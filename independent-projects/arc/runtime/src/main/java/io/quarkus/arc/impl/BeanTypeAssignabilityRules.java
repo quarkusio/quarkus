@@ -43,18 +43,38 @@ class BeanTypeAssignabilityRules {
             if (beanType instanceof Class<?>) {
                 return matches((Class<?>) requiredType, (Class<?>) beanType);
             }
-            if (beanType instanceof ParameterizedType) {
-                return matches((Class<?>) requiredType, (ParameterizedType) beanType);
+            if (isParameterizedType(beanType)) {
+                return matches((Class<?>) requiredType, asParameterizedType(beanType));
             }
-        } else if (requiredType instanceof ParameterizedType) {
+        } else if (isParameterizedType(requiredType)) {
             if (beanType instanceof Class<?>) {
-                return matches((Class<?>) beanType, (ParameterizedType) requiredType);
+                return matches((Class<?>) beanType, asParameterizedType(requiredType));
             }
-            if (beanType instanceof ParameterizedType) {
-                return matches((ParameterizedType) requiredType, (ParameterizedType) beanType);
+            if (isParameterizedType(beanType)) {
+                return matches(asParameterizedType(requiredType), asParameterizedType(beanType));
             }
         }
         return false;
+    }
+
+    private static boolean isParameterizedType(final Type beanType) {
+        //Check for ParameterizedTypeImpl first, as it's very likely going
+        //to be one; this prevents some cases of type cache pollution (see JDK-8180450).
+        if (beanType instanceof ParameterizedTypeImpl) {
+            return true;
+        }
+        return (beanType instanceof ParameterizedType);
+    }
+
+    private static ParameterizedType asParameterizedType(final Type beanType) {
+        //Check for ParameterizedTypeImpl first, as it's very likely going
+        //to be one; this prevents some cases of type cache pollution (see JDK-8180450).
+        if (beanType instanceof ParameterizedTypeImpl) {
+            //N.B. it's crucial for the purposes of this optimisation that
+            //we cast the to concrete type, not to the interface.
+            return (ParameterizedTypeImpl) beanType;
+        }
+        return (ParameterizedType) beanType;
     }
 
     private boolean matches(Class<?> requiredType, Class<?> beanType) {

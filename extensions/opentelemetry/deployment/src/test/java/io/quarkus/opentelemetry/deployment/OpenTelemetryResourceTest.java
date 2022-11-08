@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.deployment;
 
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -42,11 +43,12 @@ public class OpenTelemetryResourceTest {
                 .body(is("hello"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
-        assertEquals("/hello", spans.get(0).getName());
-        assertEquals(SERVER, spans.get(0).getKind());
-        assertEquals("authservice", spans.get(0).getResource().getAttribute(AttributeKey.stringKey("service.name")));
+
+        final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals("/hello", server.getName());
+        assertEquals("authservice", server.getResource().getAttribute(AttributeKey.stringKey("service.name")));
         assertEquals(config.getRawValue("quarkus.uuid"),
-                spans.get(0).getResource().getAttribute(AttributeKey.stringKey("service.instance.id")));
+                server.getResource().getAttribute(AttributeKey.stringKey("service.instance.id")));
     }
 
     @Path("/hello")

@@ -52,6 +52,9 @@ public class BuildTimeEnabledProcessor {
     private static final DotName UNLESS_BUILD_PROPERTY_CONTAINER = DotName
             .createSimple(UnlessBuildProperty.List.class.getName());
 
+    public static final Set<DotName> BUILD_TIME_ENABLED_BEAN_ANNOTATIONS = Set.of(IF_BUILD_PROFILE, UNLESS_BUILD_PROFILE,
+            IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER);
+
     @BuildStep
     void ifBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
         Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(IF_BUILD_PROFILE);

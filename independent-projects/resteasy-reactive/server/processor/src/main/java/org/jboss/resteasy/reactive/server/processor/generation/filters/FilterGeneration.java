@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -21,7 +22,7 @@ import org.jboss.resteasy.reactive.server.processor.util.GeneratedClassOutput;
 
 public class FilterGeneration {
     public static List<GeneratedFilter> generate(IndexView index, Set<DotName> unwrappableTypes,
-            Set<String> additionalBeanAnnotations) {
+            Set<String> additionalBeanAnnotations, Predicate<MethodInfo> isOptionalFilter) {
         List<GeneratedFilter> ret = new ArrayList<>();
         for (AnnotationInstance instance : index
                 .getAnnotations(SERVER_REQUEST_FILTER)) {
@@ -30,7 +31,7 @@ public class FilterGeneration {
             }
             MethodInfo methodInfo = instance.target().asMethod();
             GeneratedClassOutput output = new GeneratedClassOutput();
-            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations)
+            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations, isOptionalFilter)
                     .generateContainerRequestFilter(methodInfo, output);
             Integer priority = null;
             boolean preMatching = false;
@@ -88,7 +89,8 @@ public class FilterGeneration {
             Integer priority = null;
             Set<String> nameBindingNames = new HashSet<>();
             GeneratedClassOutput output = new GeneratedClassOutput();
-            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations)
+            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations,
+                    isOptionalFilter)
                     .generateContainerResponseFilter(methodInfo, output);
 
             AnnotationValue priorityValue = instance.value("priority");

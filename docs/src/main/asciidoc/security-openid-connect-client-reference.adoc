@@ -828,7 +828,24 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 
 The `quarkus-oidc-token-propagation-reactive` extension provides RestEasy Reactive Client `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` that simplifies the propagation of authentication information by propagating the xref:security-openid-connect.adoc[Bearer] token present in the current active request or the token acquired from the xref:security-openid-connect-web-authentication.adoc[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
 
-You can selectively register `AccessTokenRequestReactiveFilter` using `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation, for example:
+You can selectively register `AccessTokenRequestReactiveFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation, for example:
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import io.quarkus.oidc.token.propagation.AccessToken;
+
+@RegisterRestClient
+@AccessToken
+@Path("/")
+public interface ProtectedResourceService {
+
+    @GET
+    String getUserName();
+}
+----
+
+or
 
 [source,java]
 ----

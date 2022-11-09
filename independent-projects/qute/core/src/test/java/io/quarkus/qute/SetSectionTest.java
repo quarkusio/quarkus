@@ -62,4 +62,16 @@ public class SetSectionTest {
         }
     }
 
+    @Test
+    public void testCompositeParams() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        assertEquals("1x2x::false",
+                engine.parse(
+                        "{#let foo=(baz + 1) bar=(name ? true : false)}"
+                                + "{#for i in foo}{i_count}x{/for}::{bar}"
+                                + "{/let}")
+                        .data("baz", 1)
+                        .render());
+    }
+
 }

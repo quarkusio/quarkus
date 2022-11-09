@@ -142,6 +142,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
         defineCodeFlowAuthorizationMockTokenStub();
         defineCodeFlowAuthorizationMockEncryptedTokenStub();
 
+        //JWT bearer token grant
+        defineJwtBearerGrantTokenStub();
+
         // Login Page
         server.stubFor(
                 get(urlPathMatching("/auth/realms/quarkus[/]?"))
@@ -240,6 +243,22 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                 "{\"active\":true,\"scope\":\"" + roles.stream().collect(joining(" ")) + "\",\"username\":\""
                                         + user
                                         + "\",\"iat\":1562315654,\"exp\":1,\"expires_in\":1,\"client_id\":\"my_client_id\"}")));
+    }
+
+    private void defineJwtBearerGrantTokenStub() {
+        server.stubFor(WireMock.post("/auth/realms/quarkus/jwt-bearer-token")
+                .withRequestBody(containing("client_id=quarkus-app"))
+                .withRequestBody(containing("client_secret=secret"))
+                .withRequestBody(containing("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer"))
+                .withRequestBody(containing("scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read+offline_access"))
+                .withRequestBody(containing("requested_token_use=on_behalf_of"))
+                .withRequestBody(containing("assertion"))
+                .willReturn(WireMock.aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\n" +
+                                "  \"access_token\": \""
+                                + getAccessToken("bob", getUserRoles()) + "\""
+                                + "}")));
     }
 
     private void defineCodeFlowAuthorizationMockTokenStub() {

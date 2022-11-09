@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 
@@ -18,6 +19,16 @@ public class ParamDeclarationDefaultValueTest {
         assertDefaultValue(engine.parse("{@java.lang.String val= 'foo'}\n{val.toUpperCase}"), "FOO");
         assertDefaultValue(engine.parse("{@java.lang.String val='foo and bar'}\n{val.toUpperCase}"), "FOO AND BAR");
         assertDefaultValue(engine.parse("{@java.lang.String val= 'foo and bar'}\n{val.toUpperCase}"), "FOO AND BAR");
+    }
+
+    @Test
+    public void testDefaultValueWithComposite() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        Template template = engine.parse("{@java.lang.String val=(foo or bar)}{val}");
+        assertEquals("barbar", template.data("bar", "barbar").render());
+        Expression fooExpr = template.getExpressions().stream().filter(e -> !e.isLiteral()).findFirst().orElse(null);
+        assertNotNull(fooExpr);
+        assertNull(fooExpr.collectTypeInfo());
     }
 
     @Test

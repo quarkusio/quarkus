@@ -129,6 +129,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
                 List.class, int.class, int.class, UriInfo.class);
+        methodCreator.setParameterNames(new String[] { "sort", "page", "size", "uriInfo" });
 
         // Add method annotations
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
@@ -205,6 +206,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
                 List.class);
+        methodCreator.setParameterNames(new String[] { "sort" });
 
         // Add method annotations
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));

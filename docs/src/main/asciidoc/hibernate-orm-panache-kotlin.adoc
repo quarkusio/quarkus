@@ -25,7 +25,7 @@ change or two.  To Panache-enable your entity, you would define it something lik
 [source,kotlin]
 ----
 @Entity
-class Person: PanacheEntity {
+class Person: PanacheEntity() {
     lateinit var name: String
     lateinit var birth: LocalDate
     lateinit var status: Status

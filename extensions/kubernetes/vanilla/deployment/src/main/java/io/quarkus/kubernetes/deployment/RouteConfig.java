@@ -22,6 +22,12 @@ public class RouteConfig {
     Optional<String> host;
 
     /**
+     * The target named port. If not provided, it will be deducted from the Service resource ports.
+     */
+    @ConfigItem
+    Optional<String> targetPort;
+
+    /**
      * Custom annotations to add to exposition (route or ingress) resources
      */
     @ConfigItem

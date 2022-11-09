@@ -22,6 +22,10 @@ public class ApplyOpenshiftRouteConfigurator extends Configurator<OpenshiftConfi
                 routeBuilder.withHost(routeConfig.host.get());
             }
 
+            if (routeConfig.targetPort.isPresent()) {
+                routeBuilder.withTargetPort(routeConfig.targetPort.get());
+            }
+
             routeBuilder.endRoute();
         }
     }

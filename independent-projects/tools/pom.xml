@@ -62,7 +62,7 @@
         <maven-model-helper.version>21</maven-model-helper.version>
         <commons-io.version>2.11.0</commons-io.version>
         <smallrye-common.version>1.13.2</smallrye-common.version>
-        <jandex.version>3.0.2</jandex.version>
+        <jandex.version>3.0.3</jandex.version>
     </properties>
     <modules>
         <module>registry-client</module>

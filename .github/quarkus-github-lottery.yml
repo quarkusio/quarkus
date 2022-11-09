@@ -18,6 +18,9 @@ buckets:
     stale:
       delay: P60D
       timeout: P14D
+  stewardship:
+    delay: P60D
+    timeout: P14D
 participants:
   - username: "yrodiere"
     timezone: "Europe/Paris"
@@ -49,6 +52,9 @@ participants:
           maxIssues: 2
       stale:
         maxIssues: 5
+    stewardship:
+      days: ["MONDAY"]
+      maxIssues: 3
   - username: "mkouba"
     timezone: "Europe/Prague"
     triage:
@@ -109,6 +115,9 @@ participants:
           maxIssues: 2
       stale:
         maxIssues: 5
+    stewardship:
+      days: ["WEDNESDAY", "FRIDAY"]
+      maxIssues: 3
   - username: "sberyozkin"
     timezone: "Europe/Dublin"
     triage:

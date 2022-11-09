@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -733,7 +734,8 @@ public class ResteasyReactiveProcessor {
     public void transformEndpoints(
             ResourceScanningResultBuildItem resourceScanningResultBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
-            BuildProducer<io.quarkus.arc.deployment.AnnotationsTransformerBuildItem> annotationsTransformer) {
+            BuildProducer<io.quarkus.arc.deployment.AnnotationsTransformerBuildItem> annotationsTransformer,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
 
         // all found resources and sub-resources
         Set<DotName> allResources = new HashSet<>();
@@ -774,7 +776,7 @@ public class ResteasyReactiveProcessor {
                         // check if the class is one of resources/sub-resources
                         if (allResources.contains(clazz.name())
                                 && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                            context.transform().add(createTypedAnnotationInstance(clazz)).done();
+                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
                             return;
                         }
                         // check if the class is one of providers, either explicitly declaring the annotation
@@ -783,17 +785,52 @@ public class ResteasyReactiveProcessor {
                                 || filtersAndInterceptors.contains(clazz.name().toString()))
                                 && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
                             // Add @Typed(MyResource.class)
-                            context.transform().add(createTypedAnnotationInstance(clazz)).done();
+                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
                         }
                     }
                 }));
     }
 
-    private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz) {
+    private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+        Set<DotName> interfaceNames = new HashSet<>();
+        ClassInfo currentClazz = clazz;
+        while (!ResteasyReactiveDotNames.OBJECT.equals(currentClazz.name())) {
+            currentClazz.interfaceNames().forEach(iface -> interfaceNames.add(iface));
+            // inspect super class
+            currentClazz = beanArchiveIndexBuildItem.getIndex().getClassByName(currentClazz.superName());
+        }
+        Set<DotName> allInterfaces = new HashSet<>();
+        recursiveInterfaceSearch(interfaceNames, allInterfaces, beanArchiveIndexBuildItem);
+        AnnotationValue[] annotationValues = new AnnotationValue[allInterfaces.size() + 1];
+        // always add the bean impl class
+        annotationValues[0] = AnnotationValue.createClassValue("value",
+                Type.create(clazz.name(), Type.Kind.CLASS));
+        Iterator<DotName> iterator = allInterfaces.iterator();
+        for (int i = 1; i < annotationValues.length; i++) {
+            annotationValues[i] = AnnotationValue.createClassValue("value",
+                    Type.create(iterator.next(), Type.Kind.CLASS));
+        }
         return AnnotationInstance.create(ResteasyReactiveDotNames.TYPED, clazz,
                 new AnnotationValue[] { AnnotationValue.createArrayValue("value",
-                        new AnnotationValue[] { AnnotationValue.createClassValue("value",
-                                Type.create(clazz.name(), Type.Kind.CLASS)) }) });
+                        annotationValues) });
+    }
+
+    private void recursiveInterfaceSearch(Set<DotName> interfacesToProcess, Set<DotName> allDiscoveredInterfaces,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+        allDiscoveredInterfaces.addAll(interfacesToProcess);
+        Set<DotName> additionalInterfacesToProcess = new HashSet<>();
+        for (DotName name : interfacesToProcess) {
+            ClassInfo clazz = beanArchiveIndexBuildItem.getIndex().getClassByName(name);
+            if (clazz != null) {
+                // get all interface that this interface extends
+                additionalInterfacesToProcess.addAll(clazz.interfaceNames());
+            }
+        }
+        if (!additionalInterfacesToProcess.isEmpty()) {
+            // recursively process newly found interfaces
+            recursiveInterfaceSearch(additionalInterfacesToProcess, allDiscoveredInterfaces, beanArchiveIndexBuildItem);
+        }
     }
 
     private Collection<DotName> additionalContextTypes(List<ContextTypeBuildItem> contextTypeBuildItems) {

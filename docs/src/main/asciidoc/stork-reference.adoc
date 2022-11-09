@@ -37,6 +37,10 @@ To use this feature, add the following dependency to your project:
 .pom.xml
 ----
 <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-stork</artifactId>
+</dependency>
+<dependency>
     <groupId>io.smallrye.stork</groupId>
     <artifactId>stork-service-discovery-kubernetes</artifactId>
 </dependency>
@@ -45,6 +49,7 @@ To use this feature, add the following dependency to your project:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
+implementation("io.quarkus:quarkus-smallrye-stork")
 implementation("io.smallrye.stork:stork-service-discovery-kubernetes")
 ----
 
@@ -72,6 +77,10 @@ To implement your Service Discovery Provider, make sure your project depends on 
 .pom.xml
 ----
 <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-stork</artifactId>
+</dependency>
+<dependency>
     <groupId>io.smallrye.stork</groupId>
     <artifactId>stork-core</artifactId>
 </dependency>
@@ -86,6 +95,7 @@ To implement your Service Discovery Provider, make sure your project depends on 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
+implementation("io.quarkus:quarkus-smallrye-stork")
 implementation("io.smallrye.stork:stork-core")
 compileOnly("io.smallrye.stork:stork-configuration-generator")
 ----
@@ -224,6 +234,10 @@ To implement your Load Balancer Provider, make sure your project depends on Core
 .pom.xml
 ----
 <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-stork</artifactId>
+</dependency>
+<dependency>
     <groupId>io.smallrye.stork</groupId>
     <artifactId>stork-core</artifactId>
 </dependency>
@@ -238,6 +252,7 @@ To implement your Load Balancer Provider, make sure your project depends on Core
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
+implementation("io.quarkus:quarkus-smallrye-stork")
 implementation("io.smallrye.stork:stork-core")
 compileOnly("io.smallrye.stork:stork-configuration-generator")
 ----

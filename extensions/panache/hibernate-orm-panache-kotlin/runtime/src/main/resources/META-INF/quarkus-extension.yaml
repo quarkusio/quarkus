@@ -15,3 +15,7 @@ metadata:
   config:
   - "quarkus.datasource."
   - "quarkus.hibernate-orm."
+  codestart:
+    name: "hibernate-orm"
+    languages: [ "kotlin" ]
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

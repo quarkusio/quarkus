@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -46,19 +49,19 @@ final class EventTypeAssignabilityRules {
              */
             return matches((TypeVariable<?>) observedType, eventType);
         }
-        if (observedType instanceof Class<?> && eventType instanceof ParameterizedType) {
+        if (observedType instanceof Class<?> && isParameterizedType(eventType)) {
             /*
              * A parameterized event type is considered assignable to a raw observed event type if the raw types are identical.
              */
             return observedType.equals(Types.getRawType(eventType));
         }
-        if (observedType instanceof ParameterizedType && eventType instanceof ParameterizedType) {
+        if (isParameterizedType(observedType) && isParameterizedType(eventType)) {
             /*
              * A parameterized event type is considered assignable to a parameterized observed event type if they have identical
              * raw type and for each
              * parameter:
              */
-            return matches((ParameterizedType) observedType, (ParameterizedType) eventType);
+            return matches(asParameterizedType(observedType), asParameterizedType(eventType));
         }
         /*
          * Not explicitly said in the spec but obvious.

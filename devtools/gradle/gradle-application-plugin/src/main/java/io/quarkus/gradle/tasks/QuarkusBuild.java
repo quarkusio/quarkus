@@ -9,10 +9,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.inject.Inject;
+
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.java.archives.Attributes;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
@@ -32,7 +35,7 @@ import io.quarkus.gradle.dsl.Manifest;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.runtime.util.StringUtil;
 
-public class QuarkusBuild extends QuarkusTask {
+public abstract class QuarkusBuild extends QuarkusTask {
 
     private static final String NATIVE_PROPERTY_NAMESPACE = "quarkus.native";
     private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
@@ -41,8 +44,13 @@ public class QuarkusBuild extends QuarkusTask {
     private List<String> ignoredEntries = new ArrayList<>();
     private Manifest manifest = new Manifest();
 
+    @Inject
     public QuarkusBuild() {
         super("Quarkus builds a runner jar based on the build jar");
+    }
+
+    public QuarkusBuild(String description) {
+        super(description);
     }
 
     public QuarkusBuild nativeArgs(Action<Map<String, ?>> action) {
@@ -53,6 +61,10 @@ public class QuarkusBuild extends QuarkusTask {
         }
         return this;
     }
+
+    @Optional
+    @Input
+    public abstract MapProperty<String, String> getForcedProperties();
 
     @Optional
     @Input
@@ -125,6 +137,8 @@ public class QuarkusBuild extends QuarkusTask {
     @TaskAction
     public void buildQuarkus() {
         final ApplicationModel appModel;
+        final Map<String, String> forcedProperties = getForcedProperties().getOrElse(Collections.emptyMap());
+
         try {
             appModel = extension().getAppModelResolver().resolveModel(new GACTV(getProject().getGroup().toString(),
                     getProject().getName(), getProject().getVersion().toString()));
@@ -133,6 +147,7 @@ public class QuarkusBuild extends QuarkusTask {
         }
 
         final Properties effectiveProperties = getBuildSystemProperties(appModel.getAppArtifact());
+        effectiveProperties.putAll(forcedProperties);
         if (ignoredEntries != null && ignoredEntries.size() > 0) {
             String joinedEntries = String.join(",", ignoredEntries);
             effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);

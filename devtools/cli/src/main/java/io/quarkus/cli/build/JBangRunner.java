@@ -80,7 +80,8 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+    public BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode,
+            List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
 
         if (buildOptions.offline) {
@@ -96,12 +97,17 @@ public class JBangRunner implements BuildSystemRunner {
             args.add("--fresh");
         }
 
-        args.add("build");
+        args.add(action);
         args.addAll(flattenMappedProperties(propertiesOptions.properties));
         args.add(registryClient.getRegistryClientProperty());
         args.addAll(params);
         args.add(getMainPath());
         return prependExecutable(args);
+    }
+
+    @Override
+    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+        return prepareAction("build", buildOptions, runMode, params);
     }
 
     @Override

@@ -32,8 +32,11 @@ import org.gradle.util.GradleVersion;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
+import io.quarkus.gradle.tasks.ImageBuild;
+import io.quarkus.gradle.tasks.ImagePush;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
 import io.quarkus.gradle.tasks.QuarkusBuild;
+import io.quarkus.gradle.tasks.QuarkusBuildConfiguration;
 import io.quarkus.gradle.tasks.QuarkusDev;
 import io.quarkus.gradle.tasks.QuarkusGenerateCode;
 import io.quarkus.gradle.tasks.QuarkusGoOffline;
@@ -70,6 +73,8 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String QUARKUS_GO_OFFLINE_TASK_NAME = "quarkusGoOffline";
     public static final String QUARKUS_INFO_TASK_NAME = "quarkusInfo";
     public static final String QUARKUS_UPDATE_TASK_NAME = "quarkusUpdate";
+    public static final String IMAGE_BUILD_TASK_NAME = "imageBuild";
+    public static final String IMAGE_PUSH_TASK_NAME = "imagePush";
 
     @Deprecated
     public static final String BUILD_NATIVE_TASK_NAME = "buildNative";
@@ -143,8 +148,21 @@ public class QuarkusPlugin implements Plugin<Project> {
         TaskProvider<QuarkusGenerateCode> quarkusGenerateCodeTests = tasks.register(QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
                 QuarkusGenerateCode.class, task -> task.setTest(true));
 
+        QuarkusBuildConfiguration buildConfig = new QuarkusBuildConfiguration(project);
+
         TaskProvider<QuarkusBuild> quarkusBuild = tasks.register(QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class, build -> {
             build.dependsOn(quarkusGenerateCode);
+            build.getForcedProperties().set(buildConfig.getForcedProperties());
+        });
+
+        TaskProvider<ImageBuild> imageBuild = tasks.register(IMAGE_BUILD_TASK_NAME, ImageBuild.class, buildConfig);
+        imageBuild.configure(task -> {
+            task.finalizedBy(quarkusBuild);
+        });
+
+        TaskProvider<ImagePush> imagePush = tasks.register(IMAGE_PUSH_TASK_NAME, ImagePush.class, buildConfig);
+        imagePush.configure(task -> {
+            task.finalizedBy(quarkusBuild);
         });
 
         TaskProvider<QuarkusDev> quarkusDev = tasks.register(QUARKUS_DEV_TASK_NAME, QuarkusDev.class, devRuntimeDependencies,
@@ -163,7 +181,6 @@ public class QuarkusPlugin implements Plugin<Project> {
         });
 
         configureBuildNativeTask(project);
-
         project.getPlugins().withType(
                 BasePlugin.class,
                 basePlugin -> tasks.named(BasePlugin.ASSEMBLE_TASK_NAME, task -> task.dependsOn(quarkusBuild)));

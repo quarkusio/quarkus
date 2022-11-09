@@ -104,6 +104,8 @@ public interface BuildSystemRunner {
 
     Integer update(boolean rectify, boolean recommendedState, boolean perModule) throws Exception;
 
+    BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode, List<String> params);
+
     BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 
     List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,

@@ -161,6 +161,12 @@ public class MavenRunner implements BuildSystemRunner {
 
     @Override
     public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+        return prepareAction("install", buildOptions, runMode, params);
+    }
+
+    @Override
+    public BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode,
+            List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, runMode.isBatchMode());
 
@@ -175,7 +181,7 @@ public class MavenRunner implements BuildSystemRunner {
         if (buildOptions.clean) {
             args.add("clean");
         }
-        args.add("install");
+        args.add(action);
 
         if (buildOptions.buildNative) {
             args.add("-Dnative");

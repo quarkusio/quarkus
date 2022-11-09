@@ -42,7 +42,7 @@
         <maven.compiler.release>11</maven.compiler.release>
         <version.junit>5.9.1</version.junit>
         <version.assertj>3.23.1</version.assertj>
-        <version.jandex>3.0.2</version.jandex>
+        <version.jandex>3.0.3</version.jandex>
         <version.gizmo>1.4.0.Final</version.gizmo>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>

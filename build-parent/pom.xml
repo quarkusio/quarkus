@@ -34,7 +34,7 @@
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.0.1</jandex.version>
+        <jandex.version>3.0.3</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.7</asciidoctorj.version>
@@ -105,7 +105,7 @@
 
         <assertj.version>3.23.1</assertj.version>
 
-        <wiremock-jre8.version>2.34.0</wiremock-jre8.version>
+        <wiremock-jre8.version>2.35.0</wiremock-jre8.version>
         <wiremock-maven-plugin.version>7.2.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
@@ -118,7 +118,7 @@
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
-        <formatter-maven-plugin.version>2.20.0</formatter-maven-plugin.version>
+        <formatter-maven-plugin.version>2.21.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.7.0</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>

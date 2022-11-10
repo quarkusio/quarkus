@@ -46,6 +46,8 @@ public class QuarkusPluginTest {
         assertNotNull(tasks.getByName(QuarkusPlugin.BUILD_NATIVE_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.LIST_EXTENSIONS_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.ADD_EXTENSION_TASK_NAME));
+        assertNotNull(tasks.getByName(QuarkusPlugin.IMAGE_BUILD_TASK_NAME));
+        assertNotNull(tasks.getByName(QuarkusPlugin.IMAGE_PUSH_TASK_NAME));
     }
 
     @Test
@@ -166,5 +168,14 @@ public class QuarkusPluginTest {
             }
         }
         return dependantTaskNames;
+    }
+
+    private static final String getFinalizedByTaskName(Task task) {
+        try {
+            return ((Provider<Task>) task.getFinalizedBy()).get().getName();
+        } catch (ClassCastException e) {
+            // Nothing to do here
+            return null;
+        }
     }
 }

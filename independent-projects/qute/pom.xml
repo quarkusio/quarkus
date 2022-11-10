@@ -42,12 +42,12 @@
         <maven.compiler.release>11</maven.compiler.release>
         <version.junit>5.9.1</version.junit>
         <version.assertj>3.23.1</version.assertj>
-        <version.jandex>3.0.1</version.jandex>
+        <version.jandex>3.0.3</version.jandex>
         <version.gizmo>1.4.0.Final</version.gizmo>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
-        <version.smallrye-mutiny>1.7.0</version.smallrye-mutiny>
+        <version.smallrye-mutiny>1.8.0</version.smallrye-mutiny>
     </properties>
 
     <modules>
@@ -166,7 +166,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.20.0</version>
+                    <version>2.21.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>

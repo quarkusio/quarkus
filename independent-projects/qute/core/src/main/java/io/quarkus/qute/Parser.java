@@ -907,6 +907,10 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         if (value == null || value.isEmpty()) {
             return ExpressionImpl.EMPTY;
         }
+        // (foo ?: bar) -> foo ?: bar
+        if (value.charAt(0) == START_COMPOSITE_PARAM && value.charAt(value.length() - 1) == END_COMPOSITE_PARAM) {
+            value = value.substring(1, value.length() - 1);
+        }
         String namespace = null;
         int namespaceIdx = value.indexOf(NAMESPACE_SEPARATOR);
         int spaceIdx;

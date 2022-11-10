@@ -13,9 +13,9 @@ class AroundConstructInvocationContext extends LifecycleCallbackInvocationContex
 
     private final Supplier<Object> aroundConstructForward;
 
-    AroundConstructInvocationContext(Constructor<?> constructor, Set<Annotation> interceptorBindings,
+    AroundConstructInvocationContext(Constructor<?> constructor, Object[] parameters, Set<Annotation> interceptorBindings,
             List<InterceptorInvocation> chain, Supplier<Object> aroundConstructForward) {
-        super(null, constructor, interceptorBindings, chain);
+        super(null, constructor, parameters, interceptorBindings, chain);
         this.aroundConstructForward = aroundConstructForward;
     }
 

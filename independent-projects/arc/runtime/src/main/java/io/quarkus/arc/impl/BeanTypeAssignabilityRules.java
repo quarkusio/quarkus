@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -43,15 +46,15 @@ class BeanTypeAssignabilityRules {
             if (beanType instanceof Class<?>) {
                 return matches((Class<?>) requiredType, (Class<?>) beanType);
             }
-            if (beanType instanceof ParameterizedType) {
-                return matches((Class<?>) requiredType, (ParameterizedType) beanType);
+            if (isParameterizedType(beanType)) {
+                return matches((Class<?>) requiredType, asParameterizedType(beanType));
             }
-        } else if (requiredType instanceof ParameterizedType) {
+        } else if (isParameterizedType(requiredType)) {
             if (beanType instanceof Class<?>) {
-                return matches((Class<?>) beanType, (ParameterizedType) requiredType);
+                return matches((Class<?>) beanType, asParameterizedType(requiredType));
             }
-            if (beanType instanceof ParameterizedType) {
-                return matches((ParameterizedType) requiredType, (ParameterizedType) beanType);
+            if (isParameterizedType(beanType)) {
+                return matches(asParameterizedType(requiredType), asParameterizedType(beanType));
             }
         }
         return false;

@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
@@ -86,9 +89,10 @@ final class Types {
         if (type instanceof Class<?>) {
             return (Class<T>) type;
         }
-        if (type instanceof ParameterizedType) {
-            if (((ParameterizedType) type).getRawType() instanceof Class<?>) {
-                return (Class<T>) ((ParameterizedType) type).getRawType();
+        if (isParameterizedType(type)) {
+            final ParameterizedType parameterizedType = asParameterizedType(type);
+            if (parameterizedType.getRawType() instanceof Class<?>) {
+                return (Class<T>) parameterizedType.getRawType();
             }
         }
         if (type instanceof TypeVariable<?>) {
@@ -164,8 +168,8 @@ final class Types {
         if (type instanceof TypeVariable<?>) {
             return true;
         }
-        if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
+        if (isParameterizedType(type)) {
+            ParameterizedType parameterizedType = asParameterizedType(type);
             for (Type t : parameterizedType.getActualTypeArguments()) {
                 if (containsTypeVariable(t)) {
                     return true;

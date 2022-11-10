@@ -84,6 +84,7 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
                 resourceMetadata.getIdType());
+        methodCreator.setParameterNames(new String[] { "id" });
 
         // Add method annotations
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), "{id}"));

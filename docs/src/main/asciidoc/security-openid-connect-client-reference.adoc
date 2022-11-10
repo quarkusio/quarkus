@@ -11,7 +11,7 @@ include::_attributes.adoc[]
 This reference guide explains how to use:
 
  - `quarkus-oidc-client`, `quarkus-oidc-client-reactive-filter` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org[Keycloak]
- - `quarkus-oidc-token-propagation` and `quarkus-oidc-token-propagation-reactive` extensions to propagate the current `Bearer` or `Authorization Code Flow` access tokens
+ - `quarkus-oidc-token-propagation-reactive` and `quarkus-oidc-token-propagation` extensions to propagate the current `Bearer` or `Authorization Code Flow` access tokens
 
 The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
 
@@ -110,7 +110,7 @@ It can be further customized using a `quarkus.oidc-client.grant-options.password
 
 ==== Other Grants
 
-`OidcClient` can also help with acquiring the tokens using the grants which require some extra input parameters which can not be captured in the configuration. These grants are `refresh token` (with the external refresh token), `token exchange` and `authorization code`.
+`OidcClient` can also help with acquiring the tokens using the grants which require some extra input parameters which can not be captured in the configuration. These grants are `refresh_token` (with the external refresh token), `authorization_code`, as well as two grants which can be used to exchange the current access token, `urn:ietf:params:oauth:grant-type:token-exchange` and `urn:ietf:params:oauth:grant-type:jwt-bearer`.
 
 Using the `refresh_token` grant which uses an out-of-band refresh token to acquire a new set of tokens will be required if the existing refresh token has been posted to the current Quarkus endpoint for it to acquire the access token. In this case `OidcClient` needs to be configured as follows:
 
@@ -124,7 +124,7 @@ quarkus.oidc-client.grant.type=refresh
 
 and then you can use `OidcClient.refreshTokens` method with a provided refresh token to get the access token.
 
-Using the `token exchange` grant may be required if you are building a complex microservices application and would like to avoid the same `Bearer` token be propagated to and used by more than one service. Please see <<token-propagation,Token Propagation in MicroProfile RestClient client filter>> for more details.
+Using the `urn:ietf:params:oauth:grant-type:token-exchange` or `urn:ietf:params:oauth:grant-type:jwt-bearer` grants may be required if you are building a complex microservices application and would like to avoid the same `Bearer` token be propagated to and used by more than one service. Please see <<token-propagation-reactive,Token Propagation in MicroProfile RestClient Reactive filter>> and <<token-propagation,Token Propagation in MicroProfile RestClient filter>> for more details.
 
 Using `OidcClient` to support the `authorization code` grant might be required if for some reasons you can not use the xref:security-openid-connect-web-authentication.adoc[Quarkus OpenID Connect extension] to support Authorization Code Flow. If there is a very good reason for you to implement Authorization Code Flow then you can configure `OidcClient` as follows:
 
@@ -823,6 +823,81 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".level=T
 quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-level=TRACE
 ----
 
+[[token-propagation-reactive]]
+== Token Propagation Reactive
+
+The `quarkus-oidc-token-propagation-reactive` extension provides RestEasy Reactive Client `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` that simplifies the propagation of authentication information by propagating the xref:security-openid-connect.adoc[Bearer] token present in the current active request or the token acquired from the xref:security-openid-connect-web-authentication.adoc[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
+
+You can selectively register `AccessTokenRequestReactiveFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation, for example:
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import io.quarkus.oidc.token.propagation.AccessToken;
+
+@RegisterRestClient
+@AccessToken
+@Path("/")
+public interface ProtectedResourceService {
+
+    @GET
+    String getUserName();
+}
+----
+
+or
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter;
+
+@RegisterRestClient
+@RegisterProvider(AccessTokenRequestReactiveFilter.class)
+@Path("/")
+public interface ProtectedResourceService {
+
+    @GET
+    String getUserName();
+}
+----
+
+
+Additionally, `AccessTokenRequestReactiveFilter` can support a complex application that needs to exchange the tokens before propagating them.
+
+If you work with link:https://www.keycloak.org/docs/latest/securing_apps/#_token-exchange[Keycloak] or other OpenID Connect Providers which support a link:https://tools.ietf.org/html/rfc8693[Token Exchange] token grant then you can configure `AccessTokenRequestReactiveFilter` to exchange the token like this:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.secret=secret
+quarkus.oidc-client.grant.type=exchange
+quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
+
+quarkus.oidc-token-propagation.exchange-token=true
+----
+
+Note `AccessTokenRequestReactiveFilter` will use `OidcClient` to exchange the current token, and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenID Connect Provider.
+
+If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exhange the current token then you can configure `AccessTokenRequestReactiveFilter` to exchange the token like this:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=${azure.provider.url}
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.secret=secret
+
+quarkus.oidc-client.grant.type=jwt
+quarkus.oidc-client.grant-options.jwt.requested_token_use=on_behalf_of
+quarkus.oidc-client.scopes=https://graph.microsoft.com/user.read,offline_access
+
+quarkus.oidc-token-propagation-reactive.exchange-token=true
+----
+
+`AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation-reactive.client-name` configuration property.
+
 [[token-propagation]]
 == Token Propagation
 
@@ -889,6 +964,21 @@ quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.secret=secret
 quarkus.oidc-client.grant.type=exchange
 quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
+
+quarkus.oidc-token-propagation.exchange-token=true
+----
+
+If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exhange the current token then you can configure `AccessTokenRequestFilter` to exchange the token like this:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=${azure.provider.url}
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.secret=secret
+
+quarkus.oidc-client.grant.type=jwt
+quarkus.oidc-client.grant-options.jwt.requested_token_use=on_behalf_of
+quarkus.oidc-client.scopes=https://graph.microsoft.com/user.read,offline_access
 
 quarkus.oidc-token-propagation.exchange-token=true
 ----

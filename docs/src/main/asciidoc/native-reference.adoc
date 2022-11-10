@@ -215,6 +215,13 @@ quarkus.container-image.build=true
 quarkus.container-image.group=test
 ----
 
+[IMPORTANT]
+====
+Starting with 22.3, Mandrel does not provide a `-java11` version anymore.
+Note, however,  that this doesn't mean that you may no longer produce native executables with Mandrel for Java 11 projects.
+You can still compile your Java 11 projects using OpenJDK 11 and produce native executables from the resulting Java 11 bytecode using the `-java17` Mandrel builder images.
+====
+
 === First Debugging Steps
 
 As a first step, change to the project directory and build the native executable for the application:

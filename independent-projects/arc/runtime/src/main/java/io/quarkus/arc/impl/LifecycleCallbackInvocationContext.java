@@ -15,9 +15,9 @@ class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
 
     private int position = 0;
 
-    LifecycleCallbackInvocationContext(Object target, Constructor<?> constructor, Set<Annotation> interceptorBindings,
-            List<InterceptorInvocation> chain) {
-        super(target, null, constructor, null, null, interceptorBindings, chain);
+    LifecycleCallbackInvocationContext(Object target, Constructor<?> constructor, Object[] parameters,
+            Set<Annotation> interceptorBindings, List<InterceptorInvocation> chain) {
+        super(target, null, constructor, parameters, null, interceptorBindings, chain);
     }
 
     @Override

@@ -1,7 +1,9 @@
 package io.quarkus.opentelemetry.deployment;
 
+import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -83,19 +85,24 @@ public class WithSpanInterceptorTest {
     @Test
     void spanChild() {
         spanBean.spanChild();
-        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(2);
-        assertEquals("SpanChildBean.spanChild", spanItems.get(0).getName());
-        assertEquals("SpanBean.spanChild", spanItems.get(1).getName());
-        assertEquals(spanItems.get(0).getParentSpanId(), spanItems.get(1).getSpanId());
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
+
+        final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
+        assertEquals("SpanBean.spanChild", parent.getName());
+
+        final SpanData child = getSpanByKindAndParentId(spans, INTERNAL, parent.getSpanId());
+        assertEquals("SpanChildBean.spanChild", child.getName());
     }
 
     @Test
     void spanCdiRest() {
         spanBean.spanRestClient();
-        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(4);
-        assertEquals(spanItems.get(0).getTraceId(), spanItems.get(1).getTraceId());
-        assertEquals(spanItems.get(0).getTraceId(), spanItems.get(2).getTraceId());
-        assertEquals(spanItems.get(0).getTraceId(), spanItems.get(3).getTraceId());
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(4);
+
+        final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
+        final SpanData child = getSpanByKindAndParentId(spans, INTERNAL, parent.getSpanId());
+        final SpanData client = getSpanByKindAndParentId(spans, CLIENT, child.getSpanId());
+        final SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
     }
 
     @ApplicationScoped

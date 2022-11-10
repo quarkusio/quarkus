@@ -615,8 +615,15 @@ If you need SSL support in your native executable, you can easily include the ne
 Please see xref:native-and-ssl.adoc#working-with-containers[our Using SSL With Native Executables guide] for more information.
 ====
 
-NOTE: To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:$TAG AS build`.
-`$TAG` can be found on the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[Quarkus Mandrel Images Tags page].
+[NOTE,subs=attributes+]
+====
+To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} AS build`.
+====
+
+[NOTE]
+====
+Starting with 22.3, Mandrel does not provide a `-java11` variant anymore. Use the `-java17` image instead.
+====
 
 === Using a Distroless base image
 

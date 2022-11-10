@@ -1,5 +1,8 @@
 package io.quarkus.opentelemetry.deployment;
 
+import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
+import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -58,13 +61,15 @@ public class OpenTelemetryMDCTest {
                 .body(is("hello"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
-
         List<MdcEntry> mdcEntries = testMdcCapturer.getCapturedMdcEntries();
-
         List<MdcEntry> expectedMdcEntries = getExpectedMDCEntries(spans);
 
-        assertEquals("something", spans.get(0).getName());
-        assertEquals("/hello", spans.get(1).getName());
+        final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals("/hello", server.getName());
+
+        final SpanData programmatic = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
+        assertEquals("something", programmatic.getName());
+
         assertEquals(expectedMdcEntries, mdcEntries);
     }
 
@@ -84,13 +89,15 @@ public class OpenTelemetryMDCTest {
         }
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
-
         List<MdcEntry> mdcEntries = testMdcCapturer.getCapturedMdcEntries();
-
         List<MdcEntry> expectedMdcEntries = getExpectedMDCEntries(spans);
 
-        assertEquals("child", spans.get(0).getName());
-        assertEquals("parent", spans.get(1).getName());
+        final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
+        assertEquals("parent", parent.getName());
+
+        final SpanData child = getSpanByKindAndParentId(spans, INTERNAL, parent.getSpanId());
+        assertEquals("child", child.getName());
+
         assertEquals(expectedMdcEntries, mdcEntries);
     }
 

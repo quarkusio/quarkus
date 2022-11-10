@@ -95,6 +95,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     }
 
     /**
+     * Initialize a new helper instance for a specific section node in a template.
      *
      * @param context
      * @return a new helper instance
@@ -103,6 +104,12 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
     /**
      * Initialize a section block.
+     * <p>
+     * All section blocks are initialized before {@link #initialize(SectionInitContext)} is called.
+     * <p>
+     * The factory is responsible to register all expression via {@link BlockInfo#addExpression(String, String)}. The expression
+     * can be then used during {@link #initialize(SectionInitContext)} via {@link SectionInitContext#getExpression(String)} and
+     * {@link SectionBlock#expressions}.
      *
      * @return a new scope if this section introduces a new scope, or the outer scope
      * @see BlockInfo#addExpression(String, String)
@@ -200,7 +207,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
          * first.
          *
          * @param parameterName
-         * @return an expression registered for the specified param name, or {@code null}
+         * @return the expression registered for the main block under the specified param name, or {@code null}
          * @see BlockInfo#addExpression(String, String)
          */
         public Expression getExpression(String parameterName);

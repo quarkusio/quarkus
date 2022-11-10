@@ -36,30 +36,30 @@ import io.quarkus.bootstrap.util.IoUtils;
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class BuildMojo extends QuarkusBootstrapMojo {
 
-    private static final String PACKAGE_TYPE_PROP = "quarkus.package.type";
-    private static final String NATIVE_PROFILE_NAME = "native";
-    private static final String NATIVE_PACKAGE_TYPE = "native";
+    static final String PACKAGE_TYPE_PROP = "quarkus.package.type";
+    static final String NATIVE_PROFILE_NAME = "native";
+    static final String NATIVE_PACKAGE_TYPE = "native";
 
     @Component
-    private MavenProjectHelper projectHelper;
+    MavenProjectHelper projectHelper;
 
     /**
      * The project's remote repositories to use for the resolution of plugins and their dependencies.
      */
     @Parameter(defaultValue = "${project.remotePluginRepositories}", readonly = true, required = true)
-    private List<RemoteRepository> pluginRepos;
+    List<RemoteRepository> pluginRepos;
 
     /**
      * The directory for generated source files.
      */
     @Parameter(defaultValue = "${project.build.directory}/generated-sources")
-    private File generatedSourcesDirectory;
+    File generatedSourcesDirectory;
 
     /**
      * Skips the execution of this mojo
      */
     @Parameter(defaultValue = "false", property = "quarkus.build.skip")
-    private boolean skip = false;
+    boolean skip = false;
 
     @Deprecated
     @Parameter(property = "skipOriginalJarRename")
@@ -69,7 +69,7 @@ public class BuildMojo extends QuarkusBootstrapMojo {
      * The list of system properties defined for the plugin.
      */
     @Parameter
-    private Map<String, String> systemProperties = Collections.emptyMap();
+    Map<String, String> systemProperties = Collections.emptyMap();
 
     @Override
     protected boolean beforeExecute() throws MojoExecutionException {
@@ -153,8 +153,12 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                         }
                     }
                     if (uberJarWithSuffix) {
-                        projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),
-                                result.getJar().getClassifier());
+                        if (result.getJar().getClassifier().isEmpty()) {
+                            original.setFile(result.getJar().getPath().toFile());
+                        } else {
+                            projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),
+                                    result.getJar().getClassifier());
+                        }
                     }
                 }
             } finally {
@@ -166,7 +170,7 @@ public class BuildMojo extends QuarkusBootstrapMojo {
         }
     }
 
-    private boolean isNativeProfileEnabled(MavenProject mavenProject) {
+    boolean isNativeProfileEnabled(MavenProject mavenProject) {
         // gotcha: mavenProject.getActiveProfiles() does not always contain all active profiles (sic!),
         //         but getInjectedProfileIds() does (which has to be "flattened" first)
         Stream<String> activeProfileIds = mavenProject.getInjectedProfileIds().values().stream().flatMap(List<String>::stream);

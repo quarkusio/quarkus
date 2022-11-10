@@ -23,9 +23,9 @@ The steps in this tutorial guide you through building an application that provid
 |===
 |Endpoint | Description 
 |`/api/public`| The `/api/public` endpoint can be accessed anonymously.
-|`/api/users/me`|The `/api/admin` endpoint is protected with role-based access control (RBAC), and only users who have been granted the `admin` role can access it. 
+|`/api/admin`| The `/api/admin` endpoint is protected with role-based access control (RBAC), and only users who have been granted the `admin` role can access it.
 At this endpoint, the `@RolesAllowed` annotation is used to declaratively enforce the access constraint.
-| `/api/admin`| The `/api/users/me` endpoint is protected with RBAC and only users that have been granted the `user` role can access it. A JSON document with details about the user is returned as a response.
+|`/api/users/me`| The `/api/users/me` endpoint is protected with RBAC and only users that have been granted the `user` role can access it. A JSON document with details about the user is returned as a response.
 |===
 
 [TIP]

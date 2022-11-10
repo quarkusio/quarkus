@@ -1,6 +1,8 @@
+// Common attributes. 
+// --> No blank lines (it ends the document header)
 :project-name: Quarkus
 :quarkus-version: ${project.version}
-
+// .
 :maven-version: ${proposed-maven-version}
 :graalvm-version: ${graal-sdk.version-for-documentation}
 :graalvm-flavor: ${graal-sdk.version-for-documentation}-java17
@@ -19,7 +21,7 @@
 :grpc-version: ${grpc.version}
 :protoc-version: ${protoc.version}
 :gcf-invoker-version: ${gcf-invoker.version}
-
+// .
 :quarkus-home-url: ${quarkus-home-url}
 :quarkus-org-url: https://github.com/quarkusio
 :quarkus-site-getting-started: /get-started
@@ -40,7 +42,7 @@
 :quickstarts-archive-url: ${quickstarts-base-url}/archive/main.zip
 :quickstarts-blob-url: ${quickstarts-base-url}/blob/main
 :quickstarts-tree-url: ${quickstarts-base-url}/tree/main
-
+// .
 :amazon-services-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-amazon-services/dev/index.html
 :config-consul-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-config-extensions/dev/consul.html
 :hibernate-search-orm-elasticsearch-aws-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-hibernate-search-extras/dev/index.html
@@ -48,5 +50,5 @@
 :vault-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html
 :vault-datasource-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html
 :micrometer-registry-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/index.html
-
+// .
 include::_attributes-local.adoc[]

@@ -170,7 +170,7 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXTS_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
             "aroundConstruct",
-            InvocationContext.class, Constructor.class, List.class, Supplier.class, Set.class);
+            InvocationContext.class, Constructor.class, Object[].class, List.class, Supplier.class, Set.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_POST_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,

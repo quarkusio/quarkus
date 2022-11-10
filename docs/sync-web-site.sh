@@ -38,12 +38,17 @@ fi
 if [ $BRANCH == "main" ] && [ "$QUARKUS_RELEASE" == "true" ]; then
   TARGET_GUIDES=${TARGET_DIR}/_guides
   TARGET_CONFIG=${TARGET_DIR}/_generated-doc/latest
+  TARGET_INDEX=${TARGET_DIR}/_data/versioned/latest/index
 else
   TARGET_GUIDES=${TARGET_DIR}/_versions/${BRANCH}/guides
   TARGET_CONFIG=${TARGET_DIR}/_generated-doc/${BRANCH}
+  TARGET_INDEX=${TARGET_DIR}/_data/versioned/${BRANCH//[.]/-}/index
 fi
 
+
+echo
 echo "Copying from target/asciidoc/sources/* to $TARGET_GUIDES"
+echo
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \
@@ -53,13 +58,24 @@ rsync -vr --delete \
     target/asciidoc/sources/ \
     $TARGET_GUIDES
 
-echo "\nCopying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
+echo
+echo "Copying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
+echo
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \
     --exclude='**/_attributes.adoc' \
     ../target/asciidoc/generated/ \
     $TARGET_CONFIG
+
+if [ -f target/indexByType.yaml ]; then
+  echo
+  echo "Copying target/indexByType.yaml to $TARGET_INDEX/quarkus.yaml"
+  mkdir -p $TARGET_INDEX
+  echo "# Generated file. Do not edit" > $TARGET_INDEX/quarkus.yaml
+  cat target/indexByType.yaml >> $TARGET_INDEX/quarkus.yaml
+  echo
+fi
 
 echo "Sync done!"
 echo "=========="

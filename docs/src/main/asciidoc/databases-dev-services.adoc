@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Databases
-
+:categories: data, tooling
 include::_attributes.adoc[]
 
 When testing or running in dev mode Quarkus can provide you with a zero-config database out of the box, a feature we refer to as Dev Services.

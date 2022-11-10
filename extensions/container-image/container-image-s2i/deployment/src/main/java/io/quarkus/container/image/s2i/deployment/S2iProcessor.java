@@ -17,7 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -372,19 +373,33 @@ public class S2iProcessor {
     }
 
     private static void waitForBuildComplete(OpenShiftClient client, S2iConfig s2iConfig, String buildName, Closeable watch) {
-        Executor executor = Executors.newSingleThreadExecutor();
+        CountDownLatch latch = new CountDownLatch(1);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             try {
                 client.builds().withName(buildName).waitUntilCondition(b -> !RUNNING.equalsIgnoreCase(b.getStatus().getPhase()),
                         s2iConfig.buildTimeout.toMillis(), TimeUnit.MILLISECONDS);
             } finally {
-                try {
-                    watch.close();
-                } catch (IOException e) {
-                    LOG.debug("Error closing log reader.");
-                }
+                latch.countDown();
             }
         });
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            LOG.debug("Error waiting for build to complete.", e);
+        } finally {
+            try {
+                watch.close();
+            } catch (IOException e) {
+                LOG.debug("Error closing log reader.", e);
+            }
+            try {
+                executor.shutdown();
+            } catch (Exception e) {
+                LOG.debug("Error shutting down executor", e);
+            }
+        }
+
     }
 
     public static Predicate<HasMetadata> distinctByResourceKey() {

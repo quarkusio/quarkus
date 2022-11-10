@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.common.processor;
 
+import static java.util.Map.entry;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BEAN_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BIG_DECIMAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BIG_INTEGER;
@@ -166,41 +167,39 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private static final boolean JDK_SUPPORTS_VIRTUAL_THREADS;
 
     static {
-        Map<String, String> prims = new HashMap<>();
-        prims.put(byte.class.getName(), Byte.class.getName());
-        prims.put(Byte.class.getName(), Byte.class.getName());
-        prims.put(boolean.class.getName(), Boolean.class.getName());
-        prims.put(Boolean.class.getName(), Boolean.class.getName());
-        prims.put(char.class.getName(), Character.class.getName());
-        prims.put(Character.class.getName(), Character.class.getName());
-        prims.put(short.class.getName(), Short.class.getName());
-        prims.put(Short.class.getName(), Short.class.getName());
-        prims.put(int.class.getName(), Integer.class.getName());
-        prims.put(Integer.class.getName(), Integer.class.getName());
-        prims.put(float.class.getName(), Float.class.getName());
-        prims.put(Float.class.getName(), Float.class.getName());
-        prims.put(double.class.getName(), Double.class.getName());
-        prims.put(Double.class.getName(), Double.class.getName());
-        prims.put(long.class.getName(), Long.class.getName());
-        prims.put(Long.class.getName(), Long.class.getName());
-        primitiveTypes = Collections.unmodifiableMap(prims);
+        primitiveTypes = Map.ofEntries(
+                entry(byte.class.getName(), Byte.class.getName()),
+                entry(Byte.class.getName(), Byte.class.getName()),
+                entry(boolean.class.getName(), Boolean.class.getName()),
+                entry(Boolean.class.getName(), Boolean.class.getName()),
+                entry(char.class.getName(), Character.class.getName()),
+                entry(Character.class.getName(), Character.class.getName()),
+                entry(short.class.getName(), Short.class.getName()),
+                entry(Short.class.getName(), Short.class.getName()),
+                entry(int.class.getName(), Integer.class.getName()),
+                entry(Integer.class.getName(), Integer.class.getName()),
+                entry(float.class.getName(), Float.class.getName()),
+                entry(Float.class.getName(), Float.class.getName()),
+                entry(double.class.getName(), Double.class.getName()),
+                entry(Double.class.getName(), Double.class.getName()),
+                entry(long.class.getName(), Long.class.getName()),
+                entry(Long.class.getName(), Long.class.getName()));
 
-        Map<DotName, Class<?>> supportedReaderJavaTps = new HashMap<>();
-        supportedReaderJavaTps.put(PRIMITIVE_BOOLEAN, boolean.class);
-        supportedReaderJavaTps.put(PRIMITIVE_DOUBLE, double.class);
-        supportedReaderJavaTps.put(PRIMITIVE_FLOAT, float.class);
-        supportedReaderJavaTps.put(PRIMITIVE_LONG, long.class);
-        supportedReaderJavaTps.put(PRIMITIVE_INTEGER, int.class);
-        supportedReaderJavaTps.put(PRIMITIVE_CHAR, char.class);
-        supportedReaderJavaTps.put(BOOLEAN, Boolean.class);
-        supportedReaderJavaTps.put(DOUBLE, Double.class);
-        supportedReaderJavaTps.put(FLOAT, Float.class);
-        supportedReaderJavaTps.put(LONG, Long.class);
-        supportedReaderJavaTps.put(INTEGER, Integer.class);
-        supportedReaderJavaTps.put(CHARACTER, Character.class);
-        supportedReaderJavaTps.put(BIG_DECIMAL, BigDecimal.class);
-        supportedReaderJavaTps.put(BIG_INTEGER, BigInteger.class);
-        supportedReaderJavaTypes = Collections.unmodifiableMap(supportedReaderJavaTps);
+        supportedReaderJavaTypes = Map.ofEntries(
+                entry(PRIMITIVE_BOOLEAN, boolean.class),
+                entry(PRIMITIVE_DOUBLE, double.class),
+                entry(PRIMITIVE_FLOAT, float.class),
+                entry(PRIMITIVE_LONG, long.class),
+                entry(PRIMITIVE_INTEGER, int.class),
+                entry(PRIMITIVE_CHAR, char.class),
+                entry(BOOLEAN, Boolean.class),
+                entry(DOUBLE, Double.class),
+                entry(FLOAT, Float.class),
+                entry(LONG, Long.class),
+                entry(INTEGER, Integer.class),
+                entry(CHARACTER, Character.class),
+                entry(BIG_DECIMAL, BigDecimal.class),
+                entry(BIG_INTEGER, BigInteger.class));
 
         boolean isJDKCompatible = true;
         try {
@@ -231,7 +230,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Set<DotName> contextTypes;
     private final Set<DotName> parameterContainerTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
-    private final MultipartParameterIndexerExtension multipartParameterIndexerExtension;
     private final TargetJavaVersion targetJavaVersion;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
@@ -254,7 +252,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.contextTypes = builder.contextTypes;
         this.parameterContainerTypes = builder.parameterContainerTypes;
         this.multipartReturnTypeIndexerExtension = builder.multipartReturnTypeIndexerExtension;
-        this.multipartParameterIndexerExtension = builder.multipartParameterIndexerExtension;
         this.targetJavaVersion = builder.targetJavaVersion;
     }
 
@@ -1521,8 +1518,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Consumer<ResourceMethodCallbackData> resourceMethodCallback;
         private Collection<AnnotationsTransformer> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
-        private Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
-        private Set<DotName> parameterContainerTypes = new HashSet<>();
+        private final Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
+        private final Set<DotName> parameterContainerTypes = new HashSet<>();
         private MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension = new MultipartReturnTypeIndexerExtension() {
             @Override
             public boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo,
@@ -1530,20 +1527,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 return false;
             }
         };
-        public MultipartParameterIndexerExtension multipartParameterIndexerExtension = new MultipartParameterIndexerExtension() {
-            @Override
-            public void handleMultipartParameter(ClassInfo multipartClassInfo, IndexView indexView) {
-            }
-        };
         private TargetJavaVersion targetJavaVersion = new TargetJavaVersion.Unknown();
 
         public B setMultipartReturnTypeIndexerExtension(MultipartReturnTypeIndexerExtension multipartReturnTypeHandler) {
             this.multipartReturnTypeIndexerExtension = multipartReturnTypeHandler;
-            return (B) this;
-        }
-
-        public B setMultipartParameterIndexerExtension(MultipartParameterIndexerExtension multipartParameterHandler) {
-            this.multipartParameterIndexerExtension = multipartParameterHandler;
             return (B) this;
         }
 

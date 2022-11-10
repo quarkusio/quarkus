@@ -1,6 +1,8 @@
 package io.quarkus.opentelemetry.deployment.instrumentation;
 
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
+import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
+import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_FLAVOR;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_METHOD;
@@ -11,6 +13,7 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_USER_AGENT;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_NAME;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_PORT;
+import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static io.restassured.RestAssured.given;
 import static io.vertx.core.http.HttpMethod.GET;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -75,23 +78,24 @@ public class VertxOpenTelemetryTest {
         TextMapPropagator[] textMapPropagators = TestUtil.getTextMapPropagators(openTelemetry);
         IdGenerator idGenerator = TestUtil.getIdGenerator(openTelemetry);
         Sampler sampler = TestUtil.getSampler(openTelemetry);
-        SpanData span2 = spans.get(1);
 
-        assertEquals("io.quarkus.vertx.opentelemetry", spans.get(0).getName());
-        assertEquals("hello!", spans.get(0).getAttributes().get(stringKey("test.message")));
-
-        assertEquals(HTTP_OK, span2.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals("1.1", span2.getAttributes().get(HTTP_FLAVOR));
-        assertEquals("/tracer", span2.getAttributes().get(HTTP_TARGET));
-        assertEquals("http", span2.getAttributes().get(HTTP_SCHEME));
-        assertEquals("localhost", span2.getAttributes().get(NET_HOST_NAME));
-        assertEquals("8081", span2.getAttributes().get(NET_HOST_PORT).toString());
-        assertEquals("127.0.0.1", span2.getAttributes().get(HTTP_CLIENT_IP));
+        SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals("1.1", server.getAttributes().get(HTTP_FLAVOR));
+        assertEquals("/tracer", server.getAttributes().get(HTTP_TARGET));
+        assertEquals("http", server.getAttributes().get(HTTP_SCHEME));
+        assertEquals("localhost", server.getAttributes().get(NET_HOST_NAME));
+        assertEquals("8081", server.getAttributes().get(NET_HOST_PORT).toString());
+        assertEquals("127.0.0.1", server.getAttributes().get(HTTP_CLIENT_IP));
         assertThat(textMapPropagators, arrayContainingInAnyOrder(W3CTraceContextPropagator.getInstance(),
                 W3CBaggagePropagator.getInstance()));
         assertThat(idGenerator, instanceOf(IdGenerator.random().getClass()));
         assertThat(sampler.getDescription(), stringContainsInOrder("ParentBased", "AlwaysOnSampler"));
-        assertNotNull(span2.getAttributes().get(HTTP_USER_AGENT));
+        assertNotNull(server.getAttributes().get(HTTP_USER_AGENT));
+
+        SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
+        assertEquals("io.quarkus.vertx.opentelemetry", internal.getName());
+        assertEquals("hello!", internal.getAttributes().get(stringKey("test.message")));
     }
 
     @Test
@@ -101,20 +105,22 @@ public class VertxOpenTelemetryTest {
                 .body(is("Hello Tracer!"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
-        SpanData span2 = spans.get(1);
 
-        assertEquals("io.quarkus.vertx.opentelemetry", spans.get(0).getName());
-        assertEquals("hello!", spans.get(0).getAttributes().get(stringKey("test.message")));
+        final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals("/tracer", server.getName());
+        assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals("1.1", server.getAttributes().get(HTTP_FLAVOR));
+        assertEquals("/tracer?id=1", server.getAttributes().get(HTTP_TARGET));
+        assertEquals("http", server.getAttributes().get(HTTP_SCHEME));
+        assertEquals("localhost", server.getAttributes().get(NET_HOST_NAME));
+        assertEquals("8081", server.getAttributes().get(NET_HOST_PORT).toString());
+        assertEquals("127.0.0.1", server.getAttributes().get(HTTP_CLIENT_IP));
+        assertNotNull(server.getAttributes().get(HTTP_USER_AGENT));
 
-        assertEquals("/tracer", span2.getName());
-        assertEquals(HTTP_OK, span2.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals("1.1", span2.getAttributes().get(HTTP_FLAVOR));
-        assertEquals("/tracer?id=1", span2.getAttributes().get(HTTP_TARGET));
-        assertEquals("http", span2.getAttributes().get(HTTP_SCHEME));
-        assertEquals("localhost", span2.getAttributes().get(NET_HOST_NAME));
-        assertEquals("8081", span2.getAttributes().get(NET_HOST_PORT).toString());
-        assertEquals("127.0.0.1", span2.getAttributes().get(HTTP_CLIENT_IP));
-        assertNotNull(span2.getAttributes().get(HTTP_USER_AGENT));
+        SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
+        assertEquals("io.quarkus.vertx.opentelemetry", internal.getName());
+        assertEquals("hello!", internal.getAttributes().get(stringKey("test.message")));
+
     }
 
     @Test
@@ -126,6 +132,7 @@ public class VertxOpenTelemetryTest {
                 .body(equalTo("hello Naruto"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+        assertEquals(1, spans.size());
 
         assertEquals("/hello/:name", spans.get(0).getName());
         assertEquals(HTTP_OK, spans.get(0).getAttributes().get(HTTP_STATUS_CODE));
@@ -138,6 +145,7 @@ public class VertxOpenTelemetryTest {
         RestAssured.when().get("/notFound").then().statusCode(404);
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+        assertEquals(1, spans.size());
 
         assertEquals("/*", spans.get(0).getName());
         assertEquals("/*", spans.get(0).getAttributes().get(HTTP_ROUTE));
@@ -152,6 +160,7 @@ public class VertxOpenTelemetryTest {
                 .statusCode(HTTP_NOT_FOUND);
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+        assertEquals(1, spans.size());
 
         assertEquals("/hello/:name", spans.get(0).getName());
         assertEquals(HTTP_NOT_FOUND, spans.get(0).getAttributes().get(HTTP_STATUS_CODE));

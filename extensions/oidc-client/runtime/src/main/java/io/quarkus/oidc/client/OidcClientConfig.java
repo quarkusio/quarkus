@@ -71,7 +71,11 @@ public class OidcClientConfig extends OidcCommonConfig {
              * at least 'subject_token' parameter which must be passed to OidcClient at the token request time.
              */
             EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange"),
-
+            /**
+             * 'urn:ietf:params:oauth:grant-type:jwt-bearer' grant requiring an OIDC client authentication as well as
+             * at least an 'assertion' parameter which must be passed to OidcClient at the token request time.
+             */
+            JWT("urn:ietf:params:oauth:grant-type:jwt-bearer"),
             /**
              * 'refresh_token' grant requiring an OIDC client authentication and a refresh token.
              * Note, OidcClient supports this grant by default if an access token acquisition response contained a refresh

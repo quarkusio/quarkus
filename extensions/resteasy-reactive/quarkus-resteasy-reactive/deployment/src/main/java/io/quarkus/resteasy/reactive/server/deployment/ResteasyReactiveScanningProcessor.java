@@ -47,6 +47,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFea
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BuildTimeEnabledProcessor;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.processor.DotNames;
@@ -310,7 +311,16 @@ public class ResteasyReactiveScanningProcessor {
         }
 
         List<FilterGeneration.GeneratedFilter> generatedFilters = FilterGeneration.generate(index,
-                Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
+                Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()),
+                (methodInfo -> {
+                    List<AnnotationInstance> classAnnotations = methodInfo.declaringClass().declaredAnnotations();
+                    for (AnnotationInstance classAnnotation : classAnnotations) {
+                        if (BuildTimeEnabledProcessor.BUILD_TIME_ENABLED_BEAN_ANNOTATIONS.contains(classAnnotation.name())) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }));
         for (var generated : generatedFilters) {
             for (var i : generated.getGeneratedClasses()) {
                 generatedBean.produce(new GeneratedBeanBuildItem(i.getName(), i.getData()));

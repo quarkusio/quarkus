@@ -17,8 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class LoggingWithPanacheTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(LoggingBean.class, LoggingEntity.class, NoStackTraceTestException.class))
+            .withApplicationRoot((jar) -> jar.addClasses(LoggingBean.class, LoggingInterface.class, LoggingEntity.class,
+                    NoStackTraceTestException.class))
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".min-level", "TRACE")
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".level", "TRACE")
             .setLogRecordPredicate(record -> record.getLoggerName().startsWith("io.quarkus.logging.Logging"))
@@ -29,6 +29,7 @@ public class LoggingWithPanacheTest {
                 assertThat(lines).containsExactly(
                         "[INFO] Heya!",
                         "[TRACE] LoggingBean created",
+                        "[INFO] Default method from interface: abc",
                         "[DEBUG] starting massive computation",
                         "[DEBUG] one: 42",
                         "[TRACE] two: 42 | 13",

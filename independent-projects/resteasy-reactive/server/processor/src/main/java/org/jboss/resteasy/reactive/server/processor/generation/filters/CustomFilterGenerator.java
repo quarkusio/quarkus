@@ -578,10 +578,10 @@ final class CustomFilterGenerator {
      */
     private ScopeInspectionResult inspectScope(ClassInfo classInfo) {
         if (classInfo.hasDeclaredAnnotation(ApplicationScoped.class) || classInfo.hasDeclaredAnnotation(RequestScoped.class)) {
-            return new ScopeInspectionResult(null, true);
+            return new ScopeInspectionResult(ApplicationScoped.class, true);
         }
         if (classInfo.hasDeclaredAnnotation(Singleton.class)) {
-            return new ScopeInspectionResult(null, false);
+            return new ScopeInspectionResult(Singleton.class, false);
         }
         List<FieldInfo> fields = classInfo.fields();
         if (fields.isEmpty()) {

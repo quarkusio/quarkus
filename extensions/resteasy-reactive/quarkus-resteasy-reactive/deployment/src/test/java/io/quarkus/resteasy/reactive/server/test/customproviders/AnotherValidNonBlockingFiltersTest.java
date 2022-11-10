@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import javax.annotation.Priority;
+import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Priorities;
@@ -151,6 +152,7 @@ public class AnotherValidNonBlockingFiltersTest {
         }
     }
 
+    @ApplicationScoped
     public static class CustomFilters {
 
         @ServerRequestFilter(nonBlocking = true, priority = Priorities.USER + 20)

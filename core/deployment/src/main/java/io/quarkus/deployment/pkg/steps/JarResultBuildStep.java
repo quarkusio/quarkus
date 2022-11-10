@@ -106,6 +106,8 @@ import io.quarkus.paths.PathVisitor;
  */
 public class JarResultBuildStep {
 
+    private static final String DOT_JAR = ".jar";
+
     private static final Predicate<String> UBER_JAR_IGNORED_ENTRIES_PREDICATE = new IsEntryIgnoredForUberJarPredicate();
 
     private static final Predicate<String> UBER_JAR_CONCATENATED_ENTRIES_PREDICATE = new Predicate<>() {
@@ -264,9 +266,20 @@ public class JarResultBuildStep {
             ClassLoadingConfig classLoadingConfig) throws Exception {
 
         //we use the -runner jar name, unless we are building both types
-        Path runnerJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
-        Files.deleteIfExists(runnerJar);
+        final Path runnerJar = outputTargetBuildItem.getOutputDirectory()
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + DOT_JAR);
+
+        // If the runner jar appears to exist already we create a new one with a tmp suffix.
+        // Deleting an existing runner jar may result in deleting the original (non-runner) jar (in case the runner suffix is empty)
+        // which is used as a source of content for the runner jar.
+        final Path tmpRunnerJar;
+        if (Files.exists(runnerJar)) {
+            tmpRunnerJar = outputTargetBuildItem.getOutputDirectory()
+                    .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + ".tmp");
+            Files.deleteIfExists(tmpRunnerJar);
+        } else {
+            tmpRunnerJar = runnerJar;
+        }
 
         buildUberJar0(curateOutcomeBuildItem,
                 outputTargetBuildItem,
@@ -280,12 +293,16 @@ public class JarResultBuildStep {
                 ignoredResources,
                 mainClassBuildItem,
                 classLoadingConfig,
-                runnerJar);
+                tmpRunnerJar);
+
+        if (tmpRunnerJar != runnerJar) {
+            Files.copy(tmpRunnerJar, runnerJar, StandardCopyOption.REPLACE_EXISTING);
+            tmpRunnerJar.toFile().deleteOnExit();
+        }
 
         //for uberjars we move the original jar, so there is only a single jar in the output directory
         final Path standardJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getOriginalBaseName() + ".jar");
-
+                .resolve(outputTargetBuildItem.getOriginalBaseName() + DOT_JAR);
         final Path originalJar = Files.exists(standardJar) ? standardJar : null;
 
         return new JarBuildItem(runnerJar, originalJar, null, PackageConfig.UBER_JAR,
@@ -504,7 +521,7 @@ public class JarResultBuildStep {
             ClassLoadingConfig classLoadingConfig) throws Exception {
 
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + DOT_JAR);
         Path libDir = outputTargetBuildItem.getOutputDirectory().resolve("lib");
         Files.deleteIfExists(runnerJar);
         IoUtils.createOrEmptyDir(libDir);
@@ -660,8 +677,7 @@ public class JarResultBuildStep {
         }
 
         //now the application classes
-        Path runnerJar = appDir
-                .resolve(outputTargetBuildItem.getBaseName() + ".jar");
+        Path runnerJar = appDir.resolve(outputTargetBuildItem.getBaseName() + DOT_JAR);
         jars.add(runnerJar);
 
         if (!rebuild) {
@@ -965,7 +981,7 @@ public class JarResultBuildStep {
         copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
 
         Path runnerJar = targetDirectory
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + DOT_JAR);
         Path libDir = targetDirectory.resolve(LIB);
         Files.createDirectories(libDir);
 
@@ -1558,7 +1574,7 @@ public class JarResultBuildStep {
                 String jarFileName = jarToDecompile.getFileName().toString();
                 Path decompiledJar = context.decompiledOutputDir.resolve(jarFileName);
                 try {
-                    ZipUtils.unzip(decompiledJar, context.decompiledOutputDir.resolve(jarFileName.replace(".jar", "")));
+                    ZipUtils.unzip(decompiledJar, context.decompiledOutputDir.resolve(jarFileName.replace(DOT_JAR, "")));
                     Files.deleteIfExists(decompiledJar);
                 } catch (IOException ignored) {
                     // it doesn't really matter if we can't unzip the jar as we do it merely for user convenience

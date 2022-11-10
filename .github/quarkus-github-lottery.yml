@@ -133,3 +133,18 @@ participants:
           maxIssues: 2
       stale:
         maxIssues: 5
+  - username: "manovotn"
+    timezone: "Europe/Prague"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/arc"]
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      reproducer:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5

@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javax.inject.Singleton;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Priorities;
@@ -134,6 +135,7 @@ public class ConditionalBeanFiltersTest {
         }
     }
 
+    @Singleton
     public static class AlwaysEnabledFilter {
 
         @ServerRequestFilter(priority = Priorities.USER + 100)

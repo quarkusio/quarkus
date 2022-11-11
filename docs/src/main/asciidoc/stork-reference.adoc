@@ -264,7 +264,7 @@ This _type_ is used in the configuration to reference the provider:
 quarkus.stork.my-service.load-balancer.type=acme
 ----
 
-Similarly to `ServiceDiscoveryProvider, a `LoadBalancerProvider` implementation needs to be annotated with `@LoadBalancerType` that defines the _type_.
+Similarly to `ServiceDiscoveryProvider`, a `LoadBalancerProvider` implementation needs to be annotated with `@LoadBalancerType` that defines the _type_.
 Any configuration properties that the provider expects should be defined with `@LoadBalancerAttribute` annotations placed on the provider.
 [source, java]
 ----

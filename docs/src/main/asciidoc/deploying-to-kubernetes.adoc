@@ -616,7 +616,7 @@ This would generate the following entry in the `container` section:
 [source, yaml]
 ----
 containers:
-  resources:
+  - resources:
     limits:
       cpu: 1000m
       memory: 512Mi
@@ -667,7 +667,7 @@ After deploying these resources to Kubernetes, the Ingress resource will allow u
 
 To customize the default `host` and `path` properties of the generated Ingress resources, you need to apply the following configuration:
 
-[source]
+[source, properties]
 ----
 quarkus.kubernetes.ingress.expose=true
 # To change the Ingress host. By default, it's empty.
@@ -703,7 +703,7 @@ spec:
 
 Additionally, you can also add new Ingress rules by adding the following configuration:
 
-[source]
+[source, properties]
 ----
 # Example to add a new rule
 quarkus.kubernetes.ingress.rules.1.host=dev.svc.url

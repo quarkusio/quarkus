@@ -99,7 +99,7 @@ public class QuarkusPluginTest {
 
     @Test
     public void shouldNotFailOnProjectDependenciesWithoutMain() throws IOException {
-        var kotlinVersion = System.getProperty("kotlin_version", "1.7.20");
+        var kotlinVersion = System.getProperty("kotlin_version", "1.7.21");
         var settingFile = testProjectDir.resolve("settings.gradle.kts");
         var mppProjectDir = testProjectDir.resolve("mpp");
         var quarkusProjectDir = testProjectDir.resolve("quarkus");

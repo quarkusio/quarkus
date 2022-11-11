@@ -11,6 +11,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.gizmo.AnnotatedElement;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -28,7 +30,7 @@ import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 import io.smallrye.mutiny.Uni;
 
-public final class ListMethodImplementor extends StandardMethodImplementor {
+public class ListMethodImplementor extends StandardMethodImplementor {
 
     private static final String METHOD_NAME = "list";
 
@@ -38,14 +40,11 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "list";
 
-    private final PaginationImplementor paginationImplementor;
-
+    private final PaginationImplementor paginationImplementor = new PaginationImplementor();
     private final SortImplementor sortImplementor = new SortImplementor();
 
     public ListMethodImplementor(Capabilities capabilities) {
         super(capabilities);
-
-        this.paginationImplementor = new PaginationImplementor();
     }
 
     /**
@@ -131,10 +130,29 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         return RESOURCE_METHOD_NAME;
     }
 
+    protected String getMethodName() {
+        return METHOD_NAME;
+    }
+
+    @Override
+    protected void addProducesJsonAnnotation(AnnotatedElement element, ResourceProperties properties) {
+        super.addProducesAnnotation(element, APPLICATION_JSON);
+    }
+
+    protected void returnValueWithLinks(BytecodeCreator creator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, ResultHandle value, ResultHandle links) {
+        creator.returnValue(responseImplementor.ok(creator, value, links));
+    }
+
+    protected void returnValue(BytecodeCreator creator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, ResultHandle value) {
+        creator.returnValue(responseImplementor.ok(creator, value));
+    }
+
     private void implementPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         // Method parameters: sort strings, page index, page size, uri info
-        MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
+        MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
                 List.class, int.class, int.class, UriInfo.class);
         methodCreator.setParameterNames(new String[] { "sort", "page", "size", "uriInfo" });
@@ -142,7 +160,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         // Add method annotations
         addGetAnnotation(methodCreator);
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
-        addProducesAnnotation(methodCreator, APPLICATION_JSON);
+        addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType(), true);
@@ -177,7 +195,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
                     resource, page, sort);
 
             // Return response
-            tryBlock.returnValue(responseImplementor.ok(tryBlock, entities, links));
+            returnValueWithLinks(tryBlock, resourceMetadata, resourceProperties, entities, links);
             tryBlock.close();
         } else {
             ResultHandle uniPageCount = methodCreator.invokeVirtualMethod(
@@ -194,7 +212,8 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
                                         Sort.class),
                                 resource, page, sort);
                         body.returnValue(UniImplementor.map(body, uniEntities, EXCEPTION_MESSAGE,
-                                (listBody, list) -> listBody.returnValue(responseImplementor.ok(listBody, list, links))));
+                                (listBody, list) -> returnValueWithLinks(listBody, resourceMetadata, resourceProperties, list,
+                                        links)));
                     }));
         }
 
@@ -203,7 +222,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
 
     private void implementNotPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceFieldDescriptor) {
-        MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
+        MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
                 List.class);
         methodCreator.setParameterNames(new String[] { "sort" });
@@ -211,7 +230,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         // Add method annotations
         addGetAnnotation(methodCreator);
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
-        addProducesAnnotation(methodCreator, APPLICATION_JSON);
+        addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType(), true);
@@ -228,7 +247,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
                     ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME,
                             List.class, Page.class, Sort.class),
                     resource, tryBlock.loadNull(), sort);
-            tryBlock.returnValue(responseImplementor.ok(tryBlock, entities));
+            returnValue(tryBlock, resourceMetadata, resourceProperties, entities);
             tryBlock.close();
         } else {
             ResultHandle uniEntities = methodCreator.invokeVirtualMethod(
@@ -237,7 +256,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
                     resource, methodCreator.loadNull(), sort);
 
             methodCreator.returnValue(UniImplementor.map(methodCreator, uniEntities, EXCEPTION_MESSAGE,
-                    (body, entities) -> body.returnValue(responseImplementor.ok(body, entities))));
+                    (body, entities) -> returnValue(body, resourceMetadata, resourceProperties, entities)));
         }
 
         methodCreator.close();

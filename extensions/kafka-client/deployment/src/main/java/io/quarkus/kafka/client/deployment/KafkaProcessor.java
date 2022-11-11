@@ -179,7 +179,7 @@ public class KafkaProcessor {
         List<String> ignoredMessages = new ArrayList<>();
         for (String ignoredConfigProperty : ignoredConfigProperties) {
             ignoredMessages
-                    .add("The configuration '" + ignoredConfigProperty + "' was supplied but isn't a known config.");
+                    .add("These configurations '[" + ignoredConfigProperty + "]' were supplied but are not used yet.");
         }
 
         logCleanupFilters.produce(new LogCleanupFilterBuildItem("org.apache.kafka.clients.consumer.ConsumerConfig",

@@ -87,6 +87,14 @@ public final class OidcUtils {
     }
 
     public static JsonObject decodeJwtContent(String jwt) {
+        String encodedContent = getJwtContentPart(jwt);
+        if (encodedContent == null) {
+            return null;
+        }
+        return decodeAsJsonObject(encodedContent);
+    }
+
+    public static String decodeJwtContentAsString(String jwt) {
         StringTokenizer tokens = new StringTokenizer(jwt, ".");
         // part 1: skip the token headers
         tokens.nextToken();
@@ -100,15 +108,40 @@ public final class OidcUtils {
         if (tokens.countTokens() != 1) {
             return null;
         }
-        return decodeAsJsonObject(encodedContent);
+        try {
+            return base64UrlDecode(encodedContent);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    public static String getJwtContentPart(String jwt) {
+        StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        // part 1: skip the token headers
+        tokens.nextToken();
+        if (!tokens.hasMoreTokens()) {
+            return null;
+        }
+        // part 2: token content
+        String encodedContent = tokens.nextToken();
+
+        // let's check only 1 more signature part is available
+        if (tokens.countTokens() != 1) {
+            return null;
+        }
+        return encodedContent;
     }
 
     private static JsonObject decodeAsJsonObject(String encodedContent) {
         try {
-            return new JsonObject(new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8));
+            return new JsonObject(base64UrlDecode(encodedContent));
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    private static String base64UrlDecode(String encodedContent) {
+        return new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8);
     }
 
     public static JsonObject decodeJwtHeaders(String jwt) {

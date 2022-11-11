@@ -116,7 +116,8 @@ public class BearerTokenAuthorizationTest {
             assertEquals("userName: alice, idToken: true, accessToken: true, refreshToken: true",
                     page.getBody().asText());
 
-            assertNotNull(getSessionCookie(page.getWebClient(), "tenant-web-app-refresh"));
+            Cookie sessionCookie = getSessionCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertNotNull(sessionCookie);
             assertNotNull(getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh"));
             Cookie rtCookie = getSessionRtCookie(page.getWebClient(), "tenant-web-app-refresh");
             assertNotNull(rtCookie);
@@ -124,20 +125,26 @@ public class BearerTokenAuthorizationTest {
             // Wait till the session expires - which should cause the first and also last token refresh request,
             // id and access tokens should have new values, refresh token value should remain the same.
             // No new sign-in process is required.
-            await().atLeast(6, TimeUnit.SECONDS);
+            //await().atLeast(6, TimeUnit.SECONDS);
+            Thread.sleep(6 * 1000);
 
-            page = webClient.getPage("http://localhost:8081/tenant-refresh/tenant-web-app-refresh/api/user");
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(
+                            URI.create("http://localhost:8081/tenant-refresh/tenant-web-app-refresh/api/user")
+                                    .toURL()));
             assertEquals("userName: alice, idToken: true, accessToken: true, refreshToken: true",
-                    page.getBody().asText());
+                    webResponse.getContentAsString());
 
-            assertNotNull(getSessionCookie(page.getWebClient(), "tenant-web-app-refresh"));
-            assertNotNull(getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh"));
-            Cookie rtCookie2 = getSessionRtCookie(page.getWebClient(), "tenant-web-app-refresh");
+            Cookie sessionCookie2 = getSessionCookie(webClient, "tenant-web-app-refresh");
+            assertNotNull(sessionCookie2);
+            assertNotEquals(sessionCookie2.getValue(), sessionCookie.getValue());
+            assertNotNull(getSessionAtCookie(webClient, "tenant-web-app-refresh"));
+            Cookie rtCookie2 = getSessionRtCookie(webClient, "tenant-web-app-refresh");
             assertNotNull(rtCookie2);
             assertEquals(rtCookie2.getValue(), rtCookie.getValue());
 
             //Verify all the cookies are cleared after the session timeout
-            webClient.getOptions().setRedirectEnabled(false);
             webClient.getCache().clear();
 
             await().atMost(10, TimeUnit.SECONDS)

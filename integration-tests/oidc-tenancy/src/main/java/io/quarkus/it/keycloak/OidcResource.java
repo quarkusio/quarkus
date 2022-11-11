@@ -208,9 +208,8 @@ public class OidcResource {
             // and does not recycle refresh tokens during  the refresh token grant request.
 
             if (refreshEndpointCallCount++ == 0) {
-                // first refresh token request
-                return "{\"id_token\": \"" + jwt("1") + "\"," +
-                        "\"access_token\": \"" + jwt("1") + "\"," +
+                // first refresh token request, check the original ID token is used
+                return "{\"access_token\": \"" + jwt("1") + "\"," +
                         "   \"token_type\": \"Bearer\"," +
                         "   \"expires_in\": 300 }";
             } else {

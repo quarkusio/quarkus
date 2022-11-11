@@ -199,8 +199,8 @@ public class Registration {
     @ConfigProperty(name = "consul.host") String host;
     @ConfigProperty(name = "consul.port") int port;
 
-    @ConfigProperty(name = "blue-service-port", defaultValue = "9000") int red;
-    @ConfigProperty(name = "red-service-port", defaultValue = "9001") int blue;
+    @ConfigProperty(name = "red-service-port", defaultValue = "9000") int red;
+    @ConfigProperty(name = "blue-service-port", defaultValue = "9001") int blue;
 
     /**
      * Register our two services in Consul.

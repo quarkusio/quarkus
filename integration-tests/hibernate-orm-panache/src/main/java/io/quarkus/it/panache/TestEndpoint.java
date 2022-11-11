@@ -1253,6 +1253,18 @@ public class TestEndpoint {
         long countDistinct = projectionDistinctQuery.count();
         Assertions.assertEquals(1L, countDistinct);
 
+        // We are checking that not everything gets lowercased
+        PanacheQuery<CatProjectionBean> letterCaseQuery = Cat
+                // The spaces at the beginning are intentional
+                .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ",
+                        Parameters.with("NamE", bubulle.name))
+                .project(CatProjectionBean.class);
+
+        CatProjectionBean catView = letterCaseQuery.firstResult();
+        // Must keep the letter case
+        Assertions.assertEquals("GARFIELD", catView.getName());
+        Assertions.assertEquals("JoN ArBuCkLe", catView.getOwnerName());
+
         Cat.deleteAll();
         CatOwner.deleteAll();
 

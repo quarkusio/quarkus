@@ -26,6 +26,7 @@ import javax.validation.TraversableResolver;
 import javax.validation.Valid;
 import javax.validation.ValidationException;
 import javax.validation.executable.ValidateOnExecution;
+import javax.validation.spi.ValidationProvider;
 import javax.validation.valueextraction.ValueExtractor;
 import javax.ws.rs.Priorities;
 
@@ -72,6 +73,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -136,6 +138,11 @@ class HibernateValidatorProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     NativeImageFeatureBuildItem nativeImageFeature() {
         return new NativeImageFeatureBuildItem(DisableLoggingFeature.class);
+    }
+
+    @BuildStep
+    void serviceProviders(BuildProducer<ServiceProviderBuildItem> producer) {
+        producer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(ValidationProvider.class.getName()));
     }
 
     @BuildStep

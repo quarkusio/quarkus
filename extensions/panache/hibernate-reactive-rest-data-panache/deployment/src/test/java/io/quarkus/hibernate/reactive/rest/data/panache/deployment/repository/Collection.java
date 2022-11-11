@@ -8,38 +8,16 @@ import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 
+import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
+
 @Entity
-public class Collection {
+public class Collection extends PanacheEntityBase {
 
     @Id
-    private String id;
+    public String id;
 
-    private String name;
+    public String name;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "collection")
-    private List<Item> items = new LinkedList<>();
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<Item> getItems() {
-        return items;
-    }
-
-    public void setItems(List<Item> items) {
-        this.items = items;
-    }
+    public List<Item> items = new LinkedList<>();
 }

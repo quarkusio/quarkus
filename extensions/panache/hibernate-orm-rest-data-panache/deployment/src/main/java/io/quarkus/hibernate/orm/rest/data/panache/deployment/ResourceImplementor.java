@@ -7,6 +7,7 @@ import java.util.List;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.logging.Logger;
 
@@ -20,6 +21,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.deployment.Constants;
+import io.quarkus.rest.data.panache.deployment.ResourceMethodListenerImplementor;
 import io.quarkus.runtime.util.HashUtil;
 
 /**
@@ -42,7 +44,7 @@ class ResourceImplementor {
      * Instances of this class are registered as beans and are later used in the generated JAX-RS controllers.
      */
     String implement(ClassOutput classOutput, DataAccessImplementor dataAccessImplementor, String resourceType,
-            String entityType) {
+            String entityType, List<ClassInfo> resourceMethodListeners) {
         String className = resourceType + "Impl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
         ClassCreator classCreator = ClassCreator.builder()
@@ -52,13 +54,17 @@ class ResourceImplementor {
                 .build();
 
         classCreator.addAnnotation(ApplicationScoped.class);
+
+        ResourceMethodListenerImplementor listenerImplementor = new ResourceMethodListenerImplementor(classCreator,
+                resourceMethodListeners, false);
+
         implementList(classCreator, dataAccessImplementor);
         implementListPageCount(classCreator, dataAccessImplementor);
         implementCount(classCreator, dataAccessImplementor);
         implementGet(classCreator, dataAccessImplementor);
-        implementAdd(classCreator, dataAccessImplementor);
-        implementUpdate(classCreator, dataAccessImplementor, entityType);
-        implementDelete(classCreator, dataAccessImplementor);
+        implementAdd(classCreator, dataAccessImplementor, listenerImplementor);
+        implementUpdate(classCreator, dataAccessImplementor, entityType, listenerImplementor);
+        implementDelete(classCreator, dataAccessImplementor, listenerImplementor);
 
         classCreator.close();
         LOGGER.tracef("Completed generation of '%s'", className);
@@ -107,31 +113,42 @@ class ResourceImplementor {
         methodCreator.close();
     }
 
-    private void implementAdd(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
+    private void implementAdd(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
+            ResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("add", Object.class, Object.class);
         methodCreator.addAnnotation(Transactional.class);
         ResultHandle entity = methodCreator.getMethodParam(0);
-        methodCreator.returnValue(dataAccessImplementor.persist(methodCreator, entity));
+        resourceMethodListenerImplementor.onBeforeAdd(methodCreator, entity);
+        ResultHandle createdEntity = dataAccessImplementor.persist(methodCreator, entity);
+        resourceMethodListenerImplementor.onAfterAdd(methodCreator, createdEntity);
+        methodCreator.returnValue(createdEntity);
         methodCreator.close();
     }
 
-    private void implementUpdate(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
-            String entityType) {
+    private void implementUpdate(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor, String entityType,
+            ResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("update", Object.class, Object.class, Object.class);
         methodCreator.addAnnotation(Transactional.class);
         ResultHandle id = methodCreator.getMethodParam(0);
         ResultHandle entity = methodCreator.getMethodParam(1);
         // Set entity ID before executing an update to make sure that a requested object ID matches a given entity ID.
         setId(methodCreator, entityType, entity, id);
-        methodCreator.returnValue(dataAccessImplementor.update(methodCreator, entity));
+        resourceMethodListenerImplementor.onBeforeUpdate(methodCreator, entity);
+        ResultHandle updatedEntity = dataAccessImplementor.update(methodCreator, entity);
+        resourceMethodListenerImplementor.onAfterUpdate(methodCreator, updatedEntity);
+        methodCreator.returnValue(updatedEntity);
         methodCreator.close();
     }
 
-    private void implementDelete(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
+    private void implementDelete(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
+            ResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("delete", boolean.class, Object.class);
         methodCreator.addAnnotation(Transactional.class);
         ResultHandle id = methodCreator.getMethodParam(0);
-        methodCreator.returnValue(dataAccessImplementor.deleteById(methodCreator, id));
+        resourceMethodListenerImplementor.onBeforeDelete(methodCreator, id);
+        ResultHandle deleted = dataAccessImplementor.deleteById(methodCreator, id);
+        resourceMethodListenerImplementor.onAfterDelete(methodCreator, id);
+        methodCreator.returnValue(deleted);
         methodCreator.close();
     }
 

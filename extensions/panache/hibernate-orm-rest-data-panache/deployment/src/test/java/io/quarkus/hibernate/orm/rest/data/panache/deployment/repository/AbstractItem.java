@@ -9,17 +9,9 @@ import com.fasterxml.jackson.annotation.JsonProperty.Access;
 @MappedSuperclass
 public abstract class AbstractItem<IdType extends Number> extends AbstractEntity<IdType> {
 
-    private String name;
+    public String name;
 
     @ManyToOne(optional = false)
     @JsonProperty(access = Access.WRITE_ONLY)
-    private Collection collection;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
+    public Collection collection;
 }

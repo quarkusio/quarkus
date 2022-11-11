@@ -354,6 +354,27 @@ It applies to the paged resources only and is a number starting with 1. Default 
 Fields are sorted in the ascending order unless they're prefixed with a `-`.
 E.g. `?sort=name,-age` will sort the result by the name ascending by the age descending.
 
+== Resource Method Before/After Listeners
+
+REST Data with Panache supports the subscription to the following resource method hooks: 
+
+* Before/After add resource
+* Before/After update resource
+* Before/After delete resource
+
+To register your resource method listener, you need to provide a bean that implements the interface `RestDataResourceMethodListener`, for example:
+
+[source,java]
+----
+@ApplicationScoped
+public class PeopleRestDataResourceMethodListener implements RestDataResourceMethodListener<Person> {
+    @Override
+    public void onBeforeAdd(Person person) {
+        System.out.println("Before Save Person: " + person.name);
+    }
+}
+----
+
 == Response body examples
 
 As mentioned above REST Data with Panache supports the `application/json` and `application/hal+json` response content types.

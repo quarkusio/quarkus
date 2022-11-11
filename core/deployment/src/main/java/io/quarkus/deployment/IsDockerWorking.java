@@ -84,7 +84,7 @@ public class IsDockerWorking implements BooleanSupplier {
 
                 Class<?> configurationClass = Thread.currentThread().getContextClassLoader()
                         .loadClass("org.testcontainers.utility.TestcontainersConfiguration");
-                Object configurationInstance = configurationClass.getMethod("instance").invoke(null);
+                Object configurationInstance = configurationClass.getMethod("getInstance").invoke(null);
                 String oldReusePropertyValue = (String) configurationClass
                         .getMethod("getUserProperty", String.class, String.class)
                         .invoke(configurationInstance, "testcontainers.reuse.enable", "false"); // use the default provided in TestcontainersConfiguration#environmentSupportsReuse

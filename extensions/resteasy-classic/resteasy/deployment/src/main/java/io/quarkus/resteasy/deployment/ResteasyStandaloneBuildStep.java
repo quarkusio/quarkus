@@ -4,6 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -11,6 +12,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
@@ -22,11 +24,13 @@ import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyStandaloneBuildStep {
@@ -86,11 +90,17 @@ public class ResteasyStandaloneBuildStep {
         // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
         Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(),
                 executorBuildItem.getExecutorProxy(), resteasyVertxConfig);
+
+        // failure handler for auth failures that occurred before the handler defined right above started processing the request
+        final Consumer<Route> addFailureHandler = recorder.addVertxFailureHandler(vertx.getVertx(),
+                executorBuildItem.getExecutorProxy(), resteasyVertxConfig);
+
         // Exact match for resources matched to the root path
         routes.produce(
                 RouteBuildItem.builder()
                         .orderedRoute(standalone.deploymentRootPath,
-                                VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET)
+                                VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET,
+                                addFailureHandler)
                         .handler(handler).build());
         String matchPath = standalone.deploymentRootPath;
         if (matchPath.endsWith("/")) {
@@ -106,4 +116,10 @@ public class ResteasyStandaloneBuildStep {
         recorder.start(shutdown, requireVirtual.isPresent());
     }
 
+    @BuildStep
+    @Record(value = ExecutionTime.STATIC_INIT)
+    public FilterBuildItem addDefaultAuthFailureHandler(ResteasyStandaloneRecorder recorder) {
+        // replace default auth failure handler added by vertx-http so that our exception mappers can customize response
+        return new FilterBuildItem(recorder.defaultAuthFailureHandler(), FilterBuildItem.AUTHENTICATION - 1);
+    }
 }

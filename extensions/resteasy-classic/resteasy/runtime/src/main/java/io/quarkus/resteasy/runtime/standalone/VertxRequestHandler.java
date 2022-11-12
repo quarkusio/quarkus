@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.runtime.standalone;
 
+import static io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder.RESTEASY_URI_INFO;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,33 +101,27 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     }
 
     private void dispatch(RoutingContext routingContext, InputStream is, VertxOutput output) {
-        ResteasyUriInfo uriInfo;
-        try {
-            uriInfo = VertxUtil.extractUriInfo(routingContext.request(), rootPath);
-        } catch (Exception e) {
-            if (e.getCause() instanceof MalformedInputException) {
-                log.debug(e.getCause());
-                routingContext.response().setStatusCode(400);
-            } else {
-                log.debug(e);
-                routingContext.response().setStatusCode(500);
+        ResteasyUriInfo uriInfo = routingContext.get(RESTEASY_URI_INFO);
+        if (uriInfo == null) {
+            try {
+                uriInfo = VertxUtil.extractUriInfo(routingContext.request(), rootPath);
+            } catch (Exception e) {
+                if (e.getCause() instanceof MalformedInputException) {
+                    log.debug(e.getCause());
+                    routingContext.response().setStatusCode(400);
+                } else {
+                    log.debug(e);
+                    routingContext.response().setStatusCode(500);
+                }
+                routingContext.response().end();
+                return;
             }
-            routingContext.response().end();
-            return;
         }
 
         ManagedContext requestContext = Arc.container().requestContext();
         requestContext.activate();
         routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
-        if (association != null) {
-            QuarkusHttpUser existing = (QuarkusHttpUser) routingContext.user();
-            if (existing != null) {
-                SecurityIdentity identity = existing.getSecurityIdentity();
-                association.setIdentity(identity);
-            } else {
-                association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
-            }
-        }
+        setCurrentIdentityAssociation(routingContext);
         currentVertxRequest.setCurrent(routingContext);
         try {
             Context ctx = vertx.getOrCreateContext();
@@ -148,7 +144,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             map.put(RoutingContext.class, routingContext);
             try (ResteasyContext.CloseableContext restCtx = ResteasyContext.addCloseableContextDataLevel(map)) {
                 ContextUtil.pushContext(routingContext);
-                dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, true);
+                dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, true, routingContext.failure());
             } catch (Failure e1) {
                 vertxResponse.setStatus(e1.getErrorCode());
                 if (e1.isLoggable()) {
@@ -183,6 +179,18 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 if (requestContext.isActive()) {
                     requestContext.terminate();
                 }
+            }
+        }
+    }
+
+    protected void setCurrentIdentityAssociation(RoutingContext routingContext) {
+        if (association != null) {
+            QuarkusHttpUser existing = (QuarkusHttpUser) routingContext.user();
+            if (existing != null) {
+                SecurityIdentity identity = existing.getSecurityIdentity();
+                association.setIdentity(identity);
+            } else {
+                association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
             }
         }
     }

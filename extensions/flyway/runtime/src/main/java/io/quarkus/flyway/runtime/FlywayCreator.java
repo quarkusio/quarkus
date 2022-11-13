@@ -8,9 +8,11 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import io.quarkus.flyway.runtime.database.PostgresConfig;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
+import org.flywaydb.core.internal.database.postgresql.PostgreSQLConfigurationExtension;
 
 class FlywayCreator {
 
@@ -18,6 +20,8 @@ class FlywayCreator {
 
     private final FlywayDataSourceRuntimeConfig flywayRuntimeConfig;
     private final FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig;
+    // TODO find a way to populate it with FlywayDataSourceRuntimeConfig
+    public final PostgresConfig postgresConfig = new PostgresConfig();
     private Collection<Callback> callbacks = Collections.emptyList();
 
     public FlywayCreator(FlywayDataSourceRuntimeConfig flywayRuntimeConfig,
@@ -34,6 +38,10 @@ class FlywayCreator {
     public Flyway createFlyway(DataSource dataSource) {
         FluentConfiguration configure = Flyway.configure();
         configure.dataSource(dataSource);
+
+        // TODO if datasource is postgres then configure pluging
+        configure.getPluginRegister().getPlugin(PostgreSQLConfigurationExtension.class).setTransactionalLock(false);
+
         if (flywayRuntimeConfig.initSql.isPresent()) {
             configure.initSql(flywayRuntimeConfig.initSql.get());
         }

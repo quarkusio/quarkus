@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.flyway.runtime.database.PostgresConfig;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -203,4 +204,7 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     public Optional<String[]> ignoreMigrationPatterns = Optional.empty();
+
+
+    //TODO Specific postgres proterties
 }

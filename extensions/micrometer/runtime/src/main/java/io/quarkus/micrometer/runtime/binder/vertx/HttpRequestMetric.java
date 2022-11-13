@@ -3,6 +3,7 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Pattern;
 
 import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
@@ -21,14 +22,19 @@ public class HttpRequestMetric extends RequestMetricInfo {
     protected String initialPath;
     protected String templatePath;
     protected String currentRoutePath;
+    private final LongAdder activeRequests;
 
-    public HttpRequestMetric(String uri) {
+    private boolean requestActive = false;
+
+    public HttpRequestMetric(String uri, LongAdder activeRequests) {
         this.initialPath = uri;
+        this.activeRequests = activeRequests;
     }
 
-    public HttpRequestMetric(HttpRequest request) {
+    public HttpRequestMetric(HttpRequest request, LongAdder activeRequests) {
         this.request = (HttpServerRequestInternal) request;
         this.initialPath = this.request.path();
+        this.activeRequests = activeRequests;
     }
 
     public String getNormalizedUriPath(Map<Pattern, String> matchPatterns, List<Pattern> ignorePatterns) {
@@ -62,6 +68,20 @@ public class HttpRequestMetric extends RequestMetricInfo {
 
     public HttpServerRequestInternal request() {
         return request;
+    }
+
+    public void requestStarted() {
+        if (!requestActive) {
+            requestActive = true;
+            activeRequests.increment();
+        }
+    }
+
+    public void requestEnded() {
+        if (requestActive) {
+            requestActive = false;
+            activeRequests.decrement();
+        }
     }
 
     public void setTemplatePath(String path) {

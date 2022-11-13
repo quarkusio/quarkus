@@ -161,6 +161,10 @@ public class HttpBinderConfiguration {
         return "http.server.requests";
     }
 
+    public String getHttpServerActiveRequestsName() {
+        return "http.server.active.requests";
+    }
+
     public String getHttpServerPushName() {
         return "http.server.push";
     }

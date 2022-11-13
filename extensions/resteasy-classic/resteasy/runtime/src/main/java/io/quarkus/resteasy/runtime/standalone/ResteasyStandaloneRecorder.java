@@ -1,8 +1,11 @@
 package io.quarkus.resteasy.runtime.standalone;
 
 import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.jboss.resteasy.specimpl.ResteasyUriInfo;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 
@@ -12,9 +15,15 @@ import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.security.AuthenticationCompletionException;
+import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -23,7 +32,7 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class ResteasyStandaloneRecorder {
 
-    public static final String META_INF_RESOURCES = "META-INF/resources";
+    static final String RESTEASY_URI_INFO = ResteasyUriInfo.class.getName();
 
     private static boolean useDirect = true;
 
@@ -66,6 +75,80 @@ public class ResteasyStandaloneRecorder {
                     readTimeout.getValue().readTimeout.toMillis());
         }
         return null;
+    }
+
+    public Consumer<Route> addVertxFailureHandler(Supplier<Vertx> vertx, Executor executor, ResteasyVertxConfig config) {
+        if (deployment == null) {
+            return null;
+        } else {
+            return new Consumer<Route>() {
+                @Override
+                public void accept(Route route) {
+                    // allow customization of auth failures with exception mappers; this failure handler is only
+                    // used when auth failed before RESTEasy Classic began processing the request
+                    route.failureHandler(new VertxRequestHandler(vertx.get(), deployment, contextPath,
+                            new ResteasyVertxAllocator(config.responseBufferSize), executor,
+                            readTimeout.getValue().readTimeout.toMillis()) {
+
+                        @Override
+                        public void handle(RoutingContext request) {
+                            if (request.failure() instanceof AuthenticationFailedException
+                                    || request.failure() instanceof AuthenticationCompletionException
+                                    || request.failure() instanceof AuthenticationRedirectException) {
+                                super.handle(request);
+                            } else {
+                                request.next();
+                            }
+                        }
+
+                        @Override
+                        protected void setCurrentIdentityAssociation(RoutingContext routingContext) {
+                            // security identity is not available as authentication failed
+                        }
+                    });
+                }
+            };
+        }
+    }
+
+    public Handler<RoutingContext> defaultAuthFailureHandler() {
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                if (event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+
+                    // only replace default auth failure handler if we can extract URI info
+                    // as org.jboss.resteasy.plugins.server.BaseHttpRequest requires it;
+                    // we need to extract URI info here as if auth failure will happen further upstream
+                    // we want to return 401 and correct headers rather than 400 (malformed input) and so on
+                    try {
+                        event.put(RESTEASY_URI_INFO, VertxUtil.extractUriInfo(event.request(), contextPath));
+                    } catch (Exception e) {
+                        // URI could be malformed or there has been internal error when extracting URI info
+                        // keep default behavior (don't fail event, let default auth failure handler to handle this)
+                        event.next();
+                        return;
+                    }
+
+                    // fail event rather than end it, so that exception mappers can customize response
+                    event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new BiConsumer<RoutingContext, Throwable>() {
+
+                        @Override
+                        public void accept(RoutingContext event, Throwable throwable) {
+                            if (event.failed()) {
+                                //auth failure handler should never get called from route failure handlers
+                                //but if we get to this point bad things have happened,
+                                //so it is better to send a response than to hang
+                                event.end();
+                            } else {
+                                event.fail(throwable);
+                            }
+                        }
+                    });
+                }
+                event.next();
+            }
+        };
     }
 
     private static class ResteasyVertxAllocator implements BufferAllocator {

@@ -24,10 +24,12 @@ import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.capabilities.Capability;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
+import org.gradle.internal.composite.IncludedBuildInternal;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
@@ -78,10 +80,23 @@ public class DependencyUtils {
         File artifactFile = artifact.getFile();
 
         if (artifact.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
-            final Project projectDep = project.getRootProject().findProject(
-                    ((ProjectComponentIdentifier) artifact.getId().getComponentIdentifier()).getProjectPath());
+            ProjectComponentIdentifier componentIdentifier = ((ProjectComponentIdentifier) artifact.getId()
+                    .getComponentIdentifier());
+            Project projectDep = project.getRootProject().findProject(
+                    componentIdentifier.getProjectPath());
             SourceSetContainer sourceSets = projectDep == null ? null
                     : projectDep.getExtensions().findByType(SourceSetContainer.class);
+            final String classifier = artifact.getClassifier();
+            boolean isIncludedBuild = false;
+            if ((!componentIdentifier.getBuild().isCurrentBuild() || sourceSets == null)
+                    && (classifier == null || classifier.isEmpty())) {
+                var includedBuild = ToolingUtils.includedBuild(project, componentIdentifier);
+                if (includedBuild instanceof IncludedBuildInternal) {
+                    projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild, componentIdentifier);
+                    sourceSets = projectDep == null ? null : projectDep.getExtensions().findByType(SourceSetContainer.class);
+                    isIncludedBuild = true;
+                }
+            }
             if (sourceSets != null) {
                 SourceSet mainSourceSet = sourceSets.findByName(SourceSet.MAIN_SOURCE_SET_NAME);
                 if (mainSourceSet == null) {
@@ -90,7 +105,7 @@ public class DependencyUtils {
                 File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
                 Path descriptorPath = resourcesDir.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
                 if (Files.exists(descriptorPath)) {
-                    return loadExtensionInfo(project, descriptorPath, artifactId, projectDep);
+                    return loadExtensionInfo(project, descriptorPath, artifactId, projectDep, isIncludedBuild);
                 }
             }
         }
@@ -101,13 +116,13 @@ public class DependencyUtils {
         if (artifactFile.isDirectory()) {
             Path descriptorPath = artifactFile.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
             if (Files.exists(descriptorPath)) {
-                return loadExtensionInfo(project, descriptorPath, artifactId, null);
+                return loadExtensionInfo(project, descriptorPath, artifactId, null, false);
             }
         } else if (ArtifactCoords.TYPE_JAR.equals(artifact.getExtension())) {
             try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactFile.toPath())) {
                 Path descriptorPath = artifactFs.getPath(BootstrapConstants.DESCRIPTOR_PATH);
                 if (Files.exists(descriptorPath)) {
-                    return loadExtensionInfo(project, descriptorPath, artifactId, null);
+                    return loadExtensionInfo(project, descriptorPath, artifactId, null, false);
                 }
             } catch (IOException e) {
                 throw new GradleException("Failed to read " + artifactFile, e);
@@ -117,7 +132,7 @@ public class DependencyUtils {
     }
 
     private static ExtensionDependency loadExtensionInfo(Project project, Path descriptorPath,
-            ModuleVersionIdentifier exentionId, Project extensionProject) {
+            ModuleVersionIdentifier exentionId, Project extensionProject, boolean isIncludedBuild) {
         final Properties extensionProperties = new Properties();
         try (BufferedReader reader = Files.newBufferedReader(descriptorPath)) {
             extensionProperties.load(reader);
@@ -140,6 +155,10 @@ public class DependencyUtils {
 
         final ArtifactKey[] constraints = BootstrapUtils
                 .parseDependencyCondition(extensionProperties.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
+        if (isIncludedBuild) {
+            return new IncludedBuildExtensionDependency(extensionProject, exentionId, deploymentModule, conditionalDependencies,
+                    constraints == null ? Collections.emptyList() : Arrays.asList(constraints));
+        }
         if (extensionProject != null) {
             return new LocalExtensionDependency(extensionProject, exentionId, deploymentModule, conditionalDependencies,
                     constraints == null ? Collections.emptyList() : Arrays.asList(constraints));

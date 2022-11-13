@@ -9,8 +9,10 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.initialization.IncludedBuild;
+import org.gradle.internal.composite.IncludedBuildInternal;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.gradle.ModelParameter;
@@ -37,12 +39,19 @@ public class ToolingUtils {
                 || Category.REGULAR_PLATFORM.equals(category.getName()));
     }
 
-    public static IncludedBuild includedBuild(final Project project, final String projectName) {
+    public static IncludedBuild includedBuild(final Project project,
+            final ProjectComponentIdentifier projectComponentIdentifier) {
         try {
-            return project.getGradle().includedBuild(projectName);
-        } catch (UnknownDomainObjectException ignore) {
+            return project.getRootProject().getGradle().includedBuild(projectComponentIdentifier.getBuild().getName());
+        } catch (UnknownDomainObjectException e) {
             return null;
         }
+    }
+
+    public static Project includedBuildProject(IncludedBuildInternal includedBuild,
+            final ProjectComponentIdentifier componentIdentifier) {
+        return includedBuild.getTarget().getMutableModel().getRootProject().findProject(
+                componentIdentifier.getProjectPath());
     }
 
     public static Path serializeAppModel(ApplicationModel appModel, Task context, boolean test) throws IOException {

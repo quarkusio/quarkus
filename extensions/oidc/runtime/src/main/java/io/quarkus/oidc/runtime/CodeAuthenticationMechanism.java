@@ -248,9 +248,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), session);
+                        // Default token state manager may have encrypted ID token when it was saved in a cookie
+                        final String currentIdToken = decryptIdTokenIfEncryptedByProvider(configContext, session.getIdToken());
                         return authenticate(identityProviderManager, context,
-                                new IdTokenCredential(decryptIdTokenIfEncryptedByProvider(configContext, session.getIdToken()),
-                                        isInternalIdToken(session.getIdToken(), configContext)))
+                                new IdTokenCredential(currentIdToken,
+                                        isInternalIdToken(currentIdToken, configContext)))
                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                     @Override
                                     public Uni<Void> apply(SecurityIdentity identity) {
@@ -294,12 +296,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             }
                                             LOG.debug("Token has expired, trying to refresh it");
                                             return refreshSecurityIdentity(configContext,
+                                                    currentIdToken,
                                                     session.getRefreshToken(),
                                                     context,
                                                     identityProviderManager, false, null);
                                         } else if (session.getRefreshToken() != null) {
                                             LOG.debug("Token auto-refresh is starting");
                                             return refreshSecurityIdentity(configContext,
+                                                    currentIdToken,
                                                     session.getRefreshToken(),
                                                     context,
                                                     identityProviderManager, true,
@@ -381,6 +385,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
         }
         return false;
+    }
+
+    private boolean isIdTokenRequired(TenantConfigContext configContext) {
+        return configContext.oidcConfig.authentication.isIdTokenRequired().orElse(true);
     }
 
     private boolean isJavaScript(RoutingContext context) {
@@ -576,13 +584,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             return Uni.createFrom().failure(new AuthenticationCompletionException(tOuter));
                         }
 
-                        boolean internalIdToken = !configContext.oidcConfig.authentication.isIdTokenRequired().orElse(true);
+                        boolean internalIdToken = !isIdTokenRequired(configContext);
                         if (tokens.getIdToken() == null) {
                             if (!internalIdToken) {
                                 LOG.errorf("ID token is not available in the authorization code grant response");
                                 return Uni.createFrom().failure(new AuthenticationCompletionException());
                             } else {
-                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null));
+                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null, null));
                             }
                         }
 
@@ -590,6 +598,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), tokens);
 
+                        // Default token state manager may have encrypted ID token
                         final String idToken = decryptIdTokenIfEncryptedByProvider(configContext, tokens.getIdToken());
 
                         LOG.debug("Authorization code has been exchanged, verifying ID token");
@@ -601,7 +610,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         if (internalIdToken && configContext.oidcConfig.allowUserInfoCache
                                                 && configContext.oidcConfig.cacheUserInfoInIdtoken) {
                                             tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig,
-                                                    identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE)));
+                                                    identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE), null));
                                         }
                                         return processSuccessfulAuthentication(context, configContext,
                                                 tokens, idToken, identity);
@@ -652,6 +661,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     }
                                 });
                     }
+
                 });
 
     }
@@ -680,8 +690,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return null;
     }
 
-    private String generateInternalIdToken(OidcTenantConfig oidcConfig, UserInfo userInfo) {
+    private String generateInternalIdToken(OidcTenantConfig oidcConfig, UserInfo userInfo, String currentIdToken) {
         JwtClaimsBuilder builder = Jwt.claims();
+        if (currentIdToken != null) {
+            AbstractJsonObjectResponse currentIdTokenJson = new AbstractJsonObjectResponse(
+                    OidcUtils.decodeJwtContentAsString(currentIdToken)) {
+            };
+            for (String claim : currentIdTokenJson.getPropertyNames()) {
+                // Ignore "iat"(issued at) and "exp"(expiry) claims, new "iat" and "exp" claims will be generated
+                if (!claim.equals(Claims.iat.name()) && !claim.equals(Claims.exp.name())) {
+                    builder.claim(claim, currentIdTokenJson.get(claim));
+                }
+            }
+        }
         if (userInfo != null) {
             builder.claim(OidcUtils.USER_INFO_ATTRIBUTE, userInfo.getJsonObject());
         }
@@ -877,11 +898,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return false;
     }
 
-    private Uni<SecurityIdentity> refreshSecurityIdentity(TenantConfigContext configContext, String refreshToken,
+    private Uni<SecurityIdentity> refreshSecurityIdentity(TenantConfigContext configContext, String currentIdToken,
+            String refreshToken,
             RoutingContext context, IdentityProviderManager identityProviderManager, boolean autoRefresh,
             SecurityIdentity fallback) {
 
-        Uni<AuthorizationCodeTokens> refreshedTokensUni = refreshTokensUni(configContext, refreshToken);
+        Uni<AuthorizationCodeTokens> refreshedTokensUni = refreshTokensUni(configContext, currentIdToken, refreshToken,
+                autoRefresh);
 
         return refreshedTokensUni
                 .onItemOrFailure()
@@ -901,11 +924,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             context.put(AuthorizationCodeTokens.class.getName(), tokens);
                             context.put(REFRESH_TOKEN_GRANT_RESPONSE, Boolean.TRUE);
 
+                            // Default token state manager may have encrypted the refreshed ID token
                             final String idToken = decryptIdTokenIfEncryptedByProvider(configContext, tokens.getIdToken());
 
                             LOG.debug("Verifying the refreshed ID token");
                             return authenticate(identityProviderManager, context,
-                                    new IdTokenCredential(idToken))
+                                    new IdTokenCredential(idToken,
+                                            isInternalIdToken(idToken, configContext)))
                                     .call(new Function<SecurityIdentity, Uni<?>>() {
                                         @Override
                                         public Uni<Void> apply(SecurityIdentity identity) {
@@ -935,13 +960,33 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 });
     }
 
-    private Uni<AuthorizationCodeTokens> refreshTokensUni(TenantConfigContext configContext, String refreshToken) {
+    private Uni<AuthorizationCodeTokens> refreshTokensUni(TenantConfigContext configContext,
+            String currentIdToken, String refreshToken, boolean autoRefresh) {
         return configContext.provider.refreshTokens(refreshToken).onItem()
                 .transform(new Function<AuthorizationCodeTokens, AuthorizationCodeTokens>() {
                     @Override
                     public AuthorizationCodeTokens apply(AuthorizationCodeTokens tokens) {
-                        return tokens.getRefreshToken() != null ? tokens
-                                : new AuthorizationCodeTokens(tokens.getIdToken(), tokens.getAccessToken(), refreshToken);
+
+                        if (tokens.getRefreshToken() == null) {
+                            tokens.setRefreshToken(refreshToken);
+                        }
+
+                        if (tokens.getIdToken() == null) {
+                            if (isIdTokenRequired(configContext)) {
+                                if (!autoRefresh) {
+                                    LOG.debugf(
+                                            "ID token is not returned in the refresh token grant response, re-authentication is required");
+                                    throw new AuthenticationFailedException();
+                                } else {
+                                    // Auto-refresh is triggered while current ID token is still valid, continue using it.
+                                    tokens.setIdToken(currentIdToken);
+                                }
+                            } else {
+                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null, currentIdToken));
+                            }
+                        }
+
+                        return tokens;
                     }
 
                 });

@@ -76,12 +76,7 @@ public class HttpSecurityRecorder {
                         @Override
                         protected void proceed(Throwable throwable) {
 
-                            if (event.failed()) {
-                                //default auth failure handler should never get called from route failure handlers
-                                //but if we get to this point bad things have happened,
-                                //so it is better to send a response than to hang
-                                event.end();
-                            } else {
+                            if (!event.failed()) {
                                 //failing event makes it possible to customize response via failure handlers
                                 //QuarkusErrorHandler will send response if no other failure handler did
                                 event.fail(throwable);
@@ -356,7 +351,7 @@ public class HttpSecurityRecorder {
             return event.get(HttpAuthenticator.class.getName());
         }
 
-        private static Throwable extractRootCause(Throwable throwable) {
+        public static Throwable extractRootCause(Throwable throwable) {
             while ((throwable instanceof CompletionException && throwable.getCause() != null) ||
                     (throwable instanceof CompositeException)) {
                 if (throwable instanceof CompositeException) {

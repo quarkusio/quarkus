@@ -11,6 +11,7 @@ import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogC
 import io.quarkus.redis.datasource.json.ReactiveTransactionalJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveTransactionalKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
+import io.quarkus.redis.datasource.search.ReactiveTransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveTransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
@@ -408,6 +409,27 @@ public interface ReactiveTransactionalRedisDataSource {
      */
     @Experimental("The Redis graph support is experimental")
     <K> ReactiveTransactionalGraphCommands<K> graph(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to search documents
+     */
+    @Experimental("The Redis search support is experimental")
+    <K> ReactiveTransactionalSearchCommands search(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @return the object to search documents
+     */
+    @Experimental("The Redis Search support is experimental")
+    default ReactiveTransactionalSearchCommands search() {
+        return search(String.class);
+    }
 
     /**
      * Executes a command.

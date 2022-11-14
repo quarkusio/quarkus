@@ -16,6 +16,7 @@ import io.quarkus.redis.datasource.json.JsonCommands;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
@@ -489,7 +490,7 @@ public interface RedisDataSource {
      * Gets the object to manipulate graphs.
      * This group requires the <a href="https://redis.io/docs/stack/graph/">RedisGraph module</a>.
      *
-     * @return the object to manipulate graphs lists.
+     * @return the object to manipulate graphs.
      */
     @Experimental("The Redis graph support is experimental")
     default GraphCommands<String> graph() {
@@ -505,6 +506,27 @@ public interface RedisDataSource {
      */
     @Experimental("The Redis graph support is experimental")
     <K> GraphCommands<K> graph(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to search documents
+     */
+    @Experimental("The Redis search support is experimental")
+    <K> SearchCommands<K> search(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @return the object to search documents
+     */
+    @Experimental("The Redis Search support is experimental")
+    default SearchCommands<String> search() {
+        return search(String.class);
+    }
 
     /**
      * Gets the objects to publish and receive messages.

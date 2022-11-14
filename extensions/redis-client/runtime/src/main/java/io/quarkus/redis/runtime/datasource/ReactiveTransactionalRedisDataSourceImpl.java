@@ -16,6 +16,7 @@ import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogC
 import io.quarkus.redis.datasource.json.ReactiveTransactionalJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveTransactionalKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
+import io.quarkus.redis.datasource.search.ReactiveTransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveTransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
@@ -143,6 +144,12 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K> ReactiveTransactionalKeyCommands<K> key(Class<K> redisKeyType) {
         return new ReactiveTransactionalKeyCommandsImpl<>(this,
                 (ReactiveKeyCommandsImpl<K>) this.reactive.key(redisKeyType), tx);
+    }
+
+    @Override
+    public <K> ReactiveTransactionalSearchCommands search(Class<K> redisKeyType) {
+        return new ReactiveTransactionalSearchCommandsImpl<>(this,
+                (ReactiveSearchCommandsImpl<K>) this.reactive.search(redisKeyType), tx);
     }
 
     @Override

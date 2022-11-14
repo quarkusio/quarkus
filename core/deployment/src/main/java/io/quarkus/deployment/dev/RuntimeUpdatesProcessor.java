@@ -316,9 +316,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         scanLock.lock();
         TestScanningLock.lockForTests();
         try {
-            ClassScanResult changedTestClassResult = compileTestClasses();
             ClassScanResult changedApp = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false, test,
                     true);
+            ClassScanResult changedTestClassResult = compileTestClasses();
             if (changedApp.compilationHappened) {
                 if (testCompileProblem != null) {
                     testSupport.testCompileFailed(testCompileProblem);

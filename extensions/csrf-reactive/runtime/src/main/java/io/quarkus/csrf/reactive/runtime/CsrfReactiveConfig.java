@@ -60,10 +60,16 @@ public class CsrfReactiveConfig {
     public Optional<Set<String>> createTokenPath;
 
     /**
-     * The random CSRF token size in bytes.
+     * Random CSRF token size in bytes.
      */
     @ConfigItem(defaultValue = "16")
     public int tokenSize;
+
+    /**
+     * CSRF token HMAC signature key, if this key is set then it must be at least 32 characters long.
+     */
+    @ConfigItem
+    public Optional<String> tokenSignatureKey;
 
     /**
      * Verify CSRF token in the CSRF filter.

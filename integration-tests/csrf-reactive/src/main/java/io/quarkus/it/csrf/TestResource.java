@@ -11,6 +11,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
+import io.quarkus.csrf.reactive.runtime.CsrfTokenUtils;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.vertx.ext.web.RoutingContext;
@@ -56,7 +59,10 @@ public class TestResource {
     public String postCsrfTokenMultipart(@FormParam("name") String name,
             @FormParam("csrf-token") String csrfTokenParam, @CookieParam("csrftoken") Cookie csrfTokenCookie) {
         return name + ":" + routingContext.get("csrf_token_verified", false) + ":"
-                + csrfTokenCookie.getValue().equals(csrfTokenParam);
+                + csrfTokenCookie.getValue().equals(
+                        CsrfTokenUtils.signCsrfToken(csrfTokenParam,
+                                ConfigProvider.getConfig().getValue("quarkus.csrf-reactive.token-signature-key",
+                                        String.class)));
     }
 
     @GET

@@ -33,6 +33,7 @@ public class CsrfRequestResponseReactiveFilter {
      * CSRF token key.
      */
     private static final String CSRF_TOKEN_KEY = "csrf_token";
+    private static final String CSRF_TOKEN_BYTES_KEY = "csrf_token_bytes";
 
     /**
      * CSRF token verification status.
@@ -71,11 +72,12 @@ public class CsrfRequestResponseReactiveFilter {
             routing.put(CSRF_TOKEN_KEY, cookieToken);
 
             try {
-                int suppliedTokenSize = Base64.getUrlDecoder().decode(cookieToken).length;
-
-                if (suppliedTokenSize != config.tokenSize) {
-                    LOG.debugf("Invalid CSRF token cookie size: expected %d, got %d", config.tokenSize,
-                            suppliedTokenSize);
+                int cookieTokenSize = Base64.getUrlDecoder().decode(cookieToken).length;
+                // HMAC SHA256 output is 32 bytes long
+                int expectedCookieTokenSize = config.tokenSignatureKey.isPresent() ? 32 : config.tokenSize;
+                if (cookieTokenSize != expectedCookieTokenSize) {
+                    LOG.debugf("Invalid CSRF token cookie size: expected %d, got %d", expectedCookieTokenSize,
+                            cookieTokenSize);
                     return Uni.createFrom().item(badClientRequest());
                 }
             } catch (IllegalArgumentException e) {
@@ -88,9 +90,10 @@ public class CsrfRequestResponseReactiveFilter {
             // safe HTTP method, tolerate the absence of a token
             if (cookieToken == null && isCsrfTokenRequired(routing, config)) {
                 // Set the CSRF cookie with a randomly generated value
-                byte[] token = new byte[config.tokenSize];
-                secureRandom.nextBytes(token);
-                routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(token));
+                byte[] tokenBytes = new byte[config.tokenSize];
+                secureRandom.nextBytes(tokenBytes);
+                routing.put(CSRF_TOKEN_BYTES_KEY, tokenBytes);
+                routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes));
             }
         } else if (config.verifyToken) {
             // unsafe HTTP method, token is required
@@ -126,13 +129,18 @@ public class CsrfRequestResponseReactiveFilter {
                             if (csrfToken == null) {
                                 LOG.debug("CSRF token is not found");
                                 return Uni.createFrom().item(badClientRequest());
-                            } else if (!csrfToken.equals(cookieToken)) {
-                                LOG.debug("CSRF token value is wrong");
-                                return Uni.createFrom().item(badClientRequest());
                             } else {
-                                routing.put(CSRF_TOKEN_VERIFIED, true);
+                                String expectedCookieTokenValue = config.tokenSignatureKey.isPresent()
+                                        ? CsrfTokenUtils.signCsrfToken(csrfToken, config.tokenSignatureKey.get())
+                                        : csrfToken;
+                                if (!cookieToken.equals(expectedCookieTokenValue)) {
+                                    LOG.debug("CSRF token value is wrong");
+                                    return Uni.createFrom().item(badClientRequest());
+                                } else {
+                                    routing.put(CSRF_TOKEN_VERIFIED, true);
+                                    return Uni.createFrom().nullItem();
+                                }
                             }
-                            return Uni.createFrom().nullItem();
                         }
                     });
         } else if (cookieToken == null) {
@@ -168,14 +176,27 @@ public class CsrfRequestResponseReactiveFilter {
         final CsrfReactiveConfig config = configInstance.get();
         if (requestContext.getMethod().equals("GET") && isCsrfTokenRequired(routing, config)
                 && getCookieToken(routing, config) == null) {
-            String token = (String) routing.get(CSRF_TOKEN_KEY);
 
-            if (token == null) {
-                throw new IllegalStateException(
-                        "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+            String cookieValue = null;
+            if (config.tokenSignatureKey.isPresent()) {
+                byte[] csrfTokenBytes = (byte[]) routing.get(CSRF_TOKEN_BYTES_KEY);
+
+                if (csrfTokenBytes == null) {
+                    throw new IllegalStateException(
+                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                }
+                cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey.get());
+            } else {
+                String csrfToken = (String) routing.get(CSRF_TOKEN_KEY);
+
+                if (csrfToken == null) {
+                    throw new IllegalStateException(
+                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                }
+                cookieValue = csrfToken;
             }
 
-            createCookie(token, routing, config);
+            createCookie(cookieValue, routing, config);
         }
 
     }
@@ -201,6 +222,7 @@ public class CsrfRequestResponseReactiveFilter {
     }
 
     private void createCookie(String csrfToken, RoutingContext routing, CsrfReactiveConfig config) {
+
         ServerCookie cookie = new CookieImpl(config.cookieName, csrfToken);
         cookie.setHttpOnly(true);
         cookie.setSecure(config.cookieForceSecure || routing.request().isSSL());

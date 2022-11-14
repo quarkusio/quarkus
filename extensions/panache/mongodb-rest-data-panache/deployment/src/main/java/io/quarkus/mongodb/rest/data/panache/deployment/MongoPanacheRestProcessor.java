@@ -1,6 +1,7 @@
 package io.quarkus.mongodb.rest.data.panache.deployment;
 
 import static io.quarkus.deployment.Feature.MONGODB_REST_DATA_PANACHE;
+import static io.quarkus.rest.data.panache.deployment.utils.EntityTypeUtils.getEntityFields;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
@@ -89,7 +90,8 @@ class MongoPanacheRestProcessor {
                     classOutput, dataAccessImplementor, resourceInterface, entityType);
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
+                            getEntityFields(index.getIndex(), entityType))));
             if (capabilities.isPresent(Capability.RESTEASY)) {
                 bytecodeTransformersProducer.produce(
                         getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
@@ -124,7 +126,8 @@ class MongoPanacheRestProcessor {
                     new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
+                            getEntityFields(index.getIndex(), entityType))));
             if (capabilities.isPresent(Capability.RESTEASY)) {
                 bytecodeTransformersProducer.produce(
                         getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));

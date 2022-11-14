@@ -114,6 +114,17 @@ class MongoDbRestDataPanacheTest {
     }
 
     @Test
+    void shouldListBooksWithFilter() {
+        given().accept("application/json")
+                .when()
+                .queryParam("title", crimeAndPunishment.getTitle())
+                .get("/books")
+                .then().statusCode(200)
+                .and().body("title", not(contains(idiot.getTitle())))
+                .and().body("title", contains(crimeAndPunishment.getTitle()));
+    }
+
+    @Test
     void shouldListBooksHal() {
         given().accept("application/hal+json")
                 .when().get("/books")

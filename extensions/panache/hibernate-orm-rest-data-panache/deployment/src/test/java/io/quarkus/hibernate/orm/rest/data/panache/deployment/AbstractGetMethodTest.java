@@ -87,6 +87,29 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
+    void shouldListWithFilter() {
+        given().accept("application/json")
+                .when()
+                .queryParam("name", "first")
+                .get("/items")
+                .then().statusCode(200)
+                .and().body("id", contains(1))
+                .and().body("name", contains("first"));
+    }
+
+    @Test
+    void shouldListWithManyFilters() {
+        given().accept("application/json")
+                .when()
+                .queryParam("id", 1)
+                .queryParam("name", "first")
+                .get("/items")
+                .then().statusCode(200)
+                .and().body("id", contains(1))
+                .and().body("name", contains("first"));
+    }
+
+    @Test
     void shouldListSimpleHalObjects() {
         given().accept("application/hal+json")
                 .when().get("/items")
@@ -118,6 +141,17 @@ public abstract class AbstractGetMethodTest {
                 .then().statusCode(200)
                 .and().body("id", contains(2, 1))
                 .and().body("name", contains("second", "first"));
+    }
+
+    @Test
+    void shouldListSimpleDescendingObjectsAndFilter() {
+        given().accept("application/json")
+                .when()
+                .queryParam("name", "first")
+                .get("/items?sort=-name,id")
+                .then().statusCode(200)
+                .and().body("id", contains(1))
+                .and().body("name", contains("first"));
     }
 
     @Test
@@ -225,6 +259,19 @@ public abstract class AbstractGetMethodTest {
             assertThat(link.getUri().toString()).endsWith("/items?page=1&size=1");
             assertThat(link.getRel()).isEqualTo("next");
         });
+    }
+
+    @Test
+    void shouldGetFirstPageWithFilter() {
+        Response response = given().accept("application/json")
+                .and().queryParam("page", 0)
+                .and().queryParam("size", 1)
+                .and().queryParam("name", "second")
+                .when().get("/items")
+                .thenReturn();
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.body().jsonPath().getList("id")).containsOnly(2);
+        assertThat(response.body().jsonPath().getList("name")).containsOnly("second");
     }
 
     @Test

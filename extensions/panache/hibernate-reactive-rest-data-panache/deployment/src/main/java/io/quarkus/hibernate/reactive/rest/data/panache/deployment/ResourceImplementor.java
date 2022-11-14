@@ -3,6 +3,7 @@ package io.quarkus.hibernate.reactive.rest.data.panache.deployment;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -73,15 +74,20 @@ class ResourceImplementor {
     }
 
     private void implementList(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
-        MethodCreator methodCreator = classCreator.getMethodCreator("list", Uni.class, Page.class, Sort.class);
+        MethodCreator methodCreator = classCreator.getMethodCreator("list", Uni.class, Page.class, Sort.class,
+                String.class, Map.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);
+        ResultHandle query = methodCreator.getMethodParam(2);
+        ResultHandle queryParams = methodCreator.getMethodParam(3);
         ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
         ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
 
         BranchResult isEmptySortBranch = methodCreator.ifTrue(isEmptySort);
-        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page));
-        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
+        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page, query,
+                queryParams));
+        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort,
+                query, queryParams));
 
         methodCreator.close();
     }

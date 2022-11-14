@@ -1,5 +1,9 @@
 package io.quarkus.rest.data.panache.deployment;
 
+import java.util.Map;
+
+import org.jboss.jandex.Type;
+
 public class ResourceMetadata {
 
     /**
@@ -22,11 +26,18 @@ public class ResourceMetadata {
      */
     private final String idType;
 
-    public ResourceMetadata(String resourceClass, String resourceInterface, String entityType, String idType) {
+    /**
+     * Map containing the field names by field types.
+     */
+    private final Map<String, Type> fields;
+
+    public ResourceMetadata(String resourceClass, String resourceInterface, String entityType, String idType,
+            Map<String, Type> fields) {
         this.resourceClass = resourceClass;
         this.resourceInterface = resourceInterface;
         this.entityType = entityType;
         this.idType = idType;
+        this.fields = fields;
     }
 
     public String getResourceClass() {
@@ -43,5 +54,9 @@ public class ResourceMetadata {
 
     public String getIdType() {
         return idType;
+    }
+
+    public Map<String, Type> getFields() {
+        return fields;
     }
 }

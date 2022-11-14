@@ -774,4 +774,16 @@ public class QuarkusDevModeTest
         this.allowFailedStart = allowFailedStart;
         return this;
     }
+
+    static class ChangeSet {
+        final String name;
+        final Function<String, String> mutator;
+        final Path path;
+
+        ChangeSet(String name, Function<String, String> mutator, Path path) {
+            this.name = name;
+            this.mutator = mutator;
+            this.path = path;
+        }
+    }
 }

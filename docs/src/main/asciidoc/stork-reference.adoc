@@ -137,11 +137,11 @@ import io.smallrye.stork.spi.ServiceDiscoveryProvider;
 @ServiceDiscoveryAttribute(name = "port",
         description = "Port of the service discovery server.", required = false)
 public class AcmeServiceDiscoveryProvider // <3>
-        implements ServiceDiscoveryProvider<AcmeServiceDiscoveryProviderConfiguration> {
+        implements ServiceDiscoveryProvider<AcmeConfiguration> {
 
     // <4>
     @Override
-    public ServiceDiscovery createServiceDiscovery(AcmeServiceDiscoveryProviderConfiguration config,
+    public ServiceDiscovery createServiceDiscovery(AcmeConfiguration config,
                                                    String serviceName,
                                                    ServiceConfig serviceConfig,
                                                    StorkInfrastructure storkInfrastructure) {
@@ -154,7 +154,7 @@ This implementation is straightforward.
 
 <1> `@ServiceDiscoveryType` annotation defines the type of the service discovery provider. For each `ServiceDiscoveryProvider` annotated with this annotation, a configuration class will be generated. The name of the configuration class is constructed by appending `Configuration` to the name of the provider.
 <2> Use `@ServiceDiscoveryAttribute` to define configuration properties for services configured with this service discovery provider. Configuration properties are gathered from all properties of a form: `quarkus.stork.my-service.service-discovery.attr=value`.
-<3> The provider needs to implement `ServiceDiscoveryType` typed by the configuration class.
+<3> The provider needs to implement `ServiceDiscoveryType` typed by the configuration class. This configuration class is generated automatically by the Configuration Generator. Its name is created by appending `Configuration` to the service discovery type, such as `AcmeConfiguration`.
 <4> `createServiceDiscovery` method is the factory method. It receives the configuration and access to the name of the service and available infrastructure.
 
 Then, we need to implement the `ServiceDiscovery` interface:
@@ -177,7 +177,7 @@ public class AcmeServiceDiscovery implements ServiceDiscovery {
     private final String host;
     private final int port;
 
-    public AcmeServiceDiscovery(AcmeServiceDiscoveryProviderConfiguration configuration) {
+    public AcmeServiceDiscovery(AcmeConfiguration configuration) {
         this.host = configuration.getHost();
         this.port = Integer.parseInt(configuration.getPort());
     }

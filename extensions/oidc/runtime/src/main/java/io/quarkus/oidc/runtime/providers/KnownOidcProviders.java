@@ -24,6 +24,8 @@ public class KnownOidcProviders {
             return spotify();
         } else if (OidcTenantConfig.Provider.TWITTER == provider) {
             return twitter();
+        } else if (OidcTenantConfig.Provider.TWITCH == provider) {
+            return twitch();
         }
         return null;
     }
@@ -124,6 +126,17 @@ public class KnownOidcProviders {
         ret.getToken().setVerifyAccessTokenWithUserInfo(true);
         ret.getToken().setPrincipalClaim("display_name");
 
+        return ret;
+    }
+
+    private static OidcTenantConfig twitch() {
+        // Ref https://dev.twitch.tv/docs/authentication/getting-tokens-oidc/#oidc-authorization-code-grant-flow
+
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setAuthServerUrl("https://id.twitch.tv/oauth2");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.getAuthentication().setForceRedirectHttpsScheme(true);
+        ret.getCredentials().getClientSecret().setMethod(Method.POST);
         return ret;
     }
 }

@@ -1605,6 +1605,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         GOOGLE,
         MICROSOFT,
         SPOTIFY,
+        TWITCH,
         TWITTER
     }
 

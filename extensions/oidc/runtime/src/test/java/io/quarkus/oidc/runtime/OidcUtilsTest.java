@@ -343,6 +343,38 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testAcceptTwitchProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.TWITCH));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals("https://id.twitch.tv/oauth2", config.getAuthServerUrl().get());
+        assertEquals(Method.POST, config.credentials.clientSecret.method.get());
+        assertTrue(config.authentication.forceRedirectHttpsScheme.get());
+    }
+
+    @Test
+    public void testOverrideTwitchProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.credentials.clientSecret.setMethod(Method.BASIC);
+        tenant.authentication.setForceRedirectHttpsScheme(false);
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertFalse(config.getAuthentication().isForceRedirectHttpsScheme().get());
+        assertEquals(Method.BASIC, config.credentials.clientSecret.method.get());
+    }
+
+    @Test
     public void testCorrectTokenType() throws Exception {
         OidcTenantConfig.Token tokenClaims = new OidcTenantConfig.Token();
         tokenClaims.setTokenType("access_token");

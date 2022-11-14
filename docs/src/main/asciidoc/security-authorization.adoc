@@ -270,6 +270,8 @@ public class SubjectExposingResource {
 <4> This call to obtain the user principal will return null if the caller is unauthenticated, non-null if the caller is authenticated.
 <5> The `/subject/denied` endpoint disallows any access regardless of whether the call is authenticated by specifying the `@DenyAll` annotation.
 
+CAUTION: Please refer to the xref:security-built-in-authentication.adoc#proactive-authentication[Proactive Authentication] section of the Built-In Authentication Support guide if you plan to use standard security annotations on IO thread.
+
 == References
 
 * xref:security.adoc[Quarkus Security]

@@ -122,6 +122,55 @@ in the xref:resteasy-reactive.adoc[RESTEasy Reactive] from endpoints annotated w
 or with respective configuration authorization checks as authentication has already happened. The same is also valid
 for the xref:reactive-routes.adoc[Reactive routes] if a route response is synchronous.
 
+xref:security-authorization.adoc#standard-security-annotations[Standard security annotations] on CDI beans are not supported on IO thread if a non-void secured method returns a value synchronously and proactive authentication is disabled, as they need to access the `SecurityIdentity`.
+In the example below, we have defined `HelloResource` and `HelloService`. It's easy to see that any GET request to `/hello` will run on IO thread and throw `BlockingOperationNotAllowedException` exception.
+There is more than one way to fix the example:
+
+* switch to a worker thread (annotate `hello` endpoint with `@Blocking`)
+* change `sayHello` method return type (use reactive or asynchronous data type)
+* arguably the safest way is to move `@RolesAllowed` annotation to the endpoint, as accessing `SecurityIdentity` from endpoint methods is never the blocking operation
+
+[source,java]
+----
+import javax.annotation.security.PermitAll;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+import io.smallrye.mutiny.Uni;
+
+@Path("/hello")
+@PermitAll
+public class HelloResource {
+
+    @Inject
+    HelloService helloService;
+
+    @GET
+    public Uni<String> hello() {
+        return Uni.createFrom().item(helloService.sayHello());
+    }
+
+}
+----
+
+[source,java]
+----
+import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class HelloService {
+
+    @RolesAllowed("admin")
+    public String sayHello() {
+        return "Hello";
+    }
+
+}
+----
+
+
 === How to customize authentication exception responses
 
 By default, the authentication security constraints are enforced before the JAX-RS chain starts and only way to handle Quarkus Security authentication exceptions is to provide a failure handler like this one:

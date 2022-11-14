@@ -4,7 +4,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -30,7 +29,6 @@ import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyStandaloneBuildStep {
@@ -75,6 +73,7 @@ public class ResteasyStandaloneBuildStep {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<DefaultRouteBuildItem> defaultRoutes,
             BuildProducer<RouteBuildItem> routes,
+            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             CoreVertxBuildItem vertx,
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
@@ -92,15 +91,16 @@ public class ResteasyStandaloneBuildStep {
                 executorBuildItem.getExecutorProxy(), resteasyVertxConfig);
 
         // failure handler for auth failures that occurred before the handler defined right above started processing the request
-        final Consumer<Route> addFailureHandler = recorder.addVertxFailureHandler(vertx.getVertx(),
+        final Handler<RoutingContext> failureHandler = recorder.vertxFailureHandler(vertx.getVertx(),
                 executorBuildItem.getExecutorProxy(), resteasyVertxConfig);
+        filterBuildItemBuildProducer.produce(new FilterBuildItem(failureHandler,
+                VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET, true));
 
         // Exact match for resources matched to the root path
         routes.produce(
                 RouteBuildItem.builder()
                         .orderedRoute(standalone.deploymentRootPath,
-                                VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET,
-                                addFailureHandler)
+                                VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET)
                         .handler(handler).build());
         String matchPath = standalone.deploymentRootPath;
         if (matchPath.endsWith("/")) {

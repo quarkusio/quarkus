@@ -146,12 +146,7 @@ public class VertxWebRecorder {
                         @Override
                         protected void proceed(Throwable throwable) {
 
-                            if (event.failed()) {
-                                //auth failure handler should never get called from route failure handlers
-                                //but if we get to this point bad things have happened,
-                                //so it is better to send a response than to hang
-                                event.end();
-                            } else {
+                            if (!event.failed()) {
                                 event.fail(throwable);
                             }
                         }

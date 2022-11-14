@@ -3,6 +3,8 @@ package io.quarkus.rest.client.reactive.deployment;
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAM;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static org.jboss.resteasy.reactive.common.processor.HashUtil.sha1;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
@@ -11,6 +13,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +35,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -52,6 +56,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
 import io.quarkus.rest.client.reactive.HeaderFiller;
+import io.quarkus.rest.client.reactive.runtime.ClientQueryParamSupport;
 import io.quarkus.rest.client.reactive.runtime.ConfigUtils;
 import io.quarkus.rest.client.reactive.runtime.MicroProfileRestClientRequestFilter;
 import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
@@ -80,6 +85,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
     private static final MethodDescriptor MAP_CONTAINS_KEY_METHOD = MethodDescriptor.ofMethod(Map.class, "containsKey",
             boolean.class, Object.class);
     public static final String INVOKED_METHOD = "org.eclipse.microprofile.rest.client.invokedMethod";
+    private static final MethodDescriptor WEB_TARGET_IMPL_QUERY_PARAMS = MethodDescriptor.ofMethod(WebTargetImpl.class,
+            "queryParam", WebTargetImpl.class, String.class, Collection.class);
 
     private final Map<ClassInfo, String> interfaceMocks = new HashMap<>();
 
@@ -122,6 +129,202 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         constructor.assign(webTargetBase, constructor.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class),
                 webTargetBase, restClientFilter));
+    }
+
+    @Override
+    public void forWebTarget(MethodCreator methodCreator, IndexView index, ClassInfo interfaceClass, MethodInfo method,
+            AssignableResultHandle webTarget, BuildProducer<GeneratedClassBuildItem> generatedClasses) {
+        Map<String, QueryData> queryParamsByName = new HashMap<>();
+        collectClientQueryParamData(interfaceClass, method, queryParamsByName);
+        for (var headerEntry : queryParamsByName.entrySet()) {
+            addQueryParam(method, methodCreator, headerEntry.getValue(), webTarget, generatedClasses, index);
+        }
+    }
+
+    @Override
+    public void forSubResourceWebTarget(MethodCreator methodCreator, IndexView index, ClassInfo rootInterfaceClass,
+            ClassInfo subInterfaceClass, MethodInfo rootMethod, MethodInfo subMethod,
+            AssignableResultHandle webTarget, BuildProducer<GeneratedClassBuildItem> generatedClasses) {
+
+        Map<String, QueryData> queryParamsByName = new HashMap<>();
+        collectClientQueryParamData(rootInterfaceClass, rootMethod, queryParamsByName);
+        collectClientQueryParamData(subInterfaceClass, subMethod, queryParamsByName);
+        for (var headerEntry : queryParamsByName.entrySet()) {
+            addQueryParam(subMethod, methodCreator, headerEntry.getValue(), webTarget, generatedClasses, index);
+        }
+    }
+
+    private void collectClientQueryParamData(ClassInfo interfaceClass, MethodInfo method,
+            Map<String, QueryData> headerFillersByName) {
+        AnnotationInstance classLevelHeader = interfaceClass.declaredAnnotation(CLIENT_QUERY_PARAM);
+        if (classLevelHeader != null) {
+            headerFillersByName.put(classLevelHeader.value("name").asString(),
+                    new QueryData(classLevelHeader, interfaceClass));
+        }
+        putAllQueryAnnotations(headerFillersByName,
+                interfaceClass,
+                extractAnnotations(interfaceClass.declaredAnnotation(CLIENT_QUERY_PARAMS)));
+
+        Map<String, QueryData> methodLevelHeadersByName = new HashMap<>();
+        AnnotationInstance methodLevelHeader = method.annotation(CLIENT_QUERY_PARAM);
+        if (methodLevelHeader != null) {
+            methodLevelHeadersByName.put(methodLevelHeader.value("name").asString(),
+                    new QueryData(methodLevelHeader, interfaceClass));
+        }
+        putAllQueryAnnotations(methodLevelHeadersByName, interfaceClass,
+                extractAnnotations(method.annotation(CLIENT_QUERY_PARAMS)));
+
+        headerFillersByName.putAll(methodLevelHeadersByName);
+    }
+
+    private void putAllQueryAnnotations(Map<String, QueryData> headerMap, ClassInfo interfaceClass,
+            AnnotationInstance[] annotations) {
+        for (AnnotationInstance annotation : annotations) {
+            String name = annotation.value("name").asString();
+            if (headerMap.put(name, new QueryData(annotation, interfaceClass)) != null) {
+                throw new RestClientDefinitionException("Duplicate ClientQueryParam annotation for query parameter: " + name +
+                        " on " + annotation.target());
+            }
+        }
+    }
+
+    private void addQueryParam(MethodInfo declaringMethod, MethodCreator methodCreator,
+            QueryData queryData,
+            AssignableResultHandle webTargetImpl, BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            IndexView index) {
+
+        AnnotationInstance annotation = queryData.annotation;
+        ClassInfo declaringClass = queryData.definingClass;
+
+        String queryName = annotation.value("name").asString();
+        ResultHandle queryNameHandle = methodCreator.load(queryName);
+
+        ResultHandle isQueryParamPresent = methodCreator.invokeStaticMethod(
+                MethodDescriptor.ofMethod(ClientQueryParamSupport.class, "isQueryParamPresent", boolean.class,
+                        WebTargetImpl.class, String.class),
+                webTargetImpl, queryNameHandle);
+        BytecodeCreator creator = methodCreator.ifTrue(isQueryParamPresent).falseBranch();
+
+        String[] values = annotation.value().asStringArray();
+
+        if (values.length == 0) {
+            log.warnv("Ignoring ClientQueryParam that specifies an empty array of header values for header {} on {}",
+                    annotation.value("name").asString(), annotation.target());
+            return;
+        }
+
+        if (values.length > 1 || !(values[0].startsWith("{") && values[0].endsWith("}"))) {
+            boolean required = annotation.valueWithDefault(index, "required").asBoolean();
+            ResultHandle valuesList = creator.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+            for (String value : values) {
+                if (value.startsWith("${") && value.endsWith("}")) {
+                    ResultHandle queryValueFromConfig = creator.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(ConfigUtils.class, "getConfigValue", String.class, String.class,
+                                    boolean.class),
+                            creator.load(value), creator.load(required));
+                    creator.ifNotNull(queryValueFromConfig)
+                            .trueBranch().invokeInterfaceMethod(LIST_ADD_METHOD, valuesList, queryValueFromConfig);
+                } else {
+                    creator.invokeInterfaceMethod(LIST_ADD_METHOD, valuesList, creator.load(value));
+                }
+            }
+
+            creator.assign(webTargetImpl, creator.invokeVirtualMethod(WEB_TARGET_IMPL_QUERY_PARAMS, webTargetImpl,
+                    queryNameHandle, valuesList));
+        } else { // method call :O {some.package.ClassName.methodName} or {defaultMethodWithinThisInterfaceName}
+            // if `!required` an exception on header filling does not fail the invocation:
+            boolean required = annotation.valueWithDefault(index, "required").asBoolean();
+
+            BytecodeCreator methodCallCreator = creator;
+            TryBlock tryBlock = null;
+
+            if (!required) {
+                tryBlock = creator.tryBlock();
+                methodCallCreator = tryBlock;
+            }
+            String methodName = values[0].substring(1, values[0].length() - 1); // strip curly braces
+
+            MethodInfo queryValueMethod;
+            ResultHandle queryValue;
+            if (methodName.contains(".")) {
+                // calling a static method
+                int endOfClassName = methodName.lastIndexOf('.');
+                String className = methodName.substring(0, endOfClassName);
+                String staticMethodName = methodName.substring(endOfClassName + 1);
+
+                ClassInfo clazz = index.getClassByName(DotName.createSimple(className));
+                if (clazz == null) {
+                    throw new RestClientDefinitionException(
+                            "Class " + className + " used in ClientQueryParam on " + declaringClass + " not found");
+                }
+                queryValueMethod = findMethod(clazz, declaringClass, staticMethodName, CLIENT_QUERY_PARAM.toString());
+
+                if (queryValueMethod.parametersCount() == 0) {
+                    queryValue = methodCallCreator.invokeStaticMethod(queryValueMethod);
+                } else if (queryValueMethod.parametersCount() == 1 && isString(queryValueMethod.parameterType(0))) {
+                    queryValue = methodCallCreator.invokeStaticMethod(queryValueMethod, methodCallCreator.load(queryName));
+                } else {
+                    throw new RestClientDefinitionException(
+                            "ClientQueryParam method " + declaringClass.toString() + "#" + staticMethodName
+                                    + " has too many parameters, at most one parameter, header name, expected");
+                }
+            } else {
+                // interface method
+                String mockName = mockInterface(declaringClass, generatedClasses, index);
+                ResultHandle interfaceMock = methodCallCreator.newInstance(MethodDescriptor.ofConstructor(mockName));
+
+                queryValueMethod = findMethod(declaringClass, declaringClass, methodName, CLIENT_QUERY_PARAM.toString());
+
+                if (queryValueMethod == null) {
+                    throw new RestClientDefinitionException(
+                            "ClientQueryParam method " + methodName + " not found on " + declaringClass);
+                }
+
+                if (queryValueMethod.parametersCount() == 0) {
+                    queryValue = methodCallCreator.invokeInterfaceMethod(queryValueMethod, interfaceMock);
+                } else if (queryValueMethod.parametersCount() == 1 && isString(queryValueMethod.parameterType(0))) {
+                    queryValue = methodCallCreator.invokeInterfaceMethod(queryValueMethod, interfaceMock,
+                            methodCallCreator.load(queryName));
+                } else {
+                    throw new RestClientDefinitionException(
+                            "ClientQueryParam method " + declaringClass + "#" + methodName
+                                    + " has too many parameters, at most one parameter, header name, expected");
+                }
+
+            }
+
+            Type returnType = queryValueMethod.returnType();
+            ResultHandle valuesList;
+            if (returnType.kind() == Type.Kind.ARRAY && returnType.asArrayType().component().name().equals(STRING)) {
+                // repack array to list
+                valuesList = methodCallCreator.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(Arrays.class, "asList", List.class, Object[].class), queryValue);
+            } else if (returnType.kind() == Type.Kind.CLASS && returnType.name().equals(STRING)) {
+                valuesList = methodCallCreator.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+                methodCallCreator.invokeInterfaceMethod(LIST_ADD_METHOD, valuesList, queryValue);
+            } else {
+                throw new RestClientDefinitionException("Method " + declaringClass.toString() + "#" + methodName
+                        + " has an unsupported return type for ClientQueryParam. " +
+                        "Only String and String[] return types are supported");
+            }
+            methodCallCreator.assign(webTargetImpl,
+                    methodCallCreator.invokeVirtualMethod(WEB_TARGET_IMPL_QUERY_PARAMS, webTargetImpl, queryNameHandle,
+                            valuesList));
+
+            if (!required) {
+                CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
+                ResultHandle log = catchBlock.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(Logger.class, "getLogger", Logger.class, String.class),
+                        catchBlock.load(declaringClass.name().toString()));
+                String errorMessage = String.format(
+                        "Invoking query param generation method '%s' for '%s' on method '%s#%s' failed",
+                        methodName, queryName, declaringClass.name(), declaringMethod.name());
+                catchBlock.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(Logger.class, "warn", void.class, Object.class, Throwable.class),
+                        log,
+                        catchBlock.load(errorMessage), catchBlock.getCaughtException());
+            }
+        }
     }
 
     @Override
@@ -337,7 +540,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                     throw new RestClientDefinitionException(
                             "Class " + className + " used in ClientHeaderParam on " + declaringClass + " not found");
                 }
-                headerFillingMethod = findMethod(clazz, declaringClass, staticMethodName);
+                headerFillingMethod = findMethod(clazz, declaringClass, staticMethodName, CLIENT_HEADER_PARAM.toString());
 
                 if (headerFillingMethod.parametersCount() == 0) {
                     headerValue = fillHeader.invokeStaticMethod(headerFillingMethod);
@@ -353,7 +556,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 String mockName = mockInterface(declaringClass, generatedClasses, index);
                 ResultHandle interfaceMock = fillHeader.newInstance(MethodDescriptor.ofConstructor(mockName));
 
-                headerFillingMethod = findMethod(declaringClass, declaringClass, methodName);
+                headerFillingMethod = findMethod(declaringClass, declaringClass, methodName, CLIENT_HEADER_PARAM.toString());
 
                 if (headerFillingMethod == null) {
                     throw new RestClientDefinitionException(
@@ -403,20 +606,21 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         }
     }
 
-    private MethodInfo findMethod(ClassInfo declaringClass, ClassInfo restInterface, String methodName) {
-        MethodInfo headerFillingMethod = null;
+    private MethodInfo findMethod(ClassInfo declaringClass, ClassInfo restInterface, String methodName,
+            String sourceAnnotationName) {
+        MethodInfo result = null;
         for (MethodInfo method : declaringClass.methods()) {
             if (method.name().equals(methodName)) {
-                if (headerFillingMethod != null) {
-                    throw new RestClientDefinitionException("Ambiguous ClientHeaderParam definition, " +
-                            "more than one method of name " + methodName + " found on " + declaringClass +
-                            ". Problematic interface: " + restInterface);
+                if (result != null) {
+                    throw new RestClientDefinitionException(String.format(
+                            "Ambiguous %s definition, more than one method of name %s found on %s. Problematic interface: %s",
+                            sourceAnnotationName, methodName, declaringClass, restInterface));
                 } else {
-                    headerFillingMethod = method;
+                    result = method;
                 }
             }
         }
-        return headerFillingMethod;
+        return result;
     }
 
     private static boolean isString(Type type) {
@@ -473,6 +677,21 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         private final ClassInfo definingClass;
 
         public HeaderData(AnnotationInstance annotation, ClassInfo definingClass) {
+            this.annotation = annotation;
+            this.definingClass = definingClass;
+        }
+    }
+
+    /**
+     * ClientQueryParam annotations can be defined on a JAX-RS interface or a sub-client (sub-resource).
+     * If we're adding query params for a sub-client, we need to know the defining class of the ClientHeaderParam
+     * to properly resolve default methods of the "root" client
+     */
+    private static class QueryData {
+        private final AnnotationInstance annotation;
+        private final ClassInfo definingClass;
+
+        public QueryData(AnnotationInstance annotation, ClassInfo definingClass) {
             this.annotation = annotation;
             this.definingClass = definingClass;
         }

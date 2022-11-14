@@ -32,6 +32,20 @@ public interface JaxrsClientReactiveEnricher {
             ClassInfo interfaceClass, IndexView index);
 
     /**
+     * Called when a {@link javax.ws.rs.client.WebTarget} has been populated for a normal Client
+     */
+    void forWebTarget(MethodCreator methodCreator, IndexView index, ClassInfo interfaceClass, MethodInfo method,
+            AssignableResultHandle webTarget, BuildProducer<GeneratedClassBuildItem> generatedClasses);
+
+    /**
+     * Called when a {@link javax.ws.rs.client.WebTarget} has been populated for a sub Client
+     */
+    void forSubResourceWebTarget(MethodCreator methodCreator, IndexView index, ClassInfo rootInterfaceClass,
+            ClassInfo subInterfaceClass,
+            MethodInfo rootMethod, MethodInfo subMethod, AssignableResultHandle webTarget,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses);
+
+    /**
      * Method-level alterations
      *
      * @param classCreator creator of the jaxrs stub class

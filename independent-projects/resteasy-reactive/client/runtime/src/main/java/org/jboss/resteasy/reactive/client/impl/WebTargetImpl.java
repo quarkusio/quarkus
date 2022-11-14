@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -81,6 +82,10 @@ public class WebTargetImpl implements WebTarget {
     public UriBuilder getUriBuilder() {
         abortIfClosed();
         return uriBuilder.clone();
+    }
+
+    public UriBuilderImpl getUriBuilderUnsafe() {
+        return (UriBuilderImpl) uriBuilder;
     }
 
     @Override
@@ -219,6 +224,11 @@ public class WebTargetImpl implements WebTarget {
         return stringValues;
     }
 
+    @SuppressWarnings("unused")
+    public WebTargetImpl queryParam(String name, Collection<String> values) throws NullPointerException {
+        return queryParam(name, values.toArray(new Object[0]));
+    }
+
     @Override
     public WebTargetImpl queryParam(String name, Object... values) throws NullPointerException {
         abortIfClosed();
@@ -244,6 +254,7 @@ public class WebTargetImpl implements WebTarget {
         return newInstance(client, copy, configuration);
     }
 
+    @SuppressWarnings("unused")
     public WebTargetImpl queryParams(MultivaluedMap<String, Object> parameters)
             throws IllegalArgumentException, NullPointerException {
         abortIfClosed();

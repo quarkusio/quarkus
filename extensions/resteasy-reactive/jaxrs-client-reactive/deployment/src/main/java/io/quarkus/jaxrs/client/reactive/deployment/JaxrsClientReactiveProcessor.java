@@ -964,6 +964,12 @@ public class JaxrsClientReactiveProcessor {
                         }
                     }
 
+                    for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {
+                        enricher.getEnricher()
+                                .forWebTarget(methodCreator, index, interfaceClass, jandexMethod, methodTarget,
+                                        generatedClasses);
+                    }
+
                     AssignableResultHandle builder = methodCreator.createVariable(Invocation.Builder.class);
                     if (method.getProduces() == null || method.getProduces().length == 0) { // this should never happen!
                         methodCreator.assign(builder, methodCreator.invokeInterfaceMethod(
@@ -1456,6 +1462,12 @@ public class JaxrsClientReactiveProcessor {
 
                     // if the response is multipart, let's add it's class to the appropriate collection:
                     addResponseTypeIfMultipart(multipartResponseTypes, jandexSubMethod, index);
+
+                    for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {
+                        enricher.getEnricher()
+                                .forSubResourceWebTarget(subMethodCreator, index, interfaceClass, subInterface,
+                                        jandexMethod, jandexSubMethod, methodTarget, generatedClasses);
+                    }
 
                     AssignableResultHandle builder = subMethodCreator.createVariable(Invocation.Builder.class);
                     if (method.getProduces() == null || method.getProduces().length == 0) { // this should never happen!

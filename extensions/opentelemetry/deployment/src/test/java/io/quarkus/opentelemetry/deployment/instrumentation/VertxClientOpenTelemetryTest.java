@@ -22,12 +22,14 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.HttpMethod;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -42,7 +44,11 @@ import io.vertx.ext.web.client.WebClient;
 public class VertxClientOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClass(TestSpanExporter.class));
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .withConfigurationResource("application-default.properties");
 
     @Inject
     TestSpanExporter spanExporter;

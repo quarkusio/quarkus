@@ -50,7 +50,10 @@ public class InjectionResource {
         Assertions.assertNotNull(span, "Span cannot be injected");
         Assertions.assertNotNull(openTelemetry, "Baggage cannot be injected");
 
-        Assertions.assertEquals(GlobalOpenTelemetry.get(), openTelemetry);
+        // GlobalOpenTelemetry.get() returns an Obfuscated OpenTelemetry instance that
+        // is not equal to the injected one but contains the same objects.
+        Assertions.assertEquals(GlobalOpenTelemetry.get().getTracerProvider(), openTelemetry.getTracerProvider());
+        Assertions.assertEquals(GlobalOpenTelemetry.get().getPropagators(), openTelemetry.getPropagators());
         Assertions.assertEquals(Span.current().getSpanContext(), span.getSpanContext());
         Assertions.assertEquals(Baggage.current().size(), baggage.size());
         baggage.asMap().forEach((s, baggageEntry) -> Assertions.assertEquals(baggageEntry, baggage.asMap().get(s)));

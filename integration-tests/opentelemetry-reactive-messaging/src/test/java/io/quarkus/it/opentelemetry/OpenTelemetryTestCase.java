@@ -2,6 +2,8 @@ package io.quarkus.it.opentelemetry;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -43,6 +45,7 @@ public class OpenTelemetryTestCase {
                 .when().get("/export/clear")
                 .then()
                 .statusCode(204);
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 0);
     }
 
     private List<Map<String, Object>> getSpans() {

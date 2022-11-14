@@ -2,7 +2,7 @@ package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
 import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.RECEIVE;
 import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.SEND;
-import static io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.config.build.OtelBuildConfig.INSTRUMENTATION_NAME;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.propagation.TextMapGetter;

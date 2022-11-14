@@ -3,11 +3,10 @@ package io.quarkus.opentelemetry.deployment;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -24,7 +23,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
@@ -33,9 +34,14 @@ public class OpenTelemetryDevServicesDatasourcesTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, InMemorySpanExporterProducer.class)
-                    .add(new StringAsset("quarkus.datasource.db-kind=h2\n" +
-                            "quarkus.datasource.jdbc.telemetry=true\n"),
+                    .addClasses(HelloResource.class, TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+                    .add(new StringAsset(
+                            "quarkus.datasource.db-kind=h2\n" +
+                                    "quarkus.datasource.jdbc.telemetry=true\n" +
+                                    "quarkus.otel.traces.exporter=test-span-exporter\n" +
+                                    "quarkus.otel.bsp.schedule.delay=50\n"),
                             "application.properties"));
 
     @Test
@@ -43,25 +49,19 @@ public class OpenTelemetryDevServicesDatasourcesTest {
 
         final String greeting1 = "Hello World";
         createGreeting(greeting1);
-        verifyNumOfInsertedTraces(1);
+        verifyNumOfInsertedTraces(6, 1);
 
         // Test a change in resources that disables OTEL
         TEST.modifyResourceFile("application.properties",
-                s -> s + "quarkus.datasource.jdbc.telemetry.enabled=false\n");
+                s -> s + "quarkus.datasource.jdbc.telemetry=false\n");
         final String greeting2 = "Hi";
         createGreeting(greeting2);
-        verifyNumOfInsertedTraces(0);
-
-        // Test a change in resources that enables OTEL
-        TEST.modifyResourceFile("application.properties", s -> s.replace("quarkus.datasource.jdbc.telemetry.enabled=false",
-                "quarkus.datasource.jdbc.telemetry.enabled=true"));
-        final String greeting3 = "Hey";
-        createGreeting(greeting3);
-        verifyNumOfInsertedTraces(1);
+        verifyNumOfInsertedTraces(0, 0);
     }
 
-    private void verifyNumOfInsertedTraces(int insertCount) {
-        RestAssured.get("/hello/greetings-insert-count").then().statusCode(200)
+    private void verifyNumOfInsertedTraces(int expectedSpans, int insertCount) {
+        RestAssured.get("/hello/greetings-insert-count/" + expectedSpans).then()
+                .statusCode(200)
                 .body(Matchers.is(Integer.toString(insertCount)));
     }
 
@@ -75,7 +75,7 @@ public class OpenTelemetryDevServicesDatasourcesTest {
     public static class HelloResource {
 
         @Inject
-        InMemorySpanExporter exporter;
+        TestSpanExporter spanExporter;
 
         @Inject
         AgroalDataSource dataSource;
@@ -96,9 +96,10 @@ public class OpenTelemetryDevServicesDatasourcesTest {
         }
 
         @GET
-        @Path("/greetings-insert-count")
-        public long greetingsInsertCount() {
-            return exporter.getFinishedSpanItems().stream()
+        @Path("/greetings-insert-count/{expectedSpans}")
+        public long greetingsInsertCount(@PathParam("expectedSpans") int expectedSpans) {
+            List<SpanData> spans = spanExporter.getFinishedSpanItems(expectedSpans);
+            return spans.stream()
                     .filter(span -> "INSERT".equals(span.getAttributes().get(AttributeKey.stringKey("db.operation")))).count();
         }
 
@@ -115,16 +116,6 @@ public class OpenTelemetryDevServicesDatasourcesTest {
                     statement.execute("CREATE TABLE greeting (id int, greeting varchar)");
                 }
             }
-        }
-    }
-
-    @ApplicationScoped
-    static class InMemorySpanExporterProducer {
-
-        @jakarta.enterprise.inject.Produces
-        @Singleton
-        InMemorySpanExporter inMemorySpanExporter() {
-            return InMemorySpanExporter.create();
         }
     }
 }

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -55,6 +56,7 @@ public class OpenTelemetryTest {
     @TestHTTPResource("param")
     URL pathParamUrl;
 
+    @BeforeEach
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
@@ -604,6 +606,7 @@ public class OpenTelemetryTest {
         } catch (IOException e) {
             fail("Not failing graciously. Got: " + e.getMessage());
         }
+        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 1);
     }
 
     private void verifyResource(Map<String, Object> spanData) {

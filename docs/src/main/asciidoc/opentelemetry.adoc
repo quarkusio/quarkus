@@ -8,8 +8,19 @@ include::_attributes.adoc[]
 :categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide distributed tracing for interactive web applications.
 
-This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] to provide
+This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 distributed tracing for interactive web applications.
+
+OpenTelemetry Metrics and Logging are not yet supported.
+
+[NOTE]
+====
+- Quarkus now supports the OpenTelemetry Autoconfiguration for Traces. The configurations match what you can see at
+https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md[OpenTelemetry SDK Autoconfigure]
+with the `quarkus.*` prefix.
+
+- Extensions and the libraries they provide, are directly instrumented in Quarkus. The *use of the https://opentelemetry.io/docs/instrumentation/java/automatic/[OpenTelemetry Agent] is not needed nor recommended* due to context propagation issues between imperative and reactive libraries.
+====
 
 == Prerequisites
 
@@ -97,30 +108,29 @@ endpoint will be traced without any required code changes.
 
 === Create the configuration
 
-There are two ways to configure the default OTLP gRPC Exporter within the application.
-
-The first approach is by providing the properties within the `src/main/resources/application.properties` file:
+There are no mandatory configurations for the extension to work. If you need to change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
 
 [source,properties]
 ----
 quarkus.application.name=myservice // <1>
-quarkus.opentelemetry.enabled=true // <2>
-quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:4317 // <3>
-
-quarkus.opentelemetry.tracer.exporter.otlp.headers=Authorization=Bearer my_secret // <4>
-
-quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{parentId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n  // <5>
+quarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4317 // <2>
+quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{parentId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n  // <3>
 
 # Alternative to the console log
-quarkus.http.access-log.pattern="...traceId=%{X,traceId} spanId=%{X,spanId}" // <6>
+quarkus.http.access-log.pattern="...traceId=%{X,traceId} spanId=%{X,spanId}" // <4>
 ----
 
 <1> All spans created from the application will include an OpenTelemetry `Resource` indicating the span was created by the `myservice` application. If not set, it will default to the artifact id.
-<2> Whether OpenTelemetry is enabled or not. The default is `true`, but shown here to indicate how it can be disabled
-<3> gRPC endpoint for sending spans
-<4> Optional gRPC headers commonly used for authentication
-<5> Add tracing information into log message.
-<6> You can also only put the trace info into the access log. In this case you must omit the info in the console log format.
+<2> gRPC endpoint to send spans. If not set, it will default to `http://localhost:4317`.
+<3> Add tracing information into log messages.
+<4> You can also only put the trace info into the access log. In this case you must omit the info in the console log format.
+
+[NOTE]
+====
+All configurations have been updated from `quarkus.opentelemetry.\*` -> `quarkus.otel.*`
+
+The legacy configurations are now deprecated but will still work during a transition period.
+====
 
 == Run the application
 
@@ -128,42 +138,10 @@ The first step is to configure and start the https://opentelemetry.io/docs/colle
 
 [NOTE]
 ====
-Jaeger supports the OTel protocols out of the box since version 1.35.
-In this case you do not need to install the collector but can directly send the trace data to Jaeger (after enabling OTLP receivers there, see e.g. this
-https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c[blog entry]).
+Jaeger-all-in-one includes the Jaeger agent, an OTel collector, and the query service/UI.
+You do not need to install a separated collector. You can directly send the trace data to Jaeger (after enabling OTLP receivers there, see e.g. this
+https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c[blog entry] for details).
 ====
-
-Configure the OpenTelemetry Collector by creating an `otel-collector-config.yaml` file:
-
-[source,yaml,subs="attributes"]
-----
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: otel-collector:4317
-
-exporters:
-  jaeger:
-    endpoint: jaeger-all-in-one:14250
-    tls:
-      insecure: true
-
-processors:
-  batch:
-
-extensions:
-  health_check:
-
-service:
-  extensions: [health_check]
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [jaeger]
-
-----
 
 Start the OpenTelemetry Collector and Jaeger system via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
@@ -176,21 +154,15 @@ services:
   jaeger-all-in-one:
     image: jaegertracing/all-in-one:latest
     ports:
-      - "16686:16686"
-      - "14268:14268"
-      - "14250:14250"
-  # Collector
-  otel-collector:
-    image: otel/opentelemetry-collector:latest
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:Z
-    ports:
-      - "13133:13133" # Health_check extension
+      - "16686:16686" # Jaeger UI
+      - "14268:14268" # Receive legacy OpenTracing traces, optional
       - "4317:4317"   # OTLP gRPC receiver
-    depends_on:
-      - jaeger-all-in-one
+      - "4318:4318"   # OTLP HTTP receiver, not yet used by Quarkus, optional
+      - "14250:14250" # Receive from external otel-collector, optional
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
 ----
+You should remove the optional ports you don't need them.
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
 
@@ -198,7 +170,7 @@ include::{includes}/devtools/dev.adoc[]
 
 or if configuring the OTLP gRPC endpoint via JVM arguments:
 
-:dev-additional-parameters: -Djvm.args="-Dquarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:4317"
+:dev-additional-parameters: -Djvm.args="-Dquarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4317"
 include::{includes}/devtools/dev.adoc[]
 :!dev-additional-parameters:
 
@@ -222,7 +194,7 @@ When the first request has been submitted, you will be able to see the tracing i
 
 Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
 
-Hit `CTRL+C` to stop the application.
+Hit `CTRL+C` or type `q` to stop the application.
 
 === JDBC
 
@@ -363,8 +335,38 @@ to the collector.
 You can set a https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#built-in-samplers[built-in sampler]
 simply by setting the desired sampler config described in the <<configuration-reference>>.
 
-If you need to use a custom sampler or to use one that is provided by one of the https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions[OpenTelemetry SDK Extensions]
-you can create a sampler producer. The OpenTelemetry extension will detect the `Sampler` CDI bean and will use it when configuring the tracer producer.
+[NOTE]
+====
+Quarkus 3.0 introduced breaking changes on the configuration.
+
+Sampler related property names and values change to comply with the latest Java OpenTelemetry SDK. During a transition period it will be possible to set the new configuration values in the old property because we are mapping  `quarkus.opentelemetry.tracer.sampler` -> `quarkus.otel.traces.sampler`.
+
+If the sampler is parent based, there is no need to set, the now dropped property, `quarkus.opentelemetry.tracer.sampler.parent-based`.
+
+The values you need to set on `quarkus.opentelemetry.tracer.sampler` are now:
+
+|===
+|Old Sampler config value |New Sampler config value|New Sampler config value (Parent based)
+
+|`on`
+|`always_on`
+|`parentbased_always_on`
+
+|`off`
+|`always_off`
+|`parentbased_always_off`
+
+|`ratio`
+|`traceidratio`
+|`parentbased_traceidratio`
+|===
+====
+
+If you need to use a custom sampler there are now 2 different ways:
+
+==== Sampler CDI Producer
+
+You can create a sampler CDI producer. The Quarkus OpenTelemetry extension will detect the `Sampler` CDI bean and will use it when configuring the Tracer.
 
 [source,java]
 ----
@@ -381,6 +383,56 @@ public class CustomConfiguration {
     }
 }
 ----
+
+==== OTel Sampler SPI
+
+This will use the SPI hooks available with the OTel Autoconfiguration.
+You can create a simple Sampler class:
+[source,java]
+----
+public class CustomSPISampler implements Sampler {
+    @Override
+    public SamplingResult shouldSample(Context context,
+            String s,
+            String s1,
+            SpanKind spanKind,
+            Attributes attributes,
+            List<LinkData> list) {
+        // Do some sampling here
+        return Sampler.alwaysOn().shouldSample(context, s, s1, spanKind, attributes, list);
+    }
+
+    @Override
+    public String getDescription() {
+        return "custom-spi-sampler-description";
+    }
+}
+
+----
+Then a Sampler Provider:
+[source,java]
+----
+public class CustomSPISamplerProvider implements ConfigurableSamplerProvider {
+    @Override
+    public Sampler createSampler(ConfigProperties configProperties) {
+        return new CustomSPISampler();
+    }
+
+    @Override
+    public String getName() {
+        return "custom-spi-sampler";
+    }
+}
+----
+Write the SPI loader text file at `resources/META-INF/services` with name `io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider` containing the full qualified name of the `CustomSPISamplerProvider` class.
+
+Then activate on the configuration:
+[source,properties]
+----
+quarkus.opentelemetry.tracer.sampler=custom-spi-sampler
+----
+
+As you can see, CDI is much simpler to work with.
 
 == Additional instrumentation
 
@@ -478,5 +530,15 @@ Additional exporters will be available in the Quarkiverse https://github.com/qua
 
 [[configuration-reference]]
 == OpenTelemetry Configuration Reference
+
+Quarkus supports the OpenTelemetry Autoconfiguration for Traces.
+The configurations match what you can see at
+https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md[OpenTelemetry SDK Autoconfigure]
+adding the usual `quarkus.*` prefix.
+
+Quarkus OpenTelemetry configuration properties now have the `quarkus.otel.*` prefix.
+
+*The legacy properties* with prefix `quarkus.opentelemetry.*` are currently being mapped to the new ones as a default, during a transition period. See Default column in the details below.
+
 
 include::{generated-dir}/config/quarkus-opentelemetry.adoc[leveloffset=+1, opts=optional]

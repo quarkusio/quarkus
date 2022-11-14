@@ -16,6 +16,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -37,7 +39,10 @@ public class OpenTelemetryHttpCDILegacyTest {
                             .addClass(TestUtil.class)
                             .addClass(HelloResource.class)
                             .addClass(HelloBean.class)
-                            .addClass(TestSpanExporter.class));
+                            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .withConfigurationResource("application-default.properties");
 
     @Inject
     TestSpanExporter spanExporter;

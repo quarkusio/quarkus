@@ -72,6 +72,7 @@ class JaxRsResourceImplementor {
         LOGGER.tracef("Starting generation of '%s'", controllerClassName);
         ClassCreator classCreator = ClassCreator.builder()
                 .classOutput(classOutput).className(controllerClassName)
+                .interfaces(resourceMetadata.getResourceInterface())
                 .build();
 
         implementClassAnnotations(classCreator, resourceMetadata, resourceProperties, capabilities);

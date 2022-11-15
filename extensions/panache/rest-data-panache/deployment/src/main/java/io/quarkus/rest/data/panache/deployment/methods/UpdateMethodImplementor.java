@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 
 import javax.validation.Valid;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -134,13 +135,14 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
-                resourceMetadata.getIdType(), resourceMetadata.getEntityType());
-        methodCreator.setParameterNames(new String[] { "id", "entity" });
+                resourceMetadata.getIdType(), resourceMetadata.getEntityType(), UriInfo.class);
+        methodCreator.setParameterNames(new String[] { "id", "entity", "uriInfo" });
 
         // Add method annotations
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_UPDATE_METHOD_NAME), "{id}"));
         addPutAnnotation(methodCreator);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
+        addContextAnnotation(methodCreator.getParameterAnnotations(2));
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);

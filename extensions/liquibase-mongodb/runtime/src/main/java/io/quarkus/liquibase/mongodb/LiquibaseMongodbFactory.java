@@ -40,7 +40,7 @@ public class LiquibaseMongodbFactory {
 
     public Liquibase createLiquibase() {
         String databaseName = this.defaultDatabaseName.orElseThrow(() -> {
-            String propertyName = MongoClientBeanUtil.isDefault(this.liquibaseMongodbConfig.mongoClientName)
+            String propertyName = MongoClientBeanUtil.isDefault(this.mongoClientName)
                     ? "quarkus.mongodb.database"
                     : "quarkus.mongodb." + this.mongoClientName + ".database";
             return new IllegalArgumentException("Config property '" + propertyName + "' must be defined");

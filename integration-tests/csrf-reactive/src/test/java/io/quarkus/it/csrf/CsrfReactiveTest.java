@@ -84,12 +84,13 @@ public class CsrfReactiveTest {
             HtmlForm loginForm = htmlPage.getForms().get(0);
 
             loginForm.getInputByName("name").setValueAttribute("alice");
+            loginForm.getInputByName("file").setValueAttribute("file.txt");
 
             assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
 
             TextPage textPage = loginForm.getInputByName("submit").click();
 
-            assertEquals("alice:true:true", textPage.getContent());
+            assertEquals("alice:true:true:true", textPage.getContent());
 
             textPage = webClient.getPage("http://localhost:8081/service/hello");
             assertEquals("hello", textPage.getContent());

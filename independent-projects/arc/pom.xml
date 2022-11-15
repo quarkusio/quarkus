@@ -50,7 +50,7 @@
         <version.jakarta-annotation>1.3.5</version.jakarta-annotation>
         <version.gizmo>1.4.0.Final</version.gizmo>
         <version.jpa>2.2.3</version.jpa>
-        <version.mutiny>1.6.0</version.mutiny>
+        <version.mutiny>1.8.0</version.mutiny>
 
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>

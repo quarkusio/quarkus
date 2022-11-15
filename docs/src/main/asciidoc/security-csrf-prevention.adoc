@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 
 https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
 
-Quarkus Security provides a CSRF prevention feature which consists of a xref:resteasy-reactive.adoc[RESTEasy Reactive] server filter which creates and verifies CSRF tokens in 'application/x-www-form-urlencoded' and 'multipart/form-data' forms and a Qute HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
+Quarkus Security provides a CSRF prevention feature which consists of a xref:resteasy-reactive.adoc[RESTEasy Reactive] server filter which creates and verifies CSRF tokens in `application/x-www-form-urlencoded` and `multipart/form-data` forms and a Qute HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
 
 == Creating the Project
 
@@ -111,11 +111,11 @@ public class UserNameResource {
 ----
 <1> Inject the `csrfToken.html` as a `Template`.
 <2> Return the HTML form with a hidden form field containing a CSRF token created by the CSRF filter.
-<3> Handle the form POST request, this method can only be invoked if the CSRF filter has successfully verified the token.
+<3> Handle the POST form request, this method can only be invoked if the CSRF filter has successfully verified the token.
 
 The form POST request will fail with HTTP status `400` if the filter finds the hidden CSRF form field is missing, the CSRF cookie is missing, or if the CSRF form field and CSRF cookie values do not match.
 
-At this stage no additional configuration is needed - by default the CSRF form field and cookie name will be set to `csrf_token`, and the filter will verify the token. But let's change these names:
+At this stage no additional configuration is needed - by default the CSRF form field and cookie name will be set to `csrf_token`, and the filter will verify the token. But you can change these names if you would like:
 
 [source,properties]
 ----
@@ -123,7 +123,105 @@ quarkus.csrf-reactive.form-field-name=csrftoken
 quarkus.csrf-reactive.cookie-name=csrftoken
 ----
 
-Note that the CSRF filter has to read and cache the input stream in order to verify the token. However if you prefer you can compare the CSRF form field and cookie values in the application code:
+== Sign CSRF token
+
+You can get `HMAC` signatures created for the generated CSRF tokens and have these `HMAC` values stored as CSRF token cookies if you would like to avoid the risk of the attackers recreating the CSRF cookie token. All you need to do is to configure a token signature secret which must be at least 32 characters long:
+
+[source,properties]
+----
+quarkus.csrf-reactive.token-signature-key=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
+----
+
+== Restrict CSRF token verification
+
+Your JAX-RS endpoint may accept not only HTTP POST requests with `application/x-www-form-urlencoded` or `multipart/form-data` payloads but also payloads with other media types, either on the same or different URL paths, and therefore you would like to avoid verifying the CSRF token in such cases, for example:
+
+[source,java]
+----
+package io.quarkus.it.csrf;
+
+import javax.inject.Inject;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateInstance;
+
+@Path("/service")
+public class UserNameResource {
+
+    @Inject
+    Template csrfToken;
+
+    @GET
+    @Path("/user")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance getCsrfTokenForm() {
+        return csrfToken.instance();
+    }
+
+    <1>
+    @POST
+    @Path("/user")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String postCsrfTokenForm(@FormParam("name") String userName) {
+        return userName;
+    }
+
+    <2>
+    @POST
+    @Path("/user")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String postJson(User user) {
+        return user.name;
+    }
+
+    <3>
+    @POST
+    @Path("/users")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String postJson(User user) {
+        return user.name;
+    }
+
+    public static class User {
+        private String name;
+        public String getName() {
+            return this.name;
+        }
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+}
+----
+<1> POST form request to `/user`, CSRF token verification is enforced by the CSRF filter
+<2> POST json request to `/user`, CSRF token verification is not needed
+<3> POST json request to `/users`, CSRF token verification is not needed
+
+As you can see a CSRF token verification will be required at the `/service/user` path accepting the `application/x-www-form-urlencoded` payload, but `User` JSON representation posted to both `/service/user` and `/service/users` method will have no CSRF token and therefore the token verification has to be skipped in these cases by restricting it to the specific `/service/user` request path but also allowing not only `application/x-www-form-urlencoded` on this path:
+
+[source,properties]
+----
+# Verify CSRF token only for the `/service/user` path, ignore other paths such as `/service/users`
+quarkus.csrf-reactive.create-token-path=/service/user
+
+# If `/service/user` path accepts not only `application/x-www-form-urlencoded` payloads but also other ones such as JSON then allow them
+quarkus.csrf-reactive.require-form-url-encoded=false
+----
+
+== Verify CSRF token in the application code
+
+If you prefer to compare the CSRF form field and cookie values in the application code then you can do it as follows:
 
 [source,java]
 ----

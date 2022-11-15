@@ -1,8 +1,9 @@
 package io.quarkus.resteasy.runtime.standalone;
 
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.extractRootCause;
+
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jboss.resteasy.specimpl.ResteasyUriInfo;
@@ -23,7 +24,6 @@ import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFa
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -77,35 +77,30 @@ public class ResteasyStandaloneRecorder {
         return null;
     }
 
-    public Consumer<Route> addVertxFailureHandler(Supplier<Vertx> vertx, Executor executor, ResteasyVertxConfig config) {
+    public Handler<RoutingContext> vertxFailureHandler(Supplier<Vertx> vertx, Executor executor, ResteasyVertxConfig config) {
         if (deployment == null) {
             return null;
         } else {
-            return new Consumer<Route>() {
+            // allow customization of auth failures with exception mappers; this failure handler is only
+            // used when auth failed before RESTEasy Classic began processing the request
+            return new VertxRequestHandler(vertx.get(), deployment, contextPath,
+                    new ResteasyVertxAllocator(config.responseBufferSize), executor,
+                    readTimeout.getValue().readTimeout.toMillis()) {
+
                 @Override
-                public void accept(Route route) {
-                    // allow customization of auth failures with exception mappers; this failure handler is only
-                    // used when auth failed before RESTEasy Classic began processing the request
-                    route.failureHandler(new VertxRequestHandler(vertx.get(), deployment, contextPath,
-                            new ResteasyVertxAllocator(config.responseBufferSize), executor,
-                            readTimeout.getValue().readTimeout.toMillis()) {
+                public void handle(RoutingContext request) {
+                    if (request.failure() instanceof AuthenticationFailedException
+                            || request.failure() instanceof AuthenticationCompletionException
+                            || request.failure() instanceof AuthenticationRedirectException) {
+                        super.handle(request);
+                    } else {
+                        request.next();
+                    }
+                }
 
-                        @Override
-                        public void handle(RoutingContext request) {
-                            if (request.failure() instanceof AuthenticationFailedException
-                                    || request.failure() instanceof AuthenticationCompletionException
-                                    || request.failure() instanceof AuthenticationRedirectException) {
-                                super.handle(request);
-                            } else {
-                                request.next();
-                            }
-                        }
-
-                        @Override
-                        protected void setCurrentIdentityAssociation(RoutingContext routingContext) {
-                            // security identity is not available as authentication failed
-                        }
-                    });
+                @Override
+                protected void setCurrentIdentityAssociation(RoutingContext routingContext) {
+                    // security identity is not available as authentication failed
                 }
             };
         }
@@ -115,7 +110,8 @@ public class ResteasyStandaloneRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
-                if (event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+                if (deployment != null
+                        && event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
 
                     // only replace default auth failure handler if we can extract URI info
                     // as org.jboss.resteasy.plugins.server.BaseHttpRequest requires it;
@@ -135,13 +131,8 @@ public class ResteasyStandaloneRecorder {
 
                         @Override
                         public void accept(RoutingContext event, Throwable throwable) {
-                            if (event.failed()) {
-                                //auth failure handler should never get called from route failure handlers
-                                //but if we get to this point bad things have happened,
-                                //so it is better to send a response than to hang
-                                event.end();
-                            } else {
-                                event.fail(throwable);
+                            if (!event.failed()) {
+                                event.fail(extractRootCause(throwable));
                             }
                         }
                     });

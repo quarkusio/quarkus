@@ -2293,9 +2293,7 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle paramAnnotations, int paramIndex) {
 
         AssignableResultHandle result = methodCreator.createVariable(WebTarget.class);
-        BranchResult isValueNull = methodCreator.ifNull(webTarget);
-        BytecodeCreator notNullValue = isValueNull.falseBranch();
-        BranchResult isParamNull = notNullValue.ifNull(queryParamHandle);
+        BranchResult isParamNull = methodCreator.ifNull(queryParamHandle);
         BytecodeCreator notNullParam = isParamNull.falseBranch();
         if (isMap(type, index)) {
             var resolvesTypes = resolveMapTypes(type, index, jandexMethod);
@@ -2371,11 +2369,7 @@ public class JaxrsClientReactiveProcessor {
                     paramArray, componentType, result);
         }
 
-        BytecodeCreator nullParam = isParamNull.trueBranch();
-        nullParam.assign(result, webTarget);
-
-        BytecodeCreator nullValue = isValueNull.trueBranch();
-        nullValue.assign(result, nullValue.loadNull());
+        isParamNull.trueBranch().assign(result, webTarget);
 
         return result;
     }

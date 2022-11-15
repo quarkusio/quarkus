@@ -4,6 +4,7 @@ import static io.quarkus.deployment.Feature.GRPC_CLIENT;
 import static io.quarkus.grpc.deployment.GrpcDotNames.ADD_BLOCKING_CLIENT_INTERCEPTOR;
 import static io.quarkus.grpc.deployment.GrpcDotNames.CONFIGURE_STUB;
 import static io.quarkus.grpc.deployment.GrpcDotNames.CREATE_CHANNEL_METHOD;
+import static io.quarkus.grpc.deployment.GrpcDotNames.MUTINY_CLIENT;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RETRIEVE_CHANNEL_METHOD;
 import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
 import static io.quarkus.grpc.deployment.ResourceRegistrationUtils.registerResourcesForProperties;
@@ -19,6 +20,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Singleton;
 
@@ -61,6 +63,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.MutinyClient;
 import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientInfo;
 import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientType;
@@ -248,9 +251,12 @@ public class GrpcClientProcessor {
                     String clientName = client.getClientName();
                     ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(clientInfo.className)
                             .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", clientName).done()
-                            .scope(Singleton.class)
+                            // Only the mutiny client can use the Application scope, the others are "final" and so need Singleton.
+                            // Using @ApplicationScoped allows the usage of @InjectMock
+                            .scope(clientInfo.type == ClientType.MUTINY_CLIENT ? ApplicationScoped.class : Singleton.class)
                             .unremovable()
                             .forceApplicationClass()
+                            .addType(MutinyClient.class)
                             .creator(new Consumer<>() {
                                 @Override
                                 public void accept(MethodCreator mc) {

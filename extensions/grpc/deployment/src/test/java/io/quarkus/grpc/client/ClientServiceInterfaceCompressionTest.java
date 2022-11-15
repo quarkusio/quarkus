@@ -14,6 +14,7 @@ import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.GreeterClient;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.GrpcClientUtils;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -31,7 +32,7 @@ public class ClientServiceInterfaceCompressionTest {
 
     @Test
     public void testCallOptions() {
-        GreeterClient client = (GreeterClient) consumer.service;
+        GreeterClient client = (GreeterClient) GrpcClientUtils.getProxiedObject(consumer.service);
         assertEquals("gzip", client.getStub().getCallOptions().getCompressor());
     }
 

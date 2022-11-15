@@ -3,6 +3,7 @@ package io.quarkus.grpc;
 import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.MetadataUtils;
+import io.quarkus.arc.ClientProxy;
 
 /**
  * gRPC client utilities
@@ -24,6 +25,9 @@ public class GrpcClientUtils {
         if (client == null) {
             throw new NullPointerException("Cannot attach headers to a null client");
         }
+
+        client = getProxiedObject(client);
+
         if (client instanceof AbstractStub) {
             return (T) MetadataUtils.attachHeaders((AbstractStub) client, extraHeaders);
         } else if (client instanceof MutinyClient) {
@@ -33,5 +37,14 @@ public class GrpcClientUtils {
         } else {
             throw new IllegalArgumentException("Unsupported client type " + client.getClass());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T getProxiedObject(T client) {
+        // If we get a proxy, get the actual instance.
+        if (client instanceof ClientProxy) {
+            client = (T) ((ClientProxy) client).arc_contextualInstance();
+        }
+        return client;
     }
 }

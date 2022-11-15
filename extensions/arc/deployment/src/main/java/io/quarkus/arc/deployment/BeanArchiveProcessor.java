@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -57,15 +59,15 @@ public class BeanArchiveProcessor {
 
         // Build the index for additional beans and generated bean classes
         Set<DotName> additionalIndex = new HashSet<>();
+        Set<DotName> knownMissingClasses = new HashSet<>();
         for (String beanClass : additionalBeanClasses) {
             IndexingUtil.indexClass(beanClass, additionalBeanIndexer, applicationIndex, additionalIndex,
-                    Thread.currentThread().getContextClassLoader());
+                    knownMissingClasses, Thread.currentThread().getContextClassLoader());
         }
         Set<DotName> generatedClassNames = new HashSet<>();
         for (GeneratedBeanBuildItem generatedBeanClass : generatedBeans) {
             IndexingUtil.indexClass(generatedBeanClass.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
-                    Thread.currentThread().getContextClassLoader(),
-                    generatedBeanClass.getData());
+                    knownMissingClasses, Thread.currentThread().getContextClassLoader(), generatedBeanClass.getData());
             generatedClassNames.add(DotName.createSimple(generatedBeanClass.getName().replace('/', '.')));
             generatedClass.produce(new GeneratedClassBuildItem(true, generatedBeanClass.getName(), generatedBeanClass.getData(),
                     generatedBeanClass.getSource()));
@@ -77,9 +79,14 @@ public class BeanArchiveProcessor {
             liveReloadBuildItem.setContextObject(PersistentClassIndex.class, index);
         }
 
+        Map<DotName, Optional<ClassInfo>> additionalClasses = index.getAdditionalClasses();
+        for (DotName knownMissingClass : knownMissingClasses) {
+            additionalClasses.put(knownMissingClass, Optional.empty());
+        }
+
         // Finally, index ArC/CDI API built-in classes
         return new BeanArchiveIndexBuildItem(
-                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), index.getAdditionalClasses(),
+                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), additionalClasses,
                         applicationIndex,
                         additionalBeanIndexer.complete()),
                 generatedClassNames);

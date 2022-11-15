@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
@@ -131,6 +132,11 @@ public class IndexingUtil {
 
     public static void indexClass(String className, Indexer indexer, IndexView quarkusIndex,
             Set<DotName> additionalIndex, ClassLoader classLoader) {
+        indexClass(className, indexer, quarkusIndex, additionalIndex, new HashSet<>(), classLoader);
+    }
+
+    public static void indexClass(String className, Indexer indexer, IndexView quarkusIndex,
+            Set<DotName> additionalIndex, Set<DotName> knownMissingClasses, ClassLoader classLoader) {
         DotName classDotName = DotName.createSimple(className);
         if (additionalIndex.contains(classDotName)) {
             return;
@@ -162,10 +168,11 @@ public class IndexingUtil {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
                     if (annotationStream == null) {
                         log.debugf("Could not index annotation: %s (missing class or dependency)", annotationName);
+                        knownMissingClasses.add(annotationName);
                     } else {
                         log.debugf("Index annotation: %s", annotationName);
-                        indexer.index(annotationStream);
-                        additionalIndex.add(annotationName);
+                        indexClass(annotationName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses,
+                                classLoader);
                     }
                 } catch (IOException e) {
                     throw new IllegalStateException("Failed to index: " + className, e);
@@ -173,12 +180,17 @@ public class IndexingUtil {
             }
         }
         if (superclassName != null && !superclassName.equals(OBJECT)) {
-            indexClass(superclassName.toString(), indexer, quarkusIndex, additionalIndex, classLoader);
+            indexClass(superclassName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses, classLoader);
         }
     }
 
     public static void indexClass(String className, Indexer indexer,
-            IndexView quarkusIndex, Set<DotName> additionalIndex,
+            IndexView quarkusIndex, Set<DotName> additionalIndex, ClassLoader classLoader, byte[] beanData) {
+        indexClass(className, indexer, quarkusIndex, additionalIndex, new HashSet<>(), classLoader, beanData);
+    }
+
+    public static void indexClass(String className, Indexer indexer,
+            IndexView quarkusIndex, Set<DotName> additionalIndex, Set<DotName> knownMissingClasses,
             ClassLoader classLoader, byte[] beanData) {
         DotName classDotName = DotName.createSimple(className);
         if (additionalIndex.contains(classDotName)) {
@@ -206,9 +218,15 @@ public class IndexingUtil {
         for (DotName annotationName : annotationNames) {
             if (!additionalIndex.contains(annotationName) && quarkusIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
-                    log.debugf("Index annotation: %s", annotationName);
-                    indexer.index(annotationStream);
-                    additionalIndex.add(annotationName);
+                    if (annotationStream == null) {
+                        log.debugf("Could not index annotation: %s (missing class or dependency)", annotationName);
+                        knownMissingClasses.add(annotationName);
+                    } else {
+                        log.debugf("Index annotation: %s", annotationName);
+                        indexClass(annotationName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses,
+                                classLoader);
+                        additionalIndex.add(annotationName);
+                    }
                 } catch (IOException e) {
                     throw new IllegalStateException("Failed to index: " + className, e);
                 }

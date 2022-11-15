@@ -576,9 +576,13 @@ It may be empty, i.e. the start tag ends with `/`: `{#myEmptySection /}`.
 Sections usually contain nested expressions and other sections.
 The end tag starts with `/` and contains the name of the section (optional): `{#if foo}Foo!{/if}` or `{#if foo}Foo!{/}`.
 
-The start tag can also define parameters: `{#if item.isActive}`.
-Parameters are separated by one or more spaces. 
-However, parameters can have optional names separated by the equals sign prefixed and suffixed with any number of spaces, e.g. `{#let id='Foo'}` and `{#let id = 'Foo'}` are equivalents where the name of the parameter is `id` and the value is `Foo`.
+A start tag can define parameters with optional names, e.g. `{#if item.isActive}` and `{#let foo=1 bar=false}`.
+Parameters are separated by one or more spaces.
+Names are separated from the values by the equals sign.
+Names and values can be prefixed and suffixed with any number of spaces, e.g. `{#let id='Foo'}` and `{#let id  = 'Foo'}` are equivalents where the name of the parameter is `id` and the value is `Foo`.
+Values can be grouped using parentheses, e.g. `{#let id=(item.id ?: 42)}` where the name is `id` and the value is `item.id ?: 42`. 
+Sections can interpret parameter values in any way, e.g. take the value as is.
+However, in most cases the parameter value is registered as an <<expressions,expression>> and evaluated before use.
 
 A section may contain several content *blocks*. 
 The "main" block is always present.
@@ -903,14 +907,15 @@ This section allows you to define named local variables:
 
 [source,html]
 ----
-{#let myParent=order.item.parent isActive=false age=10} <1>
+{#let myParent=order.item.parent isActive=false age=10 price=(order.price + 10)} <1><2>
   <h1>{myParent.name}</h1>
   Is active: {isActive}
   Age: {age}
-{/let} <2>
+{/let} <3>
 ----
-<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>.
-<2> Keep in mind that the variable is not available outside the `let` section that defines it.
+<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>, i.e. `isActive=false` and `age=10`.
+<2> The infix notation is only supported if parentheses are used for grouping, e.g. `price=(order.price + 10)` is equivalent to `price=order.price.plus(10)`.
+<3> Keep in mind that the variable is not available outside the `let` section that defines it.
 
 If a key of a section parameter (aka the name of the local variable) ends with a `?` then the local variable is only set if the key without the `?` suffix resolves to `null` or _"not found"_:
 
@@ -1547,7 +1552,7 @@ On the other hand, if the value is set (e.g. via `TemplateInstance.data("foo", "
 
 The type of a default value must be assignable to the type of the parameter declaration, i.e. the following parameter declaration is incorrect and results in a build failure: `{@org.acme.Foo foo=1}`.
 
-TIP: The default value is actually an <<expressions,expression>>. So the default value does not have to be a literal (such as `42` or `true`). For example, you can leverage the `@TemplateEnum` and specify an enum constant as a default value of a parameter declaration: `{@org.acme.MyEnum myEnum=MyEnum:FOO}`. However, the infix notation is not supported in default values.
+TIP: The default value is actually an <<expressions,expression>>. So the default value does not have to be a literal (such as `42` or `true`). For example, you can leverage the `@TemplateEnum` and specify an enum constant as a default value of a parameter declaration: `{@org.acme.MyEnum myEnum=MyEnum:FOO}`. However, the infix notation is not supported in default values unless the parentheses are used for grouping, e.g. `{@org.acme.Foo foo=(foo1 ?: foo2)}``.
 
 IMPORTANT: The type of a default value is not validated in <<standalone, Qute standalone>>.
 

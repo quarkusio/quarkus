@@ -103,6 +103,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
                 resourceMetadata.getEntityType());
+        methodCreator.setParameterNames(new String[] { "entity" });
 
         // Add method annotations
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));

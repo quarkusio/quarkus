@@ -235,10 +235,10 @@ public class FortuneResource {
         var quotes = getQuotes(fortunes.size()).await().indefinitely();
 
         // we append each quote to each fortune
-        for(int i=0; i  < fortunes.size();i ++){
-            fortunes.get(i).title+= "   -  "+quotes.get(i);
+        for(int i=0; i  < fortunes.size(); i ++){
+            fortunes.get(i).title += "   -  " + quotes.get(i);
         }
-        return todos;
+        return fortunes;
     }
 
     @GET
@@ -254,12 +254,12 @@ public class FortuneResource {
 
         // we now need to combine the two reactive streams
         // before returning the result to the user
-        return Uni.combine().all().unis(fortunes,quotes).asTuple().onItem().transform(tuple -> {
-            var todoList=tuple.getItem1();
+        return Uni.combine().all().unis(fortunes, quotes).asTuple().onItem().transform(tuple -> {
+            var todoList = tuple.getItem1();
             //can await it since it is already resolved
             var quotesList = tuple.getItem2();
-            for(int i=0; i  < todoList.size();i ++){
-                            todoList.get(i).title+= "   -  "+quotesList.get(i);
+            for(int i=0; i  < todoList.size(); i ++){
+                todoList.get(i).title += "   -  " + quotesList.get(i);
             }
             return todoList;
         });
@@ -276,12 +276,11 @@ public class FortuneResource {
         var quotes = getQuotes(fortunes.size()).await().indefinitely();
 
         //we append each quote to each fortune
-        for(int i=0; i  < fortunes.size();i ++){
-            fortunes.get(i).title+= "   -  "+quotes.get(i);
+        for(int i=0; i  < fortunes.size(); i ++){
+            fortunes.get(i).title += "   -  " + quotes.get(i);
         }
-        return todos;
+        return fortunes;
     }
-
 }
 ----
 
@@ -292,7 +291,7 @@ In this situation, the platform thread is blocked exactly as it would have been 
 
 According to link:{vthreadjep}[JEP 425] this can happen in two situations:
 
-- when a virtual thread executes performs a blocking operation inside a `synchronized` block or method
+- when a virtual thread performs a blocking operation inside a `synchronized` block or method
 - when it executes a blocking operation inside a native method or a foreign function
 
 It can be fairly easy to avoid these situations in our own code, but it is hard to verify every dependency we use.
@@ -413,7 +412,7 @@ reactive implementation.
 == A point about performance
 
 Our experiments seem to indicate that Quarkus with virtual threads will scale better than Quarkus blocking (offloading
-the computation on a pool of platform worker threads) but not as well Quarkus reactive.
+the computation on a pool of platform worker threads) but not as well as Quarkus reactive.
 The memory consumption especially might be an issue: if your system needs to keep its memory footprint low we would
 advise you stick to using reactive constructs.
 
@@ -423,7 +422,7 @@ This was illustrated in the issue that we will now describe.
 
 === The Netty problem
 For JSON serialization, Netty uses their custom implementation of thread locals, `FastThreadLocal` to store buffers.
-When using virtual threads in quarkus, then number of virtual threads simultaneously living in the service is directly
+When using virtual threads in quarkus, the number of virtual threads simultaneously living in the service is directly
 related to the incoming traffic.
 It is possible to get hundreds of thousands, if not millions, of them.
 
@@ -494,7 +493,7 @@ Instead, you want to specify them all in the configuration of the `quarkus-maven
 </plugin>
 ----
 
-If you don't want to put specify the opening the `java.lang` module in your pom.xml file, you can also specify it as an argument
+If you don't want to specify the opening of the `java.lang` module in your pom.xml file, you can also specify it as an argument
 when you start the dev mode.
 
 The configuration of the quarkus-maven-plugin will be simpler:

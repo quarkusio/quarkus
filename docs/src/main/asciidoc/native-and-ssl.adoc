@@ -248,7 +248,7 @@ The easiest way to do so is by setting `quarkus.native.additional-build-args`. F
 quarkus.native.additional-build-args=-J-Djavax.net.ssl.trustStore=/tmp/mycerts,-J-Djavax.net.ssl.trustStorePassword=changeit
 ----
 
-will ensure that the certificates of `/tmp/mycerts` are baked into the native binary and used *in addition* to the default `cacerts`.
+will ensure that the certificates of `/tmp/mycerts` are baked into the native binary and used *instead* of the default `cacerts`.
 The file containing the custom TrustStore does *not* (and probably should not) have to be present at runtime as its content has been baked into the native binary.
 
 === Run time configuration

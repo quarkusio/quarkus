@@ -1,7 +1,8 @@
 package io.quarkus.hibernate.orm.rest.data.panache.deployment;
 
 import static io.quarkus.deployment.Feature.HIBERNATE_ORM_REST_DATA_PANACHE;
-import static io.quarkus.rest.data.panache.deployment.utils.ResourceMethodListenerUtils.getListenersByEntityType;
+import static io.quarkus.rest.data.panache.deployment.utils.EntityTypeUtils.getEntityFields;
+import static io.quarkus.rest.data.panache.deployment.utils.EntityTypeUtils.getListenersByEntityType;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
@@ -102,7 +103,8 @@ class HibernateOrmPanacheRestProcessor {
                     classOutput, dataAccessImplementor, resourceInterface, entityType, listenersForEntityType);
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
+                            getEntityFields(index.getIndex(), entityType))));
         }
     }
 
@@ -138,7 +140,8 @@ class HibernateOrmPanacheRestProcessor {
                     new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
+                            getEntityFields(index.getIndex(), entityType))));
         }
     }
 

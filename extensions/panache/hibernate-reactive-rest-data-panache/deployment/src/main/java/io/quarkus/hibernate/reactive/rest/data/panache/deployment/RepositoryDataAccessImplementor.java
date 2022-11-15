@@ -3,6 +3,7 @@ package io.quarkus.hibernate.reactive.rest.data.panache.deployment;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.annotation.Annotation;
+import java.util.Map;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
@@ -39,26 +40,28 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
-     * Implements <code>repository.findAll().page(page).list()</code>
+     * Implements <code>repository.find(query, params).page(page).list()</code>
      */
     @Override
-    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
-        ResultHandle query = creator.invokeInterfaceMethod(
-                ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class), getRepositoryInstance(creator));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
-        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), query);
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeInterfaceMethod(
+                ofMethod(PanacheRepositoryBase.class, "find", PanacheQuery.class, String.class, Map.class),
+                getRepositoryInstance(creator), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), panacheQuery);
     }
 
     /**
-     * Implements <code>repository.findAll(sort).page(page).list()</code>
+     * Implements <code>repository.findAll(query, sort, params).page(page).list()</code>
      */
     @Override
-    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
-        ResultHandle query = creator.invokeInterfaceMethod(
-                ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class, Sort.class),
-                getRepositoryInstance(creator), sort);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
-        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), query);
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort, ResultHandle query,
+            ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeInterfaceMethod(
+                ofMethod(PanacheRepositoryBase.class, "find", PanacheQuery.class, String.class, Sort.class, Map.class),
+                getRepositoryInstance(creator), query, sort, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), panacheQuery);
     }
 
     /**

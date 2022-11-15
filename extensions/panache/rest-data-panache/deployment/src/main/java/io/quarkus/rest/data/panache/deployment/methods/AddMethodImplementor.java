@@ -5,6 +5,7 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 
 import javax.validation.Valid;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.ClassCreator;
@@ -102,13 +103,14 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
-                resourceMetadata.getEntityType());
-        methodCreator.setParameterNames(new String[] { "entity" });
+                resourceMetadata.getEntityType(), UriInfo.class);
+        methodCreator.setParameterNames(new String[] { "entity", "uriInfo" });
 
         // Add method annotations
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addPostAnnotation(methodCreator);
+        addContextAnnotation(methodCreator.getParameterAnnotations(1));
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);

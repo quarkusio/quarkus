@@ -888,7 +888,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleBeanParamMethod = classContext.classCreator.getMethodCreator(
-                                    handleBeanParamDescriptor);
+                                    handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
@@ -921,7 +921,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleHeaderMethod = classContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
@@ -939,7 +939,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleCookieMethod = classContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1272,7 +1272,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleBeanParamMethod = subContext.classCreator.getMethodCreator(
-                                    handleBeanParamDescriptor);
+                                    handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1308,7 +1308,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleHeaderMethod = subContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1330,7 +1330,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleCookieMethod = subContext.classCreator.getMethodCreator(
-                                    handleCookieDescriptor);
+                                    handleCookieDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1379,7 +1379,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleBeanParamMethod = ownerContext.classCreator.getMethodCreator(
-                                    handleBeanParamDescriptor);
+                                    handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1414,7 +1414,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleHeaderMethod = subContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1432,7 +1432,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleCookieMethod = subContext.classCreator.getMethodCreator(
-                                    handleCookieDescriptor);
+                                    handleCookieDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                     .createVariable(Invocation.Builder.class);

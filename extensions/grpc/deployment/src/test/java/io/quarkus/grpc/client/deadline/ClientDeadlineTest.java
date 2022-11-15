@@ -20,6 +20,7 @@ import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.GrpcClientUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ClientDeadlineTest {
@@ -36,7 +37,7 @@ public class ClientDeadlineTest {
 
     @Test
     public void testCallOptions() {
-        GreeterClient client = (GreeterClient) consumer.service;
+        GreeterClient client = (GreeterClient) GrpcClientUtils.getProxiedObject(consumer.service);
         Deadline deadline = client.getStub().getCallOptions().getDeadline();
         assertNotNull(deadline);
         HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("Scaladar").build()).onFailure()

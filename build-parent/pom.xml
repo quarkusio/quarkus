@@ -159,7 +159,7 @@
         <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
-        <platform.quarkus.native.builder-image>graalvm</platform.quarkus.native.builder-image>
+        <platform.quarkus.native.builder-image>mandrel</platform.quarkus.native.builder-image>
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>

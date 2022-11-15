@@ -715,14 +715,10 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         if: startsWith(matrix.os-name, 'windows')
         with:
-          version: 'latest'
+          version: 'mandrel-latest'
           java-version: '17'
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install native-image component
-        if: startsWith(matrix.os-name, 'windows')
-        run: |
-          gu.cmd install native-image
       # We do this so we can get better analytics for the downloaded version of the build images
       - name: Update Docker Client User Agent
         shell: bash

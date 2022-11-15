@@ -727,8 +727,12 @@ public class NativeImageBuildStep {
                  */
                 handleAdditionalProperties(nativeImageArgs);
 
-                nativeImageArgs.add(
-                        "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
+                // Work around https://github.com/quarkusio/quarkus/issues/29275
+                if (!(nativeConfig.additionalBuildArgs.isPresent()
+                        && nativeConfig.additionalBuildArgs.get().contains("--gc=epsilon"))) {
+                    nativeImageArgs.add(
+                            "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
+                }
                 nativeImageArgs.add("-H:+AllowFoldMethods");
 
                 if (nativeConfig.headless) {

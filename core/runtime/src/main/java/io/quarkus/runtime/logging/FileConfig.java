@@ -1,6 +1,7 @@
 package io.quarkus.runtime.logging;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.util.Optional;
 import java.util.logging.Level;
 
@@ -45,6 +46,12 @@ public class FileConfig {
      */
     @ConfigItem
     Optional<String> filter;
+
+    /**
+     * The character encoding used
+     */
+    @ConfigItem
+    Optional<Charset> encoding;
 
     /**
      * File async logging config

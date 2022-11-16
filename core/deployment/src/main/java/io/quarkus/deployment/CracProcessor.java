@@ -48,24 +48,37 @@ public class CracProcessor {
 
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public void generateClassListFromApplication(
-            CracConfig cc,
+            CracConfig config,
+            Optional<CracDefaultValueBuildItem> defaultVal,
             BuildProducer<PreloadClassBuildItem> producer,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<GeneratedClassBuildItem> generatedClasses) {
-        if (cc.generateApplicationClassList) {
+        if (config.enable.isPresent()) {
+            if (!config.enable.get()) {
+                return;
+            }
+        } else if (defaultVal == null || !defaultVal.isPresent() || !defaultVal.get().isDefaultValue()) {
+            return;
+        }
+
+        if (config.generateApplicationClassList) {
             for (Set<TransformedClassesBuildItem.TransformedClass> transformedSet : transformedClasses
                     .getTransformedClassesByJar().values()) {
                 for (TransformedClassesBuildItem.TransformedClass transformed : transformedSet) {
                     String className = transformed.getClassName();
-                    producer.produce(new PreloadClassBuildItem(className));
+                    if (className != null) {
+                        producer.produce(new PreloadClassBuildItem(className));
+                    }
                 }
             }
 
             for (GeneratedClassBuildItem i : generatedClasses) {
                 if (i.isApplicationClass()) {
-                    String cn = i.getName().replace("/", ".");
-                    producer.produce(new PreloadClassBuildItem(cn));
+                    if (i.getName() != null) {
+                        String cn = i.getName().replace("/", ".");
+                        producer.produce(new PreloadClassBuildItem(cn));
+                    }
                 }
             }
 

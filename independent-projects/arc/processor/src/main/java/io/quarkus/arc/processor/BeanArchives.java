@@ -55,12 +55,11 @@ public final class BeanArchives {
      * @return the final bean archive index
      */
     public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader,
-            Map<DotName, Optional<ClassInfo>> persistentClassIndex,
-            IndexView... applicationIndexes) {
+            Map<DotName, Optional<ClassInfo>> additionalClasses, IndexView... applicationIndexes) {
         List<IndexView> indexes = new ArrayList<>();
         Collections.addAll(indexes, applicationIndexes);
         indexes.add(buildAdditionalIndex());
-        return new IndexWrapper(CompositeIndex.create(indexes), deploymentClassLoader, persistentClassIndex);
+        return new IndexWrapper(CompositeIndex.create(indexes), deploymentClassLoader, additionalClasses);
     }
 
     private static IndexView buildAdditionalIndex() {

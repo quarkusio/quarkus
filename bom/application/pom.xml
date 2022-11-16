@@ -119,7 +119,7 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.1.214</h2.version>
         <postgresql-jdbc.version>42.5.0</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.0.9</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.1.0</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>11.2.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -4976,6 +4976,16 @@
                 <groupId>org.mariadb.jdbc</groupId>
                 <artifactId>mariadb-java-client</artifactId>
                 <version>${mariadb-jdbc.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>jcl-over-slf4j</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>mysql</groupId>

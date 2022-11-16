@@ -4,6 +4,8 @@ import static io.quarkus.arc.processor.MethodDescriptors.MAP_PUT;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_EXCEPTION_MAPPER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAM;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
@@ -106,6 +108,8 @@ class RestClientReactiveProcessor {
             REGISTER_PROVIDERS,
             CLIENT_HEADER_PARAM,
             CLIENT_HEADER_PARAMS,
+            CLIENT_QUERY_PARAM,
+            CLIENT_QUERY_PARAMS,
             REGISTER_CLIENT_HEADERS);
 
     @BuildStep

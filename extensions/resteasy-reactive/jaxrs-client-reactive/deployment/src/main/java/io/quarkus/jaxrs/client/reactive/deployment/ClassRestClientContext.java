@@ -91,7 +91,7 @@ class ClassRestClientContext implements AutoCloseable {
             FieldDescriptor javaMethodParamAnnotationsField = FieldDescriptor.of(classCreator.getClassName(),
                     "javaMethodParameterAnnotations" + methodIndex, Supplier.class);
             classCreator.getFieldCreator(javaMethodParamAnnotationsField)
-                    .setModifiers(Modifier.PUBLIC | Modifier.FINAL | Modifier.STATIC);
+                    .setModifiers(Modifier.FINAL | Modifier.STATIC); // needs to be package-private because it's used by subresources
             clinit.writeStaticField(javaMethodParamAnnotationsField, javaMethodParamAnnotationsHandle);
 
             methodParamAnnotationsStaticFields.put(methodIndex, javaMethodParamAnnotationsField);
@@ -117,7 +117,7 @@ class ClassRestClientContext implements AutoCloseable {
             FieldDescriptor javaMethodGenericParametersField = FieldDescriptor.of(classCreator.getClassName(),
                     "javaMethodGenericParameters" + methodIndex, Supplier.class);
             classCreator.getFieldCreator(javaMethodGenericParametersField)
-                    .setModifiers(Modifier.PUBLIC | Modifier.FINAL | Modifier.STATIC);
+                    .setModifiers(Modifier.FINAL | Modifier.STATIC); // needs to be package-private because it's used by subresources
             clinit.writeStaticField(javaMethodGenericParametersField, javaMethodGenericParametersHandle);
 
             methodGenericParametersStaticFields.put(methodIndex, javaMethodGenericParametersField);

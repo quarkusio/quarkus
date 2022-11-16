@@ -888,7 +888,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleBeanParamMethod = classContext.classCreator.getMethodCreator(
-                                    handleBeanParamDescriptor);
+                                    handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
@@ -921,7 +921,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleHeaderMethod = classContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
@@ -939,7 +939,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleCookieMethod = classContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                     .createVariable(Invocation.Builder.class);
@@ -962,6 +962,12 @@ public class JaxrsClientReactiveProcessor {
                                     param.mimeType, param.partFileName,
                                     jandexMethod.declaringClass().name() + "." + jandexMethod.name());
                         }
+                    }
+
+                    for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {
+                        enricher.getEnricher()
+                                .forWebTarget(methodCreator, index, interfaceClass, jandexMethod, methodTarget,
+                                        generatedClasses);
                     }
 
                     AssignableResultHandle builder = methodCreator.createVariable(Invocation.Builder.class);
@@ -1272,7 +1278,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleBeanParamMethod = subContext.classCreator.getMethodCreator(
-                                    handleBeanParamDescriptor);
+                                    handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1308,7 +1314,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleHeaderMethod = subContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1330,7 +1336,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleCookieMethod = subContext.classCreator.getMethodCreator(
-                                    handleCookieDescriptor);
+                                    handleCookieDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1379,7 +1385,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleBeanParamMethod = ownerContext.classCreator.getMethodCreator(
-                                    handleBeanParamDescriptor);
+                                    handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1414,7 +1420,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleHeaderMethod = subContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1432,7 +1438,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleCookieMethod = subContext.classCreator.getMethodCreator(
-                                    handleCookieDescriptor);
+                                    handleCookieDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1456,6 +1462,12 @@ public class JaxrsClientReactiveProcessor {
 
                     // if the response is multipart, let's add it's class to the appropriate collection:
                     addResponseTypeIfMultipart(multipartResponseTypes, jandexSubMethod, index);
+
+                    for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {
+                        enricher.getEnricher()
+                                .forSubResourceWebTarget(subMethodCreator, index, interfaceClass, subInterface,
+                                        jandexMethod, jandexSubMethod, methodTarget, generatedClasses);
+                    }
 
                     AssignableResultHandle builder = subMethodCreator.createVariable(Invocation.Builder.class);
                     if (method.getProduces() == null || method.getProduces().length == 0) { // this should never happen!
@@ -2293,9 +2305,7 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle paramAnnotations, int paramIndex) {
 
         AssignableResultHandle result = methodCreator.createVariable(WebTarget.class);
-        BranchResult isValueNull = methodCreator.ifNull(webTarget);
-        BytecodeCreator notNullValue = isValueNull.falseBranch();
-        BranchResult isParamNull = notNullValue.ifNull(queryParamHandle);
+        BranchResult isParamNull = methodCreator.ifNull(queryParamHandle);
         BytecodeCreator notNullParam = isParamNull.falseBranch();
         if (isMap(type, index)) {
             var resolvesTypes = resolveMapTypes(type, index, jandexMethod);
@@ -2371,11 +2381,7 @@ public class JaxrsClientReactiveProcessor {
                     paramArray, componentType, result);
         }
 
-        BytecodeCreator nullParam = isParamNull.trueBranch();
-        nullParam.assign(result, webTarget);
-
-        BytecodeCreator nullValue = isValueNull.trueBranch();
-        nullValue.assign(result, nullValue.loadNull());
+        isParamNull.trueBranch().assign(result, webTarget);
 
         return result;
     }

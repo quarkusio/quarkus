@@ -12,6 +12,11 @@ public class ResourceMetadata {
     private final String resourceClass;
 
     /**
+     * Name that is used to generate the new resource.
+     */
+    private final String resourceName;
+
+    /**
      * Application interface that extends RestDataResource interface.
      */
     private final String resourceInterface;
@@ -33,7 +38,13 @@ public class ResourceMetadata {
 
     public ResourceMetadata(String resourceClass, String resourceInterface, String entityType, String idType,
             Map<String, Type> fields) {
+        this(resourceClass, resourceInterface, resourceInterface, entityType, idType, fields);
+    }
+
+    public ResourceMetadata(String resourceClass, String resourceName, String resourceInterface, String entityType,
+            String idType, Map<String, Type> fields) {
         this.resourceClass = resourceClass;
+        this.resourceName = resourceName;
         this.resourceInterface = resourceInterface;
         this.entityType = entityType;
         this.idType = idType;
@@ -42,6 +53,10 @@ public class ResourceMetadata {
 
     public String getResourceClass() {
         return resourceClass;
+    }
+
+    public String getResourceName() {
+        return resourceName;
     }
 
     public String getResourceInterface() {

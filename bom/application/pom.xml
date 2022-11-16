@@ -6191,6 +6191,7 @@
                                 <recipe>io.quarkus.smallrye</recipe>
                                 <recipe>io.quarkus.bom.resteasy-microprofile</recipe>
                                 <recipe>io.quarkus.bom.resteasy-spring-web</recipe>
+                                <recipe>io.quarkus.bom.resteasy-cdi</recipe>
                                 <recipe>io.quarkus.jakarta-json</recipe>
                                 <recipe>io.quarkus.keycloak-admin-client</recipe>
                                 <recipe>io.quarkus.infinispan</recipe>

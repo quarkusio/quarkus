@@ -37,18 +37,18 @@ public class ResourcePropertiesProvider {
      * Find resource and method properties annotations used by a given interface
      * and build {@link ResourceProperties} instance.
      */
-    public ResourceProperties getForInterface(String resourceInterface) {
-        DotName resourceInterfaceName = DotName.createSimple(resourceInterface);
-        AnnotationInstance annotation = findResourcePropertiesAnnotation(resourceInterfaceName);
+    public ResourceProperties getFromClass(String resourceClass) {
+        DotName resourceClassName = DotName.createSimple(resourceClass);
+        AnnotationInstance annotation = findResourcePropertiesAnnotation(resourceClassName);
         return new ResourceProperties(
                 isExposed(annotation),
-                getPath(annotation, resourceInterface),
+                getPath(annotation, resourceClass),
                 isPaged(annotation),
                 isHal(annotation),
-                getHalCollectionName(annotation, resourceInterface),
+                getHalCollectionName(annotation, resourceClass),
                 getRolesAllowed(annotation),
-                collectAnnotationsToCopy(resourceInterfaceName),
-                collectMethodProperties(resourceInterfaceName));
+                collectAnnotationsToCopy(resourceClassName),
+                collectMethodProperties(resourceClassName));
     }
 
     private Collection<AnnotationInstance> collectAnnotationsToCopy(DotName className) {
@@ -142,18 +142,18 @@ public class ResourcePropertiesProvider {
         return "";
     }
 
-    private String getPath(AnnotationInstance annotation, String resourceInterface) {
+    private String getPath(AnnotationInstance annotation, String resourceClass) {
         if (annotation != null && annotation.value("path") != null) {
             return annotation.value("path").asString();
         }
-        return ResourceName.fromClass(resourceInterface);
+        return ResourceName.fromClass(resourceClass);
     }
 
-    private String getHalCollectionName(AnnotationInstance annotation, String resourceInterface) {
+    private String getHalCollectionName(AnnotationInstance annotation, String resourceClass) {
         if (annotation != null && annotation.value("halCollectionName") != null) {
             return annotation.value("halCollectionName").asString();
         }
-        return ResourceName.fromClass(resourceInterface);
+        return ResourceName.fromClass(resourceClass);
     }
 
     private String[] getRolesAllowed(AnnotationInstance annotation) {

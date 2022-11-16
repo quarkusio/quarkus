@@ -780,12 +780,24 @@ recipeList:
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.bom.resteasy-cdi
+displayName: Add RESTEasy CDI to BOM
+recipeList:
+  - org.openrewrite.maven.AddManagedDependency:
+      groupId: org.jboss.resteasy
+      artifactId: resteasy-cdi
+      version: "${resteasy.version}"
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.resteasy-common
-displayName: Add RESTEasy MicroProfile Config to RESTEasy Common
+displayName: Add RESTEasy CDI and MicroProfile Config to RESTEasy Common
 recipeList:
   - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
       groupId: org.jboss.resteasy.microprofile
       artifactId: microprofile-config
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: org.jboss.resteasy
+      artifactId: resteasy-cdi
   - org.openrewrite.maven.ExcludeDependency:
       groupId: org.jboss.spec.javax.ws.rs
       artifactId: jboss-jaxrs-api_3.0_spec

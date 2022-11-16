@@ -15,6 +15,7 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.PreventFurtherStepsException;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
 import liquibase.lockservice.LockServiceFactory;
@@ -24,9 +25,9 @@ public class LiquibaseRecorder {
 
     private static final Logger log = Logger.getLogger(LiquibaseRecorder.class);
 
-    private final LiquibaseRuntimeConfig config;
+    private final RuntimeValue<LiquibaseRuntimeConfig> config;
 
-    public LiquibaseRecorder(LiquibaseRuntimeConfig config) {
+    public LiquibaseRecorder(RuntimeValue<LiquibaseRuntimeConfig> config) {
         this.config = config;
     }
 
@@ -51,7 +52,7 @@ public class LiquibaseRecorder {
     }
 
     public void doStartActions() {
-        if (!config.enabled) {
+        if (!config.getValue().enabled) {
             return;
         }
 
@@ -96,7 +97,7 @@ public class LiquibaseRecorder {
                 LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
                 var config = liquibaseFactory.getConfiguration();
                 if (config.runAndExit) {
-                    throw new PreventFurtherStepsException();
+                    throw new PreventFurtherStepsException(0);
                 }
 
             }

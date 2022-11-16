@@ -27,6 +27,7 @@ import io.quarkus.bootstrap.runner.RunnerClassLoader;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.graal.DiagnosticPrinter;
+import io.quarkus.runtime.util.ExceptionUtil;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
@@ -153,11 +154,8 @@ public class ApplicationLifecycleManager {
                 }
             }
         } catch (Exception e) {
+            Throwable rootCause = ExceptionUtil.getRootCause(e);
             if (exitCodeHandler == null) {
-                Throwable rootCause = e;
-                while (rootCause.getCause() != null) {
-                    rootCause = rootCause.getCause();
-                }
                 Logger applicationLogger = Logger.getLogger(Application.class);
                 if (rootCause instanceof QuarkusBindException) {
                     List<Integer> ports = ((QuarkusBindException) rootCause).getPorts();
@@ -204,7 +202,10 @@ public class ApplicationLifecycleManager {
                 stateLock.unlock();
             }
             application.stop();
-            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(1, e);
+            int exceptionExitCode = rootCause instanceof PreventFurtherStepsException
+                    ? ((PreventFurtherStepsException) rootCause).getExitCode()
+                    : 1;
+            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(exceptionExitCode, e);
             return;
         } finally {
             try {

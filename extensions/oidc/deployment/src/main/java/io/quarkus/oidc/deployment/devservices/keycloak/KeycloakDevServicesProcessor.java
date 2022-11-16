@@ -259,7 +259,8 @@ public class KeycloakDevServicesProcessor {
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer, String internalURL,
             String hostURL, List<RealmRepresentation> realmReps,
             boolean keycloakX, List<String> errors) {
-        final String realmName = !realmReps.isEmpty() ? realmReps.iterator().next().getRealm() : getDefaultRealmName();
+        final String realmName = realmReps != null && !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
+                : getDefaultRealmName();
         final String authServerInternalUrl = realmsURL(internalURL, realmName);
 
         String clientAuthServerBaseUrl = hostURL != null ? hostURL : internalURL;

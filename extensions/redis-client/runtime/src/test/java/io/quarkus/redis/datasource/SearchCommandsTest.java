@@ -699,8 +699,10 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
         assertThatThrownBy(() -> search.ftAliasAdd("my-index", "idx:movie"));
 
-        var result2 = search.ftAggregate("my-index", "*", new AggregateArgs().allFields());
-        assertThat(result2.count()).isEqualTo(5);
+        await().untilAsserted(() -> {
+            var res = search.ftAggregate("my-index", "*", new AggregateArgs().allFields());
+            assertThat(res.count()).isEqualTo(5);
+        });
 
         search.ftAliasDel("my-index");
         assertThatThrownBy(() -> search.ftAggregate("my-index", "*", new AggregateArgs().allFields()));

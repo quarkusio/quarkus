@@ -24,7 +24,9 @@ import javax.validation.MessageInterpolator;
 import javax.validation.ParameterNameProvider;
 import javax.validation.TraversableResolver;
 import javax.validation.Valid;
+import javax.validation.Validation;
 import javax.validation.ValidationException;
+import javax.validation.ValidatorFactory;
 import javax.validation.executable.ValidateOnExecution;
 import javax.validation.valueextraction.ValueExtractor;
 import javax.ws.rs.Priorities;
@@ -43,6 +45,9 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -62,6 +67,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -75,10 +81,12 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.hibernate.validator.ValidatorFactoryCustomizer;
 import io.quarkus.hibernate.validator.runtime.DisableLoggingFeature;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
+import io.quarkus.hibernate.validator.runtime.ValidationSupport;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
@@ -383,6 +391,40 @@ class HibernateValidatorProcessor {
         reflectiveClassProducer.produce(
                 new ReflectiveClassBuildItem(true, true, ViolationReport.class,
                         ViolationReport.Violation.class));
+    }
+
+    // We need to make sure that the standard process of obtaining a ValidationFactory is not followed,
+    // because it fails in native. So we just redirect the call to our own code that obtains the factory
+    // from Arc
+    @BuildStep
+    void overrideStandardValidationFactoryResolution(BuildProducer<BytecodeTransformerBuildItem> transformer) {
+        BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem(Validation.class.getName(),
+                (className, classVisitor) -> new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                    @Override
+                    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                            String[] exceptions) {
+                        MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature, exceptions);
+
+                        if (name.equals("buildDefaultValidatorFactory")) {
+                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                @Override
+                                public void visitCode() {
+                                    super.visitCode();
+                                    visitMethodInsn(Opcodes.INVOKESTATIC,
+                                            ValidationSupport.class.getName().replace(".", "/"),
+                                            "buildDefaultValidatorFactory",
+                                            String.format("()L%s;", ValidatorFactory.class.getName().replace(".", "/")), false);
+                                    visitInsn(Opcodes.ARETURN);
+                                }
+                            };
+                        }
+
+                        // TODO: should intercept the other methods and throw an exception to indicate they are unsupported?
+
+                        return visitor;
+                    }
+                });
+        transformer.produce(transformation);
     }
 
     private static void contributeBuiltinConstraints(Set<String> builtinConstraints,

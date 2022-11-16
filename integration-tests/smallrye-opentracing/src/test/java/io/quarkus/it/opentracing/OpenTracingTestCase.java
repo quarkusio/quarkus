@@ -22,7 +22,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@DisabledOnOs(OS.WINDOWS)
+@DisabledOnOs({ OS.WINDOWS, OS.MAC })
 public class OpenTracingTestCase {
 
     static GenericContainer postgreSQLContainer;

@@ -112,6 +112,7 @@ public class MailerTest {
     }
 
     @Test
+    @DisabledOnOs(OS.MAC)
     public void sendHtmlEmail() {
         RestAssured.get("/mail/html");
 

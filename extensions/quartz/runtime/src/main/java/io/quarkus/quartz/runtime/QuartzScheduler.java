@@ -80,6 +80,11 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
+/**
+ * Although this class is not part of the public API it must not be renamed in order to preserve backward compatibility. The
+ * name of this class can be stored in a Quartz table in the database. See https://github.com/quarkusio/quarkus/issues/29177
+ * for more information.
+ */
 @Singleton
 public class QuartzScheduler implements Scheduler {
 
@@ -564,6 +569,11 @@ public class QuartzScheduler implements Scheduler {
         return props;
     }
 
+    /**
+     * Although this class is not part of the public API it must not be renamed in order to preserve backward compatibility. The
+     * name of this class can be stored in a Quartz table in the database. See https://github.com/quarkusio/quarkus/issues/29177
+     * for more information.
+     */
     static class InvokerJob implements Job {
 
         final QuartzTrigger trigger;

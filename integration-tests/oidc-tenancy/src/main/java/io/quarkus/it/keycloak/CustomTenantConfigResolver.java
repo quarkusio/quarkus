@@ -126,7 +126,8 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.getToken().setRefreshExpired(true);
                     config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus-webapp");
                     config.setClientId("quarkus-app-webapp");
-                    config.getCredentials().setSecret("secret");
+                    config.getCredentials().setSecret(
+                            "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
 
                     // Let Keycloak issue a login challenge but use the test token endpoint
                     String uri = context.request().absoluteURI();
@@ -137,6 +138,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.getToken().setIssuer("any");
                     config.tokenStateManager.setSplitTokens(true);
                     config.getAuthentication().setSessionAgeExtension(Duration.ofMinutes(1));
+                    config.getAuthentication().setIdTokenRequired(false);
                     return config;
                 } else if ("tenant-web-app-dynamic".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();

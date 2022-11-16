@@ -2,6 +2,8 @@ package io.quarkus.it.panache.reactive.kotlin
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.hibernate.reactive.panache.Panache
+import io.quarkus.hibernate.reactive.panache.common.WithSession
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional
 import io.quarkus.test.TestReactiveTransaction
 import io.quarkus.test.junit.DisabledOnIntegrationTest
@@ -15,15 +17,13 @@ import io.smallrye.mutiny.Uni
 import jakarta.json.bind.JsonbBuilder
 import jakarta.persistence.PersistenceException
 import org.hamcrest.Matchers.`is`
-import org.hibernate.reactive.mutiny.Mutiny
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.toJavaDuration
+import java.util.function.Supplier
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -55,14 +55,10 @@ open class PanacheFunctionalityTest {
     }
 
     @Test
+    @RunOnVertxContext
     @DisabledOnIntegrationTest
-    fun testPanacheInTest() {
-        assertEquals(
-            0,
-            Person.count()
-                .await()
-                .atMost(5.minutes.toJavaDuration())
-        )
+    fun testPanacheInTest(asserter: UniAsserter) {
+        asserter.assertEquals({ Panache.withSession { Person.count() } }, 0L)
     }
 
     @Test
@@ -164,52 +160,47 @@ open class PanacheFunctionalityTest {
     }
 
     @Test
-    @ReactiveTransactional
+    @RunOnVertxContext
     @DisabledOnIntegrationTest
-    fun testTransaction(): Uni<Void> {
-        val transaction: Mutiny.Transaction? = Panache.currentTransaction()
-            .await()
-            .atMost(5.minutes.toJavaDuration())
-        Assertions.assertNotNull(transaction)
-        return Uni.createFrom().nullItem()
+    fun testTransaction(asserter: UniAsserter) {
+        asserter.assertNotNull { Panache.withTransaction { Panache.currentTransaction() } }
     }
 
     @Test
+    @RunOnVertxContext
     @DisabledOnIntegrationTest
-    fun testNoTransaction() {
-        val transaction: Mutiny.Transaction? = Panache.currentTransaction()
-            .await()
-            .atMost(5.minutes.toJavaDuration())
-        Assertions.assertNull(transaction)
+    fun testNoTransaction(asserter: UniAsserter) {
+        asserter.assertNull { Panache.withSession { Panache.currentTransaction() } }
     }
 
     @Test
+    @RunOnVertxContext
     @DisabledOnIntegrationTest
-    fun testBug7102() {
-        createBug7102()
-            .flatMap { person: Person ->
-                getBug7102(person.id!!)
-                    .flatMap { person1: Person ->
-                        assertEquals("pero", person1.name)
-                        updateBug7102(person.id!!)
-                    }.flatMap { _ -> getBug7102(person.id!!) }
-                    .map { person2: Person ->
-                        assertEquals("jozo", person2.name)
-                        null
-                    }
-            }.flatMap { Person.deleteAll() }
-            .await()
-            .atMost(5.minutes.toJavaDuration())
+    fun testBug7102(asserter: UniAsserter) {
+        asserter.execute {
+            createBug7102()
+                .flatMap { person: Person ->
+                    getBug7102(person.id!!)
+                        .flatMap { person1: Person ->
+                            assertEquals("pero", person1.name)
+                            updateBug7102(person.id!!)
+                        }.flatMap { _ -> getBug7102(person.id!!) }
+                        .map { person2: Person ->
+                            assertEquals("jozo", person2.name)
+                            null
+                        }
+                }.flatMap { Panache.withSession { Person.deleteAll() } }
+        }
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     fun createBug7102(): Uni<Person> {
         val person = Person()
         person.name = "pero"
         return person.persistAndFlush()
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     fun updateBug7102(id: Long): Uni<Void> {
         return Person.findById(id)
             .map { person: Person? ->
@@ -218,7 +209,7 @@ open class PanacheFunctionalityTest {
             }
     }
 
-    @ReactiveTransactional
+    @WithSession
     fun getBug7102(id: Long): Uni<Person> {
         return Person.findById(id)
             .map { it!! }
@@ -247,40 +238,59 @@ open class PanacheFunctionalityTest {
 
     @Test
     @Order(200)
-    @ReactiveTransactional
+    @RunOnVertxContext
     @DisabledOnIntegrationTest
     fun testReactiveTransactional(asserter: UniAsserter) {
-        asserter.assertNotNull { Panache.currentTransaction() }
-        asserter.assertEquals({ Person.count() }, 0L)
-        asserter.assertNotNull { Person().persist() }
-        asserter.assertEquals({ Person.count() }, 1L)
+        asserter.assertEquals({ reactiveTransactional() }, 1L)
+    }
+
+    @WithTransaction
+    fun reactiveTransactional(): Uni<Long> {
+        return Panache.currentTransaction()
+            .invoke { tx -> Assertions.assertNotNull(tx) }
+            .chain { tx -> Person.count() }
+            .invoke { count -> assertEquals(0L, count) }
+            .call(Supplier { Person().persist<Person>() })
+            .chain { tx -> Person.count() }
     }
 
     @Test
     @Order(201)
-    @ReactiveTransactional
+    @RunOnVertxContext
     @DisabledOnIntegrationTest
     fun testReactiveTransactional2(asserter: UniAsserter) {
-        asserter.assertNotNull { Panache.currentTransaction() }
-        // make sure the previous one was NOT rolled back
-        asserter.assertEquals({ Person.count() }, 1L)
-        // now delete everything and cause a rollback
-        asserter.assertEquals({ Person.deleteAll() }, 1L)
-        asserter.execute<Mutiny.Transaction> {
-            Panache.currentTransaction().invoke { tx: Mutiny.Transaction -> tx.markForRollback() }
-        }
+        asserter.assertTrue { reactiveTransactional2() }
+    }
+
+    @WithTransaction
+    fun reactiveTransactional2(): Uni<Boolean> {
+        return Panache.currentTransaction()
+            .invoke { tx -> Assertions.assertNotNull(tx) }
+            .chain(Supplier { Person.count() })
+            .invoke { count -> assertEquals(1L, count) }
+            .chain(Supplier { Person.deleteAll() })
+            .invoke { count -> assertEquals(1L, count) }
+            .chain(Supplier { Panache.currentTransaction() })
+            .invoke { tx -> tx.markForRollback() }
+            .map { tx -> true }
     }
 
     @Test
     @Order(202)
-    @ReactiveTransactional
+    @RunOnVertxContext
     @DisabledOnIntegrationTest
     fun testReactiveTransactional3(asserter: UniAsserter) {
-        asserter.assertNotNull { Panache.currentTransaction() }
-        // make sure it was rolled back
-        asserter.assertEquals({ Person.count() }, 1L)
-        // and clean up
-        asserter.assertEquals({ Person.deleteAll() }, 1L)
+        asserter.assertEquals({ testReactiveTransactional3() }, 1L)
+    }
+
+    @ReactiveTransactional
+    fun testReactiveTransactional3(): Uni<Long> {
+        return Panache.currentTransaction()
+            .invoke { tx -> Assertions.assertNotNull(tx) }
+            .chain { tx -> Person.count() }
+            // make sure it was rolled back
+            .invoke { count -> assertEquals(1L, count) }
+            .call(Supplier { Person.deleteAll() })
     }
 
     @Test
@@ -288,6 +298,6 @@ open class PanacheFunctionalityTest {
     @RunOnVertxContext
     @DisabledOnIntegrationTest
     fun testPersistenceException(asserter: UniAsserter) {
-        asserter.assertFailedWith({ Person().delete() }, PersistenceException::class.java)
+        asserter.assertFailedWith({ Panache.withSession { Person().delete() } }, PersistenceException::class.java)
     }
 }

@@ -15,6 +15,7 @@ import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
@@ -72,6 +73,7 @@ public class KafkaReceivers {
         return msg.ack();
     }
 
+    @WithSession
     public Uni<List<Fruit>> getFruits() {
         return Fruit.listAll();
     }

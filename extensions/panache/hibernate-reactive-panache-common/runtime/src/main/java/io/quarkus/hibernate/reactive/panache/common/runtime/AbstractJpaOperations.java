@@ -5,57 +5,25 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import jakarta.enterprise.inject.spi.Bean;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Session;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Vertx;
 
 public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     // FIXME: make it configurable?
     static final long TIMEOUT_MS = 5000;
     private static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
-
-    private static void executeInVertxEventLoop(Runnable runnable) {
-        Vertx vertx = Arc.container().instance(Vertx.class).get();
-        // this needs to be sync
-        CompletableFuture<Void> cf = new CompletableFuture<>();
-        vertx.runOnContext(v -> {
-            try {
-                runnable.run();
-                cf.complete(null);
-            } catch (Throwable t) {
-                cf.completeExceptionally(t);
-            }
-        });
-        try {
-            cf.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Session lookupSessionFromArc() {
-        return Arc.container().instance(Session.class).get();
-    }
 
     protected abstract PanacheQueryType createPanacheQuery(Uni<Mutiny.Session> session, String query, String orderBy,
             Object paramsArrayOrMap);
@@ -109,60 +77,12 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public boolean isPersistent(Object entity) {
-        // only attempt to look up the request context session if it's already there: do not
-        // run the producer method otherwise, before we know which thread we're on
-        Session requestSession = isInRequestContext(Mutiny.Session.class) ? lookupSessionFromArc()
-                : null;
-        if (requestSession != null) {
-            return requestSession.contains(entity);
-        } else {
-            return false;
-        }
+        Mutiny.Session current = SessionOperations.getCurrentSession();
+        return current != null ? current.contains(entity) : false;
     }
 
     public Uni<Void> flush() {
         return getSession().chain(Session::flush);
-    }
-
-    //
-    // Private stuff
-
-    public static Uni<Mutiny.Session> getSession() {
-        // Always check if we're running on the event loop: if not,
-        // we need to delegate the execution of all tasks on it.
-        if (io.vertx.core.Context.isOnEventLoopThread()) {
-            return Uni.createFrom().item(lookupSessionFromArc());
-        } else {
-            // FIXME: we may need context propagation
-            final Executor executor = AbstractJpaOperations::executeInVertxEventLoop;
-            return Uni.createFrom().item(AbstractJpaOperations::lookupSessionFromArc)
-                    .runSubscriptionOn(executor);
-        }
-    }
-
-    private static boolean isInRequestContext(Class<?> klass) {
-        Set<Bean<?>> beans = Arc.container().beanManager().getBeans(klass);
-        if (beans.isEmpty())
-            return false;
-        return Arc.container().requestContext().get(beans.iterator().next()) != null;
-    }
-
-    public static Mutiny.Query<?> bindParameters(Mutiny.Query<?> query, Object[] params) {
-        if (params == null || params.length == 0)
-            return query;
-        for (int i = 0; i < params.length; i++) {
-            query.setParameter(i + 1, params[i]);
-        }
-        return query;
-    }
-
-    public static Mutiny.Query<?> bindParameters(Mutiny.Query<?> query, Map<String, Object> params) {
-        if (params == null || params.size() == 0)
-            return query;
-        for (Entry<String, Object> entry : params.entrySet()) {
-            query.setParameter(entry.getKey(), entry.getValue());
-        }
-        return query;
     }
 
     public int paramCount(Object[] params) {
@@ -421,22 +341,6 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                 "This method is normally automatically overridden in subclasses: did you forget to annotate your entity with @Entity?");
     }
 
-    public static Uni<Integer> executeUpdate(String query, Object... params) {
-        return getSession().chain(session -> {
-            Mutiny.Query<?> jpaQuery = session.createQuery(query);
-            bindParameters(jpaQuery, params);
-            return jpaQuery.executeUpdate();
-        });
-    }
-
-    public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
-        return getSession().chain(session -> {
-            Mutiny.Query<?> jpaQuery = session.createQuery(query);
-            bindParameters(jpaQuery, params);
-            return jpaQuery.executeUpdate();
-        });
-    }
-
     public Uni<Integer> executeUpdate(Class<?> entityClass, String query, Object... params) {
 
         if (PanacheJpaUtil.isNamedQuery(query))
@@ -473,5 +377,46 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public Uni<Integer> update(Class<?> entityClass, String query, Object... params) {
         return executeUpdate(entityClass, query, params);
+    }
+
+    //
+    // Static helpers
+
+    public static Uni<Mutiny.Session> getSession() {
+        return SessionOperations.getSession();
+    }
+
+    public static Mutiny.Query<?> bindParameters(Mutiny.Query<?> query, Object[] params) {
+        if (params == null || params.length == 0)
+            return query;
+        for (int i = 0; i < params.length; i++) {
+            query.setParameter(i + 1, params[i]);
+        }
+        return query;
+    }
+
+    public static Mutiny.Query<?> bindParameters(Mutiny.Query<?> query, Map<String, Object> params) {
+        if (params == null || params.size() == 0)
+            return query;
+        for (Entry<String, Object> entry : params.entrySet()) {
+            query.setParameter(entry.getKey(), entry.getValue());
+        }
+        return query;
+    }
+
+    public static Uni<Integer> executeUpdate(String query, Object... params) {
+        return getSession().chain(session -> {
+            Mutiny.Query<?> jpaQuery = session.createQuery(query);
+            bindParameters(jpaQuery, params);
+            return jpaQuery.executeUpdate();
+        });
+    }
+
+    public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
+        return getSession().chain(session -> {
+            Mutiny.Query<?> jpaQuery = session.createQuery(query);
+            bindParameters(jpaQuery, params);
+            return jpaQuery.executeUpdate();
+        });
     }
 }

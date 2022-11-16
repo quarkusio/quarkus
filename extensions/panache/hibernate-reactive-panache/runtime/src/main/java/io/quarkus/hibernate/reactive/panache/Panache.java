@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations;
+import io.quarkus.hibernate.reactive.panache.common.runtime.SessionOperations;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
@@ -17,12 +18,24 @@ import io.smallrye.mutiny.Uni;
 public class Panache {
 
     /**
+     * Obtains a {@link Uni} within the scope of a reactive session. If a reactive session exists then it is reused. If it
+     * does not exist not exist then open a new session that is automatically closed when the provided {@link Uni} completes.
+     *
+     * @param <T>
+     * @param uniSupplier
+     * @return a new {@link Uni}
+     */
+    public static <T> Uni<T> withSession(Supplier<Uni<T>> uniSupplier) {
+        return SessionOperations.withSession(s -> uniSupplier.get());
+    }
+
+    /**
      * Returns the current {@link Mutiny.Session}
      *
      * @return the current {@link Mutiny.Session}
      */
     public static Uni<Mutiny.Session> getSession() {
-        return AbstractJpaOperations.getSession();
+        return SessionOperations.getSession();
     }
 
     /**
@@ -36,7 +49,7 @@ public class Panache {
      * @see Panache#currentTransaction()
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
-        return getSession().flatMap(session -> session.withTransaction(t -> work.get()));
+        return SessionOperations.withTransaction(() -> work.get());
     }
 
     /**

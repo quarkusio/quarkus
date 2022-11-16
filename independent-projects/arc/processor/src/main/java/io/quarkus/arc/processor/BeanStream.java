@@ -187,6 +187,24 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      *
+     * @return the new stream of beans that have an associated interceptor
+     */
+    public BeanStream withAroundInvokeInterceptor() {
+        stream = stream.filter(BeanInfo::hasAroundInvokeInterceptors);
+        return this;
+    }
+
+    /**
+     *
+     * @return the new stream of beans that have an associated lifecycle interceptor
+     */
+    public BeanStream withLifecycleInterceptor() {
+        stream = stream.filter(BeanInfo::hasLifecycleInterceptors);
+        return this;
+    }
+
+    /**
+     *
      * @param id
      * @return an {@link Optional} with the matching bean, or an empty {@link Optional} if no such bean is found
      * @see BeanInfo#getIdentifier()

@@ -10,6 +10,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
@@ -56,8 +57,10 @@ public class ReactiveService implements ReactiveTest {
         Multi<Item> cached = broadcast.cache();
         cached.subscribe().with(i -> {
         });
-        Multi<Test.Item> existing = Item.<Item> streamAll()
-                .map(item -> Test.Item.newBuilder().setText(item.text).build());
+
+        Multi<Test.Item> existing = Panache.withSession(() -> Item.<Item> listAll()).toMulti().flatMap(list -> {
+            return Multi.createFrom().iterable(list);
+        }).map(item -> Test.Item.newBuilder().setText(item.text).build());
         return Multi.createBy().concatenating()
                 .streams(existing, cached.map(i -> i.text)
                         .map(Test.Item.newBuilder()::setText)

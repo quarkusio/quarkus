@@ -18,6 +18,7 @@ import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.PreventFurtherStepsException;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -27,9 +28,9 @@ public class FlywayRecorder {
 
     static final List<FlywayContainer> FLYWAY_CONTAINERS = new ArrayList<>(2);
 
-    private final FlywayRuntimeConfig config;
+    private final RuntimeValue<FlywayRuntimeConfig> config;
 
-    public FlywayRecorder(FlywayRuntimeConfig config) {
+    public FlywayRecorder(RuntimeValue<FlywayRuntimeConfig> config) {
         this.config = config;
     }
 
@@ -75,7 +76,7 @@ public class FlywayRecorder {
     }
 
     public void doStartActions() {
-        if (!config.enabled) {
+        if (!config.getValue().enabled) {
             return;
         }
         for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {
@@ -95,7 +96,7 @@ public class FlywayRecorder {
 
         for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {
             if (flywayContainer.isRunAndExit()) {
-                throw new PreventFurtherStepsException();
+                throw new PreventFurtherStepsException(0);
             }
         }
     }

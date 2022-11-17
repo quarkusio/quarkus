@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Install yq
-        run: sudo add-apt-repository ppa:rmescandon/yq && sudo apt update && sudo apt install yq -y
+        uses: dcarbone/install-yq-action@v1.0.1
 
       - name: Set up Java
         uses: actions/setup-java@v3

@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.cors;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.nullValue;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ class CORSHandlerTestWildcardOriginCase {
                 .when()
                 .options("/test").then()
                 .statusCode(200)
+                .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Credentials", "true");
     }
 
@@ -42,7 +44,8 @@ class CORSHandlerTestWildcardOriginCase {
                 .header("Access-Control-Request-Headers", headers)
                 .when()
                 .options("/test").then()
-                .statusCode(200)
+                .statusCode(403)
+                .header("Access-Control-Allow-Origin", nullValue())
                 .header("Access-Control-Allow-Credentials", "false");
     }
 
@@ -58,6 +61,7 @@ class CORSHandlerTestWildcardOriginCase {
                 .when()
                 .options("/test").then()
                 .statusCode(200)
+                .header("Access-Control-Allow-Origin", "*")
                 .header("Access-Control-Allow-Credentials", "false");
     }
 }

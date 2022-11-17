@@ -43,6 +43,8 @@ else
   TARGET_GUIDES=${TARGET_DIR}/_versions/${BRANCH}/guides
   TARGET_CONFIG=${TARGET_DIR}/_generated-doc/${BRANCH}
   TARGET_INDEX=${TARGET_DIR}/_data/versioned/${BRANCH//[.]/-}/index
+  mkdir -p ${TARGET_GUIDES}
+  mkdir -p ${TARGET_INDEX}
 fi
 
 

@@ -371,6 +371,7 @@ It applies to the paged resources only and is a number starting with 1. Default 
 * `sort` - a comma separated list of fields which should be used for sorting a result of a list operation.
 Fields are sorted in the ascending order unless they're prefixed with a `-`.
 E.g. `?sort=name,-age` will sort the result by the name ascending by the age descending.
+* `namedQuery` - a named query that should be configured at entity level using the annotation `@NamedQuery`.
 
 For example, if you want to get two `People` entities in the first page, you should call `http://localhost:8080/people?page=0&size=2`, and the response should look like:
 
@@ -404,6 +405,25 @@ Additionally, you can also filter by the entity fields by adding a query param w
 ----
 
 IMPORTANT: Filtering by fields is only supported for primitive types.
+
+== Complex filtering to list entities using @NamedQuery
+
+You can specify a named query to filter when listing the entities. For example, having the following named query in your entity:
+
+[source,java]
+----
+@Entity
+@NamedQuery(name = "Person.containsInName", query = "from Person where name like CONCAT('%', CONCAT(:name, '%'))")
+public class Person extends PanacheEntity {
+  String name;
+}
+----
+
+In this example, we have added a named query to list all the persons that contains some text in the `name` field. 
+
+Next, we can set a query param `namedQuery` when listing the entities using the generated resource with the name of the named query that we want to use, for example, calling `http://localhost:8080/people?namedQuery=Person.containsInName&name=ter` would return all the persons which name contains the text "ter".
+
+For more information about how named queries work, go to https://quarkus.io/guides/hibernate-orm-panache#named-queries[the Hibernate ORM guide] or to https://quarkus.io/guides/hibernate-reactive-panache#named-queries[the Hibernate Reactive guide].
 
 == Resource Method Before/After Listeners
 

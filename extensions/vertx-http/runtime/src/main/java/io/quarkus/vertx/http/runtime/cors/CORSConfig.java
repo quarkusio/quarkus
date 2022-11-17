@@ -22,7 +22,7 @@ public class CORSConfig {
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> origins;
+    public Optional<List<String>> origins = Optional.empty();
 
     /**
      * HTTP methods allowed for CORS
@@ -34,7 +34,7 @@ public class CORSConfig {
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> methods;
+    public Optional<List<String>> methods = Optional.empty();
 
     /**
      * HTTP headers allowed for CORS
@@ -46,7 +46,7 @@ public class CORSConfig {
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> headers;
+    public Optional<List<String>> headers = Optional.empty();
 
     /**
      * HTTP headers exposed in CORS
@@ -57,14 +57,14 @@ public class CORSConfig {
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> exposedHeaders;
+    public Optional<List<String>> exposedHeaders = Optional.empty();
 
     /**
      * The `Access-Control-Max-Age` response header value indicating
      * how long the results of a pre-flight request can be cached.
      */
     @ConfigItem
-    public Optional<Duration> accessControlMaxAge;
+    public Optional<Duration> accessControlMaxAge = Optional.empty();
 
     /**
      * The `Access-Control-Allow-Credentials` header is used to tell the
@@ -75,7 +75,7 @@ public class CORSConfig {
      * there is a match with the precise `Origin` header and that header is not '*'.
      */
     @ConfigItem
-    public Optional<Boolean> accessControlAllowCredentials;
+    public Optional<Boolean> accessControlAllowCredentials = Optional.empty();
 
     @Override
     public String toString() {

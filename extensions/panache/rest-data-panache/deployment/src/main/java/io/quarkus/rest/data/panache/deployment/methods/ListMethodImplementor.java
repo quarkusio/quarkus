@@ -28,6 +28,8 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.AnnotatedElement;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -174,6 +176,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         parameters.add(param("page", int.class));
         parameters.add(param("size", int.class));
         parameters.add(param("uriInfo", UriInfo.class));
+        parameters.add(param("namedQuery", String.class));
         parameters.addAll(compatibleFieldsForQuery);
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
@@ -194,8 +197,9 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(2), "size");
         addDefaultValueAnnotation(methodCreator.getParameterAnnotations(2), Integer.toString(DEFAULT_PAGE_SIZE));
         addContextAnnotation(methodCreator.getParameterAnnotations(3));
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(4), "namedQuery");
         Map<String, ResultHandle> fieldValues = new HashMap<>();
-        int index = 4;
+        int index = 5;
         for (SignatureMethodCreator.Parameter param : compatibleFieldsForQuery) {
             addQueryParamAnnotation(methodCreator.getParameterAnnotations(index), param.getName());
             fieldValues.put(param.getName(), methodCreator.getMethodParam(index));
@@ -209,6 +213,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         ResultHandle pageSize = methodCreator.getMethodParam(2);
         ResultHandle page = paginationImplementor.getPage(methodCreator, pageIndex, pageSize);
         ResultHandle uriInfo = methodCreator.getMethodParam(3);
+        ResultHandle namedQuery = methodCreator.getMethodParam(4);
 
         if (isNotReactivePanache()) {
             TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
@@ -219,7 +224,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
                     resource, page);
 
             ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount);
-            ResultHandle entities = list(tryBlock, resourceMetadata, resource, page, sort, fieldValues);
+            ResultHandle entities = list(tryBlock, resourceMetadata, resource, page, sort, namedQuery, fieldValues);
 
             // Return response
             returnValueWithLinks(tryBlock, resourceMetadata, resourceProperties, entities, links);
@@ -234,7 +239,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
                     (body, pageCount) -> {
                         ResultHandle pageCountAsInt = body.checkCast(pageCount, Integer.class);
                         ResultHandle links = paginationImplementor.getLinks(body, uriInfo, page, pageCountAsInt);
-                        ResultHandle uniEntities = list(body, resourceMetadata, resource, page, sort, fieldValues);
+                        ResultHandle uniEntities = list(body, resourceMetadata, resource, page, sort, namedQuery, fieldValues);
                         body.returnValue(UniImplementor.map(body, uniEntities, EXCEPTION_MESSAGE,
                                 (listBody, list) -> returnValueWithLinks(listBody, resourceMetadata, resourceProperties, list,
                                         links)));
@@ -257,6 +262,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         Collection<SignatureMethodCreator.Parameter> compatibleFieldsForQuery = getFieldsToQuery(resourceMetadata);
         List<SignatureMethodCreator.Parameter> parameters = new ArrayList<>();
         parameters.add(param("sort", List.class));
+        parameters.add(param("namedQuery", String.class));
         parameters.addAll(compatibleFieldsForQuery);
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
                 isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
@@ -271,8 +277,9 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType(), true);
         addSecurityAnnotations(methodCreator, resourceProperties);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "namedQuery");
         Map<String, ResultHandle> fieldValues = new HashMap<>();
-        int index = 1;
+        int index = 2;
         for (SignatureMethodCreator.Parameter param : compatibleFieldsForQuery) {
             addQueryParamAnnotation(methodCreator.getParameterAnnotations(index), param.getName());
             fieldValues.put(param.getName(), methodCreator.getMethodParam(index));
@@ -280,17 +287,18 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         }
 
         ResultHandle sortQuery = methodCreator.getMethodParam(0);
+        ResultHandle namedQuery = methodCreator.getMethodParam(1);
         ResultHandle sort = sortImplementor.getSort(methodCreator, sortQuery);
         ResultHandle resource = methodCreator.readInstanceField(resourceFieldDescriptor, methodCreator.getThis());
 
         if (isNotReactivePanache()) {
             TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
-            ResultHandle entities = list(tryBlock, resourceMetadata, resource, null, sort, fieldValues);
+            ResultHandle entities = list(tryBlock, resourceMetadata, resource, null, sort, namedQuery, fieldValues);
             returnValue(tryBlock, resourceMetadata, resourceProperties, entities);
             tryBlock.close();
         } else {
             ResultHandle uniEntities = list(methodCreator, resourceMetadata, resource, methodCreator.loadNull(), sort,
-                    fieldValues);
+                    namedQuery, fieldValues);
             methodCreator.returnValue(UniImplementor.map(methodCreator, uniEntities, EXCEPTION_MESSAGE,
                     (body, entities) -> returnValue(body, resourceMetadata, resourceProperties, entities)));
         }
@@ -299,7 +307,8 @@ public class ListMethodImplementor extends StandardMethodImplementor {
     }
 
     public ResultHandle list(BytecodeCreator creator, ResourceMetadata resourceMetadata, ResultHandle resource,
-            ResultHandle page, ResultHandle sort, Map<String, ResultHandle> fieldValues) {
+            ResultHandle page, ResultHandle sort, ResultHandle namedQuery, Map<String, ResultHandle> fieldValues) {
+
         ResultHandle dataParams = creator.newInstance(ofConstructor(HashMap.class));
         ResultHandle queryList = creator.newInstance(ofConstructor(ArrayList.class));
         for (Map.Entry<String, ResultHandle> field : fieldValues.entrySet()) {
@@ -313,13 +322,29 @@ public class ListMethodImplementor extends StandardMethodImplementor {
                     dataParams, fieldValueFromQueryIsSet.load(fieldName), fieldValueFromQuery);
         }
 
+        /**
+         * String query;
+         * if (namedQuery != null) {
+         * query = "#" + namedQuery;
+         * } else {
+         * query = String.join(" AND ", queryList);
+         * }
+         */
+        AssignableResultHandle query = creator.createVariable(String.class);
+        BranchResult checkIfNamedQueryIsNull = creator.ifNull(namedQuery);
+        BytecodeCreator whenNamedQueryIsNull = checkIfNamedQueryIsNull.trueBranch();
+        BytecodeCreator whenNamedQueryIsNotNull = checkIfNamedQueryIsNull.falseBranch();
+        whenNamedQueryIsNotNull.assign(query, whenNamedQueryIsNotNull.invokeVirtualMethod(
+                ofMethod(String.class, "concat", String.class, String.class),
+                whenNamedQueryIsNotNull.load("#"), namedQuery));
+        whenNamedQueryIsNull.assign(query, whenNamedQueryIsNull.invokeStaticMethod(
+                ofMethod(String.class, "join", String.class, CharSequence.class, Iterable.class),
+                creator.load(" AND "), queryList));
+
         return creator.invokeVirtualMethod(
                 ofMethod(resourceMetadata.getResourceClass(), "list", isNotReactivePanache() ? List.class : Uni.class,
                         Page.class, Sort.class, String.class, Map.class),
-                resource, page == null ? creator.loadNull() : page, sort,
-                creator.invokeStaticMethod(ofMethod(String.class, "join", String.class, CharSequence.class, Iterable.class),
-                        creator.load(" AND "), queryList),
-                dataParams);
+                resource, page == null ? creator.loadNull() : page, sort, query, dataParams);
     }
 
     private boolean isFieldTypeCompatibleForQueryParam(Type fieldType) {

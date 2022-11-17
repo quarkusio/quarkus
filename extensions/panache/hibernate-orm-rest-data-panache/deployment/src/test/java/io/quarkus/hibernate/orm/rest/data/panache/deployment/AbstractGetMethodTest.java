@@ -110,6 +110,18 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
+    void shouldListWithNamedQuery() {
+        given().accept("application/json")
+                .when()
+                .queryParam("name", "s")
+                .queryParam("namedQuery", "Item.containsInName")
+                .get("/items")
+                .then().statusCode(200)
+                .and().body("id", contains(1, 2))
+                .and().body("name", contains("first", "second"));
+    }
+
+    @Test
     void shouldListSimpleHalObjects() {
         given().accept("application/hal+json")
                 .when().get("/items")

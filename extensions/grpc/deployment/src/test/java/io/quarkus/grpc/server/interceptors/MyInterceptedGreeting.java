@@ -15,4 +15,10 @@ public class MyInterceptedGreeting implements Greeter {
         return Uni.createFrom().item(() -> HelloReply.newBuilder()
                 .setMessage("hello " + MyFirstInterceptor.KEY_1.get() + " - " + MyFirstInterceptor.KEY_2.get()).build());
     }
+
+    @Override
+    @Blocking
+    public Uni<HelloReply> wEIRD(HelloRequest request) {
+        return sayHello(request);
+    }
 }

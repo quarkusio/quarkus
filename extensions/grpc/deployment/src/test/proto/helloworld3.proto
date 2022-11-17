@@ -11,6 +11,9 @@ package helloworld;
 service Greeter3 {
   // Sends a greeting
   rpc SayHello (HelloRequest3) returns (HelloReply3) {}
+
+  rpc WEI_RD (HelloRequest3) returns (HelloReply3) {}
+
 }
 
 // The request message containing the user's name.

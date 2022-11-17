@@ -195,7 +195,11 @@ public class CORSFilter implements Handler<RoutingContext> {
                         String.join(",", exposedHeaders.orElse(Collections.emptyList())));
             }
 
-            if (request.method().equals(HttpMethod.OPTIONS) && (requestedHeaders != null || requestedMethods != null)) {
+            if (!allowsOrigin) {
+                response.setStatusCode(403);
+                response.setStatusMessage("CORS Rejected - Invalid origin");
+                response.end();
+            } else if (request.method().equals(HttpMethod.OPTIONS) && (requestedHeaders != null || requestedMethods != null)) {
                 if (corsConfig.accessControlMaxAge.isPresent()) {
                     response.putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
                             String.valueOf(corsConfig.accessControlMaxAge.get().getSeconds()));

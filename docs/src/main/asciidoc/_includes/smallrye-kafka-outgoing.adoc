@@ -13,6 +13,10 @@ Type: _string_ | false | `1`
 
 Type: _string_ | false | `localhost:9092`
 
+| [.no-hyphens]#*client-id-prefix*# | Prefix for Kafka client `client.id` attribute. If defined configured or generated `client.id` will be prefixed with the given value, otherwise `kafka-producer-` is the prefix.
+
+Type: _string_ | false |
+
 | [.no-hyphens]#*buffer.memory*# | The total bytes of memory the producer can use to buffer records waiting to be sent to the server.
 
 Type: _long_ | false | `33554432`
@@ -104,6 +108,10 @@ Type: _string_ | false |
 | [.no-hyphens]#*key.serializer*# | The serializer classname used to serialize the record's key
 
 Type: _string_ | false | `org.apache.kafka.common.serialization.StringSerializer`
+
+| [.no-hyphens]#*lazy-client*# | Whether Kafka client is created lazily or eagerly.
+
+Type: _boolean_ | false | `false`
 
 | [.no-hyphens]#*max-inflight-messages*# | The maximum number of messages to be written to Kafka concurrently. It limits the number of messages waiting to be written and acknowledged by the broker. You can set this attribute to `0` remove the limit
 

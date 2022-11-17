@@ -579,7 +579,7 @@ Type: _boolean_ | false | `false`
 
 Type: _string_ | false | `/`
 
-| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used
+| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used. If set to `""`, the default exchange is used
 
 Type: _string_ | false |
 
@@ -751,7 +751,7 @@ Type: _boolean_ | false | `true`
 
 Type: _boolean_ | false | `true`
 
-| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used
+| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used. If set to `""`, the default exchange is used
 
 Type: _string_ | false |
 

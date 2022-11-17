@@ -19,6 +19,9 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -32,7 +35,11 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
+import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
+import io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
+import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
 import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
@@ -64,6 +71,28 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             log.produce(new LogCleanupFilterBuildItem(
                     "org.apache.kafka.common.utils.AppInfoParser",
                     "Error registering AppInfo mbean"));
+        }
+    }
+
+    @BuildStep
+    public void checkpointRedis(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.REDIS_CLIENT)) {
+            additionalBean.produce(new AdditionalBeanBuildItem(RedisStateStore.Factory.class));
+            additionalBean.produce(new AdditionalBeanBuildItem(DatabindProcessingStateCodec.Factory.class));
+        }
+    }
+
+    @BuildStep
+    public void checkpointHibernateReactive(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            additionalBean.produce(new AdditionalBeanBuildItem(HibernateReactiveStateStore.Factory.class));
+        }
+    }
+
+    @BuildStep
+    public void checkpointHibernateOrm(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.HIBERNATE_ORM)) {
+            additionalBean.produce(new AdditionalBeanBuildItem(HibernateOrmStateStore.Factory.class));
         }
     }
 

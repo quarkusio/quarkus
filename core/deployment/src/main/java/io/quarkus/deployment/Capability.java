@@ -136,4 +136,5 @@ public interface Capability {
     String KAFKA = QUARKUS_PREFIX + "kafka";
 
     String SMALLRYE_REACTIVE_MESSAGING = QUARKUS_PREFIX + "smallrye.reactive.messaging";
+    String REDIS_CLIENT = QUARKUS_PREFIX + "redis";
 }

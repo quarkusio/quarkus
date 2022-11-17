@@ -2,6 +2,8 @@ package io.quarkus.it.kafka;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.control.ActivateRequestContext;
@@ -17,9 +19,12 @@ import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.annotations.Blocking;
+import io.smallrye.reactive.messaging.kafka.commit.CheckpointMetadata;
 
 @ApplicationScoped
 public class KafkaReceivers {
+
+    private final List<Person> people = new CopyOnWriteArrayList<>();
 
     @Inject
     Mutiny.SessionFactory sf;
@@ -51,8 +56,28 @@ public class KafkaReceivers {
         });
     }
 
+    @Incoming("people-in")
+    public CompletionStage<Void> consume(Message<Person> msg) {
+        CheckpointMetadata<PeopleState> store = CheckpointMetadata.fromMessage(msg);
+        Person person = msg.getPayload();
+        store.transform(new PeopleState(), c -> {
+            if (c.names == null) {
+                c.names = person.getName();
+            } else {
+                c.names = c.names + ";" + person.getName();
+            }
+            return c;
+        });
+        people.add(person);
+        return msg.ack();
+    }
+
     public Uni<List<Fruit>> getFruits() {
         return Fruit.listAll();
+    }
+
+    public List<Person> getPeople() {
+        return people;
     }
 
 }

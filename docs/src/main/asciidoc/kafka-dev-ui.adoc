@@ -1,0 +1,27 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Kafka Dev UI
+include::_attributes.adoc[]
+:categories: messaging
+:summary: Dev UI extension for Apache Kafka for development purposes.
+
+If any Kafka-related extension is present (e.g. `quarkus-smallrye-reactive-messaging-kafka`), 
+the Quarkus Dev UI is extended with a Kafka broker management UI.
+It is connected automatically to the Kafka broker configured for the application.
+
+image::kafka-dev-ui-link.png[alt=Kafka Dev UI link, width=25%, align=center]
+
+With the *Kafka Dev UI*, you can directly manage your Kafka cluster and perform tasks, such as:
+
+* Listing and creating topics
+* Visualizing records
+* Publishing new records
+* Inspecting the list of consumer groups and their consumption lag
+
+image::kafka-dev-ui-records.png[alt=Kafka Dev UI records, width=80%, align=center]
+
+IMPORTANT: Kafka Dev UI is part of the Quarkus Dev UI and is only available in development mode.
+

@@ -545,6 +545,10 @@ Type: _boolean_ | false | `false`
 
 Type: _boolean_ | false | `false`
 
+| [.no-hyphens]#*capabilities*# | A comma-separated list of capabilities proposed by the sender or receiver client.
+
+Type: _string_ | false |
+
 | [.no-hyphens]#*client-options-name*#
 
 [.no-hyphens]#_(amqp-client-options-name)_# | The name of the AMQP Client Option bean used to customize the AMQP client configuration
@@ -617,6 +621,10 @@ Type: _int_ | false | `10`
 
 Type: _string_ | false |
 
+| [.no-hyphens]#*selector*# | Sets a message selector. This attribute is used to define an `apache.org:selector-filter:string` filter on the source terminus, using SQL-based syntax to request the server filters which messages are delivered to the receiver (if supported by the server in question). Precise functionality supported and syntax needed can vary depending on the server.
+
+Type: _string_ | false |
+
 | [.no-hyphens]#*tracing-enabled*# | Whether tracing is enabled (default) or disabled
 
 Type: _boolean_ | false | `true`
@@ -649,6 +657,10 @@ Type: _string_ | false |
 |Attribute (_alias_) | Description | Mandatory | Default
 
 | [.no-hyphens]#*address*# | The AMQP address. If not set, the channel name is used
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*capabilities*# | A comma-separated list of capabilities proposed by the sender or receiver client.
 
 Type: _string_ | false |
 

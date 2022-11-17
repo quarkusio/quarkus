@@ -57,4 +57,18 @@ public class KafkaConnectorTest {
         }
     }
 
+    protected static final TypeRef<List<Person>> PERSON_TYPE_REF = new TypeRef<List<Person>>() {
+    };
+
+    @Test
+    public void testPeople() {
+        await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/people").as(PERSON_TYPE_REF).size(), 6));
+        await().untilAsserted(() -> {
+            PeopleState result = get("/kafka/people-state").as(PeopleState.class);
+            Assertions.assertNotNull(result);
+            Assertions.assertTrue(result.offset >= 6);
+            Assertions.assertEquals("bob;alice;tom;jerry;anna;ken", result.names);
+        });
+    }
+
 }

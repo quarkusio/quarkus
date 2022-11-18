@@ -73,12 +73,12 @@ what you would expect to see. Don't forget to indicate your Quarkus, Java, Maven
 ## Checking an issue is fixed in main
 
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own
-application. Testing the `main` branch is easy and you have two options:
+application. There are two simple options for testing the `main` branch:
 
 * either use the snapshots we publish daily on https://s01.oss.sonatype.org/content/repositories/snapshots
-* or build Quarkus all by yourself
+* or build Quarkus locally
 
-This is a quick summary to get you to quickly test main. If you are interested in having more details, refer to
+The following is a quick summary aimed at allowing you to quickly test `main`. If you are interested in learning more details, refer to
 the [Build section](#build) and the [Usage section](#usage).
 
 ### Using snapshots
@@ -134,14 +134,13 @@ You can check the last publication date here: https://s01.oss.sonatype.org/conte
 
 Just do the following:
 
-```
+```sh
 git clone git@github.com:quarkusio/quarkus.git
 cd quarkus
-export MAVEN_OPTS="-Xmx4g"
-./mvnw -Dquickly
+MAVEN_OPTS="-Xmx4g" ./mvnw -Dquickly
 ```
 
-Wait for a bit and you're done.
+Building can take a few minutes depending on the hardware being used.
 
 **Note** For Apple Silicon computer, Rosetta must be installed. It can be done using `softwareupdate --install-rosetta`
 
@@ -162,7 +161,7 @@ To contribute, use GitHub Pull Requests, from your **own** fork.
 
 Also, make sure you have set up your Git authorship correctly:
 
-```
+```sh
 git config --global user.name "Your Full Name"
 git config --global user.email your.email@example.com
 ```

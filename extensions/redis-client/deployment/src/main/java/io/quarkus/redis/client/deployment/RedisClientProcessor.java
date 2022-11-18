@@ -36,6 +36,7 @@ import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.RedisOptionsCustomizer;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.quarkus.redis.runtime.client.RedisClientRecorder;
+import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.redis.client.impl.types.BulkType;
@@ -97,6 +98,8 @@ public class RedisClientProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void init(RedisClientRecorder recorder,
+            RedisBuildTimeConfig buildTimeConfig,
+            RedisConfig redisConfig,
             BeanArchiveIndexBuildItem indexBuildItem,
             BeanDiscoveryFinishedBuildItem beans,
             ShutdownContextBuildItem shutdown,
@@ -116,6 +119,12 @@ public class RedisClientProcessor {
                 .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
                 .findAny()
                 .ifPresent(x -> names.add(DEFAULT_CLIENT_NAME));
+
+        beans.getInjectionPoints().stream()
+                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
+                .filter(InjectionPointInfo::isProgrammaticLookup)
+                .findAny()
+                .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, redisConfig)));
 
         // Inject the creation of the client when the application starts.
         recorder.initialize(vertxBuildItem.getVertx(), names);
@@ -142,6 +151,18 @@ public class RedisClientProcessor {
         }
 
         recorder.cleanup(shutdown);
+    }
+
+    static Set<String> configuredClientNames(RedisBuildTimeConfig buildTimeConfig, RedisConfig redisConfig) {
+        Set<String> names = new HashSet<>();
+        // redis client names from dev services
+        if (buildTimeConfig.defaultDevService.devservices.enabled) {
+            names.add(DEFAULT_CLIENT_NAME);
+        }
+        names.addAll(buildTimeConfig.additionalDevServices.keySet());
+        // redis client names declared in config
+        names.addAll(redisConfig.clientNames());
+        return names;
     }
 
     static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name,

@@ -2,6 +2,7 @@ package io.quarkus.redis.client.deployment;
 
 import static io.quarkus.redis.client.deployment.RedisClientProcessor.REDIS_CLIENT_ANNOTATION;
 import static io.quarkus.redis.client.deployment.RedisClientProcessor.configureAndCreateSyntheticBean;
+import static io.quarkus.redis.client.deployment.RedisClientProcessor.configuredClientNames;
 import static io.quarkus.redis.runtime.client.config.RedisConfig.DEFAULT_CLIENT_NAME;
 
 import java.util.Collection;
@@ -25,6 +26,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.runtime.client.RedisClientRecorder;
+import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class RedisDatasourceProcessor {
@@ -36,6 +38,8 @@ public class RedisDatasourceProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void init(RedisClientRecorder recorder,
+            RedisBuildTimeConfig buildTimeConfig,
+            RedisConfig redisConfig,
             BeanArchiveIndexBuildItem indexBuildItem,
             BeanDiscoveryFinishedBuildItem beans,
             ShutdownContextBuildItem shutdown,
@@ -55,6 +59,12 @@ public class RedisDatasourceProcessor {
                 .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
                 .findAny()
                 .ifPresent(x -> names.add(DEFAULT_CLIENT_NAME));
+
+        beans.getInjectionPoints().stream()
+                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
+                .filter(InjectionPointInfo::isProgrammaticLookup)
+                .findAny()
+                .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, redisConfig)));
 
         // Inject the creation of the client when the application starts.
         recorder.initialize(vertxBuildItem.getVertx(), names);

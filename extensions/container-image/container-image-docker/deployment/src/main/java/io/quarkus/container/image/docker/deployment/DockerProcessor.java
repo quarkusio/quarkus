@@ -100,11 +100,14 @@ public class DockerProcessor {
                             dockerFileBaseInformation.get().getBaseImage()));
         }
 
-        log.info("Starting (local) container image build for jar using docker.");
+        if (buildContainerImage) {
+            log.info("Starting (local) container image build for jar using docker.");
+        }
 
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImageInfo, out, reader,
                 false,
+                buildContainerImage,
                 pushContainerImage, packageConfig);
 
         // a pull is not required when using this image locally because the docker strategy always builds the container image
@@ -148,6 +151,7 @@ public class DockerProcessor {
 
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,
+                buildContainerImage,
                 pushContainerImage, packageConfig);
 
         // a pull is not required when using this image locally because the docker strategy always builds the container image
@@ -160,11 +164,11 @@ public class DockerProcessor {
 
     private String createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,
             ContainerImageInfoBuildItem containerImageInfo,
-            OutputTargetBuildItem out, ImageIdReader reader, boolean forNative, boolean pushRequested,
+            OutputTargetBuildItem out, ImageIdReader reader, boolean forNative, boolean buildContainerImage,
+            boolean pushContainerImage,
             PackageConfig packageConfig) {
 
         var useBuildx = dockerConfig.buildx.useBuildx();
-        var pushImages = pushRequested || containerImageConfig.isPushExplicitlyEnabled();
 
         // useBuildx: Whether or not any of the buildx parameters are set
         //
@@ -184,41 +188,45 @@ public class DockerProcessor {
 
         DockerfilePaths dockerfilePaths = getDockerfilePaths(dockerConfig, forNative, packageConfig, out);
         String[] dockerArgs = getDockerArgs(containerImageInfo.getImage(), dockerfilePaths, containerImageConfig, dockerConfig,
-                containerImageInfo, pushImages);
+                containerImageInfo, pushContainerImage);
 
-        if (useBuildx && pushImages) {
+        if (useBuildx && pushContainerImage) {
             // Needed because buildx will push all the images in a single step
             loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, dockerConfig);
         }
 
-        log.infof("Executing the following command to build docker image: '%s %s'", dockerConfig.executableName,
-                String.join(" ", dockerArgs));
-        boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, dockerConfig.executableName,
-                dockerArgs);
-        if (!buildSuccessful) {
-            throw dockerException(dockerArgs);
+        if (buildContainerImage) {
+            log.infof("Executing the following command to build docker image: '%s %s'", dockerConfig.executableName,
+                    String.join(" ", dockerArgs));
+            boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, dockerConfig.executableName,
+                    dockerArgs);
+            if (!buildSuccessful) {
+                throw dockerException(dockerArgs);
+            }
+
+            dockerConfig.buildx.platform
+                    .filter(platform -> platform.size() > 1)
+                    .ifPresentOrElse(
+                            platform -> log.infof("Built container image %s (%s platform(s))\n", containerImageInfo.getImage(),
+                                    String.join(",", platform)),
+                            () -> log.infof("Built container image %s (%s)\n", containerImageInfo.getImage(),
+                                    reader.getImageId()));
+
         }
 
-        dockerConfig.buildx.platform
-                .filter(platform -> platform.size() > 1)
-                .ifPresentOrElse(
-                        platform -> log.infof("Built container image %s (%s platform(s))\n", containerImageInfo.getImage(),
-                                String.join(",", platform)),
-                        () -> log.infof("Built container image %s (%s)\n", containerImageInfo.getImage(), reader.getImageId()));
-
-        if (!useBuildx) {
+        if (!useBuildx && buildContainerImage) {
             // If we didn't use buildx, now we need to process any tags
             if (!containerImageInfo.getAdditionalImageTags().isEmpty()) {
                 createAdditionalTags(containerImageInfo.getImage(), containerImageInfo.getAdditionalImageTags(), dockerConfig);
             }
+        }
 
-            if (pushImages) {
-                // If not using buildx, push the images
-                loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, dockerConfig);
+        if (pushContainerImage) {
+            // If not using buildx, push the images
+            loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, dockerConfig);
 
-                Stream.concat(containerImageInfo.getAdditionalImageTags().stream(), Stream.of(containerImageInfo.getImage()))
-                        .forEach(imageToPush -> pushImage(imageToPush, dockerConfig));
-            }
+            Stream.concat(containerImageInfo.getAdditionalImageTags().stream(), Stream.of(containerImageInfo.getImage()))
+                    .forEach(imageToPush -> pushImage(imageToPush, dockerConfig));
         }
 
         return containerImageInfo.getImage();

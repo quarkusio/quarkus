@@ -406,7 +406,6 @@ public class CodeFlowTest {
     }
 
     @Test
-    @Disabled("flaky")
     public void testRPInitiatedLogout() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant-logout");

@@ -24,7 +24,7 @@ import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
-import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
@@ -44,7 +44,7 @@ public class Deployment {
     private final RequestContextFactory requestContextFactory;
     private final List<ServerRestHandler> preMatchHandlers;
     private final ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
-    private final List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers;
+    private final List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers;
     private final RuntimeExceptionMapper exceptionMapper;
     private final boolean resumeOn404;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
@@ -59,7 +59,7 @@ public class Deployment {
             ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
             List<ServerRestHandler> preMatchHandlers,
             ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
-            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers,
+            List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers,
             RuntimeExceptionMapper exceptionMapper,
             boolean resumeOn404,
             ResteasyReactiveConfig resteasyReactiveConfig) {
@@ -191,7 +191,7 @@ public class Deployment {
         return requestContextFactory;
     }
 
-    public List<RuntimeConfigurableServerRestHandler> getRuntimeConfigurableServerRestHandlers() {
+    public List<GenericRuntimeConfigurableServerRestHandler<?>> getRuntimeConfigurableServerRestHandlers() {
         return runtimeConfigurableServerRestHandlers;
     }
 

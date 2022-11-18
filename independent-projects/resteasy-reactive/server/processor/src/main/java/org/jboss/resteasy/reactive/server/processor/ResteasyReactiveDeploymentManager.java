@@ -61,7 +61,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFea
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveParamConverterScanner;
 import org.jboss.resteasy.reactive.server.processor.util.GeneratedClass;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
-import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -362,6 +362,7 @@ public class ResteasyReactiveDeploymentManager {
             }
         }
 
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         public RunnableApplication createApplication(RuntimeConfiguration runtimeConfiguration,
                 RequestContextFactory requestContextFactory, Executor executor) {
             sa.getResourceInterceptors().initializeDefaultFactories(factoryCreator);
@@ -436,10 +437,12 @@ public class ResteasyReactiveDeploymentManager {
             Deployment deployment = runtimeDeploymentManager.deploy();
             deployment.setRuntimeConfiguration(runtimeConfiguration);
             RestInitialHandler initialHandler = new RestInitialHandler(deployment);
-            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = deployment
+            List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = deployment
                     .getRuntimeConfigurableServerRestHandlers();
-            for (RuntimeConfigurableServerRestHandler handler : runtimeConfigurableServerRestHandlers) {
-                handler.configure(runtimeConfiguration);
+            for (GenericRuntimeConfigurableServerRestHandler handler : runtimeConfigurableServerRestHandlers) {
+                if (handler.getConfigurationClass().equals(RuntimeConfiguration.class)) {
+                    handler.configure(runtimeConfiguration);
+                }
             }
             return new RunnableApplication(closeTasks, initialHandler, deployment, path);
         }

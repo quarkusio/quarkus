@@ -46,7 +46,7 @@ import org.jboss.resteasy.reactive.server.model.Features;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
-import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -103,7 +103,7 @@ public class RuntimeDeploymentManager {
                         return info.getFactoryCreator().apply(aClass).createInstance();
                     }
                 });
-        List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = new ArrayList<>();
+        List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = new ArrayList<>();
         RuntimeResourceDeployment runtimeResourceDeployment = new RuntimeResourceDeployment(info, executorSupplier,
                 virtualExecutorSupplier,
                 interceptorDeployment, dynamicEntityWriter, resourceLocatorHandler, requestContextFactory.isDefaultBlocking());
@@ -215,10 +215,10 @@ public class RuntimeDeploymentManager {
     }
 
     private void addRuntimeConfigurableHandlers(RuntimeResource runtimeResource,
-            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers) {
+            List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers) {
         for (ServerRestHandler serverRestHandler : runtimeResource.getHandlerChain()) {
-            if (serverRestHandler instanceof RuntimeConfigurableServerRestHandler) {
-                runtimeConfigurableServerRestHandlers.add((RuntimeConfigurableServerRestHandler) serverRestHandler);
+            if (serverRestHandler instanceof GenericRuntimeConfigurableServerRestHandler) {
+                runtimeConfigurableServerRestHandlers.add((GenericRuntimeConfigurableServerRestHandler<?>) serverRestHandler);
             }
         }
     }

@@ -36,6 +36,9 @@ public class BlockingStubInjectionTest {
     public void test() {
         String neo = service.invoke("neo");
         assertThat(neo).isEqualTo("Hello neo");
+
+        neo = service.invokeWeird("neo");
+        assertThat(neo).isEqualTo("Hello neo");
     }
 
     @ApplicationScoped
@@ -46,6 +49,11 @@ public class BlockingStubInjectionTest {
 
         public String invoke(String s) {
             return service.sayHello(HelloRequest.newBuilder().setName(s).build())
+                    .getMessage();
+        }
+
+        public String invokeWeird(String s) {
+            return service.wEIRD(HelloRequest.newBuilder().setName(s).build())
                     .getMessage();
         }
 

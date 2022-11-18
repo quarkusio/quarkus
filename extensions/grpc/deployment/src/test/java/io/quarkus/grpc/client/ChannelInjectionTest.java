@@ -37,6 +37,9 @@ public class ChannelInjectionTest {
     public void test() {
         String neo = service.invoke("neo-channel");
         assertThat(neo).isEqualTo("Hello neo-channel");
+
+        neo = service.invokeWeird("neo-weird");
+        assertThat(neo).isEqualTo("Hello neo-weird");
     }
 
     @ApplicationScoped
@@ -48,6 +51,12 @@ public class ChannelInjectionTest {
         public String invoke(String s) {
             return GreeterGrpc.newBlockingStub(channel)
                     .sayHello(HelloRequest.newBuilder().setName(s).build())
+                    .getMessage();
+        }
+
+        public String invokeWeird(String s) {
+            return GreeterGrpc.newBlockingStub(channel)
+                    .wEIRD(HelloRequest.newBuilder().setName(s).build())
                     .getMessage();
         }
 

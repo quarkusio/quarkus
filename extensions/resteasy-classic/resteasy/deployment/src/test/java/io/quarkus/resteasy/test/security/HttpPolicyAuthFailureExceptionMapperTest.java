@@ -1,5 +1,9 @@
 package io.quarkus.resteasy.test.security;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
@@ -21,6 +25,11 @@ import io.restassured.RestAssured;
 public class HttpPolicyAuthFailureExceptionMapperTest {
 
     private static final String EXPECTED_RESPONSE = "expect response";
+
+    /**
+     * Number of times exception mappers was invoked.
+     */
+    private static final AtomicInteger EXCEPTION_MAPPER_INVOCATION_COUNT = new AtomicInteger(0);
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -47,6 +56,9 @@ public class HttpPolicyAuthFailureExceptionMapperTest {
                 .then()
                 .statusCode(401)
                 .body(Matchers.equalTo(EXPECTED_RESPONSE));
+
+        assertEquals(1, EXCEPTION_MAPPER_INVOCATION_COUNT.get(),
+                "Exception mapper was invoked more than once during one request.");
     }
 
     @Provider
@@ -54,6 +66,7 @@ public class HttpPolicyAuthFailureExceptionMapperTest {
 
         @Override
         public Response toResponse(AuthenticationFailedException exception) {
+            EXCEPTION_MAPPER_INVOCATION_COUNT.incrementAndGet();
             return Response.status(401).entity(EXPECTED_RESPONSE).build();
         }
     }

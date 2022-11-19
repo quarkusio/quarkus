@@ -170,6 +170,12 @@ This will also work in tandem with link:https://kubernetes.io/docs/concepts/conf
 
 _Note: in order to remain compatible with earlier versions of Quarkus (before 0.16) the default password is set to "password". It is therefore not a mandatory parameter!_
 
+=== Configure the HTTPS port
+
+By default, Quarkus listens to port 8443 for SSL secured connections and 8444 when running tests.
+
+These ports can be configured in your `application.properties` with the properties `quarkus.http.ssl-port` and `quarkus.http.test-ssl-port`.
+
 === Disable the HTTP port
 
 It is possible to disable the HTTP port and only support secure requests. This is done via the

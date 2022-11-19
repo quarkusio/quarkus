@@ -138,7 +138,9 @@ public class HttpAuthorizer {
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) {
-                        if (!routingContext.response().ended()) {
+                        // we don't fail event if it's already failed with same exception as we don't want to process
+                        // the exception twice;at this point, the exception could be failed by the default auth failure handler
+                        if (!routingContext.response().ended() && !throwable.equals(routingContext.failure())) {
                             routingContext.fail(throwable);
                         } else if (!(throwable instanceof AuthenticationFailedException)) {
                             //don't log auth failure

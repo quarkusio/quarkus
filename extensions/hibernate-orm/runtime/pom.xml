@@ -57,8 +57,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core-jakarta</artifactId>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.glassfish.jaxb</groupId>
@@ -94,7 +94,7 @@
         useful as it helps to keep it shorter; also this should allow us to have slightly more flexibility
         in experimenting with different version of Hibernate ORM -->
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-graalvm</artifactId>
         </dependency>
 
@@ -128,7 +128,7 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
-            <artifactId>quarkus-local-cache-jakarta</artifactId>
+            <artifactId>quarkus-local-cache</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>

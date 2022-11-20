@@ -70,8 +70,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-jpamodelgen-jakarta</artifactId>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-jpamodelgen</artifactId>
             <scope>provided</scope>
             <!-- Exclude these dependencies, since they are banned -->
             <exclusions>

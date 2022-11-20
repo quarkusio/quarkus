@@ -137,6 +137,9 @@ public class QuarkusPluginExtension {
 
     /**
      * Returns the last file from the specified {@link FileCollection}.
+     *
+     * @param fileCollection the collection of files present in the directory
+     * @return result returns the last file
      */
     public static File getLastFile(FileCollection fileCollection) {
         File result = null;

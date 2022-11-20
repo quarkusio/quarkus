@@ -131,8 +131,6 @@ public class QuarkusDev extends QuarkusTask {
     /**
      * The dependency Configuration associated with this task. Used
      * for up-to-date checks
-     *
-     * @return quarkusDevConfiguration returns the configuration
      */
     @SuppressWarnings("unused")
     @CompileClasspath
@@ -142,8 +140,6 @@ public class QuarkusDev extends QuarkusTask {
 
     /**
      * The JVM sources (Java, Kotlin, ..) for the project
-     *
-     * @return the FileCollection of all java source files present in the source directories
      */
     @Optional
     @InputFiles
@@ -154,8 +150,6 @@ public class QuarkusDev extends QuarkusTask {
 
     /**
      * The JVM classes directory (compilation output)
-     *
-     * @return the FileCollection of all output directories of the classes
      */
     @Optional
     @InputFiles
@@ -169,8 +163,6 @@ public class QuarkusDev extends QuarkusTask {
      *
      * Defaults to the main source set's classes directory. If there are
      * multiple, one is picked at random (see {@link QuarkusPluginExtension#getLastFile}).
-     *
-     * @return workingDirectory
      */
     @Input
     public Property<File> getWorkingDirectory() {
@@ -179,9 +171,7 @@ public class QuarkusDev extends QuarkusTask {
 
     /**
      * @deprecated See {@link #workingDirectory}
-     * @param workingDir the working directory
      */
-
     @Deprecated
     public void setWorkingDir(String workingDir) {
         workingDirectory.set(getProject().file(workingDir));
@@ -194,7 +184,6 @@ public class QuarkusDev extends QuarkusTask {
 
     /**
      * @deprecated see {@link #getPreventNoVerify()}
-     * @return boolean value of getPreventNoVerify()
      */
     @SuppressWarnings("SpellCheckingInspection")
     @Deprecated
@@ -205,7 +194,6 @@ public class QuarkusDev extends QuarkusTask {
 
     /**
      * @deprecated see {@link #getPreventNoVerify()}
-     * @param preventNoVerify the boolean value
      */
     @SuppressWarnings("SpellCheckingInspection")
     @Deprecated

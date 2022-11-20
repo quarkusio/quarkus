@@ -295,7 +295,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
         return metadata.getFetchProfileMap();
     }
 
-    public Map<Class, MappedSuperclass> getMappedSuperclassMap() {
+    public Map<Class<?>, MappedSuperclass> getMappedSuperclassMap() {
         return metadata.getMappedSuperclassMap();
     }
 

@@ -313,9 +313,10 @@ public class ExtensionDescriptorTask extends DefaultTask {
     private void computeSourceLocation(ObjectNode extObject) {
         Map<String, String> repo = ScmInfoProvider.getSourceRepo();
         if (repo != null) {
-            ObjectNode scm = extObject.putObject("scm");
+            ObjectNode metadata = getMetadataNode(extObject);
+
             for (Map.Entry<String, String> e : repo.entrySet()) {
-                scm.put(e.getKey(), e.getValue());
+                metadata.put("scm-" + e.getKey(), e.getValue());
 
             }
         }

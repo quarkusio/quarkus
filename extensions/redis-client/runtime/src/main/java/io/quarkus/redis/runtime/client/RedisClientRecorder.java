@@ -41,7 +41,6 @@ public class RedisClientRecorder {
 
     public void initialize(RuntimeValue<io.vertx.core.Vertx> vertx, Set<String> names) {
         this.vertx = Vertx.newInstance(vertx.getValue());
-        names.addAll(config.clientNames());
         _initialize(this.vertx, names);
     }
 

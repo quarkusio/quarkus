@@ -675,7 +675,11 @@ public class SubclassGenerator extends AbstractGenerator {
             paramHandles[paramIdx++] = subclassConstructor.getThis();
         }
         for (DecoratorInfo decoratorParameter : decoratorParameters) {
-            paramHandles[paramIdx++] = decoratorToResultHandle.get(decoratorParameter.getIdentifier());
+            ResultHandle decoratorHandle = decoratorToResultHandle.get(decoratorParameter.getIdentifier());
+            if (decoratorHandle == null) {
+                throw new IllegalStateException("Decorator handle must not be null");
+            }
+            paramHandles[paramIdx++] = decoratorHandle;
         }
         ResultHandle delegateSubclassInstance = subclassConstructor.newInstance(MethodDescriptor.ofConstructor(
                 delegateSubclass.getClassName(), constructorParameterTypes.toArray(new String[0])), paramHandles);

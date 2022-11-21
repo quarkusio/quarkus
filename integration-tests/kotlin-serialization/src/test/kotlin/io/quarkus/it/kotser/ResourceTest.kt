@@ -33,6 +33,26 @@ open class ResourceTest {
     }
 
     @Test
+    fun testRestResponse() {
+        When {
+            get("/restResponse")
+        } Then {
+            statusCode(200)
+            body(`is`("""{"name":"Jim Halpert","defaulted":"hi there!"}"""))
+        }
+    }
+
+    @Test
+    fun testRestResponseList() {
+        When {
+            get("/restResponseList")
+        } Then {
+            statusCode(200)
+            body(`is`("""[{"name":"Jim Halpert","defaulted":"hi there!"}]"""))
+        }
+    }
+
+    @Test
     fun testGetUnknownType() {
         When {
             get("/unknownType")

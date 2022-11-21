@@ -2,12 +2,14 @@ package io.quarkus.grpc.runtime.supports.context;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.Prioritized;
+import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
 
@@ -15,11 +17,12 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
-import io.grpc.Status;
+import io.grpc.StatusException;
+import io.quarkus.grpc.ExceptionHandlerProvider;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.grpc.runtime.Interceptors;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 @ApplicationScoped
@@ -27,12 +30,8 @@ import io.vertx.core.Vertx;
 public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, Prioritized {
     private static final Logger log = Logger.getLogger(GrpcDuplicatedContextGrpcInterceptor.class.getName());
 
-    public GrpcDuplicatedContextGrpcInterceptor() {
-    }
-
-    private static boolean isRootContext(Context context) {
-        return !VertxContext.isDuplicatedContext(context);
-    }
+    @Inject
+    ExceptionHandlerProvider ehp;
 
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
@@ -48,7 +47,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
             setContextSafe(local, true);
 
             // Must be sure to call next.startCall on the right context
-            return new ListenedOnDuplicatedContext<>(call, () -> next.startCall(call, headers), local);
+            return new ListenedOnDuplicatedContext<>(ehp, call, () -> next.startCall(call, headers), local);
         } else {
             log.warn("Unable to run on a duplicated context - interceptor not called on the Vert.x event loop");
             return next.startCall(call, headers);
@@ -57,20 +56,23 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
     @Override
     public int getPriority() {
-        return Integer.MAX_VALUE;
+        return Interceptors.DUPLICATE_CONTEXT;
     }
 
     static class ListenedOnDuplicatedContext<ReqT, RespT> extends ServerCall.Listener<ReqT> {
 
         private final Context context;
         private final Supplier<ServerCall.Listener<ReqT>> supplier;
+        private final ExceptionHandlerProvider ehp;
         private final ServerCall<ReqT, RespT> call;
         private ServerCall.Listener<ReqT> delegate;
 
         private final AtomicBoolean closed = new AtomicBoolean();
 
-        public ListenedOnDuplicatedContext(ServerCall<ReqT, RespT> call, Supplier<ServerCall.Listener<ReqT>> supplier,
-                Context context) {
+        public ListenedOnDuplicatedContext(
+                ExceptionHandlerProvider ehp,
+                ServerCall<ReqT, RespT> call, Supplier<ServerCall.Listener<ReqT>> supplier, Context context) {
+            this.ehp = ehp;
             this.context = context;
             this.supplier = supplier;
             this.call = call;
@@ -91,8 +93,14 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         }
 
         private void close(Throwable t) {
-            if (closed.compareAndSet(false, true)) {
-                call.close(Status.fromThrowable(t), new Metadata());
+            // TODO -- "call.isRead" guards against dup calls;
+            //  e.g. onComplete, after onError already closed it
+            if (closed.compareAndSet(false, true) && call.isReady()) {
+                // use EHP so that we're consistent with transforming any user exception
+                Throwable nt = ehp.transform(t);
+                StatusException sre = (StatusException) ExceptionHandlerProvider.toStatusException(nt, false);
+                Optional<Metadata> metadata = ExceptionHandlerProvider.toTrailers(nt);
+                call.close(sre.getStatus(), metadata.orElse(new Metadata()));
             }
         }
 
@@ -108,18 +116,15 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
                     close(t);
                 }
             } else {
-                context.runOnContext(new Handler<Void>() {
-                    @Override
-                    public void handle(Void x) {
-                        ServerCall.Listener<ReqT> listener = ListenedOnDuplicatedContext.this.getDelegate();
-                        if (listener == null) {
-                            return;
-                        }
-                        try {
-                            invocation.accept(listener);
-                        } catch (Throwable t) {
-                            close(t);
-                        }
+                context.runOnContext(v -> {
+                    ServerCall.Listener<ReqT> listener = ListenedOnDuplicatedContext.this.getDelegate();
+                    if (listener == null) {
+                        return;
+                    }
+                    try {
+                        invocation.accept(listener);
+                    } catch (Throwable t) {
+                        close(t);
                     }
                 });
             }
@@ -127,12 +132,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
         @Override
         public void onMessage(ReqT message) {
-            invoke(new Consumer<ServerCall.Listener<ReqT>>() {
-                @Override
-                public void accept(ServerCall.Listener<ReqT> listener) {
-                    listener.onMessage(message);
-                }
-            });
+            invoke(listener -> listener.onMessage(message));
         }
 
         @Override

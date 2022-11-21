@@ -1,11 +1,12 @@
 package io.quarkus.grpc.runtime.supports.blocking;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -32,13 +33,13 @@ import io.vertx.core.Vertx;
 public class BlockingServerInterceptor implements ServerInterceptor, Function<String, Boolean> {
 
     private final Vertx vertx;
-    private final List<String> blockingMethods;
-    private final Map<String, Boolean> cache = new HashMap<>();
+    private final Set<String> blockingMethods;
+    private final Map<String, Boolean> cache = new ConcurrentHashMap<>();
     private final boolean devMode;
 
     public BlockingServerInterceptor(Vertx vertx, List<String> blockingMethods, boolean devMode) {
         this.vertx = vertx;
-        this.blockingMethods = new ArrayList<>();
+        this.blockingMethods = new HashSet<>();
         this.devMode = devMode;
         for (String method : blockingMethods) {
             this.blockingMethods.add(method.toLowerCase());
@@ -74,24 +75,17 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
             ReplayListener<ReqT> replay = new ReplayListener<>(state);
-            vertx.executeBlocking(new Handler<Promise<ServerCall.Listener<ReqT>>>() {
-                @Override
-                public void handle(Promise<ServerCall.Listener<ReqT>> f) {
-                    ServerCall.Listener<ReqT> listener;
-                    try {
-                        requestContext.activate(state);
-                        listener = next.startCall(call, headers);
-                    } finally {
-                        requestContext.deactivate();
-                    }
-                    f.complete(listener);
+            vertx.executeBlocking(f -> {
+                ServerCall.Listener<ReqT> listener;
+                try {
+                    requestContext.activate(state);
+                    listener = next.startCall(call, headers);
+                } finally {
+                    requestContext.deactivate();
                 }
-            }, false, new Handler<AsyncResult<ServerCall.Listener<ReqT>>>() {
-                @Override
-                public void handle(AsyncResult<ServerCall.Listener<ReqT>> event) {
-                    replay.setDelegate(event.result());
-                }
-            });
+                f.complete(listener);
+            }, false,
+                    (Handler<AsyncResult<ServerCall.Listener<ReqT>>>) event -> replay.setDelegate(event.result()));
 
             return replay;
         } else {
@@ -122,7 +116,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
          * Must be called from within the event loop context
          * If there are deferred events will start executing them in the shared worker context
          *
-         * @param delegate
+         * @param delegate the original
          */
         void setDelegate(ServerCall.Listener<ReqT> delegate) {
             this.delegate = delegate;
@@ -147,7 +141,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
          * Once complete will enqueue the next consumer for execution.
          * This method guarantees ordered execution per request.
          *
-         * @param consumer
+         * @param consumer the original
          */
         private void executeBlockingWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {
             final Context grpcContext = Context.current();
@@ -170,12 +164,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
 
         @Override
         public void onMessage(ReqT message) {
-            executeOnContextOrEnqueue(new Consumer<ServerCall.Listener<ReqT>>() {
-                @Override
-                public void accept(ServerCall.Listener<ReqT> t) {
-                    t.onMessage(message);
-                }
-            });
+            executeOnContextOrEnqueue(t -> t.onMessage(message));
         }
 
         @Override

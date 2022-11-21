@@ -12,7 +12,11 @@ import javax.enterprise.inject.spi.Prioritized;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 
-final class Interceptors {
+public final class Interceptors {
+
+    public static final int DUPLICATE_CONTEXT = Integer.MAX_VALUE - 5;
+    public static final int EXCEPTION_HANDLER = Integer.MAX_VALUE - 10;
+    public static final int REQUEST_CONTEXT = Integer.MAX_VALUE - 50;
 
     static <T> List<T> getSortedPerServiceInterceptors(String name, Set<Class<?>> interceptorClasses) {
         if (interceptorClasses.isEmpty()) {

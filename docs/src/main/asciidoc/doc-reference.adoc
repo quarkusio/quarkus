@@ -10,29 +10,32 @@ include::_attributes.adoc[]
 
 A detailed reference for the structure and composition of Quarkus documentation.
 
-== Source locations
+== AsciiDoc syntax
 
-- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
-- Configuration documentation is generated from JavaDoc comments in Java source files.
-- Java, YAML, and other source files can also be referenced by AsciiDoc files.
+Quarkus docs use AsciiDoc syntax.
+The following links provide background on AsciiDoc syntax and general conventions.
 
-== Templates
+* https://redhat-documentation.github.io/asciidoc-markup-conventions/[AsciiDoc Mark-up Quick Reference for Documentation]
+* https://docs.asciidoctor.org/asciidoc/latest/[AsciiDoctor User Manual]
+* https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference]
 
-Create new documentation files with the appropriate template for the content type: 
+== Language and grammar
 
-Concepts:: Use `docs/src/main/asciidoc/_templates/template-concepts.adoc`
-How-To Guides:: Use `docs/src/main/asciidoc/_templates/template-howto.adoc`
-Reference:: Use `docs/src/main/asciidoc/_templates/template-reference.adoc`
-Tutorials:: Use `docs/src/main/asciidoc/_templates/template-tutorial.adoc`
+Write clear, concise, and consistent technical information in US English. 
+Write for a global audience with localization, translation, inclusivity, and diversity in mind. 
+Try to use the following grammar styles:
 
-== Output locations
+* link:https://developers.google.com/style/tense?hl=en[Present tense]
+* link:https://developers.google.com/style/voice?hl=en[Active voice] 
+* link:https://developers.google.com/style/person?hl=en[Second person (you)]
+* link:https://developers.google.com/style/tone?hl=en[A conversational tone]
+* link:https://developers.google.com/style/pronouns?hl=en[Gender neutral language]
 
-Configuration references:: Configuration reference documentation is generated from Javadoc comments discovered in MicroProfile Config source files.
-These generated files are in `target/asciidoc/generated/config/` (from the project root).
+== Sentence length
 
-AsciiDoc output to HTML:: AsciiDoc processing creates HTML files in `docs/target/generated-docs/`.
+Shorter sentences are much easier to read and translate. Try to use less than 32 words per sentence.
 
-=== Website publication
+== Website publication
 
 Content from this repository is published to the https://quarkus.io/guides/[Quarkus.io website].
 
@@ -86,7 +89,31 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 |Creating an App
 |===
 
-== File naming conventions
+== File conventions
+
+=== Source locations
+
+- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- Configuration documentation is generated from JavaDoc comments in Java source files.
+- Java, YAML, and other source files can also be referenced by AsciiDoc files.
+
+=== Output locations
+
+Configuration references:: Configuration reference documentation is generated from Javadoc comments discovered in MicroProfile Config source files.
+These generated files are in `target/asciidoc/generated/config/` (from the project root).
+
+AsciiDoc output to HTML:: AsciiDoc processing creates HTML files in `docs/target/generated-docs/`.
+
+=== Templates
+
+Create new documentation files with the appropriate template for the content type: 
+
+Concepts:: Use `docs/src/main/asciidoc/_templates/template-concepts.adoc`
+How-To Guides:: Use `docs/src/main/asciidoc/_templates/template-howto.adoc`
+Reference:: Use `docs/src/main/asciidoc/_templates/template-reference.adoc`
+Tutorials:: Use `docs/src/main/asciidoc/_templates/template-tutorial.adoc`
+
+=== File names
 
 Quarkus documentation uses a flat hierarchy.
 
@@ -102,23 +129,36 @@ Suffix:: The file name should reflect the document type:
 - References should end in `-reference.adoc`
 - Tutorials should end in `-tutorial.adoc`
 
-== Language and grammar
+== Document structure
 
-Write clear, concise, and consistent technical information in US English. 
-Write for a global audience with localization, translation, inclusivity, and diversity in mind. 
-Try to use the following grammar styles:
+=== Document header
 
-* link:https://developers.google.com/style/tense?hl=en[Present tense]
-* link:https://developers.google.com/style/voice?hl=en[Active voice] 
-* link:https://developers.google.com/style/person?hl=en[Second person (you)]
-* link:https://developers.google.com/style/tone?hl=en[A conversational tone]
-* link:https://developers.google.com/style/pronouns?hl=en[Gender neutral language]
+Each document should define a header for document-scoped attributes. 
+Minimally, each document should define and id and a title, and include common attributes (`_attributes.adoc`).
 
-== Sentence length
+[source,asciidoc]
+----
+[id="reference-doc-quarkus-documentation"] // <1>
+= Quarkus documentation reference // <2>
+\include::_attributes.adoc[] // <3>
+:categories: contributing // <4>
+----
 
-Shorter sentences are much easier to read and translate. Try to use less than 32 words per sentence.
+<1> Specify an id for your document. 
+It should start with the document type: `concept-`, `howto-`, `reference-`, or `tutorial-`.
+<2> Define the document title following guidance in <<Titles and headings>>
+<3> Include common document attributes
+<4> Specify the relevant <<Categories>> (comma separated)
 
-== Abstracts (preamble)
+==== Other common document attributes:
+
+`:extension-status: preview`:: Use this attribute to flag special types of content. Valid values: `experimental`, `preview`, `stable` (not usually used), and `deprecated`.
+`:summary: <text>`:: Use the summary to provide a concise (26 words or less) description of the document. 
+This attribute will be used in tiles or other descriptions on the website. If not present, the contents of the <<Abstracts (preamble),preamble>> will be used instead.
+
+NOTE: Take care with whitespace when working with document-scoped attributes. The document header ends with the first blank line. 
+
+=== Abstracts (preamble)
 
 Add a short description that helps your audience to quickly find and understand the purpose and intent of the page.
 
@@ -133,35 +173,12 @@ Try to write the abstract by using the following guidelines:
 The first sentence of the abstract must explain the value and some benefit of the content in less than 27 words because this automatically displays on the link:https://quarkus.io/guides/[Quarkus guides homepage].
 ====
 
-== AsciiDoc syntax
-
-Quarkus docs use AsciiDoc syntax.
-The following links provide background on AsciiDoc syntax and general conventions.
-
-* https://redhat-documentation.github.io/asciidoc-markup-conventions/[AsciiDoc Mark-up Quick Reference for Documentation]
-* https://docs.asciidoctor.org/asciidoc/latest/[AsciiDoctor User Manual]
-* https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference]
-
-
 === Semantic line breaks
 
 :semantic-line-breaks: footnote:smbl[Rhodes, B. Semantic Linefeeds. https://rhodesmill.org/brandon/2012/one-sentence-per-line/]
 
 Text in paragraphs, lists, and tables should be broken into pieces that are easier to review{semantic-line-breaks}.
 Start a new line at the end of each sentence, and split sentences themselves at natural breaks between clauses.
-
-=== Automatic Table of Contents (TOC)
-
-Use `:toc: preamble` in the document header to insert an automatically generated TOC after the abstract (or preamble) to the document.
-For example, this document has the following in its header:
-
-[source,asciidoc]
-----
-[id="reference-doc-quarkus-documentation"]
-= Quarkus documentation reference
-\include::_attributes.adoc[]
-:toc: preamble
-----
 
 === Using sections
 
@@ -288,6 +305,45 @@ examples:
 [source,java]
 ----
 // Source: integration-tests/micrometer-prometheus/src/main/java/io/quarkus/doc/micrometer/ExampleResource.java
+----
+
+== Document attributes and variables
+
+=== Categories
+
+Quarkus documentation is grouped into the following categories. 
+
+.Categories
+[cols="<m,<2",options="header"]
+|===
+|Category | Description
+| alt-languages | Support for other languages, namely Kotlin and Scala
+| architecture | Quarkus runtime and ecosystem architecture
+| business-automation | Business automation integrations
+| cloud | Integrations and support for cloud services
+| command-line | Command Line Applications
+| compatibility | Compatibility with other languages and frameworks 
+| contributing | Guidance and references to help you contribute to Quarkus.
+| core | Information about how the Quarkus works
+| data | Topics related to using data sources with Quarkus
+| getting-started | Getting started materials
+| integration | Support for integration extensions (Camel)
+| messaging | Integrations with messaging systems like Kafka, AMQP, or RabbitMQ.
+| miscellaneous | Miscellaneous
+| observability | Extensions and integrations for runtime and application observability
+| reactive | Extensions that support reactive technologies and techniques
+| security | Security
+| serialization | Serialization
+| tooling | Tooling
+| web | Web
+| writing-extensions | Writing Extensions
+|===
+
+Tag your content to improve findability by adding at least one category to the categories attribute line in the <<Document header,document header>>. To add multiple categories, use comma-separated values. For example:
+
+[source,asciidoc]
+----
+:categories: contributing, data
 ----
 
 === Quarkus documentation variables

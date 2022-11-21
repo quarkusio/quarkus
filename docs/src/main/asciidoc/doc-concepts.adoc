@@ -27,7 +27,7 @@ Good concept guides:
 Their goal is to help the reader understand the concept.
 - do not teach, instruct or include reference information.
 If you need to refer to a tutorial, how-to, or reference guide, point the reader to where they can find it, but do not replicate that information directly in your concept guide.
-- provide background information and context to explain _why_ things work the way they do, or why they are built in a particular way.
+- provide background information and context to explain _why_ things work the way they do, or why they are built the way they are.
 You can cite design decisions, historical reasons, and technical constraints to reaffirm your points.
 - include specific examples to illustrate the explanation, but avoid making the explanation itself overly dependent on a specific technology or pattern of implementation.
 - analyze the concept from multiple perspectives and draw comparisons with alternative concepts discuss if it is relevant and useful for the reader's understanding.
@@ -79,7 +79,7 @@ Good tutorials:
 - include only enough information to complete the task. 
   They delegate to other documentation types (concepts or reference) to provide additional context.
 - focus on one way of doing the task. Alternative approaches are explored in other document types
-  (e.g. a how-to guide).
+  (a how-to guide, for example).
 
 
 

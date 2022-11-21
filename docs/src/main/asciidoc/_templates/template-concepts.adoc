@@ -3,13 +3,21 @@ This document is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+////
+TODO: See Quarkus documentation reference for details
+- Title should have an implied "Understanding..." in front. 
+- ID should start with 'concept-'
+- choose appropriate categories
+////
 [id="concept-..."]
 = Title using sentence capitalization
-////
-TODO: If this is a concept related to an experimental or tech-preview extension, uncomment the following and set the appropriate status (otherwise delete)
-:extension-status: preview
-////
 include::_attributes.adoc[]
+:categories: ...
+////
+:extension-status: preview
+TODO: uncomment the above for for an experimental or tech-preview content. 
+The document header ends at the first blank line.
+////
 
 A short introduction that summarizes or frames the concept.
 This summary should help a reader determine whether or not this document is what they want to read.

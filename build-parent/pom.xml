@@ -85,7 +85,7 @@
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/postgres:14</postgres.image>
-        <mariadb.image>docker.io/mariadb:10.6</mariadb.image>
+        <mariadb.image>docker.io/mariadb:10.10</mariadb.image>
         <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2019-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>

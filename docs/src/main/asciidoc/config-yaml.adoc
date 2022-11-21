@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core
 :summary: YAML as a Configuration Source.
-:toc:
 
 https://en.wikipedia.org/wiki/YAML[YAML] is a very popular format. Kubernetes relies heavily on the YAML format to
 write the various resource descriptors.

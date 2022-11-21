@@ -8,12 +8,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: tooling
 :summary: This guide explains how to measure the test coverage of your Quarkus application.
-:toc: macro
-:toclevels: 4
-:doctype: book
-:icons: font
-:docinfo1:
-
 :numbered:
 :sectnums:
 :sectnumlevels: 4

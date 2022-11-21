@@ -8,7 +8,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :summary: Learn how to integrate your extension with Quarkus' CDI container.
 include::_attributes.adoc[]
 :numbered:
-:toc:
 :toclevels: 2
 
 ArC, the CDI container, is bootstrapped at build time.

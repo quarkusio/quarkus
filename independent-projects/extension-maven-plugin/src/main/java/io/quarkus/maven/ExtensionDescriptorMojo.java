@@ -676,9 +676,10 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private void addSource(ObjectNode extObject) throws MojoExecutionException {
         Map<String, String> repo = ScmInfoProvider.getSourceRepo();
         if (repo != null) {
-            ObjectNode scm = extObject.putObject("scm");
+            ObjectNode metadata = getMetadataNode(extObject);
             for (Map.Entry<String, String> e : repo.entrySet()) {
-                scm.put(e.getKey(), e.getValue());
+                // Tools may not be able to handle nesting in metadata, so do fake-nesting
+                metadata.put("scm-" + e.getKey(), e.getValue());
 
             }
         }

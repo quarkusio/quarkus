@@ -100,8 +100,7 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         // From maven this property should be set, running in an IDE it won't be unless specially configured
         if (System.getenv("GITHUB_REPOSITORY") != null) {
             // Lazily test that the scm is there but is an object
-            assertYamlContainsObject(fileContents, "scm");
-            assertYamlContains(fileContents, "url", "https://github.com/some/repo");
+            assertYamlContains(fileContents, "scm-url", "https://github.com/some/repo");
         }
 
     }

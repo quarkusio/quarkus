@@ -82,6 +82,8 @@ import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.runtime.supports.context.GrpcDuplicatedContextGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor;
+import io.quarkus.grpc.runtime.supports.exc.DefaultExceptionHandlerProvider;
+import io.quarkus.grpc.runtime.supports.exc.ExceptionInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -512,6 +514,9 @@ public class GrpcServerProcessor {
                 beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcSecurityInterceptor.class));
                 beans.produce(AdditionalBeanBuildItem.unremovableOf(DefaultAuthExceptionHandlerProvider.class));
             }
+
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(ExceptionInterceptor.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(DefaultExceptionHandlerProvider.class));
         } else {
             log.debug("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
         }
@@ -523,11 +528,13 @@ public class GrpcServerProcessor {
         additionalInterceptors
                 .produce(new AdditionalGlobalInterceptorBuildItem(GrpcRequestContextGrpcInterceptor.class.getName()));
         additionalInterceptors
-                .produce(new AdditionalGlobalInterceptorBuildItem(GrpcRequestContextGrpcInterceptor.class.getName()));
+                .produce(new AdditionalGlobalInterceptorBuildItem(GrpcDuplicatedContextGrpcInterceptor.class.getName()));
         if (capabilities.isPresent(Capability.SECURITY)) {
             additionalInterceptors
                     .produce(new AdditionalGlobalInterceptorBuildItem(GrpcSecurityInterceptor.class.getName()));
         }
+        additionalInterceptors
+                .produce(new AdditionalGlobalInterceptorBuildItem(ExceptionInterceptor.class.getName()));
     }
 
     @SuppressWarnings("deprecation")
@@ -578,11 +585,7 @@ public class GrpcServerProcessor {
             // the interceptors defined on the user bean have to be applied to the generated bean:
             targetClass = delegateMap.getOrDefault(targetClass, targetClass);
 
-            Set<String> registered = registeredInterceptors.get(targetClass);
-            if (registered == null) {
-                registered = new HashSet<>();
-                registeredInterceptors.put(targetClass, registered);
-            }
+            Set<String> registered = registeredInterceptors.computeIfAbsent(targetClass, k -> new HashSet<>());
             registered.add(interceptorClass);
             superfluousInterceptors.remove(interceptorClass);
         }

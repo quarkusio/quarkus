@@ -18,8 +18,7 @@ public class RedisNoConfTest {
 
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false");
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Inject
     @Any

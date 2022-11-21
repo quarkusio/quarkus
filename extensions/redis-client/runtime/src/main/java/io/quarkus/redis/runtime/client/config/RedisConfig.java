@@ -1,15 +1,13 @@
 package io.quarkus.redis.runtime.client.config;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED, name = RedisConfig.REDIS_CONFIG_ROOT_NAME)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME, name = RedisConfig.REDIS_CONFIG_ROOT_NAME)
 public class RedisConfig {
     public final static String REDIS_CONFIG_ROOT_NAME = "redis";
     public final static String HOSTS_CONFIG_NAME = "hosts";
@@ -53,19 +51,6 @@ public class RedisConfig {
 
     public static boolean isDefaultClient(String name) {
         return DEFAULT_CLIENT_NAME.equalsIgnoreCase(name);
-    }
-
-    public Set<String> clientNames() {
-        Set<String> names = new HashSet<>();
-        if (this.namedRedisClients != null) {
-            names.addAll(this.namedRedisClients.keySet());
-        }
-        if (this.defaultRedisClient != null) {
-            if (this.defaultRedisClient.hosts.isPresent()) {
-                names.add(DEFAULT_CLIENT_NAME);
-            }
-        }
-        return names;
     }
 
 }

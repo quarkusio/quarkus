@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
@@ -66,7 +65,7 @@ public class RedisStateStore implements CheckpointStateStore {
                     .orElse(null);
             ReactiveRedisDataSource rds = clientName != null
                     ? redisDataSource.select(RedisClientName.Literal.of(clientName)).get()
-                    : redisDataSource.select(Default.Literal.INSTANCE).get();
+                    : redisDataSource.get();
             ProcessingStateCodec stateCodec = CDIUtils.getInstanceById(stateCodecFactory, config.getChannel(), () -> {
                 if (stateCodecFactory.isUnsatisfied()) {
                     return VertxJsonProcessingStateCodec.FACTORY;

@@ -660,10 +660,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private void addSource(ObjectNode extObject) throws MojoExecutionException {
         Map<String, String> repo = getSourceRepo();
         if (repo != null) {
-            ObjectNode scm = extObject.putObject("scm");
+            ObjectNode metadata = getMetadataNode(extObject);
             for (Map.Entry<String, String> e : repo.entrySet()) {
-                scm.put(e.getKey(), e.getValue());
-
+                metadata.put("scm-" + e.getKey(), e.getValue());
             }
         }
     }

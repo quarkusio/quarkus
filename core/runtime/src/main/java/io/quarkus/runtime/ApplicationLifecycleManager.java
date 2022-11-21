@@ -77,7 +77,6 @@ public class ApplicationLifecycleManager {
     private static int exitCode = -1;
     private static volatile boolean shutdownRequested;
     private static Application currentApplication;
-    private static boolean hooksRegistered;
     private static boolean vmShuttingDown;
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");

@@ -15,6 +15,9 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.BuildChainBuilder;
@@ -52,6 +55,16 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                             return;
                         }
 
+                        CustomScopeAnnotationsBuildItem scopes = context.consume(CustomScopeAnnotationsBuildItem.class);
+                        // A bean defining annotation cannot be bound to multiple default scopes
+                        Set<DotName> singletonBeanDefiningAnnotations = new HashSet<>();
+                        for (BeanDefiningAnnotationBuildItem annotation : context
+                                .consumeMulti(BeanDefiningAnnotationBuildItem.class)) {
+                            if (DotNames.SINGLETON.equals(annotation.getDefaultScope())) {
+                                singletonBeanDefiningAnnotations.add(annotation.getName());
+                            }
+                        }
+
                         // TODO: this annotation transformer is too simplistic and should be replaced
                         //  by whatever build item comes out of the implementation
                         //  of https://github.com/quarkusio/quarkus/issues/16572
@@ -67,14 +80,17 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 if (target.kind() == AnnotationTarget.Kind.CLASS) { // scope on bean case
                                     ClassInfo classInfo = target.asClass();
                                     if (isMatchingBean(classInfo)) {
-                                        if (classInfo.classAnnotation(DotNames.SINGLETON) != null) {
+                                        if (Annotations.contains(transformationContext.getAnnotations(), DotNames.SINGLETON)
+                                                || hasSingletonBeanDefiningAnnotation(transformationContext)) {
                                             replaceSingletonWithApplicationScoped(transformationContext);
                                         }
                                     }
                                 } else if (target.kind() == AnnotationTarget.Kind.METHOD) { // CDI producer case
                                     MethodInfo methodInfo = target.asMethod();
                                     if ((methodInfo.annotation(DotNames.PRODUCES) != null)
-                                            && (methodInfo.annotation(DotNames.SINGLETON) != null)) {
+                                            && (Annotations.contains(transformationContext.getAnnotations(),
+                                                    DotNames.SINGLETON)
+                                                    || hasSingletonBeanDefiningAnnotation(transformationContext))) {
                                         DotName returnType = methodInfo.returnType().name();
                                         if (mockTypes.contains(returnType)) {
                                             replaceSingletonWithApplicationScoped(transformationContext);
@@ -105,9 +121,20 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 }
                                 return false;
                             }
+
+                            private boolean hasSingletonBeanDefiningAnnotation(TransformationContext transformationContext) {
+                                if (singletonBeanDefiningAnnotations.isEmpty()
+                                        || scopes.isScopeIn(transformationContext.getAnnotations())) {
+                                    return false;
+                                }
+                                return Annotations.containsAny(transformationContext.getAnnotations(),
+                                        singletonBeanDefiningAnnotations);
+                            }
+
                         }));
                     }
-                }).produces(AnnotationsTransformerBuildItem.class).build();
+                }).produces(AnnotationsTransformerBuildItem.class).consumes(CustomScopeAnnotationsBuildItem.class)
+                        .consumes(BeanDefiningAnnotationBuildItem.class).build();
             }
         };
     }

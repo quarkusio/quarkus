@@ -20,10 +20,10 @@
   "os-name": "ubuntu-latest"
 }
 , {
-  "name": "11 Windows",
-  "java-version": 11,
+  "name": "17 Windows",
+  "java-version": 17,
   "maven_args": "-DskipDocs -Dformat.skip",
-  "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g -Xlog:gc*=debug:file=windows-java-11.txt",
+  "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
  "os-name": "windows-latest"
 }
 , {

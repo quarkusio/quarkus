@@ -48,7 +48,9 @@ public class Push extends BaseImageCommand {
             registryPassword.ifPresent(p -> properties.put(QUARKUS_CONTAINER_IMAGE_PASSWORD, p));
         }
 
-        if (!alsoBuild) {
+        if (alsoBuild) {
+            properties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
+        } else {
             properties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "false");
         }
 

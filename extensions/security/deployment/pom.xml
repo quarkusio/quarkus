@@ -65,6 +65,17 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Automatic-Module-Name>io.quarkus.security.deployment</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

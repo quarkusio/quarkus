@@ -74,6 +74,21 @@
 
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Automatic-Module-Name>io.quarkus.resteasy.reactive.jackson</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <profiles>
         <profile>
             <id>jakarta-rewrite</id>

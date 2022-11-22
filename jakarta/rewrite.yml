@@ -132,7 +132,7 @@ recipeList:
       newValue: 6.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-http.version
-      newValue: 5.0.0.Alpha2
+      newValue: 5.0.0.Alpha3
   # Transaction
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jta

@@ -593,7 +593,7 @@ Use the following information to learn how you can securely use `OpenID Connect`
 
 == References
 
-* xref:security.adoc[Security Architecture and Guides]
+* xref:security-overview-concept.adoc[Quarkus Security overview]
 * xref:security-openid-connect.adoc[Using OpenID Connect (OIDC) to Protect Service Applications using Bearer Token Authorization]
 * xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect (OIDC) to Protect Web Applications using Authorization Code Flow
 ]

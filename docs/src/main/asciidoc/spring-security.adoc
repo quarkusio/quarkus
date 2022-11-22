@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: compatibility
 :summary: While you are encouraged to use the Quarkus security layer to secure your applications, Quarkus provides a compatibility layer for Spring Security in the form of the spring-security extension.
 
-While users are encouraged to use xref:security.adoc#standard-security-annotations[Java standard annotations for security authorizations], Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
+While users are encouraged to use xref:security-overview-concept.adoc#standard-security-annotations[Java standard annotations for security authorizations], Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
 
 This guide explains how a Quarkus application can leverage the well known Spring Security annotations to define authorizations on RESTful services using roles.
 

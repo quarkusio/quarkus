@@ -363,4 +363,4 @@ quarkus.oidc.credentials.secret=<Client Secret>
 == References
 
 * xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

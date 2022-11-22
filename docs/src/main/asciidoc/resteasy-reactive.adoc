@@ -1086,7 +1086,7 @@ public class Person {
 }
 ----
 
-Assuming security has been set up for the application (see our xref:security.adoc[guide] for more details), when a user with the `admin` role
+Assuming security has been set up for the application (see our xref:security-overview-concept.adoc[guide] for more details), when a user with the `admin` role
 performs an HTTP GET on `/person/1` they will receive:
 
 [source,json]

@@ -1305,4 +1305,4 @@ include::{generated-dir}/config/quarkus-security-webauthn.adoc[opts=optional, le
 
 == References
 
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

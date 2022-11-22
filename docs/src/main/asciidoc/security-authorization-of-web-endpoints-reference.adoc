@@ -275,4 +275,4 @@ CAUTION: Please refer to the xref:security-built-in-authentication-support-conce
 
 == References
 
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

@@ -145,4 +145,4 @@ quarkus.security.users.embedded.roles.noadmin=user
 
 == References
 
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

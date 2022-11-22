@@ -16,10 +16,10 @@ Enable Basic authentication for your Quarkus project and allow users to authenti
 quarkus.http.auth.basic=true
 ----
  
-For a Basic authentication configuration walk-through that uses `JPA`, see the xref:security-getting-started.adoc[Getting Started With Security] guide.
+For a Basic authentication configuration walk-through that uses `JPA`, see the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication] guide.
  
 == Additional resources
 
-* xref:security.adoc[Security Architecture and Guides]
-* xref:security.adoc#identity-providers[Security Identity Providers]
+* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-overview-concept.adoc#identity-providers[Security Identity Providers]
 * xref:security-testing.adoc#configuring-user-information[Configuring User Information in application.properties]

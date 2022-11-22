@@ -382,6 +382,11 @@ public class DevMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
 
+        if (project.getPackaging().equals(ArtifactCoords.TYPE_POM)) {
+            getLog().info("Type of the artifact is POM, skipping dev goal");
+            return;
+        }
+
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
 
         initToolchain();

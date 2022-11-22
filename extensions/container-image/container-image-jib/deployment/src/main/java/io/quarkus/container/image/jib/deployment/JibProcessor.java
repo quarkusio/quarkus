@@ -219,7 +219,7 @@ public class JibProcessor {
 
         log.info("Starting (local) container image build for native binary using jib.");
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
-                pushRequest.isPresent());
+                pushContainerImage);
         writeOutputFiles(container, jibConfig, outputTarget);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",

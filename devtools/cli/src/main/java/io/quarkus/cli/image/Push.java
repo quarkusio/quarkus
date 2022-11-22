@@ -16,6 +16,7 @@ public class Push extends BaseImageCommand {
     private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:image-push",
             BuildTool.GRADLE, "imagePush");
 
+    private static final String QUARKUS_CONTAINER_IMAGE_BUILD = "quarkus.container-image.build";
     private static final String QUARKUS_CONTAINER_IMAGE_USERNAME = "quarkus.container-image.username";
     private static final String QUARKUS_CONTAINER_IMAGE_PASSWORD = "quarkus.container-image.password";
 
@@ -31,17 +32,28 @@ public class Push extends BaseImageCommand {
             "--registry-password-stdin" }, description = "Read the image registry password from stdin.")
     public boolean registryPasswordStdin;
 
+    @CommandLine.Option(order = 11, names = {
+            "--also-build" }, description = "(Re)build the image before pushing.")
+    public boolean alsoBuild;
+
     @Override
     public void populateImageConfiguration(Map<String, String> properties) {
         super.populateImageConfiguration(properties);
         registryUsername.ifPresent(u -> properties.put(QUARKUS_CONTAINER_IMAGE_USERNAME, u));
 
-        if (registryPasswordStdin) {
+        if (registryPasswordStdin && !runMode.isDryRun()) {
             String password = new String(System.console().readPassword("Registry password:"));
             properties.put(QUARKUS_CONTAINER_IMAGE_PASSWORD, password);
         } else {
             registryPassword.ifPresent(p -> properties.put(QUARKUS_CONTAINER_IMAGE_PASSWORD, p));
         }
+
+        if (alsoBuild) {
+            properties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
+        } else {
+            properties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "false");
+        }
+
         properties.put(QUARKUS_FORCED_EXTENSIONS, QUARKUS_CONTAINER_IMAGE_EXTENSION);
     }
 

@@ -187,6 +187,8 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <source>10</source>
+                    <target>10</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>io.quarkus</groupId>
@@ -217,14 +219,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>10</source>
-                    <target>10</target>
-                </configuration>
             </plugin>
         </plugins>
     </build>

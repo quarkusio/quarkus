@@ -4253,6 +4253,11 @@
                 <version>${graal-sdk.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.graalvm.js</groupId>
+                <artifactId>js</artifactId>
+                <version>${graal-sdk.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>jandex</artifactId>
                 <version>${jandex.version}</version>

@@ -45,6 +45,41 @@ else
   TARGET_INDEX=${TARGET_DIR}/_data/versioned/${BRANCH//[.]/-}/index
   mkdir -p ${TARGET_GUIDES}
   mkdir -p ${TARGET_INDEX}
+
+  if [ "$QUARKUS_RELEASE" == "true" ]; then
+    if [ ! -f ${TARGET_GUIDES}/_attributes-local.adoc ]; then
+      cat <<EOF > ${TARGET_GUIDES}/_attributes-local.adoc
+// tag::xref-attributes[]
+:doc-examples: ./_examples
+:generated-dir: ../../../_generated-doc/${BRANCH}
+:code-examples: {generated-dir}/examples
+:imagesdir: ./images
+:includes: ./_includes
+// end::xref-attributes[]
+EOF
+    fi
+
+    if [ ! -f ${TARGET_GUIDES}/guides.md ]; then
+      cat <<EOF > ${TARGET_GUIDES}/guides.md
+---
+layout: documentation
+title: Guides
+permalink: /version/${BRANCH}/guides/
+---
+EOF
+    fi
+
+    BRANCH_WITH_DASH=${BRANCH/./-}
+    if [ ! -f _data/guides-${BRANCH_WITH_DASH}.yaml ]; then
+      echo
+      echo "##############################################################################################################"
+      echo "#"
+      echo "# Make sure to create a _data/guides-${BRANCH_WITH_DASH}.yaml index file with a guide index consistent with the ${BRANCH} branch"
+      echo "#"
+      echo "##############################################################################################################"
+      echo
+    fi
+  fi
 fi
 
 

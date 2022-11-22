@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
@@ -12,6 +13,8 @@ import io.quarkus.arc.processor.BuildExtension.Key;
  * Transformation context base for an {@link AnnotationsTransformation}.
  */
 abstract class AnnotationsTransformationContext<C extends Collection<AnnotationInstance>> implements BuildContext {
+
+    private static final Logger LOG = Logger.getLogger(AnnotationsTransformationContext.class);
 
     protected final BuildContext buildContext;
     protected final AnnotationTarget target;
@@ -49,6 +52,7 @@ abstract class AnnotationsTransformationContext<C extends Collection<AnnotationI
     }
 
     void setAnnotations(C annotations) {
+        LOG.tracef("Annotations of %s transformed: %s", target, annotations);
         this.annotations = annotations;
     }
 

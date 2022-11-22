@@ -7,11 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: getting-started
 :summary: Discover how to create your first Quarkus application.
-:toc: macro
-:toclevels: 4
-:doctype: book
-:icons: font
-:docinfo1:
 :numbered:
 :sectnums:
 :sectnumlevels: 4

@@ -13,7 +13,7 @@ Create a new tutorial that guides users through creating, running, and testing a
 == Prerequisites
 
 - Roughly 15 minutes
-- An editor or IDE that provides syntax highlighting and previews for asciidoc, either natively or using a plugin.
+- An editor or IDE that provides syntax highlighting and previews for AsciiDoc, either natively or using a plugin.
 - You should be familiar with the overview of what a xref:doc-concepts.adoc#tutorial[Tutorial] is.
 - Have the xref:doc-reference.adoc[Quarkus documentation reference] handy as a reference for required syntax and other conventions.
 
@@ -41,14 +41,16 @@ Copy `docs/src/main/diataxis/_templates/template-tutorial.adoc` from the Quarkus
 ----
 [id="tutorial-acme-serve-http-requests"] // <1>
 = Serve Http requests using the Acme extension // <2>
-:extension-status: experimental // <3>
-include::_attributes.adoc[] // <4>
+include::_attributes.adoc[] // <3>
+:categories: web // <4>
+:extension-status: experimental // <5>
 ----
 
 <1> Specify a unique id for the section in lower-kebab-case.
 <2> Add the title as a top-level heading.
-<3> Our imaginary `acme` extension is experimental, so we include the extension status declaration in the header.
-<4> Include additional attributes that help define consistent formatting and provide source portability.
+<3> Include additional attributes that help define consistent formatting and provide source portability.
+<4> Specify the `web` category, as our imaginary extension works with Http requests.
+<5> Our imaginary `acme` extension is experimental, so we include the extension status declaration in the header.
 
 .Document Preview
 --
@@ -85,7 +87,7 @@ It uses the extension status attribute defined in the header.
 
 .Document Preview
 --
-The preview of your document should now include an admonition box below the abstract explaining that the plugin is experimental technology, and describing what can be expected in terms of stability and/or support for experimental technologies.
+The preview of your document should now include an admonition box below the abstract explaining that the plugin is experimental technology, and describing what can be expected in terms of stability or support for experimental technologies.
 --
 
 == Define Prerequisites
@@ -109,7 +111,7 @@ The `curl` command line utility is also used to manually test the endpoint.
 
 <1> Declare that our hypothetical tutorial will take about 30 minutes to complete.
 <2> Declare that our nonsensical acme extension also requires a container runtime.
-<3> For simplicity in this tutorial, we will avoid graalvm/mandrel prerequisites
+<3> For simplicity in this tutorial, we will avoid GraalVM and Mandrel prerequisites.
 <4> Include the common file that provides text describing prerequisites.
 
 .Document Preview
@@ -146,7 +148,7 @@ include::{includes}/devtools/create-app.adoc[] // <6>
 <1> Enable section numbering
 <2> Create a second level heading for the first step
 <3> Describe the step briefly
-<4> Define the maven/gradle artifact id
+<4> Define the artifact id (Maven or Gradle)
 <5> List the extensions required by this project
 <6> Use common text to describe how to create a project
 
@@ -205,9 +207,9 @@ public class MyAcmeApplication {
 
 There are a few things to notice in this code sample:
 
-- There are callouts as comments on some lines, and their numbering is not sequential.
+- AsciiDoc callouts are shown as comments on some lines, and their numbering is not sequential.
 
-- There are Asciidoc content regions defined by tag pairs (`tag::` and `end::`) in comments surrounding different sections of code.
+- AsciiDoc content regions are defined by tag pairs (`tag::` and `end::`) in comments surrounding different sections of code.
 
 === Provide concise subsequent steps
 
@@ -243,7 +245,7 @@ Some things to notice about these instructions:
 - We describe what `@Anvil` is providing in the specific case covered by this tutorial.
 
 WARNING: Be careful with the amount of explanation given in a tutorial.
-Include enough information in the tutorial to help the user determine what other resource (howto, concept, or reference) they should look at next.
+Include enough information in the tutorial to help the user determine what other resource (`howto`, `concept`, or `reference`) they should look at next.
 
 .Document Preview
 --
@@ -360,7 +362,7 @@ You should see a message that 2 tests were run, and both were successful.
 
 A few things to note:
 
-- We're using the asciidoc region tag to include only one region of the target file.
+- We're using the AsciiDoc region tag to include only one region of the target file.
 
 - We do not go into detail explaining concepts:
 
@@ -399,7 +401,7 @@ Your preview should now contain an unnumbered `Summary` section.
 Congratulations!
 You have created a tutorial that describes how to create an application that uses annotations of dubious merit from a hypothetical extension.
 
-If you wish, you may compare your result against the complete worked example:
+Compare your result against the complete worked example:
 
 [source,asciidoc]
 -----

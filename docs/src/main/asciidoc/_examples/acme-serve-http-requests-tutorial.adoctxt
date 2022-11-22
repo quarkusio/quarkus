@@ -5,8 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="tutorial-acme-serve-http-requests"]
 = Serve Http requests using the Acme extension
+include::_attributes.adoc[]
+:categories: web
 :extension-status: experimental
-include::attributes.adoc[]
 
 In this tutorial, we will create an application that uses unique annotations from the experimental acme extension to define two endpoints:
 a simple Http endpoint and an endpoint that emits Server-Sent Events (SSE).

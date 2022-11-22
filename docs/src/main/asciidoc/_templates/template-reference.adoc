@@ -3,13 +3,21 @@ This document is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+////
+TODO: See Quarkus documentation reference for details
+- Title should have an implied "About..." in front. 
+- ID should start with 'reference-'
+- choose appropriate categories
+////
 [id="reference-..."]
 = Title using sentence capitalization
-////
-TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following and set the appropriate status (otherwise delete)
-:extension-status: preview
-////
 include::_attributes.adoc[]
+:categories: ...
+////
+:extension-status: preview
+TODO: uncomment the above for for an experimental or tech-preview content. 
+The document header ends at the first blank line.
+////
 
 A short introduction that describes the content of this reference.
 This summary should help a reader determine if this document is likely to contain the information they are looking for.

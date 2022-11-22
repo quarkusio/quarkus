@@ -3,17 +3,24 @@ package io.quarkus.narayana.quarkus;
 import static io.quarkus.narayana.jta.QuarkusTransaction.beginOptions;
 import static io.quarkus.narayana.jta.QuarkusTransaction.runOptions;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.control.ActivateRequestContext;
+import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
+import javax.transaction.TransactionScoped;
 
+import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -28,8 +35,16 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class QuarkusTransactionTest {
 
+    private static AtomicInteger counter = new AtomicInteger();
+
     @Inject
     TransactionManager transactionManager;
+
+    @Inject
+    ThreadContext threadContext;
+
+    @Inject
+    TransactionScopedTestBean testBean;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -224,6 +239,31 @@ public class QuarkusTransactionTest {
         });
     }
 
+    @Test
+    public void testConcurrentTransactionScopedBeanCreation() {
+        // 1. A Transaction is activated in a parent thread.
+        QuarkusTransaction.run(() -> {
+            ExecutorService executor = Executors.newCachedThreadPool();
+            try {
+                // 2. The parent thread starts 2 child threads, and propagates the transaction.
+                // 3. The child threads access a @TransactionScoped bean concurrently,
+                //    which has resource intensive producer simulated by sleep.
+                var f1 = executor.submit(threadContext.contextualRunnable(() -> testBean.doWork()));
+                var f2 = executor.submit(threadContext.contextualRunnable(() -> testBean.doWork()));
+
+                f1.get();
+                f2.get();
+            } catch (Throwable e) {
+                throw new AssertionError("Should not have thrown", e);
+            } finally {
+                executor.shutdownNow();
+            }
+        });
+
+        // 4. The race condition is handled correctly, the bean is only created once.
+        Assertions.assertEquals(1, counter.get());
+    }
+
     TestSync register() {
         TestSync t = new TestSync();
         try {
@@ -249,4 +289,25 @@ public class QuarkusTransactionTest {
         }
     }
 
+    static class TransactionScopedTestBean {
+        public void doWork() {
+
+        }
+    }
+
+    @Singleton
+    static class TransactionScopedTestBeanCreator {
+
+        @Produces
+        @TransactionScoped
+        TransactionScopedTestBean transactionScopedTestBean() {
+            try {
+                Thread.sleep(100);
+            } catch (Exception e) {
+
+            }
+            counter.incrementAndGet();
+            return new TransactionScopedTestBean();
+        }
+    }
 }

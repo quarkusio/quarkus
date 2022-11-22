@@ -1,6 +1,7 @@
 package io.quarkus.cli.image;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -77,11 +78,9 @@ public class Jib extends BaseImageCommand {
     BaseImageCommand parent;
 
     @Override
-    public void populateImageConfiguration(Map<String, String> properties) {
-        super.populateImageConfiguration(properties);
+    public Integer call() throws Exception {
+        Map<String, String> properties = parent.getPropertiesOptions().properties;
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, JIB);
-        properties.put(QUARKUS_FORCED_EXTENSIONS, QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + JIB);
-
         baseImage.ifPresent(
                 d -> properties.put(JIB_CONFIG_PREFIX + (buildOptions.buildNative ? BASE_NATIVE_IMAGE : BASE_JVM_IMAGE), d));
 
@@ -133,16 +132,18 @@ public class Jib extends BaseImageCommand {
         if (buildOptions.offline) {
             properties.put(JIB_CONFIG_PREFIX + OFFLINE_MODE, "true");
         }
+
+        parent.getForcedExtensions().add(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + JIB);
+        parent.runMode = runMode;
+        parent.buildOptions = buildOptions;
+        parent.imageOptions = imageOptions;
+        parent.setOutput(output);
+        return parent.call();
     }
 
     @Override
-    public Integer call() throws Exception {
-        try {
-            populateImageConfiguration(parent.getPropertiesOptions().properties);
-            return parent.call();
-        } catch (Exception e) {
-            return output.handleCommandException(e, "Unable to build image: " + e.getMessage());
-        }
+    public List<String> getForcedExtensions() {
+        return Arrays.asList(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + JIB);
     }
 
     @Override

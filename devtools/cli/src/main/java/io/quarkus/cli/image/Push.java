@@ -1,12 +1,12 @@
 package io.quarkus.cli.image;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
-import picocli.CommandLine.ExitCode;
 
 @CommandLine.Command(name = "push", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Push a container image.", description = "%n"
         + "This command will build and push a container image for the project.", footer = "%n", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
@@ -37,8 +37,8 @@ public class Push extends BaseImageCommand {
     public boolean alsoBuild;
 
     @Override
-    public void populateImageConfiguration(Map<String, String> properties) {
-        super.populateImageConfiguration(properties);
+    public Integer call() throws Exception {
+        Map<String, String> properties = getPropertiesOptions().properties;
         registryUsername.ifPresent(u -> properties.put(QUARKUS_CONTAINER_IMAGE_USERNAME, u));
 
         if (registryPasswordStdin && !runMode.isDryRun()) {
@@ -53,8 +53,7 @@ public class Push extends BaseImageCommand {
         } else {
             properties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "false");
         }
-
-        properties.put(QUARKUS_FORCED_EXTENSIONS, QUARKUS_CONTAINER_IMAGE_EXTENSION);
+        return super.call();
     }
 
     @Override
@@ -62,23 +61,15 @@ public class Push extends BaseImageCommand {
         return Optional.ofNullable(ACTION_MAPPING.get(getRunner().getBuildTool()));
     }
 
-    @Override
-    public Integer call() throws Exception {
-        try {
-            populateImageConfiguration(propertiesOptions.properties);
-            BuildSystemRunner runner = getRunner();
-            String action = getAction().orElseThrow(
-                    () -> new IllegalStateException("Unknown image push action for " + runner.getBuildTool().name()));
-            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareAction(action, buildOptions, runMode, params);
-            if (runMode.isDryRun()) {
-                System.out.println("Dry run option detected. Target command:");
-                System.out.println(commandArgs.showCommand());
-                return ExitCode.OK;
-            }
-            return runner.run(commandArgs);
-        } catch (Exception e) {
-            return output.handleCommandException(e, "Unable to push image: " + e.getMessage());
+    public void prepareMaven() {
+        if (alsoBuild) {
+            super.prepareMaven();
         }
+    }
+
+    @Override
+    public List<String> getForcedExtensions() {
+        return Arrays.asList(QUARKUS_CONTAINER_IMAGE_EXTENSION);
     }
 
     @Override

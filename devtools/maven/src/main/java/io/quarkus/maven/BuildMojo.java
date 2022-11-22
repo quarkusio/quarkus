@@ -29,6 +29,7 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
  * Builds the Quarkus application.
@@ -77,11 +78,11 @@ public class BuildMojo extends QuarkusBootstrapMojo {
             getLog().info("Skipping Quarkus build");
             return false;
         }
-        if (mavenProject().getPackaging().equals("pom")) {
+        if (mavenProject().getPackaging().equals(ArtifactCoords.TYPE_POM)) {
             getLog().info("Type of the artifact is POM, skipping build goal");
             return false;
         }
-        if (!mavenProject().getArtifact().getArtifactHandler().getExtension().equals("jar")) {
+        if (!mavenProject().getArtifact().getArtifactHandler().getExtension().equals(ArtifactCoords.TYPE_JAR)) {
             throw new MojoExecutionException(
                     "The project artifact's extension is '" + mavenProject().getArtifact().getArtifactHandler().getExtension()
                             + "' while this goal expects it be 'jar'");

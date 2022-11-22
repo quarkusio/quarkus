@@ -1,4 +1,4 @@
-package io.quarkus.it.kafka;
+package io.quarkus.it.kafka.people;
 
 import javax.persistence.Entity;
 

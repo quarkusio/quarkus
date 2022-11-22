@@ -8,10 +8,14 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.quarkus.it.kafka.fruit.Fruit;
+import io.quarkus.it.kafka.fruit.FruitDto;
+import io.quarkus.it.kafka.people.PeopleState;
+import io.quarkus.it.kafka.people.Person;
 import io.smallrye.reactive.messaging.kafka.commit.CheckpointMetadata;
 
 @ApplicationScoped
@@ -20,13 +24,13 @@ public class KafkaReceivers {
     private final List<Person> people = new CopyOnWriteArrayList<>();
 
     @Channel("fruits-persisted")
-    MutinyEmitter<Fruit> emitter;
+    Emitter<FruitDto> emitter;
 
     @Incoming("fruits-in")
     @Transactional
-    public CompletionStage<Void> persist(Message<Fruit> fruit) {
-        fruit.getPayload().persist();
-        return emitter.sendMessage(fruit).subscribeAsCompletionStage();
+    public CompletionStage<Void> persist(Fruit fruit) {
+        fruit.persist();
+        return emitter.send(new FruitDto(fruit));
     }
 
     @Incoming("people-in")
@@ -34,10 +38,10 @@ public class KafkaReceivers {
         CheckpointMetadata<PeopleState> store = CheckpointMetadata.fromMessage(msg);
         Person person = msg.getPayload();
         store.transform(new PeopleState(), c -> {
-            if (c.names == null) {
-                c.names = person.getName();
+            if (c.getNames() == null) {
+                c.setNames(person.getName());
             } else {
-                c.names = c.names + ";" + person.getName();
+                c.setNames(c.getNames() + ";" + person.getName());
             }
             return c;
         });

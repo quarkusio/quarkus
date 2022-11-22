@@ -2618,13 +2618,14 @@ public class ResourceSendingToKafka {
     @Transactional                                                      // <1>
     public CompletionStage<Void> storeAndSendToKafka(Fruit fruit) {     // <2>
         fruit.persist();
-        return emitter.send(fruit);                                     // <3>
+        return emitter.send(new FruitDto(fruit));                       // <3>
     }
 }
 ----
 <1> As we are writing to the database, make sure we run inside a transaction
 <2> The method receives the fruit instance to persist. It returns a `CompletionStage` which is used for the transaction demarcation. The transaction is committed when the return `CompletionStage` completes. In our case, it's when the message is written to Kafka.
-<3> Send the managed instance to Kafka. Make sure we wait for the message to complete before closing the transaction.
+<3> Wrap the managed entity inside a Data transfer object and send it to Kafka.
+This makes sure that managed entity is not impacted by the Kafka serialization.
 
 [#writing-entities-managed-by-hibernate-reactive-to-kafka]
 === Writing entities managed by Hibernate Reactive to Kafka

@@ -12,9 +12,11 @@ import javax.ws.rs.core.Response;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.it.kafka.fruit.Fruit;
+import io.quarkus.it.kafka.people.PeopleState;
+import io.quarkus.it.kafka.people.Person;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
@@ -25,7 +27,6 @@ import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)
-@Disabled
 public class KafkaConnectorTest {
 
     protected static final TypeRef<List<Fruit>> TYPE_REF = new TypeRef<List<Fruit>>() {
@@ -69,7 +70,7 @@ public class KafkaConnectorTest {
             PeopleState result = get("/kafka/people-state").as(PeopleState.class);
             Assertions.assertNotNull(result);
             Assertions.assertTrue(result.offset >= 6);
-            Assertions.assertEquals("bob;alice;tom;jerry;anna;ken", result.names);
+            Assertions.assertEquals("bob;alice;tom;jerry;anna;ken", result.getNames());
         });
     }
 

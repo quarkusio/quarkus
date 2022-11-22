@@ -72,19 +72,31 @@ public class HibernateOrmStateStore implements CheckpointStateStore {
             Object[] ids = partitions.stream()
                     .map(tp -> new CheckpointEntityId(consumerGroupId, tp))
                     .toArray(Object[]::new);
-            return Vertx.currentContext().executeBlocking(Uni.createFrom().item(() -> {
+            return Vertx.currentContext().executeBlocking(Uni.createFrom().emitter(emitter -> {
                 List<CheckpointEntity> fetched = new ArrayList<>();
+                Transaction tx = null;
                 try (Session session = sf.openSession()) {
+                    tx = session.beginTransaction();
                     for (Object id : ids) {
                         CheckpointEntity entity = session.find(stateType, id);
                         if (entity != null) {
                             fetched.add(entity);
                         }
                     }
+                    Map<TopicPartition, ProcessingState<?>> stateMap = fetched.stream()
+                            .filter(e -> e != null && CheckpointEntity.topicPartition(e) != null)
+                            .collect(Collectors.toMap(CheckpointEntity::topicPartition,
+                                    e -> new ProcessingState<>(e, e.offset)));
+                    session.flush();
+                    tx.commit();
+                    emitter.complete(stateMap);
+                } catch (Throwable t) {
+                    if (tx != null) {
+                        tx.rollback();
+                    }
+                    emitter.fail(t);
                 }
-                return fetched.stream().filter(e -> e != null && CheckpointEntity.topicPartition(e) != null)
-                        .collect(Collectors.toMap(CheckpointEntity::topicPartition,
-                                e -> new ProcessingState<>(e, e.offset)));
+
             }));
         });
     }

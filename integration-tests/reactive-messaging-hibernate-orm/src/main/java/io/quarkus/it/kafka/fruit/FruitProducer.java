@@ -1,4 +1,4 @@
-package io.quarkus.it.kafka;
+package io.quarkus.it.kafka.fruit;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;

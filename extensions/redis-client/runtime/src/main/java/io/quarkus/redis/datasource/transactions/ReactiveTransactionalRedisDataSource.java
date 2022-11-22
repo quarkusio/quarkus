@@ -1,5 +1,6 @@
 package io.quarkus.redis.datasource.transactions;
 
+import io.quarkus.redis.datasource.autosuggest.ReactiveTransactionalAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveTransactionalCountMinCommands;
@@ -429,6 +430,27 @@ public interface ReactiveTransactionalRedisDataSource {
     @Experimental("The Redis Search support is experimental")
     default ReactiveTransactionalSearchCommands search() {
         return search(String.class);
+    }
+
+    /**
+     * Gets the object to emit commands from the {@code auto-suggest} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to get suggestions
+     */
+    @Experimental("The Redis auto-suggest support is experimental")
+    <K> ReactiveTransactionalAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code auto-suggest} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @return the object to get suggestions
+     */
+    @Experimental("The Redis auto-suggest support is experimental")
+    default ReactiveTransactionalAutoSuggestCommands<String> autosuggest() {
+        return autosuggest(String.class);
     }
 
     /**

@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.autosuggest.AutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.datasource.bloom.BloomCommands;
 import io.quarkus.redis.datasource.countmin.CountMinCommands;
@@ -261,6 +262,11 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K> SearchCommands<K> search(Class<K> redisKeyType) {
         return new BlockingSearchCommandsImpl<>(this, reactive.search(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> AutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
+        return new BlockingAutoSuggestCommandsImpl<>(this, reactive.autosuggest(redisKeyType), timeout);
     }
 
     @Override

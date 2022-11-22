@@ -5,6 +5,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import java.util.Arrays;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.autosuggest.ReactiveTransactionalAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveTransactionalCountMinCommands;
@@ -150,6 +151,12 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K> ReactiveTransactionalSearchCommands search(Class<K> redisKeyType) {
         return new ReactiveTransactionalSearchCommandsImpl<>(this,
                 (ReactiveSearchCommandsImpl<K>) this.reactive.search(redisKeyType), tx);
+    }
+
+    @Override
+    public <K> ReactiveTransactionalAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
+        return new ReactiveTransactionalAutoSuggestCommandsImpl<>(this,
+                (ReactiveAutoSuggestCommandsImpl<K>) this.reactive.autosuggest(redisKeyType), tx);
     }
 
     @Override

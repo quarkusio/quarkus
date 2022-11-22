@@ -285,6 +285,7 @@ As mentioned above, the API is divided into groups:
 - graph - `.graph()` (requires the https://redis.com/modules/redis-graph/[RedisGraph] module on the server side).
 These commands are marked as experimental, as we would need feedback before making them stable.
 - search - `.search()` (requires the https://redis.com/modules/redis-search/[RedisSearch] module on the server side).
+- auto-suggest - `.autosuggest()` (requires the https://redis.com/modules/redis-search/[RedisSearch] module on the server side).O
 These commands are marked as experimental, as we would need feedback before making them stable.
 
 Each of these methods returns an object that lets you execute the commands related to the group.

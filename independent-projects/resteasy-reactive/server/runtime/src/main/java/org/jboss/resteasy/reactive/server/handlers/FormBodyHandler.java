@@ -18,12 +18,11 @@ import org.jboss.resteasy.reactive.server.core.multipart.FormDataParser;
 import org.jboss.resteasy.reactive.server.core.multipart.FormEncodedDataDefinition;
 import org.jboss.resteasy.reactive.server.core.multipart.FormParserFactory;
 import org.jboss.resteasy.reactive.server.core.multipart.MultiPartParserDefinition;
-import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
-import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
-public class FormBodyHandler implements ServerRestHandler, RuntimeConfigurableServerRestHandler {
+public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHandler<RuntimeConfiguration> {
 
     private final boolean alsoSetInputStream;
     private final Supplier<Executor> executorSupplier;
@@ -32,6 +31,11 @@ public class FormBodyHandler implements ServerRestHandler, RuntimeConfigurableSe
     public FormBodyHandler(boolean alsoSetInputStream, Supplier<Executor> executorSupplier) {
         this.alsoSetInputStream = alsoSetInputStream;
         this.executorSupplier = executorSupplier;
+    }
+
+    @Override
+    public Class<RuntimeConfiguration> getConfigurationClass() {
+        return RuntimeConfiguration.class;
     }
 
     @Override

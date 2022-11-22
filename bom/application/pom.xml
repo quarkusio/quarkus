@@ -93,7 +93,7 @@
         <hibernate-reactive.version>1.1.9.Final</hibernate-reactive.version>
         <hibernate-validator.version>6.2.5.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
-        <narayana.version>5.13.1.Alpha1</narayana.version>
+        <narayana.version>5.13.1.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.16</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
@@ -152,7 +152,7 @@
         <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
         <kotlin-serialization.version>1.4.1</kotlin-serialization.version>
         <kubernetes-client.version>6.2.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <dekorate.version>3.1.1</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>3.1.2</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.11</jboss-logmanager.version>
@@ -6173,6 +6173,7 @@
                                 <recipe>io.quarkus.smallrye</recipe>
                                 <recipe>io.quarkus.bom.resteasy-microprofile</recipe>
                                 <recipe>io.quarkus.bom.resteasy-spring-web</recipe>
+                                <recipe>io.quarkus.bom.resteasy-cdi</recipe>
                                 <recipe>io.quarkus.jakarta-json</recipe>
                                 <recipe>io.quarkus.keycloak-admin-client</recipe>
                                 <recipe>io.quarkus.infinispan</recipe>

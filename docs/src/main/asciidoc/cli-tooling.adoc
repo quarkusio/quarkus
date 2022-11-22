@@ -149,7 +149,7 @@ You can use Homebrew to install (and update) the Quarkus CLI.
 Make sure you have a JDK installed before installing the Quarkus CLI.
 We haven't added an explicit dependency as we wanted to make sure you could use your preferred JDK version.
 
-You can install a JDK with `brew install openjdk` for Java 17 or `brew install openjdk@11` for Java 11.
+You can install a JDK with `brew install openjdk` for the latest Java version, `brew install openjdk@17` for Java 17, or `brew install openjdk@11` for Java 11.
 ====
 
 To install the Quarkus CLI using Homebrew, run the following command:

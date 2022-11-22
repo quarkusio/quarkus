@@ -24,6 +24,7 @@ import io.dekorate.kubernetes.config.IngressRuleBuilder;
 import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
+import io.dekorate.kubernetes.decorator.AddIngressRuleDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressTlsDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
@@ -176,16 +177,13 @@ public class VanillaKubernetesProcessor {
                 result.add(new DecoratorBuildItem(KUBERNETES,
                         new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), INGRESS)));
             }
-            // TODO: Workaround for https://github.com/quarkusio/quarkus/issues/28812
-            // We need to remove the duplicate paths of the generated Ingress. The following logic can be removed after
-            // bumping the next Dekorate version that includes the fix: https://github.com/dekorateio/dekorate/pull/1092.
-            result.add(new DecoratorBuildItem(KUBERNETES, new RemoveDuplicateIngressRuleDecorator(name)));
+
             Optional<Port> defaultHostPort = KubernetesCommonHelper.combinePorts(ports, config).values().stream()
                     .filter(distinct(p -> p.getName()))
                     .findFirst();
 
             for (IngressRuleConfig rule : config.ingress.rules.values()) {
-                result.add(new DecoratorBuildItem(KUBERNETES, new ChangeIngressRuleDecorator(name, defaultHostPort,
+                result.add(new DecoratorBuildItem(KUBERNETES, new AddIngressRuleDecorator(name, defaultHostPort,
                         new IngressRuleBuilder()
                                 .withHost(rule.host)
                                 .withPath(rule.path)

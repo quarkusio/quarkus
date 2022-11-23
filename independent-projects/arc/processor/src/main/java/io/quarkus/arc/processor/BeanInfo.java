@@ -649,7 +649,7 @@ public class BeanInfo implements InjectionTargetInfo {
         }
     }
 
-    List<DecoratorInfo> findMatchingDecorators(MethodInfo method, List<DecoratorInfo> decorators) {
+    private List<DecoratorInfo> findMatchingDecorators(MethodInfo method, List<DecoratorInfo> decorators) {
         List<Type> methodParams = method.parameterTypes();
         List<DecoratorInfo> matching = new ArrayList<>(decorators.size());
         for (DecoratorInfo decorator : decorators) {
@@ -661,6 +661,10 @@ public class BeanInfo implements InjectionTargetInfo {
                     throw new DefinitionException(
                             "The class of the decorated type " + decoratedType + " was not found in the index");
                 }
+
+                Map<String, Type> resolvedTypeParameters = Types.resolveDecoratedTypeParams(decoratedTypeClass,
+                        decorator);
+
                 for (MethodInfo decoratedMethod : decoratedTypeClass.methods()) {
                     if (!method.name().equals(decoratedMethod.name())) {
                         continue;
@@ -671,10 +675,12 @@ public class BeanInfo implements InjectionTargetInfo {
                     }
                     // Match the resolved parameter types
                     boolean matches = true;
-                    decoratedMethodParams = Types.getResolvedParameters(decoratedTypeClass, method,
+                    decoratedMethodParams = Types.getResolvedParameters(decoratedTypeClass, resolvedTypeParameters,
+                            decoratedMethod,
                             beanDeployment.getBeanArchiveIndex());
                     for (int i = 0; i < methodParams.size(); i++) {
-                        if (!methodParams.get(i).equals(decoratedMethodParams.get(i))) {
+                        if (!beanDeployment.getDelegateInjectionPointResolver().matches(decoratedMethodParams.get(i),
+                                methodParams.get(i))) {
                             matches = false;
                         }
                     }

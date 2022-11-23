@@ -2,6 +2,10 @@ package io.quarkus.vertx;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -73,6 +77,11 @@ public class EventBusCodecTest {
         }
     }
 
+    @Retention(RetentionPolicy.CLASS)
+    @Target(ElementType.TYPE_USE)
+    @interface NonNull {
+    }
+
     static class MyBean {
         @ConsumeEvent("person")
         public CompletionStage<Greeting> hello(Person p) {
@@ -82,6 +91,12 @@ public class EventBusCodecTest {
         @ConsumeEvent(value = "pet", codec = MyPetCodec.class)
         public CompletionStage<Greeting> hello(Pet p) {
             return CompletableFuture.completedFuture(new Greeting("Hello " + p.getName()));
+        }
+
+        // presence of this method is enough to verify that type annotation
+        // on the message type doesn't cause failure
+        @ConsumeEvent("message-type-with-type-annotation")
+        void messageTypeWithTypeAnnotation(@NonNull Person person) {
         }
     }
 

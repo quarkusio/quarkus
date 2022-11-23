@@ -26,6 +26,8 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.lookup.LookupIfProperty;
+import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.test.QuarkusUnitTest;
@@ -49,14 +51,14 @@ public class ConditionalBeanFiltersTest {
     public void testExpectedFilters() {
         List<String> responseFiltersValues = get("/test/filters")
                 .then().statusCode(200)
-                .body(Matchers.is("void-on,response-on,uni-on,always"))
+                .body(Matchers.is("void-on,response-on,uni-on,void-lookup-on,always"))
                 .extract()
                 .headers()
                 .getList("response-filters")
                 .stream()
                 .map(Header::getValue)
                 .collect(Collectors.toList());
-        assertThat(responseFiltersValues).containsOnly("always", "void-on", "uni-on");
+        assertThat(responseFiltersValues).containsOnly("always", "void-lookup-on", "void-on", "uni-on");
     }
 
     @Path("test")
@@ -132,6 +134,34 @@ public class ConditionalBeanFiltersTest {
         public Uni<Void> uniResponseFilter(ContainerResponseContext ctx) {
             ctx.getHeaders().add("response-filters", "uni-on");
             return Uni.createFrom().nullItem();
+        }
+    }
+
+    @LookupIfProperty(name = "notexistingproperty", stringValue = "true")
+    public static class WontBeEnabledLookupPropertyFilter {
+
+        @ServerRequestFilter(priority = Priorities.USER + 10)
+        public void voidRequestFilter(ContainerRequestContext requestContext) {
+            requestContext.getHeaders().add("request-filters", "void-lookup-off");
+        }
+
+        @ServerResponseFilter
+        public void voidResponseFilter(ContainerResponseContext ctx) {
+            assertFalse(true);
+        }
+    }
+
+    @LookupUnlessProperty(name = "notexistingproperty", stringValue = "true", lookupIfMissing = true)
+    public static class WillBeEnabledLookupPropertyFilter {
+
+        @ServerRequestFilter(priority = Priorities.USER + 20)
+        public void voidRequestFilter(ContainerRequestContext requestContext) {
+            requestContext.getHeaders().add("request-filters", "void-lookup-on");
+        }
+
+        @ServerResponseFilter(priority = Priorities.USER + 20)
+        public void voidResponseFilter(ContainerResponseContext ctx) {
+            ctx.getHeaders().add("response-filters", "void-lookup-on");
         }
     }
 

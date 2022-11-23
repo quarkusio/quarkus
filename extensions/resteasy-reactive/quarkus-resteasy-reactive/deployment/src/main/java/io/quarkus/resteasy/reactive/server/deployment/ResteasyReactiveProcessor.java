@@ -1106,8 +1106,9 @@ public class ResteasyReactiveProcessor {
         Function<String, BeanFactory<?>> factoryFunction = s -> FactoryUtils.factory(s, singletonClasses, recorder,
                 beanContainerBuildItem);
         interceptors.initializeDefaultFactories(factoryFunction);
-        exceptionMapping.initializeDefaultFactories(factoryFunction);
         contextResolvers.initializeDefaultFactories(factoryFunction);
+        exceptionMapping.initializeDefaultFactories(factoryFunction);
+        exceptionMapping.replaceDiscardAtRuntimeIfBeanIsUnavailable(className -> recorder.beanUnavailable(className));
 
         paramConverterProviders.initializeDefaultFactories(factoryFunction);
         paramConverterProviders.sort();

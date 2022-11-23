@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.spi;
 
+import org.jboss.jandex.ClassInfo;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 public final class ExceptionMapperBuildItem extends MultiBuildItem implements CheckBean {
@@ -8,12 +10,14 @@ public final class ExceptionMapperBuildItem extends MultiBuildItem implements Ch
     private final Integer priority;
     private final String handledExceptionName;
     private final boolean registerAsBean;
+    private final ClassInfo declaringClass;
 
     public ExceptionMapperBuildItem(String className, String handledExceptionName, Integer priority, boolean registerAsBean) {
         this.className = className;
         this.priority = priority;
         this.handledExceptionName = handledExceptionName;
         this.registerAsBean = registerAsBean;
+        this.declaringClass = null;
     }
 
     private ExceptionMapperBuildItem(Builder builder) {
@@ -21,6 +25,7 @@ public final class ExceptionMapperBuildItem extends MultiBuildItem implements Ch
         this.handledExceptionName = builder.handledExceptionName;
         this.priority = builder.priority;
         this.registerAsBean = builder.registerAsBean;
+        this.declaringClass = builder.declaringClass;
     }
 
     public String getClassName() {
@@ -40,12 +45,22 @@ public final class ExceptionMapperBuildItem extends MultiBuildItem implements Ch
         return registerAsBean;
     }
 
+    public ClassInfo getDeclaringClass() {
+        return declaringClass;
+    }
+
     public static class Builder {
         private final String className;
         private final String handledExceptionName;
 
         private Integer priority;
         private boolean registerAsBean = true;
+
+        /**
+         * Used to track the class that resulted in the registration of the exception mapper.
+         * This is only set for exception mappers created from {@code @ServerExceptionMapper}
+         */
+        private ClassInfo declaringClass;
 
         public Builder(String className, String handledExceptionName) {
             this.className = className;
@@ -59,6 +74,11 @@ public final class ExceptionMapperBuildItem extends MultiBuildItem implements Ch
 
         public Builder setRegisterAsBean(boolean registerAsBean) {
             this.registerAsBean = registerAsBean;
+            return this;
+        }
+
+        public Builder setDeclaringClass(ClassInfo declaringClass) {
+            this.declaringClass = declaringClass;
             return this;
         }
 

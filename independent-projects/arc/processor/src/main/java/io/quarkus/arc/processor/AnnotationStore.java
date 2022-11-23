@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -15,6 +17,7 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
@@ -138,6 +141,8 @@ public final class AnnotationStore {
     static class TransformationContextImpl extends AnnotationsTransformationContext<Collection<AnnotationInstance>>
             implements TransformationContext {
 
+        private static final Logger LOG = Logger.getLogger(TransformationContextImpl.class);
+
         public TransformationContextImpl(BuildContext buildContext, AnnotationTarget target,
                 Collection<AnnotationInstance> annotations) {
             super(buildContext, target, annotations);
@@ -145,6 +150,14 @@ public final class AnnotationStore {
 
         @Override
         public Transformation transform() {
+            if (LOG.isTraceEnabled()) {
+                String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                        .skip(2)
+                        .limit(7)
+                        .map(se -> "\n\t" + se.toString())
+                        .collect(Collectors.joining());
+                LOG.tracef("Transforming annotations of %s %s\n\t...", target, stack);
+            }
             return new Transformation(new ArrayList<>(getAnnotations()), getTarget(), this::setAnnotations);
         }
 

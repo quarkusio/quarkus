@@ -94,7 +94,11 @@ public class BackChannelLogoutHandler {
 
                                     }
                                 }
-                                context.response().end();
+
+                                if (context.response().getStatusCode() != 200) {
+                                    context.response().end();
+                                }
+                                context.next();
                             }
 
                         });

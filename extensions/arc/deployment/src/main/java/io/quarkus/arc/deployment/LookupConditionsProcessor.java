@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -30,6 +31,9 @@ public class LookupConditionsProcessor {
     private static final DotName LOOK_UP_UNLESS_PROPERTY = DotName.createSimple(LookupUnlessProperty.class.getName());
     private static final DotName LOOK_UP_UNLESS_PROPERTY_CONTAINER = DotName
             .createSimple(LookupUnlessProperty.List.class.getName());
+
+    public static final Set<DotName> LOOKUP_BEAN_ANNOTATIONS = Set.of(LOOK_UP_IF_PROPERTY, LOOK_UP_IF_CONTAINER,
+            LOOK_UP_UNLESS_PROPERTY, LOOK_UP_UNLESS_PROPERTY_CONTAINER);
 
     private static final String NAME = "name";
     private static final String STRING_VALUE = "stringValue";

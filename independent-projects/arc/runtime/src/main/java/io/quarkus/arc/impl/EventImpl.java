@@ -473,8 +473,13 @@ class EventImpl<T> implements Event<T> {
             } catch (Exception e) {
                 // swallow exception and log errors for every problematic OM
                 LOG.errorf(
-                        "Failure occurred while notifying a transational %s for event of type %s \n- please enable debug logging to see the full stack trace",
-                        observerMethod, eventContext.getMetadata().getType().getTypeName());
+                        "Failure occurred while notifying a transational %s for event of type %s " +
+                                "\n- please enable debug logging to see the full stack trace" +
+                                "\n %s",
+                        observerMethod, eventContext.getMetadata().getType().getTypeName(),
+                        e.getCause() != null && e.getMessage() != null
+                                ? "Cause: " + e.getCause() + " Message: " + e.getMessage()
+                                : "Exception caught: " + e);
                 LOG.debugf(e, "Failure occurred while notifying a transational %s for event of type %s",
                         observerMethod, eventContext.getMetadata().getType().getTypeName());
             }

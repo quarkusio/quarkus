@@ -313,6 +313,15 @@ public class ResteasyReactiveScanningProcessor {
         List<FilterGeneration.GeneratedFilter> generatedFilters = FilterGeneration.generate(index,
                 Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()),
                 (methodInfo -> {
+                    List<AnnotationInstance> methodAnnotations = methodInfo.annotations();
+                    for (AnnotationInstance methodAnnotation : methodAnnotations) {
+                        if (BuildTimeEnabledProcessor.BUILD_TIME_ENABLED_BEAN_ANNOTATIONS.contains(methodAnnotation.name())) {
+                            throw new RuntimeException("The combination of '@" + methodAnnotation.name().withoutPackagePrefix()
+                                    + "' and '@ServerRequestFilter' or '@ServerResponseFilter' is not allowed. Offending method is '"
+                                    + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
+                        }
+                    }
+
                     List<AnnotationInstance> classAnnotations = methodInfo.declaringClass().declaredAnnotations();
                     for (AnnotationInstance classAnnotation : classAnnotations) {
                         if (BuildTimeEnabledProcessor.BUILD_TIME_ENABLED_BEAN_ANNOTATIONS.contains(classAnnotation.name())) {

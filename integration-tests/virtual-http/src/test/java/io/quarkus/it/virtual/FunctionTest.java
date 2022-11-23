@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 import javax.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.microsoft.azure.functions.ExecutionContext;
@@ -17,6 +18,7 @@ import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 
+import io.quarkus.azure.functions.resteasy.runtime.BaseFunction;
 import io.quarkus.azure.functions.resteasy.runtime.Function;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -26,6 +28,10 @@ import io.restassured.RestAssured;
  */
 @QuarkusTest
 public class FunctionTest {
+    @BeforeAll
+    public static void setFlag() {
+        BaseFunction.throwException = false;
+    }
 
     @Test
     public void testFunqy() {

@@ -11,6 +11,7 @@ public enum Feature {
 
     AGROAL,
     AMAZON_LAMBDA,
+    AZURE_FUNCTIONS,
     APICURIO_REGISTRY_AVRO,
     AWT,
     CACHE,

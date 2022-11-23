@@ -150,7 +150,8 @@
         <aws-lambda-java.version>1.2.2</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.11.0</aws-lambda-java-events.version>
         <aws-xray.version>2.13.0</aws-xray.version>
-        <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
+        <azure-functions-java-library.version>2.2.0</azure-functions-java-library.version>
+        <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
         <kotlin.version>1.7.22</kotlin.version>
         <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
         <kotlin-serialization.version>1.4.1</kotlin-serialization.version>
@@ -2452,6 +2453,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-reactive-datasource</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-azure-functions</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-azure-functions-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -5511,6 +5522,11 @@
                 <groupId>com.microsoft.azure.functions</groupId>
                 <artifactId>azure-functions-java-library</artifactId>
                 <version>${azure-functions-java-library.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure.functions</groupId>
+                <artifactId>azure-functions-java-spi</artifactId>
+                <version>${azure-functions-java-spi.version}</version>
             </dependency>
 
             <dependency>

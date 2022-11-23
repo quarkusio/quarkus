@@ -4,6 +4,7 @@ fallback: true
 language:
   base:
     shared-data:
+      generate-native: true
       buildtool:
         build-dir: target
         cli: mvn

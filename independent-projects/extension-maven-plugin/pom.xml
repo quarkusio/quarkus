@@ -35,7 +35,7 @@
         <maven.compiler.release>11</maven.compiler.release>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <jackson-bom.version>2.14.0</jackson-bom.version>
+        <jackson-bom.version>2.14.1</jackson-bom.version>
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
     </properties>
     <build>

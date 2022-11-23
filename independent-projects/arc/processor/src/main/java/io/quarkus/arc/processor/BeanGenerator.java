@@ -1932,9 +1932,14 @@ public class BeanGenerator extends AbstractGenerator {
                 annotationHandle = constructor
                         .readStaticField(FieldDescriptor.of(InjectLiteral.class, "INSTANCE", InjectLiteral.class));
             } else {
-                // Create annotation literal if needed
-                ClassInfo literalClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
-                annotationHandle = annotationLiterals.create(constructor, literalClass, annotation);
+                if (!annotation.runtimeVisible()) {
+                    continue;
+                }
+                ClassInfo annotationClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
+                if (annotationClass == null) {
+                    continue;
+                }
+                annotationHandle = annotationLiterals.create(constructor, annotationClass, annotation);
             }
             constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
                     annotationHandle);

@@ -20,18 +20,18 @@ recipeList:
       newVersion: "${angus-activation.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.activation.version
-      newValue: 2.1.0
+      newValue: '2.1.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: angus-activation.version
-      newValue: 1.0.0
+      newValue: '1.0.0'
       addIfMissing: true
   # Annotation
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jakarta-annotation
-      newValue: 2.1.1
+      newValue: '2.1.1'
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.annotation-api.version
-      newValue: 2.1.1
+      newValue: '2.1.1'
   # EL
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.glassfish
@@ -43,43 +43,43 @@ recipeList:
       propertyName: jakarta.el-impl.version
   - org.openrewrite.maven.ChangePropertyValue:
       key: expressly.version
-      newValue: 5.0.0
+      newValue: '5.0.0'
       addIfMissing: true
   # CDI
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.cdi
-      newValue: 4.0.1
+      newValue: '4.0.1'
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.enterprise.cdi-api.version
-      newValue: 4.0.1
+      newValue: '4.0.1'
   # Inject
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.inject-api.version
-      newValue: 2.0.1
+      newValue: '2.0.1'
   # Interceptor
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.interceptor-api.version
-      newValue: 2.1.0
+      newValue: '2.1.0'
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
-      newValue: 6.2.1.Final
+      newValue: '6.2.1.Final'
   # JAXB - See below
   # JSON - See below
   # JSON Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.json.bind-api.version
-      newValue: 3.0.0
+      newValue: '3.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: yasson.version
-      newValue: 3.0.2
+      newValue: '3.0.2'
   # JPA
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jpa
-      newValue: 3.0.0
+      newValue: '3.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.persistence-api.version
-      newValue: 3.0.0
+      newValue: '3.0.0'
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.hibernate
       oldArtifactId: hibernate-core
@@ -121,25 +121,25 @@ recipeList:
   # so let's wait for it to switch to Angus Mail.
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.mail.version
-      newValue: 2.0.1
+      newValue: '2.0.1'
   # Security - See below
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-security.version
-      newValue: 2.0.0.Alpha2
+      newValue: '2.0.0.Alpha2'
   # Servlet
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version
-      newValue: 6.0.0
+      newValue: '6.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-http.version
-      newValue: 5.0.0.Alpha3
+      newValue: '5.0.0.Alpha3'
   # Transaction
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jta
-      newValue: 2.0.1
+      newValue: '2.0.1'
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.transaction-api.version
-      newValue: 2.0.1
+      newValue: '2.0.1'
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.jboss.narayana.jta
       oldArtifactId: narayana-jta
@@ -152,29 +152,29 @@ recipeList:
       newArtifactId: narayana-jts-integration-jakarta
   - org.openrewrite.maven.ChangePropertyValue:
       key: agroal.version
-      newValue: 2.0
+      newValue: '2.0'
   # Validation
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.validation-api.version
-      newValue: 3.0.2
+      newValue: '3.0.2'
   - org.openrewrite.maven.ChangePropertyValue:
       key: hibernate-validator.version
-      newValue: 8.0.0.Final
+      newValue: '8.0.0.Final'
   # Websockets
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.websocket-api.version
-      newValue: 2.1.0
+      newValue: '2.1.0'
   # XML Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.xml.bind-api.version
-      newValue: 4.0.0
+      newValue: '4.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: jaxb-runtime.version
-      newValue: 4.0.1
+      newValue: '4.0.1'
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
-      newValue: 2.0.0.Final
+      newValue: '2.0.0.Final'
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-el
@@ -186,7 +186,7 @@ recipeList:
       version: "${jakarta.el-api.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.el-api.version
-      newValue: 5.0.1
+      newValue: '5.0.1'
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -203,11 +203,11 @@ recipeList:
       version: "${jakarta.ws.rs-api.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.xml.bind-api.version
-      newValue: 4.0.0
+      newValue: '4.0.0'
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.ws.rs-api.version
-      newValue: 3.1.0
+      newValue: '3.1.0'
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -360,15 +360,15 @@ recipeList:
       version: "${jakarta.json-api.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: parsson.version
-      newValue: 1.1.1
+      newValue: '1.1.1'
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.json-api.version
-      newValue: 2.1.1
+      newValue: '2.1.1'
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jboss-logmanager.version
-      newValue: 1.1.1
+      newValue: '1.1.1'
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-json-switch
@@ -386,7 +386,7 @@ displayName: Adjust build-parent
 recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: subethasmtp.version
-      newValue: 6.0.1
+      newValue: '6.0.1'
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-security
@@ -395,18 +395,18 @@ recipeList:
   - org.openrewrite.maven.AddManagedDependency:
       groupId: jakarta.authorization
       artifactId: jakarta.authorization-api
-      version: "${jakarta.authorization-api.version}" 
+      version: "${jakarta.authorization-api.version}"
   - org.openrewrite.maven.AddManagedDependency:
       groupId: jakarta.authentication
       artifactId: jakarta.authentication-api
       version: "${jakarta.authentication-api}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authorization-api.version
-      newValue: 2.1.0
+      newValue: '2.1.0'
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authentication-api
-      newValue: 3.0.0
+      newValue: '3.0.0'
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -555,37 +555,37 @@ displayName: Adjust SmallRye dependencies
 recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-common.version
-      newValue: 2.0.0
+      newValue: '2.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-context-propagation.version
-      newValue: 1.3
+      newValue: '1.3'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-context-propagation.version
-      newValue: 2.0.0
+      newValue: '2.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-config-api.version
-      newValue: 3.0
+      newValue: '3.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-config.version
-      newValue: 3.0.0
+      newValue: '3.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-fault-tolerance.version
-      newValue: 6.1.0
+      newValue: '6.1.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-graphql.version
-      newValue: 2.0.0.RC13
+      newValue: '2.0.0.RC13'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
-      newValue: 4.0.0
+      newValue: '4.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-jwt.version
-      newValue: 2.0
+      newValue: '2.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-jwt.version
-      newValue: 4.0.0
+      newValue: '4.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-lra.version
-      newValue: 2.0-RC1
+      newValue: '2.0-RC1'
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.jboss.narayana.rts
       oldArtifactId: narayana-lra
@@ -608,29 +608,29 @@ recipeList:
       newArtifactId: lra-client-jakarta
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-metrics-api.version
-      newValue: 4.0.1
+      newValue: '4.0.1'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-metrics.version
-      newValue: 4.0.0
+      newValue: '4.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-open-api.version
-      newValue: 3.0.1
+      newValue: '3.0.1'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-opentracing-api.version
-      newValue: 3.0
+      newValue: '3.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-opentracing.version
-      newValue: 3.0.0
+      newValue: '3.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-reactive-messaging.version
-      newValue: 4.1.0
+      newValue: '4.1.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
-      newValue: 3.0
+      newValue: '3.0'
   # TestNG update, needed for the MicroProfile TCKs
   - org.openrewrite.maven.ChangePropertyValue:
       key: testng.version
-      newValue: 7.4.0
+      newValue: '7.4.0'
 # TODO, these ones probably still need a change:
 #        <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
 #        <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -644,41 +644,41 @@ displayName: Adjust MicroProfile TCK versions
 recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-config-tck.version
-      newValue: 3.0.1
+      newValue: '3.0.1'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-context-propagation-tck.version
-      newValue: 1.3
+      newValue: '1.3'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-fault-tolerance-tck.version
-      newValue: 4.0
+      newValue: '4.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-graphql-tck.version
-      newValue: 2.0
+      newValue: '2.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-health-tck.version
-      newValue: 4.0
+      newValue: '4.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-jwt-auth-tck.version
-      newValue: 2.0
+      newValue: '2.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-lra-tck.version
-      newValue: 2.0-RC1
+      newValue: '2.0-RC1'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-metrics-tck.version
-      newValue: 4.0.1
+      newValue: '4.0.1'
   # TODO: update to 3.1 once SmallRye passes it
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-openapi-tck.version
-      newValue: 3.0
+      newValue: '3.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-opentracing-tck.version
-      newValue: 3.0
+      newValue: '3.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-reactive-messaging-tck.version
-      newValue: 3.0
+      newValue: '3.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client-tck.version
-      newValue: 3.0
+      newValue: '3.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy-reactive-testsuite.repo.ref
       newValue: 4116f1a0c5605ad00d7779367dac8002af8c6882
@@ -742,11 +742,11 @@ displayName: Adjust bootstrap
 recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: javax.inject.version
-      newValue: 1
+      newValue: '1'
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: javax.annotation-api.version
-      newValue: 1.3.2
+      newValue: '1.3.2'
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -758,7 +758,7 @@ recipeList:
       oldArtifactId: jboss-ejb-api_3.1_spec
       newGroupId: jakarta.ejb
       newArtifactId: jakarta.ejb-api
-      newVersion: 4.0.1
+      newVersion: '4.0.1'
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.bom.resteasy-microprofile
@@ -776,7 +776,7 @@ recipeList:
       newVersion: "${resteasy-microprofile.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy-microprofile.version
-      newValue: 2.0.0.Final
+      newValue: '2.0.0.Final'
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -817,7 +817,7 @@ recipeList:
       newVersion: "${resteasy-spring-web.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy-spring-web.version
-      newValue: 3.0.0.Beta3
+      newValue: '3.0.0.Beta3'
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe

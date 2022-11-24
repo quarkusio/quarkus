@@ -189,7 +189,7 @@ The `quarkus.oidc.client-id` property references the `client_id` issued by the O
 The `quarkus.oidc.application-type` property is set to `web-app` in order to tell Quarkus that you want to enable the OpenID Connect Authorization Code Flow, so that your users are redirected to the OpenID Connect Provider to authenticate.
 
 For last, the `quarkus.http.auth.permission.authenticated` permission is set to tell Quarkus about the paths you want to protect. In this case,
-all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access. For more details check xref:security-authorization.adoc[Security Authorization Guide].
+all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access. For more details check xref:security-authorization-of-web-endpoints-reference.adoc[Security Authorization Guide].
 
 === Starting and Configuring the Keycloak Server
 

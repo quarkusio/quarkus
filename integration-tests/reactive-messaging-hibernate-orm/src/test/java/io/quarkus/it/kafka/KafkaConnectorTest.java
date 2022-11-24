@@ -12,6 +12,7 @@ import javax.ws.rs.core.Response;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -24,6 +25,7 @@ import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)
+@Disabled
 public class KafkaConnectorTest {
 
     protected static final TypeRef<List<Fruit>> TYPE_REF = new TypeRef<List<Fruit>>() {

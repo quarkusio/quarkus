@@ -36,12 +36,15 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ResourceReferenceProvider;
+import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.arc.test.ArcTestContainer;
 
 public class ResourceInjectionTest {
@@ -50,7 +53,26 @@ public class ResourceInjectionTest {
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(EEResourceField.class, JpaClient.class)
             .resourceReferenceProviders(EntityManagerProvider.class, DummyProvider.class)
-            .resourceAnnotations(PersistenceContext.class, Dummy.class).build();
+            .resourceAnnotations(PersistenceContext.class, Dummy.class)
+            .injectionPointsTransformers(new InjectionPointsTransformer() {
+                @Override
+                public boolean appliesTo(org.jboss.jandex.Type requiredType) {
+                    return requiredType.name().toString().equals(String.class.getName());
+                }
+
+                @Override
+                public void transform(TransformationContext transformationContext) {
+                    if (transformationContext.getAllAnnotations()
+                            .stream()
+                            .anyMatch(it -> it.name().toString().equals(Dummy.class.getName()))) {
+                        // pretend that the injection point has an annotation whose class is missing
+                        transformationContext.transform()
+                                .add(AnnotationInstance.builder(DotName.createSimple("missing.NonNull")).build())
+                                .done();
+                    }
+                }
+            })
+            .build();
 
     @Test
     public void testInjection() {

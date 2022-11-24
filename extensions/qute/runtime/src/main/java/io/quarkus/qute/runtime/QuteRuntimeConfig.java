@@ -14,7 +14,7 @@ public class QuteRuntimeConfig {
 
     /**
      * The strategy used when a standalone expression evaluates to a "not found" value at runtime and
-     * the {@code io.quarkus.qute.strict-rendering} config property is set to {@code false}
+     * the {@code quarkus.qute.strict-rendering} config property is set to {@code false}
      * <p>
      * This strategy is never used when evaluating section parameters, e.g. <code>{#if foo.name}</code>. In such case, it's the
      * responsibility of the section to handle this situation appropriately.

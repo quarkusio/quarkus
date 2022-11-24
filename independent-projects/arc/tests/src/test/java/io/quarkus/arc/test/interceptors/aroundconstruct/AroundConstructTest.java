@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.interceptor.AroundConstruct;
+import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
@@ -23,7 +24,7 @@ public class AroundConstructTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(MyTransactional.class, SimpleBean.class,
-            SimpleInterceptor.class, MyDependency.class);
+            SimpleInterceptor.class, MyDependency.class, SomeAroundInvokeInterceptor.class);
 
     public static AtomicBoolean INTERCEPTOR_CALLED = new AtomicBoolean(false);
 
@@ -40,6 +41,12 @@ public class AroundConstructTest {
 
         @Inject
         SimpleBean(MyDependency foo) {
+
+        }
+
+        // the method has to remain here in order to trigger subclass creation due to at least one around invoke
+        // intercepted method
+        public void ping() {
 
         }
 
@@ -71,6 +78,17 @@ public class AroundConstructTest {
             assertTrue(param instanceof MyDependency);
             assertEquals(Arc.container().instance(MyDependency.class).get().getCreated(), ((MyDependency) param).getCreated());
             ctx.proceed();
+        }
+
+    }
+
+    @MyTransactional
+    @Interceptor
+    public static class SomeAroundInvokeInterceptor {
+
+        @AroundInvoke
+        public Object someAroundInvoke(InvocationContext ctx) throws Exception {
+            return ctx.proceed();
         }
 
     }

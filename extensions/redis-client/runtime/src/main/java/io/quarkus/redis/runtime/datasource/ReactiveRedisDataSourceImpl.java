@@ -10,6 +10,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands;
@@ -322,6 +323,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public <K> ReactiveSearchCommands<K> search(Class<K> redisKeyType) {
         return new ReactiveSearchCommandsImpl<>(this, redisKeyType);
+    }
+
+    @Override
+    public <K> ReactiveAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
+        return new ReactiveAutoSuggestCommandsImpl<>(this, redisKeyType);
     }
 
     @Override

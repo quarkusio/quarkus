@@ -3,6 +3,7 @@ package io.quarkus.redis.datasource;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands;
@@ -537,6 +538,27 @@ public interface ReactiveRedisDataSource {
     @Experimental("The Redis Search support is experimental")
     default ReactiveSearchCommands<String> search() {
         return search(String.class);
+    }
+
+    /**
+     * Gets the object to emit commands from the {@code auto-suggest} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to get suggestions
+     */
+    @Experimental("The Redis auto-suggest support is experimental")
+    <K> ReactiveAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code auto-suggest} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @return the object to get suggestions
+     */
+    @Experimental("The Redis auto-suggest support is experimental")
+    default ReactiveAutoSuggestCommands<String> autosuggest() {
+        return autosuggest(String.class);
     }
 
     /**

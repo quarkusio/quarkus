@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import java.time.Duration;
 
+import io.quarkus.redis.datasource.autosuggest.TransactionalAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
 import io.quarkus.redis.datasource.bloom.TransactionalBloomCommands;
 import io.quarkus.redis.datasource.countmin.TransactionalCountMinCommands;
@@ -129,6 +130,11 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K> TransactionalSearchCommands search(Class<K> redisKeyType) {
         return new BlockingTransactionalSearchCommandsImpl(this, reactive.search(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TransactionalAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
+        return new BlockingTransactionalAutoSuggestCommandsImpl<>(this, reactive.autosuggest(redisKeyType), timeout);
     }
 
     @Override

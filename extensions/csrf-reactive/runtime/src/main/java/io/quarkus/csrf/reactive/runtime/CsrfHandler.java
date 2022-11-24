@@ -1,5 +1,7 @@
 package io.quarkus.csrf.reactive.runtime;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -28,7 +30,23 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
      */
     private static final String CSRF_TOKEN_VERIFIED = "csrf_token_verified";
 
-    private volatile SecureRandom secureRandom = new SecureRandom();
+    // although technically the field does not need to be volatile (since the access mode is determined by the VarHandle use)
+    // it is a recommended practice by Doug Lea meant to catch cases where the field is accessed directly (by accident)
+    @SuppressWarnings("unused")
+    private volatile SecureRandom secureRandom;
+
+    // use a VarHandle to access the secureRandom as the value is written only by the main thread
+    // and all other threads simply read the value, and thus we can use the Release / Acquire access mode
+    private static final VarHandle SECURE_RANDOM_VH;
+
+    static {
+        try {
+            SECURE_RANDOM_VH = MethodHandles.lookup().findVarHandle(CsrfHandler.class, "secureRandom",
+                    SecureRandom.class);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new Error(e);
+        }
+    }
 
     private CsrfReactiveConfig config;
 
@@ -81,10 +99,7 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
             if (cookieToken == null && isCsrfTokenRequired(routing, config)) {
                 // Set the CSRF cookie with a randomly generated value
                 byte[] tokenBytes = new byte[config.tokenSize];
-                if (secureRandom == null) {
-                    secureRandom = new SecureRandom();
-                }
-                secureRandom.nextBytes(tokenBytes);
+                getSecureRandom().nextBytes(tokenBytes);
                 routing.put(CSRF_TOKEN_BYTES_KEY, tokenBytes);
                 routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes));
             }
@@ -141,6 +156,10 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
         }
     }
 
+    private SecureRandom getSecureRandom() {
+        return (SecureRandom) SECURE_RANDOM_VH.getAcquire(this);
+    }
+
     private static boolean isMatchingMediaType(MediaType contentType, MediaType expectedType) {
         return contentType.getType().equals(expectedType.getType())
                 && contentType.getSubtype().equals(expectedType.getSubtype());
@@ -183,6 +202,7 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
 
     public void configure(CsrfReactiveConfig configuration) {
         this.config = configuration;
+        SECURE_RANDOM_VH.setRelease(this, new SecureRandom());
     }
 
     @Override

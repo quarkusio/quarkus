@@ -18,6 +18,7 @@ class QuarkusRedisTest {
             "/quarkus-redis",
             "/quarkus-redis-with-name",
             "/quarkus-redis-with-name-legacy",
+            "/quarkus-redis-with-instance",
             "/quarkus-redis-provided-hosts",
             "/quarkus-redis-parameter-injection-legacy"
     };

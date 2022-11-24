@@ -8,10 +8,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -45,6 +49,9 @@ public class RedisClientProcessor {
     static final DotName REDIS_CLIENT_ANNOTATION = DotName.createSimple(RedisClientName.class.getName());
 
     private static final String FEATURE = "redis-client";
+
+    private static final Pattern NAMED_CLIENT_PROPERTY_NAME_PATTERN = Pattern
+            .compile("^quarkus\\.redis\\.(.+)\\.hosts(-provider-name)?$");
 
     private static final List<DotName> SUPPORTED_INJECTION_TYPE = List.of(
             // Legacy types
@@ -97,6 +104,7 @@ public class RedisClientProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void init(RedisClientRecorder recorder,
+            RedisBuildTimeConfig buildTimeConfig,
             BeanArchiveIndexBuildItem indexBuildItem,
             BeanDiscoveryFinishedBuildItem beans,
             ShutdownContextBuildItem shutdown,
@@ -116,6 +124,12 @@ public class RedisClientProcessor {
                 .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
                 .findAny()
                 .ifPresent(x -> names.add(DEFAULT_CLIENT_NAME));
+
+        beans.getInjectionPoints().stream()
+                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
+                .filter(InjectionPointInfo::isProgrammaticLookup)
+                .findAny()
+                .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, ConfigProvider.getConfig())));
 
         // Inject the creation of the client when the application starts.
         recorder.initialize(vertxBuildItem.getVertx(), names);
@@ -142,6 +156,27 @@ public class RedisClientProcessor {
         }
 
         recorder.cleanup(shutdown);
+    }
+
+    static Set<String> configuredClientNames(RedisBuildTimeConfig buildTimeConfig, Config config) {
+        Set<String> names = new HashSet<>();
+        // redis client names from dev services
+        if (buildTimeConfig.defaultDevService.devservices.enabled) {
+            names.add(DEFAULT_CLIENT_NAME);
+        }
+        names.addAll(buildTimeConfig.additionalDevServices.keySet());
+        // redis client names declared in config
+        for (String propertyName : config.getPropertyNames()) {
+            if (propertyName.equals("quarkus.redis.hosts")) {
+                names.add(DEFAULT_CLIENT_NAME);
+                continue;
+            }
+            Matcher matcher = NAMED_CLIENT_PROPERTY_NAME_PATTERN.matcher(propertyName);
+            if (matcher.matches()) {
+                names.add(matcher.group(1));
+            }
+        }
+        return names;
     }
 
     static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name,

@@ -5,8 +5,7 @@
     <parent>
         <artifactId>quarkus-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <!--TODO Remove-->
-        <version>2.14.0.Final</version>
+        <version>999-SNAPSHOT</version>
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>

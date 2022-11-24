@@ -13,8 +13,7 @@
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-parent</artifactId>
     <name>Quarkus - Parent pom</name>
-    <!--TODO Remove-->
-    <version>2.14.0.Final</version>
+    <version>999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <description>Quarkus - Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM</description>

@@ -5,8 +5,7 @@
     <parent>
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <!--TODO Remove-->
-        <version>2.14.0.Final</version>
+        <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 

@@ -3,12 +3,12 @@ include::_attributes.adoc[]
 
 Quarkus documentation uses asciidoc syntax.
 
-A gradual refactoring effort is underway to reshape Quarkus documentation to make it easier to both read and write (see xref:doc-concepts.adoc[Quarkus documentation concepts] for more on this transition).
+A gradual refactoring effort is underway to reshape Quarkus documentation to make it easier to both read and write (see xref:doc-concept.adoc[Quarkus documentation concepts] for more on this transition).
 
 For more information on contributing to Quarkus docs, see:
 
 - xref:doc-contribute-docs-howto.adoc[How to contribute documentation]
-- xref:doc-concepts.adoc[Quarkus documentation concepts]
+- xref:doc-concept.adoc[Quarkus documentation concepts]
 - xref:doc-reference.adoc[Quarkus documentation reference]
 
 == Glossary

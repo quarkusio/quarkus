@@ -3,7 +3,7 @@ This document is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="reference-doc-quarkus-documentation"]
+[id="doc-reference"]
 = About Quarkus documentation
 include::_attributes.adoc[]
 :categories: contributing
@@ -108,7 +108,7 @@ AsciiDoc output to HTML:: AsciiDoc processing creates HTML files in `docs/target
 
 Create new documentation files with the appropriate template for the content type: 
 
-Concepts:: Use `docs/src/main/asciidoc/_templates/template-concepts.adoc`
+Concepts:: Use `docs/src/main/asciidoc/_templates/template-concept.adoc`
 How-To Guides:: Use `docs/src/main/asciidoc/_templates/template-howto.adoc`
 Reference:: Use `docs/src/main/asciidoc/_templates/template-reference.adoc`
 Tutorials:: Use `docs/src/main/asciidoc/_templates/template-tutorial.adoc`
@@ -124,7 +124,7 @@ Prefix:: Use a common prefix to group related documents. Documents related to wr
 
 Suffix:: The file name should reflect the document type:
 
-- Concept documents should end in `-concepts.adoc`
+- Concept documents should end in `-concept.adoc`
 - How-to guides should end in `-howto.adoc`
 - References should end in `-reference.adoc`
 - Tutorials should end in `-tutorial.adoc`
@@ -138,14 +138,13 @@ Minimally, each document should define and id and a title, and include common at
 
 [source,asciidoc]
 ----
-[id="reference-doc-quarkus-documentation"] // <1>
+[id="doc-reference"] // <1>
 = Quarkus documentation reference // <2>
 \include::_attributes.adoc[] // <3>
 :categories: contributing // <4>
 ----
 
-<1> Specify an id for your document. 
-It should start with the document type: `concept-`, `howto-`, `reference-`, or `tutorial-`.
+<1> Use the filename as the ID for the document.
 <2> Define the document title following guidance in <<Titles and headings>>
 <3> Include common document attributes
 <4> Specify the relevant <<Categories>> (comma separated)
@@ -199,7 +198,7 @@ If you end up with deeply nested sections, think about the following:
 For example, if this is a reference, should some of this content be moved to a concept doc or how-to guide instead?
 - Can the content be reorganized to make it simpler to consume?
 
-See xref:{doc-guides}/doc-concepts.adoc[Quarkus documentation concepts] for more information about content types and organization.
+See xref:{doc-guides}/doc-concept.adoc[Quarkus documentation concepts] for more information about content types and organization.
 ====
 
 === Links
@@ -242,7 +241,7 @@ When cross-referencing content, always use the inter-document `xref:` syntax and
 .Cross-reference example
 [source,asciidoc]
 ----
-xref:{doc-guides}/doc-concepts.adoc[Quarkus Documentation concepts] <1>
+xref:{doc-guides}/doc-concept.adoc[Quarkus Documentation concepts] <1>
 ----
 <1> The cross reference starts with `xref:`, uses a cross-reference source attribute(`\{doc-guides}`), and provides a readable description: `[Quarkus Documentation concepts]`.
 

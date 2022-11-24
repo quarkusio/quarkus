@@ -121,6 +121,18 @@ public class KubernetesClientBuildConfig {
     public Duration requestTimeout;
 
     /**
+     * Maximum number of retry attempts for API requests that fail with an HTTP code of >= 500
+     */
+    @ConfigItem(defaultValue = "0") // default lifted from Kubernetes Client
+    public Integer requestRetryBackoffLimit;
+
+    /**
+     * Time interval between retry attempts for API requests that fail with an HTTP code of >= 500
+     */
+    @ConfigItem(defaultValue = "PT1S") // default lifted from Kubernetes Client
+    public Duration requestRetryBackoffInterval;
+
+    /**
      * Maximum amount of time in milliseconds to wait for a rollout to be completed
      */
     @ConfigItem(defaultValue = "PT15M") // default lifted from Kubernetes Client

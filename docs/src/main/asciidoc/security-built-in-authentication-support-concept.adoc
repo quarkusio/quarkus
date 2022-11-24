@@ -3,15 +3,17 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="security-built-in-authentication-support-concept"]
 = Built-In Authentication Support
-
 include::_attributes.adoc[]
+:categories: security,web
 
 The following section describes the Quarkus built-in authentication mechanisms for HTTP based FORM, BASIC, and Mutual TLS authentication. Proactive authentication is also described.
 
-include::security-basic-auth-concept.adoc[leveloffset=+1]
+include::security-basic-authentication-concept.adoc[leveloffset=+1]
 
-include::security-enabling-basic-auth-howto.adoc[leveloffset=+2]
+// include::security-enabling-basic-auth-howto.adoc[leveloffset=+2]
+// How to I convert this how-to into a guide that appears alongside all the other guides?
 
 
 [[form-auth]]

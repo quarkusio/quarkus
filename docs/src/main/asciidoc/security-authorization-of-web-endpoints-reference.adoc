@@ -3,9 +3,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="security-authorization-of-web-endpoints-reference"]
 = Authorization of Web Endpoints
-
 include::_attributes.adoc[]
+:categories: security,web
 
 Quarkus has an integrated pluggable web security layer. If security is enabled all HTTP requests will have a permission
 check performed to make sure they are allowed to continue.
@@ -91,7 +92,7 @@ TIP: Given the above permission set, `GET /public/forbidden-folder/foo` would ma
 but because it matches the `deny1` permission set's path on a longer match, `deny1` will be chosen and the request will
 be rejected.
 
-[NOTE] 
+[NOTE]
 ====
 Subpath permissions always win against the root path permissions as explained above in the `deny1` versus `permit1` permission example.
 Here is another example showing a subpath permission allowing a public resource access with the root path permission requiring the authorization:
@@ -167,9 +168,9 @@ Defines the default role requirements for unannotated endpoints. The role '**' i
 and JAX-RS endpoints that do not have security annotations but are defined in classes that contain methods with
 security annotations. Defaults to `false`.
 
-=== Disabling permissions 
+=== Disabling permissions
 
-Permissions can be disabled at build time with an `enabled` property for each declared permission, for example: 
+Permissions can be disabled at build time with an `enabled` property for each declared permission, for example:
 
 [source,properties]
 ----
@@ -192,14 +193,14 @@ By default, `quarkus.http.root-path` is prepended automatically to configured pe
 quarkus.http.auth.permission.permit1.paths=public/*,css/*,js/*,robots.txt
 ----
 
-This configuration is equivalent to the following: 
+This configuration is equivalent to the following:
 
 [source,properties]
 ----
 quarkus.http.auth.permission.permit1.paths=${quarkus.http.root-path}/public/*,${quarkus.http.root-path}/css/*,${quarkus.http.root-path}/js/*,${quarkus.http.root-path}/robots.txt
 ----
 
-A leading slash will change how the configured permission path is interpreted. The configured URL will be used as-is, and paths will not be adjusted if the value of `quarkus.http.root-path` is changed. For example: 
+A leading slash will change how the configured permission path is interpreted. The configured URL will be used as-is, and paths will not be adjusted if the value of `quarkus.http.root-path` is changed. For example:
 
 [source,properties]
 ----
@@ -270,7 +271,7 @@ public class SubjectExposingResource {
 <4> This call to obtain the user principal will return null if the caller is unauthenticated, non-null if the caller is authenticated.
 <5> The `/subject/denied` endpoint disallows any access regardless of whether the call is authenticated by specifying the `@DenyAll` annotation.
 
-CAUTION: Please refer to the xref:security-built-in-authentication.adoc#proactive-authentication[Proactive Authentication] section of the Built-In Authentication Support guide if you plan to use standard security annotations on IO thread.
+CAUTION: Please refer to the xref:security-built-in-authentication-support-concept.adoc#proactive-authentication[Proactive Authentication] section of the Built-In Authentication Support guide if you plan to use standard security annotations on IO thread.
 
 == References
 

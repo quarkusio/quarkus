@@ -14,7 +14,7 @@ Quarkus Security is a framework that provides the architecture, multiple authent
 
 Before you start building security into your Quarkus applications, review the overview information to learn about the Quarkus Security architecture and the different authentication and authorization mechanisms that Quarkus supports.
 
-To get started with security in Quarkus, we recommend that you first combine the Quarkus built-in xref:security-basic-auth-concept.adoc[Basic HTTP authentication] with the JPA identity provider to enable role-based access control (RBAC). 
+To get started with security in Quarkus, we recommend that you first combine the Quarkus built-in xref:security-basic-authentication-concept.adoc[Basic HTTP authentication] with the JPA identity provider to enable role-based access control (RBAC). 
 Complete the steps in the xref:security-getting-started.adoc[Secure a Quarkus application with Basic authentication] tutorial.
 After you have successfully secured your Quarkus application with basic HTTP authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, OpenID Connect (OIDC) authentication.
 
@@ -38,7 +38,7 @@ Quarkus supports multiple authentication mechanisms
 
 === Basic and Form HTTP authentication
 
-xref:security-basic-auth-concept.adoc[Basic HTTP Authentication] and xref:security-built-in-authentication.adoc#form-auth[Form HTTP authentication] are the core authentication mechanisms supported in Quarkus. 
+xref:security-basic-authentication-concept.adoc[Basic HTTP Authentication] and xref:security-built-in-authentication-support-concept.adoc#form-auth[Form HTTP authentication] are the core authentication mechanisms supported in Quarkus. 
 
 === WebAuthn authentication
 
@@ -49,7 +49,7 @@ For more information, see xref:security-webauthn.adoc[Secure a Quarkus applicati
 === Mutual TLS (mTLS) authentication
 
 Quarkus provides mutual TLS (mTLS) authentication so that you can authenticate users based on their X.509 certificates.
-For more information, see xref:security-built-in-authentication.adoc#mutual-tls[mutual TLS authentication].
+For more information, see xref:security-built-in-authentication-support-concept.adoc#mutual-tls[mutual TLS authentication].
 
 === OpenID Connect authentication
 
@@ -242,7 +242,7 @@ If you use `Basic` or `Form` HTTP-based authentication then you must add an `Ide
 == Authorization
 
 Quarkus also supports role-based access control (RBAC). 
-For more information about RBAC and other authorization options in Quarkus, see xref:security-authorization.adoc[Security authorization].
+For more information about RBAC and other authorization options in Quarkus, see xref:security-authorization-of-web-endpoints-reference.adoc[Security authorization].
 
 == Quarkus Security customization
 
@@ -287,7 +287,7 @@ Ensure that the value of the `auth-mechanism` property matches the authenticatio
 == Proactive authentication
 
 By default, Quarkus does proactive authentication, which means that all incoming requests with credentials are authenticated regardless of whether the target page requires authentication.
-For more information, see xref:security-built-in-authentication.adoc#proactive-authentication[Proactive authentication].
+For more information, see xref:security-built-in-authentication-support-concept.adoc#proactive-authentication[Proactive authentication].
 
 == Secure connections with SSL/TLS
 

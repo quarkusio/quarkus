@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 
 The following section describes the Quarkus built-in authentication mechanisms for HTTP based FORM, BASIC, and Mutual TLS authentication. Proactive authentication is also described.
 
-include::security-basic-auth-concept.adoc[leveloffset=+1]
+include::security-basic-authentication-concept.adoc[leveloffset=+1]
 
 include::security-enabling-basic-auth-howto.adoc[leveloffset=+2]
 

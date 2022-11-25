@@ -525,7 +525,7 @@ quarkus.oidc.application-type=web-app
 quarkus.oidc.logout.frontchannel.path=/front-channel-logout
 ----
 
-This path will be compared against the current request's path and the user willbe logged out if these paths match.
+This path will be compared against the current request's path and the user will be logged out if these paths match.
 
 [[local-logout]]
 ==== Local Logout

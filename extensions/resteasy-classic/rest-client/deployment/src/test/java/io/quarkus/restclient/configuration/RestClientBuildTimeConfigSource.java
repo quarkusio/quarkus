@@ -17,7 +17,7 @@ import io.smallrye.config.common.MapBackedConfigSource;
  * runtime, but it doesn't return any configuration.
  */
 public class RestClientBuildTimeConfigSource extends MapBackedConfigSource {
-    // Because getPropertyNames() is called during SmallRyeConfig init (2 times)
+    // Because getPropertyNames() is called during SmallRyeConfig init (3 times)
     private int propertyNamesCallCount = 0;
 
     private static final Map<String, String> PROPERTIES = Map.of(
@@ -42,7 +42,7 @@ public class RestClientBuildTimeConfigSource extends MapBackedConfigSource {
 
     @Override
     public Set<String> getPropertyNames() {
-        if (propertyNamesCallCount >= 2) {
+        if (propertyNamesCallCount >= 3) {
             return isBuildTime() ? PROPERTIES.keySet() : emptySet();
         } else {
             propertyNamesCallCount++;

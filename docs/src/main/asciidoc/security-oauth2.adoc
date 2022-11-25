@@ -84,7 +84,7 @@ public class TokenSecuredResource {
 
 This is a basic REST endpoint that does not have any of the {extension-name} specific features, so let's add some.
 
-We will use the JSR 250 common security annotations, they are described in the xref:security.adoc[Using Security] guide. 
+We will use the JSR 250 common security annotations, they are described in the xref:security-overview-concept.adoc[Using Security] guide. 
 
 [source,java]
 ----
@@ -451,7 +451,7 @@ class TokenSecuredResourceTest {
 == References
 
 * https://tools.ietf.org/html/rfc6749[OAuth2]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]
 
 [[config-reference]]
 == Configuration Reference

@@ -237,4 +237,4 @@ public class AuthenticationFailedExceptionMapper implements ExceptionMapper<Auth
 
 == References
 
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

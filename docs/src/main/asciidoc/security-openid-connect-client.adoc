@@ -502,4 +502,4 @@ will return `403` status code.
 
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect Client and Token Propagation Reference Guide]
 * xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

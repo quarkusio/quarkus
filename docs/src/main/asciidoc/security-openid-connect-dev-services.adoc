@@ -409,4 +409,4 @@ This document refers to the `http://localhost:8080/q/dev` Dev UI URL in several 
 * https://openid.net/connect/[OpenID Connect]
 * xref:security-openid-connect.adoc[Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization]
 * xref:security-openid-connect-web-authentication.adoc[Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

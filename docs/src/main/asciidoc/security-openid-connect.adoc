@@ -397,7 +397,7 @@ If the token is opaque (binary) then a `scope` property from the remote token in
 
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
-Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security.adoc#security-identity-customization[here].
+Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security-overview-concept.adoc#security-identity-customization[here].
 
 [[token-verification-introspection]]
 === Token Verification And Introspection
@@ -1184,6 +1184,6 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* xref:security.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
+* xref:security-overview-concept.adoc[Quarkus Security overview]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

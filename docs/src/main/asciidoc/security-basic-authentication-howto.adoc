@@ -1,8 +1,9 @@
-[id="security-enabling-basic-auth-howto"]
-= Enable HTTP Basic authentication
+[id="security-basic-authentication-howto"]
+= Enable Basic authentication
 include::_attributes.adoc[]
+:categories: security
 
-Enable the HTTP Basic authentication for your Quarkus project and allow users to authenticate with a username and password.
+Enable Basic authentication for your Quarkus project and allow users to authenticate with a username and password.
  
 == Prerequisites
  

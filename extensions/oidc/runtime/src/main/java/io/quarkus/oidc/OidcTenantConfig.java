@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -14,6 +15,9 @@ import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
 
 @ConfigGroup
 public class OidcTenantConfig extends OidcCommonConfig {
@@ -707,7 +711,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Additional properties which will be added as the query parameters to the authentication redirect URI.
          */
         @ConfigItem
-        public Map<String, String> extraParams;
+        public Map<String, String> extraParams = new HashMap<>();
+
+        /**
+         * Request URL query parameters which, if present, will be added to the authentication redirect URI.
+         */
+        @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
+        public Optional<List<String>> forwardParams = Optional.empty();
 
         /**
          * If enabled the state, session and post logout cookies will have their 'secure' parameter set to 'true'
@@ -964,6 +975,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setResponseMode(ResponseMode responseMode) {
             this.responseMode = Optional.of(responseMode);
+        }
+
+        public Optional<List<String>> getForwardParams() {
+            return forwardParams;
+        }
+
+        public void setForwardParams(List<String> forwardParams) {
+            this.forwardParams = Optional.of(forwardParams);
         }
     }
 

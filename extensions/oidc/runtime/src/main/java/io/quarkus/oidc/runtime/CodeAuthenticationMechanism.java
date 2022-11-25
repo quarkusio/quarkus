@@ -490,6 +490,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         codeFlowParams.append(AMP).append(OidcConstants.TOKEN_SCOPE).append(EQ)
                                 .append(OidcCommonUtils.urlEncode(String.join(" ", scopes)));
 
+                        MultiMap requestQueryParams = null;
+                        if (!configContext.oidcConfig.getAuthentication().forwardParams.isEmpty()) {
+                            requestQueryParams = context.queryParams();
+                            for (String forwardedParam : configContext.oidcConfig.getAuthentication().forwardParams.get()) {
+                                if (requestQueryParams.contains(forwardedParam)) {
+                                    for (String requestQueryParamValue : requestQueryParams.getAll(forwardedParam))
+                                        codeFlowParams.append(AMP).append(forwardedParam).append(EQ)
+                                                .append(OidcCommonUtils.urlEncode(requestQueryParamValue));
+                                    requestQueryParams.remove(forwardedParam);
+                                }
+                            }
+                        }
+
                         // redirect_uri
                         String redirectPath = getRedirectPath(configContext, context);
                         String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig), redirectPath);
@@ -503,7 +516,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         // state
                         codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_STATE).append(EQ)
-                                .append(generateCodeFlowState(context, configContext, redirectPath,
+                                .append(generateCodeFlowState(context, configContext, redirectPath, requestQueryParams,
                                         pkceStateBean != null ? pkceStateBean.getCodeVerifier() : null));
 
                         if (pkceStateBean != null) {
@@ -809,7 +822,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String generateCodeFlowState(RoutingContext context, TenantConfigContext configContext,
-            String redirectPath, String pkceCodeVerifier) {
+            String redirectPath, MultiMap requestQueryWithoutForwardedParams, String pkceCodeVerifier) {
         String uuid = UUID.randomUUID().toString();
         String cookieValue = uuid;
 
@@ -822,7 +835,22 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         ? context.request().path()
                         : "";
                 if (requestQuery != null) {
-                    requestPath += ("?" + requestQuery);
+                    requestPath += "?";
+                    if (requestQueryWithoutForwardedParams == null) {
+                        requestPath += requestQuery;
+                    } else {
+                        StringBuilder sb = new StringBuilder();
+                        for (String requestQueryParam : requestQueryWithoutForwardedParams.names()) {
+                            for (String requestQueryParamValue : requestQueryWithoutForwardedParams.getAll(requestQueryParam)) {
+                                if (sb.length() > 0) {
+                                    sb.append(AMP);
+                                }
+                                sb.append(requestQueryParam).append(EQ)
+                                        .append(OidcCommonUtils.urlEncode(requestQueryParamValue));
+                            }
+                        }
+                        requestPath += sb.toString();
+                    }
                 }
                 if (!requestPath.isEmpty()) {
                     extraStateValue.setRestorePath(requestPath);

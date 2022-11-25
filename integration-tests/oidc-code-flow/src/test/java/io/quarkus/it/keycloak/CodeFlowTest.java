@@ -2,6 +2,7 @@ package io.quarkus.it.keycloak;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -221,8 +222,12 @@ public class CodeFlowTest {
 
             WebResponse webResponse = webClient
                     .loadWebResponse(
-                            new WebRequest(URI.create("http://localhost:8081/tenant-https/query?code=b").toURL()));
+                            new WebRequest(
+                                    URI.create("http://localhost:8081/tenant-https/query?code=b&kc_idp_hint=google").toURL()));
             String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            String keycloakUrlQuery = URI.create(keycloakUrl).getQuery();
+            assertTrue(keycloakUrlQuery.contains("kc_idp_hint=google"));
+            assertFalse(keycloakUrlQuery.contains("code=b"));
             verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "tenant-https",
                     true);
 

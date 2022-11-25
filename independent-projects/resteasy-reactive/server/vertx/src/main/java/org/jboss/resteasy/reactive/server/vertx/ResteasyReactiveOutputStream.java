@@ -80,7 +80,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
 
     public void write(ByteBuf data, boolean last) throws IOException {
         if (last && data == null) {
-            request.response().end();
+            request.response().end((Handler<AsyncResult<Void>>) null);
             return;
         }
         //do all this in the same lock
@@ -104,9 +104,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                     data.release();
                 } else {
                     if (last) {
-                        request.response().end(createBuffer(data));
+                        request.response().end(createBuffer(data), null);
                     } else {
-                        request.response().write(createBuffer(data));
+                        request.response().write(createBuffer(data), null);
                     }
                 }
             } catch (Exception e) {
@@ -160,9 +160,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                         if (overflow != null) {
                             if (overflow.size() > 0) {
                                 if (closed) {
-                                    request.response().end(Buffer.buffer(overflow.toByteArray()));
+                                    request.response().end(Buffer.buffer(overflow.toByteArray()), null);
                                 } else {
-                                    request.response().write(Buffer.buffer(overflow.toByteArray()));
+                                    request.response().write(Buffer.buffer(overflow.toByteArray()), null);
                                 }
                                 overflow.reset();
                             }

@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 import javax.enterprise.event.Observes;
@@ -10,6 +11,8 @@ import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.SecurityEvent;
+import io.quarkus.oidc.SecurityEvent.Type;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -84,6 +87,11 @@ public class BackChannelLogoutHandler {
                                         if (verifyLogoutTokenClaims(result)) {
                                             resolver.getBackChannelLogoutTokens().put(oidcTenantConfig.tenantId.get(),
                                                     result);
+                                            if (resolver.isSecurityEventObserved()) {
+                                                resolver.getSecurityEvent().fire(
+                                                        new SecurityEvent(Type.OIDC_BACKCHANNEL_LOGOUT_INITIATED,
+                                                                Map.of(OidcConstants.BACK_CHANNEL_LOGOUT_TOKEN, result)));
+                                            }
                                             context.response().setStatusCode(200);
                                         } else {
                                             context.response().setStatusCode(400);

@@ -23,7 +23,7 @@ public class CustomTenantResolver implements TenantResolver {
         if (path.endsWith("code-flow-encrypted-id-token-pem")) {
             return "code-flow-encrypted-id-token-pem";
         }
-        if (path.endsWith("code-flow-form-post")) {
+        if (path.endsWith("code-flow-form-post") || path.endsWith("code-flow-form-post/front-channel-logout")) {
             return "code-flow-form-post";
         }
         if (path.endsWith("code-flow-user-info-only")) {

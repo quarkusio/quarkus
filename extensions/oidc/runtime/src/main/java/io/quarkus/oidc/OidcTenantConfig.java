@@ -157,7 +157,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Token token = new Token();
 
     /**
-     * RP Initiated and BackChannel Logout configuration
+     * RP Initiated, BackChannel and FrontChannel Logout configuration
      */
     @ConfigItem
     public Logout logout = new Logout();
@@ -241,6 +241,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Backchannel backchannel = new Backchannel();
 
+        /**
+         * Front-Channel Logout configuration
+         */
+        @ConfigItem
+        public Frontchannel frontchannel = new Frontchannel();
+
         public void setPath(Optional<String> path) {
             this.path = path;
         }
@@ -280,12 +286,37 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public void setBackchannel(Backchannel backchannel) {
             this.backchannel = backchannel;
         }
+
+        public Frontchannel getFrontchannel() {
+            return frontchannel;
+        }
+
+        public void setFrontchannel(Frontchannel frontchannel) {
+            this.frontchannel = frontchannel;
+        }
     }
 
     @ConfigGroup
     public static class Backchannel {
         /**
          * The relative path of the Back-Channel Logout endpoint at the application.
+         */
+        @ConfigItem
+        public Optional<String> path = Optional.empty();
+
+        public void setPath(Optional<String> path) {
+            this.path = path;
+        }
+
+        public String getPath() {
+            return path.get();
+        }
+    }
+
+    @ConfigGroup
+    public static class Frontchannel {
+        /**
+         * The relative path of the Front-Channel Logout endpoint at the application.
          */
         @ConfigItem
         public Optional<String> path = Optional.empty();

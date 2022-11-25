@@ -13,8 +13,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
-
 import io.smallrye.config.common.utils.StringUtil;
 
 /**
@@ -23,7 +21,6 @@ import io.smallrye.config.common.utils.StringUtil;
 public final class ConfigDiagnostic {
     private static final Logger log = Logger.getLogger("io.quarkus.config");
 
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     private static final List<String> errorsMessages = new CopyOnWriteArrayList<>();
     private static final Set<String> errorKeys = new CopyOnWriteArraySet<>();
 

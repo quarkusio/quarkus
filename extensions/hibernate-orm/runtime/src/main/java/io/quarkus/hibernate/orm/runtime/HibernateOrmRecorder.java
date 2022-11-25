@@ -133,7 +133,7 @@ public class HibernateOrmRecorder {
                     String.class);
         }
         //if hibernate is already managing the schema we don't do this
-        if (val.isPresent() && !val.get().equals("none")) {
+        if (val.isPresent() && "none".equals(val.get()) {
             return;
         }
         new Thread(new Runnable() {

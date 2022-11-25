@@ -1050,9 +1050,11 @@ Then, in your test you can simply use `@InjectMock` to create and inject a mock:
 
 [source,java]
 ----
-import static org.assertj.core.api.Assertions.assertThat;
+package io.quarkus.it.rest.client.main;
+
 import static org.mockito.Mockito.when;
 
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -1063,6 +1065,7 @@ import io.quarkus.test.junit.mockito.InjectMock;
 public class InjectMockTest {
 
     @InjectMock
+    @RestClient
     Client mock;
 
     @BeforeEach
@@ -1082,6 +1085,8 @@ If Mockito doesn't meet your needs, you can create a mock programmatically using
 
 [source,java]
 ----
+package io.quarkus.it.rest.client.main;
+
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

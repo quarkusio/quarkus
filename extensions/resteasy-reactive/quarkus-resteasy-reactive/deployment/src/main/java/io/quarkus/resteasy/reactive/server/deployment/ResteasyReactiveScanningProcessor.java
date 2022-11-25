@@ -50,6 +50,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BuildTimeEnabledProcessor;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.LookupConditionsProcessor;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -80,6 +81,13 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
  * Processor that handles scanning for types and turning them into build items
  */
 public class ResteasyReactiveScanningProcessor {
+
+    public static final Set<DotName> CONDITIONAL_BEAN_ANNOTATIONS;
+
+    static {
+        CONDITIONAL_BEAN_ANNOTATIONS = new HashSet<>(BuildTimeEnabledProcessor.BUILD_TIME_ENABLED_BEAN_ANNOTATIONS);
+        CONDITIONAL_BEAN_ANNOTATIONS.addAll(LookupConditionsProcessor.LOOKUP_BEAN_ANNOTATIONS);
+    }
 
     @BuildStep
     public MethodScannerBuildItem asyncSupport() {
@@ -313,9 +321,18 @@ public class ResteasyReactiveScanningProcessor {
         List<FilterGeneration.GeneratedFilter> generatedFilters = FilterGeneration.generate(index,
                 Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()),
                 (methodInfo -> {
+                    List<AnnotationInstance> methodAnnotations = methodInfo.annotations();
+                    for (AnnotationInstance methodAnnotation : methodAnnotations) {
+                        if (CONDITIONAL_BEAN_ANNOTATIONS.contains(methodAnnotation.name())) {
+                            throw new RuntimeException("The combination of '@" + methodAnnotation.name().withoutPackagePrefix()
+                                    + "' and '@ServerRequestFilter' or '@ServerResponseFilter' is not allowed. Offending method is '"
+                                    + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
+                        }
+                    }
+
                     List<AnnotationInstance> classAnnotations = methodInfo.declaringClass().declaredAnnotations();
                     for (AnnotationInstance classAnnotation : classAnnotations) {
-                        if (BuildTimeEnabledProcessor.BUILD_TIME_ENABLED_BEAN_ANNOTATIONS.contains(classAnnotation.name())) {
+                        if (CONDITIONAL_BEAN_ANNOTATIONS.contains(classAnnotation.name())) {
                             return true;
                         }
                     }

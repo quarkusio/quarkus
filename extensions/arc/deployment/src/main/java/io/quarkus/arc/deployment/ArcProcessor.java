@@ -260,6 +260,10 @@ public class ArcProcessor {
                     // If it declares a scope no action is needed
                     return;
                 }
+                if (customScopes.isScopeIn(transformationContext.getAnnotations())) {
+                    // if one of annotations (even if added via transformer) is a scope, no action is needed
+                    return;
+                }
                 DotName defaultScope = additionalBeanTypes.get(beanClassName);
                 if (defaultScope != null) {
                     transformationContext.transform().add(defaultScope).done();

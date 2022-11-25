@@ -731,7 +731,7 @@ public class ResteasyReactiveProcessor {
         return ab.get();
     }
 
-    // We want to add @Typed to resources and providers so that they can be resolved as CDI bean using purely their
+    // We want to add @Typed to resources, beanparams and providers so that they can be resolved as CDI bean using purely their
     // class as a bean type. This removes any ambiguity that potential subclasses may have.
     @BuildStep
     public void transformEndpoints(
@@ -744,6 +744,10 @@ public class ResteasyReactiveProcessor {
         Set<DotName> allResources = new HashSet<>();
         allResources.addAll(resourceScanningResultBuildItem.getResult().getScannedResources().keySet());
         allResources.addAll(resourceScanningResultBuildItem.getResult().getPossibleSubResources().keySet());
+
+        // all found bean params
+        Set<String> beanParams = resourceScanningResultBuildItem.getResult()
+                .getBeanParams();
 
         // discovered filters and interceptors
         Set<String> filtersAndInterceptors = new HashSet<>();
@@ -789,6 +793,14 @@ public class ResteasyReactiveProcessor {
                                 && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
                             // Add @Typed(MyResource.class)
                             context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                            return;
+                        }
+                        // check if the class is a bean param
+                        if (beanParams.contains(clazz.name().toString())
+                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                            // Add @Typed(MyBean.class)
+                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                            return;
                         }
                     }
                 }));

@@ -42,7 +42,7 @@ public class EventBusCodecProcessor {
 
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
         Collection<AnnotationInstance> consumeEventAnnotationInstances = index.getAnnotations(CONSUME_EVENT);
-        Map<Type, DotName> codecByTypes = new HashMap<>();
+        Map<DotName, DotName> codecByTypes = new HashMap<>();
         for (AnnotationInstance consumeEventAnnotationInstance : consumeEventAnnotationInstances) {
             AnnotationTarget typeTarget = consumeEventAnnotationInstance.target();
             if (typeTarget.kind() != AnnotationTarget.Kind.METHOD) {
@@ -59,7 +59,7 @@ public class EventBusCodecProcessor {
                 if (codecTargetFromParameter == null) {
                     throw new IllegalStateException("Invalid `codec` argument in @ConsumeEvent - no parameter");
                 }
-                codecByTypes.put(codecTargetFromParameter, codec.asClass().asClassType().name());
+                codecByTypes.put(codecTargetFromParameter.name(), codec.asClass().asClassType().name());
             } else if (codecTargetFromParameter != null) {
                 // Codec is not set, check if we have a built-in codec
                 if (!hasBuiltInCodec(codecTargetFromParameter)) {
@@ -70,24 +70,24 @@ public class EventBusCodecProcessor {
                                 "The generic message codec can only be used for local delivery,"
                                         + ", implement your own event bus codec for " + codecTargetFromParameter.name()
                                                 .toString());
-                    } else if (!codecByTypes.containsKey(codecTargetFromParameter)) {
+                    } else if (!codecByTypes.containsKey(codecTargetFromParameter.name())) {
                         LOGGER.infof("Local Message Codec registered for type %s",
                                 codecTargetFromParameter.toString());
-                        codecByTypes.put(codecTargetFromParameter, LOCAL_EVENT_BUS_CODEC);
+                        codecByTypes.put(codecTargetFromParameter.name(), LOCAL_EVENT_BUS_CODEC);
                     }
                 }
             }
 
             if (codecTargetFromReturnType != null && !hasBuiltInCodec(codecTargetFromReturnType)
-                    && !codecByTypes.containsKey(codecTargetFromReturnType)) {
+                    && !codecByTypes.containsKey(codecTargetFromReturnType.name())) {
 
                 LOGGER.infof("Local Message Codec registered for type %s", codecTargetFromReturnType.toString());
-                codecByTypes.put(codecTargetFromReturnType, LOCAL_EVENT_BUS_CODEC);
+                codecByTypes.put(codecTargetFromReturnType.name(), LOCAL_EVENT_BUS_CODEC);
             }
         }
 
         // Produce the build items
-        for (Map.Entry<Type, DotName> entry : codecByTypes.entrySet()) {
+        for (Map.Entry<DotName, DotName> entry : codecByTypes.entrySet()) {
             messageCodecs.produce(new MessageCodecBuildItem(entry.getKey().toString(), entry.getValue().toString()));
         }
 

@@ -962,12 +962,12 @@ using the `optional` attribute of the `@io.quarkus.deployment.annotations.Record
 @BuildStep
 @Record(value = ExecutionTime.RUNTIME_INIT, optional = true) // <1>
 ExecutorBuildItem createExecutor( // <2>
-        ExecutorTemplate executorTemplate,
+        ExecutorRecorder recorder,
         ThreadPoolConfig threadPoolConfig
 ) {
 
     return new ExecutorBuildItem(
-        setupTemplate.setupRunTime(
+        recorder.setupRunTime(
             shutdownContextBuildItem,
             threadPoolConfig,
             launchModeBuildItem.getLaunchMode()

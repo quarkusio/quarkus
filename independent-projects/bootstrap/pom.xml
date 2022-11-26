@@ -65,7 +65,7 @@
         <graal-sdk.version>22.3.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <smallrye-common.version>1.13.2</smallrye-common.version>
-        <gradle-tooling.version>7.5.1</gradle-tooling.version>
+        <gradle-tooling.version>7.6</gradle-tooling.version>
         <quarkus-fs-util.version>0.0.9</quarkus-fs-util.version>
         <org-crac.version>0.1.3</org-crac.version>
         <formatter-maven-plugin.version>2.21.0</formatter-maven-plugin.version>

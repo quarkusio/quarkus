@@ -35,7 +35,7 @@ class FlywayCreator {
     public Flyway createFlyway(DataSource dataSource) {
         FluentConfiguration configure = Flyway.configure();
         configure.dataSource(dataSource);
-        //TODO how to know database is postgres? maybe add a new private field ?
+
         flywayRuntimeConfig.postgress.isTransactionalLock
                 .ifPresent(isTransactionalLock -> configure.getPluginRegister().getPlugin(PostgreSQLConfigurationExtension.class)
                         .setTransactionalLock(isTransactionalLock));
@@ -113,15 +113,5 @@ class FlywayCreator {
         configure.resourceProvider(new QuarkusFlywayResourceProvider(quarkusPathLocationScanner.scanForResources()));
 
         return configure.load();
-    }
-    // TODO delete
-    public static boolean isPostgres(DataSource dataSource) {
-
-        //        try {
-        //            return "PostgresSQL".equals(dataSource.getConnection().getMetaData().getDatabaseProductName());
-        //        } catch (SQLException e) {
-        //            System.out.println(e);
-        //        }
-        return false;
     }
 }

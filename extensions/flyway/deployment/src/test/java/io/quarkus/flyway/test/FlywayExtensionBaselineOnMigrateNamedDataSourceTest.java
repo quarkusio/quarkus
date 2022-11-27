@@ -23,7 +23,7 @@ public class FlywayExtensionBaselineOnMigrateNamedDataSourceTest {
             .withDbName("quarkus-flyway-baseline-on-named-ds")
             .withPort(11302)
             .withInitSqlFile("src/test/resources/h2-init-data.sql");
-    //TODO remove
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setBeforeAllCustomizer(customizer::startH2)

@@ -17,8 +17,6 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.pattern.ValidatePattern;
-import org.flywaydb.core.internal.database.postgresql.PostgreSQLConfigurationExtension;
-import org.flywaydb.core.internal.plugin.PluginRegister;
 import org.flywaydb.core.internal.util.ValidatePatternUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,21 +34,6 @@ class FlywayCreatorTest {
      * class under test.
      */
     private FlywayCreator creator;
-
-    @Test
-    @DisplayName("postgresqTransactionalLock should be false by default")
-    void testPostgreSQLConfigurationExtensionDefault() {
-        buildConfig.locations = Arrays.asList("db/migrations", "db/postgres");
-        // TODO Link postgres plugins to build path or PostgresConfig group
-        creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(false,
-                (
-                    (PostgreSQLConfigurationExtension) createdFlywayConfig()
-                        .getPluginRegister()
-                        .getPlugin(PostgreSQLConfigurationExtension.class)
-                ).isTransactionalLock()
-                ," should false by default , when is postgres client");
-    }
 
     @Test
     @DisplayName("locations default matches flyway default")

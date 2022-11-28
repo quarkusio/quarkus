@@ -23,22 +23,18 @@ public class Docker extends BaseImageCommand {
     BaseImageCommand parent;
 
     @Override
-    public void populateImageConfiguration(Map<String, String> properties) {
-        super.populateImageConfiguration(properties);
-        properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, DOCKER);
-        properties.put(QUARKUS_FORCED_EXTENSIONS, QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + DOCKER);
-        dockerFile.ifPresent(d -> properties.put(DOCKER_CONFIG_PREFIX
-                + (buildOptions.buildNative ? DOCKERFILE_NATIVE_PATH : DOCKERFILE_JVM_PATH), d));
-    }
-
-    @Override
     public Integer call() throws Exception {
-        try {
-            populateImageConfiguration(parent.getPropertiesOptions().properties);
-            return parent.call();
-        } catch (Exception e) {
-            return output.handleCommandException(e, "Unable to build image: " + e.getMessage());
-        }
+        Map<String, String> properties = parent.getPropertiesOptions().properties;
+        properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, DOCKER);
+        dockerFile.ifPresent(d -> properties
+                .put(DOCKER_CONFIG_PREFIX + (buildOptions.buildNative ? DOCKERFILE_NATIVE_PATH : DOCKERFILE_JVM_PATH), d));
+
+        parent.getForcedExtensions().add(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + DOCKER);
+        parent.runMode = runMode;
+        parent.buildOptions = buildOptions;
+        parent.imageOptions = imageOptions;
+        parent.setOutput(output);
+        return parent.call();
     }
 
     @Override

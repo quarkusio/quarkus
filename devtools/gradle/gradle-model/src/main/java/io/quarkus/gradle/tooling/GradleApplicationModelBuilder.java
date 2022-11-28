@@ -28,6 +28,8 @@ import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.compile.AbstractCompile;
+import org.gradle.composite.internal.CompositeProjectComponentArtifactMetadata;
+import org.gradle.internal.composite.IncludedBuildInternal;
 import org.gradle.language.jvm.tasks.ProcessResources;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile;
@@ -168,7 +170,15 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
                 ProjectComponentIdentifier projectComponentIdentifier = (ProjectComponentIdentifier) a.getId()
                         .getComponentIdentifier();
-                final Project projectDep = project.getRootProject().findProject(projectComponentIdentifier.getProjectPath());
+                Project projectDep = null;
+                if (a.getId() instanceof CompositeProjectComponentArtifactMetadata) {
+                    projectDep = ToolingUtils.includedBuildProject(
+                            (IncludedBuildInternal) Objects
+                                    .requireNonNull(ToolingUtils.includedBuild(project, projectComponentIdentifier)),
+                            projectComponentIdentifier);
+                } else {
+                    projectDep = project.getRootProject().findProject(projectComponentIdentifier.getProjectPath());
+                }
                 Objects.requireNonNull(projectDep, "project " + projectComponentIdentifier.getProjectPath() + " should exist");
                 SourceSetContainer sourceSets = projectDep.getExtensions().getByType(SourceSetContainer.class);
 
@@ -275,17 +285,29 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             PathCollection paths = null;
             if (workspaceDiscovery && a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
 
-                final Project projectDep = project.getRootProject().findProject(
+                Project projectDep = project.getRootProject().findProject(
                         ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
                 SourceSetContainer sourceSets = projectDep == null ? null
                         : projectDep.getExtensions().findByType(SourceSetContainer.class);
 
                 final String classifier = a.getClassifier();
                 if (classifier == null || classifier.isEmpty()) {
-                    final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(), a.getName());
+                    final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(),
+                            (ProjectComponentIdentifier) a.getId().getComponentIdentifier());
                     if (includedBuild != null) {
                         final PathList.Builder pathBuilder = PathList.builder();
-                        addSubstitutedProject(pathBuilder, includedBuild.getProjectDir());
+
+                        if (includedBuild instanceof IncludedBuildInternal) {
+                            projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild,
+                                    (ProjectComponentIdentifier) a.getId().getComponentIdentifier());
+                        }
+                        if (projectDep != null) {
+                            projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
+                                    pathBuilder, SourceSet.MAIN_SOURCE_SET_NAME, false);
+                            addSubstitutedProject(pathBuilder, projectDep.getProjectDir());
+                        } else {
+                            addSubstitutedProject(pathBuilder, includedBuild.getProjectDir());
+                        }
                         paths = pathBuilder.build();
                     } else if (sourceSets != null) {
                         final PathList.Builder pathBuilder = PathList.builder();

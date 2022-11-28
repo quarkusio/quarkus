@@ -31,6 +31,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
+import io.quarkus.gradle.tooling.dependency.IncludedBuildExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.LocalExtensionDependency;
 import io.quarkus.runtime.LaunchMode;
 
@@ -213,7 +214,9 @@ public class ApplicationDeploymentClasspathBuilder {
                     final DependencyHandler dependencies = project.getDependencies();
                     final Set<Dependency> deploymentDependencies = new HashSet<>();
                     for (ExtensionDependency extension : extensions) {
-                        if (extension instanceof LocalExtensionDependency) {
+                        if (extension instanceof IncludedBuildExtensionDependency) {
+                            deploymentDependencies.add(((IncludedBuildExtensionDependency) extension).getDeployment());
+                        } else if (extension instanceof LocalExtensionDependency) {
                             LocalExtensionDependency localExtensionDependency = (LocalExtensionDependency) extension;
                             deploymentDependencies.add(
                                     dependencies.project(Collections.singletonMap("path",

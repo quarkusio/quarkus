@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    //noinspection GroovyAssignabilityCheck
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
+}
+rootProject.name='libraries'
+
+include('libraryA')
+include('libraryB')

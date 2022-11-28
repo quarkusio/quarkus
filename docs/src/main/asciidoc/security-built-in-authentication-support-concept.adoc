@@ -10,11 +10,11 @@ include::_attributes.adoc[]
 
 The following section describes the Quarkus built-in authentication mechanisms for HTTP based FORM, BASIC, and Mutual TLS authentication. Proactive authentication is also described.
 
-include::security-basic-authentication-concept.adoc[leveloffset=+1]
+== Basic Authentication
 
-// include::security-enabling-basic-auth-howto.adoc[leveloffset=+2]
-// How to I convert this how-to into a guide that appears alongside all the other guides?
+Setting `quarkus.http.auth.basic=true` enables basic authentication for your Quarkus project. When enabled, users must authenticate by entering their username and password.
 
+For more information, see the xref:security-basic-authentication-howto.adoc[Enable basic authentication] how-to topic.
 
 [[form-auth]]
 == Form Based Authentication

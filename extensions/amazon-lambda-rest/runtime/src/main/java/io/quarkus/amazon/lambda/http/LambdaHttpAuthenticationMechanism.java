@@ -68,7 +68,8 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
         final boolean isSamLocal = Boolean.parseBoolean(systemEnvironment.get("AWS_SAM_LOCAL"));
         final String forcedUserName = systemEnvironment.get("QUARKUS_AWS_LAMBDA_FORCE_USER_NAME");
         return (isSamLocal && forcedUserName != null) || (event.getRequestContext() != null
-                && (event.getRequestContext().getAuthorizer() != null || event.getRequestContext().getIdentity() != null));
+                && (event.getRequestContext().getAuthorizer() != null || (event.getRequestContext().getIdentity() != null
+                        && event.getRequestContext().getIdentity().getUser() != null)));
     }
 
     @Override

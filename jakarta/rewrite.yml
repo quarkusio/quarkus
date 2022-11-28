@@ -573,7 +573,7 @@ recipeList:
       newValue: '6.1.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-graphql.version
-      newValue: '2.0.0.RC13'
+      newValue: '2.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
       newValue: '4.0.0'

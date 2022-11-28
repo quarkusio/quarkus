@@ -523,6 +523,12 @@ That approach is possible with a multi-stage Docker build:
 1. The first stage builds the native executable using Maven or Gradle
 2. The second stage is a minimal image copying the produced native executable
 
+
+[WARNING]
+====
+Before building a container image from the Dockerfiles shown below, you need to update the default `.dockerignore` file, as it filters everything except the `target` directory. In order to build inside a container, you need to copy the `src` directory. Thus, edit your `.dockerignore` and remove the `*` line.
+====
+
 Such a multi-stage build can be achieved as follows:
 
 Sample Dockerfile for building with Maven:
@@ -590,11 +596,6 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
 If you are using Gradle in your project, you can use this sample Dockerfile.  Save it in `src/main/docker/Dockerfile.multistage`.
-
-[WARNING]
-====
-Before launching our Docker build, we need to update the default `.dockerignore` file as it filters everything except the `target` directory. As we plan to build inside a container, we need to copy the `src` directory. Thus, edit your `.dockerignore` and update the content.
-====
 
 [source,bash]
 ----

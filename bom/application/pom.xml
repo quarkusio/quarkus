@@ -205,6 +205,7 @@
         <strimzi-oauth.nimbus.version>9.24.4</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.1</org-crac.version>
+        <sshd-common.version>2.9.2</sshd-common.version>
     </properties>
 
     <dependencyManagement>
@@ -4719,6 +4720,11 @@
                         <artifactId>jcl-over-slf4j</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-common</artifactId>
+                <version>${sshd-common.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.wildfly.security</groupId>

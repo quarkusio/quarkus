@@ -65,13 +65,22 @@ This is a work in progress and some pieces are still missing (JPA 3.1 and Hibern
 `jakarta/transform.sh` is the main script to run.
 It has to be run from the root of the Quarkus repository.
 
+It is highly recommended to run the script in a specific tree (or at least a specific branch) as it will commit the changes to the current branch.
+
+If you don't want to run the extension tests and just want to check that the build is working, you can run:
+
+```
+REWRITE_NO_TESTS=true jakarta/transform.sh
+```
+
 If you are offline and can't fetch the external projects, do:
 ```
-export REWRITE_OFFLINE=true
-jakarta/transform.sh
+REWRITE_OFFLINE=true jakarta/transform.sh
 ```
 Obviously, you need to have run a full build before.
 Also keep in mind you should run a full build from time to time to get the potential updates to OpenRewrite.
+
+You can combine both `REWRITE_NO_TESTS` and `REWRITE_OFFLINE` in a single run if that fits you.
 
 It consists of several steps that leverage various tools:
 

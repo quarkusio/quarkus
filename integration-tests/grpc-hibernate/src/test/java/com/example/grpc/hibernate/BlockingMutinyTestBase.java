@@ -24,9 +24,13 @@ public class BlockingMutinyTestBase {
     @GrpcClient
     Test client;
 
+    Test getClient() {
+        return client;
+    }
+
     @BeforeEach
     void clear() {
-        client.clear(EMPTY).onFailure().invoke(e -> {
+        getClient().clear(EMPTY).onFailure().invoke(e -> {
             throw new RuntimeException("Failed to clear items", e);
         }).await().atMost(Duration.ofSeconds(20));
     }
@@ -39,7 +43,7 @@ public class BlockingMutinyTestBase {
             String text = "text " + i;
             expected.add(text);
             final int attempt = i;
-            client.add(TestOuterClass.Item.newBuilder().setText(text).build())
+            getClient().add(TestOuterClass.Item.newBuilder().setText(text).build())
                     .onFailure().invoke(e -> {
                         throw new RuntimeException("Failed to add on attempt " + attempt, e);
                     })
@@ -47,11 +51,7 @@ public class BlockingMutinyTestBase {
         }
 
         List<String> actual = new ArrayList<>();
-        Multi<TestOuterClass.Item> all = client.getAll(EMPTY)
-                .onFailure().invoke(th -> {
-                    System.out.println("Failed to read");
-                    th.printStackTrace();
-                });
+        Multi<TestOuterClass.Item> all = getClient().getAll(EMPTY);
         all.subscribe().with(item -> actual.add(item.getText()));
         await().atMost(Duration.ofSeconds(TIMEOUT / 2))
                 .until(() -> actual.size() == NO_OF_ELTS);
@@ -74,17 +74,13 @@ public class BlockingMutinyTestBase {
                     }
                     m.complete();
                 });
-        client.bidi(request).subscribe().with(item -> echoed.add(item.getText()));
+        getClient().bidi(request).subscribe().with(item -> echoed.add(item.getText()));
 
         await().atMost(Duration.ofSeconds(TIMEOUT / 2))
                 .until(() -> echoed.size() == NO_OF_ELTS);
         assertThat(echoed).containsExactlyInAnyOrderElementsOf(expected);
 
-        Multi<TestOuterClass.Item> all = client.getAll(EMPTY)
-                .onFailure().invoke(th -> {
-                    System.out.println("Failed to read");
-                    th.printStackTrace();
-                });
+        Multi<TestOuterClass.Item> all = getClient().getAll(EMPTY);
         all.subscribe().with(item -> actual.add(item.getText()));
         await().atMost(Duration.ofSeconds(TIMEOUT / 2))
                 .until(() -> actual.size() == NO_OF_ELTS);

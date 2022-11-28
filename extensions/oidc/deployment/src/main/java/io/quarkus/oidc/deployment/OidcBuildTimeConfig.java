@@ -27,4 +27,14 @@ public class OidcBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean defaultTokenCacheEnabled;
+
+    /**
+     * Whether to include the OIDC application endpoints in the generated OpenAPI document.
+     * For example, OIDC may expose logout endpoints that are not included by default.
+     * If you want the OpenAPI document to include paths defined by runtime configuration property, as are
+     * `quarkus.oidc.logout.path`, `quarkus.oidc.logout.backchannel.path` and `quarkus.oidc.logout.frontchannel.path`,
+     * you must define them in the Quarkus configuration file at build time.
+     */
+    @ConfigItem(defaultValue = "false", name = "openapi.included")
+    public boolean openapiIncluded;
 }

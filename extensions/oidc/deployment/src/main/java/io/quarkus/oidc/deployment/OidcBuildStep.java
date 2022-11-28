@@ -1,9 +1,13 @@
 package io.quarkus.oidc.deployment;
 
+import java.util.Map;
 import java.util.function.BooleanSupplier;
+import java.util.regex.Pattern;
 
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.jwt.Claim;
 import org.jboss.jandex.DotName;
 
@@ -22,6 +26,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfoCache;
@@ -39,6 +44,7 @@ import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.runtime.TlsConfig;
+import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
@@ -49,6 +55,12 @@ import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 @BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
     public static final DotName DOTNAME_SECURITY_EVENT = DotName.createSimple(SecurityEvent.class.getName());
+
+    /**
+     * Regular expression matching configuration group {@link OidcTenantConfig.Logout}.
+     */
+    private static final Pattern OIDC_CONFIG_LOGOUT_PATTERN = Pattern
+            .compile("quarkus\\.oidc(\\.\\\"*[\\w-_]+\\\"*)*\\.logout\\..+");
 
     @BuildStep
     public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
@@ -132,6 +144,70 @@ public class OidcBuildStep {
         boolean isSecurityEventObserved = synthesisFinished.getObservers().stream()
                 .anyMatch(observer -> observer.asObserver().getObservedType().name().equals(DOTNAME_SECURITY_EVENT));
         recorder.setSecurityEventObserved(isSecurityEventObserved);
+    }
+
+    @BuildStep(onlyIf = OpenAPIIncluded.class)
+    public void includeInOpenAPIEndpoint(BuildProducer<AddToOpenAPIDefinitionBuildItem> openAPIProducer,
+            Capabilities capabilities) {
+        // Add to OpenAPI if OpenAPI is available
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
+            final Iterable<ConfigSource> configSources = ConfigProvider.getConfig().getConfigSources();
+            if (configSources != null) {
+
+                // there are 3 application endpoints exposed by OIDC
+                String logoutPath = null;
+                boolean logoutPathFound = false;
+                String backchannelPath = null;
+                boolean backchannelPathFound = false;
+                String frontchannelPath = null;
+                boolean frontchannelPathFound = false;
+
+                // search all config sources
+                searchConfigSources: for (ConfigSource configSource : configSources) {
+                    final Map<String, String> propertiesMap = configSource.getProperties();
+                    if (propertiesMap != null && !propertiesMap.isEmpty()) {
+                        for (String propertyName : propertiesMap.keySet()) {
+
+                            // collect io.quarkus.oidc.OidcTenantConfig.Logout application endpoints
+                            if (OIDC_CONFIG_LOGOUT_PATTERN.matcher(propertyName).matches()) {
+                                if (propertyName.endsWith(".logout.path")) {
+                                    // io.quarkus.oidc.OidcTenantConfig.Logout.path
+                                    logoutPathFound = true;
+                                    logoutPath = propertiesMap.get(propertyName);
+                                } else if (propertyName.endsWith(".logout.backchannel.path")) {
+                                    // io.quarkus.oidc.OidcTenantConfig.Backchannel.path
+                                    backchannelPathFound = true;
+                                    backchannelPath = propertiesMap.get(propertyName);
+                                } else if (propertyName.endsWith(".logout.frontchannel.path")) {
+                                    // io.quarkus.oidc.OidcTenantConfig.Frontchannel.path
+                                    frontchannelPathFound = true;
+                                    frontchannelPath = propertiesMap.get(propertyName);
+                                }
+
+                                if (backchannelPathFound && frontchannelPathFound && logoutPathFound) {
+                                    break searchConfigSources;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // add endpoints to OpenAPI
+                if (logoutPathFound || backchannelPathFound || frontchannelPathFound) {
+                    openAPIProducer.produce(new AddToOpenAPIDefinitionBuildItem(
+                            new OidcOpenAPIFilter(logoutPath, backchannelPath, frontchannelPath)));
+                }
+            }
+        }
+    }
+
+    static class OpenAPIIncluded implements BooleanSupplier {
+
+        OidcBuildTimeConfig oidcBuildTimeConfig;
+
+        public boolean getAsBoolean() {
+            return oidcBuildTimeConfig.openapiIncluded;
+        }
     }
 
     public static class IsEnabled implements BooleanSupplier {

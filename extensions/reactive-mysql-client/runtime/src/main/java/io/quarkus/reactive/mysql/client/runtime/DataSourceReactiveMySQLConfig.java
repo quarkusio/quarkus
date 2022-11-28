@@ -1,9 +1,11 @@
 package io.quarkus.reactive.mysql.client.runtime;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.vertx.mysqlclient.MySQLAuthenticationPlugin;
 import io.vertx.mysqlclient.SslMode;
 
 @ConfigGroup
@@ -38,4 +40,17 @@ public class DataSourceReactiveMySQLConfig {
      */
     @ConfigItem(defaultValueDocumentation = "disabled")
     public Optional<SslMode> sslMode = Optional.empty();
+
+    /**
+     * Connection timeout in seconds
+     */
+    @ConfigItem()
+    public OptionalInt connectionTimeout = OptionalInt.empty();
+
+    /**
+     * The authentication plugin the client should use.
+     * By default, it uses the plugin name specified by the server in the initial handshake packet.
+     */
+    @ConfigItem(defaultValueDocumentation = "default")
+    public Optional<MySQLAuthenticationPlugin> authenticationPlugin = Optional.empty();
 }

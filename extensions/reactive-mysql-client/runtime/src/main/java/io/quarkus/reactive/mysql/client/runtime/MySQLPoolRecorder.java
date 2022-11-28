@@ -103,6 +103,11 @@ public class MySQLPoolRecorder {
             poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
 
+        if (dataSourceReactiveMySQLConfig.connectionTimeout.isPresent()) {
+            poolOptions.setConnectionTimeout(dataSourceReactiveMySQLConfig.connectionTimeout.getAsInt());
+            poolOptions.setConnectionTimeoutUnit(TimeUnit.SECONDS);
+        }
+
         return poolOptions;
     }
 
@@ -189,6 +194,10 @@ public class MySQLPoolRecorder {
         if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()) {
             mysqlConnectOptions.setHostnameVerificationAlgorithm(
                     dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
+        }
+
+        if (dataSourceReactiveMySQLConfig.authenticationPlugin.isPresent()) {
+            mysqlConnectOptions.setAuthenticationPlugin(dataSourceReactiveMySQLConfig.authenticationPlugin.get());
         }
 
         dataSourceReactiveRuntimeConfig.additionalProperties.forEach(mysqlConnectOptions::addProperty);

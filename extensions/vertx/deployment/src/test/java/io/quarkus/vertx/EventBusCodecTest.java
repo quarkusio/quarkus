@@ -26,7 +26,8 @@ public class EventBusCodecTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap
                     .create(JavaArchive.class).addClasses(MyBean.class, MyNonLocalBean.class,
-                            MyPetCodec.class, Person.class, Pet.class));
+                            MyPetCodec.class, Person.class, Pet.class,
+                            Event.class, SubclassEvent.class));
 
     @Inject
     MyBean bean;
@@ -65,6 +66,19 @@ public class EventBusCodecTest {
         assertThat(hello.getMessage()).isEqualTo("Non Local Hello NEO");
     }
 
+    @Test
+    public void testWithSubclass() {
+        Greeting hello = vertx.eventBus().<Greeting> request("subevent", new Event("my-event"))
+                .onItem().transform(Message::body)
+                .await().indefinitely();
+        assertThat(hello.getMessage()).isEqualTo("Hello my-event");
+
+        hello = vertx.eventBus().<Greeting> request("subevent", new SubclassEvent("my-subclass-event"))
+                .onItem().transform(Message::body)
+                .await().indefinitely();
+        assertThat(hello.getMessage()).isEqualTo("Hello my-subclass-event");
+    }
+
     static class Greeting {
         private final String message;
 
@@ -97,6 +111,12 @@ public class EventBusCodecTest {
         // on the message type doesn't cause failure
         @ConsumeEvent("message-type-with-type-annotation")
         void messageTypeWithTypeAnnotation(@NonNull Person person) {
+        }
+
+        // also register codec for subclasses
+        @ConsumeEvent("subevent")
+        public CompletionStage<Greeting> hello(Event event) {
+            return CompletableFuture.completedFuture(new Greeting("Hello " + event.getProperty()));
         }
     }
 

@@ -138,7 +138,7 @@ public class BuildDependencyGraphVisitor {
 
             Artifact artifact = dep.getArtifact();
             if (artifact.getFile() == null) {
-                artifact = resolver.resolve(artifact).getArtifact();
+                artifact = resolver.resolve(artifact, node.getRepositories()).getArtifact();
             }
 
             int flags = DependencyFlags.DEPLOYMENT_CP;

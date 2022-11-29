@@ -93,6 +93,7 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
+import io.quarkus.vertx.http.runtime.devmode.DevConsoleCORSFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
@@ -399,6 +400,7 @@ public class DevConsoleProcessor {
     @Consume(LoggingSetupBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
     public void setupDevConsoleRoutes(
+            DevUIConfig devUIConfig,
             DevConsoleRecorder recorder,
             LogStreamRecorder logStreamRecorder,
             List<DevConsoleRouteBuildItem> routes,
@@ -432,6 +434,12 @@ public class DevConsoleProcessor {
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             // otherwise this is handled in the setupDeploymentSideHandling method
             if (!i.isDeploymentSide()) {
+                if (devUIConfig.cors.enabled) {
+                    routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                            .route("dev/*")
+                            .handler(new DevConsoleCORSFilter())
+                            .build());
+                }
                 NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
                                 "dev/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),

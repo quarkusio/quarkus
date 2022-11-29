@@ -17,6 +17,8 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
@@ -33,7 +35,13 @@ public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         try {
             return doReadFrom(type, genericType, entityStream);
-        } catch (MismatchedInputException e) {
+        } catch (StreamReadException | DatabindException e) {
+            /*
+             * As JSON is evaluated, it can be invalid due to one of two reasons:
+             * 1) Malformed JSON. Un-parsable JSON results in a StreamReadException
+             * 2) Valid JSON that violates some binding constraint, i.e., a required property, mismatched data types, etc.
+             * Violations of these types are captured via a DatabindException.
+             */
             throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
         }
     }

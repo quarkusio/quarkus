@@ -14,9 +14,10 @@ import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.providers.serialisers.AbstractJsonMessageBodyReader;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 public class JacksonBasicMessageBodyReader extends AbstractJsonMessageBodyReader {
 
@@ -32,7 +33,7 @@ public class JacksonBasicMessageBodyReader extends AbstractJsonMessageBodyReader
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         try {
             return doReadFrom(type, genericType, entityStream);
-        } catch (MismatchedInputException e) {
+        } catch (StreamReadException | DatabindException e) {
             throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
         }
     }

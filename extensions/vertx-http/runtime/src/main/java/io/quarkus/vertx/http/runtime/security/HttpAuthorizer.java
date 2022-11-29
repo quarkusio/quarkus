@@ -14,6 +14,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationController;
@@ -186,7 +187,7 @@ public class HttpAuthorizer {
                         }
                     });
                 } else {
-                    routingContext.fail(403);
+                    routingContext.fail(new ForbiddenException());
                 }
             }
 

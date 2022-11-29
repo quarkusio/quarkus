@@ -6,7 +6,7 @@ import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "info", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Quarkus project information.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
+@CommandLine.Command(name = "info", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Display project information and verify versions health (platform and extensions).", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
 public class Info extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.Option(names = { "--per-module" }, description = "Display information per project module.")
@@ -16,7 +16,7 @@ public class Info extends BaseBuildCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         try {
             final BuildSystemRunner runner = getRunner();
-            return runner.info(perModule);
+            return runner.projectInfo(perModule);
         } catch (Exception e) {
             return output.handleCommandException(e, "Unable to collect Quarkus project information: " + e.getMessage());
         }

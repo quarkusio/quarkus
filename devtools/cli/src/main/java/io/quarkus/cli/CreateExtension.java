@@ -5,7 +5,7 @@ import java.util.TreeMap;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
 import io.quarkus.cli.create.ExtensionCodeGenerationGroup;
 import io.quarkus.cli.create.ExtensionGAVMixin;
@@ -75,7 +75,7 @@ public class CreateExtension extends BaseCreateCommand {
     ExtensionGAVMixin gav = new ExtensionGAVMixin();
 
     @CommandLine.ArgGroup(order = 1, heading = "%nQuarkus version:%n")
-    TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
+    TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
     @CommandLine.ArgGroup(order = 2, exclusive = false, heading = "%nGenerated artifacts%n")
     ExtensionNameGenerationGroup nameGeneration = new ExtensionNameGenerationGroup();

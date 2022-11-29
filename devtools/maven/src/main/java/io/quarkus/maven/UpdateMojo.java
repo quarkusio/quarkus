@@ -1,15 +1,11 @@
 package io.quarkus.maven;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
-import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
-import io.quarkus.devtools.commands.handlers.UpdateCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.registry.RegistryResolutionException;
 
@@ -21,18 +17,28 @@ import io.quarkus.registry.RegistryResolutionException;
 public class UpdateMojo extends QuarkusProjectStateMojoBase {
 
     /**
-     * If true, the state of the project will be logged as if the recommended updates
-     * were applied
+     * Display information per project module.
      */
-    @Parameter(property = "recommendedState")
-    boolean recommendedState;
+    @Parameter(property = "perModule")
+    boolean perModule;
 
     /**
      * If true, instead of checking and recommending the latest available Quarkus platform version,
      * recommendations to properly align the current project configuration will be logged (if any)
      */
-    @Parameter(property = "rectify")
-    boolean rectify;
+
+    /**
+     * Version of the target platform (e.g: 2.0.0.Final)
+     * You may instead use streamId to target the latest version of a specific platform stream.
+     */
+    @Parameter(property = "platformVersion", required = false)
+    private String platformVersion;
+
+    /**
+     * Target streamId (e.g: 2.0)
+     */
+    @Parameter(property = "streamId", required = false)
+    private String streamId;
 
     @Override
     protected void validateParameters() throws MojoExecutionException {
@@ -43,21 +49,21 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     @Override
     protected void processProjectState(QuarkusProject quarkusProject) throws MojoExecutionException {
 
-        final Map<String, Object> params = new HashMap<>();
+        final UpdateProject invoker = new UpdateProject(quarkusProject);
         try {
-            params.put(UpdateCommandHandler.LATEST_CATALOG, getExtensionCatalogResolver().resolveExtensionCatalog());
+            invoker.latestCatalog(getExtensionCatalogResolver().resolveExtensionCatalog());
         } catch (RegistryResolutionException e) {
             throw new MojoExecutionException(
                     "Failed to resolve the latest Quarkus extension catalog from the configured extension registries", e);
         }
-        params.put(UpdateCommandHandler.APP_MODEL, resolveApplicationModel());
-        params.put(UpdateCommandHandler.LOG_RECOMMENDED_STATE, recommendedState);
-        params.put(UpdateCommandHandler.LOG_STATE_PER_MODULE, perModule);
-        params.put(UpdateCommandHandler.RECTIFY, rectify);
 
-        final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(quarkusProject, params);
+        // TODO ALEXEY: resolve targetPlatformVersion from streamId if needed or from latest version
+        invoker.targetPlatformVersion(platformVersion);
+        invoker.perModule(perModule);
+        invoker.appModel(resolveApplicationModel());
+
         try {
-            new UpdateCommandHandler().execute(invocation);
+            invoker.execute();
         } catch (QuarkusCommandException e) {
             throw new MojoExecutionException("Failed to resolve the available updates", e);
         }

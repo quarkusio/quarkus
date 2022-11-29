@@ -8,7 +8,7 @@ import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.RunModeOption;
-import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -32,7 +32,7 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
     RunModeOption runMode;
 
     @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute):%n")
-    TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
+    TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
     @CommandLine.Option(names = { "-i",
             "--installable" }, defaultValue = "false", order = 2, description = "List extensions that can be installed (relative)")

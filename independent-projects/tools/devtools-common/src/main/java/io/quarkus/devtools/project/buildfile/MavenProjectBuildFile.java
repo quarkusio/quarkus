@@ -21,10 +21,14 @@ import java.util.regex.Pattern;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
@@ -65,6 +69,21 @@ public class MavenProjectBuildFile extends BuildFile {
         return getProject(projectPom, projectModel, projectDir,
                 projectModel == null ? new Properties() : projectModel.getProperties(), mvnResolver, log,
                 defaultQuarkusVersion);
+    }
+
+    public static ApplicationModel resolveApplicationModel(Path projectDir) throws MojoExecutionException {
+        final MavenArtifactResolver mvnResolver = getMavenResolver(projectDir);
+        final LocalProject currentProject = mvnResolver.getMavenContext().getCurrentProject();
+        try {
+            return new BootstrapAppModelResolver(mvnResolver)
+                    .resolveModel(ArtifactCoords.pom(currentProject.getGroupId(), currentProject.getArtifactId(),
+                            currentProject.getVersion()));
+        } catch (AppModelResolverException e) {
+            throw new MojoExecutionException("Failed to resolve the Quarkus application model for project "
+                    + ArtifactCoords.pom(currentProject.getGroupId(), currentProject.getArtifactId(),
+                            currentProject.getVersion()),
+                    e);
+        }
     }
 
     public static QuarkusProject getProject(Artifact projectPom, Model projectModel, Path projectDir,

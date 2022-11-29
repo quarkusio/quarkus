@@ -14,7 +14,7 @@ import io.smallrye.common.classloader.ClassPathUtils;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 
-@CommandLine.Command(name = "version", header = "Display version information.")
+@CommandLine.Command(name = "version", header = "Display Cli version information.", hidden = true)
 public class Version implements CommandLine.IVersionProvider, Callable<Integer> {
 
     private static String version;
@@ -30,10 +30,6 @@ public class Version implements CommandLine.IVersionProvider, Callable<Integer> 
 
     @CommandLine.Spec
     CommandSpec spec;
-
-    @CommandLine.Option(order = 3, names = {
-            "--dependencies" }, description = "Show project dependency versions")
-    boolean dependencies = false;
 
     @Override
     public Integer call() throws Exception {

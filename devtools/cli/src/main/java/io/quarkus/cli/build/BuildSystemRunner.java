@@ -100,9 +100,9 @@ public interface BuildSystemRunner {
 
     Integer removeExtension(RunModeOption runMode, Set<String> extensions) throws Exception;
 
-    Integer info(boolean perModule) throws Exception;
+    Integer projectInfo(boolean perModule) throws Exception;
 
-    Integer update(boolean rectify, boolean recommendedState, boolean perModule) throws Exception;
+    Integer updateProject(String targetPlatformVersion, String targetPlatformStreamId, boolean perModule) throws Exception;
 
     BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 

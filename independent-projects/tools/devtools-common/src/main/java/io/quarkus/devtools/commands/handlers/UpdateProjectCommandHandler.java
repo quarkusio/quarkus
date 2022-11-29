@@ -1,5 +1,8 @@
 package io.quarkus.devtools.commands.handlers;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -7,20 +10,25 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.commands.handlers.InfoCommandHandler.PlatformInfo;
+import io.quarkus.devtools.commands.handlers.ProjectInfoCommandHandler.PlatformInfo;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.state.ExtensionProvider;
 import io.quarkus.devtools.project.state.ModuleState;
 import io.quarkus.devtools.project.state.ProjectState;
 import io.quarkus.devtools.project.state.TopExtensionDependency;
+import io.quarkus.devtools.project.update.QuarkusUpdates;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
@@ -29,44 +37,65 @@ import io.quarkus.registry.catalog.selection.OriginCombination;
 import io.quarkus.registry.catalog.selection.OriginPreference;
 import io.quarkus.registry.catalog.selection.OriginSelector;
 
-public class UpdateCommandHandler implements QuarkusCommandHandler {
-
-    public static final String APP_MODEL = "app-model";
-    public static final String LATEST_CATALOG = "latest-catalog";
-    public static final String LOG_RECOMMENDED_STATE = "log-recommended-state";
-    public static final String LOG_STATE_PER_MODULE = "log-state-per-module";
-    public static final String RECTIFY = "rectify";
-
+public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
     public static final String ADD = "Add:";
     public static final String REMOVE = "Remove:";
     public static final String UPDATE = "Update:";
-
     public static final String PLATFORM_RECTIFY_FORMAT = "%-7s %s";
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
+        final ApplicationModel appModel = invocation.getValue(UpdateProject.APP_MODEL);
+        final ExtensionCatalog latestCatalog = invocation.getValue(UpdateProject.LATEST_CATALOG);
+        final String targetPlatformVersion = invocation.getValue(UpdateProject.TARGET_PLATFORM_VERSION);
 
-        final ApplicationModel appModel = invocation.getValue(APP_MODEL);
-        final ExtensionCatalog latestCatalog = invocation.getValue(UpdateCommandHandler.LATEST_CATALOG);
-        final boolean logRecommendedState = invocation.getValue(UpdateCommandHandler.LOG_RECOMMENDED_STATE, false);
-        final boolean logStatePerModule = invocation.getValue(UpdateCommandHandler.LOG_STATE_PER_MODULE, false);
-        final boolean rectify = invocation.getValue(UpdateCommandHandler.RECTIFY, false);
+        final boolean perModule = invocation.getValue(UpdateProject.PER_MODULE, false);
+        final boolean generateRewriteConfig = invocation.getValue(UpdateProject.GENERATE_REWRITE_CONFIG, true);
 
-        if (logStatePerModule && !rectify) {
-            throw new QuarkusCommandException("Update per module isn't supported yet!");
-        }
-
-        final ProjectState currentState = InfoCommandHandler.resolveProjectState(appModel,
+        final ProjectState currentState = ProjectInfoCommandHandler.resolveProjectState(appModel,
                 invocation.getQuarkusProject().getExtensionsCatalog());
+        final ArtifactCoords projectQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
 
-        if (rectify) {
-            InfoCommandHandler.logState(currentState, logStatePerModule, rectify, invocation.getQuarkusProject().log());
+        if (projectQuarkusPlatformBom == null) {
+            invocation.log().error("The project does not import any Quarkus platform BOM");
+            return QuarkusCommandOutcome.failure();
+        }
+        if (Objects.equals(projectQuarkusPlatformBom.getVersion(), targetPlatformVersion)) {
+            invocation.log().info("Instructions to repair this project:");
+            // TODO ALEXEY: if the targetPlatformVersion is equal to the project platform version, we should give instructions repair the project
+            ProjectInfoCommandHandler.logState(currentState, perModule, true, invocation.getQuarkusProject().log());
+
         } else {
-            logUpdates(currentState, latestCatalog, logRecommendedState, logStatePerModule,
+            invocation.log().info("Instructions to update this project from '%s' to '%s':",
+                    projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
+            // TODO ALEXEY: instructions to update the project
+            logUpdates(currentState, latestCatalog, false, perModule,
                     invocation.getQuarkusProject().log());
         }
 
+        if (generateRewriteConfig) {
+            QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
+                    projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
+            try {
+                final Path tempFile = Files.createTempFile("quarkus-project-recipe-", ".yaml");
+                QuarkusUpdates.createRecipe(tempFile,
+                        QuarkusProjectHelper.artifactResolver(), request);
+                invocation.log().info("Project update recipe has been created: %s", tempFile.toString());
+            } catch (IOException e) {
+                throw new QuarkusCommandException("Failed to create project update recipe", e);
+            }
+        }
+
         return QuarkusCommandOutcome.success();
+    }
+
+    private static ArtifactCoords getProjectQuarkusPlatformBOM(ProjectState currentState) {
+        for (ArtifactCoords c : currentState.getPlatformBoms()) {
+            if (c.getArtifactId().equals(ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID)) {
+                return c;
+            }
+        }
+        return null;
     }
 
     private static void logUpdates(ProjectState currentState, ExtensionCatalog recommendedCatalog, boolean recommendState,
@@ -86,7 +115,7 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
         }
 
         if (recommendState) {
-            InfoCommandHandler.logState(recommendedState, perModule, false, log);
+            ProjectInfoCommandHandler.logState(recommendedState, perModule, false, log);
             return;
         }
 
@@ -117,22 +146,22 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
             log.info("Recommended Quarkus platform BOM updates:");
             if (!importVersionUpdates.isEmpty()) {
                 for (PlatformInfo importInfo : importVersionUpdates) {
-                    log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                            UpdateCommandHandler.UPDATE, importInfo.imported.toCompactCoords()) + " -> "
+                    log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                            UpdateProjectCommandHandler.UPDATE, importInfo.imported.toCompactCoords()) + " -> "
                             + importInfo.getRecommendedVersion());
                 }
             }
             if (!newImports.isEmpty()) {
                 for (PlatformInfo importInfo : newImports) {
-                    log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                            UpdateCommandHandler.ADD, importInfo.recommended.toCompactCoords()));
+                    log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                            UpdateProjectCommandHandler.ADD, importInfo.recommended.toCompactCoords()));
                 }
             }
             if (importsToBeRemoved) {
                 for (PlatformInfo importInfo : platformImports.values()) {
                     if (importInfo.recommended == null) {
-                        log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                                UpdateCommandHandler.REMOVE, importInfo.imported.toCompactCoords()));
+                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateProjectCommandHandler.REMOVE, importInfo.imported.toCompactCoords()));
                     }
                 }
             }
@@ -205,17 +234,17 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
             log.info("Extensions from " + platform.getRecommendedProviderKey() + ":");
             for (ExtensionInfo e : versionedManagedExtensions.getOrDefault(provider, Collections.emptyList())) {
                 final StringBuilder sb = new StringBuilder();
-                sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                        UpdateCommandHandler.UPDATE, e.currentDep.getArtifact().toCompactCoords()));
+                sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                        UpdateProjectCommandHandler.UPDATE, e.currentDep.getArtifact().toCompactCoords()));
                 sb.append(" -> remove version (managed)");
                 log.info(sb.toString());
             }
             for (ArtifactCoords e : addedExtensions.getOrDefault(provider, Collections.emptyList())) {
-                log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, UpdateCommandHandler.ADD,
+                log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, UpdateProjectCommandHandler.ADD,
                         e.getKey().toGacString()));
             }
             for (ArtifactCoords e : removedExtensions.getOrDefault(provider, Collections.emptyList())) {
-                log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, UpdateCommandHandler.REMOVE,
+                log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, UpdateProjectCommandHandler.REMOVE,
                         e.getKey().toGacString()));
             }
             log.info("");
@@ -226,14 +255,15 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
                 log.info("Extensions from " + provider.getKey() + ":");
                 for (ExtensionInfo info : provider.getValue()) {
                     if (info.currentDep.isPlatformExtension()) {
-                        log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                                UpdateCommandHandler.ADD, info.getRecommendedDependency().getArtifact().toCompactCoords()));
+                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateProjectCommandHandler.ADD,
+                                info.getRecommendedDependency().getArtifact().toCompactCoords()));
                     } else if (info.getRecommendedDependency().isPlatformExtension()) {
-                        log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                                UpdateCommandHandler.REMOVE, info.currentDep.getArtifact().toCompactCoords()));
+                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateProjectCommandHandler.REMOVE, info.currentDep.getArtifact().toCompactCoords()));
                     } else {
-                        log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                                UpdateCommandHandler.UPDATE, info.currentDep.getArtifact().toCompactCoords() + " -> "
+                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateProjectCommandHandler.UPDATE, info.currentDep.getArtifact().toCompactCoords() + " -> "
                                         + info.getRecommendedDependency().getVersion()));
                     }
                 }

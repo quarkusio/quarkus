@@ -1,23 +1,19 @@
 package io.quarkus.gradle.tasks;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
-import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
-import io.quarkus.devtools.commands.handlers.UpdateCommandHandler;
+import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.registry.RegistryResolutionException;
 
 public class QuarkusUpdate extends QuarkusPlatformTask {
 
     private boolean perModule = false;
-    private boolean recommendedState = false;
-    private boolean rectify = false;
+    private String targetStreamId;
+    private String targetPlatformVersion;
 
     @Input
     public boolean getPerModule() {
@@ -30,23 +26,23 @@ public class QuarkusUpdate extends QuarkusPlatformTask {
     }
 
     @Input
-    public boolean getRecommendedState() {
-        return recommendedState;
+    public String getTargetStreamId() {
+        return targetStreamId;
     }
 
-    @Option(description = "Log the new recommended project state.", option = "recommendedState")
-    public void setRecommendedState(boolean recommendedState) {
-        this.recommendedState = recommendedState;
+    @Option(description = "A target stream id, for example:  2.0", option = "streamId")
+    public void setStreamId(String targetStreamId) {
+        this.targetStreamId = targetStreamId;
     }
 
     @Input
-    public boolean getRectify() {
-        return rectify;
+    public String getTargetPlatformVersion() {
+        return targetPlatformVersion;
     }
 
-    @Option(description = "Log the rectified state of the current project according to the recommendations based on the currently enforced Quarkus platforms.", option = "rectify")
-    public void setRectify(boolean rectify) {
-        this.rectify = rectify;
+    @Option(description = "A target platform version, for example:  2.0.0.Final", option = "platformVersion")
+    public void setTargetPlatformVersion(String targetPlatformVersion) {
+        this.targetPlatformVersion = targetPlatformVersion;
     }
 
     public QuarkusUpdate() {
@@ -59,21 +55,20 @@ public class QuarkusUpdate extends QuarkusPlatformTask {
         getProject().getLogger().warn(getName() + " is experimental, its options and output might change in future versions");
 
         final QuarkusProject quarkusProject = getQuarkusProject(false);
-        final Map<String, Object> params = new HashMap<>();
+        final UpdateProject invoker = new UpdateProject(quarkusProject);
         try {
-            params.put(UpdateCommandHandler.LATEST_CATALOG,
-                    getExtensionCatalogResolver(quarkusProject.log()).resolveExtensionCatalog());
+            invoker.latestCatalog(getExtensionCatalogResolver(quarkusProject.log()).resolveExtensionCatalog());
         } catch (RegistryResolutionException e) {
             throw new GradleException(
                     "Failed to resolve the latest Quarkus extension catalog from the configured extension registries", e);
         }
-        params.put(UpdateCommandHandler.APP_MODEL, extension().getApplicationModel());
-        params.put(UpdateCommandHandler.LOG_STATE_PER_MODULE, perModule);
-        params.put(UpdateCommandHandler.LOG_RECOMMENDED_STATE, recommendedState);
-        params.put(UpdateCommandHandler.RECTIFY, rectify);
-        final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(quarkusProject, params);
+
+        // TODO ALEXEY: resolve targetPlatformVersion from targetPlatformStreamId if needed or from latest version
+        invoker.targetPlatformVersion(targetPlatformVersion);
+        invoker.perModule(perModule);
+        invoker.appModel(extension().getApplicationModel());
         try {
-            new UpdateCommandHandler().execute(invocation);
+            invoker.execute();
         } catch (Exception e) {
             throw new GradleException("Failed to resolve recommended updates", e);
         }

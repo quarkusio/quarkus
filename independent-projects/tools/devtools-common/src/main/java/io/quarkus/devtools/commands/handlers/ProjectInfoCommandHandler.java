@@ -13,6 +13,7 @@ import java.util.Map;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
+import io.quarkus.devtools.commands.ProjectInfo;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -29,17 +30,17 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
 
-public class InfoCommandHandler implements QuarkusCommandHandler {
+public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
 
-    public static final String APP_MODEL = "app-model";
-    public static final String LOG_STATE_PER_MODULE = "log-state-per-module";
     public static final String RECOMMENDATIONS_AVAILABLE = "recommendations-available";
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
 
-        final ApplicationModel appModel = invocation.getValue(APP_MODEL);
-        final boolean logStatePerModule = invocation.getValue(UpdateCommandHandler.LOG_STATE_PER_MODULE, false);
+        // TODO ALEXEY: info about the project (versions and extensions) and hint on how to repair if broken (or to update if available - nice to have)
+
+        final ApplicationModel appModel = invocation.getValue(ProjectInfo.APP_MODEL);
+        final boolean logStatePerModule = invocation.getValue(ProjectInfo.PER_MODULE, false);
 
         final boolean recommendationsAvailable = logState(
                 resolveProjectState(appModel, invocation.getExtensionsCatalog()), logStatePerModule, false,
@@ -79,8 +80,8 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
                 final StringBuilder sb = new StringBuilder();
                 if (platform.recommended == null) {
                     if (rectify) {
-                        sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                                UpdateCommandHandler.REMOVE, platform.imported.toCompactCoords()));
+                        sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateProjectCommandHandler.REMOVE, platform.imported.toCompactCoords()));
                         recommendationsAvailable = true;
                     } else {
                         sb.append("  ");
@@ -94,8 +95,8 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
                     }
                 } else if (platform.isVersionUpdateRecommended()) {
                     if (rectify) {
-                        sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                                UpdateCommandHandler.UPDATE, platform.imported.toCompactCoords()));
+                        sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateProjectCommandHandler.UPDATE, platform.imported.toCompactCoords()));
                         sb.append(platform.imported.toCompactCoords()).append(" -> ")
                                 .append(platform.getRecommendedVersion());
                     } else {
@@ -105,7 +106,7 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
                     recommendationsAvailable = true;
                 } else {
                     if (rectify) {
-                        sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, "",
+                        sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, "",
                                 platform.imported.toCompactCoords()));
                     } else {
                         sb.append("  ").append(platform.imported.toCompactCoords());
@@ -116,7 +117,8 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
             if (rectify && recommendExtraImports) {
                 for (PlatformInfo platform : providerInfo.values()) {
                     if (platform.imported == null) {
-                        log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, UpdateCommandHandler.ADD,
+                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateProjectCommandHandler.ADD,
                                 platform.recommended.toCompactCoords()));
                     }
                 }
@@ -177,10 +179,10 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
         if (dep.isPlatformExtension()) {
             if (rectify) {
                 if (dep.isNonRecommendedVersion()) {
-                    sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                            UpdateCommandHandler.UPDATE, ""));
+                    sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                            UpdateProjectCommandHandler.UPDATE, ""));
                 } else {
-                    sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
+                    sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
                 }
                 sb.append(dep.getArtifact().getGroupId()).append(':')
                         .append(dep.getArtifact().getArtifactId());
@@ -208,7 +210,7 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
             }
         } else {
             if (rectify) {
-                sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
+                sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
             } else {
                 sb.append("  ");
             }

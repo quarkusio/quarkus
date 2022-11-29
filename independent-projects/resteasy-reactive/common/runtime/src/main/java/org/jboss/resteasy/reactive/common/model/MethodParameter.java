@@ -25,6 +25,7 @@ public class MethodParameter {
     private boolean isObtainedAsCollection;
     public String mimeType;
     public String partFileName;
+    public String separator;
 
     public MethodParameter() {
     }
@@ -33,7 +34,7 @@ public class MethodParameter {
             ParameterType parameterType,
             boolean single,
             String defaultValue, boolean isObtainedAsCollection, boolean optional, boolean encoded,
-            String mimeType, String partFileName) {
+            String mimeType, String partFileName, String separator) {
         this.name = name;
         this.type = type;
         this.declaredType = declaredType;
@@ -47,6 +48,7 @@ public class MethodParameter {
         this.encoded = encoded;
         this.mimeType = mimeType;
         this.partFileName = partFileName;
+        this.separator = separator;
     }
 
     public String getName() {

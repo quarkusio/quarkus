@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.cors;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -176,7 +177,7 @@ public class CORSFilter implements Handler<RoutingContext> {
             }
 
             boolean allowsOrigin = isConfiguredWithWildcard(corsConfig.origins) || corsConfig.origins.get().contains(origin)
-                    || isOriginAllowedByRegex(allowedOriginsRegex, origin);
+                    || isOriginAllowedByRegex(allowedOriginsRegex, origin) || isSameOrigin(request, origin);
 
             if (allowsOrigin) {
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
@@ -209,5 +210,19 @@ public class CORSFilter implements Handler<RoutingContext> {
                 event.next();
             }
         }
+    }
+
+    private static boolean isSameOrigin(HttpServerRequest request, String origin) {
+        String absUriString = request.absoluteURI();
+        if (absUriString.startsWith(origin)) {
+            // Make sure that Origin URI contains scheme, host, and port.
+            // If no port is set in Origin URI then the request URI must not have it set either
+            URI baseUri = URI.create(absUriString.substring(0, origin.length()));
+            if (baseUri.getScheme() != null && baseUri.getHost() != null
+                    && (baseUri.getPort() > 0 || URI.create(absUriString).getPort() == -1)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

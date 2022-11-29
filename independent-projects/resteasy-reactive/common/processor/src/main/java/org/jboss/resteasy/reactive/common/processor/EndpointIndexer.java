@@ -1500,6 +1500,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return mimeType;
     }
 
+    protected String getSeparator(Map<DotName, AnnotationInstance> annotations) {
+        AnnotationInstance separator = annotations.get(ResteasyReactiveDotNames.SEPARATOR);
+        String result = null;
+        if (separator != null && separator.value() != null) {
+            result = separator.value().asString();
+        }
+        return result;
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static abstract class Builder<T extends EndpointIndexer<T, ?, METHOD>, B extends Builder<T, B, METHOD>, METHOD extends ResourceMethod> {
         private Function<String, BeanFactory<Object>> factoryCreator;

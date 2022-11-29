@@ -315,11 +315,12 @@ public class ServerEndpointIndexer
         ParameterConverterSupplier converter = parameterResult.getConverter();
         DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
         String mimeType = getPartMime(parameterResult.getAnns());
+        String separator = getSeparator(parameterResult.getAnns());
         return new ServerMethodParameter(name,
                 elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                parameterResult.getCustomParameterExtractor(), mimeType);
+                parameterResult.getCustomParameterExtractor(), mimeType, separator);
     }
 
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,

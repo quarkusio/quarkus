@@ -26,6 +26,7 @@ import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.timeseries.TimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
@@ -267,6 +268,11 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K> AutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
         return new BlockingAutoSuggestCommandsImpl<>(this, reactive.autosuggest(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TimeSeriesCommands<K> timeseries(Class<K> redisKeyType) {
+        return new BlockingTimeSeriesCommandsImpl<>(this, reactive.timeseries(redisKeyType), timeout);
     }
 
     @Override

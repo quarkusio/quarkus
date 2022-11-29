@@ -39,7 +39,7 @@ import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.quarkus.redis.datasource.RedisCommands;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.TransactionalRedisCommands;
-import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
+import io.quarkus.redis.datasource.timeseries.ReactiveTimeSeriesCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.runtime.datasource.AbstractRedisCommandGroup;
@@ -63,8 +63,8 @@ public class RedisApiGenerator {
 
     public static void main(String[] args) throws FileNotFoundException {
         // PARAMETERS
-        String reactiveApi = ReactiveAutoSuggestCommands.class.getName();
-        String prefix = "ft";
+        String reactiveApi = ReactiveTimeSeriesCommands.class.getName();
+        String prefix = "ts";
         // ---------
 
         File out = new File("extensions/redis-client/runtime/target/generation");

@@ -9,6 +9,8 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -73,8 +75,8 @@ public class IsDockerWorking implements BooleanSupplier {
 
         @Override
         public Result get() {
-            //testcontainers uses the Unreliables library to test if docker is started
-            //this runs in threads that start with 'ducttape'
+            // Testcontainers uses the Unreliables library to test if docker is started
+            // this runs in threads that start with 'ducttape'
             StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null,
                     (s) -> s.getName().startsWith("ducttape"));
             try {
@@ -104,7 +106,7 @@ public class IsDockerWorking implements BooleanSupplier {
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 if (!silent) {
                     compressor.closeAndDumpCaptured();
-                    LOGGER.debug("Unable to use testcontainers to determine if Docker is working", e);
+                    LOGGER.debug("Unable to use Testcontainers to determine if Docker is working", e);
                 }
                 return Result.UNKNOWN;
             } finally {
@@ -122,26 +124,46 @@ public class IsDockerWorking implements BooleanSupplier {
      */
     private static class DockerHostStrategy implements Strategy {
 
+        private static final String UNIX_SCHEME = "unix";
+
         @Override
         public Result get() {
-
             String dockerHost = System.getenv("DOCKER_HOST");
-            if (dockerHost != null && !dockerHost.startsWith("unix:")) {
-                try {
-                    URI url = new URI(dockerHost);
+
+            if (dockerHost == null) {
+                return Result.UNKNOWN;
+            }
+
+            try {
+                URI dockerHostUri = new URI(dockerHost);
+
+                if (UNIX_SCHEME.equals(dockerHostUri.getScheme())) {
+                    // Java 11 does not support connecting to Unix sockets so for now let's use a naive approach
+                    Path dockerSocketPath = Path.of(dockerHostUri.getPath());
+
+                    if (Files.isWritable(dockerSocketPath)) {
+                        return Result.AVAILABLE;
+                    } else {
+                        LOGGER.warnf(
+                                "Unix socket defined in DOCKER_HOST %s is not writable, make sure Docker is running on the specified host",
+                                dockerHost);
+                    }
+                } else {
                     try (Socket s = new Socket()) {
-                        s.connect(new InetSocketAddress(url.getHost(), url.getPort()), DOCKER_HOST_CHECK_TIMEOUT);
+                        s.connect(new InetSocketAddress(dockerHostUri.getHost(), dockerHostUri.getPort()),
+                                DOCKER_HOST_CHECK_TIMEOUT);
                         return Result.AVAILABLE;
                     } catch (IOException e) {
                         LOGGER.warnf(
-                                "Unable to connect to DOCKER_HOST URI %s, make sure docker is running on the specified host",
+                                "Unable to connect to DOCKER_HOST URI %s, make sure Docker is running on the specified host",
                                 dockerHost);
                     }
-                } catch (URISyntaxException | IllegalArgumentException e) {
-                    LOGGER.warnf("Unable to parse DOCKER_HOST URI %s, it will be ignored for working docker detection",
-                            dockerHost);
                 }
+            } catch (URISyntaxException | IllegalArgumentException e) {
+                LOGGER.warnf("Unable to parse DOCKER_HOST URI %s, it will be ignored for working Docker detection",
+                        dockerHost);
             }
+
             return Result.UNKNOWN;
         }
     }

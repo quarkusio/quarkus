@@ -45,7 +45,7 @@ public class BouncyCastleJsseTestCase {
                 .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost()))
                 .setPort(url.getPort())
                 .setKeyStore("client-keystore.jks", "password")
-                .setTrustStore("client-truststore.jks", "password")
+                .setTrustStore("client-truststore.jks", "secret")
                 .build();
         RestAssured.given()
                 .spec(spec)

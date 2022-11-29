@@ -1825,7 +1825,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         retValue = valueMethod.load(value.asChar());
                         break;
                     case CLASS:
-                        retValue = valueMethod.loadClassFromTCCL(value.asClass().toString());
+                        retValue = valueMethod.loadClassFromTCCL(value.asClass().name().toString());
                         break;
                     case ARRAY:
                         retValue = arrayValue(value, valueMethod, method, annotationClass);

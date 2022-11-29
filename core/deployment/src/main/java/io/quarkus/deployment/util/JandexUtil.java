@@ -350,33 +350,6 @@ public final class JandexUtil {
         return isSubclassOf(index, superClass, parentName);
     }
 
-    @Deprecated(forRemoval = true, since = "2.13.3.Final")
-    @SuppressWarnings("incomplete-switch")
-    public static String getBoxedTypeName(Type type) {
-        switch (type.kind()) {
-            case PRIMITIVE:
-                switch (type.asPrimitiveType().primitive()) {
-                    case BOOLEAN:
-                        return "java.lang.Boolean";
-                    case BYTE:
-                        return "java.lang.Byte";
-                    case CHAR:
-                        return "java.lang.Character";
-                    case DOUBLE:
-                        return "java.lang.Double";
-                    case FLOAT:
-                        return "java.lang.Float";
-                    case INT:
-                        return "java.lang.Integer";
-                    case LONG:
-                        return "java.lang.Long";
-                    case SHORT:
-                        return "java.lang.Short";
-                }
-        }
-        return type.toString();
-    }
-
     private static class ClassNotIndexedException extends RuntimeException {
 
         private final DotName dotName;

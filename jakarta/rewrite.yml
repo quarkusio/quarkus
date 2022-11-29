@@ -576,7 +576,7 @@ recipeList:
       newValue: '2.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
-      newValue: '4.0.0'
+      newValue: '4.0.1'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-jwt.version
       newValue: '2.0'

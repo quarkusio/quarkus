@@ -278,6 +278,10 @@ class SmallRyeHealthProcessor {
                     String.valueOf(healthConfig.maxGroupRegistriesCount.getAsInt())));
         }
         config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.delayChecksInitializations", "true"));
+        if (healthConfig.defaultHealthGroup.isPresent()) {
+            config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.defaultHealthGroup",
+                    healthConfig.defaultHealthGroup.get()));
+        }
     }
 
     @BuildStep(onlyIf = OpenAPIIncluded.class)

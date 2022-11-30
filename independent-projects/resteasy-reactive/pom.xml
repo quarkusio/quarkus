@@ -68,6 +68,9 @@
         <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
         <awaitility.version>4.2.0</awaitility.version>
         <smallrye-mutiny-vertx-core.version>2.25.0</smallrye-mutiny-vertx-core.version>
+
+        <!-- Forbidden API checks -->
+        <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
     </properties>
 
     <modules>
@@ -483,6 +486,29 @@
                             </transformation>
                         </transformations>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>de.thetaphi</groupId>
+                    <artifactId>forbiddenapis</artifactId>
+                    <version>${forbiddenapis-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>verify-forbidden-apis</id>
+                            <configuration>
+                                <!-- if the used Java version is too new, don't fail, just do nothing: -->
+                                <failOnUnsupportedJava>false</failOnUnsupportedJava>
+                                <signaturesFiles>
+                                    <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
+                                </signaturesFiles>
+                                <failOnMissingClasses>false</failOnMissingClasses>
+                                <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
+                            </configuration>
+                            <phase>compile</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>

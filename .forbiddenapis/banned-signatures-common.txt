@@ -1,0 +1,2 @@
+@defaultMessage Never use Type#toString() as it's almost always the wrong thing to do. Usually org.jboss.jandex.DotName#toString() is what is needed
+org.jboss.jandex.Type#toString()

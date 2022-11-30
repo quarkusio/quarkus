@@ -230,8 +230,7 @@ public class KubernetesDeployer {
                             .orElseThrow(() -> new IllegalStateException("Could not retrieve API resource information for:"
                                     + i.getApiVersion() + " " + i.getKind() + ". Is the CRD for the resource available?"));
 
-                    client.genericKubernetesResources(context).withName(i.getMetadata().getName())
-                            .createOrReplace(genericResource);
+                    client.genericKubernetesResources(context).resource(genericResource).createOrReplace();
                 } else {
                     final var r = client.resource(i);
                     if (shouldDeleteExisting(deploymentTarget, i)) {

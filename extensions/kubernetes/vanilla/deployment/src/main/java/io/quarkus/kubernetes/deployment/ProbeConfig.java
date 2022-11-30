@@ -12,12 +12,13 @@ public class ProbeConfig {
 
     /**
      * The http path to use for the probe For this to work, the container port also
-     * needs to be set
+     * needs to be set.
      *
      * Assuming the container port has been set (as per above comment), if
      * execAction or tcpSocketAction are not set, an HTTP probe will be used
      * automatically even if no path is set (which will result in the root path
-     * being used)
+     * being used).
+     * If Smallrye Health is used, the path will automatically be set according to the health check path.
      */
     @ConfigItem
     Optional<String> httpActionPath;
@@ -37,13 +38,13 @@ public class ProbeConfig {
     /**
      * The amount of time to wait before starting to probe.
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem(defaultValue = "5")
     Duration initialDelay;
 
     /**
      * The period in which the action should be called.
      */
-    @ConfigItem(defaultValue = "30s")
+    @ConfigItem(defaultValue = "10s")
     Duration period;
 
     /**

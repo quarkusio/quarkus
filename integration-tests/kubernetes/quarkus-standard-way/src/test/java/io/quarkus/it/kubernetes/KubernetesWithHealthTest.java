@@ -72,7 +72,7 @@ public class KubernetesWithHealthTest {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getReadinessProbe()).isNotNull().satisfies(p -> {
-                                assertThat(p.getInitialDelaySeconds()).isEqualTo(0);
+                                assertThat(p.getInitialDelaySeconds()).isEqualTo(5);
                                 assertProbePath(p, "/q/health/ready");
 
                                 assertNotNull(p.getHttpGet());

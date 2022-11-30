@@ -37,7 +37,7 @@ import io.quarkus.arc.properties.UnlessBuildProperty;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.configuration.ConfigUtils;
 
 public class BuildTimeEnabledProcessor {
 
@@ -60,7 +60,7 @@ public class BuildTimeEnabledProcessor {
         Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(IF_BUILD_PROFILE);
         for (AnnotationInstance instance : annotationInstances) {
             String profileOnInstance = instance.value().asString();
-            boolean enabled = profileOnInstance.equals(ProfileManager.getActiveProfile());
+            boolean enabled = ConfigUtils.isProfileActive(profileOnInstance);
             if (enabled) {
                 LOGGER.debug("Enabling " + instance.target() + " since the profile value matches the active profile.");
             } else {
@@ -75,7 +75,7 @@ public class BuildTimeEnabledProcessor {
         Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(UNLESS_BUILD_PROFILE);
         for (AnnotationInstance instance : annotationInstances) {
             String profileOnInstance = instance.value().asString();
-            boolean enabled = !profileOnInstance.equals(ProfileManager.getActiveProfile());
+            boolean enabled = !ConfigUtils.isProfileActive(profileOnInstance);
             if (enabled) {
                 LOGGER.debug("Enabling " + instance.target() + " since the profile value does not match the active profile.");
             } else {

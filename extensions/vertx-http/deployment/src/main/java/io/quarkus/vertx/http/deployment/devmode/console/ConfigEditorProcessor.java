@@ -46,7 +46,7 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
-import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsRecorder;
@@ -215,18 +215,22 @@ public class ConfigEditorProcessor {
         if (values != null && !values.isEmpty()) {
             try {
                 Path configPath = getConfigPath();
-                String profile = ProfileManager.getActiveProfile();
+                List<String> profiles = ConfigUtils.getProfiles();
                 List<String> lines = Files.readAllLines(configPath);
                 for (Map.Entry<String, String> entry : values.entrySet()) {
                     String name = entry.getKey();
                     String value = entry.getValue();
-                    name = !profile.equals(DEVELOPMENT.getDefaultProfile()) ? "%" + profile + "." + name : name;
                     int nameLine = -1;
                     for (int i = 0, linesSize = lines.size(); i < linesSize; i++) {
-                        final String line = lines.get(i);
-                        if (line.startsWith(name + "=")) {
-                            nameLine = i;
-                            break;
+                        String line = lines.get(i);
+                        for (String profile : profiles) {
+                            String profileName = !profile.equals(DEVELOPMENT.getDefaultProfile()) ? "%" + profile + "." + name
+                                    : name;
+                            if (line.startsWith(profileName + "=")) {
+                                name = profileName;
+                                nameLine = i;
+                                break;
+                            }
                         }
                     }
 
@@ -259,9 +263,6 @@ public class ConfigEditorProcessor {
     static void setConfig(String value) {
         try {
             Path configPath = getConfigPath();
-            String profile = ProfileManager.getActiveProfile();
-            List<String> lines = Files.readAllLines(configPath);
-
             try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
                 if (value == null || value.isEmpty()) {
                     writer.newLine();

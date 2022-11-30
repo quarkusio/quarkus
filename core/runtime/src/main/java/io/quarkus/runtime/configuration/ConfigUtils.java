@@ -134,7 +134,20 @@ public final class ConfigUtils {
 
     public static SmallRyeConfigBuilder emptyConfigBuilder() {
         SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.withDefaultValue(SMALLRYE_CONFIG_PROFILE, ProfileManager.getActiveProfile());
+        LaunchMode launchMode = ProfileManager.getLaunchMode();
+        builder.withDefaultValue(launchMode.getProfileKey(), launchMode.getDefaultProfile());
+
+        builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
+            @Override
+            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                return new RelocateConfigSourceInterceptor(Map.of(SMALLRYE_CONFIG_PROFILE, launchMode.getProfileKey()));
+            }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(Priorities.LIBRARY + 200 - 10);
+            }
+        });
 
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
@@ -178,6 +191,7 @@ public final class ConfigUtils {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
                 Map<String, String> fallbacks = new HashMap<>();
+                fallbacks.put("quarkus.profile", SMALLRYE_CONFIG_PROFILE);
                 fallbacks.put("quarkus.config.locations", SMALLRYE_CONFIG_LOCATIONS);
                 fallbacks.put("quarkus.config.profile.parent", SMALLRYE_CONFIG_PROFILE_PARENT);
                 return new FallbackConfigSourceInterceptor(fallbacks);
@@ -267,6 +281,14 @@ public final class ConfigUtils {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static List<String> getProfiles() {
+        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getProfiles();
+    }
+
+    public static boolean isProfileActive(final String profile) {
+        return getProfiles().contains(profile);
     }
 
     /**

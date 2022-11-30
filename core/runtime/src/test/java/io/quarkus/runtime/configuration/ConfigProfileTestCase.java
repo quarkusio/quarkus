@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import static io.quarkus.runtime.configuration.ConfigUtils.emptyConfigBuilder;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,17 +21,14 @@ import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class ConfigProfileTestCase {
-
     private SmallRyeConfigBuilder configBuilder(String... keyValues) {
-        return new SmallRyeConfigBuilder()
-                .addDefaultInterceptors()
-                .withSources(new PropertiesConfigSource(maps(keyValues), "test input", 500))
-                .withProfile(ProfileManager.getActiveProfile());
+        return emptyConfigBuilder()
+                .addDefaultSources()
+                .withSources(new PropertiesConfigSource(maps(keyValues), "test input", 500));
     }
 
     private SmallRyeConfig buildConfig(String... keyValues) {
-        final SmallRyeConfig config = configBuilder(keyValues).build();
-        return config;
+        return configBuilder(keyValues).build();
     }
 
     private Map<String, String> maps(String... keyValues) {
@@ -79,7 +77,7 @@ public class ConfigProfileTestCase {
 
     @Test
     void overriddenProfileHigherOrdinal() {
-        System.setProperty("quarkus-profile", "foo");
+        System.setProperty("quarkus.profile", "foo");
         try {
             final SmallRyeConfig config = configBuilder()
                     .withSources(new PropertiesConfigSource(maps("foo", "default"), "source", 1000))
@@ -88,25 +86,25 @@ public class ConfigProfileTestCase {
 
             assertEquals("default", config.getRawValue("foo"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 
     @Test
     void profileNoErrorOnExpansion() {
-        System.setProperty("quarkus-profile", "foo");
+        System.setProperty("quarkus.profile", "foo");
         try {
             final SmallRyeConfig config = configBuilder("foo", "${noExpansionAvailable}", "%foo.foo", "profile").build();
 
             assertEquals("profile", config.getRawValue("foo"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 
     @Test
     public void profile() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1", "%prof.my.prop", "2");
 
@@ -115,51 +113,51 @@ public class ConfigProfileTestCase {
             assertEquals("my.prop", config.getConfigValue("my.prop").getName());
             assertEquals("my.prop", config.getConfigValue("%prof.my.prop").getName());
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 
     @Test
     public void profileOnly() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1", "%prof.my.prop", "2");
 
             assertEquals("2", config.getRawValue("my.prop"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 
     @Test
     public void fallback() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1");
 
             assertEquals("1", config.getRawValue("my.prop"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 
     @Test
     public void expressions() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         System.setProperty("my.prop", "1");
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1", "%prof.my.prop", "${my.prop}");
 
             assertThrows(IllegalArgumentException.class, () -> config.getRawValue("my.prop"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
             System.clearProperty("my.prop");
         }
     }
 
     @Test
     public void profileExpressions() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         System.setProperty("%prof.my.prop.profile", "2");
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1",
@@ -168,14 +166,14 @@ public class ConfigProfileTestCase {
 
             assertEquals("2", config.getRawValue("my.prop"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
             System.clearProperty("%prof.my.prop.profile");
         }
     }
 
     @Test
     public void customConfigProfile() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         try {
             final SmallRyeConfig config = configBuilder()
                     .addDefaultSources()
@@ -184,7 +182,7 @@ public class ConfigProfileTestCase {
 
             assertEquals("2", config.getValue("my.prop", String.class));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 
@@ -203,7 +201,7 @@ public class ConfigProfileTestCase {
 
     @Test
     public void priorityProfile() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         try {
             final SmallRyeConfig config = configBuilder()
                     .addDefaultSources()
@@ -214,13 +212,13 @@ public class ConfigProfileTestCase {
 
             assertEquals("higher-profile", config.getRawValue("my.prop"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 
     @Test
     public void priorityOverrideProfile() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         try {
             final SmallRyeConfig config = new SmallRyeConfigBuilder()
                     .addDefaultSources()
@@ -231,13 +229,13 @@ public class ConfigProfileTestCase {
 
             assertEquals("higher", config.getRawValue("my.prop"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 
     @Test
     public void priorityProfileOverOriginal() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         try {
             final SmallRyeConfig config = configBuilder()
                     .addDefaultSources()
@@ -249,13 +247,13 @@ public class ConfigProfileTestCase {
 
             assertEquals("higher-profile", config.getRawValue("my.prop"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 
     @Test
     public void propertyNames() {
-        System.setProperty("quarkus-profile", "prof");
+        System.setProperty("quarkus.profile", "prof");
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1", "%prof.my.prop", "2", "%prof.prof.only", "1");
 
@@ -268,7 +266,7 @@ public class ConfigProfileTestCase {
             assertTrue(properties.contains("my.prop"));
             assertTrue(properties.contains("prof.only"));
         } finally {
-            System.clearProperty("quarkus-profile");
+            System.clearProperty("quarkus.profile");
         }
     }
 }

@@ -1072,6 +1072,9 @@ public final class HibernateOrmProcessor {
         descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
                 persistenceUnitConfig.query.defaultNullOrdering.name().toLowerCase(Locale.ROOT));
 
+        descriptor.getProperties().setProperty(AvailableSettings.IN_CLAUSE_PARAMETER_PADDING,
+                String.valueOf(persistenceUnitConfig.query.inClauseParameterPadding));
+
         // Disable sequence validations: they are reportedly slow, and people already get the same validation from normal schema validation
         descriptor.getProperties().put(AvailableSettings.SEQUENCE_INCREMENT_SIZE_MISMATCH_STRATEGY,
                 SequenceMismatchStrategy.NONE);

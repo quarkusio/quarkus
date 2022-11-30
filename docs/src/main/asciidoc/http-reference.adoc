@@ -26,7 +26,7 @@ Servlet filter, otherwise it will run directly on top of Vert.x with no Servlet 
 
 To serve static resources you must place them in the `META-INF/resources` directory of your application. This location
 was chosen as it is the standard location for resources in `jar` files as defined by the Servlet spec. Even though
-Quarkus can be used without Servlet following this convention allows existing code that places its resources in this
+Quarkus can be used without Servlet, following this convention allows existing code that places its resources in this
 location to function correctly.
 
 === WebJar Locator Support
@@ -133,7 +133,7 @@ quarkus.http.ssl.certificate.key-files=/path/to/key
 
 === Providing a keystore
 
-An alternate solution is to directly provide a keystore which already contains a default entry with a certificate
+An alternate solution is to directly provide a keystore which already contains a default entry with a certificate.
  You will need to at least provide the file and a password.
 
 As with the certificate/key file combination, Quarkus will first try to resolve the given path as a resource, before attempting to read it from the filesystem.

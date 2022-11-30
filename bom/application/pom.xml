@@ -4738,6 +4738,11 @@
                 <version>${sshd-common.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-core</artifactId>
+                <version>${sshd-common.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.wildfly.security</groupId>
                 <artifactId>wildfly-elytron-sasl-gs2</artifactId>
                 <version>${wildfly-elytron.version}</version>

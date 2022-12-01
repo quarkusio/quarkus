@@ -185,7 +185,23 @@ public class CORSFilter implements Handler<RoutingContext> {
         }
     }
 
-    private static boolean isSameOrigin(HttpServerRequest request, String origin) {
+    static boolean isSameOrigin(HttpServerRequest request, String origin) {
+        //fast path check, when everything is the same
+        if (origin.startsWith(request.scheme())) {
+            if (!substringMatch(origin, request.scheme().length(), "://", false)) {
+                return false;
+            }
+            if (substringMatch(origin, request.scheme().length() + 3, request.host(), true)) {
+                //they are a simple match
+                return true;
+            }
+            return isSameOriginSlowPath(request, origin);
+        } else {
+            return false;
+        }
+    }
+
+    static boolean isSameOriginSlowPath(HttpServerRequest request, String origin) {
         String absUriString = request.absoluteURI();
         if (absUriString.startsWith(origin)) {
             // Make sure that Origin URI contains scheme, host, and port.
@@ -197,5 +213,27 @@ public class CORSFilter implements Handler<RoutingContext> {
             }
         }
         return false;
+    }
+
+    static boolean substringMatch(String str, int pos, String substring, boolean requireFull) {
+        int length = str.length();
+        int subLength = substring.length();
+        int strPos = pos;
+        int subPos = 0;
+        if (pos + subLength > length) {
+            //too long, avoid checking in the loop
+            return false;
+        }
+        for (;;) {
+            if (subPos == subLength) {
+                //if we are at the end return the correct value, depending on if we are also at the end of the origin
+                return !requireFull || strPos == length;
+            }
+            if (str.charAt(strPos) != substring.charAt(subPos)) {
+                return false;
+            }
+            strPos++;
+            subPos++;
+        }
     }
 }

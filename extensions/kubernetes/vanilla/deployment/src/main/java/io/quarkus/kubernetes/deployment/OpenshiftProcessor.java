@@ -57,6 +57,7 @@ import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -169,6 +170,7 @@ public class OpenshiftProcessor {
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Capabilities capabilities,
             List<KubernetesInitContainerBuildItem> initContainers,
+            List<KubernetesJobBuildItem> jobs,
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             List<KubernetesEnvBuildItem> envs,
@@ -331,8 +333,9 @@ public class OpenshiftProcessor {
                     config.remoteDebug.buildJavaToolOptionsEnv())));
         }
 
-        // Handle init Containers
+        // Handle init Containers and Jobs
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(OPENSHIFT, name, initContainers, result));
+        result.addAll(KubernetesCommonHelper.createInitJobDecorators(OPENSHIFT, name, jobs, result));
         return result;
     }
 }

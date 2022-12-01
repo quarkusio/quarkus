@@ -233,7 +233,7 @@ public class InfinispanClientProducer {
             String cacheName = cache.getKey();
             InfinispanClientRuntimeConfig.RemoteCacheConfig remoteCacheConfig = cache.getValue();
             if (remoteCacheConfig.configurationUri.isPresent()) {
-                URL configFile = InfinispanClientProducer.class.getClassLoader()
+                URL configFile = Thread.currentThread().getContextClassLoader()
                         .getResource(remoteCacheConfig.configurationUri.get());
                 try {
                     builder.remoteCache(cacheName).configurationURI(configFile.toURI());

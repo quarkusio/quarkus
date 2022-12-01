@@ -49,4 +49,26 @@ public interface UniAsserter {
      * The assertions fails if the Uni does not fail.
      */
     <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Class<? extends Throwable> c);
+
+    /**
+     *
+     * @param key
+     * @return the test data associated with the given key, or {@code null}
+     * @see #putData(String, Object)
+     */
+    Object getData(String key);
+
+    /**
+     * Associate the value with the given key.
+     *
+     * @param key
+     * @param value
+     * @return the previous value, or {@code null} if there was no data for the given key
+     */
+    Object putData(String key, Object value);
+
+    /**
+     * Clear the test data.
+     */
+    void clearData();
 }

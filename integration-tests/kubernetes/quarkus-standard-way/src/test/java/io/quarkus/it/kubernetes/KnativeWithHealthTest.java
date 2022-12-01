@@ -58,7 +58,7 @@ public class KnativeWithHealthTest {
                                     assertThat(p.getName()).isEqualTo("http1");
                                 });
                                 assertThat(c.getReadinessProbe()).isNotNull().satisfies(p -> {
-                                    assertThat(p.getInitialDelaySeconds()).isEqualTo(0);
+                                    assertThat(p.getInitialDelaySeconds()).isEqualTo(5);
                                     assertProbePath(p, "/q/health/ready");
 
                                     assertNotNull(p.getHttpGet());

@@ -54,11 +54,11 @@ public class AddJobResourceDecorator extends ResourceProvidingDecorator<Kubernet
 
         // defaults for:
         // - match labels
-        if (spec.getSelector().getMatchLabels() == null) {
+        if (spec.buildSelector().getMatchLabels() == null) {
             spec.editSelector().withMatchLabels(new HashMap<>()).endSelector();
         }
         // - termination grace period seconds
-        if (spec.getTemplate().getSpec().getTerminationGracePeriodSeconds() == null) {
+        if (spec.buildTemplate().getSpec().getTerminationGracePeriodSeconds() == null) {
             spec.editTemplate().editSpec().withTerminationGracePeriodSeconds(10L).endSpec().endTemplate();
         }
         // - container
@@ -90,7 +90,7 @@ public class AddJobResourceDecorator extends ResourceProvidingDecorator<Kubernet
     }
 
     private boolean containsContainerWithName(JobFluent.SpecNested<JobBuilder> spec) {
-        List<Container> containers = spec.getTemplate().getSpec().getContainers();
+        List<Container> containers = spec.buildTemplate().getSpec().getContainers();
         return containers == null || containers.stream().anyMatch(c -> name.equals(c.getName()));
     }
 }

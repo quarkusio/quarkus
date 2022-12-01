@@ -136,8 +136,6 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The arguments
-     *
-     * @return The arguments
      */
     @ConfigItem
     Optional<List<String>> arguments;
@@ -154,6 +152,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
      * @deprecated Use the {@code quarkus.openshift.route.host} instead
      */
     @ConfigItem
+    @Deprecated
     Optional<String> host;
 
     /**
@@ -309,6 +308,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
      * @deprecated Use the {@code quarkus.openshift.route.exposition} instead
      */
     @ConfigItem
+    @Deprecated
     boolean expose;
 
     /**

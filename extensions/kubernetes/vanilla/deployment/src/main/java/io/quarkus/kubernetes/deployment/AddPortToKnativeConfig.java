@@ -28,7 +28,7 @@ public class AddPortToKnativeConfig extends Configurator<KnativeConfigFluent<?>>
      * @return True if port with same container port exists.
      */
     private boolean hasPort(KnativeConfigFluent<?> config) {
-        for (Port p : config.getPorts()) {
+        for (Port p : config.buildPorts()) {
             if (p.getContainerPort() == port.getContainerPort()) {
                 return true;
             }

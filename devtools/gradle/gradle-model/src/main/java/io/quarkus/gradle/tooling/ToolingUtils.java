@@ -7,7 +7,6 @@ import java.nio.file.Path;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.attributes.Category;
@@ -41,11 +40,13 @@ public class ToolingUtils {
 
     public static IncludedBuild includedBuild(final Project project,
             final ProjectComponentIdentifier projectComponentIdentifier) {
-        try {
-            return project.getRootProject().getGradle().includedBuild(projectComponentIdentifier.getBuild().getName());
-        } catch (UnknownDomainObjectException e) {
-            return null;
+        final String name = projectComponentIdentifier.getBuild().getName();
+        for (IncludedBuild ib : project.getRootProject().getGradle().getIncludedBuilds()) {
+            if (ib.getName().equals(name)) {
+                return ib;
+            }
         }
+        return null;
     }
 
     public static Project includedBuildProject(IncludedBuildInternal includedBuild,

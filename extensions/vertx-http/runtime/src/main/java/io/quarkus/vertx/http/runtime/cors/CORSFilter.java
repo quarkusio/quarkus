@@ -66,7 +66,8 @@ public class CORSFilter implements Handler<RoutingContext> {
      * If any regular expression origins are configured, try to match on them.
      * Regular expressions must begin and end with '/'
      * 
-     * @param allowedOrigins the configured regex origins.
+     *
+     * @param allowOriginsRegex the configured regex origins.
      * @param origin the specified origin
      * @return true if any configured regular expressions match the specified origin, false otherwise
      */
@@ -203,13 +204,37 @@ public class CORSFilter implements Handler<RoutingContext> {
 
     static boolean isSameOriginSlowPath(HttpServerRequest request, String origin) {
         String absUriString = request.absoluteURI();
-        if (absUriString.startsWith(origin)) {
-            // Make sure that Origin URI contains scheme, host, and port.
-            // If no port is set in Origin URI then the request URI must not have it set either
-            URI baseUri = URI.create(absUriString.substring(0, origin.length()));
-            if (baseUri.getScheme() != null && baseUri.getHost() != null
-                    && (baseUri.getPort() > 0 || URI.create(absUriString).getPort() == -1)) {
-                return true;
+        //we already know the scheme is correct, as the fast path will reject that
+        URI baseUri = URI.create(absUriString);
+        URI originUri = URI.create(origin);
+        if (!originUri.getPath().isEmpty()) {
+            //origin should not contain a path component
+            //just reject it in this case
+            return false;
+        }
+        if (!baseUri.getHost().equals(originUri.getHost())) {
+            return false;
+        }
+        if (baseUri.getPort() == originUri.getPort()) {
+            return true;
+        }
+        if (baseUri.getPort() != -1 && originUri.getPort() != -1) {
+            //ports are explictly set
+            return false;
+        }
+        if (baseUri.getScheme().equals("http")) {
+            if (baseUri.getPort() == 80 || baseUri.getPort() == -1) {
+                if (originUri.getPort() == 80 || originUri.getPort() == -1) {
+                    //port is either unset or 80
+                    return true;
+                }
+            }
+        } else if (baseUri.getScheme().equals("https")) {
+            if (baseUri.getPort() == 443 || baseUri.getPort() == -1) {
+                if (originUri.getPort() == 443 || originUri.getPort() == -1) {
+                    //port is either unset or 443
+                    return true;
+                }
             }
         }
         return false;

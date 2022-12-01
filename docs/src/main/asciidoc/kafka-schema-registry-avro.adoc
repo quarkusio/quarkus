@@ -778,7 +778,7 @@ You can use the following configuration properties to alter how it works:
 
 - `avro.codegen.[avsc|avdl|avpr].imports` - a list of files or directories that should be compiled first thus making them
 importable by subsequently compiled schemas. Note that imported files should not reference each other. All paths should be relative
-to the `src/[main|test]/avro` directory. Passed as a comma-separated list.
+to the `src/[main|test]/avro` directory, or `avro` sub-directory in any source directory configured by the build system. Passed as a comma-separated list.
 - `avro.codegen.stringType` - the Java type to use for Avro strings. May be one of `CharSequence`, `String` or
 `Utf8`. Defaults to `String`
 - `avro.codegen.createOptionalGetters` - enables generating the `getOptional...`

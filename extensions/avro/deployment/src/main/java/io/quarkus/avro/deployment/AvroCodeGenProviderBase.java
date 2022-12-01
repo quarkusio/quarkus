@@ -3,9 +3,9 @@ package io.quarkus.avro.deployment;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -24,6 +24,8 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
 
     private static final Logger log = Logger.getLogger(AvroCodeGenProviderBase.class);
 
+    public static final String[] EMPTY = new String[0];
+
     /**
      * The directory (within the java classpath) that contains the velocity
      * templates to use for code generation.
@@ -39,7 +41,7 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
     public boolean trigger(CodeGenContext context) throws CodeGenException {
         init();
         boolean filesGenerated = false;
-        AvroOptions options = new AvroOptions(context.config(), inputExtension());
+        AvroOptions options = new AvroOptions(context.config());
         Path input = context.inputDir();
         Path outputDir = context.outDir();
 
@@ -47,14 +49,18 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
 
         // compile the imports first
         for (String imprt : options.imports) {
-            Path importPath = Paths.get(input.toAbsolutePath().toString(), imprt.trim()).toAbsolutePath();
+            Path importPath = input.resolve(imprt.trim()).toAbsolutePath().normalize();
             if (Files.isDirectory(importPath)) {
-                for (Path file : gatherAllFiles(importPath)) {
+                log.infof("Importing Directory: %s", importPath);
+                Collection<Path> files = gatherAllFiles(importPath);
+                log.debugf("Importing Directory Files: %s", files);
+                for (Path file : files) {
                     compileSingleFile(file, outputDir, options);
                     importedPaths.add(file);
                     filesGenerated = true;
                 }
-            } else {
+            } else if (Files.exists(importPath)) {
+                log.infof("Importing File: %s", importPath);
                 compileSingleFile(importPath, outputDir, options);
                 importedPaths.add(importPath);
                 filesGenerated = true;
@@ -75,6 +81,9 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
     abstract void init();
 
     private Collection<Path> gatherAllFiles(Path importPath) throws CodeGenException {
+        if (!Files.exists(importPath)) {
+            return Collections.emptySet();
+        }
         try {
             return Files.find(importPath, 20,
                     (path, ignored) -> Files.isRegularFile(path) && path.toString().endsWith("." + inputExtension()))
@@ -87,9 +96,7 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
 
     abstract void compileSingleFile(Path importPath, Path outputDir, AvroOptions options) throws CodeGenException;
 
-    public static class AvroOptions {
-
-        public static final String[] EMPTY = new String[0];
+    public class AvroOptions {
 
         private final Config config;
 
@@ -151,10 +158,9 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
          */
         final List<String> customConversions = new ArrayList<>();
 
-        AvroOptions(Config config, String specificPropertyKey) {
+        AvroOptions(Config config) {
             this.config = config;
-            String imports = prop("avro.codegen." + specificPropertyKey + ".imports", "");
-            this.imports = "".equals(imports) ? EMPTY : imports.split(",");
+            this.imports = getImports(config);
 
             stringType = GenericData.StringType.valueOf(prop("avro.codegen.stringType", "String"));
             createOptionalGetters = getBooleanProperty("avro.codegen.createOptionalGetters", false);
@@ -186,4 +192,20 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
             return defaultValue;
         }
     }
+
+    public String[] getImports(Config config) {
+        return config.getOptionalValue("avro.codegen." + inputExtension() + ".imports", String.class)
+                .map(i -> i.split(","))
+                .orElse(EMPTY);
+    }
+
+    @Override
+    public boolean shouldRun(Path sourceDir, Config config) {
+        return CodeGenProvider.super.shouldRun(sourceDir, config) || hasImportsConfig(config);
+    }
+
+    private boolean hasImportsConfig(Config config) {
+        return getImports(config).length > 0;
+    }
+
 }

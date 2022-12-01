@@ -50,6 +50,7 @@ import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -124,9 +125,10 @@ public class VanillaKubernetesProcessor {
 
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
-            OutputTargetBuildItem outputTarget, Capabilities capabilities, KubernetesConfig config, PackageConfig packageConfig,
+            OutputTargetBuildItem outputTarget, Capabilities capabilities, KubernetesConfig config,
+            PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
-
+            List<KubernetesJobBuildItem> jobs,
             List<KubernetesInitContainerBuildItem> initContainers,
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels, List<KubernetesEnvBuildItem> envs,
@@ -253,8 +255,9 @@ public class VanillaKubernetesProcessor {
                     config.remoteDebug.buildJavaToolOptionsEnv())));
         }
 
-        // Handle init Containers
+        // Handle init Containers and Jobs
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(KUBERNETES, name, initContainers, result));
+        result.addAll(KubernetesCommonHelper.createInitJobDecorators(KUBERNETES, name, jobs, result));
         return result;
     }
 

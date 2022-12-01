@@ -39,6 +39,7 @@ import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
@@ -55,6 +56,7 @@ public class DevClusterHelper {
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             List<KubernetesInitContainerBuildItem> initContainers,
+            List<KubernetesJobBuildItem> jobs,
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             List<KubernetesEnvBuildItem> envs,
@@ -118,6 +120,7 @@ public class DevClusterHelper {
 
         // Handle init Containers
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(clusterKind, name, initContainers, result));
+        result.addAll(KubernetesCommonHelper.createInitJobDecorators(clusterKind, name, jobs, result));
         return result;
     }
 

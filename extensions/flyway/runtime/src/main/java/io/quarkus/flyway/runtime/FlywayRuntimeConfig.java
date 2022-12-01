@@ -22,7 +22,7 @@ public final class FlywayRuntimeConfig {
     }
 
     /**
-     * Flag to enable / disable Liquibase.
+     * Flag to enable / disable Flyway.
      *
      */
     @ConfigItem(defaultValue = "true")

@@ -38,7 +38,6 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -51,6 +50,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -62,8 +62,6 @@ import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
-import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 class FlywayProcessor {
@@ -222,15 +220,13 @@ class FlywayProcessor {
     }
 
     @BuildStep
-    void configureKubernetes(ContainerImageInfoBuildItem imageInfo,
-            BuildProducer<KubernetesInitContainerBuildItem> initContainers, BuildProducer<KubernetesEnvBuildItem> env) {
-        initContainers.produce(KubernetesInitContainerBuildItem.create("flyway")
-                .withImage(imageInfo.getImage())
-                .withEnvVars(Map.of("QUARKUS_FLYWAY_RUN_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
-                .withInheritEnvVars(true)
-                .withInheritMounts(true));
-
-        env.produce(KubernetesEnvBuildItem.createSimpleVar("QUARKUS_FLYWAY_ENABLED", "false", null));
+    public InitTaskBuildItem configureInitTask() {
+        return InitTaskBuildItem.create()
+                .withName("flyway-init")
+                .withTaskEnvVars(Map.of("QUARKUS_FLYWAY_RUN_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
+                .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ENABLED", "false"))
+                .withSharedEnvironment(true)
+                .withSharedFilesystem(true);
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

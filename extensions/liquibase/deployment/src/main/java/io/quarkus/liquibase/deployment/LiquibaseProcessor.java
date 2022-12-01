@@ -32,7 +32,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -43,6 +42,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -53,8 +53,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuil
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
@@ -297,15 +295,13 @@ class LiquibaseProcessor {
     }
 
     @BuildStep
-    void configureKubernetes(ContainerImageInfoBuildItem imageInfo,
-            BuildProducer<KubernetesInitContainerBuildItem> initContainers, BuildProducer<KubernetesEnvBuildItem> env) {
-        initContainers.produce(KubernetesInitContainerBuildItem.create("liquibase")
-                .withImage(imageInfo.getImage())
-                .withEnvVars(Map.of("QUARKUS_LIQUIBASE_RUN_AND_EXIT", "true", "QUARKUS_LIQUIBASE_ENABLED", "true"))
-                .withInheritEnvVars(true)
-                .withInheritMounts(true));
-
-        env.produce(KubernetesEnvBuildItem.createSimpleVar("QUARKUS_LIQUIBASE_ENABLED", "false", null));
+    public InitTaskBuildItem configureInitTask() {
+        return InitTaskBuildItem.create()
+                .withName("liquibase-init")
+                .withTaskEnvVars(Map.of("QUARKUS_LIQUIBASE_RUN_AND_EXIT", "true", "QUARKUS_LIQUIBASE_ENABLED", "true"))
+                .withAppEnvVars(Map.of("QUARKUS_LIQUIBASE_ENABLED", "false"))
+                .withSharedEnvironment(true)
+                .withSharedFilesystem(true);
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

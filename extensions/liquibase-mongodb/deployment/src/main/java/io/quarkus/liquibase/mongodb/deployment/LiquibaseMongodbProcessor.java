@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -31,6 +32,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -235,6 +237,17 @@ class LiquibaseMongodbProcessor {
         recorder.doStartActions();
 
         return new ServiceStartBuildItem("liquibase-mongodb");
+    }
+
+    @BuildStep
+    public InitTaskBuildItem configureInitTask() {
+        return InitTaskBuildItem.create()
+                .withName("liquibase-mongodb-init")
+                .withTaskEnvVars(
+                        Map.of("QUARKUS_LIQUIBASE_MONGODB_RUN_AND_EXIT", "true", "QUARKUS_LIQUIBASE_MONGODB_ENABLED", "true"))
+                .withAppEnvVars(Map.of("QUARKUS_LIQUIBASE_MONGODB_ENABLED", "false"))
+                .withSharedEnvironment(true)
+                .withSharedFilesystem(true);
     }
 
     /**

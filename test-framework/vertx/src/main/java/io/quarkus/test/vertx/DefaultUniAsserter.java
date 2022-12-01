@@ -5,6 +5,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Assertions;
+import org.opentest4j.AssertionFailedError;
 
 import io.smallrye.mutiny.Uni;
 
@@ -147,6 +148,9 @@ class DefaultUniAsserter implements UniAsserter {
                     if (t == null) {
                         return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
                     } else {
+                        if (t instanceof AssertionFailedError) {
+                            return Uni.createFrom().failure(t);
+                        }
                         return Uni.createFrom().item(() -> {
                             c.accept(t);
                             return null;

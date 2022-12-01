@@ -18,6 +18,7 @@ import io.quarkus.redis.datasource.search.TransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
+import io.quarkus.redis.datasource.timeseries.TransactionalTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
@@ -135,6 +136,11 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K> TransactionalAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
         return new BlockingTransactionalAutoSuggestCommandsImpl<>(this, reactive.autosuggest(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TransactionalTimeSeriesCommands<K> timeseries(Class<K> redisKeyType) {
+        return new BlockingTransactionalTimeSeriesCommandsImpl<>(this, reactive.timeseries(redisKeyType), timeout);
     }
 
     @Override

@@ -21,6 +21,7 @@ import io.quarkus.redis.datasource.search.ReactiveTransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveTransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
+import io.quarkus.redis.datasource.timeseries.ReactiveTransactionalTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.ReactiveTransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
@@ -157,6 +158,12 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K> ReactiveTransactionalAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
         return new ReactiveTransactionalAutoSuggestCommandsImpl<>(this,
                 (ReactiveAutoSuggestCommandsImpl<K>) this.reactive.autosuggest(redisKeyType), tx);
+    }
+
+    @Override
+    public <K> ReactiveTransactionalTimeSeriesCommands<K> timeseries(Class<K> redisKeyType) {
+        return new ReactiveTransactionalTimeSeriesCommandsImpl<>(this,
+                (ReactiveTimeSeriesCommandsImpl<K>) this.reactive.timeseries(redisKeyType), tx);
     }
 
     @Override

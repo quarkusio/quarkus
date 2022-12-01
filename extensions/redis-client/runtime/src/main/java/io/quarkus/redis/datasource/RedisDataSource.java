@@ -21,6 +21,7 @@ import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.timeseries.TimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
@@ -548,6 +549,27 @@ public interface RedisDataSource {
     @Experimental("The Redis auto-suggest support is experimental")
     default AutoSuggestCommands<String> autosuggest() {
         return autosuggest(String.class);
+    }
+
+    /**
+     * Gets the object to emit commands from the {@code time series} group.
+     * This group requires the <a href="https://redis.io/docs/stack/timeseries/">Redis Time Series module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate time series
+     */
+    @Experimental("The Redis time series support is experimental")
+    <K> TimeSeriesCommands<K> timeseries(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code time series} group.
+     * This group requires the <a href="https://redis.io/docs/stack/timeseries/">Redis Time Series module</a>.
+     *
+     * @return the object to manipulate time series
+     */
+    @Experimental("The Redis time series support is experimental")
+    default TimeSeriesCommands<String> timeseries() {
+        return timeseries(String.class);
     }
 
     /**

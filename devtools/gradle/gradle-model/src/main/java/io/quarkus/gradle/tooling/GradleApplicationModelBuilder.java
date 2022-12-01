@@ -28,7 +28,6 @@ import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.compile.AbstractCompile;
-import org.gradle.composite.internal.CompositeProjectComponentArtifactMetadata;
 import org.gradle.internal.composite.IncludedBuildInternal;
 import org.gradle.language.jvm.tasks.ProcessResources;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
@@ -170,11 +169,10 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
                 ProjectComponentIdentifier projectComponentIdentifier = (ProjectComponentIdentifier) a.getId()
                         .getComponentIdentifier();
+                var includedBuild = ToolingUtils.includedBuild(project, projectComponentIdentifier);
                 Project projectDep = null;
-                if (a.getId() instanceof CompositeProjectComponentArtifactMetadata) {
-                    projectDep = ToolingUtils.includedBuildProject(
-                            (IncludedBuildInternal) Objects
-                                    .requireNonNull(ToolingUtils.includedBuild(project, projectComponentIdentifier)),
+                if (includedBuild != null) {
+                    projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild,
                             projectComponentIdentifier);
                 } else {
                     projectDep = project.getRootProject().findProject(projectComponentIdentifier.getProjectPath());

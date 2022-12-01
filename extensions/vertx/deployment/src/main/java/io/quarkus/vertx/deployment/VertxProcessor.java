@@ -122,6 +122,9 @@ class VertxProcessor {
         AnnotationStore annotationStore = beanRegistrationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
         for (BeanInfo bean : beanRegistrationPhase.getContext().beans().classBeans()) {
             for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
+                if (method.isSynthetic()) {
+                    continue;
+                }
                 AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
                 if (consumeEvent != null) {
                     // Validate method params and return type

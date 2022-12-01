@@ -237,4 +237,32 @@ public class StreamTestCase {
             Assertions.assertEquals(1, errors.size());
         }
     }
+
+    @Test
+    public void testSseForMultiWithOutboundSseEvent() throws InterruptedException {
+        Client client = ClientBuilder.newBuilder().build();
+        WebTarget target = client.target(this.uri.toString() + "stream/sse/raw");
+        try (SseEventSource sse = SseEventSource.target(target).build()) {
+            CountDownLatch latch = new CountDownLatch(1);
+            List<Throwable> errors = new CopyOnWriteArrayList<>();
+            List<String> results = new CopyOnWriteArrayList<>();
+            List<String> ids = new CopyOnWriteArrayList<>();
+            List<String> names = new CopyOnWriteArrayList<>();
+            sse.register(event -> {
+                results.add(event.readData());
+                ids.add(event.getId());
+                names.add(event.getName());
+            }, error -> {
+                errors.add(error);
+            }, () -> {
+                latch.countDown();
+            });
+            sse.open();
+            Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
+            Assertions.assertEquals(Arrays.asList("uno", "dos", "tres"), results);
+            Assertions.assertEquals(Arrays.asList("one", "two", "three"), ids);
+            Assertions.assertEquals(Arrays.asList("eins", "zwei", "drei"), names);
+            Assertions.assertEquals(0, errors.size());
+        }
+    }
 }

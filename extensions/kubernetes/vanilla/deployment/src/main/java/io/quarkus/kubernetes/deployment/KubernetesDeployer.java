@@ -30,6 +30,7 @@ import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesList;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -319,7 +320,9 @@ public class KubernetesDeployer {
     private static boolean shouldDeleteExisting(DeploymentTargetEntry deploymentTarget, HasMetadata resource) {
         return KNATIVE.equalsIgnoreCase(deploymentTarget.getName())
                 || resource instanceof Service
-                || (Objects.equals("v1", resource.getApiVersion()) && Objects.equals("Service", resource.getKind()));
+                || (Objects.equals("v1", resource.getApiVersion()) && Objects.equals("Service", resource.getKind()))
+                || resource instanceof Job
+                || (Objects.equals("batch/v1", resource.getApiVersion()) && Objects.equals("Job", resource.getKind()));
     }
 
     private static Predicate<HasMetadata> distinctByResourceKey() {

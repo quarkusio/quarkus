@@ -37,7 +37,7 @@ public class BeanInfoQualifiersTest {
         ClassInfo fooClass = index.getClassByName(fooName);
 
         BeanInfo bean = Beans.createClassBean(fooClass,
-                BeanProcessor.builder().setBeanArchiveIndex(index).build().getBeanDeployment(),
+                BeanProcessor.builder().setImmutableBeanArchiveIndex(index).build().getBeanDeployment(),
                 null);
 
         AnnotationInstance requiredFooQualifier = index.getAnnotations(fooQualifierName).stream()

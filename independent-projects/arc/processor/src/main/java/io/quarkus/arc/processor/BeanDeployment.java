@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -55,8 +56,8 @@ public class BeanDeployment {
 
     private final BuildContextImpl buildContext;
 
-    private final IndexView beanArchiveIndex;
-
+    private final IndexView beanArchiveComputingIndex;
+    private final IndexView beanArchiveImmutableIndex;
     private final IndexView applicationIndex;
 
     private final Map<DotName, ClassInfo> qualifiers;
@@ -124,7 +125,8 @@ public class BeanDeployment {
         }
         this.beanDefiningAnnotations = beanDefiningAnnotations;
         this.resourceAnnotations = new HashSet<>(builder.resourceAnnotations);
-        this.beanArchiveIndex = builder.beanArchiveIndex;
+        this.beanArchiveComputingIndex = builder.beanArchiveComputingIndex;
+        this.beanArchiveImmutableIndex = Objects.requireNonNull(builder.beanArchiveImmutableIndex);
         this.applicationIndex = builder.applicationIndex;
         this.annotationStore = new AnnotationStore(initAndSort(builder.annotationTransformers, buildContext), buildContext);
         if (buildContext != null) {
@@ -141,11 +143,11 @@ public class BeanDeployment {
         this.excludeTypes = builder.excludeTypes != null ? new ArrayList<>(builder.excludeTypes) : Collections.emptyList();
 
         qualifierNonbindingMembers = new HashMap<>();
-        qualifiers = findQualifiers(this.beanArchiveIndex);
+        qualifiers = findQualifiers();
         for (QualifierRegistrar registrar : builder.qualifierRegistrars) {
             for (Map.Entry<DotName, Set<String>> entry : registrar.getAdditionalQualifiers().entrySet()) {
                 DotName dotName = entry.getKey();
-                ClassInfo classInfo = getClassByName(this.beanArchiveIndex, dotName);
+                ClassInfo classInfo = getClassByName(getBeanArchiveIndex(), dotName);
                 if (classInfo != null) {
                     Set<String> nonbindingMembers = entry.getValue();
                     if (nonbindingMembers == null) {
@@ -156,15 +158,15 @@ public class BeanDeployment {
                 }
             }
         }
-        repeatingQualifierAnnotations = findContainerAnnotations(qualifiers, this.beanArchiveIndex);
+        repeatingQualifierAnnotations = findContainerAnnotations(qualifiers);
         buildContextPut(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
 
         interceptorNonbindingMembers = new HashMap<>();
-        interceptorBindings = findInterceptorBindings(this.beanArchiveIndex);
+        interceptorBindings = findInterceptorBindings();
         for (InterceptorBindingRegistrar registrar : builder.interceptorBindingRegistrars) {
             for (InterceptorBindingRegistrar.InterceptorBinding binding : registrar.getAdditionalBindings()) {
                 DotName dotName = binding.getName();
-                ClassInfo annotationClass = getClassByName(this.beanArchiveIndex, dotName);
+                ClassInfo annotationClass = getClassByName(getBeanArchiveIndex(), dotName);
                 if (annotationClass != null) {
                     Set<String> nonbinding = new HashSet<>();
                     for (MethodInfo method : annotationClass.methods()) {
@@ -177,7 +179,7 @@ public class BeanDeployment {
                 interceptorBindings.put(dotName, annotationClass);
             }
         }
-        repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings, this.beanArchiveIndex);
+        repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings);
         buildContextPut(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
 
         Set<DotName> additionalStereotypes = new HashSet<>();
@@ -185,12 +187,11 @@ public class BeanDeployment {
             additionalStereotypes.addAll(stereotypeRegistrar.getAdditionalStereotypes());
         }
 
-        this.stereotypes = findStereotypes(this.beanArchiveIndex, interceptorBindings, customContexts, additionalStereotypes,
+        this.stereotypes = findStereotypes(interceptorBindings, customContexts, additionalStereotypes,
                 annotationStore);
         buildContextPut(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
 
         this.transitiveInterceptorBindings = findTransitiveInterceptorBindings(interceptorBindings.keySet(),
-                this.beanArchiveIndex,
                 new HashMap<>(), interceptorBindings, annotationStore);
 
         this.injectionPoints = new CopyOnWriteArrayList<>();
@@ -199,7 +200,7 @@ public class BeanDeployment {
         this.beans = new CopyOnWriteArrayList<>();
         this.observers = new CopyOnWriteArrayList<>();
 
-        this.assignabilityCheck = new AssignabilityCheck(beanArchiveIndex, applicationIndex);
+        this.assignabilityCheck = new AssignabilityCheck(getBeanArchiveIndex(), applicationIndex);
         this.beanResolver = new BeanResolverImpl(this);
         this.delegateInjectionPointResolver = new DelegateInjectionPointResolverImpl(this);
         this.interceptorResolver = new InterceptorResolver(this);
@@ -517,12 +518,17 @@ public class BeanDeployment {
     }
 
     /**
-     * This index was used to discover components (beans, interceptors, qualifiers, etc.) and during type-safe resolution.
+     * Returns the index that was used during discovery and type-safe resolution.
+     * <p>
+     * In general, the returned index is usually "computing" which means that it attempts to compute the information for the
+     * classes that were not part of the initial bean archive index. I.e. the returned index corresponds to
+     * {@link BeanProcessor.Builder#setComputingBeanArchiveIndex(IndexView)}. However, if the computing index was not set then
+     * the index set by {@link BeanProcessor.Builder#setImmutableBeanArchiveIndex(IndexView)} is used instead.
      *
      * @return the bean archive index
      */
     public IndexView getBeanArchiveIndex() {
-        return beanArchiveIndex;
+        return beanArchiveComputingIndex != null ? beanArchiveComputingIndex : beanArchiveImmutableIndex;
     }
 
     /**
@@ -670,9 +676,9 @@ public class BeanDeployment {
         }
     }
 
-    private Map<DotName, ClassInfo> findQualifiers(IndexView index) {
+    private Map<DotName, ClassInfo> findQualifiers() {
         Map<DotName, ClassInfo> qualifiers = new HashMap<>();
-        for (AnnotationInstance qualifier : index.getAnnotations(DotNames.QUALIFIER)) {
+        for (AnnotationInstance qualifier : beanArchiveImmutableIndex.getAnnotations(DotNames.QUALIFIER)) {
             ClassInfo qualifierClass = qualifier.target().asClass();
             if (isExcluded(qualifierClass)) {
                 continue;
@@ -682,23 +688,23 @@ public class BeanDeployment {
         return qualifiers;
     }
 
-    private Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations, IndexView index) {
+    private Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations) {
         Map<DotName, ClassInfo> containerAnnotations = new HashMap<>();
         for (ClassInfo annotation : annotations.values()) {
             AnnotationInstance repeatableMetaAnnotation = annotation.declaredAnnotation(DotNames.REPEATABLE);
             if (repeatableMetaAnnotation != null) {
                 DotName containerAnnotationName = repeatableMetaAnnotation.value().asClass().name();
-                ClassInfo containerClass = getClassByName(index, containerAnnotationName);
+                ClassInfo containerClass = getClassByName(getBeanArchiveIndex(), containerAnnotationName);
                 containerAnnotations.put(containerAnnotationName, containerClass);
             }
         }
         return containerAnnotations;
     }
 
-    private Map<DotName, ClassInfo> findInterceptorBindings(IndexView index) {
+    private Map<DotName, ClassInfo> findInterceptorBindings() {
         Map<DotName, ClassInfo> bindings = new HashMap<>();
         // Note: doesn't use AnnotationStore, this will operate on classes without applying annotation transformers
-        for (AnnotationInstance binding : index.getAnnotations(DotNames.INTERCEPTOR_BINDING)) {
+        for (AnnotationInstance binding : beanArchiveImmutableIndex.getAnnotations(DotNames.INTERCEPTOR_BINDING)) {
             ClassInfo bindingClass = binding.target().asClass();
             if (isExcluded(bindingClass)) {
                 continue;
@@ -709,7 +715,6 @@ public class BeanDeployment {
     }
 
     private static Map<DotName, Set<AnnotationInstance>> findTransitiveInterceptorBindings(Collection<DotName> initialBindings,
-            IndexView index,
             Map<DotName, Set<AnnotationInstance>> result, Map<DotName, ClassInfo> interceptorBindings,
             AnnotationStore annotationStore) {
         // for all known interceptor bindings
@@ -748,20 +753,20 @@ public class BeanDeployment {
         return result;
     }
 
-    private Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings,
+    private Map<DotName, StereotypeInfo> findStereotypes(Map<DotName, ClassInfo> interceptorBindings,
             Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts,
             Set<DotName> additionalStereotypes, AnnotationStore annotationStore) {
 
         Map<DotName, StereotypeInfo> stereotypes = new HashMap<>();
 
         Set<DotName> stereotypeNames = new HashSet<>();
-        for (AnnotationInstance annotation : index.getAnnotations(DotNames.STEREOTYPE)) {
+        for (AnnotationInstance annotation : beanArchiveImmutableIndex.getAnnotations(DotNames.STEREOTYPE)) {
             stereotypeNames.add(annotation.target().asClass().name());
         }
         stereotypeNames.addAll(additionalStereotypes);
 
         for (DotName stereotypeName : stereotypeNames) {
-            ClassInfo stereotypeClass = getClassByName(index, stereotypeName);
+            ClassInfo stereotypeClass = getClassByName(getBeanArchiveIndex(), stereotypeName);
             if (stereotypeClass != null && !isExcluded(stereotypeClass)) {
 
                 boolean isAlternative = false;
@@ -852,7 +857,8 @@ public class BeanDeployment {
                 .map(StereotypeInfo::getName)
                 .collect(Collectors.toSet());
 
-        for (ClassInfo beanClass : beanArchiveIndex.getKnownClasses()) {
+        // If needed use the specialized immutable index to discover beans
+        for (ClassInfo beanClass : beanArchiveImmutableIndex.getKnownClasses()) {
 
             if (Modifier.isInterface(beanClass.flags()) || Modifier.isAbstract(beanClass.flags())
                     || beanClass.isAnnotation() || beanClass.isEnum()) {
@@ -987,7 +993,7 @@ public class BeanDeployment {
                 }
                 DotName superType = aClass.superName();
                 aClass = superType != null && !superType.equals(DotNames.OBJECT)
-                        ? getClassByName(beanArchiveIndex, superType)
+                        ? getClassByName(getBeanArchiveIndex(), superType)
                         : null;
             }
             for (FieldInfo field : beanClass.fields()) {
@@ -1233,7 +1239,7 @@ public class BeanDeployment {
 
     private List<InterceptorInfo> findInterceptors(List<InjectionPointInfo> injectionPoints) {
         Map<DotName, ClassInfo> interceptorClasses = new HashMap<>();
-        for (AnnotationInstance annotation : beanArchiveIndex.getAnnotations(DotNames.INTERCEPTOR)) {
+        for (AnnotationInstance annotation : beanArchiveImmutableIndex.getAnnotations(DotNames.INTERCEPTOR)) {
             if (Kind.CLASS.equals(annotation.target().kind())) {
                 interceptorClasses.put(annotation.target().asClass().name(), annotation.target().asClass());
             }
@@ -1260,7 +1266,7 @@ public class BeanDeployment {
 
     private List<DecoratorInfo> findDecorators(List<InjectionPointInfo> injectionPoints) {
         Map<DotName, ClassInfo> decoratorClasses = new HashMap<>();
-        for (AnnotationInstance annotation : beanArchiveIndex.getAnnotations(DotNames.DECORATOR)) {
+        for (AnnotationInstance annotation : beanArchiveImmutableIndex.getAnnotations(DotNames.DECORATOR)) {
             if (Kind.CLASS.equals(annotation.target().kind())) {
                 decoratorClasses.put(annotation.target().asClass().name(), annotation.target().asClass());
             }

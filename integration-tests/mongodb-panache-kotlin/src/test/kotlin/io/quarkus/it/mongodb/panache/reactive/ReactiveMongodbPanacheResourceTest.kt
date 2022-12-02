@@ -29,6 +29,7 @@ import java.util.Calendar
 import java.util.Collections
 import java.util.Date
 import java.util.GregorianCalendar
+import java.util.concurrent.atomic.LongAdder
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.ClientBuilder
 import javax.ws.rs.client.WebTarget
@@ -194,7 +195,7 @@ internal open class ReactiveMongodbPanacheResourceTest {
         val client: Client = ClientBuilder.newClient()
         val target: WebTarget = client.target("http://localhost:8081$endpoint/stream")
         SseEventSource.target(target).build().use { source ->
-            val nbEvent = IntegerAdder()
+            val nbEvent = LongAdder()
             source.register { inboundSseEvent ->
                 try {
                     val theBook: BookDTO = objectMapper.readValue(inboundSseEvent.readData(), BookDTO::class.java)
@@ -205,7 +206,7 @@ internal open class ReactiveMongodbPanacheResourceTest {
                 nbEvent.increment()
             }
             source.open()
-            await().atMost(Duration.ofSeconds(10)).until({ nbEvent.count() == 3 })
+            await().atMost(Duration.ofSeconds(10)).until({ nbEvent.sum() == 3L })
         }
 
         // delete all
@@ -335,15 +336,6 @@ internal open class ReactiveMongodbPanacheResourceTest {
         val cal: Calendar = GregorianCalendar()
         cal.set(year, 1, 1)
         return cal.getTime()
-    }
-
-    private class IntegerAdder {
-        var cpt = 0
-        fun increment() {
-            cpt++
-        }
-
-        fun count(): Int = cpt
     }
 
     @Test

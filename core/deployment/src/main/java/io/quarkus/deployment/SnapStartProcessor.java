@@ -5,33 +5,33 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.CracDefaultValueBuildItem;
-import io.quarkus.deployment.builditem.CracEnabledBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.PreloadClassBuildItem;
 import io.quarkus.deployment.builditem.PreloadClassesEnabledBuildItem;
+import io.quarkus.deployment.builditem.SnapStartDefaultValueBuildItem;
+import io.quarkus.deployment.builditem.SnapStartEnabledBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
-import io.quarkus.runtime.CracRecorder;
+import io.quarkus.runtime.SnapStartRecorder;
 
-public class CracProcessor {
-
-    private static Logger logger = Logger.getLogger(CracProcessor.class);
+/**
+ * A processor handling the various AWS SnapStart optimizations.
+ */
+public class SnapStartProcessor {
 
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     @Record(ExecutionTime.STATIC_INIT)
-    public void processCrac(BuildProducer<PreloadClassesEnabledBuildItem> preload,
-            BuildProducer<CracEnabledBuildItem> cracEnabled,
-            CracRecorder crac,
-            CracConfig config,
-            Optional<CracDefaultValueBuildItem> defaultVal) {
+    public void processSnapStart(BuildProducer<PreloadClassesEnabledBuildItem> preload,
+            BuildProducer<SnapStartEnabledBuildItem> snapStartEnabled,
+            SnapStartRecorder recorder,
+            SnapStartConfig config,
+            Optional<SnapStartDefaultValueBuildItem> defaultVal) {
         if (config.enable.isPresent()) {
             if (!config.enable.get().booleanValue()) {
                 return;
@@ -40,16 +40,16 @@ public class CracProcessor {
         } else if (defaultVal == null || !defaultVal.isPresent() || !defaultVal.get().isDefaultValue()) {
             return;
         }
-        cracEnabled.produce(CracEnabledBuildItem.INSTANCE);
+        snapStartEnabled.produce(SnapStartEnabledBuildItem.INSTANCE);
         if (config.preloadClasses)
             preload.produce(new PreloadClassesEnabledBuildItem(config.initializeClasses));
-        crac.register(config.fullWarmup);
+        recorder.register(config.fullWarmup);
     }
 
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public void generateClassListFromApplication(
-            CracConfig config,
-            Optional<CracDefaultValueBuildItem> defaultVal,
+            SnapStartConfig config,
+            Optional<SnapStartDefaultValueBuildItem> defaultVal,
             BuildProducer<PreloadClassBuildItem> producer,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,

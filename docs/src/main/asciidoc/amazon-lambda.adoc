@@ -705,3 +705,7 @@ To use Alexa with Quarkus native, you need to use the https://github.com/quarkiv
 Create your Alexa handler, as normal, by sub-classing the abstract `com.amazon.ask.SkillStreamHandler`, and add your request handler implementation.
 
 That's all there is to it!
+
+== SnapStart
+
+To optimize your application for Lambda SnapStart, check xref:amazon-snapstart.adoc[the SnapStart Configuration Documentation].

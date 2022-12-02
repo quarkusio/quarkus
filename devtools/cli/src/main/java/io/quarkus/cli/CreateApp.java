@@ -3,6 +3,7 @@ package io.quarkus.cli;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.quarkus.cli.common.DataOptions;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
@@ -51,6 +52,9 @@ public class CreateApp extends BaseCreateCommand {
     CodeGenerationGroup codeGeneration = new CodeGenerationGroup();
 
     @CommandLine.ArgGroup(order = 6, exclusive = false, validate = false)
+    DataOptions dataOptions = new DataOptions();
+
+    @CommandLine.ArgGroup(order = 7, exclusive = false, validate = false)
     PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     @Override
@@ -72,6 +76,7 @@ public class CreateApp extends BaseCreateCommand {
             setCodegenOptions(codeGeneration);
             setValue(CreateProjectKey.PROJECT_NAME, name);
             setValue(CreateProjectKey.PROJECT_DESCRIPTION, description);
+            setValue(CreateProjectKey.DATA, dataOptions.data);
 
             QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion,
                     propertiesOptions.properties, extensions);
@@ -112,6 +117,7 @@ public class CreateApp extends BaseCreateCommand {
                 + ", name=" + name
                 + ", description=" + description
                 + ", project=" + super.toString()
+                + ", data=" + dataOptions.data
                 + ", properties=" + propertiesOptions.properties
                 + '}';
     }

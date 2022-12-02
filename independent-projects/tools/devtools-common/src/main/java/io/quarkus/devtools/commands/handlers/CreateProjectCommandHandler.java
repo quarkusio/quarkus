@@ -1,5 +1,6 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.DATA;
 import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXAMPLE;
 import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTENSIONS;
 import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTRA_CODESTARTS;
@@ -149,6 +150,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     .noDockerfiles(invocation.getValue(NO_DOCKERFILES, false))
                     .addData(platformData)
                     .addData(toCodestartData(invocation.getValues()))
+                    .addData(invocation.getValue(DATA, Collections.emptyMap()))
                     .messageWriter(invocation.log())
                     .build();
             invocation.log().info("-----------");

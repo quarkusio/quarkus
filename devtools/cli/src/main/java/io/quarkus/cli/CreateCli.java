@@ -3,6 +3,7 @@ package io.quarkus.cli;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.quarkus.cli.common.DataOptions;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
@@ -10,6 +11,7 @@ import io.quarkus.cli.create.CodeGenerationGroup;
 import io.quarkus.cli.create.TargetBuildToolGroup;
 import io.quarkus.cli.create.TargetGAVGroup;
 import io.quarkus.cli.create.TargetLanguageGroup;
+import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.devtools.commands.SourceType;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
@@ -43,6 +45,9 @@ public class CreateCli extends BaseCreateCommand {
     CodeGenerationGroup codeGeneration = new CodeGenerationGroup();
 
     @CommandLine.ArgGroup(order = 6, exclusive = false, validate = false)
+    DataOptions dataOptions = new DataOptions();
+
+    @CommandLine.ArgGroup(order = 7, exclusive = false, validate = false)
     PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     @Override
@@ -64,6 +69,7 @@ public class CreateCli extends BaseCreateCommand {
             setJavaVersion(sourceType, targetLanguage.getJavaVersion());
             setSourceTypeExtensions(extensions, sourceType);
             setCodegenOptions(codeGeneration);
+            setValue(CreateProjectKey.DATA, dataOptions.data);
 
             QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion,
                     propertiesOptions.properties, extensions);
@@ -101,6 +107,7 @@ public class CreateCli extends BaseCreateCommand {
                 + ", codeGeneration=" + codeGeneration
                 + ", extensions=" + extensions
                 + ", project=" + super.toString()
+                + ", data=" + dataOptions.data
                 + ", properties=" + propertiesOptions.properties
                 + '}';
     }

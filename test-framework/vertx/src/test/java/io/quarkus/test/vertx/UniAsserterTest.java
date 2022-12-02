@@ -1,12 +1,14 @@
 package io.quarkus.test.vertx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 
@@ -56,12 +58,20 @@ public class UniAsserterTest {
         testAsserter(ua -> ua.assertFailedWith(() -> Uni.createFrom().failure(new NullPointerException()),
                 NullPointerException.class));
         testAsserterFailure(ua -> ua.assertFailedWith(() -> Uni.createFrom().failure(new IllegalStateException()),
-                NullPointerException.class));
+                NullPointerException.class), t -> AssertionError.class.isInstance(t));
 
-        // TODO note that assertFailedWith() receives the exception thrown from the previous assertEquals()
-        testAsserter(ua -> ua.assertEquals(() -> Uni.createFrom().item("foo"), null)
+        // Note that assertFailedWith() is not tested at all because of the exception thrown from the previous assertEquals()
+        testAsserterFailure(ua -> ua.assertEquals(() -> Uni.createFrom().item("foo"), null)
                 .assertFailedWith(() -> Uni.createFrom().failure(new NullPointerException()),
-                        AssertionError.class));
+                        IllegalArgumentException.class),
+                t -> AssertionError.class.isInstance(t));
+
+        testAsserterFailure(ua -> ua.assertTrue(() -> {
+            throw new IllegalArgumentException();
+        })
+                .assertFailedWith(() -> Uni.createFrom().failure(new NullPointerException()),
+                        IllegalArgumentException.class),
+                t -> IllegalArgumentException.class.isInstance(t));
     }
 
     @Test
@@ -180,6 +190,10 @@ public class UniAsserterTest {
     }
 
     private void testAsserterFailure(Consumer<UniAsserter> assertion) {
+        testAsserterFailure(assertion, null);
+    }
+
+    private void testAsserterFailure(Consumer<UniAsserter> assertion, Predicate<Throwable> expected) {
         CompletableFuture<Object> cf = new CompletableFuture<>();
         DefaultUniAsserter asserter = new DefaultUniAsserter();
         assertion.accept(asserter);
@@ -188,7 +202,9 @@ public class UniAsserterTest {
             cf.get();
             fail("No failure");
         } catch (ExecutionException e) {
-            // expected
+            if (expected != null) {
+                assertTrue(expected.test(e.getCause()));
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

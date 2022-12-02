@@ -148,17 +148,22 @@ class DefaultUniAsserter implements UniAsserter {
         return this;
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Consumer<Throwable> c) {
-        execution = uniFromSupplier(uni)
-                // return a new uni so we can avoid io.smallrye.mutiny.CompositeException
-                .onItemOrFailure().transformToUni((o, t) -> {
-                    if (t == null) {
-                        return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
-                    } else {
-                        return Uni.createFrom().item(() -> {
-                            c.accept(t);
-                            return null;
+        execution = execution.onItem()
+                .transformToUni((Function) new Function<Object, Uni<T>>() {
+                    @Override
+                    public Uni<T> apply(Object obj) {
+                        return uni.get().onItemOrFailure().transformToUni((o, t) -> {
+                            if (t == null) {
+                                return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
+                            } else {
+                                return Uni.createFrom().item(() -> {
+                                    c.accept(t);
+                                    return null;
+                                });
+                            }
                         });
                     }
                 });

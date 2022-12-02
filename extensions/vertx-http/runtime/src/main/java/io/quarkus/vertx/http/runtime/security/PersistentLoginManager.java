@@ -63,7 +63,7 @@ public class PersistentLoginManager {
     }
 
     public RestoreResult restore(RoutingContext context, String cookieName) {
-        Cookie existing = context.getCookie(cookieName);
+        Cookie existing = context.request().getCookie(cookieName);
         // If there is no credential cookie, we have nothing to restore.
         if (existing == null) {
             // Enforce new login.

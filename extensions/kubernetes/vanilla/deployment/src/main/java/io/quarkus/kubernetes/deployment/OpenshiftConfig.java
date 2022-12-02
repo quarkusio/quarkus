@@ -558,6 +558,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
      */
     DebugConfig remoteDebug;
 
+    /**
+     * If set to true, Quarkus will attempt to deploy the application to the target Openshift cluster
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean deploy;
+
     public Optional<String> getAppSecret() {
         return this.appSecret;
     }

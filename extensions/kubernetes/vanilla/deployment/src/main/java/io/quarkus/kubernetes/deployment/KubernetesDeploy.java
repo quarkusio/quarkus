@@ -1,14 +1,10 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOY;
-
 import java.util.Optional;
 
 import javax.net.ssl.SSLHandshakeException;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -50,8 +46,7 @@ public class KubernetesDeploy {
     }
 
     private Result doCheck() {
-        Config config = ConfigProvider.getConfig();
-        if (!config.getOptionalValue(DEPLOY, Boolean.class).orElse(false)) {
+        if (!KubernetesConfigUtil.isDeploymentEnabled()) {
             return Result.notConfigured();
         }
 

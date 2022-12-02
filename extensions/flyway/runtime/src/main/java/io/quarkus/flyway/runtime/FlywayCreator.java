@@ -34,13 +34,17 @@ class FlywayCreator {
     public Flyway createFlyway(DataSource dataSource) {
         FluentConfiguration configure = Flyway.configure();
 
-        if (flywayRuntimeConfig.username.isPresent() && flywayRuntimeConfig.password.isPresent()
-                && flywayRuntimeConfig.jdbcUrl.isPresent()) {
-            configure.dataSource(flywayRuntimeConfig.jdbcUrl.get(), flywayRuntimeConfig.username.get(),
-                    flywayRuntimeConfig.password.get());
-        } else {
-            configure.dataSource(dataSource);
-        }
+        /*
+         * if (flywayRuntimeConfig.username.isPresent() && flywayRuntimeConfig.password.isPresent()
+         * && flywayRuntimeConfig.jdbcUrl.isPresent()) {
+         * configure.dataSource(flywayRuntimeConfig.jdbcUrl.get(), flywayRuntimeConfig.username.get(),
+         * flywayRuntimeConfig.password.get());
+         * } else {
+         * configure.dataSource(dataSource);
+         * }
+         */
+        configure.dataSource(new FlywayDataSourceDecorator(dataSource, flywayRuntimeConfig));
+
         if (flywayRuntimeConfig.initSql.isPresent()) {
             configure.initSql(flywayRuntimeConfig.initSql.get());
         }

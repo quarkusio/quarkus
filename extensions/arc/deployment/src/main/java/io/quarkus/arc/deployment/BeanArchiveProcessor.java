@@ -84,12 +84,12 @@ public class BeanArchiveProcessor {
             additionalClasses.put(knownMissingClass, Optional.empty());
         }
 
-        // Finally, index ArC/CDI API built-in classes
-        return new BeanArchiveIndexBuildItem(
-                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), additionalClasses,
-                        applicationIndex,
-                        additionalBeanIndexer.complete()),
-                generatedClassNames);
+        IndexView immutableBeanArchiveIndex = BeanArchives.buildImmutableBeanArchiveIndex(applicationIndex,
+                additionalBeanIndexer.complete());
+        IndexView computingBeanArchiveIndex = BeanArchives.buildComputingBeanArchiveIndex(
+                Thread.currentThread().getContextClassLoader(),
+                additionalClasses, immutableBeanArchiveIndex);
+        return new BeanArchiveIndexBuildItem(computingBeanArchiveIndex, immutableBeanArchiveIndex, generatedClassNames);
     }
 
     private IndexView buildApplicationIndex(ArcConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,

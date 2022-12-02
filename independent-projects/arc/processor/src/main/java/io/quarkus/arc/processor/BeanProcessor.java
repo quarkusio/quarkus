@@ -91,7 +91,10 @@ public class BeanProcessor {
         this.applicationClassPredicate = builder.applicationClassPredicate;
         this.name = builder.name;
         this.output = builder.output;
-        this.annotationLiterals = new AnnotationLiteralProcessor(builder.beanArchiveIndex, applicationClassPredicate);
+        this.annotationLiterals = new AnnotationLiteralProcessor(
+                builder.beanArchiveComputingIndex != null ? builder.beanArchiveComputingIndex
+                        : builder.beanArchiveImmutableIndex,
+                applicationClassPredicate);
         this.generateSources = builder.generateSources;
         this.allowMocking = builder.allowMocking;
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
@@ -99,7 +102,9 @@ public class BeanProcessor {
 
         // Initialize all build processors
         buildContext = new BuildContextImpl();
-        buildContext.putInternal(Key.INDEX.asString(), builder.beanArchiveIndex);
+        buildContext.putInternal(Key.INDEX.asString(),
+                builder.beanArchiveComputingIndex != null ? builder.beanArchiveComputingIndex
+                        : builder.beanArchiveImmutableIndex);
 
         this.beanRegistrars = initAndSort(builder.beanRegistrars, buildContext);
         this.observerRegistrars = initAndSort(builder.observerRegistrars, buildContext);
@@ -440,7 +445,8 @@ public class BeanProcessor {
     public static class Builder {
 
         String name;
-        IndexView beanArchiveIndex;
+        IndexView beanArchiveComputingIndex;
+        IndexView beanArchiveImmutableIndex;
         IndexView applicationIndex;
         Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations;
         ResourceOutput output;
@@ -510,14 +516,33 @@ public class BeanProcessor {
         }
 
         /**
-         * Set the bean archive index. This index is mandatory and is used to discover components (beans, interceptors,
-         * qualifiers, etc.) and during type-safe resolution.
+         * Set the computing bean archive index. This index is optional and can be used for example during type-safe resolution.
+         * If it's not set then the immutable index is used instead.
+         * <p>
+         * The computing index must be built on top of the immutable index and compute only the classes that are not part of the
+         * immutable index.
+         * <p>
+         * This index is never used to discover components (beans, observers, etc.).
          *
-         * @param beanArchiveIndex
+         * @param index
          * @return self
+         * @see Builder#setImmutableBeanArchiveIndex(IndexView)
          */
-        public Builder setBeanArchiveIndex(IndexView beanArchiveIndex) {
-            this.beanArchiveIndex = beanArchiveIndex;
+        public Builder setComputingBeanArchiveIndex(IndexView index) {
+            this.beanArchiveComputingIndex = index;
+            return this;
+        }
+
+        /**
+         * Set the immutable bean archive index. This index is mandatory and is used to discover components (beans, observers,
+         * etc.).
+         *
+         * @param index
+         * @return self
+         * @see Builder#setComputingBeanArchiveIndex(IndexView)
+         */
+        public Builder setImmutableBeanArchiveIndex(IndexView index) {
+            this.beanArchiveImmutableIndex = index;
             return this;
         }
 
@@ -526,11 +551,11 @@ public class BeanProcessor {
          * <p>
          * Some types may not be part of the bean archive index but are still needed during type-safe resolution.
          *
-         * @param applicationIndex
+         * @param index
          * @return self
          */
-        public Builder setApplicationIndex(IndexView applicationIndex) {
-            this.applicationIndex = applicationIndex;
+        public Builder setApplicationIndex(IndexView index) {
+            this.applicationIndex = index;
             return this;
         }
 

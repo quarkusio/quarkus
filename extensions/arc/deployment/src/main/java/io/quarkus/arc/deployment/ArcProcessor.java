@@ -277,7 +277,8 @@ public class ArcProcessor {
             }
         });
 
-        builder.setBeanArchiveIndex(index);
+        builder.setComputingBeanArchiveIndex(index);
+        builder.setImmutableBeanArchiveIndex(beanArchiveIndex.getImmutableIndex());
         builder.setApplicationIndex(combinedIndex.getIndex());
         List<BeanDefiningAnnotation> beanDefiningAnnotations = additionalBeanDefiningAnnotations.stream()
                 .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope())).collect(Collectors.toList());

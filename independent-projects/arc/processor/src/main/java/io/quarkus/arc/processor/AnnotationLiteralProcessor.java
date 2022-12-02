@@ -46,7 +46,7 @@ public class AnnotationLiteralProcessor {
                 generateAnnotationLiteralClassName(key.annotationName()),
                 applicationClassPredicate.test(key.annotationName()),
                 key.annotationClass));
-        this.beanArchiveIndex = beanArchiveIndex;
+        this.beanArchiveIndex = Objects.requireNonNull(beanArchiveIndex);
     }
 
     boolean hasLiteralsToGenerate() {

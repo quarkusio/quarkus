@@ -44,6 +44,34 @@ public final class FlywayDataSourceRuntimeConfig {
     public Optional<String> defaultSchema = Optional.empty();
 
     /**
+     * This is a safety measurement against theoretical situations where the application goes haywire for any reason.
+     * This includes e.g. accidentally setting quarkus.hibernate-orm.database.generation to drop-and-create.
+     * If the application runs with a restricted database user, damage in such situations can be mitigated.
+     * # Name of a custom database user for flyway to use. Must have DDL rights
+     * quarkus.flyway.username=my_schema_owner
+     *
+     */
+
+    @ConfigItem
+    public Optional<String> username = Optional.empty();
+
+    /**
+     * Set the password for connection;
+     * quarkus.flyway.password=my_secret_password
+     */
+
+    @ConfigItem
+    public Optional<String> password = Optional.empty();
+
+    /**
+     * Set the jdbc url.
+     * * quarkus.flyway.jdbcUrl= database:url
+     */
+
+    @ConfigItem
+    public Optional<String> jdbcUrl = Optional.empty();
+
+    /**
      * Comma-separated case-sensitive list of schemas managed by Flyway.
      * The first schema in the list will be automatically set as the default one during the migration.
      * It will also be the one containing the schema history table.

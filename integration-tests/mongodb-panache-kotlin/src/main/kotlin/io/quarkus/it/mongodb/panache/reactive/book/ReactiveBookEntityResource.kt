@@ -5,7 +5,7 @@ import io.quarkus.panache.common.Sort
 import io.smallrye.mutiny.Uni
 import org.bson.types.ObjectId
 import org.jboss.logging.Logger
-import org.jboss.resteasy.annotations.SseElementType
+import org.jboss.resteasy.reactive.RestStreamElementType
 import org.reactivestreams.Publisher
 import java.net.URI
 import java.time.LocalDate.parse
@@ -42,7 +42,7 @@ class ReactiveBookEntityResource {
     @GET
     @Path("/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     fun streamBooks(@QueryParam("sort") sort: String?): Publisher<ReactiveBookEntity> {
         return if (sort != null) {
             ReactiveBookEntity.streamAll(Sort.ascending(sort))

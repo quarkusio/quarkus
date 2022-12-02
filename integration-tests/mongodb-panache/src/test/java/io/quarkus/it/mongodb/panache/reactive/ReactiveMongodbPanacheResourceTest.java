@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.concurrent.atomic.LongAdder;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -197,7 +198,7 @@ class ReactiveMongodbPanacheResourceTest {
         Client client = ClientBuilder.newClient();
         WebTarget target = client.target("http://localhost:8081" + endpoint + "/stream");
         try (SseEventSource source = SseEventSource.target(target).build()) {
-            final IntegerAdder nbEvent = new IntegerAdder();
+            final LongAdder nbEvent = new LongAdder();
             source.register((inboundSseEvent) -> {
                 try {
                     BookDTO theBook = objectMapper.readValue(inboundSseEvent.readData(), BookDTO.class);
@@ -208,7 +209,7 @@ class ReactiveMongodbPanacheResourceTest {
                 nbEvent.increment();
             });
             source.open();
-            await().atMost(Duration.ofSeconds(10)).until(() -> nbEvent.count() == 3);
+            await().atMost(Duration.ofSeconds(10)).until(() -> nbEvent.sum() == 3);
         }
 
         //delete all
@@ -341,18 +342,6 @@ class ReactiveMongodbPanacheResourceTest {
         Calendar cal = new GregorianCalendar();
         cal.set(year, 1, 1);
         return cal.getTime();
-    }
-
-    private static class IntegerAdder {
-        int cpt = 0;
-
-        public void increment() {
-            cpt++;
-        }
-
-        public int count() {
-            return cpt;
-        }
     }
 
     @Test

@@ -187,6 +187,9 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "appConfig")
     private String appConfig;
 
+    @Parameter(property = "data")
+    private String data;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -304,7 +307,8 @@ public class CreateProjectMojo extends AbstractMojo {
                     .resourcePath(path)
                     .example(example)
                     .noCode(noCode)
-                    .appConfig(appConfig);
+                    .appConfig(appConfig)
+                    .data(data);
 
             success = createProject.execute().isSuccess();
             if (success && parentPomModel != null && BuildTool.MAVEN.equals(buildToolEnum)) {

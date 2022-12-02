@@ -25,6 +25,7 @@ import io.vertx.mutiny.core.Vertx;
 
 public class HibernateReactiveStateStore implements CheckpointStateStore {
 
+    public static final String HIBERNATE_REACTIVE_STATE_STORE = "quarkus-hibernate-reactive";
     private final String consumerGroupId;
     private final Mutiny.SessionFactory sf;
     private final Class<? extends CheckpointEntity> stateType;
@@ -37,7 +38,7 @@ public class HibernateReactiveStateStore implements CheckpointStateStore {
     }
 
     @ApplicationScoped
-    @Identifier("quarkus-hibernate-reactive")
+    @Identifier(HIBERNATE_REACTIVE_STATE_STORE)
     public static class Factory implements CheckpointStateStore.Factory {
 
         @Inject

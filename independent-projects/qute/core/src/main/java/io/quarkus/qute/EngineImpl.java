@@ -153,6 +153,17 @@ class EngineImpl implements Engine {
         return useAsyncTimeout;
     }
 
+    @Override
+    public Optional<TemplateLocation> locate(String id) {
+        for (TemplateLocator locator : locators) {
+            Optional<TemplateLocation> location = locator.locate(id);
+            if (location.isPresent()) {
+                return location;
+            }
+        }
+        return Optional.empty();
+    }
+
     String generateId() {
         return "" + idGenerator.incrementAndGet();
     }

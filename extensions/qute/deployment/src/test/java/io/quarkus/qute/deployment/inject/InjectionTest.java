@@ -3,6 +3,7 @@ package io.quarkus.qute.deployment.inject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
@@ -33,6 +34,8 @@ public class InjectionTest {
     @Test
     public void testInjection() {
         assertNotNull(simpleBean.engine);
+        assertTrue(simpleBean.engine.locate("foo.txt").isPresent());
+        assertTrue(simpleBean.engine.locate("foo.html").isEmpty());
         assertEquals("bar", simpleBean.foo.render("bar"));
         assertEquals("<strong>bar</strong>", simpleBean.foo2.render("bar"));
         assertEquals("bar", simpleBean.bar.render("bar"));

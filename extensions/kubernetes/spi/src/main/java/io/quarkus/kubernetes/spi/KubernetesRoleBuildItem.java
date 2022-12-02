@@ -20,9 +20,19 @@ public final class KubernetesRoleBuildItem extends MultiBuildItem {
      */
     private final List<PolicyRule> rules;
 
+    /**
+     * The target manifest that should include this role.
+     */
+    private final String target;
+
     public KubernetesRoleBuildItem(String name, List<PolicyRule> rules) {
+        this(name, rules, null);
+    }
+
+    public KubernetesRoleBuildItem(String name, List<PolicyRule> rules, String target) {
         this.name = name;
         this.rules = rules;
+        this.target = target;
     }
 
     public String getName() {
@@ -31,6 +41,10 @@ public final class KubernetesRoleBuildItem extends MultiBuildItem {
 
     public List<PolicyRule> getRules() {
         return rules;
+    }
+
+    public String getTarget() {
+        return target;
     }
 
     /**

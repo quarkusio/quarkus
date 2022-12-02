@@ -24,15 +24,24 @@ public final class KubernetesRoleBindingBuildItem extends MultiBuildItem {
      * If {@code true}, the binding refers to a {@code ClusterRole}, otherwise to a namespaced {@code Role}.
      */
     private final boolean clusterWide;
+    /**
+     * The target manifest that should include this role.
+     */
+    private final String target;
 
     public KubernetesRoleBindingBuildItem(String role, boolean clusterWide) {
-        this(null, role, clusterWide);
+        this(null, role, clusterWide, null);
     }
 
     public KubernetesRoleBindingBuildItem(String name, String role, boolean clusterWide) {
+        this(name, role, clusterWide, null);
+    }
+
+    public KubernetesRoleBindingBuildItem(String name, String role, boolean clusterWide, String target) {
         this.name = name;
         this.role = role;
         this.clusterWide = clusterWide;
+        this.target = target;
     }
 
     public String getName() {
@@ -45,5 +54,9 @@ public final class KubernetesRoleBindingBuildItem extends MultiBuildItem {
 
     public boolean isClusterWide() {
         return clusterWide;
+    }
+
+    public String getTarget() {
+        return target;
     }
 }

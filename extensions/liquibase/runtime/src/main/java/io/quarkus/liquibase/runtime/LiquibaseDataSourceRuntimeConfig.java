@@ -60,6 +60,7 @@ public final class LiquibaseDataSourceRuntimeConfig {
 
     /**
      * true to quit exit right after the operation.
+     * The option is not meant be used directly by users.
      *
      */
     @ConfigItem

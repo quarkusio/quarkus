@@ -7,7 +7,10 @@ import java.lang.annotation.Target;
 
 /**
  * Allows test methods to run on a Vert.x thread instead of the main thread.
- * This is useful for testing components that must be run on the Event Loop (like Hibernate Reactive)
+ * This is useful for testing components that must be run on the Event Loop (like Hibernate Reactive).
+ *
+ * In most cases users will have to use {@link UniAsserter} in order to verify the results of the Async API
+ * under test.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })

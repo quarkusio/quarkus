@@ -232,7 +232,7 @@ public class Quarkus {
             Class<?> appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
             manualApp = (Application) appClass.getDeclaredConstructor().newInstance();
             manualState = MANUAL_INITIALIZED;
-            if (CracRecorder.enabled && CracRecorder.fullWarmup) {
+            if (SnapStartRecorder.enabled && SnapStartRecorder.fullWarmup) {
                 manualStart();
             }
         } catch (Exception e) {

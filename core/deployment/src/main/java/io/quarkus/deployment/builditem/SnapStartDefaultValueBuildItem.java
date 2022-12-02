@@ -3,12 +3,12 @@ package io.quarkus.deployment.builditem;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Allows extensions to set default value for enabling CRAC
+ * Allows extensions to set default value for enabling SnapStart.
  */
-public final class CracDefaultValueBuildItem extends SimpleBuildItem {
+public final class SnapStartDefaultValueBuildItem extends SimpleBuildItem {
     private final boolean defaultValue;
 
-    public CracDefaultValueBuildItem(boolean defaultValue) {
+    public SnapStartDefaultValueBuildItem(boolean defaultValue) {
         this.defaultValue = defaultValue;
     }
 

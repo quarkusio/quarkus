@@ -37,6 +37,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -259,6 +260,25 @@ public class VanillaKubernetesProcessor {
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(KUBERNETES, name, initContainers, result));
         result.addAll(KubernetesCommonHelper.createInitJobDecorators(KUBERNETES, name, jobs, result));
         return result;
+    }
+
+    @BuildStep
+    void externalizeInitTasks(
+            ApplicationInfoBuildItem applicationInfo,
+            KubernetesConfig config,
+            ContainerImageInfoBuildItem image,
+            List<InitTaskBuildItem> initTasks,
+            BuildProducer<KubernetesJobBuildItem> jobs,
+            BuildProducer<KubernetesInitContainerBuildItem> initContainers,
+            BuildProducer<KubernetesEnvBuildItem> env,
+            BuildProducer<KubernetesRoleBuildItem> roles,
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
+            BuildProducer<DecoratorBuildItem> decorators) {
+        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        if (config.externalizeInit) {
+            InitTaskProcessor.process(KUBERNETES, name, image, initTasks, jobs, initContainers, env, roles, roleBindings,
+                    decorators);
+        }
     }
 
 }

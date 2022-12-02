@@ -308,6 +308,12 @@ public class ConfigBuildStep {
                 configMappings.add(configClass);
             }
         }
+        // make sure we take @Unremovable into account
+        for (ConfigClassBuildItem configClass : configMappingTypes.values()) {
+            if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
+                configMappings.add(configClass);
+            }
+        }
 
         for (ConfigClassBuildItem configClass : configMappings) {
             BeanConfigurator<Object> bean = beanRegistration.getContext()

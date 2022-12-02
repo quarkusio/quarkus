@@ -2,12 +2,14 @@ package io.quarkus.arc.test.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.ConfigMapping;
@@ -37,6 +39,11 @@ public class UnremovedConfigMappingTest {
         assertEquals("default", base.base());
     }
 
+    @Test
+    void unremovedWithInjectionPoint() {
+        assertTrue(Arc.container().instance(Other.class).isAvailable());
+    }
+
     @Unremovable
     @ConfigMapping(prefix = "mapping")
     public interface UnremovedConfigMapping {
@@ -53,5 +60,11 @@ public class UnremovedConfigMappingTest {
     public interface ExtendsBase extends Base {
         @WithDefault("default")
         String myProp();
+    }
+
+    @Unremovable
+    @ConfigMapping(prefix = "other")
+    public interface Other {
+
     }
 }

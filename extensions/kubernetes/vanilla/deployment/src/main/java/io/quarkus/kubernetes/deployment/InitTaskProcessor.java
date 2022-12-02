@@ -4,10 +4,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
+import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
+import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
@@ -16,19 +19,25 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public class InitTaskProcessor {
 
-    @BuildStep
-    public void process(ContainerImageInfoBuildItem image, List<InitTaskBuildItem> initTasks,
+    static void process(
+            String target, // kubernetes, openshift, etc.
+            String name,
+            ContainerImageInfoBuildItem image, List<InitTaskBuildItem> initTasks,
             BuildProducer<KubernetesJobBuildItem> jobs,
             BuildProducer<KubernetesInitContainerBuildItem> initContainers,
             BuildProducer<KubernetesEnvBuildItem> env,
             BuildProducer<KubernetesRoleBuildItem> roles,
-            BuildProducer<KubernetesRoleBindingBuildItem> roleBindings) {
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
+            BuildProducer<DecoratorBuildItem> decorators) {
+
         initTasks.forEach(task -> {
             initContainers.produce(KubernetesInitContainerBuildItem.create("groundnuty/k8s-wait-for:1.3")
+                    .withTarget(target)
                     .withArguments(Arrays.asList("job", task.getName())));
 
             jobs.produce(KubernetesJobBuildItem.create(image.getImage())
                     .withName(task.getName())
+                    .withTarget(target)
                     .withEnvVars(task.getTaskEnvVars())
                     .withCommand(task.getCommand())
                     .withArguments(task.getArguments())
@@ -36,25 +45,22 @@ public class InitTaskProcessor {
                     .withSharedFilesystem(task.isSharedFilesystem()));
 
             task.getAppEnvVars().forEach((k, v) -> {
-                env.produce(KubernetesEnvBuildItem.createSimpleVar(k, v, null, false));
+                decorators.produce(new DecoratorBuildItem(target,
+                        new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
+                                .withName(k)
+                                .withValue(v)
+                                .build())));
+
             });
 
             roles.produce(new KubernetesRoleBuildItem("view-jobs", Collections.singletonList(
                     new KubernetesRoleBuildItem.PolicyRule(
                             Collections.singletonList("batch"),
                             Collections.singletonList("jobs"),
-                            List.of("get")))));
-            roleBindings.produce(new KubernetesRoleBindingBuildItem("view-jobs", false));
+                            List.of("get"))),
+                    target));
+            roleBindings.produce(new KubernetesRoleBindingBuildItem(null, "view-jobs", false, target));
 
         });
     }
-
-    // # The init containers
-    // initContainers:
-    // - name: "{{ .Chart.Name }}-init"
-    //   image: "groundnuty/k8s-wait-for:1.3"
-    //   imagePullPolicy: {{ .Values.image.pullPolicy }}
-    //   args:
-    //   - "job"
-    //   - "{{ .Release.Name }}-test-app-cli-{{ .Release.Revision}}"
 }

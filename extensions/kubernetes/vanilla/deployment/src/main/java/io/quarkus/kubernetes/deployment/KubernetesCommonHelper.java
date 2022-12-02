@@ -183,6 +183,12 @@ public class KubernetesCommonHelper {
         }
 
         //Handle RBAC
+        roleBindings = roleBindings.stream()
+                .filter(roleBinding -> roleBinding.getTarget() == null || roleBinding.getTarget().equals(target))
+                .collect(Collectors.toList());
+        roles = roles.stream().filter(role -> role.getTarget() == null || role.getTarget().equals(target))
+                .collect(Collectors.toList());
+
         if (!roleBindings.isEmpty()) {
             result.add(new DecoratorBuildItem(target, new ApplyServiceAccountNameDecorator(name, name)));
             result.add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator(name)));
@@ -279,27 +285,27 @@ public class KubernetesCommonHelper {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
         List<AddEnvVarDecorator> envVarDecorators = decorators.stream()
-                .filter(d -> d.getGroup().equals(target))
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .map(d -> d.getDecorator(AddEnvVarDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
         List<AddMountDecorator> mountDecorators = decorators.stream()
-                .filter(d -> d.getGroup().equals(target))
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .map(d -> d.getDecorator(AddMountDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
-        for (KubernetesInitContainerBuildItem item : items) {
+        items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
             io.dekorate.kubernetes.config.ContainerBuilder containerBuilder = new io.dekorate.kubernetes.config.ContainerBuilder()
                     .withName(item.getName())
                     .withImage(item.getImage())
                     .withCommand(item.getCommand().toArray(new String[item.getCommand().size()]))
                     .withArguments(item.getArguments().toArray(new String[item.getArguments().size()]));
 
-            if (item.isInheritEnvVars()) {
+            if (item.isSharedEnvironment()) {
                 for (final AddEnvVarDecorator delegate : envVarDecorators) {
                     result.add(new DecoratorBuildItem(target,
                             new ApplicationContainerDecorator<ContainerBuilder>(name, item.getName()) {
@@ -322,8 +328,7 @@ public class KubernetesCommonHelper {
                 }
             }
 
-            if (item.isInheritMounts()) {
-
+            if (item.isSharedFilesystem()) {
                 for (final AddMountDecorator delegate : mountDecorators) {
                     result.add(new DecoratorBuildItem(target,
                             new ApplicationContainerDecorator<ContainerBuilder>(target, item.getName()) {
@@ -342,7 +347,7 @@ public class KubernetesCommonHelper {
                                     .withValue(e.getValue())
                                     .build()).collect(Collectors.toList()))
                             .build())));
-        }
+        });
         return result;
     }
 
@@ -351,14 +356,14 @@ public class KubernetesCommonHelper {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
         List<AddEnvVarDecorator> envVarDecorators = decorators.stream()
-                .filter(d -> d.getGroup().equals(target))
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .map(d -> d.getDecorator(AddEnvVarDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
         List<NamedResourceDecorator<?>> volumeDecorators = decorators.stream()
-                .filter(d -> d.getGroup().equals(target))
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .filter(d -> d.getDecorator() instanceof AddEmptyDirVolumeDecorator
                         || d.getDecorator() instanceof AddSecretVolumeDecorator
                         || d.getDecorator() instanceof AddEmptyDirVolumeDecorator
@@ -369,13 +374,26 @@ public class KubernetesCommonHelper {
                 .collect(Collectors.toList());
 
         List<AddMountDecorator> mountDecorators = decorators.stream()
-                .filter(d -> d.getGroup().equals(target))
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .map(d -> d.getDecorator(AddMountDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
-        for (KubernetesJobBuildItem item : items) {
+        items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
+
+            result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
+                @Override
+                public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
+                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
+                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
+                        builder.addNewEnv()
+                                .withName(e.getKey())
+                                .withValue(e.getValue())
+                                .endEnv();
+                    }
+                }
+            }));
 
             if (item.isSharedEnvironment()) {
                 for (final AddEnvVarDecorator delegate : envVarDecorators) {
@@ -424,7 +442,7 @@ public class KubernetesCommonHelper {
             }
             result.add(new DecoratorBuildItem(target,
                     new AddJobResourceDecorator2(item.getName(), item.getImage(), item.getCommand(), item.getArguments())));
-        }
+        });
         return result;
     }
 

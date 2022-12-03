@@ -8,6 +8,7 @@ import java.util.OptionalInt;
 
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
+import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImplementation;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -149,6 +150,6 @@ public class DataSourceJdbcRuntimeConfig {
      * choose agroal DataSourceImplementation
      */
     @ConfigItem
-    public Optional<String> dataSourceImplementation = Optional.empty();
+    public Optional<DataSourceImplementation> dataSourceImplementation = Optional.empty();
 
 }

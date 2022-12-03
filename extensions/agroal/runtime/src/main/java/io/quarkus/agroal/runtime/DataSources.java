@@ -209,23 +209,15 @@ public class DataSources {
 
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
 
-        String dataSourceImplementation = dataSourceJdbcRuntimeConfig.dataSourceImplementation.get();
-        if(dataSourceImplementation!=null){
-            if(dataSourceImplementation.equals("agroal")){
-                dataSourceConfiguration.dataSourceImplementation(DataSourceImplementation.AGROAL);
-            }
-            if(dataSourceImplementation.equals("agroal_poolless")){
-                dataSourceConfiguration.dataSourceImplementation(DataSourceImplementation.AGROAL_POOLLESS);
-            }
-            if(dataSourceImplementation.equals("hikari")){
-                dataSourceConfiguration.dataSourceImplementation(DataSourceImplementation.HIKARI);
-            }
+        //choose agroal DataSourceImplementation
+        if(dataSourceJdbcRuntimeConfig.dataSourceImplementation.isPresent()){
+            dataSourceConfiguration.dataSourceImplementation(dataSourceJdbcRuntimeConfig.dataSourceImplementation.get());
         }
 
-        // Set pool-less mode poolingEnabled no need
-//        if (!dataSourceJdbcRuntimeConfig.poolingEnabled) {
-//            dataSourceConfiguration.dataSourceImplementation(DataSourceImplementation.AGROAL_POOLLESS);
-//        }
+        // Set pool-less mode
+        if (!dataSourceJdbcRuntimeConfig.poolingEnabled) {
+            dataSourceConfiguration.dataSourceImplementation(DataSourceImplementation.AGROAL_POOLLESS);
+        }
 
 
         AgroalConnectionPoolConfigurationSupplier poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();

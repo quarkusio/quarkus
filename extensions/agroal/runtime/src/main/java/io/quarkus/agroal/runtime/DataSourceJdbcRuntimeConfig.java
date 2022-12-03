@@ -145,4 +145,10 @@ public class DataSourceJdbcRuntimeConfig {
     @ConfigItem
     public DataSourceJdbcTracingRuntimeConfig tracing = new DataSourceJdbcTracingRuntimeConfig();
 
+    /**
+     * choose agroal DataSourceImplementation
+     */
+    @ConfigItem
+    public Optional<String> dataSourceImplementation = Optional.empty();
+
 }

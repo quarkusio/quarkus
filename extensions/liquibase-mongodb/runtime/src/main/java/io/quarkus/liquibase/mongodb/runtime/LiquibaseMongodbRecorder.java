@@ -20,11 +20,14 @@ public class LiquibaseMongodbRecorder {
 
     public Supplier<LiquibaseMongodbFactory> liquibaseSupplier(LiquibaseMongodbConfig config,
             LiquibaseMongodbBuildTimeConfig buildTimeConfig, MongodbConfig mongodbConfig) {
-        return () -> {
-            MongoClientConfig mongoClientConfig = MongoClientBeanUtil.isDefault(config.mongoClientName)
-                    ? mongodbConfig.defaultMongoClientConfig
-                    : mongodbConfig.mongoClientConfigs.get(config.mongoClientName);
-            return new LiquibaseMongodbFactory(config, buildTimeConfig, config.mongoClientName, mongoClientConfig.database);
+        return new Supplier<LiquibaseMongodbFactory>() {
+            @Override
+            public LiquibaseMongodbFactory get() {
+                MongoClientConfig mongoClientConfig = MongoClientBeanUtil.isDefault(config.mongoClientName)
+                        ? mongodbConfig.defaultMongoClientConfig
+                        : mongodbConfig.mongoClientConfigs.get(config.mongoClientName);
+                return new LiquibaseMongodbFactory(config, buildTimeConfig, config.mongoClientName, mongoClientConfig.database);
+            }
         };
     }
 

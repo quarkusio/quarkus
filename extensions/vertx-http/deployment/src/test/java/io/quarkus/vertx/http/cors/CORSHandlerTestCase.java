@@ -22,7 +22,7 @@ public class CORSHandlerTestCase {
     public void corsPreflightTestServlet() {
         String origin = "http://custom.origin.quarkus";
         String methods = "GET,POST";
-        String headers = "X-Custom";
+        String headers = "X-Custom, content-type";
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
                 .header("Access-Control-Request-Headers", headers)
@@ -40,7 +40,7 @@ public class CORSHandlerTestCase {
     public void corsNoPreflightTestServlet() {
         String origin = "http://custom.origin.quarkus";
         String methods = "GET,POST";
-        String headers = "X-Custom";
+        String headers = "x-custom, CONTENT-TYPE";
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
                 .header("Access-Control-Request-Headers", headers)

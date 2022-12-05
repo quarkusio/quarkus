@@ -78,7 +78,7 @@ public class EventBusCodecProcessor {
                                                 .toString());
                     } else if (!codecByTypes.containsKey(codecTargetFromParameter.name())) {
                         LOGGER.debugf("Local Message Codec registered for type %s",
-                                codecTargetFromParameter.toString());
+                                codecTargetFromParameter);
                         codecByTypes.put(codecTargetFromParameter.name(), LOCAL_EVENT_BUS_CODEC);
                     }
                 }
@@ -87,7 +87,7 @@ public class EventBusCodecProcessor {
             if (codecTargetFromReturnType != null && !hasBuiltInCodec(codecTargetFromReturnType)
                     && !codecByTypes.containsKey(codecTargetFromReturnType.name())) {
 
-                LOGGER.debugf("Local Message Codec registered for type %s", codecTargetFromReturnType.toString());
+                LOGGER.debugf("Local Message Codec registered for type %s", codecTargetFromReturnType);
                 codecByTypes.put(codecTargetFromReturnType.name(), LOCAL_EVENT_BUS_CODEC);
             }
         }

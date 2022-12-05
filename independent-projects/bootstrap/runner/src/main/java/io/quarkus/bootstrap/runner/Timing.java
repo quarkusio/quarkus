@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.runner;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.logging.Handler;
 
 import org.jboss.logging.Logger;
@@ -88,8 +89,8 @@ public class Timing {
         }
     }
 
-    public static void printStartupTime(String name, String version, String quarkusVersion, String features, String profile,
-            boolean liveCoding, boolean anc) {
+    public static void printStartupTime(String name, String version, String quarkusVersion, String features,
+            List<String> profiles, boolean liveCoding, boolean anc) {
         Timing t = get(anc);
         final long bootTimeNanoSeconds = System.nanoTime() - t.bootStartTime;
         final Logger logger = Logger.getLogger("io.quarkus");
@@ -105,7 +106,8 @@ public class Timing {
             logger.infof("%s %s %s (powered by Quarkus %s) started in %ss. %s", name, version, nativeOrJvm, quarkusVersion,
                     secondsRepresentation, t.httpServerInfo);
         }
-        logger.infof("Profile %s activated. %s", profile, liveCoding ? "Live Coding activated." : "");
+        logger.infof("Profile%s %s activated. %s", profiles.size() > 1 ? "s" : "", String.join(",", profiles),
+                liveCoding ? "Live Coding activated." : "");
         logger.infof("Installed features: [%s]", features);
         t.bootStartTime = -1;
     }

@@ -17,7 +17,7 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 public class CertificateConfig {
 
     /**
-     * The {@linkplain CredentialsProvider}}.
+     * The {@linkplain CredentialsProvider}.
      * If this property is configured then a matching 'CredentialsProvider' will be used
      * to get the keystore, keystore key and truststore passwords unless these passwords have already been configured.
      *

@@ -30,6 +30,9 @@ public class ShutdownRecorder {
     }
 
     public static void runShutdown() {
+        if (shutdownListeners == null) {
+            return;
+        }
         log.debug("Attempting to gracefully shutdown.");
         try {
             CountDownLatch preShutdown = new CountDownLatch(shutdownListeners.size());

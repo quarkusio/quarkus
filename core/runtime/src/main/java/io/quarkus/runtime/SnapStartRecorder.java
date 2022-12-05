@@ -3,10 +3,10 @@ package io.quarkus.runtime;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
- * Registers a CRAC resource. Must be called in static initialization phase!
+ * Stores the optimizations to execute for SnapStart.
  */
 @Recorder
-public class CracRecorder {
+public class SnapStartRecorder {
 
     public static boolean enabled = false;
     public static boolean fullWarmup = false;

@@ -87,7 +87,7 @@ The solution is located in the `security-webauthn-quickstart` {quickstarts-tree-
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-webauthn-quickstart
-:create-app-extensions: security-webauthn,reactive-pg-client,resteasy-reactive,hibernate-reactive-panache,test-security-webauthn
+:create-app-extensions: security-webauthn,reactive-pg-client,resteasy-reactive,hibernate-reactive-panache
 include::{includes}/devtools/create-app.adoc[]
 
 [NOTE]
@@ -1059,7 +1059,7 @@ Quarkus WebAuthn endpoints to defer those calls to the worker pool.
 == Testing WebAuthn
 
 Testing WebAuthn can be complicated because normally you need a hardware token, which is why we've made the
-`quarkus-test-security-webauthn` extension:
+`quarkus-test-security-webauthn` helper library:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml

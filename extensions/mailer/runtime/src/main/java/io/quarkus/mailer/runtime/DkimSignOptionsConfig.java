@@ -21,43 +21,43 @@ public class DkimSignOptionsConfig {
      * Configures the PKCS#8 format private key used to sign the email.
      */
     @ConfigItem
-    public Optional<String> privateKey;
+    public Optional<String> privateKey = Optional.empty();
 
     /**
      * Configures the PKCS#8 format private key file path.
      */
     @ConfigItem
-    public Optional<String> privateKeyPath;
+    public Optional<String> privateKeyPath = Optional.empty();
 
     /**
      * Configures the Agent or User Identifier (AUID).
      */
     @ConfigItem
-    public Optional<String> auid;
+    public Optional<String> auid = Optional.empty();
 
     /**
      * Configures the selector used to query the public key.
      */
     @ConfigItem
-    public Optional<String> selector;
+    public Optional<String> selector = Optional.empty();
 
     /**
      * Configures the Signing Domain Identifier (SDID).
      */
     @ConfigItem
-    public Optional<String> sdid;
+    public Optional<String> sdid = Optional.empty();
 
     /**
      * Configures the canonicalization algorithm for signed headers.
      */
     @ConfigItem
-    public Optional<CanonicalizationAlgorithmOption> headerCanonAlgo;
+    public Optional<CanonicalizationAlgorithmOption> headerCanonAlgo = Optional.empty();
 
     /**
      * Configures the canonicalization algorithm for mail body.
      */
     @ConfigItem
-    public Optional<CanonicalizationAlgorithmOption> bodyCanonAlgo;
+    public Optional<CanonicalizationAlgorithmOption> bodyCanonAlgo = Optional.empty();
 
     /**
      * Configures the body limit to sign.
@@ -65,13 +65,13 @@ public class DkimSignOptionsConfig {
      * Must be greater than zero.
      */
     @ConfigItem
-    public OptionalInt bodyLimit;
+    public OptionalInt bodyLimit = OptionalInt.empty();
 
     /**
      * Configures to enable or disable signature sign timestamp.
      */
     @ConfigItem
-    public Optional<Boolean> signatureTimestamp;
+    public Optional<Boolean> signatureTimestamp = Optional.empty();
 
     /**
      * Configures the expire time in seconds when the signature sign will be expired.
@@ -79,7 +79,7 @@ public class DkimSignOptionsConfig {
      * Must be greater than zero.
      */
     @ConfigItem
-    public OptionalLong expireTime;
+    public OptionalLong expireTime = OptionalLong.empty();
 
     /**
      * Configures the signed headers in DKIM, separated by commas.
@@ -87,7 +87,7 @@ public class DkimSignOptionsConfig {
      * The order in the list matters.
      */
     @ConfigItem
-    public Optional<List<String>> signedHeaders;
+    public Optional<List<String>> signedHeaders = Optional.empty();
 
     public enum CanonicalizationAlgorithmOption {
         SIMPLE,

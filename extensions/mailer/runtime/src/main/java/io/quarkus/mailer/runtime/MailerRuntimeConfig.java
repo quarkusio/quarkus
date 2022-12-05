@@ -4,19 +4,18 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "mailer", phase = ConfigPhase.RUN_TIME)
-public class MailConfig {
+@ConfigGroup
+public class MailerRuntimeConfig {
 
     /**
      * Sets the default `from` attribute when not specified in the {@link io.quarkus.mailer.Mail} instance.
      * It's the sender email address.
      */
     @ConfigItem
-    public Optional<String> from;
+    public Optional<String> from = Optional.empty();
 
     /**
      * Enables the mock mode.
@@ -26,20 +25,20 @@ public class MailConfig {
      * Disabled by default on PROD, enabled by default on DEV and TEST modes.
      */
     @ConfigItem
-    public Optional<Boolean> mock;
+    public Optional<Boolean> mock = Optional.empty();
 
     /**
      * Sets the default bounce email address.
      * A bounced email, or bounce, is an email message that gets rejected by a mail server.
      */
     @ConfigItem
-    public Optional<String> bounceAddress;
+    public Optional<String> bounceAddress = Optional.empty();
 
     /**
      * Sets the SMTP host name.
      */
     @ConfigItem(defaultValue = "localhost")
-    public String host;
+    public String host = "localhost";
 
     /**
      * The SMTP port.
@@ -54,19 +53,19 @@ public class MailConfig {
      * and it should no longer be used for SMTP communications.
      */
     @ConfigItem
-    public OptionalInt port;
+    public OptionalInt port = OptionalInt.empty();
 
     /**
      * Sets the username to connect to the SMTP server.
      */
     @ConfigItem
-    public Optional<String> username;
+    public Optional<String> username = Optional.empty();
 
     /**
      * Sets the password to connect to the SMTP server.
      */
     @ConfigItem
-    public Optional<String> password;
+    public Optional<String> password = Optional.empty();
 
     /**
      * Enables or disables the TLS/SSL.
@@ -79,26 +78,26 @@ public class MailConfig {
      * This option is only used when {@link #ssl} is enabled.
      */
     @ConfigItem
-    public Optional<Boolean> trustAll;
+    public Optional<Boolean> trustAll = Optional.empty();
 
     /**
      * Sets the max number of open connections to the mail server.
      */
     @ConfigItem(defaultValue = "10")
-    public int maxPoolSize;
+    public int maxPoolSize = 10;
 
     /**
      * Sets the hostname to be used for HELO/EHLO and the Message-ID.
      */
     @ConfigItem
-    public Optional<String> ownHostName;
+    public Optional<String> ownHostName = Optional.empty();
 
     /**
      * Sets if connection pool is enabled.
      * If the connection pooling is disabled, the max number of sockets is enforced nevertheless.
      */
     @ConfigItem(defaultValue = "true")
-    public boolean keepAlive;
+    public boolean keepAlive = true;
 
     /**
      * Disable ESMTP.
@@ -114,13 +113,13 @@ public class MailConfig {
      * Either {@code DISABLED}, {@code OPTIONAL} or {@code REQUIRED}.
      */
     @ConfigItem(defaultValue = "OPTIONAL")
-    public String startTLS;
+    public String startTLS = "OPTIONAL";
 
     /**
      * Configures DKIM signature verification.
      */
     @ConfigItem
-    public DkimSignOptionsConfig dkim;
+    public DkimSignOptionsConfig dkim = new DkimSignOptionsConfig();
 
     /**
      * Sets the login mode for the connection.
@@ -134,7 +133,7 @@ public class MailConfig {
      * </ul>
      */
     @ConfigItem(defaultValue = "NONE")
-    public String login;
+    public String login = "NONE";
 
     /**
      * Sets the allowed authentication methods.
@@ -144,7 +143,7 @@ public class MailConfig {
      * The list is given as a space separated list, such as {@code DIGEST-MD5 CRAM-SHA256 CRAM-SHA1 CRAM-MD5 PLAIN LOGIN}.
      */
     @ConfigItem
-    public Optional<String> authMethods;
+    public Optional<String> authMethods = Optional.empty();
 
     /**
      * Set the trust store.
@@ -153,7 +152,7 @@ public class MailConfig {
      */
     @Deprecated
     @ConfigItem
-    public Optional<String> keyStore;
+    public Optional<String> keyStore = Optional.empty();
 
     /**
      * Sets the trust store password if any.
@@ -162,13 +161,13 @@ public class MailConfig {
      */
     @ConfigItem
     @Deprecated
-    public Optional<String> keyStorePassword;
+    public Optional<String> keyStorePassword = Optional.empty();
 
     /**
      * Configures the trust store.
      */
     @ConfigItem
-    public TrustStoreConfig truststore;
+    public TrustStoreConfig truststore = new TrustStoreConfig();
 
     /**
      * Whether the mail should always been sent as multipart even if they don't have attachments.
@@ -188,14 +187,14 @@ public class MailConfig {
      * Enables or disables the pipelining capability if the SMTP server supports it.
      */
     @ConfigItem(defaultValue = "true")
-    public boolean pipelining;
+    public boolean pipelining = true;
 
     /**
      * Sets the connection pool cleaner period.
      * Zero disables expiration checks and connections will remain in the pool until they are closed.
      */
     @ConfigItem(defaultValue = "PT1S")
-    public Duration poolCleanerPeriod;
+    public Duration poolCleanerPeriod = Duration.ofSeconds(1L);
 
     /**
      * Set the keep alive timeout for the SMTP connection.
@@ -203,12 +202,12 @@ public class MailConfig {
      * A timeout of 0 means there is no timeout.
      */
     @ConfigItem(defaultValue = "PT300S")
-    public Duration keepAliveTimeout;
+    public Duration keepAliveTimeout = Duration.ofSeconds(300L);
 
     /**
      * Configures NTLM (Windows New Technology LAN Manager).
      */
     @ConfigItem
-    public NtlmConfig ntlm;
+    public NtlmConfig ntlm = new NtlmConfig();
 
 }

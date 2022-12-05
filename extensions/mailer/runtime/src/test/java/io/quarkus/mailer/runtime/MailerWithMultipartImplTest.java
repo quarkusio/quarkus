@@ -60,11 +60,9 @@ class MailerWithMultipartImplTest {
 
     @BeforeEach
     void init() {
-        mailer = new MutinyMailerImpl();
-        mailer.mailerSupport = new MailerSupport(FROM, null, false);
-        mailer.vertx = vertx;
-        mailer.client = MailClient.createShared(mailer.vertx,
-                new MailConfig().setPort(wiser.getServer().getPort()).setMultiPartOnly(true));
+        mailer = new MutinyMailerImpl(vertx, MailClient.createShared(vertx,
+                new MailConfig().setPort(wiser.getServer().getPort()).setMultiPartOnly(true)), null,
+                FROM, null, false);
 
         wiser.getMessages().clear();
     }
@@ -300,10 +298,4 @@ class MailerWithMultipartImplTest {
         }
         return types;
     }
-
-    private List<String> getContentTypesFromMimeMultipart(
-            String content) throws MessagingException, IOException {
-        return Collections.singletonList(content);
-    }
-
 }

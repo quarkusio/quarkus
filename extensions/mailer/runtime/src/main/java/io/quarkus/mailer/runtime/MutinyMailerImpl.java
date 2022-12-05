@@ -10,9 +10,6 @@ import java.util.concurrent.Flow.Publisher;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
 import org.jboss.logging.Logger;
 
 import io.quarkus.mailer.Attachment;
@@ -29,22 +26,31 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.file.AsyncFile;
 import io.vertx.mutiny.ext.mail.MailClient;
 
-@ApplicationScoped
 public class MutinyMailerImpl implements ReactiveMailer {
 
     private static final Logger LOGGER = Logger.getLogger("quarkus-mailer");
 
-    @Inject
-    MailClient client;
+    private final Vertx vertx;
 
-    @Inject
-    Vertx vertx;
+    private final MailClient client;
 
-    @Inject
-    MockMailboxImpl mockMailbox;
+    private final MockMailboxImpl mockMailbox;
 
-    @Inject
-    MailerSupport mailerSupport;
+    private final String from;
+
+    private final String bounceAddress;
+
+    private boolean mock;
+
+    MutinyMailerImpl(Vertx vertx, MailClient client, MockMailboxImpl mockMailbox,
+            String from, String bounceAddress, boolean mock) {
+        this.vertx = vertx;
+        this.client = client;
+        this.mockMailbox = mockMailbox;
+        this.from = from;
+        this.bounceAddress = bounceAddress;
+        this.mock = mock;
+    }
 
     @Override
     public Uni<Void> send(Mail... mails) {
@@ -71,12 +77,12 @@ public class MutinyMailerImpl implements ReactiveMailer {
     }
 
     private Uni<Void> send(Mail mail, MailMessage message) {
-        if (mailerSupport.isMock()) {
+        if (mock) {
             LOGGER.infof("Sending email %s from %s to %s, text body: \n%s\nhtml body: \n%s",
                     message.getSubject(), message.getFrom(), message.getTo(),
                     message.getText() == null ? "<empty>" : message.getText(),
                     message.getHtml() == null ? "<empty>" : message.getHtml());
-            return mockMailbox.send(mail);
+            return mockMailbox.send(mail, message);
         } else {
             return client.sendMail(message)
                     .replaceWithVoid();
@@ -89,13 +95,13 @@ public class MutinyMailerImpl implements ReactiveMailer {
         if (mail.getBounceAddress() != null) {
             message.setBounceAddress(mail.getBounceAddress());
         } else {
-            message.setBounceAddress(this.mailerSupport.getBounceAddress());
+            message.setBounceAddress(bounceAddress);
         }
 
         if (mail.getFrom() != null) {
             message.setFrom(mail.getFrom());
         } else {
-            message.setFrom(this.mailerSupport.getFrom());
+            message.setFrom(from);
         }
         message.setTo(mail.getTo());
         message.setCc(mail.getCc());

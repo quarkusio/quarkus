@@ -52,11 +52,10 @@ class MailerImplTest {
 
     @BeforeEach
     void init() {
-        mailer = new MutinyMailerImpl();
-        mailer.mailerSupport = new MailerSupport(FROM, null, false);
-        mailer.vertx = vertx;
-        mailer.client = MailClient.createShared(mailer.vertx,
-                new MailConfig().setPort(wiser.getServer().getPort()));
+        mailer = new MutinyMailerImpl(vertx,
+                MailClient.createShared(vertx,
+                        new MailConfig().setPort(wiser.getServer().getPort())),
+                null, FROM, null, false);
 
         wiser.getMessages().clear();
     }

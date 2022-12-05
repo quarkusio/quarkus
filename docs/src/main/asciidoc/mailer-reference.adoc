@@ -341,6 +341,80 @@ When not set, Quarkus tries to deduce the type from the file name.
 
 NOTE: You can also configure `quarkus.mailer.trust-all=true` to bypass the verification.
 
+== Multiple mailer configurations
+
+Some applications require to send mails through different SMTP servers.
+
+This use case is perfectly supported in Quarkus and you can configure several mailers:
+
+[source,properties]
+----
+quarkus.mailer.from=your-from-address@gmail.com <1>
+quarkus.mailer.host=smtp.gmail.com
+
+quarkus.mailer.aws.from=your-from-address@gmail.com <2>
+quarkus.mailer.aws.host=${ses.smtp}
+quarkus.mailer.aws.port=587
+
+quarkus.mailer.sendgrid.from=your-from-address@gmail.com <3>
+quarkus.mailer.sendgrid.host=${sendgrid.smtp-host}
+quarkus.mailer.sendgrid.port=465
+----
+<1> Configuration for the default mailer.
+<2> Configuration for a mailer named `aws`.
+<3> Configuration for a mailer named `sendgrid`.
+
+Then, access your named mailers by using the `@MailerName` CDI qualifier:
+
+[source,java]
+----
+@Inject <1>
+Mailer mailer;
+
+@Inject <1>
+ReactiveMailer reactiveMailer;
+
+@Inject <1>
+@Location("hello")
+MailTemplate mailTemplate;
+
+@Inject
+@MailerName("aws") <2>
+Mailer mailer;
+
+@Inject
+@MailerName("aws") <2>
+ReactiveMailer reactiveMailer;
+
+@Inject
+@MailerName("aws") <2>
+@Location("hello")
+MailTemplate mailTemplate;
+
+@Inject
+@MailerName("sendgrid") <3>
+Mailer mailer;
+
+@Inject
+@MailerName("sendgrid") <3>
+ReactiveMailer reactiveMailer;
+
+@Inject
+@MailerName("sendgrid") <3>
+@Location("hello")
+MailTemplate mailTemplate;
+----
+<1> Inject instances without qualifier for the default configuration.
+<2> Inject instances with the `@MailerName("aws")` qualifier for the `aws` configuration.
+<3> Inject instances with the `@MailerName("sendgrid")` qualifier for the `sendgrid` configuration.
+
+[WARNING]
+====
+Type-safe template using `@CheckedTemplate` are currently only supported for the default mailer configuration.
+
+Use `MailTemplate` injection for the named mailer configurations.
+====
+
 [[popular]]
 == Mailer configuration for popular email services
 

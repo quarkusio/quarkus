@@ -236,6 +236,14 @@ public class HibernateOrmConfigPersistenceUnit {
     @ConfigItem(defaultValue = "true")
     public boolean validateInDevMode;
 
+    /**
+     * Represents flushing strategies (AUTO, COMMIT, ALWAYS, MANUAL).
+     * The default value is AUTO.
+     */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> flushMode;
+
     @ConfigItem(generateDocumentation = false)
     @ConfigDocMapKey("full-property-key")
     public Map<String, String> unsupportedProperties = new HashMap<>();
@@ -256,6 +264,7 @@ public class HibernateOrmConfigPersistenceUnit {
                 !cache.isEmpty() ||
                 !secondLevelCachingEnabled ||
                 multitenant.isPresent() ||
+                flushMode.isPresent() ||
                 multitenantSchemaDatasource.isPresent() ||
                 fetch.isAnyPropertySet() ||
                 discriminator.isAnyPropertySet() ||

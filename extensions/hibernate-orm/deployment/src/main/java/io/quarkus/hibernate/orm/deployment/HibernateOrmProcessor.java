@@ -1038,6 +1038,10 @@ public final class HibernateOrmProcessor {
                 namingStrategy -> descriptor.getProperties()
                         .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
+        // Flush Mode
+        persistenceUnitConfig.flushMode.ifPresent(
+                flushMode -> descriptor.getProperties().setProperty(AvailableSettings.FLUSH_MODE, flushMode));
+
         // Metadata builder contributor
         persistenceUnitConfig.metadataBuilderContributor.ifPresent(
                 className -> descriptor.getProperties()

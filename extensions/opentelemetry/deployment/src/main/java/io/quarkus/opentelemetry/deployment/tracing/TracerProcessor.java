@@ -1,18 +1,12 @@
 package io.quarkus.opentelemetry.deployment.tracing;
 
-import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
-import static javax.interceptor.Interceptor.Priority.LIBRARY_AFTER;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -43,10 +37,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.opentelemetry.runtime.config.TracerRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingClientInterceptor;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingServerInterceptor;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
 
@@ -57,38 +48,6 @@ public class TracerProcessor {
     private static final DotName SAMPLER = DotName.createSimple(Sampler.class.getName());
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
-
-    static class MetricsExtensionAvailable implements BooleanSupplier {
-        private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresentAtRuntime(
-                "io.quarkus.micrometer.runtime.binder.vertx.VertxHttpServerMetrics");
-
-        @Override
-        public boolean getAsBoolean() {
-            Config config = ConfigProvider.getConfig();
-            if (IS_MICROMETER_EXTENSION_AVAILABLE) {
-                if (config.getOptionalValue("quarkus.micrometer.enabled", Boolean.class).orElse(true)) {
-                    Optional<Boolean> httpServerEnabled = config
-                            .getOptionalValue("quarkus.micrometer.binder.http-server.enabled", Boolean.class);
-                    if (httpServerEnabled.isPresent()) {
-                        return httpServerEnabled.get();
-                    } else {
-                        return config.getOptionalValue("quarkus.micrometer.binder-enabled-default", Boolean.class).orElse(true);
-                    }
-                }
-            }
-            return false;
-        }
-    }
-
-    static class GrpcExtensionAvailable implements BooleanSupplier {
-        private static final boolean IS_GRPC_EXTENSION_AVAILABLE = isClassPresentAtRuntime(
-                "io.quarkus.grpc.runtime.GrpcServerRecorder");
-
-        @Override
-        public boolean getAsBoolean() {
-            return IS_GRPC_EXTENSION_AVAILABLE;
-        }
-    }
 
     @BuildStep
     UnremovableBeanBuildItem ensureProducersAreRetained(
@@ -177,24 +136,6 @@ public class TracerProcessor {
             }
         }
         dropStaticResources.produce(new DropStaticResourcesBuildItem(resources));
-    }
-
-    @BuildStep(onlyIf = GrpcExtensionAvailable.class)
-    void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    VertxOptionsConsumerBuildItem vertxTracingOptions(TracerRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
-    }
-
-    @BuildStep(onlyIfNot = MetricsExtensionAvailable.class)
-    @Record(ExecutionTime.STATIC_INIT)
-    VertxOptionsConsumerBuildItem vertxTracingMetricsOptions(TracerRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingMetricsOptions(), LIBRARY_AFTER + 1);
     }
 
     @BuildStep

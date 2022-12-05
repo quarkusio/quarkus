@@ -14,6 +14,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
@@ -23,7 +24,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.json.JsonWriteFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -42,8 +42,9 @@ import io.smallrye.mutiny.Uni;
 public class SimpleJsonResource extends SuperClass<Person> {
 
     @ServerExceptionMapper
-    public Response handleParseException(JsonParseException jpe) {
-        return Response.status(Response.Status.BAD_REQUEST).entity(jpe.getMessage()).build();
+    public Response handleParseException(WebApplicationException e) {
+        var cause = e.getCause() == null ? e : e.getCause();
+        return Response.status(Response.Status.BAD_REQUEST).entity(cause.getMessage()).build();
     }
 
     @GET

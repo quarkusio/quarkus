@@ -2,6 +2,7 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,10 +30,12 @@ import io.quarkus.test.QuarkusProdModeTest;
 //
 public class OpenshiftWithDeploymentResourceTest {
 
+    private static final String NAME = "openshift-with-deployment-resource";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("openshift-with-deployment-resource")
+            .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .overrideConfigKey("quarkus.openshift.deployment-kind", "Deployment")
             .overrideConfigKey("quarkus.openshift.replicas", "3")
@@ -55,17 +58,21 @@ public class OpenshiftWithDeploymentResourceTest {
         assertThat(kubernetesList).filteredOn(h -> "BuildConfig".equals(h.getKind())).hasSize(1);
         assertThat(kubernetesList).filteredOn(h -> "ImageStream".equals(h.getKind())).hasSize(2);
         assertThat(kubernetesList).filteredOn(h -> "ImageStream".equals(h.getKind())
-                && h.getMetadata().getName().equals("openshift-with-deployment-resource")).hasSize(1);
+                && h.getMetadata().getName().equals(NAME)).hasSize(1);
 
         assertThat(kubernetesList).filteredOn(i -> i instanceof Deployment).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("openshift-with-deployment-resource");
+                    assertThat(m.getName()).isEqualTo(NAME);
                 });
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getReplicas()).isEqualTo(3);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
+                        assertThat(t.getMetadata()).satisfies(metadata -> assertThat(metadata.getLabels()).containsAnyOf(
+                                entry("app.kubernetes.io/name", NAME),
+                                entry("app.kubernetes.io/version", "0.1-SNAPSHOT")));
+
                         assertThat(t.getSpec()).satisfies(podSpec -> {
                             assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getImage())

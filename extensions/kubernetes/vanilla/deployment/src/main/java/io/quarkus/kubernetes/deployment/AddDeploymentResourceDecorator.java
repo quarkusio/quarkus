@@ -24,6 +24,8 @@ public class AddDeploymentResourceDecorator extends ResourceProvidingDecorator<K
                 .withMatchLabels(new HashMap<String, String>())
                 .endSelector()
                 .withNewTemplate()
+                .withNewMetadata()
+                .endMetadata()
                 .withNewSpec()
                 .addNewContainer()
                 .withName(name)

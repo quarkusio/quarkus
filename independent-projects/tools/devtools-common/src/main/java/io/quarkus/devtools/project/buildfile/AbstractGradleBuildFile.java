@@ -46,16 +46,20 @@ abstract class AbstractGradleBuildFile extends BuildFile {
     public void writeToDisk() throws IOException {
         if (rootProjectPath != null) {
             Files.write(rootProjectPath.resolve(getSettingsGradlePath()), getModel().getRootSettingsContent().getBytes());
-            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                getModel().getRootPropertiesContent().store(out, "Gradle properties");
-                Files.write(rootProjectPath.resolve(GRADLE_PROPERTIES_PATH),
-                        out.toByteArray());
+            if (hasRootProjectFile(GRADLE_PROPERTIES_PATH)) {
+                try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                    getModel().getRootPropertiesContent().store(out, "Gradle properties");
+                    Files.write(rootProjectPath.resolve(GRADLE_PROPERTIES_PATH),
+                            out.toByteArray());
+                }
             }
         } else {
             writeToProjectFile(getSettingsGradlePath(), getModel().getSettingsContent().getBytes());
-            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                getModel().getPropertiesContent().store(out, "Gradle properties");
-                writeToProjectFile(GRADLE_PROPERTIES_PATH, out.toByteArray());
+            if (hasProjectFile(GRADLE_PROPERTIES_PATH)) {
+                try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                    getModel().getPropertiesContent().store(out, "Gradle properties");
+                    writeToProjectFile(GRADLE_PROPERTIES_PATH, out.toByteArray());
+                }
             }
         }
         writeToProjectFile(getBuildGradlePath(), getModel().getBuildContent().getBytes());

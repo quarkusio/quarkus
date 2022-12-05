@@ -51,6 +51,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo.WhileLoop;
 import io.quarkus.runtime.NativeImageFeatureUtils;
 import io.quarkus.runtime.ResourceHelper;
 import io.quarkus.runtime.graal.ResourcesFeature;
@@ -95,6 +96,11 @@ public class NativeImageFeatureStep {
             "findModule", Module.class, String.class);
     private static final MethodDescriptor INVOKE = ofMethod(
             Method.class, "invoke", Object.class, Object.class, Object[].class);
+
+    /**
+     * The max amount of classes that can be registered in a registerClasses method.
+     */
+    private static final int CLASSES_TO_REGISTER_BATCH_SIZE = 100;
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String LEGACY_JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String JNI_RUNTIME_ACCESS = "org.graalvm.nativeimage.hosted.RuntimeJNIAccess";
@@ -538,108 +544,113 @@ public class NativeImageFeatureStep {
 
         MethodDescriptor registerSerializationMethod = null;
 
-        MethodCreator registerForReflection = file
-                .getMethodCreator("registerForReflection", void.class, Feature.BeforeAnalysisAccess.class)
-                .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+        MethodCreator registerForReflection = addMethodRegisterForReflection(file);
+        MethodCreator registerClasses = addMethodRegisterClass(file);
 
+        int index = 0;
+        MethodCreator currentRegisterClass = null;
         for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
-            MethodCreator mv = file.getMethodCreator("registerClass" + count++, void.class, Feature.BeforeAnalysisAccess.class);
-            mv.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-            registerForReflection.invokeStaticMethod(mv.getMethodDescriptor(), registerForReflection.getMethodParam(0));
-
-            TryBlock tc = mv.tryBlock();
-
-            ResultHandle clazz = tc.loadClassFromTCCL(entry.getKey());
-            //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
-            ResultHandle constructors = tc
-                    .invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
-            ResultHandle methods = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class), clazz);
-            ResultHandle fields = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
-
-            if (!entry.getValue().weak) {
-                ResultHandle carray = tc.newArray(Class.class, tc.load(1));
-                tc.writeArrayValue(carray, 0, clazz);
-                tc.invokeStaticMethod(ofMethod(RUNTIME_REFLECTION, "register", void.class, Class[].class),
-                        carray);
-
-                if (entry.getValue().constructors) {
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                            constructors);
-                } else if (!entry.getValue().ctorSet.isEmpty()) {
-                    ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
+            // To avoid getting MethodTooLargeException, the methods only manage up to CLASSES_TO_REGISTER_BATCH_SIZE entries
+            // To avoid getting ClassTooLargeException, the methods need to manage several classes
+            if (index++ % CLASSES_TO_REGISTER_BATCH_SIZE == 0) {
+                if (currentRegisterClass != null) {
+                    currentRegisterClass.returnVoid();
+                }
+                currentRegisterClass = file.getMethodCreator("registerClasses" + count++, void.class,
+                        Feature.BeforeAnalysisAccess.class);
+                currentRegisterClass.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+            }
+            boolean hasConstructorsToHandle = !entry.getValue().weak && !entry.getValue().constructors
+                    && !entry.getValue().ctorSet.isEmpty();
+            boolean hasMethodsToHandle = !entry.getValue().weak && !entry.getValue().methods
+                    && !entry.getValue().methodSet.isEmpty();
+            boolean hasFieldsToHandle = !entry.getValue().weak && !entry.getValue().fields
+                    && !entry.getValue().fieldSet.isEmpty();
+            boolean hasSerializationToHandle = entry.getValue().serialization;
+            boolean tryBlock = hasConstructorsToHandle || hasMethodsToHandle || hasFieldsToHandle || hasSerializationToHandle;
+            final BytecodeCreator creator;
+            if (tryBlock) {
+                TryBlock tc = currentRegisterClass.tryBlock();
+                CatchBlockCreator cc = tc.addCatch(Throwable.class);
+                // cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                creator = tc;
+            } else {
+                creator = currentRegisterClass;
+            }
+            ResultHandle clazz = creator.invokeStaticMethod(registerClasses.getMethodDescriptor(),
+                    creator.load(entry.getKey()),
+                    creator.load(entry.getValue().weak), creator.load(entry.getValue().constructors),
+                    creator.load(entry.getValue().methods),
+                    creator.load(entry.getValue().fields), creator.load(entry.getValue().finalFieldsWritable),
+                    creator.load(entry.getValue().serialization),
+                    creator.getMethodParam(0));
+            if (!tryBlock) {
+                continue;
+            }
+            try (BytecodeCreator classNotNullBranch = creator.ifNotNull(clazz).trueBranch()) {
+                if (hasConstructorsToHandle) {
+                    ResultHandle farray = classNotNullBranch.newArray(Constructor.class, classNotNullBranch.load(1));
                     for (ReflectiveMethodBuildItem ctor : entry.getValue().ctorSet) {
-                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.getParams().length));
+                        ResultHandle paramArray = classNotNullBranch.newArray(Class.class,
+                                classNotNullBranch.load(ctor.getParams().length));
                         for (int i = 0; i < ctor.getParams().length; ++i) {
                             String type = ctor.getParams()[i];
-                            tc.writeArrayValue(paramArray, i, tc.loadClassFromTCCL(type));
+                            classNotNullBranch.writeArrayValue(paramArray, i, classNotNullBranch.loadClassFromTCCL(type));
                         }
-                        ResultHandle fhandle = tc.invokeVirtualMethod(
+                        ResultHandle fhandle = classNotNullBranch.invokeVirtualMethod(
                                 ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz,
                                 paramArray);
-                        tc.writeArrayValue(farray, 0, fhandle);
-                        tc.invokeStaticMethod(
+                        classNotNullBranch.writeArrayValue(farray, 0, fhandle);
+                        classNotNullBranch.invokeStaticMethod(
                                 ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
                                 farray);
                     }
                 }
-                if (entry.getValue().methods) {
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                            methods);
-                } else if (!entry.getValue().methodSet.isEmpty()) {
-                    ResultHandle farray = tc.newArray(Method.class, tc.load(1));
+                if (hasMethodsToHandle) {
+                    ResultHandle farray = classNotNullBranch.newArray(Method.class, classNotNullBranch.load(1));
                     for (ReflectiveMethodBuildItem method : entry.getValue().methodSet) {
-                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.getParams().length));
+                        ResultHandle paramArray = classNotNullBranch.newArray(Class.class,
+                                classNotNullBranch.load(method.getParams().length));
                         for (int i = 0; i < method.getParams().length; ++i) {
                             String type = method.getParams()[i];
-                            tc.writeArrayValue(paramArray, i, tc.loadClassFromTCCL(type));
+                            classNotNullBranch.writeArrayValue(paramArray, i, classNotNullBranch.loadClassFromTCCL(type));
                         }
-                        ResultHandle fhandle = tc.invokeVirtualMethod(
+                        ResultHandle fhandle = classNotNullBranch.invokeVirtualMethod(
                                 ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz,
-                                tc.load(method.getName()), paramArray);
-                        tc.writeArrayValue(farray, 0, fhandle);
-                        tc.invokeStaticMethod(
+                                classNotNullBranch.load(method.getName()), paramArray);
+                        classNotNullBranch.writeArrayValue(farray, 0, fhandle);
+                        classNotNullBranch.invokeStaticMethod(
                                 ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
                                 farray);
                     }
                 }
-                if (entry.getValue().fields) {
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class,
-                                    boolean.class, boolean.class, Field[].class),
-                            tc.load(entry.getValue().finalFieldsWritable), tc.load(entry.getValue().serialization), fields);
-                } else if (!entry.getValue().fieldSet.isEmpty()) {
-                    ResultHandle farray = tc.newArray(Field.class, tc.load(1));
+                if (hasFieldsToHandle) {
+                    ResultHandle farray = classNotNullBranch.newArray(Field.class, classNotNullBranch.load(1));
                     for (String field : entry.getValue().fieldSet) {
-                        ResultHandle fhandle = tc.invokeVirtualMethod(
-                                ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, tc.load(field));
-                        tc.writeArrayValue(farray, 0, fhandle);
-                        tc.invokeStaticMethod(
+                        ResultHandle fhandle = classNotNullBranch.invokeVirtualMethod(
+                                ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz,
+                                classNotNullBranch.load(field));
+                        classNotNullBranch.writeArrayValue(farray, 0, fhandle);
+                        classNotNullBranch.invokeStaticMethod(
                                 ofMethod(RUNTIME_REFLECTION, "register", void.class, Field[].class),
                                 farray);
                     }
                 }
-            } else {
-                tc.invokeStaticMethod(WEAK_REFLECTION_REGISTRATION, tc.getMethodParam(0), clazz,
-                        tc.load(entry.getValue().constructors), tc.load(entry.getValue().methods),
-                        tc.load(entry.getValue().fields));
-            }
 
-            if (entry.getValue().serialization) {
-                if (registerSerializationMethod == null) {
-                    registerSerializationMethod = createRegisterSerializationForClassMethod(file);
+                if (hasSerializationToHandle) {
+                    if (registerSerializationMethod == null) {
+                        registerSerializationMethod = createRegisterSerializationForClassMethod(file);
+                    }
+
+                    classNotNullBranch.invokeStaticMethod(registerSerializationMethod, clazz);
                 }
-
-                tc.invokeStaticMethod(registerSerializationMethod, clazz);
             }
-
-            CatchBlockCreator cc = tc.addCatch(Throwable.class);
-            //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-            mv.returnValue(null);
         }
-        registerForReflection.returnVoid();
-        overallCatch.invokeStaticMethod(registerForReflection.getMethodDescriptor(), beforeAnalysisParam);
+        if (currentRegisterClass != null) {
+            currentRegisterClass.returnVoid();
+        }
+        overallCatch.invokeStaticMethod(registerForReflection.getMethodDescriptor(), beforeAnalysisParam,
+                overallCatch.load(count));
 
         count = 0;
 
@@ -725,6 +736,173 @@ public class NativeImageFeatureStep {
         beforeAn.returnValue(null);
 
         file.close();
+    }
+
+    /**
+     * Add the method {@code _registerClass} that contains the common part of the code allowing to register the classes,
+     * the constructors, the methods and the fields
+     *
+     * <p/>
+     * The generated code is equivalent to:
+     *
+     * <pre>{@code
+     * private static Class<?> _registerClass(String className, boolean weak, boolean constructors, boolean methods,
+     *         boolean fields, boolean finalFieldsWritable, boolean serialization,
+     *         Feature.BeforeAnalysisAccess beforeAnalysisAccess) {
+     *     try {
+     *         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+     *         Class<?> aClass = Class.forName(className, false, contextClassLoader);
+     *         Constructor<?>[] declaredConstructors = aClass.getDeclaredConstructors();
+     *         Method[] declaredMethods = aClass.getDeclaredMethods();
+     *         Field[] declaredFields = aClass.getDeclaredFields();
+     *         if (weak) {
+     *             WeakReflection.register(beforeAnalysisAccess, aClass, constructors, methods, fields);
+     *         } else {
+     *             Class<?>[] classes = new Class[] { aClass };
+     *             RuntimeReflection.register(classes);
+     *             if (constructors) {
+     *                 RuntimeReflection.register(declaredConstructors);
+     *             }
+     *             if (methods) {
+     *                 RuntimeReflection.register(declaredMethods);
+     *             }
+     *             if (fields) {
+     *                 RuntimeReflection.register(finalFieldsWritable, serialization, declaredFields);
+     *             }
+     *         }
+     *         return aClass;
+     *     } catch (Throwable e) {
+     *         e.printStackTrace();
+     *     }
+     *     return null;
+     * }
+     * }</pre>
+     *
+     * @param file the class in which the method is created.
+     * @return an instance of {@link MethodCreator} corresponding to the created method.
+     */
+    private static MethodCreator addMethodRegisterClass(ClassCreator file) {
+        // Params:
+        // 0. Class to register
+        // 1. Weak
+        // 2. Constructors
+        // 3. Methods
+        // 4. Fields
+        // 5. FinalFieldsWritable
+        // 6. Serialization
+        // 7. Feature.BeforeAnalysisAccess
+        MethodCreator registerClass = file.getMethodCreator("_registerClass", Class.class, String.class, boolean.class,
+                boolean.class, boolean.class,
+                boolean.class, boolean.class, boolean.class, Feature.BeforeAnalysisAccess.class);
+        registerClass.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+
+        TryBlock tc = registerClass.tryBlock();
+
+        ResultHandle clazz = tc.invokeStaticMethod(
+                ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
+                registerClass.getMethodParam(0), tc.load(false),
+                tc.invokeVirtualMethod(
+                        ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
+                        tc.invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class))));
+        //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
+        ResultHandle constructors = tc
+                .invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
+        ResultHandle methods = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class), clazz);
+        ResultHandle fields = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
+
+        BranchResult notWeakResult = tc.ifFalse(registerClass.getMethodParam(1));
+        try (BytecodeCreator notWeakBranch = notWeakResult.trueBranch()) {
+            ResultHandle carray = notWeakBranch.newArray(Class.class, notWeakBranch.load(1));
+            notWeakBranch.writeArrayValue(carray, 0, clazz);
+            notWeakBranch.invokeStaticMethod(ofMethod(RUNTIME_REFLECTION, "register", void.class, Class[].class),
+                    carray);
+            try (BytecodeCreator constructorsBranch = notWeakBranch.ifTrue(registerClass.getMethodParam(2)).trueBranch()) {
+                constructorsBranch.invokeStaticMethod(
+                        ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
+                        constructors);
+            }
+            try (BytecodeCreator methodsBranch = notWeakBranch.ifTrue(registerClass.getMethodParam(3)).trueBranch()) {
+                methodsBranch.invokeStaticMethod(
+                        ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
+                        methods);
+            }
+            try (BytecodeCreator fieldsBranch = notWeakBranch.ifTrue(registerClass.getMethodParam(4)).trueBranch()) {
+                fieldsBranch.invokeStaticMethod(
+                        ofMethod(RUNTIME_REFLECTION, "register", void.class,
+                                boolean.class, boolean.class, Field[].class),
+                        registerClass.getMethodParam(5), registerClass.getMethodParam(6), fields);
+            }
+        }
+        try (BytecodeCreator weakBranch = notWeakResult.falseBranch()) {
+            weakBranch.invokeStaticMethod(WEAK_REFLECTION_REGISTRATION, registerClass.getMethodParam(7), clazz,
+                    registerClass.getMethodParam(2), registerClass.getMethodParam(3), registerClass.getMethodParam(4));
+        }
+        tc.returnValue(clazz);
+        CatchBlockCreator cc = tc.addCatch(Throwable.class);
+        // cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+        registerClass.returnNull();
+        return registerClass;
+    }
+
+    /**
+     * Adds the method {@code registerForReflection} that calls by reflection all methods whose name starts with
+     * {@code registerClass}.
+     * <p/>
+     * The generated code is equivalent to:
+     *
+     * <pre>{@code
+     * private static void registerForReflection(Feature.BeforeAnalysisAccess beforeAnalysisAccess,
+     *         int maxSuffixNameIndex) {
+     *     for (int i = 0; i <= maxSuffixNameIndex; i++) {
+     *         try {
+     *             Method method = Feature.class.getDeclaredMethod("registerClasses" + i, BeforeAnalysisAccess.class);
+     *             method.invoke(null, beforeAnalysisAccess);
+     *         } catch (Exception e) {
+     *             e.printStackTrace();
+     *         }
+     *     }
+     * }
+     * }</pre>
+     *
+     * @param file the class in which the method is created.
+     * @return an instance of {@link MethodCreator} corresponding to the created method.
+     */
+    private static MethodCreator addMethodRegisterForReflection(ClassCreator file) {
+        MethodCreator registerForReflection = file
+                .getMethodCreator("registerForReflection", void.class, Feature.BeforeAnalysisAccess.class, int.class)
+                .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+        ResultHandle thisClass = registerForReflection.loadClassFromTCCL(GRAAL_FEATURE);
+        ResultHandle beforeAnalysisAccessClass = registerForReflection.loadClassFromTCCL(Feature.BeforeAnalysisAccess.class);
+        AssignableResultHandle counter = registerForReflection.createVariable(int.class);
+        registerForReflection.assign(counter, registerForReflection.load(0));
+        WhileLoop whileLoop = registerForReflection
+                .whileLoop(bc -> bc.ifIntegerLessThan(counter, registerForReflection.getMethodParam(1)));
+        try (BytecodeCreator whileLoopBlock = whileLoop.block()) {
+            AssignableResultHandle methodName = whileLoopBlock.createVariable(String.class);
+            ResultHandle formatParamTypes = whileLoopBlock.newArray(Object.class, whileLoopBlock.load(1));
+            whileLoopBlock.writeArrayValue(formatParamTypes, 0, counter);
+            whileLoopBlock.assign(methodName,
+                    whileLoopBlock.invokeStaticMethod(
+                            ofMethod(String.class, "format", String.class, String.class, Object[].class),
+                            whileLoopBlock.load("registerClasses%d"), formatParamTypes));
+            TryBlock tc = whileLoopBlock.tryBlock();
+            ResultHandle invokeParamTypes = tc.newArray(Class.class, tc.load(1));
+            tc.writeArrayValue(invokeParamTypes, 0, beforeAnalysisAccessClass);
+            ResultHandle method = tc
+                    .invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class),
+                            thisClass, methodName, invokeParamTypes);
+
+            ResultHandle invokeParams = tc.newArray(Object.class, tc.load(1));
+            tc.writeArrayValue(invokeParams, 0, tc.getMethodParam(0));
+            tc.invokeVirtualMethod(ofMethod(Method.class, "invoke", Object.class, Object.class, Object[].class),
+                    method, tc.loadNull(), invokeParams);
+
+            CatchBlockCreator cc = tc.addCatch(Throwable.class);
+            // cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+            whileLoopBlock.assign(counter, whileLoopBlock.increment(counter));
+        }
+        registerForReflection.returnVoid();
+        return registerForReflection;
     }
 
     private MethodDescriptor createRegisterSerializationForClassMethod(ClassCreator file) {

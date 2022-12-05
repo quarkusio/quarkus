@@ -201,6 +201,9 @@ public class RestClientCDIDelegateBuilder<T> {
         if (maybeHostnameVerifier.isPresent()) {
             registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
         }
+
+        oneOf(clientConfigByClassName().verifyHost, clientConfigByConfigKey().verifyHost, configRoot.verifyHost)
+                .ifPresent(builder::verifyHost);
     }
 
     private void registerHostnameVerifier(String verifier, RestClientBuilder builder) {

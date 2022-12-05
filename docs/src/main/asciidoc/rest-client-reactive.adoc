@@ -283,6 +283,19 @@ quarkus.rest-client.extensions-api.url=https://stage.code.quarkus.io/api
 quarkus.rest-client.extensions-api.scope=javax.inject.Singleton
 ----
 
+=== Disabling Hostname Verification
+
+To disable the SSL hostname verification for a specific REST client, add the following property to your configuration:
+
+[source,properties]
+----
+quarkus.rest-client.extensions-api.verify-host=false
+----
+[WARNING]
+====
+This setting should not be used in production as it will disable the SSL hostname verification.
+====
+
 == Create the JAX-RS resource
 
 Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:

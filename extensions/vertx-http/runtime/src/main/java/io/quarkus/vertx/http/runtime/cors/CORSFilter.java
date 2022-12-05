@@ -2,7 +2,9 @@ package io.quarkus.vertx.http.runtime.cors;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -98,24 +100,25 @@ public class CORSFilter implements Handler<RoutingContext> {
         if (isConfiguredWithWildcard(corsConfig.headers)) {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowHeadersValue);
         } else {
-            List<String> requestedHeaders;
+            Map<String, String> requestedHeaders;
             String[] allowedParts = COMMA_SEPARATED_SPLIT_REGEX.split(allowHeadersValue);
-            requestedHeaders = new ArrayList<>(allowedParts.length);
+            requestedHeaders = new HashMap<>();
             for (String requestedHeader : allowedParts) {
-                requestedHeaders.add(requestedHeader.toLowerCase());
+                requestedHeaders.put(requestedHeader.toLowerCase(), requestedHeader);
             }
 
             List<String> corsConfigHeaders = corsConfig.headers.get();
             StringBuilder allowedHeaders = new StringBuilder();
             boolean isFirst = true;
             for (String configHeader : corsConfigHeaders) {
-                if (requestedHeaders.contains(configHeader.toLowerCase())) {
+                String configHeaderLowerCase = configHeader.toLowerCase();
+                if (requestedHeaders.containsKey(configHeaderLowerCase)) {
                     if (isFirst) {
                         isFirst = false;
                     } else {
                         allowedHeaders.append(',');
                     }
-                    allowedHeaders.append(configHeader);
+                    allowedHeaders.append(requestedHeaders.get(configHeaderLowerCase));
                 }
             }
 

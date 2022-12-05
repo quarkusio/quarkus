@@ -216,6 +216,40 @@ You can also inject an instance of `Uni<Mutiny.Session>` using the exact same me
 Uni<Mutiny.Session> session;
 ----
 
+=== Testing
+
+Using Hibernate Reactive in a `@QuarkusTest` is slightly more involved than using Hibernate ORM due to the asynchronous nature of the APIs and the fact that all operations need to run on a Vert.x Event Loop.
+
+Two components are necessary to write these tests:
+
+* The use of `@io.quarkus.test.vertx.RunOnVertxContext` or `@io.quarkus.test.TestReactiveTransaction` on the test methods
+* The use of `io.quarkus.test.vertx.UniAsserter` as a test method parameter.
+
+IMPORTANT: These classes are provided by the `quarkus-test-vertx` dependency.
+
+A very simple example usage looks like:
+
+[source,java]
+----
+@QuarkusTest
+public class SomeTest {
+
+    @Inject
+    Mutiny.SessionFactory sessionFactory;
+
+    @Test
+    @RunOnVertxContext
+    public void testQuery(UniAsserter asserter) {
+        asserter.assertThat(() -> sessionFactory.withSession(s -> s.createQuery(
+                "from Gift g where g.name = :name").setParameter("name", "Lego").getResultList()),
+                list -> org.junit.jupiter.api.Assertions.assertEquals(list.size(), 1));
+    }
+
+}
+----
+
+NOTE: See the Javadoc of `UniAsserter` for a full description of the various methods that can be used for creating assertions.
+
 [[hr-limitations]]
 == Limitations and other things you should know
 

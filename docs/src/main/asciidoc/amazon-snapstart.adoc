@@ -185,3 +185,10 @@ public class HelloPriming implements Resource {
 ----
 
 WARNING: Restoration is limited to 2 seconds.
+
+== TieredCompilation
+
+It is also recommended to use _tiered compilation_ when using SnapStart.
+To achieve this, set the `JAVA_TOOL_OPTIONS` environment property to `-XX:+TieredCompilation -XX:TieredStopAtLevel=1`.
+
+TIP: `TieredCompilation` can also be interesting for regular Lambda functions.

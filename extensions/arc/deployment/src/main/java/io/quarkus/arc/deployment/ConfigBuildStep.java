@@ -383,6 +383,7 @@ public class ConfigBuildStep {
     void validateConfigMappingsInjectionPoints(
             ArcConfig arcConfig,
             ValidationPhaseBuildItem validationPhase,
+            List<UnremovableBeanBuildItem> unremovableBeans,
             List<ConfigClassBuildItem> configClasses,
             BuildProducer<ConfigMappingBuildItem> configMappings) {
 
@@ -422,10 +423,17 @@ public class ConfigBuildStep {
             }
         }
 
-        for (ConfigClassBuildItem configClass : configMappingTypes.values()) {
-            // We don't look in the beans here, because SR Config has an API that can retrieve the mapping without CDI
-            if (!arcConfig.shouldEnableBeanRemoval() || configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
-                toRegister.add(new ConfigMappingBuildItem(configClass.getConfigClass(), configClass.getPrefix()));
+        if (arcConfig.shouldEnableBeanRemoval()) {
+            Set<String> unremovableClassNames = unremovableBeans.stream()
+                    .map(UnremovableBeanBuildItem::getClassNames)
+                    .flatMap(Collection::stream)
+                    .collect(toSet());
+
+            for (ConfigClassBuildItem configClass : configMappingTypes.values()) {
+                if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)
+                        || unremovableClassNames.contains(configClass.getName().toString())) {
+                    toRegister.add(new ConfigMappingBuildItem(configClass.getConfigClass(), configClass.getPrefix()));
+                }
             }
         }
 

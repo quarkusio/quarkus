@@ -207,7 +207,7 @@ public class CliProjectGradleTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path buildGradle = project.resolve("build.gradle");
-        String buildGradleContent = CliDriver.readFileAsString(project, buildGradle);
+        String buildGradleContent = CliDriver.readFileAsString(buildGradle);
         Assertions.assertFalse(buildGradleContent.contains("quarkus-qute"),
                 "Dependencies should not contain qute extension by default. Found:\n" + buildGradleContent);
 
@@ -379,7 +379,7 @@ public class CliProjectGradleTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path buildGradle = project.resolve("build.gradle");
-        String buildGradleContent = CliDriver.readFileAsString(project, buildGradle);
+        String buildGradleContent = CliDriver.readFileAsString(buildGradle);
         Assertions.assertTrue(buildGradleContent.contains("sourceCompatibility = JavaVersion.VERSION_11"),
                 "Java 11 should be used when specified. Found:\n" + buildGradle);
     }
@@ -394,7 +394,7 @@ public class CliProjectGradleTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path buildGradle = project.resolve("build.gradle");
-        String buildGradleContent = CliDriver.readFileAsString(project, buildGradle);
+        String buildGradleContent = CliDriver.readFileAsString(buildGradle);
 
         Assertions.assertTrue(buildGradleContent.contains("sourceCompatibility = JavaVersion.VERSION_17"),
                 "Java 17 should be used when specified. Found:\n" + buildGradleContent);
@@ -405,7 +405,7 @@ public class CliProjectGradleTest {
         Assertions.assertTrue(buildGradle.toFile().exists(),
                 "build.gradle should exist: " + buildGradle.toAbsolutePath().toString());
 
-        String buildContent = CliDriver.readFileAsString(project, buildGradle);
+        String buildContent = CliDriver.readFileAsString(buildGradle);
         Assertions.assertTrue(buildContent.contains("group '" + group + "'"),
                 "build.gradle should include the group id:\n" + buildContent);
         Assertions.assertTrue(buildContent.contains("version '" + version + "'"),
@@ -414,7 +414,7 @@ public class CliProjectGradleTest {
         Path settings = project.resolve("settings.gradle");
         Assertions.assertTrue(settings.toFile().exists(),
                 "settings.gradle should exist: " + settings.toAbsolutePath().toString());
-        String settingsContent = CliDriver.readFileAsString(project, settings);
+        String settingsContent = CliDriver.readFileAsString(settings);
         Assertions.assertTrue(settingsContent.contains(artifact),
                 "settings.gradle should include the artifact id:\n" + settingsContent);
 
@@ -426,7 +426,7 @@ public class CliProjectGradleTest {
         Assertions.assertTrue(buildGradle.toFile().exists(),
                 "build.gradle.kts should exist: " + buildGradle.toAbsolutePath().toString());
 
-        String buildContent = CliDriver.readFileAsString(project, buildGradle);
+        String buildContent = CliDriver.readFileAsString(buildGradle);
         Assertions.assertTrue(buildContent.contains("group = \"" + group + "\""),
                 "build.gradle.kts should include the group id:\n" + buildContent);
         Assertions.assertTrue(buildContent.contains("version = \"" + version + "\""),
@@ -435,7 +435,7 @@ public class CliProjectGradleTest {
         Path settings = project.resolve("settings.gradle.kts");
         Assertions.assertTrue(settings.toFile().exists(),
                 "settings.gradle.kts should exist: " + settings.toAbsolutePath().toString());
-        String settingsContent = CliDriver.readFileAsString(project, settings);
+        String settingsContent = CliDriver.readFileAsString(settings);
         Assertions.assertTrue(settingsContent.contains(artifact),
                 "settings.gradle.kts should include the artifact id:\n" + settingsContent);
 

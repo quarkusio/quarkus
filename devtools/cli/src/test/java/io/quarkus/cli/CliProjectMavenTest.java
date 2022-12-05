@@ -113,8 +113,7 @@ public class CliProjectMavenTest {
         Assertions.assertTrue(result.stdout.contains("WARN"),
                 "Expected a warning that the directory already exists. " + result);
 
-        String greetingResource = CliDriver.readFileAsString(project,
-                project.resolve("src/main/java/custom/pkg/GreetingResource.java"));
+        String greetingResource = CliDriver.readFileAsString(project.resolve("src/main/java/custom/pkg/GreetingResource.java"));
         Assertions.assertTrue(greetingResource.contains("return \"An awesome response\";"));
     }
 
@@ -124,7 +123,7 @@ public class CliProjectMavenTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
         Assertions.assertFalse(pomContent.contains("quarkus-qute"),
                 "Dependencies should not contain qute extension by default. Found:\n" + pomContent);
 
@@ -335,7 +334,7 @@ public class CliProjectMavenTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
 
         Assertions.assertTrue(pomContent.contains("maven.compiler.release>11<"),
                 "Java 11 should be used when specified. Found:\n" + pomContent);
@@ -351,7 +350,7 @@ public class CliProjectMavenTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
 
         Assertions.assertTrue(pomContent.contains("maven.compiler.release>17<"),
                 "Java 17 should be used when specified. Found:\n" + pomContent);
@@ -383,7 +382,7 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(pom.toFile().exists(),
                 "pom.xml should exist: " + pom.toAbsolutePath().toString());
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
         Assertions.assertTrue(pomContent.contains("<groupId>" + group + "</groupId>"),
                 "pom.xml should contain group id:\n" + pomContent);
         Assertions.assertTrue(pomContent.contains("<artifactId>" + artifact + "</artifactId>"),

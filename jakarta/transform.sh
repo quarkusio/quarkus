@@ -34,7 +34,7 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)
   rm -rf target/kotlin
-  git clone -b v1.7.21-jakarta --depth 1 https://github.com/gsmet/kotlin.git target/kotlin
+  git clone -b v1.7.22-jakarta --depth 1 https://github.com/gsmet/kotlin.git target/kotlin
   pushd target/kotlin/libraries/tools/kotlin-maven-plugin
   mvn -B clean install -DskipTests -DskipITs
   popd

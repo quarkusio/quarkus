@@ -447,6 +447,15 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
+    protected URL findResource(String name) {
+        return getResource(name);
+    }
+
+    @Override
+    protected Enumeration<URL> findResources(String name) throws IOException {
+        return getResources(name);
+    }
+
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         return loadClass(name, false);

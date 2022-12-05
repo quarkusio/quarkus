@@ -486,6 +486,12 @@ public class KnativeConfig implements PlatformConfiguration {
     @ConfigItem
     SecurityContextConfig securityContext;
 
+    /**
+     * If set to true, Quarkus will attempt to deploy the application to the target knative cluster
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean deploy;
+
     public Optional<String> getAppSecret() {
         return this.appSecret;
     }

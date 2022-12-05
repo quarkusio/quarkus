@@ -78,8 +78,8 @@ public class KubernetesDeployer {
             return;
         }
 
-        final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(
-                containerImageInfo, targets, activeContainerImageCapability.get(), containerImageConfig);
+        final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(containerImageInfo, targets,
+                activeContainerImageCapability.get(), containerImageConfig);
         selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
         if (MINIKUBE.equals(selectedTarget.getName()) || KIND.equals(selectedTarget.getName())) {
             preventImplicitContainerImagePush.produce(new PreventImplicitContainerImagePushBuildItem());

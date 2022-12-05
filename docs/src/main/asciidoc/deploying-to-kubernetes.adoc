@@ -1014,6 +1014,22 @@ OpenShift's users might want to use `oc` rather than `kubectl`:
 oc apply -f target/kubernetes/openshift.json
 ----
 
+For users that prefer to keep the `application.properties` independent of the deployment platform, the deployment target can be specified directly in the deploy command by adding `-Dquarkus.kubernetes.deployment-target=openshift`
+in addition to `-Dquarkus.kubernetes.deploy=true`. Furthermore, Quarkus allows collapsing the two properties into one: `-Dquarkus.openshift.deploy=true`.
+
+[source,bash]
+----
+./mvnw clean package -Dquarkus.openshift.deploy=true
+----
+
+The equivalent with gradle:
+
+[source,bash]
+----
+./gradlew build -Dquarkus.openshift.deploy=true
+----
+
+In case that both properties are used with conflicting values `quarkus.kubernetes.deployment-target` is used.
 
 NOTE: Quarkus also provides the xref:deploying-to-openshift.adoc[OpenShift] extension. This extension is basically a wrapper around the Kubernetes extension and
 relieves OpenShift users of the necessity of setting the `deployment-target` property to `openshift`
@@ -1097,6 +1113,23 @@ and deployed to a cluster (if `quarkus.kubernetes.deploy` has been set to `true`
 By default, when no `deployment-target` is set, then only vanilla Kubernetes resources are generated and deployed. When multiple values are set (for example
 `quarkus.kubernetes.deployment-target=kubernetes,openshift`) then the resources for all targets are generated, but only the resources
 that correspond to the *first* target are applied to the cluster (if deployment is enabled).
+
+For users that prefer to keep the `application.properties` independent of the deployment platform, the deployment target can be specified directly in the deploy command by adding `-Dquarkus.kubernetes.deployment-target=knative`
+in addition to `-Dquarkus.knative.deploy=true`. Furthermore, Quarkus allows collapsing the two properties into one: `-Dquarkus.knative.deploy=true`.
+
+[source,bash]
+----
+./mvnw clean package -Dquarkus.knative.deploy=true
+----
+
+The equivalent with gradle:
+
+[source,bash]
+----
+./gradlew build -Dquarkus.knative.deploy=true
+----
+
+In case that both properties are used with conflicting values `-Dquarkus.kubernetes.deployment-target` is used.
 
 In the case of wrapper extensions like OpenShift and Minikube, when these extensions have been explicitly added to the project, the default `deployment-target`
 is set by those extensions. For example if `quarkus-minikube` has been added to a project, then `minikube` becomes the default deployment target and its

@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -8,13 +9,28 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
+@SuppressWarnings({ "unchecked", "unused" })
 public class ExceptionMapping {
 
+    /**
+     * The idea behind having two different maps is the following:
+     * Under normal circumstances, mappers are added to the first map,
+     * and we don't need to track multiple mappings because the priority is enough
+     * to distinguish.
+     *
+     * However, in the case where ExceptionMapper classes may not be active at runtime
+     * (due to the presence of conditional bean annotations), then we need to track
+     * all the possible mappings and at runtime determine the one with the lowest priority
+     * value that is active.
+     */
     final Map<String, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
+    // this is going to be used when there are mappers that are removable at runtime
+    final Map<String, List<ResourceExceptionMapper<? extends Throwable>>> runtimeCheckMappers = new HashMap<>();
 
     /**
      * Exceptions that indicate an blocking operation was performed on an IO thread.
@@ -61,23 +77,95 @@ public class ExceptionMapping {
         ResourceExceptionMapper<? extends Throwable> existing = mappers.get(exceptionClass);
         if (existing != null) {
             if (existing.getPriority() < mapper.getPriority()) {
-                //already a higher priority mapper
+                // we already have a lower priority mapper registered
                 return;
+            } else {
+                mappers.remove(exceptionClass);
+                List<ResourceExceptionMapper<?>> list = new ArrayList<>(2);
+                list.add(mapper);
+                list.add(existing);
+                runtimeCheckMappers.put(exceptionClass, list);
+            }
+        } else {
+            var list = runtimeCheckMappers.get(exceptionClass);
+            if (list == null) {
+                if (mapper.getDiscardAtRuntime() == null) {
+                    mappers.put(exceptionClass, mapper);
+                } else {
+                    list = new ArrayList<>(1);
+                    list.add(mapper);
+                    runtimeCheckMappers.put(exceptionClass, list);
+                }
+            } else {
+                list.add(mapper);
+                Collections.sort(list);
             }
         }
-        mappers.put(exceptionClass, mapper);
     }
 
     public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {
-        for (Map.Entry<String, ResourceExceptionMapper<? extends Throwable>> entry : mappers.entrySet()) {
-            if (entry.getValue().getFactory() == null) {
-                entry.getValue().setFactory((BeanFactory) factoryCreator.apply(entry.getValue().getClassName()));
+        for (var resourceExceptionMapper : mappers.values()) {
+            if (resourceExceptionMapper.getFactory() == null) {
+                resourceExceptionMapper.setFactory((BeanFactory) factoryCreator.apply(resourceExceptionMapper.getClassName()));
+            }
+        }
+        for (var list : runtimeCheckMappers.values()) {
+            for (var resourceExceptionMapper : list) {
+                if (resourceExceptionMapper.getFactory() == null) {
+                    resourceExceptionMapper
+                            .setFactory((BeanFactory) factoryCreator.apply(resourceExceptionMapper.getClassName()));
+                }
             }
         }
     }
 
     public Map<String, ResourceExceptionMapper<? extends Throwable>> getMappers() {
         return mappers;
+    }
+
+    public Map<String, List<ResourceExceptionMapper<? extends Throwable>>> getRuntimeCheckMappers() {
+        return runtimeCheckMappers;
+    }
+
+    public Map<String, ResourceExceptionMapper<? extends Throwable>> effectiveMappers() {
+        if (runtimeCheckMappers.isEmpty()) {
+            return mappers;
+        }
+        Map<String, ResourceExceptionMapper<? extends Throwable>> result = new HashMap<>();
+        for (var entry : runtimeCheckMappers.entrySet()) {
+            String exceptionClass = entry.getKey();
+            var list = entry.getValue();
+            for (var resourceExceptionMapper : list) {
+                if (resourceExceptionMapper.getDiscardAtRuntime() == null) {
+                    result.put(exceptionClass, resourceExceptionMapper);
+                    break;
+                } else {
+                    if (!resourceExceptionMapper.getDiscardAtRuntime().get()) {
+                        result.put(exceptionClass, resourceExceptionMapper);
+                        break;
+                    }
+                }
+            }
+        }
+        result.putAll(mappers);
+        return result;
+    }
+
+    public void replaceDiscardAtRuntimeIfBeanIsUnavailable(Function<String, Supplier<Boolean>> function) {
+        if (runtimeCheckMappers.isEmpty()) {
+            return;
+        }
+        for (var list : runtimeCheckMappers.values()) {
+            for (var resourceExceptionMapper : list) {
+                if (resourceExceptionMapper
+                        .getDiscardAtRuntime() instanceof ResourceExceptionMapper.DiscardAtRuntimeIfBeanIsUnavailable) {
+                    var discardAtRuntimeIfBeanIsUnavailable = (ResourceExceptionMapper.DiscardAtRuntimeIfBeanIsUnavailable) resourceExceptionMapper
+                            .getDiscardAtRuntime();
+                    resourceExceptionMapper
+                            .setDiscardAtRuntime(function.apply(discardAtRuntimeIfBeanIsUnavailable.getBeanClass()));
+                }
+            }
+        }
     }
 
     public static class ExceptionTypePredicate implements Predicate<Throwable> {

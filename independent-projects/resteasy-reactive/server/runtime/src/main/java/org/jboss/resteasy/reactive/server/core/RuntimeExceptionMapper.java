@@ -45,7 +45,7 @@ public class RuntimeExceptionMapper {
     public RuntimeExceptionMapper(ExceptionMapping mapping, ClassLoader classLoader) {
         try {
             mappers = new HashMap<>();
-            for (var i : mapping.mappers.entrySet()) {
+            for (var i : mapping.effectiveMappers().entrySet()) {
                 mappers.put((Class<? extends Throwable>) Class.forName(i.getKey(), false, classLoader), i.getValue());
             }
             blockingProblemPredicates = new ArrayList<>(mapping.blockingProblemPredicates);

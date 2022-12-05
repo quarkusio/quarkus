@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.container.ResourceInfo;
@@ -240,7 +242,7 @@ public final class ServerExceptionMapperGenerator {
      * Returns a map containing the handled exception name as the key and the generated class name as the value
      */
     public static Map<String, String> generateGlobalMapper(MethodInfo targetMethod, ClassOutput classOutput,
-            Set<DotName> unwrappableTypes, Set<String> additionalBeanAnnotations) {
+            Set<DotName> unwrappableTypes, Set<String> additionalBeanAnnotations, Predicate<MethodInfo> isOptionalMapper) {
         ReturnType returnType = determineReturnType(targetMethod);
         checkModifiers(targetMethod);
 
@@ -264,14 +266,31 @@ public final class ServerExceptionMapperGenerator {
                         .setModifiers(Modifier.PRIVATE | Modifier.FINAL)
                         .getFieldDescriptor();
 
-                // generate a constructor that takes the target class as an argument - this class is a CDI bean so Arc will be able to inject into the generated class
-                MethodCreator ctor = cc.getMethodCreator("<init>", void.class, targetClass.name().toString());
+                MethodCreator ctor;
+
+                boolean isOptional = isOptionalMapper.test(targetMethod);
+                if (isOptional) {
+                    // generate a constructor that takes the Instance<TargetClass> as an argument in order to avoid missing bean issues if the target has been conditionally disabled
+                    // the body can freely read the instance value because if the target has been conditionally disabled, the generated class will not be instantiated
+                    ctor = cc.getMethodCreator("<init>", void.class, Instance.class).setSignature(
+                            String.format("(Ljavax/enterprise/inject/Instance<L%s;>;)V",
+                                    targetClass.name().toString().replace('.', '/')));
+                } else {
+                    // generate a constructor that takes the target class as an argument - this class is a CDI bean so Arc will be able to inject into the generated class
+                    ctor = cc.getMethodCreator("<init>", void.class, targetClass.name().toString());
+                }
+
                 ctor.setModifiers(Modifier.PUBLIC);
                 ctor.addAnnotation(Inject.class);
                 ctor.invokeSpecialMethod(ofConstructor(Object.class), ctor.getThis());
                 ResultHandle self = ctor.getThis();
-                ResultHandle config = ctor.getMethodParam(0);
-                ctor.writeInstanceField(delegateField, self, config);
+                ResultHandle param = ctor.getMethodParam(0);
+                if (isOptional) {
+                    ctor.writeInstanceField(delegateField, self, ctor
+                            .invokeInterfaceMethod(MethodDescriptor.ofMethod(Instance.class, "get", Object.class), param));
+                } else {
+                    ctor.writeInstanceField(delegateField, self, param);
+                }
                 ctor.returnValue(null);
 
                 if (returnType == ReturnType.RESPONSE || returnType == ReturnType.REST_RESPONSE) {

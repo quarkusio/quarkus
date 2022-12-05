@@ -333,6 +333,20 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
     }
 
+    public Supplier<Boolean> beanUnavailable(String className) {
+        return new Supplier<>() {
+            @Override
+            public Boolean get() {
+                try {
+                    return !Arc.container().select(Class.forName(className, false, Thread.currentThread()
+                            .getContextClassLoader())).isResolvable();
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException("Unable to determine if bean '" + className + "' is available", e);
+                }
+            }
+        };
+    }
+
     private static final class FailingDefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
 
         @Override

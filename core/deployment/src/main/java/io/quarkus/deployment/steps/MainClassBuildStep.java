@@ -80,6 +80,7 @@ import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.appcds.AppCDSUtil;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.naming.DisabledInitialContextManager;
 import io.quarkus.runtime.util.StepTiming;
@@ -248,8 +249,8 @@ public class MainClassBuildStep {
                 startupContext, mv.getMethodParam(0));
 
         mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
-        ResultHandle activeProfile = mv
-                .invokeStaticMethod(ofMethod(ProfileManager.class, "getActiveProfile", String.class));
+        ResultHandle profiles = mv
+                .invokeStaticMethod(ofMethod(ConfigUtils.class, "getProfiles", List.class));
 
         tryBlock = mv.tryBlock();
         tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);
@@ -271,12 +272,12 @@ public class MainClassBuildStep {
         ResultHandle featuresHandle = tryBlock.load(featureNames.stream().sorted().collect(Collectors.joining(", ")));
         tryBlock.invokeStaticMethod(
                 ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class, String.class,
-                        String.class, boolean.class, boolean.class),
+                        List.class, boolean.class, boolean.class),
                 tryBlock.load(applicationInfo.getName()),
                 tryBlock.load(applicationInfo.getVersion()),
                 tryBlock.load(Version.getVersion()),
                 featuresHandle,
-                activeProfile,
+                profiles,
                 tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())),
                 tryBlock.load(launchMode.isAuxiliaryApplication()));
 

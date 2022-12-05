@@ -172,7 +172,7 @@ public class CliCreateExtensionTest {
         Assertions.assertTrue(pom.toFile().exists(),
                 "pom.xml should exist: " + pom.toAbsolutePath().toString());
 
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
         Assertions.assertTrue(pomContent.contains("<groupId>" + group + "</groupId>"),
                 pom + " should contain group id " + group + ":\n" + pomContent);
         Assertions.assertTrue(pomContent.contains("<artifactId>" + artifact + "</artifactId>"),

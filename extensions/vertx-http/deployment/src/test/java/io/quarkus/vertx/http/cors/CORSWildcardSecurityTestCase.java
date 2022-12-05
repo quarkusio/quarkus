@@ -22,6 +22,7 @@ public class CORSWildcardSecurityTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.cors=true\n" +
+            "quarkus.http.cors.origins=*\n" +
             "quarkus.http.auth.basic=true\n" +
             "quarkus.http.auth.policy.r1.roles-allowed=test\n" +
             "quarkus.http.auth.permission.roles1.paths=/test\n" +

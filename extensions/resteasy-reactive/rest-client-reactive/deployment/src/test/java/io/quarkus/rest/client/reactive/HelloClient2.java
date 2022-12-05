@@ -4,7 +4,6 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -24,10 +23,4 @@ public interface HelloClient2 {
     @GET
     @Path("delay")
     Uni<String> delay();
-
-    @POST
-    @Path("/imageInfo")
-    @Consumes("image/gif")
-    @Produces(MediaType.TEXT_PLAIN)
-    String imageInfo(byte[] imageFile);
 }

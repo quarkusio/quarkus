@@ -329,9 +329,16 @@ public class HibernateOrmConfigPersistenceUnit {
         @ConfigItem(defaultValue = "none")
         public NullOrdering defaultNullOrdering;
 
+        /**
+         * Enables IN clause parameter padding which improves statement caching.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean inClauseParameterPadding;
+
         public boolean isAnyPropertySet() {
             return queryPlanCacheMaxSize != DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE
-                    || defaultNullOrdering != NullOrdering.NONE;
+                    || defaultNullOrdering != NullOrdering.NONE
+                    || !inClauseParameterPadding;
         }
     }
 

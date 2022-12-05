@@ -306,6 +306,9 @@ public final class HibernateReactiveProcessor {
         desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
                 persistenceUnitConfig.query.defaultNullOrdering.name().toLowerCase());
 
+        desc.getProperties().setProperty(AvailableSettings.IN_CLAUSE_PARAMETER_PADDING,
+                String.valueOf(persistenceUnitConfig.query.inClauseParameterPadding));
+
         // JDBC
         persistenceUnitConfig.jdbc.statementBatchSize.ifPresent(
                 statementBatchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,

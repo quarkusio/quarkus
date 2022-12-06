@@ -72,7 +72,7 @@ public class LiquibaseMongodbRecorder {
                 LiquibaseMongodbFactory liquibaseFactory = liquibaseFactoryHandle.get();
                 var config = liquibaseFactory.getConfiguration();
                 if (config.runAndExit) {
-                    throw new PreventFurtherStepsException(0);
+                    throw new PreventFurtherStepsException("Gracefully exiting after Liquibase Mongodb initalization.", 0);
                 }
             }
 

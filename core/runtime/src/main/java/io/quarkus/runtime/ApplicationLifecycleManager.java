@@ -28,6 +28,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.graal.DiagnosticPrinter;
 import io.quarkus.runtime.util.ExceptionUtil;
+import io.quarkus.runtime.util.StringUtil;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
@@ -186,6 +187,9 @@ public class ApplicationLifecycleManager {
                         applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                     }
                 } else if (rootCause instanceof ConfigurationException) {
+                    System.err.println(rootCause.getMessage());
+                } else if (rootCause instanceof PreventFurtherStepsException
+                        && !StringUtil.isNullOrEmpty(rootCause.getMessage())) {
                     System.err.println(rootCause.getMessage());
                 } else {
                     // If it is not a ConfigurationException it should be safe to call ConfigProvider.getConfig here

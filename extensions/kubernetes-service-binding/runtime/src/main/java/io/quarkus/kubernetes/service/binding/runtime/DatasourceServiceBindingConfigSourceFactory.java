@@ -63,7 +63,7 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
             }
             properties.put(urlPropertyName, formatUrl(urlFormat, serviceBinding.getType(), host, database, portPart));
         } else {
-            log.debugf("One or more of 'host' or 'database' properties were not found for datasource of type %s",
+            log.warnf("One or more of 'host' or 'database' properties were not found for datasource of type %s",
                     serviceBinding.getType());
         }
 

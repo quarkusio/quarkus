@@ -96,7 +96,7 @@ public class FlywayRecorder {
 
         for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {
             if (flywayContainer.isRunAndExit()) {
-                throw new PreventFurtherStepsException(0);
+                throw new PreventFurtherStepsException("Gracefully exiting after Flyway initalization.", 0);
             }
         }
     }

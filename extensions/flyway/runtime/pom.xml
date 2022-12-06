@@ -39,6 +39,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web</artifactId>
             <optional>true</optional>

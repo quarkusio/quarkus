@@ -6,12 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.inject.Inject;
+import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
@@ -34,6 +38,30 @@ class FlywayCreatorTest {
      * class under test.
      */
     private FlywayCreator creator;
+
+    @Inject
+    DataSource dataSource;
+
+    @Test
+    @DisplayName("Test Different user config")
+    void testDifferentUserConfig() throws SQLException {
+        FlywayDataSourceRuntimeConfig runtimeConfig = FlywayDataSourceRuntimeConfig.defaultConfig();
+        FlywayDataSourceBuildTimeConfig buildConfig = FlywayDataSourceBuildTimeConfig.defaultConfig();
+        runtimeConfig.username = runtimeConfig.username.of("sa");
+        runtimeConfig.password = runtimeConfig.password.of("sa");
+        runtimeConfig.jdbcUrl = runtimeConfig.jdbcUrl.of("jdbc:h2:~/test");
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        Flyway flyway = creator.createFlyway(dataSource);
+        boolean error = false;
+        try {
+            flyway.validate();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            error = true;
+        }
+
+        assertEquals(false, error, "Database connection with different user failed! ");
+    }
 
     @Test
     @DisplayName("locations default matches flyway default")

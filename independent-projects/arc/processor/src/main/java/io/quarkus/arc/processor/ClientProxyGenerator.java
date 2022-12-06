@@ -205,7 +205,12 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 // Always use invokevirtual and the original descriptor for java.lang.Object#toString()
                 ret = forward.invokeVirtualMethod(originalMethodDescriptor, delegate, params);
             } else if (isInterface) {
-                ret = forward.invokeInterfaceMethod(method, delegate, params);
+                // make sure we invoke the method upon the provider type, i.e. don't use the original method descriptor
+                MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerType.className(),
+                        originalMethodDescriptor.getName(),
+                        originalMethodDescriptor.getReturnType(),
+                        originalMethodDescriptor.getParameterTypes());
+                ret = forward.invokeInterfaceMethod(virtualMethod, delegate, params);
             } else if (isReflectionFallbackNeeded(method, targetPackage)) {
                 // Reflection fallback
                 ResultHandle paramTypesArray = forward.newArray(Class.class, forward.load(method.parametersCount()));

@@ -41,7 +41,7 @@
         <maven.compiler.release>11</maven.compiler.release>
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
-        <jandex.version>3.0.4</jandex.version>
+        <jandex.version>3.0.5</jandex.version>
         <bytebuddy.version>1.12.12</bytebuddy.version>
         <junit5.version>5.9.1</junit5.version>
         <maven.version>3.8.6</maven.version>

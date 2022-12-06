@@ -20,7 +20,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 
 import org.jboss.logging.Logger;
@@ -244,11 +243,6 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         }
                     }
 
-                    if (Response.Status.Family.familyOf(status) != Response.Status.Family.SUCCESSFUL) {
-                        httpClientRequest.connection().close();
-                        requestContext.resume();
-                    }
-
                     if (isResponseMultipart(requestContext)) {
                         QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
                                 clientResponse);
@@ -372,16 +366,17 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     requestContext.resume(t);
                 }
             }
-        }).onFailure(new Handler<>() {
-            @Override
-            public void handle(Throwable failure) {
-                if (failure instanceof IOException) {
-                    requestContext.resume(new ProcessingException(failure));
-                } else {
-                    requestContext.resume(failure);
-                }
-            }
-        });
+        })
+                .onFailure(new Handler<>() {
+                    @Override
+                    public void handle(Throwable failure) {
+                        if (failure instanceof IOException) {
+                            requestContext.resume(new ProcessingException(failure));
+                        } else {
+                            requestContext.resume(failure);
+                        }
+                    }
+                });
     }
 
     private boolean isResponseMultipart(RestClientRequestContext requestContext) {

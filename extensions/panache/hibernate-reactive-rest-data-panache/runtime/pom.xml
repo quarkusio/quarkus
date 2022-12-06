@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-hibernate-reactive-rest-data-panache</artifactId>
     <name>Quarkus - Hibernate Reactive REST data with Panache - Runtime</name>
-    <description>Generate JAX-RS resources for your Hibernate Panache entities and repositories</description>
+    <description>Generate JAX-RS resources for your Hibernate Reactive Panache entities and repositories</description>
 
     <dependencies>
         <dependency>

@@ -197,7 +197,6 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyReactiveProcessor {
@@ -1070,6 +1069,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<ResteasyReactiveDeploymentBuildItem> quarkusRestDeploymentBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RouteBuildItem> routes,
+            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             ApplicationResultBuildItem applicationResultBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             ExceptionMappersBuildItem exceptionMappersBuildItem,
@@ -1202,11 +1202,12 @@ public class ResteasyReactiveProcessor {
         if (!requestContextFactoryBuildItem.isPresent()) {
             RuntimeValue<RestInitialHandler> restInitialHandler = recorder.restInitialHandler(deployment);
             Handler<RoutingContext> handler = recorder.handler(restInitialHandler);
-            Consumer<Route> addFailureHandler = recorder.addFailureHandler(restInitialHandler);
+            Handler<RoutingContext> failureHandler = recorder.failureHandler(restInitialHandler);
+            filterBuildItemBuildProducer.produce(new FilterBuildItem(failureHandler, order, true));
 
             // Exact match for resources matched to the root path
             routes.produce(RouteBuildItem.builder()
-                    .orderedRoute(deploymentPath, order, addFailureHandler).handler(handler).build());
+                    .orderedRoute(deploymentPath, order).handler(handler).build());
             String matchPath = deploymentPath;
             if (matchPath.endsWith("/")) {
                 matchPath += "*";
@@ -1215,7 +1216,7 @@ public class ResteasyReactiveProcessor {
             }
             // Match paths that begin with the deployment path
             routes.produce(
-                    RouteBuildItem.builder().orderedRoute(matchPath, order, addFailureHandler)
+                    RouteBuildItem.builder().orderedRoute(matchPath, order)
                             .handler(handler).build());
         }
     }

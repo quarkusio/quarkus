@@ -8,6 +8,7 @@ source: Quarkus contributor guide
 action:
   name: replace
 swap:
+  assertj|Assertj: AssertJ
   asciidoc|Asciidoc: AsciiDoc
   asciidoctor|AsciiDoctor: Asciidoctor
   '[nN]odejs|[nN]ode\.JS|node\.js': Node.js
@@ -65,10 +66,12 @@ swap:
   iso: ISO
   Itanium2: Itanium 2
   JBoss.org: JBoss Community
+  jetbrains|Jetbrains: JetBrains
   Junit|junit: JUnit
   Jvm|jvm: JVM
   kernel-based virtual machine: Kernel-based Virtual Machine
   kickstart: Kickstart
+  knowledgebase: Knowledgebase
   kvm: KVM
   Lan|lan: LAN
   LINUX|linux: Linux
@@ -91,6 +94,7 @@ swap:
   popup|Pop-up: pop-up
   Posix|posix: POSIX
   Postscript: PostScript
+  Powershell|powershell: PowerShell
   PPC|P-PC|PPC64: PowerPC
   Ppp|ppp: PPP
   prom|Prom: PROM
@@ -152,6 +156,7 @@ swap:
   wca: WCA
   web-UI|webUI: web UI
   Webauthn|webAuthn|WebAuthN: WebAuthn
+  websocket|Websocket: WebSocket
   Window-Maker|WindowMaker: Window Maker
   Xemacs: XEmacs
   Xterm: xterm

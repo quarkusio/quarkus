@@ -4,15 +4,18 @@ level: warning
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/spelling/
 message: "Use correct American English spelling. Did you really mean '%s'?"
 source: Quarkus contributor guide
+
 # A "filter" is a case-sensitive regular expression specifying words to ignore during spell checking.
 # Spelling rule applies to individual words
 filters:
   - '\.NET'
   - 'I/O'
   - 'Node\.js'
+  - "[aA]ccessor"
   - "[aA]llowlist"
   - "[aA]utostart"
   - "[bB]ackfilling"
+  - "[bB]ackported"
   - "[bB]acktrace"
   - "[bB]crypt"
   - "[bB]indable"
@@ -24,6 +27,9 @@ filters:
   - "[cC]lasspath"
   - "[cC]olocate"
   - "[cC]onfig"
+  - "[dD]eclaratively"
+  - "[dD]ecompiler"
+  - "[dD]eserialization"
   - "[dD]ev[wW]orkspace"
   - "[dD]evfile"
   - "[dD]evfiles"
@@ -38,14 +44,17 @@ filters:
   - "[gG]bps"
   - "[gG]it"
   - "[gG]rafana"
+  - "[hH]ardcoding"
   - "[hH]eatmap"
   - "[hH]ostname"
   - "[hH]yperconverged"
   - "[iI]node"
   - "[iI]tem"
+  - "[jJ]et[bB]rains"
   - "[jJ]ournald"
   - "[jJ]ournaling"
   - "[kK]eycloak"
+  - "[kK]eylime"
   - "[kK]eyring"
   - "[kK]eyrings"
   - "[lL]ibvirt"
@@ -54,6 +63,7 @@ filters:
   - "[lL]oopback"
   - "[mM]atrixes"
   - "[mM]ebibytes"
+  - "[mM]iddleware"
   - "[mM]illicores"
   - "[mM]ixin"
   - "[mM]ixins"
@@ -69,9 +79,13 @@ filters:
   - "[nN]amespaces"
   - "[oO]nboarding"
   - "[oO]perator"
+  - "[oO]verridable"
   - "[pP]reconfigured"
   - "[pP]regenerated"
   - "[pP]ulldown"
+  - "[pP]reconfigured"
+  - "[pP]repend"
+  - "[pP]repended"
   - "[pP]roductize"
   - "[pP]roductized"
   - "[rR]eadonly"
@@ -98,7 +112,10 @@ filters:
   - "[sS]crollbar"
   - "[sS]earchability"
   - "[sS]erializer"
+  - "[sS]erialization"
+  - "[sS]erializable"
   - "[sS]erverless"
+  - "[sS]ervlet"
   - "[sS]harding"
   - "[Ss]u"
   - "[sS]ubcommand"
@@ -120,6 +137,7 @@ filters:
   - "[sS]ubvolume"
   - "[sS]ubvolumes"
   - "[sS]ystemd"
+  - "[tT]emplated"
   - "[tT]heia"
   - "[tT]olerations"
   - "[tT]raceback"
@@ -134,18 +152,23 @@ filters:
   - "[uU]ntrusted"
   - "[uU]psell"
   - "[uU]pselling"
+  - "[vV]alidator"
   - "Let\'s Encrypt"
   - adoc
+  - Agroal
   - Annobin
   - Ansible
   - Antora
   - API
+  - AssertJ
   - aws
   - AWS
   - Azure
   - Bierner
   - Bitbucket
+  - BOM
   - Bonjour
+  - Bouncy Castle
   - btn
   - Btrfs
   - Bugzilla
@@ -191,7 +214,10 @@ filters:
   - Esprima
   - Exif
   - Fabrice
+  - Failsafe
+  - Fernflower
   - Fortran
+  - Funqy
   - GCC
   - GitHub
   - GitLab
@@ -199,6 +225,7 @@ filters:
   - Gradle
   - Grayscale
   - GraalVM
+  - GraphQL
   - GUI
   - Hashicorp
   - Helgrind
@@ -216,10 +243,10 @@ filters:
   - IntelliJ
   - Itanium
   - Jakarta
+  - Jandex
   - Java
   - Jave
   - JBoss
-  - Jetbrains
   - Jira
   - Jolokia
   - Joyent
@@ -230,7 +257,7 @@ filters:
   - kbd
   - Kibana
   - Knative
-  - knowledgebase
+  - Knowledgebase
   - Kogito
   - Kompose
   - Kubespray
@@ -240,10 +267,8 @@ filters:
   - Makefile
   - Mattermost
   - Maven
-  - Maven Failsafe
   - MicroProfile
   - Microsoft
-  - Middleware
   - Minikube
   - Minishift
   - Mirantis
@@ -251,6 +276,7 @@ filters:
   - MongoDB
   - MySQL
   - Nagios
+  - Narayana
   - Neoverse
   - NetcoredebugOutput
   - Netty
@@ -269,27 +295,31 @@ filters:
   - PHP
   - Podman
   - PostgreSQL
-  - preconfigured
-  - prepended
+  - PowerShell
   - Prometheus
   - proxied
   - Pytorch
   - qeth
   - Quarkiverse
   - Quarkus
+  - Qute
+  - Quiltflower
   - Redistributions
   - Restic
   - RESTEasy
   - Rolfe
   - Sakila
+  - sbt
   - SCM
   - SELinux
   - Semeru
   - SLAs
   - Shadowman
   - SmallRye
+  - Spotify
   - startx
   - Suchow
+  - Symfony
   - SVG
   - Tekton
   - Telekom
@@ -311,6 +341,7 @@ filters:
   - WebAuthn
   - Webview
   - Webviews
+  - WebSocket
   - Wildfly
   - Woopra
   - Wordpress

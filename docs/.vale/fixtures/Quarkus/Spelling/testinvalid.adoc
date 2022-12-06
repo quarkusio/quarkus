@@ -1,8 +1,6 @@
 ansible
 antora
 api
-Asciidoc
-asciidoc
 bitbucket
 btrfs
 centos
@@ -16,6 +14,7 @@ dns
 dotnet
 endevor
 gluster
+gradle
 Graal VM
 graal vm
 gui
@@ -33,8 +32,9 @@ kubespray
 lombok
 mattermost
 microsoft azure
+mokitto
+mokito
 minikube
-Mongo DB
 Mysql
 mysql
 Netcoredebugoutput
@@ -50,8 +50,10 @@ postgres
 podman
 quarkus
 restic
+Sbt
 scm
 svg
+symfony
 uber
 uri
 velero

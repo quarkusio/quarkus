@@ -1,3 +1,9 @@
+assertj
+Assertj
+Asciidoc
+asciidoc
+AsciiDoctor
+asciidoctor
 Bios
 btrfs
 burner
@@ -10,6 +16,8 @@ Cds
 CDS
 CGroup
 classic mode
+configmap
+configuration map
 control key
 csv
 ctrl
@@ -56,7 +64,6 @@ gpl
 Gpl
 Graalvm
 graalVM
-gradle
 Grub
 gtk
 Gtk
@@ -68,6 +75,7 @@ HyperVisor
 ia64
 IA64
 IBM z Systems
+ignition config
 Infiniband
 Intel Tolapai
 Iops
@@ -79,11 +87,14 @@ iso
 iso image
 Itanium2
 JBoss.org
+jetbrains
+Jetbrains
 Junit
 junit
 jvm
 Jvm
 kernel-based virtual machine
+knowledgebase
 kickstart
 kvm
 lan
@@ -94,6 +105,7 @@ Microprofile
 micro-profile
 MicroSoft
 mongoDB
+Mongo DB
 Mongodb
 Mongo-db
 MS
@@ -135,13 +147,15 @@ popup
 posix
 Posix
 Postscript
+Powershell
+powershell
 PPC
 PPC64
 ppp
 Ppp
 prom
 Prom
-prometheus
+proof key for code exchange
 pSeries
 q & a
 Q & A
@@ -159,7 +173,10 @@ RAMdisk
 RAW
 Red Boot
 Red Hat Proxy
-Red Hat Satellite
+Red Hat satellite
+Red Hat Satellite server
+Red Hat Satellite Capsule server
+Red Hat Network Satellite server
 Redboot
 resteasy
 Resteasy
@@ -235,6 +252,8 @@ wca
 Webauthn
 webAuthn
 WebAuthN
+Websocket
+websocket
 web-UI
 webUI
 Window-Maker

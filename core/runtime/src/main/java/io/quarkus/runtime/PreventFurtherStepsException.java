@@ -17,7 +17,11 @@ public final class PreventFurtherStepsException extends RuntimeException {
     }
 
     public PreventFurtherStepsException(int exitCode) {
-        super();
+        this(null, exitCode);
+    }
+
+    public PreventFurtherStepsException(String message, int exitCode) {
+        super(message);
         this.exitCode = exitCode;
     }
 

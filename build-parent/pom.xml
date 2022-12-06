@@ -23,7 +23,7 @@
         <kotlin.version>1.7.22</kotlin.version>
         <dokka.version>1.7.20</dokka.version>
         <scala.version>2.13.8</scala.version>
-        <scala-maven-plugin.version>4.7.2</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.8.0</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 

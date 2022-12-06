@@ -8,6 +8,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
@@ -26,11 +27,13 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
 
     private final boolean alsoSetInputStream;
     private final Supplier<Executor> executorSupplier;
+    private final Set<String> fileFormNames;
     private volatile FormParserFactory formParserFactory;
 
-    public FormBodyHandler(boolean alsoSetInputStream, Supplier<Executor> executorSupplier) {
+    public FormBodyHandler(boolean alsoSetInputStream, Supplier<Executor> executorSupplier, Set<String> fileFormNames) {
         this.alsoSetInputStream = alsoSetInputStream;
         this.executorSupplier = executorSupplier;
+        this.fileFormNames = fileFormNames;
     }
 
     @Override
@@ -79,7 +82,7 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
         if (BlockingOperationSupport.isBlockingAllowed()) {
             //blocking IO approach
 
-            FormDataParser factory = formParserFactory.createParser(requestContext);
+            FormDataParser factory = formParserFactory.createParser(requestContext, fileFormNames);
             if (factory == null) {
                 return;
             }
@@ -96,7 +99,7 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                 requestContext.setInputStream(new ByteArrayInputStream(cis.baos.toByteArray()));
             }
         } else if (alsoSetInputStream) {
-            FormDataParser factory = formParserFactory.createParser(requestContext);
+            FormDataParser factory = formParserFactory.createParser(requestContext, fileFormNames);
             if (factory == null) {
                 return;
             }
@@ -116,7 +119,7 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                 }
             });
         } else {
-            FormDataParser factory = formParserFactory.createParser(requestContext);
+            FormDataParser factory = formParserFactory.createParser(requestContext, fileFormNames);
             if (factory == null) {
                 return;
             }

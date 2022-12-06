@@ -283,9 +283,9 @@ public final class MultipartSupport {
 
     public static List<DefaultFileUpload> getFileUploads(String formName, ResteasyReactiveRequestContext context) {
         List<DefaultFileUpload> result = new ArrayList<>();
-        FormData fileUploads = context.getFormData();
-        if (fileUploads != null) {
-            Collection<FormValue> fileUploadsForName = fileUploads.get(formName);
+        FormData formData = context.getFormData();
+        if (formData != null) {
+            Collection<FormValue> fileUploadsForName = formData.get(formName);
             if (fileUploadsForName != null) {
                 for (FormData.FormValue fileUpload : fileUploadsForName) {
                     if (fileUpload.isFileItem()) {

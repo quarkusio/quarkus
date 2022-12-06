@@ -3,8 +3,8 @@ package io.quarkus.smallrye.graphql.deployment;
 import static io.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.containsString;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Size;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;

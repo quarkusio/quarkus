@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.Providers;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;

@@ -1,6 +1,6 @@
 package io.quarkus.it.hibernate.validator;
 
-import javax.validation.constraints.Digits;
+import jakarta.validation.constraints.Digits;
 
 public interface HibernateValidatorTestResourceGenericInterface<T extends Number> {
 

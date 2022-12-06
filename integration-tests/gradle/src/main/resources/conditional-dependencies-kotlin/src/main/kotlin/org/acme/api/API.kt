@@ -1,10 +1,10 @@
 package org.acme.api
 
 import javax.validation.Valid
-import javax.ws.rs.*
-import javax.ws.rs.core.Context
-import javax.ws.rs.core.Response
-import javax.ws.rs.core.UriInfo
+import jakarta.ws.rs.*
+import jakarta.ws.rs.core.Context
+import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.core.UriInfo
 
 @Path(value = "/admin/api/v1.0")
 @Produces(value = ["application/json"])

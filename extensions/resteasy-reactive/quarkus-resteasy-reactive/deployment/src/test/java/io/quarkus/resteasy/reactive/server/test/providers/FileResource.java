@@ -3,8 +3,8 @@ package io.quarkus.resteasy.reactive.server.test.providers;
 import java.io.File;
 import java.nio.file.Paths;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;

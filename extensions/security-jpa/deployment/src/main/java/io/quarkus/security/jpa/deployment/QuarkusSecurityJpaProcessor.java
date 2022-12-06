@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import javax.inject.Singleton;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
+import jakarta.inject.Singleton;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 
 import org.hibernate.Session;
 import org.hibernate.SimpleNaturalIdLoadAccess;

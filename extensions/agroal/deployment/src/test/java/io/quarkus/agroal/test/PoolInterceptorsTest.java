@@ -3,8 +3,8 @@ package io.quarkus.agroal.test;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.Assertions;

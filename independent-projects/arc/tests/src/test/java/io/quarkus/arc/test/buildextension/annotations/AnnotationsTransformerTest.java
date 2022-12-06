@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.AbstractList;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Vetoed;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Vetoed;
+import jakarta.inject.Inject;
 
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;

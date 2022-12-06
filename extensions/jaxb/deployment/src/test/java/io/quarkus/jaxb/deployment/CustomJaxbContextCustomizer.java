@@ -1,8 +1,8 @@
 package io.quarkus.jaxb.deployment;
 
-import javax.inject.Singleton;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.PropertyException;
+import jakarta.inject.Singleton;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.PropertyException;
 
 import io.quarkus.jaxb.runtime.JaxbContextCustomizer;
 

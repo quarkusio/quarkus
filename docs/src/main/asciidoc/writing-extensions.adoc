@@ -1983,8 +1983,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.HealthCheck;
@@ -2375,7 +2375,7 @@ The CDI layer processes CDI beans that are either explicitly registered or that 
 .Register a Bean Defining Annotation
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.jandex.DotName;
 import io.quarkus.extest.runtime.TestAnnotation;
 
@@ -2688,13 +2688,13 @@ public final class MyExtProcessor {
         resource.produce(new NativeImageResourceBuildItem(
                 "META-INF/my-descriptor.xml")); //<2>
 
-        resourceBundle.produce(new NativeImageResourceBuildItem("javax.xml.bind.Messages")); //<3>
+        resourceBundle.produce(new NativeImageResourceBuildItem("jakarta.xml.bind.Messages")); //<3>
     }
 }
 ----
 <1> Indicate that the /security/runtime.keys classpath resource should be copied into native image.
 <2> Indicate that the `META-INF/my-descriptor.xml` resource should be copied into native image
-<3> Indicate that the "javax.xml.bind.Messages" resource bundle should be copied into native image.
+<3> Indicate that the "jakarta.xml.bind.Messages" resource bundle should be copied into native image.
 
 ==== Service files
 

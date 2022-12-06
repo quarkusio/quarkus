@@ -76,8 +76,8 @@ Create the `org.acme.validation.Book` class with the following content:
 ----
 package org.acme.validation;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 
 public class Book {
 
@@ -103,10 +103,10 @@ Create the following REST resource as `org.acme.validation.BookResource`:
 ----
 package org.acme.validation;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/books")
 public class BookResource {
@@ -207,8 +207,8 @@ The best option is then to annotate a method of your business service with your 
 ----
 package org.acme.validation;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.validation.Valid;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.validation.Valid;
 
 @ApplicationScoped
 public class BookService {
@@ -287,12 +287,12 @@ you can very easily tweak it by declaring replacement beans that will be injecte
 
 If you create a bean of the following types in your application, it will automatically be injected into the `ValidatorFactory` configuration:
 
- * `javax.validation.ClockProvider`
- * `javax.validation.ConstraintValidator`
- * `javax.validation.ConstraintValidatorFactory`
- * `javax.validation.MessageInterpolator`
- * `javax.validation.ParameterNameProvider`
- * `javax.validation.TraversableResolver`
+ * `jakarta.validation.ClockProvider`
+ * `jakarta.validation.ConstraintValidator`
+ * `jakarta.validation.ConstraintValidatorFactory`
+ * `jakarta.validation.MessageInterpolator`
+ * `jakarta.validation.ParameterNameProvider`
+ * `jakarta.validation.TraversableResolver`
  * `org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy`
  * `org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider`
  * `org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory`
@@ -335,7 +335,7 @@ public class MyEmailValidatorFactoryCustomizer implements ValidatorFactoryCustom
 ----
 
 All beans implementing `ValidatorFactoryCustomizer` are applied, meaning you can have several of them.
-If you need to enforce some ordering, you can use the usual `@javax.annotation.Priority` annotation - beans with higher priority are applied first.
+If you need to enforce some ordering, you can use the usual `@jakarta.annotation.Priority` annotation - beans with higher priority are applied first.
 
 ==== Constraint validators as beans
 

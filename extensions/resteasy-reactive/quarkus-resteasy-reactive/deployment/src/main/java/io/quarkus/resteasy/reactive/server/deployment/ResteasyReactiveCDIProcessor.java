@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.ws.rs.BeanParam;
+import jakarta.ws.rs.BeanParam;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

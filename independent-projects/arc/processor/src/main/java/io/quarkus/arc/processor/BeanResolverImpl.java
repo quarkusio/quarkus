@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.AmbiguousResolutionException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassType;

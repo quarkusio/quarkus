@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.validator.runtime;
 
-import javax.validation.Validation;
-import javax.validation.ValidatorFactory;
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;

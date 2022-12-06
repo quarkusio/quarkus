@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import com.rabbitmq.client.impl.CredentialsProvider;
 

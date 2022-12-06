@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.core.parameters;
 
-import javax.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.Cookie;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 

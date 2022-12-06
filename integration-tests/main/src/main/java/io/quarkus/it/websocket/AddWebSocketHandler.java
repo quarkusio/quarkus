@@ -1,14 +1,14 @@
 package io.quarkus.it.websocket;
 
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.annotation.WebListener;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpointConfig;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.annotation.WebListener;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
@@ -24,7 +24,7 @@ public class AddWebSocketHandler implements ServletContextListener {
             ((ServerContainer) sce.getServletContext().getAttribute(ServerContainer.class.getName()))
                     .addEndpoint(ServerEndpointConfig.Builder.create(WebSocketEndpoint.class, "/added-dynamic").build());
 
-        } catch (DeploymentException | javax.websocket.DeploymentException e) {
+        } catch (DeploymentException | jakarta.websocket.DeploymentException e) {
             throw new RuntimeException(e);
         }
     }

@@ -4,7 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedHashMap;
 
 /**
  * QuarkusMultivaluedHashMap without the bug in put/putAll that leaks external mutable storage into our storage.

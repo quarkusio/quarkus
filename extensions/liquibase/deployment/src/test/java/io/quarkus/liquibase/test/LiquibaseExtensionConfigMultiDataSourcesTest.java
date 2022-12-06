@@ -2,8 +2,8 @@ package io.quarkus.liquibase.test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

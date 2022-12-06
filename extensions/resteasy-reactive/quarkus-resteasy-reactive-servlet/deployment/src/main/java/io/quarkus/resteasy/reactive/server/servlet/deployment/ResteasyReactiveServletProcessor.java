@@ -2,8 +2,8 @@ package io.quarkus.resteasy.reactive.server.servlet.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.Application;
+import jakarta.servlet.DispatcherType;
+import jakarta.ws.rs.core.Application;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

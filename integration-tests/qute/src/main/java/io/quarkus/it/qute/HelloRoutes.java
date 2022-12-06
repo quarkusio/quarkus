@@ -1,6 +1,6 @@
 package io.quarkus.it.qute;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.qute.Template;
 import io.quarkus.vertx.web.Route;

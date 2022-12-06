@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Order;

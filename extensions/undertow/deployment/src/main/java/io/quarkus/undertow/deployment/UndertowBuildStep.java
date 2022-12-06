@@ -5,7 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.AUTHENTICATE;
 import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.DENY;
 import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.PERMIT;
-import static javax.servlet.DispatcherType.REQUEST;
+import static jakarta.servlet.DispatcherType.REQUEST;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,21 +18,21 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import javax.annotation.security.DeclareRoles;
-import javax.annotation.security.RunAs;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.SessionScoped;
-import javax.enterprise.inject.Typed;
-import javax.inject.Inject;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.annotation.HandlesTypes;
-import javax.servlet.annotation.MultipartConfig;
-import javax.servlet.annotation.ServletSecurity;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.annotation.WebListener;
-import javax.servlet.annotation.WebServlet;
+import jakarta.annotation.security.DeclareRoles;
+import jakarta.annotation.security.RunAs;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.inject.Typed;
+import jakarta.inject.Inject;
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.annotation.HandlesTypes;
+import jakarta.servlet.annotation.MultipartConfig;
+import jakarta.servlet.annotation.ServletSecurity;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.annotation.WebListener;
+import jakarta.servlet.annotation.WebServlet;
 
 import org.jboss.annotation.javaee.Descriptions;
 import org.jboss.annotation.javaee.DisplayNames;
@@ -146,7 +146,7 @@ public class UndertowBuildStep {
     public static final DotName MULTIPART_CONFIG = DotName.createSimple(MultipartConfig.class.getName());
     public static final DotName SERVLET_SECURITY = DotName.createSimple(ServletSecurity.class.getName());
     public static final DotName TYPED = DotName.createSimple(Typed.class.getName());
-    protected static final String SERVLET_CONTAINER_INITIALIZER = "META-INF/services/javax.servlet.ServletContainerInitializer";
+    protected static final String SERVLET_CONTAINER_INITIALIZER = "META-INF/services/jakarta.servlet.ServletContainerInitializer";
     protected static final DotName HANDLES_TYPES = DotName.createSimple(HandlesTypes.class.getName());
 
     @Inject
@@ -516,7 +516,7 @@ public class UndertowBuildStep {
                         } else {
                             for (DispatcherType dispatcher : mapping.getDispatchers()) {
                                 recorder.addFilterURLMapping(deployment, mapping.getFilterName(), m,
-                                        javax.servlet.DispatcherType.valueOf(dispatcher.name()));
+                                        jakarta.servlet.DispatcherType.valueOf(dispatcher.name()));
                             }
                         }
                     }
@@ -528,7 +528,7 @@ public class UndertowBuildStep {
                         } else {
                             for (DispatcherType dispatcher : mapping.getDispatchers()) {
                                 recorder.addFilterServletNameMapping(deployment, mapping.getFilterName(), name,
-                                        javax.servlet.DispatcherType.valueOf(dispatcher.name()));
+                                        jakarta.servlet.DispatcherType.valueOf(dispatcher.name()));
                             }
                         }
                     }

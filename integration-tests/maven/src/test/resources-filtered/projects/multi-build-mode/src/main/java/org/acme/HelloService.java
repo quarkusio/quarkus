@@ -2,7 +2,7 @@ package org.acme;
 
 import io.quarkus.arc.profile.IfBuildProfile;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.collections4.MultiSet;
 

@@ -3,7 +3,7 @@ package io.quarkus.vertx.web.blocking;
 import static io.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.containsString;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

@@ -4,6 +4,9 @@
     "revapi-update": {
       "script-ref": "RevapiUpdate.java",
       "properties": {}
+    },
+    "transform": {
+      "script-ref": "org.eclipse.transformer:org.eclipse.transformer.cli:0.4.0"
     }
   },
   "templates": {}

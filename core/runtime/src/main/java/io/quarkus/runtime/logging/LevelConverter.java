@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.util.Locale;
 import java.util.logging.Level;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logmanager.LogContext;

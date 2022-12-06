@@ -12,7 +12,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Map;
 
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

@@ -6,9 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.UUID;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
@@ -59,7 +59,7 @@ public class AutoScopeBuildItemTest {
             }).setLogRecordPredicate(log -> "AutoScopeBuildItemTest".equals(log.getLoggerName()))
             .assertLogRecords(records -> {
                 assertEquals(1, records.size());
-                assertEquals("javax.inject.Singleton:Foo!", records.get(0).getMessage());
+                assertEquals("jakarta.inject.Singleton:Foo!", records.get(0).getMessage());
             });
 
     @Inject

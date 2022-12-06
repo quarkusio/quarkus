@@ -991,9 +991,9 @@ It allows more advanced reactive use cases, for example, you can use it to send 
 ----
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.reactivestreams.Publisher;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 @GET
 @Path("/stream")

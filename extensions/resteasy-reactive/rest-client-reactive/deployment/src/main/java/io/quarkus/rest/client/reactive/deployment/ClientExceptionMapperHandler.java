@@ -2,8 +2,8 @@ package io.quarkus.rest.client.reactive.deployment;
 
 import java.lang.reflect.Modifier;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.jandex.AnnotationInstance;
@@ -73,7 +73,7 @@ class ClientExceptionMapperHandler {
         }
         if (!isValid) {
             String message = DotNames.CLIENT_EXCEPTION_MAPPER
-                    + " is only supported on static methods of REST Client interfaces that take 'javax.ws.rs.core.Response' as a single parameter and return 'java.lang.RuntimeException'.";
+                    + " is only supported on static methods of REST Client interfaces that take 'jakarta.ws.rs.core.Response' as a single parameter and return 'java.lang.RuntimeException'.";
             if (targetMethod != null) {
                 message += " Offending instance is '" + targetMethod.declaringClass().name().toString() + "#"
                         + targetMethod.name() + "'";

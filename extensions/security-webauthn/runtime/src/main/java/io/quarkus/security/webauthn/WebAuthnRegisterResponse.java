@@ -1,7 +1,7 @@
 package io.quarkus.security.webauthn;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.FormParam;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.FormParam;
 
 import io.vertx.core.json.JsonObject;
 

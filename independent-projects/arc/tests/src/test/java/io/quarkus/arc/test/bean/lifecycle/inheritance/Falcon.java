@@ -2,7 +2,7 @@ package io.quarkus.arc.test.bean.lifecycle.inheritance;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 // extends Bird class, overrides pre-destroy and post construct with new variant
 @Dependent

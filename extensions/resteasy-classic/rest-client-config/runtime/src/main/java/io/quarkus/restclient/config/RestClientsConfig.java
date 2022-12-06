@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.enterprise.inject.CreationException;
+import jakarta.enterprise.inject.CreationException;
 
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
@@ -197,7 +197,8 @@ public class RestClientsConfig {
 
     /**
      * The CDI scope to use for injections of REST client instances. Value can be either a fully qualified class name of a CDI
-     * scope annotation (such as "javax.enterprise.context.ApplicationScoped") or its simple name (such as"ApplicationScoped").
+     * scope annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such
+     * as"ApplicationScoped").
      *
      * Default scope for the rest-client extension is "Dependent" (which is the spec-compliant behavior).
      *

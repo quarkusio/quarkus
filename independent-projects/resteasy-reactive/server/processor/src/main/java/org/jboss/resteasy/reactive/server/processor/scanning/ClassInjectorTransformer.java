@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.FieldInfo;

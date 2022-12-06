@@ -98,9 +98,9 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import java.util.Set;
 
 @Path("/extensions")
@@ -148,10 +148,10 @@ package org.acme.rest.client;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestQuery;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -188,10 +188,10 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import java.util.Set;
 
 @Path("/extensions")
@@ -236,7 +236,7 @@ public interface ExtensionsService {
 ----
 # Your configuration properties
 quarkus.rest-client.extensions-api.url=https://stage.code.quarkus.io/api
-quarkus.rest-client.extensions-api.scope=javax.inject.Singleton
+quarkus.rest-client.extensions-api.scope=jakarta.inject.Singleton
 ----
 
 == Create the JAX-RS resource
@@ -250,8 +250,8 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.Set;
 
 @Path("/extension")
@@ -285,9 +285,9 @@ With this approach the client interface could look as follows:
 ----
 package org.acme.rest.client;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import java.util.Set;
 
 @Path("/extensions")
@@ -305,8 +305,8 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.net.URI;
 import java.util.Set;
 
@@ -346,8 +346,8 @@ Let's see an example about how to provide the HTTP Client Options via CDI:
 ----
 package org.acme.rest.client;
 
-import javax.enterprise.inject.Produces;
-import javax.ws.rs.ext.ContextResolver;
+import jakarta.enterprise.inject.Produces;
+import jakarta.ws.rs.ext.ContextResolver;
 
 import io.vertx.core.http.HttpClientOptions;
 import io.quarkus.arc.Unremovable;
@@ -374,8 +374,8 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.net.URI;
 import java.util.Set;
 
@@ -462,9 +462,9 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
@@ -488,8 +488,8 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
@@ -545,9 +545,9 @@ package org.acme.rest.client;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import java.util.Set;
 
 @Path("/extensions")
@@ -570,8 +570,8 @@ package org.acme.rest.client;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.Set;
 
 @Path("/extension")
@@ -634,10 +634,10 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import java.util.Set;
 
 @Path("/extensions")
@@ -673,9 +673,9 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -710,9 +710,9 @@ import io.smallrye.mutiny.Uni;
 
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -1010,8 +1010,8 @@ Let's assume you have the following client:
 ----
 package io.quarkus.it.rest.client.main;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 

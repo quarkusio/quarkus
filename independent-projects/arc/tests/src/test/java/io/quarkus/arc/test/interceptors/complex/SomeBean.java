@@ -2,9 +2,9 @@ package io.quarkus.arc.test.interceptors.complex;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Singleton;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Singleton;
 
 @Singleton
 @MyBinding

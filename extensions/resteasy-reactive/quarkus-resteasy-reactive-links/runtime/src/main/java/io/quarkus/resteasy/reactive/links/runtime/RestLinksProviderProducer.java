@@ -1,9 +1,9 @@
 package io.quarkus.resteasy.reactive.links.runtime;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.ws.rs.core.UriInfo;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.ws.rs.core.UriInfo;
 
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.resteasy.reactive.links.RestLinksProvider;

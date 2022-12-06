@@ -1,7 +1,7 @@
 package io.quarkus.spring.security.deployment.app;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 import org.springframework.security.access.annotation.Secured;
 

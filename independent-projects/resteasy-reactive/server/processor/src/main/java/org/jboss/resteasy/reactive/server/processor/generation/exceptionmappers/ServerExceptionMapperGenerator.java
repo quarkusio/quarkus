@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;

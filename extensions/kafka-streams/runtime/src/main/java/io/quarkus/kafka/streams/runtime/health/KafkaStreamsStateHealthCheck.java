@@ -1,7 +1,7 @@
 package io.quarkus.kafka.streams.runtime.health;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.apache.kafka.streams.KafkaStreams;
 import org.eclipse.microprofile.health.HealthCheck;

@@ -2,8 +2,8 @@ package io.quarkus.resteasy.test.route;
 
 import static org.hamcrest.core.Is.is;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

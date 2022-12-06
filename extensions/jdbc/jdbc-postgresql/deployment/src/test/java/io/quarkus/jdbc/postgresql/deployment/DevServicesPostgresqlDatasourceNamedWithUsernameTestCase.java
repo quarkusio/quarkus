@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

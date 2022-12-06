@@ -3,7 +3,7 @@ package io.quarkus.arc.runtime;
 import java.lang.annotation.Annotation;
 import java.util.Set;
 
-import javax.interceptor.InvocationContext;
+import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.ArcInvocationContext;
 

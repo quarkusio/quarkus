@@ -2,7 +2,7 @@ package io.quarkus.scheduler.test;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

@@ -33,19 +33,19 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.Produces;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.Providers;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.Providers;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptor;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -878,7 +878,7 @@ public class ResteasyReactiveProcessor {
     }
 
     /**
-     * RESTEasy Classic also includes the providers that are set in the 'META-INF/services/javax.ws.rs.ext.Providers' file
+     * RESTEasy Classic also includes the providers that are set in the 'META-INF/services/jakarta.ws.rs.ext.Providers' file
      * This is not a ServiceLoader call, but essentially provides the same functionality.
      */
     @BuildStep

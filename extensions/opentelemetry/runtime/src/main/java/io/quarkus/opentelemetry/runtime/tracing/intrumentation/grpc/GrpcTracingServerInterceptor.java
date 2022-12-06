@@ -6,7 +6,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collections;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ForwardingServerCallListener.SimpleForwardingServerCallListener;

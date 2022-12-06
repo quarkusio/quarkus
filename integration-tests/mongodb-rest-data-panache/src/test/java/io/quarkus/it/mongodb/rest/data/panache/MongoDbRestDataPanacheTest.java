@@ -5,9 +5,9 @@ import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.ws.rs.core.MediaType;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

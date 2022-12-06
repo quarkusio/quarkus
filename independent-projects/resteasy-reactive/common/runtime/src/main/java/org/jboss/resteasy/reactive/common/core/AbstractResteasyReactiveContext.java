@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
-import javax.ws.rs.container.CompletionCallback;
-import javax.ws.rs.container.ConnectionCallback;
+import jakarta.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.container.ConnectionCallback;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.PreserveTargetException;

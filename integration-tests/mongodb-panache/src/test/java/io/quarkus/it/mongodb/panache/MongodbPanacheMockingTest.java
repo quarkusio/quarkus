@@ -3,8 +3,8 @@ package io.quarkus.it.mongodb.panache;
 import java.util.Collections;
 import java.util.Optional;
 
-import javax.inject.Inject;
-import javax.ws.rs.WebApplicationException;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Order;

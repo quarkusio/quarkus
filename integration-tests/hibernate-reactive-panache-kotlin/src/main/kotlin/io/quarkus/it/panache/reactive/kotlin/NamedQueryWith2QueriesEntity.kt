@@ -2,8 +2,8 @@ package io.quarkus.it.panache.reactive.kotlin
 
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheCompanion
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntity
-import javax.persistence.Entity
-import javax.persistence.NamedQuery
+import jakarta.persistence.Entity
+import jakarta.persistence.NamedQuery
 
 @Entity
 @NamedQuery(name = "NamedQueryWith2QueriesEntity.getAll1", query = "from NamedQueryWith2QueriesEntity")

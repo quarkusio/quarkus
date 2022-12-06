@@ -1,9 +1,9 @@
 package io.quarkus.it.keycloak;
 
-import javax.inject.Inject;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.inject.Inject;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;

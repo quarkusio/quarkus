@@ -1,6 +1,6 @@
 package io.quarkus.it.keycloak;
 
-import javax.annotation.security.RolesAllowed;
+import jakarta.annotation.security.RolesAllowed;
 
 @RolesAllowed("user")
 public class HelloResourceBase {

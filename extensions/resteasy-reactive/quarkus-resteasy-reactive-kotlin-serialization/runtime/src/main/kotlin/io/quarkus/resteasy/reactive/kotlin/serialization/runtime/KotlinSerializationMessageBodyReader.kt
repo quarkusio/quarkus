@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.kotlin.serialization.runtime
 
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.MultivaluedMap
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
@@ -11,8 +13,6 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext
 import java.io.InputStream
 import java.lang.reflect.Type
-import javax.ws.rs.core.MediaType
-import javax.ws.rs.core.MultivaluedMap
 
 class KotlinSerializationMessageBodyReader(private val json: Json) : AbstractJsonMessageBodyReader(), ServerMessageBodyReader<Any> {
     override fun isReadable(type: Class<*>, genericType: Type, annotations: Array<Annotation>?, mediaType: MediaType) =

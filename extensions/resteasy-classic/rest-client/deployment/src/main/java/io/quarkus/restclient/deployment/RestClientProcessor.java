@@ -12,12 +12,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.SessionScoped;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.ws.rs.Path;
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.ClientResponseFilter;
-import javax.ws.rs.ext.Providers;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.inject.spi.InterceptionType;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.ext.Providers;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -116,13 +116,13 @@ class RestClientProcessor {
     void setupProviders(BuildProducer<NativeImageResourceBuildItem> resources,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition) {
 
-        proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem("javax.ws.rs.ext.Providers"));
+        proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem("jakarta.ws.rs.ext.Providers"));
         resources.produce(new NativeImageResourceBuildItem(PROVIDERS_SERVICE_FILE));
     }
 
     @BuildStep
     void setupClientBuilder(BuildProducer<NativeImageResourceBuildItem> resources) {
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
+        resources.produce(new NativeImageResourceBuildItem("META-INF/services/jakarta.ws.rs.client.ClientBuilder"));
     }
 
     @BuildStep
@@ -163,7 +163,7 @@ class RestClientProcessor {
                 ProxyBuilderImpl.class.getName(),
                 ClientRequestFilter[].class.getName(),
                 ClientResponseFilter[].class.getName(),
-                javax.ws.rs.ext.ReaderInterceptor[].class.getName()));
+                jakarta.ws.rs.ext.ReaderInterceptor[].class.getName()));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
                 ResteasyClientBuilder.class.getName(), NoopHostnameVerifier.class.getName()));

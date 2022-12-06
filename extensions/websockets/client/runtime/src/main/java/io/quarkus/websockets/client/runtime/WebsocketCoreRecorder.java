@@ -7,11 +7,11 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Instance;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.server.ServerApplicationConfig;
-import javax.websocket.server.ServerEndpointConfig;
+import jakarta.enterprise.inject.Instance;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.server.ServerApplicationConfig;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 import org.jboss.logging.Logger;
 

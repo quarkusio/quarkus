@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.literal.NamedLiteral;
-import javax.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.util.AnnotationLiteral;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;

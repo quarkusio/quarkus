@@ -1,6 +1,6 @@
 package ilove.quark.us.funqygooglecloudfunctions;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.funqy.Funq;
 import io.quarkus.funqy.gcp.functions.event.PubsubMessage;

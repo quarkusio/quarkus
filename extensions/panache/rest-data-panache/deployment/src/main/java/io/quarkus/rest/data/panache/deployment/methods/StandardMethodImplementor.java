@@ -2,18 +2,18 @@ package io.quarkus.rest.data.panache.deployment.methods;
 
 import java.util.Collection;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.logging.Logger;
@@ -42,7 +42,7 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     private static final String OPENAPI_CONTENT_ANNOTATION = OPENAPI_PACKAGE + ".media.Content";
     private static final String OPENAPI_SCHEMA_ANNOTATION = OPENAPI_PACKAGE + ".media.Schema";
     private static final String SCHEMA_TYPE_ARRAY = "ARRAY";
-    private static final String ROLES_ALLOWED_ANNOTATION = "javax.annotation.security.RolesAllowed";
+    private static final String ROLES_ALLOWED_ANNOTATION = "jakarta.annotation.security.RolesAllowed";
     private static final Logger LOGGER = Logger.getLogger(StandardMethodImplementor.class);
 
     protected final ResponseImplementor responseImplementor;

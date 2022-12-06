@@ -3,7 +3,7 @@ package io.quarkus.it.kafka.streams;
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.streams.KafkaStreams;

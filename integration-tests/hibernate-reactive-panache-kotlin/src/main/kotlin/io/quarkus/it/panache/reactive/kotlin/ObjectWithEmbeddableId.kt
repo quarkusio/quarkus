@@ -2,11 +2,11 @@ package io.quarkus.it.panache.reactive.kotlin
 
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntityBase
+import jakarta.persistence.Embeddable
+import jakarta.persistence.EmbeddedId
+import jakarta.persistence.Entity
 import java.io.Serializable
 import java.util.Objects
-import javax.persistence.Embeddable
-import javax.persistence.EmbeddedId
-import javax.persistence.Entity
 
 @Entity
 class ObjectWithEmbeddableId : PanacheEntityBase {

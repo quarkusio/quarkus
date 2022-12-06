@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Priority;
-import javax.interceptor.Interceptor;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.Interceptor;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;

@@ -25,7 +25,7 @@ NOTE: If you add the `quarkus-quartz` dependency to your project the lightweight
 A method annotated with `@io.quarkus.scheduler.Scheduled` is automatically scheduled for invocation.
 A scheduled method must not be abstract or private.
 It may be either static or non-static.
-A scheduled method can be annotated with interceptor bindings, such as `@javax.transaction.Transactional` and `@org.eclipse.microprofile.metrics.annotation.Counted`.
+A scheduled method can be annotated with interceptor bindings, such as `@jakarta.transaction.Transactional` and `@org.eclipse.microprofile.metrics.annotation.Counted`.
 
 NOTE: If there is a bean class that has no scope and declares at least one non-static method annotated with `@Scheduled` then `@Singleton` is used.
 

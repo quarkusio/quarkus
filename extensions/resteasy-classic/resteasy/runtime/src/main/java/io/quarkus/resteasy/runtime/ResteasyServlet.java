@@ -2,9 +2,9 @@ package io.quarkus.resteasy.runtime;
 
 import java.io.IOException;
 
-import javax.enterprise.inject.spi.CDI;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 

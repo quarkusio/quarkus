@@ -1588,11 +1588,11 @@ If using <<resteasy_integration,templates in JAX-RS resources>>, you can rely on
 ----
 package org.acme.quarkus.sample;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
@@ -1648,10 +1648,10 @@ Use those static methods to build your template instances:
 ----
 package org.acme.quarkus.sample;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import io.quarkus.qute.TemplateInstance;
 
 @Path("hello")
@@ -1678,7 +1678,7 @@ By default, the name of the `@CheckedTemplate` method is used as is.
 ----
 package org.acme.quarkus.sample;
 
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.CheckedTemplate;
@@ -2287,10 +2287,10 @@ The end result is that a using Qute within a JAX-RS resource may look as simple 
 ----
 package org.acme.quarkus.sample;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;

@@ -20,13 +20,14 @@ import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.UriBuilder;
+
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.Invocation.Builder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Link;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;

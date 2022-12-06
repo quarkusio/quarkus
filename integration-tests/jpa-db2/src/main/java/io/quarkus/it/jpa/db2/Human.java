@@ -1,6 +1,6 @@
 package io.quarkus.it.jpa.db2;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 
 /**
  * Mapped superclass test

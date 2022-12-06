@@ -2,7 +2,7 @@ package io.quarkus.jdbc.postgresql.deployment;
 
 import java.util.logging.Level;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

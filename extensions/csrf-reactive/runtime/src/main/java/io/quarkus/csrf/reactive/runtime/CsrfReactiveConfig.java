@@ -70,9 +70,9 @@ public class CsrfReactiveConfig {
      * If this property is enabled then the input stream will be read and cached by the CSRF filter to verify the token.
      *
      * If you prefer then you can disable this property and compare
-     * CSRF form and cookie parameters in the application code using JAX-RS javax.ws.rs.FormParam which refers to the
+     * CSRF form and cookie parameters in the application code using JAX-RS jakarta.ws.rs.FormParam which refers to the
      * {@link #formFieldName}
-     * form property and javax.ws.rs.CookieParam which refers to the {@link CsrfReactiveConfig#cookieName} cookie.
+     * form property and jakarta.ws.rs.CookieParam which refers to the {@link CsrfReactiveConfig#cookieName} cookie.
      *
      * Note that even if the CSRF token verification in the CSRF filter is disabled, the filter will still perform checks to
      * ensure the token

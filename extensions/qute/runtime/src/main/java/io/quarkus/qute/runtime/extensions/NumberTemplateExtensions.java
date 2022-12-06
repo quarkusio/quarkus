@@ -1,6 +1,6 @@
 package io.quarkus.qute.runtime.extensions;
 
-import javax.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.Vetoed;
 
 import io.quarkus.qute.TemplateExtension;
 

@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.security;
 
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static jakarta.ws.rs.core.Response.Status.UNAUTHORIZED;
 
 import java.util.function.Supplier;
 

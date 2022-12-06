@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Any;
+import jakarta.enterprise.inject.Any;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;

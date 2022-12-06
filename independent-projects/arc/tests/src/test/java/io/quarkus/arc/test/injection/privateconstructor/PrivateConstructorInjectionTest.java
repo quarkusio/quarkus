@@ -2,9 +2,9 @@ package io.quarkus.arc.test.injection.privateconstructor;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

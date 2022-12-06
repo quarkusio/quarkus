@@ -2,10 +2,10 @@ package io.quarkus.security.runtime;
 
 import java.util.concurrent.Executor;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.identity.IdentityProvider;

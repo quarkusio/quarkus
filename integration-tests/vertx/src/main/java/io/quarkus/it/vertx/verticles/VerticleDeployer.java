@@ -2,9 +2,9 @@ package io.quarkus.it.vertx.verticles;
 
 import java.util.concurrent.CountDownLatch;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import io.quarkus.runtime.StartupEvent;
 import io.vertx.core.DeploymentOptions;

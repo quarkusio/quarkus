@@ -2,8 +2,8 @@ package io.quarkus.resteasy.multipart.parttype;
 
 import java.util.Map;
 
-import javax.ws.rs.FormParam;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.annotations.providers.multipart.PartType;
 

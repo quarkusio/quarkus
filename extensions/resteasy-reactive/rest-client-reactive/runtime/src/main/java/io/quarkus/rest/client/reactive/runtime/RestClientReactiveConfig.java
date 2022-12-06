@@ -15,10 +15,10 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class RestClientReactiveConfig {
 
     /**
-     * Default scope for Rest Client Reactive. Use `javax.enterprise.context.Dependent` for spec-compliant behavior
+     * Default scope for Rest Client Reactive. Use `jakarta.enterprise.context.Dependent` for spec-compliant behavior
      */
     @Deprecated // Deprecated in favour of RestClientsConfig.scope
-    @ConfigItem(name = "scope", defaultValue = "javax.enterprise.context.ApplicationScoped")
+    @ConfigItem(name = "scope", defaultValue = "jakarta.enterprise.context.ApplicationScoped")
     public String scope;
 
     /**
@@ -33,7 +33,7 @@ public class RestClientReactiveConfig {
     public boolean disableSmartProduces;
 
     /**
-     * Whether providers (filters, etc.) annotated with {@link javax.ws.rs.ext.Provider} should be
+     * Whether providers (filters, etc.) annotated with {@link jakarta.ws.rs.ext.Provider} should be
      * automatically registered for all the clients in the application.
      */
     @ConfigItem(name = "provider-autodiscovery", defaultValue = "true")

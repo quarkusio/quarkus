@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-integration-tests-parent</artifactId>
-        <version>2.14.3.Final</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-integration-test-awt</artifactId>
     <name>Quarkus - Integration Tests - AWT</name>

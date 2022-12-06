@@ -5,5 +5,5 @@
 // Generated on: 2014.09.12 at 03:00:35 PM CEST
 //
 
-@javax.xml.bind.annotation.XmlSchema(namespace = "http://www.w3.org/2005/Atom", elementFormDefault = javax.xml.bind.annotation.XmlNsForm.QUALIFIED)
+@jakarta.xml.bind.annotation.XmlSchema(namespace = "http://www.w3.org/2005/Atom", elementFormDefault = jakarta.xml.bind.annotation.XmlNsForm.QUALIFIED)
 package io.quarkus.it.jaxb.mapper.codegen.feed;

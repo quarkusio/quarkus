@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.specific.AvroGenerated;

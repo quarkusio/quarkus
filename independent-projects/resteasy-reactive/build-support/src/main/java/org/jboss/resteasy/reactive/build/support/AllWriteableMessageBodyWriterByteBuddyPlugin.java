@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 

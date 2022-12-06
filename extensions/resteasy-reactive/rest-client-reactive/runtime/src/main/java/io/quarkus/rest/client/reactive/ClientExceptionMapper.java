@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import javax.ws.rs.Priorities;
+import jakarta.ws.rs.Priorities;
 
 /**
  * Used to easily define an exception mapper for the specific REST Client on which it's used.
@@ -15,7 +15,7 @@ import javax.ws.rs.Priorities;
  * <ul>
  * <li>Is a {@code static} method</li>
  * <li>Returns any subclass of {@link RuntimeException}</li>
- * <li>Takes a single parameter of type {@link javax.ws.rs.core.Response}</li>
+ * <li>Takes a single parameter of type {@link jakarta.ws.rs.core.Response}</li>
  * </ul>
  *
  * An example method could look like the following:

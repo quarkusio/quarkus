@@ -1,8 +1,8 @@
 package io.quarkus.cache.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.event.Observes;
 
 import io.quarkus.cache.CacheManager;
 

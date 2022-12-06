@@ -5,7 +5,7 @@ import static io.quarkus.deployment.Feature.MONGODB_REST_DATA_PANACHE;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import javax.ws.rs.Priorities;
+import jakarta.ws.rs.Priorities;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

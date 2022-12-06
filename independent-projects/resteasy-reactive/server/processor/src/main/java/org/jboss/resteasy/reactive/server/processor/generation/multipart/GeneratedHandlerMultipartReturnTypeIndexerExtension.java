@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.server.processor.generation.multipart;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;

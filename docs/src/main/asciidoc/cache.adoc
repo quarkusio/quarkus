@@ -78,7 +78,7 @@ package org.acme.cache;
 
 import java.time.LocalDate;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class WeatherForecastService {
@@ -151,10 +151,10 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.RestQuery;
 
@@ -211,7 +211,7 @@ package org.acme.cache;
 
 import java.time.LocalDate;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.cache.CacheResult;
 
@@ -344,7 +344,7 @@ When a cache key is built from several method arguments, whether they are explic
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheResult;
@@ -384,7 +384,7 @@ public class CachedService {
 You may want to include more than the arguments of a method into a cache key.
 This can be done by implementing the `io.quarkus.cache.CacheKeyGenerator` interface and declaring that implementation in the `keyGenerator` field of a `@CacheResult` or `@CacheInvalidate` annotation.
 
-If a CDI scope is declared on a key generator class and if that class has a default qualifier (no qualifier annotation or `@javax.enterprise.inject.Default`), then the key generator will be injected as a CDI bean during the cache key computation.
+If a CDI scope is declared on a key generator class and if that class has a default qualifier (no qualifier annotation or `@jakarta.enterprise.inject.Default`), then the key generator will be injected as a CDI bean during the cache key computation.
 Otherwise, the key generator will be instantiated using its default constructor.
 All CDI scopes supported by Quarkus can be used on a key generator.
 
@@ -395,8 +395,8 @@ The following key generator will be injected as a CDI bean:
 package org.acme.cache;
 
 import java.lang.reflect.Method;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CompositeCacheKey;
@@ -447,7 +447,7 @@ Both kinds of key generators can be used in a similar way:
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.acme.cache.ApplicationScopedKeyGen;
 import org.acme.cache.NotABeanKeyGen;
@@ -496,8 +496,8 @@ The following sections will show you how to do that.
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
@@ -539,8 +539,8 @@ Another way to retrieve a `Cache` instance consists in injecting the `io.quarkus
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
@@ -578,7 +578,7 @@ If the cache entries are modified while an iteration over the set is in progress
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
@@ -607,7 +607,7 @@ This method associates the `CompletableFuture` with the given key in the cache. 
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
@@ -639,7 +639,7 @@ Otherwise, the method will return `null`.
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
@@ -748,7 +748,7 @@ cache_eviction_weight_total{cache="foo",} 540.0
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
@@ -779,7 +779,7 @@ public class CachedService {
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
@@ -811,7 +811,7 @@ public class CachedService {
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
@@ -842,7 +842,7 @@ public class CachedService {
 ----
 package org.acme.cache;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
@@ -872,8 +872,8 @@ public class CachedService {
 ----
 package org.acme.cache;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.cache.CacheManager;
 

@@ -145,7 +145,7 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.function.Supplier;
 
 @ApplicationScoped
@@ -186,7 +186,7 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.function.Supplier;
 import java.util.Set;
 
@@ -231,7 +231,7 @@ You can enforce the order by implementing a default `SecurityIdentityAugmentor#p
 ====
 
 By default, the request context is not activated when augmenting the security identity, this means that if you want to use for example Hibernate
-that mandates a request context, you will have a `javax.enterprise.context.ContextNotActiveException`.
+that mandates a request context, you will have a `jakarta.enterprise.context.ContextNotActiveException`.
 
 The solution is to activate the request context, the following example shows how to get the roles from an Hibernate with Panache `UserRoleEntity`.
 
@@ -243,8 +243,8 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.control.ActivateRequestContext;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import java.util.function.Supplier;
 
 @ApplicationScoped
@@ -282,11 +282,11 @@ If you use JAX-RS `ContainerRequestFilter` to set a custom JAX-RS `SecurityConte
 ----
 import java.security.Principal;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.PreMatching;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.PreMatching;
+import jakarta.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.ext.Provider;
 
 @Provider
 @PreMatching

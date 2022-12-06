@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.core.parameters;
 
 import java.util.List;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;

@@ -3,12 +3,12 @@ package io.quarkus.resteasy.runtime;
 import java.lang.annotation.Annotation;
 import java.util.Set;
 
-import javax.annotation.Priority;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.inject.Inject;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.inject.Inject;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.ArcInvocationContext;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;

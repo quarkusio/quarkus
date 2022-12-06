@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.reactive.rest.data.panache.deployment.entity;
 
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 

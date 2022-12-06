@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.EntityType;
-import javax.persistence.metamodel.Metamodel;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.Metamodel;
 
 import org.hibernate.engine.spi.CascadeStyle;
 import org.hibernate.engine.spi.CascadingActions;
@@ -70,8 +70,8 @@ public class AdditionalJpaOperations {
 
     /**
      * Detects if cascading delete is needed. The delete-cascading is needed when associations with cascade delete enabled
-     * {@link javax.persistence.OneToMany#cascade()} and also on entities containing a collection of elements
-     * {@link javax.persistence.ElementCollection}
+     * {@link jakarta.persistence.OneToMany#cascade()} and also on entities containing a collection of elements
+     * {@link jakarta.persistence.ElementCollection}
      *
      * @param entityClass
      * @return true if cascading delete is needed. False otherwise

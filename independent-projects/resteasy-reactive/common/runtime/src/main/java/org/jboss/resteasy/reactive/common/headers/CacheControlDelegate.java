@@ -2,8 +2,8 @@ package org.jboss.resteasy.reactive.common.headers;
 
 import java.util.List;
 
-import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.ext.RuntimeDelegate;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.resteasy.reactive.common.util.ExtendedCacheControl;
 

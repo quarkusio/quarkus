@@ -90,11 +90,11 @@ Add a regular JAX-RS resource to your Java source code, as outlined in the follo
 ----
 package org.acme.security.jpa;
 
-import javax.annotation.security.PermitAll;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.annotation.security.PermitAll;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/api/public")
 public class PublicResource {
@@ -114,11 +114,11 @@ Add a JAX-RS resource with the following `@RolesAllowed` annotation:
 ----
 package org.acme.security.jpa;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/api/admin")
 public class AdminResource {
@@ -138,12 +138,12 @@ We are also using `SecurityContext` to get access to the currently authenticated
 ----
 package org.acme.security.jpa;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 
 @Path("/api/users")
 public class UserResource {
@@ -165,8 +165,8 @@ You can now describe how you want security information to be stored in the model
 ----
 package org.acme.security.jpa;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.elytron.security.common.BcryptUtil;
@@ -248,9 +248,9 @@ In this tutorial, a PostgreSQL database is used for the identity store. Hibernat
 ----
 package org.acme.security.jpa;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
-import javax.transaction.Transactional;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
+import jakarta.transaction.Transactional;
 
 import io.quarkus.runtime.StartupEvent;
 

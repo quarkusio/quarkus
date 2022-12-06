@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Unmarshaller;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Unmarshaller;
 
 import io.quarkus.it.jaxb.mapper.codegen.feed.Feed;
 import io.quarkus.it.jaxb.mapper.codegen.feed.Feed.Entry;

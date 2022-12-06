@@ -1,6 +1,6 @@
 package org.acme.quarkus.sample.extension.deployment;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.acme.quarkus.sample.extension.ConfigReport;
 import org.acme.quarkus.sample.extension.ConfigReportRecorder;

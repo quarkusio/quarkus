@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.control.ActivateRequestContext;
-import javax.inject.Inject;
-import javax.persistence.TransactionRequiredException;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+import jakarta.inject.Inject;
+import jakarta.persistence.TransactionRequiredException;
+import jakarta.transaction.Transactional;
 
 import org.hibernate.Session;
 import org.junit.jupiter.api.Test;

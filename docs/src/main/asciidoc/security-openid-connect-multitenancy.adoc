@@ -83,10 +83,10 @@ Let's start by implementing the `/{tenant}` endpoint. As you can see from the so
 ----
 package org.acme.quickstart.oidc;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -153,7 +153,7 @@ In order to resolve the tenant from incoming requests and map it to a specific `
 ----
 package org.acme.quickstart.oidc;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -240,7 +240,7 @@ and use a custom `TenantConfigResolver` to resolve it:
 ----
 package org.acme.quickstart.oidc;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -276,7 +276,7 @@ Therefore, when working with multiple OpenID Connect Providers, you only need a 
 ----
 package org.acme.quickstart.oidc;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -630,7 +630,7 @@ This interface allows you to dynamically create tenant configurations at runtime
 ----
 package io.quarkus.it.keycloak;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.function.Supplier;
 
 import io.smallrye.mutiny.Uni;
@@ -706,7 +706,7 @@ package org.acme.quickstart.oidc;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.TenantResolver;
 import io.vertx.core.http.Cookie;

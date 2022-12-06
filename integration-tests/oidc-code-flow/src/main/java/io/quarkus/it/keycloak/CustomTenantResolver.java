@@ -2,7 +2,7 @@ package io.quarkus.it.keycloak;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.TenantResolver;
 import io.quarkus.oidc.runtime.OidcUtils;

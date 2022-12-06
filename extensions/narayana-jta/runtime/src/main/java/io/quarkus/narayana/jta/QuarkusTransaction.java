@@ -2,16 +2,16 @@ package io.quarkus.narayana.jta;
 
 import java.util.concurrent.Callable;
 
-import javax.transaction.Status;
-import javax.transaction.SystemException;
-import javax.transaction.Transactional;
+import jakarta.transaction.Status;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transactional;
 
 import com.arjuna.ats.jta.UserTransaction;
 
 import io.quarkus.arc.Arc;
 
 /**
- * A simplified transaction interface. While broadly covering the same use cases as {@link javax.transaction.UserTransaction},
+ * A simplified transaction interface. While broadly covering the same use cases as {@link jakarta.transaction.UserTransaction},
  * this class is designed to be easier to use. The main features it offers over {@code UserTransaction} are:
  *
  * <ul>

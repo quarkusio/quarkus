@@ -3,7 +3,7 @@ package io.quarkus.smallrye.faulttolerance.test.asynchronous;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.faulttolerance.Asynchronous;
 

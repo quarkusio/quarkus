@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.processor;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INSTANT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS;
@@ -37,9 +37,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
 
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.PathSegment;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -113,13 +113,13 @@ public class ServerEndpointIndexer
         if (dotName.equals(JSONP_JSON_VALUE)
                 || dotName.equals(JSONP_JSON_NUMBER)
                 || dotName.equals(JSONP_JSON_STRING)) {
-            additionalWriters.add(ServerJsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
+            additionalWriters.add(ServerJsonValueHandler.class, APPLICATION_JSON, jakarta.json.JsonValue.class);
         } else if (dotName.equals(JSONP_JSON_ARRAY)) {
-            additionalWriters.add(ServerJsonArrayHandler.class, APPLICATION_JSON, javax.json.JsonArray.class);
+            additionalWriters.add(ServerJsonArrayHandler.class, APPLICATION_JSON, jakarta.json.JsonArray.class);
         } else if (dotName.equals(JSONP_JSON_OBJECT)) {
-            additionalWriters.add(ServerJsonObjectHandler.class, APPLICATION_JSON, javax.json.JsonObject.class);
+            additionalWriters.add(ServerJsonObjectHandler.class, APPLICATION_JSON, jakarta.json.JsonObject.class);
         } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
-            additionalWriters.add(ServerJsonStructureHandler.class, APPLICATION_JSON, javax.json.JsonStructure.class);
+            additionalWriters.add(ServerJsonStructureHandler.class, APPLICATION_JSON, jakarta.json.JsonStructure.class);
         }
     }
 
@@ -128,13 +128,13 @@ public class ServerEndpointIndexer
         if (dotName.equals(JSONP_JSON_NUMBER)
                 || dotName.equals(JSONP_JSON_VALUE)
                 || dotName.equals(JSONP_JSON_STRING)) {
-            additionalReaders.add(ServerJsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
+            additionalReaders.add(ServerJsonValueHandler.class, APPLICATION_JSON, jakarta.json.JsonValue.class);
         } else if (dotName.equals(JSONP_JSON_ARRAY)) {
-            additionalReaders.add(ServerJsonArrayHandler.class, APPLICATION_JSON, javax.json.JsonArray.class);
+            additionalReaders.add(ServerJsonArrayHandler.class, APPLICATION_JSON, jakarta.json.JsonArray.class);
         } else if (dotName.equals(JSONP_JSON_OBJECT)) {
-            additionalReaders.add(ServerJsonObjectHandler.class, APPLICATION_JSON, javax.json.JsonObject.class);
+            additionalReaders.add(ServerJsonObjectHandler.class, APPLICATION_JSON, jakarta.json.JsonObject.class);
         } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
-            additionalReaders.add(ServerJsonStructureHandler.class, APPLICATION_JSON, javax.json.JsonStructure.class);
+            additionalReaders.add(ServerJsonStructureHandler.class, APPLICATION_JSON, jakarta.json.JsonStructure.class);
         } else if (dotName.equals(MULTI_VALUED_MAP)) {
             additionalReaders.add(ServerFormUrlEncodedProvider.class, APPLICATION_FORM_URLENCODED,
                     MultivaluedMap.class);

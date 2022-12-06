@@ -95,6 +95,13 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
 public class ServerEndpointIndexer
         extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter, ServerResourceMethod> {
+
+    private static final DotName FILE_DOT_NAME = DotName.createSimple(File.class.getName());
+    private static final DotName PATH_DOT_NAME = DotName.createSimple(Path.class.getName());
+    private static final DotName FILEUPLOAD_DOT_NAME = DotName.createSimple(FileUpload.class.getName());
+
+    private static final Set<DotName> SUPPORTED_MULTIPART_FILE_TYPES = Set.of(FILE_DOT_NAME, PATH_DOT_NAME,
+            FILEUPLOAD_DOT_NAME);
     protected final EndpointInvokerFactory endpointInvokerFactory;
     protected final List<MethodScanner> methodScanners;
     protected final FieldInjectionIndexerExtension fieldInjectionHandler;
@@ -176,7 +183,8 @@ public class ServerEndpointIndexer
     }
 
     @Override
-    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters, int i) {
+    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters, int i,
+            Set<String> fileFormNames) {
         ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
         InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
                 actualEndpointInfo,
@@ -186,7 +194,7 @@ public class ServerEndpointIndexer
                     + "Annotations like `@QueryParam` should be used in fields, not in methods.",
                     beanParamClassInfo.name()));
         }
-
+        fileFormNames.addAll(injectableBean.getFileFormNames());
         return injectableBean.isFormParamRequired();
     }
 
@@ -233,6 +241,7 @@ public class ServerEndpointIndexer
         }
     }
 
+    @Override
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             Map<String, String> existingConverters, AdditionalReaders additionalReaders,
             Map<String, InjectableBean> injectableBeans, boolean hasRuntimeConverters) {
@@ -280,6 +289,24 @@ public class ServerEndpointIndexer
             } else if (result.getType() == ParameterType.FORM) {
                 // direct form param requirement
                 currentInjectableBean.setFormParamRequired(true);
+
+                if (SUPPORTED_MULTIPART_FILE_TYPES.contains(field.type().name())) {
+                    String name = field.name();
+                    AnnotationInstance restForm = field.annotation(ResteasyReactiveDotNames.REST_FORM_PARAM);
+                    AnnotationInstance formParam = field.annotation(ResteasyReactiveDotNames.FORM_PARAM);
+                    if (restForm != null) {
+                        AnnotationValue value = restForm.value();
+                        if (value != null) {
+                            name = value.asString();
+                        }
+                    } else if (formParam != null) {
+                        AnnotationValue value = formParam.value();
+                        if (value != null) {
+                            name = value.asString();
+                        }
+                    }
+                    currentInjectableBean.getFileFormNames().add(name);
+                }
             }
         }
         // the TCK expects that fields annotated with @BeanParam are handled last
@@ -309,15 +336,22 @@ public class ServerEndpointIndexer
         return currentInjectableBean;
     }
 
+    @Override
     protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo, boolean encoded,
             Type paramType, ServerIndexedParameter parameterResult, String name, String defaultValue, ParameterType type,
-            String elementType, boolean single, String signature) {
+            String elementType, boolean single, String signature,
+            Set<String> fileFormNames) {
         ParameterConverterSupplier converter = parameterResult.getConverter();
         DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
         String mimeType = getPartMime(parameterResult.getAnns());
         String separator = getSeparator(parameterResult.getAnns());
+        String declaredType = declaredTypes.getDeclaredType();
+
+        if (SUPPORTED_MULTIPART_FILE_TYPES.contains(DotName.createSimple(declaredType))) {
+            fileFormNames.add(name);
+        }
         return new ServerMethodParameter(name,
-                elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(),
+                elementType, declaredType, declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
                 parameterResult.getCustomParameterExtractor(), mimeType, separator);

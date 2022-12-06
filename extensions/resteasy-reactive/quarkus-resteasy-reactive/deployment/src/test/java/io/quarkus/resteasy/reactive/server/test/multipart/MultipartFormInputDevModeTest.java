@@ -74,7 +74,7 @@ public class MultipartFormInputDevModeTest {
                 .post("/multipart/" + path + "/2")
                 .then()
                 .statusCode(200)
-                .body(equalTo("Alice - true - 50 - WORKING - text/html - true - true"));
+                .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
     }
 
 }

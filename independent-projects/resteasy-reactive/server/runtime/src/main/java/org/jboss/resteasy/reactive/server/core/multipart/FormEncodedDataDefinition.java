@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -37,7 +38,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
     }
 
     @Override
-    public FormDataParser create(final ResteasyReactiveRequestContext exchange) {
+    public FormDataParser create(final ResteasyReactiveRequestContext exchange, Set<String> fileFormNames) {
         String mimeType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (forceCreation || (mimeType != null && mimeType.startsWith(APPLICATION_X_WWW_FORM_URLENCODED))) {
 

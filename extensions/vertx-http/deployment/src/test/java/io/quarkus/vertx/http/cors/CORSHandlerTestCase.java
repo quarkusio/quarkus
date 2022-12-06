@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.cors;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 
 import org.junit.jupiter.api.DisplayName;
@@ -22,7 +23,7 @@ public class CORSHandlerTestCase {
     public void corsPreflightTestServlet() {
         String origin = "http://custom.origin.quarkus";
         String methods = "GET,POST";
-        String headers = "X-Custom";
+        String headers = "X-Custom,content-type";
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
                 .header("Access-Control-Request-Headers", headers)
@@ -36,11 +37,28 @@ public class CORSHandlerTestCase {
     }
 
     @Test
+    public void corsPreflightTestUnmatchedHeader() {
+        String origin = "http://custom.origin.quarkus";
+        String methods = "GET,POST";
+        String headers = "X-Customs,content-types";
+        given().header("Origin", origin)
+                .header("Access-Control-Request-Method", methods)
+                .header("Access-Control-Request-Headers", headers)
+                .when()
+                .options("/test").then()
+                .statusCode(200)
+                .header("Access-Control-Allow-Origin", origin)
+                .header("Access-Control-Allow-Methods", methods)
+                .header("Access-Control-Allow-Credentials", "true")
+                .header("Access-Control-Allow-Headers", nullValue());
+    }
+
+    @Test
     @DisplayName("Handles a direct CORS request correctly")
     public void corsNoPreflightTestServlet() {
         String origin = "http://custom.origin.quarkus";
         String methods = "GET,POST";
-        String headers = "X-Custom";
+        String headers = "x-custom,CONTENT-TYPE";
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
                 .header("Access-Control-Request-Headers", headers)

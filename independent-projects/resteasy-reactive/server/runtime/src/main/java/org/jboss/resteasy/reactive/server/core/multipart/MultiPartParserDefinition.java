@@ -53,6 +53,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
     private long maxAttributeSize = 2048;
     private long maxEntitySize = -1;
+    private List<String> fileContentTypes;
 
     public MultiPartParserDefinition(Supplier<Executor> executorSupplier) {
         this.executorSupplier = executorSupplier;
@@ -152,6 +153,15 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
+    public List<String> getFileContentTypes() {
+        return fileContentTypes;
+    }
+
+    public MultiPartParserDefinition setFileContentTypes(List<String> fileContentTypes) {
+        this.fileContentTypes = fileContentTypes;
+        return this;
+    }
+
     private final class MultiPartUploadHandler implements FormDataParser, MultipartParser.PartHandler {
 
         private final ResteasyReactiveRequestContext exchange;
@@ -236,7 +246,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 if (disposition.startsWith("form-data")) {
                     currentName = HeaderUtil.extractQuotedValueFromHeader(disposition, "name");
                     fileName = HeaderUtil.extractQuotedValueFromHeaderWithEncoding(disposition, "filename");
-                    if (fileName != null && fileSizeThreshold == 0) {
+                    String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
+                    if ((fileName != null || isFileContentType(contentType)) && fileSizeThreshold == 0) {
                         try {
                             if (tempFileLocation != null) {
                                 Files.createDirectories(tempFileLocation);
@@ -252,6 +263,14 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     }
                 }
             }
+        }
+
+        private boolean isFileContentType(String contentType) {
+            if (contentType == null || fileContentTypes == null) {
+                return false;
+            }
+
+            return fileContentTypes.contains(contentType);
         }
 
         @Override

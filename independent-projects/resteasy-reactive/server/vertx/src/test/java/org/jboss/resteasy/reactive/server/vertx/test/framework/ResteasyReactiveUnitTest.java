@@ -121,6 +121,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
     static Vertx vertx;
     static ExecutorService executor;
     boolean deleteUploadedFilesOnEnd = true;
+    List<String> fileContentTypes;
     Path uploadPath;
 
     private List<Consumer<ResteasyReactiveDeploymentManager.ScanStep>> scanCustomizers = new ArrayList<>();
@@ -146,6 +147,11 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
 
     public ResteasyReactiveUnitTest setDeleteUploadedFilesOnEnd(boolean deleteUploadedFilesOnEnd) {
         this.deleteUploadedFilesOnEnd = deleteUploadedFilesOnEnd;
+        return this;
+    }
+
+    public ResteasyReactiveUnitTest setFileContentTypes(List<String> fileContentTypes) {
+        this.fileContentTypes = fileContentTypes;
         return this;
     }
 
@@ -391,7 +397,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         DefaultRuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(Duration.ofMinutes(1),
                 deleteUploadedFilesOnEnd,
                 uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
-                defaultCharset, Optional.empty(), maxFormAttributeSize);
+                fileContentTypes, defaultCharset, Optional.empty(), maxFormAttributeSize);
         ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
                 new VertxRequestContextFactory(), executor);
         fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());

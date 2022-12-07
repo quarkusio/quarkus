@@ -132,7 +132,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     private final List<ObjectLoader> loaders = new ArrayList<>();
     private final Map<Class<?>, ConstantHolder<?>> constants = new HashMap<>();
-    private final Set<Class> classesToUseRecorableConstructor = new HashSet<>();
+    private final Set<Class> classesToUseRecordableConstructor = new HashSet<>();
     private final boolean useIdentityComparison;
 
     /**
@@ -394,7 +394,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     }
 
     public void markClassAsConstructorRecordable(Class<?> clazz) {
-        classesToUseRecorableConstructor.add(clazz);
+        classesToUseRecordableConstructor.add(clazz);
     }
 
     private ProxyInstance getProxyInstance(Class<?> returnType) throws InstantiationException, IllegalAccessException {
@@ -1173,7 +1173,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 nonDefaultConstructorHandles[i] = loadObjectInstance(obj, existing,
                         parameterTypes[count++], relaxedValidation);
             }
-        } else if (classesToUseRecorableConstructor.contains(param.getClass())) {
+        } else if (classesToUseRecordableConstructor.contains(param.getClass())) {
             Constructor<?> current = null;
             int count = 0;
             for (var c : param.getClass().getConstructors()) {

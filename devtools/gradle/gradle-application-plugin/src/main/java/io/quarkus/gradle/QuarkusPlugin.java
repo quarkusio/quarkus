@@ -32,6 +32,7 @@ import org.gradle.util.GradleVersion;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
+import io.quarkus.gradle.tasks.Deploy;
 import io.quarkus.gradle.tasks.ImageBuild;
 import io.quarkus.gradle.tasks.ImagePush;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
@@ -75,6 +76,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String QUARKUS_UPDATE_TASK_NAME = "quarkusUpdate";
     public static final String IMAGE_BUILD_TASK_NAME = "imageBuild";
     public static final String IMAGE_PUSH_TASK_NAME = "imagePush";
+    public static final String DEPLOY_TASK_NAME = "deploy";
 
     @Deprecated
     public static final String BUILD_NATIVE_TASK_NAME = "buildNative";
@@ -162,6 +164,11 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         TaskProvider<ImagePush> imagePush = tasks.register(IMAGE_PUSH_TASK_NAME, ImagePush.class, buildConfig);
         imagePush.configure(task -> {
+            task.finalizedBy(quarkusBuild);
+        });
+
+        TaskProvider<Deploy> deploy = tasks.register(DEPLOY_TASK_NAME, Deploy.class, buildConfig);
+        deploy.configure(task -> {
             task.finalizedBy(quarkusBuild);
         });
 

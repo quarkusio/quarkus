@@ -68,5 +68,4 @@ public class AbstractImageMojo extends BuildMojo {
                         d.getVersion()))
                 .findFirst();
     }
-
 }

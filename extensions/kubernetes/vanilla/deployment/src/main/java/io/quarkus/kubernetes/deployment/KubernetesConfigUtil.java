@@ -2,7 +2,6 @@ package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.container.spi.ImageReference.DEFAULT_TAG;
 import static io.quarkus.deployment.builditem.ApplicationInfoBuildItem.UNSET_VALUE;
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOY;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_TARGET;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.S2I;
@@ -13,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,6 +19,8 @@ import java.util.stream.StreamSupport;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+
+import io.quarkus.deployment.util.DeploymentUtil;
 
 public class KubernetesConfigUtil {
 
@@ -56,7 +56,7 @@ public class KubernetesConfigUtil {
      * Get the user configured deployment target, if any.
      * The configured deployment target is determined using:
      * 1. the value of `quarkus.kubernetes.deployment-target=<deployment-target>`
-     * 2. the presenve of `quarkus.<deployment-target>.deploy=true`
+     * 2. the presence of `quarkus.<deployment-target>.deploy=true`
      */
     public static Optional<String> getConfiguredDeploymentTarget() {
         Config config = ConfigProvider.getConfig();
@@ -90,22 +90,8 @@ public class KubernetesConfigUtil {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * @return true if deployment is explicitly enabled using: `quarkus.<deployment target>.deploy=true`.
-     */
     public static boolean isDeploymentEnabled() {
-        Config config = ConfigProvider.getConfig();
-        Optional<Boolean> indirectTargetEnabled = Stream
-                .concat(System.getProperties().entrySet().stream().map(e -> String.valueOf(e.getKey())).filter(
-                        k -> k.startsWith("quarkus.")), StreamSupport.stream(config.getPropertyNames().spliterator(), false))
-                .map(p -> QUARKUS_DEPLOY_PATTERN.matcher(p))
-                .filter(Matcher::matches)
-                .map(m -> m.group(1))
-                .map(k -> config.getOptionalValue("quarkus." + k + ".deploy", Boolean.class).orElse(false))
-                .findFirst();
-
-        // 'quarkus.kubernetes.deploy' has a default value and thus getOptionaValue will never return `Optional.empty()`
-        return config.getOptionalValue(DEPLOY, Boolean.class).orElse(false) || indirectTargetEnabled.orElse(false);
+        return DeploymentUtil.isDeploymentEnabled("kubernetes", "openshift", "knative");
     }
 
     /*

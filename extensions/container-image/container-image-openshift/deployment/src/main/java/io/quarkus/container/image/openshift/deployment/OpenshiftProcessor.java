@@ -75,6 +75,8 @@ public class OpenshiftProcessor {
     private static final String BUILD_CONFIG_NAME = "openshift.io/build-config.name";
     private static final String RUNNING = "Running";
     private static final String JAVA_APP_JAR = "JAVA_APP_JAR";
+    private static final String JAVA_APP_LIB = "JAVA_APP_LIB";
+    private static final String JAVA_ARGS = "JAVA_ARGS";
 
     private static final int LOG_TAIL_SIZE = 10;
     private static final Logger LOG = Logger.getLogger(OpenshiftProcessor.class);
@@ -94,8 +96,9 @@ public class OpenshiftProcessor {
             decorator.produce(new DecoratorBuildItem(new ApplyDockerfileToBuildConfigDecorator(null,
                     findMainSourcesRoot(out.getOutputDirectory()).getValue().resolve(openshiftConfig.jvmDockerfile))));
             //When using the docker build strategy, we can't possibly know these values, so it's the image responsibility to work without them.
-            decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, "JAVA_APP_JAR")));
-            decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, "JAVA_APP_LIB")));
+            decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, JAVA_APP_JAR)));
+            decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, JAVA_APP_LIB)));
+            decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, JAVA_ARGS)));
         }
     }
 
@@ -110,8 +113,9 @@ public class OpenshiftProcessor {
                     findMainSourcesRoot(out.getOutputDirectory()).getValue().resolve(openshiftConfig.nativeDockerfile))));
         }
         //Let's remove this for all kinds of native build
-        decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, "JAVA_APP_JAR")));
-        decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, "JAVA_APP_LIB")));
+        decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, JAVA_APP_JAR)));
+        decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, JAVA_APP_LIB)));
+        decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, JAVA_ARGS)));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class }, onlyIfNot = NativeBuild.class)
@@ -151,17 +155,22 @@ public class OpenshiftProcessor {
             // If the image is known, we can define env vars for classpath, jar, lib etc.
             baseImage.ifPresent(b -> {
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, null));
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
-                        String.join(" ", config.getEffectiveJvmArguments()), null));
+
+                List<String> jvmArguments = config.getEffectiveJvmArguments();
+                if (!jvmArguments.isEmpty()) {
+                    envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
+                            String.join(" ", jvmArguments), null));
+                }
             });
 
             //In all other cases its the responsibility of the image to set those up correctly.
-            if (hasCustomJarPath || hasCustomJvmArguments) {
+            if (hasCustomJarPath || hasCustomJvmArguments || (baseImage.isPresent() && baseImage.get().isRequiresCommand())) {
+                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(JAVA_APP_JAR, pathToJar, null));
+
                 List<String> cmd = new ArrayList<>();
                 cmd.add("java");
                 cmd.addAll(config.getEffectiveJvmArguments());
                 cmd.addAll(Arrays.asList("-jar", pathToJar));
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(JAVA_APP_JAR, pathToJar, null));
                 commandProducer.produce(KubernetesCommandBuildItem.command(cmd));
             } else if (baseImage.isEmpty()) {
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(JAVA_APP_JAR, pathToJar, null));
@@ -213,11 +222,11 @@ public class OpenshiftProcessor {
             baseImage.ifPresent(b -> {
                 envProducer.produce(
                         KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), nativeBinaryDirectory, OPENSHIFT));
+                commandProducer.produce(KubernetesCommandBuildItem.command(pathToNativeBinary));
                 config.nativeArguments.ifPresent(nativeArguments -> {
                     envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(),
                             String.join(" ", nativeArguments), OPENSHIFT));
                 });
-
             });
 
             if (hasCustomNativePath || hasCustomNativeArguments) {

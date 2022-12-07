@@ -4,16 +4,19 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -25,11 +28,14 @@ import org.infinispan.client.hotrod.logging.LogFactory;
 import org.infinispan.counter.api.CounterConfiguration;
 import org.infinispan.counter.api.CounterManager;
 import org.infinispan.counter.api.CounterType;
+import org.infinispan.counter.api.Storage;
 import org.infinispan.counter.api.StrongCounter;
+import org.infinispan.counter.api.WeakCounter;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
 
 import io.quarkus.infinispan.client.Remote;
+import io.smallrye.common.annotation.Blocking;
 
 @Path("/test")
 public class TestServlet {
@@ -111,16 +117,38 @@ public class TestServlet {
                 .collect(Collectors.joining(",", "[", "]"));
     }
 
+    @Path("counter/{id}")
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public boolean defineCounter(@PathParam("id") String id, @QueryParam("type") String type,
+            @QueryParam("storage") String storage) {
+        cacheSetup.ensureStarted();
+        CounterConfiguration configuration = counterManager.getConfiguration(id);
+        if (configuration == null) {
+            configuration = CounterConfiguration.builder(CounterType.valueOf(type)).storage(Storage.valueOf(storage)).build();
+            return counterManager.defineCounter(id, configuration);
+        }
+        return true;
+    }
+
     @Path("incr/{id}")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
     public CompletionStage<Long> incrementCounter(@PathParam("id") String id) {
         cacheSetup.ensureStarted();
         CounterConfiguration configuration = counterManager.getConfiguration(id);
         if (configuration == null) {
-            configuration = CounterConfiguration.builder(CounterType.BOUNDED_STRONG).build();
-            counterManager.defineCounter(id, configuration);
+            return CompletableFuture.completedFuture(0L);
         }
+
+        if (configuration.type() == CounterType.WEAK) {
+            WeakCounter weakCounter = counterManager.getWeakCounter(id);
+            weakCounter.sync().increment();
+            return CompletableFuture.completedFuture(weakCounter.getValue());
+        }
+
         StrongCounter strongCounter = counterManager.getStrongCounter(id);
         return strongCounter.incrementAndGet();
     }

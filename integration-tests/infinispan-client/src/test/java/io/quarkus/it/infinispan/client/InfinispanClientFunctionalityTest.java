@@ -4,6 +4,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.infinispan.counter.api.CounterType;
+import org.infinispan.counter.api.Storage;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -33,8 +35,30 @@ public class InfinispanClientFunctionalityTest {
 
     @Test
     public void testCounterIncrement() {
-        String initialValue = RestAssured.when().get("test/incr/somevalue").body().print();
-        String nextValue = RestAssured.when().get("test/incr/somevalue").body().print();
+        RestAssured.given()
+                .queryParam("type", CounterType.BOUNDED_STRONG)
+                .queryParam("storage", Storage.VOLATILE)
+                .post("test/counter/strong-1").body().print();
+
+        RestAssured.given()
+                .queryParam("type", CounterType.WEAK)
+                .queryParam("storage", Storage.VOLATILE)
+                .post("test/counter/weak-1").body().print();
+
+        RestAssured.given()
+                .queryParam("type", CounterType.UNBOUNDED_STRONG)
+                .queryParam("storage", Storage.PERSISTENT)
+                .post("test/counter/strong-2").body().print();
+
+        assertCounterIncrement("strong-1");
+        assertCounterIncrement("weak-1");
+        assertCounterIncrement("strong-2");
+    }
+
+    private void assertCounterIncrement(String counterName) {
+        String initialValue = RestAssured.given()
+                .get("test/incr/" + counterName).body().print();
+        String nextValue = RestAssured.when().get("test/incr/" + counterName).body().print();
         assertEquals(Integer.parseInt(initialValue) + 1, Integer.parseInt(nextValue));
     }
 

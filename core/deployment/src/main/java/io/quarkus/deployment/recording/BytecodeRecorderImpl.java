@@ -1219,7 +1219,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         for (Property i : desc) {
             if (!i.getDeclaringClass().getPackageName().startsWith("java.")) {
                 // check if the getter is ignored
-                if ((i.getReadMethod() != null) && (i.getReadMethod().getAnnotation(IgnoreProperty.class) != null)) {
+                if ((i.getReadMethod() != null) && RecordingAnnotationsUtil.isIgnored(i.getReadMethod())) {
                     continue;
                 }
                 // check if the matching field is ignored
@@ -1556,7 +1556,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
      * Returns {@code true} iff the field is annotated {@link IgnoreProperty} or the field is marked as {@code transient}
      */
     private static boolean ignoreField(Field field) {
-        return (field.getAnnotation(IgnoreProperty.class) != null) || Modifier.isTransient(field.getModifiers());
+        if (Modifier.isTransient(field.getModifiers())) {
+            return true;
+        }
+        return RecordingAnnotationsUtil.isIgnored(field);
     }
 
     private DeferredParameter findLoaded(final Object param) {

@@ -59,6 +59,10 @@ If you are using the Maven command, the following table lists the attributes you
 | The version currently recommended by the https://quarkus.io/guides/extension-registry-user[Quarkus Extension Registry]
 | The version of the platform you want the project to use. It can also accept a version range, in which case the latest from the specified range will be used.
 
+| `javaVersion`
+| 17
+| The version of Java you want the project to use.
+
 | `className`
 | _Not created if omitted_
 | The fully qualified name of the generated resource

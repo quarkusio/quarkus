@@ -6,10 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 TODO: See Quarkus documentation reference for details
 - Title should have an implied "Understanding..." in front. 
-- ID should start with 'concept-'
+- ID should end with '-concept' (using the filename works)
 - choose appropriate categories
 ////
-[id="concept-..."]
+[id="...-concept"]
 = Title using sentence capitalization
 include::_attributes.adoc[]
 :categories: ...
@@ -29,7 +29,7 @@ include::{includes}/extension-status.adoc[]
 
 == Create additional sections
 
-- xref:{doc-guides}/doc-concepts.adoc#concept[Documentation concepts: Concept guides]
+- xref:{doc-guides}/doc-concept.adoc#concept[Documentation concepts: Concept guides]
 - xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
 
 == Guidelines for a good Concept doc

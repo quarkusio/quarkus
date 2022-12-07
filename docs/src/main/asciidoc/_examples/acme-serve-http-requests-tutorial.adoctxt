@@ -3,7 +3,7 @@ This document is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="tutorial-acme-serve-http-requests"]
+[id="acme-serve-http-requests-tutorial"]
 = Serve Http requests using the Acme extension
 include::_attributes.adoc[]
 :categories: web

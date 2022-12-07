@@ -6,10 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 TODO: See Quarkus documentation reference for details
 - Title should have an implied "How to..." in front. 
-- ID should start with 'howto-'
+- ID should end with '-howto' (using the filename works)
 - choose appropriate categories
 ////
-[id="howto-..."]
+[id="...-howto"]
 = Title using sentence capitalization
 include::_attributes.adoc[]
 :categories: ...
@@ -33,7 +33,7 @@ Your user will also be in the middle of something: define the starting-point tha
 == Resources
 
 - xref:{doc-guides}/doc-create-howto-tutorial.adoc[Tutorial: Create a How-To]
-- xref:{doc-guides}/doc-concepts.adoc#howto-guide[Documentation concepts: How-to guides]
+- xref:{doc-guides}/doc-concept.adoc#howto-guide[Documentation concepts: How-to guides]
 - xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
 
 == Guidelines for good How-To guides

@@ -304,26 +304,24 @@ public class YamlMetadataGenerator {
     }
 
     enum Type {
-        concepts("concepts", "Concepts", "concept"),
-        howto("howto", "How-To Guides"),
+        concept("concepts", "Concept", "concept"),
+        howto("howto", "How-To Guide"),
         tutorial("tutorial", "Tutorial"),
         reference("reference", "Reference"),
-        other("guide", "General Guides");
+        other("guide", "General Guide");
 
         final String name;
         final String id;
-        final String prefix;
+        final String suffix;
 
         Type(String id, String name) {
-            this.name = name;
-            this.id = id;
-            this.prefix = id;
+            this(id, name, id);
         }
 
-        Type(String id, String name, String prefix) {
+        Type(String id, String name, String suffix) {
             this.name = name;
             this.id = id;
-            this.prefix = prefix;
+            this.suffix = suffix;
         }
     }
 
@@ -452,8 +450,8 @@ public class YamlMetadataGenerator {
 
             if (this.categories.contains(Category.getting_started)) {
                 this.type = Type.tutorial;
-            } else if (filename.endsWith("-concepts.adoc")) {
-                this.type = Type.concepts;
+            } else if (filename.endsWith("-concept.adoc")) {
+                this.type = Type.concept;
             } else if (filename.endsWith("-howto.adoc")) {
                 this.type = Type.howto;
             } else if (filename.endsWith("-tutorial.adoc")) {
@@ -467,11 +465,11 @@ public class YamlMetadataGenerator {
 
             if (id == null) {
                 errors.record("missing-id", path);
-            } else if (type != Type.other && !id.startsWith(type.prefix)) {
+            } else if (type != Type.other && !id.endsWith(type.suffix)) {
                 errors.record("incorrect-id", path,
                         String.format(
-                                "The document id (%s) does not start with the correct prefix, should start with '%s-'%n",
-                                id, type.prefix));
+                                "The document id (%s) does not end with the correct suffix, should end with '-%s'%n",
+                                id, type.suffix));
             }
 
             if (this.categories.isEmpty()) {

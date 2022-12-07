@@ -6,10 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 TODO: See Quarkus documentation reference for details
 - Finish a sentence like: "Create a ...", "How to ..." 
-- ID should start with 'tutorial-'
+- ID should end with '-tutorial' (using the filename works)
 - choose appropriate categories 
 ////
-[id="tutorial-..."]
+[id="...-tutorial"]
 = Title using sentence capitalization
 include::_attributes.adoc[]
 :categories: ...
@@ -43,7 +43,7 @@ This file offers a few different variables that can be used to tweak what is sho
 == Outline steps
 
 - xref:{doc-guides}/doc-create-tutorial.adoc[Tutorial: Create a tutorial]
-- xref:{doc-guides}/doc-concepts.adoc#tutorial[Documentation concepts: Tutorials]
+- xref:{doc-guides}/doc-concept.adoc#tutorial[Documentation concepts: Tutorials]
 - xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
 
 Each step should conclude with a comprehensible/observable result.

@@ -47,13 +47,39 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     private final Predicate<BeanInfo> predicate;
+    private final Set<String> classNames;
 
     public UnremovableBeanBuildItem(Predicate<BeanInfo> predicate) {
         this.predicate = predicate;
+        this.classNames = Collections.emptySet();
+    }
+
+    public UnremovableBeanBuildItem(BeanClassNameExclusion predicate) {
+        this.predicate = predicate;
+        this.classNames = Collections.singleton(predicate.className);
+    }
+
+    public UnremovableBeanBuildItem(BeanClassNamesExclusion predicate) {
+        this.predicate = predicate;
+        this.classNames = predicate.classNames;
+    }
+
+    public UnremovableBeanBuildItem(BeanTypeExclusion predicate) {
+        this.predicate = predicate;
+        this.classNames = Collections.singleton(predicate.dotName.toString());
+    }
+
+    public UnremovableBeanBuildItem(BeanTypesExclusion predicate) {
+        this.predicate = predicate;
+        this.classNames = predicate.dotNames.stream().map(DotName::toString).collect(Collectors.toSet());
     }
 
     public Predicate<BeanInfo> getPredicate() {
         return predicate;
+    }
+
+    public Set<String> getClassNames() {
+        return classNames;
     }
 
     /**

@@ -78,23 +78,4 @@ public class HelloResource {
         return Uni.createFrom().item("Hello")
                 .onItem().delayIt().by(Duration.ofMillis(500));
     }
-
-    @Path("callClientForImageInfo")
-    @GET
-    public String callClientForImageInfo() {
-        int size = 1024 * 1024 * 5;
-
-        byte[] buffer = new byte[size];
-
-        //Should provoke 415 Unsupported Media Type
-        return client2.imageInfo(buffer);
-    }
-
-    @POST
-    @Consumes({ "image/jpeg", "image/png" })
-    @Path("/imageInfo")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String imageInfo(byte[] imageFile) {
-        throw new IllegalStateException("This method should never be invoked");
-    }
 }

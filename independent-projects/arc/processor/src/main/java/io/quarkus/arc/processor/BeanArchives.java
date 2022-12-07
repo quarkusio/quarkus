@@ -52,14 +52,23 @@ public final class BeanArchives {
     /**
      *
      * @param applicationIndexes
-     * @return the final bean archive index
+     * @return the immutable bean archive index
      */
-    public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader,
-            Map<DotName, Optional<ClassInfo>> additionalClasses, IndexView... applicationIndexes) {
+    public static IndexView buildImmutableBeanArchiveIndex(IndexView... applicationIndexes) {
         List<IndexView> indexes = new ArrayList<>();
         Collections.addAll(indexes, applicationIndexes);
         indexes.add(buildAdditionalIndex());
-        return new IndexWrapper(CompositeIndex.create(indexes), deploymentClassLoader, additionalClasses);
+        return CompositeIndex.create(indexes);
+    }
+
+    /**
+     *
+     * @param wrappedIndexes
+     * @return the computing bean archive index
+     */
+    public static IndexView buildComputingBeanArchiveIndex(ClassLoader deploymentClassLoader,
+            Map<DotName, Optional<ClassInfo>> additionalClasses, IndexView immutableIndex) {
+        return new IndexWrapper(immutableIndex, deploymentClassLoader, additionalClasses);
     }
 
     private static IndexView buildAdditionalIndex() {

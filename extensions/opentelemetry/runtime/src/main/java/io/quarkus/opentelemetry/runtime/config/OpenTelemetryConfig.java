@@ -27,6 +27,8 @@ public final class OpenTelemetryConfig {
     @ConfigItem(defaultValue = "tracecontext,baggage")
     public List<String> propagators;
 
-    /** Build / static runtime config for tracer */
+    /**
+     * Build / static runtime config for tracer
+     */
     public TracerConfig tracer;
 }

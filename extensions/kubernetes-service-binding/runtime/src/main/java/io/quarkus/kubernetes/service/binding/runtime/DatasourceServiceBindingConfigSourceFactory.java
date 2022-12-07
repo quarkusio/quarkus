@@ -47,9 +47,14 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
             log.debugf("Property 'password' was not found for datasource of type %s", serviceBinding.getType());
         }
 
-        String url = bindingProperties.get("jdbc-url");
-        if (url != null) {
-            properties.put(urlPropertyName, url);
+        String jdbcURL = bindingProperties.get("jdbc-url");
+        if (jdbcURL != null) {
+            properties.put(urlPropertyName, jdbcURL);
+            return properties;
+        }
+        String uri = bindingProperties.get("uri");
+        if (uri != null) {
+            properties.put(urlPropertyName, uri);
             return properties;
         }
 
@@ -63,7 +68,7 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
             }
             properties.put(urlPropertyName, formatUrl(urlFormat, serviceBinding.getType(), host, database, portPart));
         } else {
-            log.debugf("One or more of 'host' or 'database' properties were not found for datasource of type %s",
+            log.warnf("One or more of 'host' or 'database' properties were not found for datasource of type %s",
                     serviceBinding.getType());
         }
 

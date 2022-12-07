@@ -32,6 +32,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -62,6 +63,7 @@ import io.quarkus.extest.runtime.config.TestConfigRoot;
 import io.quarkus.extest.runtime.config.TestMappingBuildTime;
 import io.quarkus.extest.runtime.config.TestMappingBuildTimeRunTime;
 import io.quarkus.extest.runtime.config.TestMappingRunTime;
+import io.quarkus.extest.runtime.config.UnremovableMappingFromBuildItem;
 import io.quarkus.extest.runtime.config.XmlConfig;
 import io.quarkus.extest.runtime.logging.AdditionalLogHandlerValueFactory;
 import io.quarkus.extest.runtime.runtimeinitializedpackage.RuntimeInitializedClass;
@@ -473,6 +475,11 @@ public final class TestProcessor {
     @BuildStep
     void runTimeConfigBuilder(BuildProducer<RunTimeConfigBuilderBuildItem> configBuilders) {
         configBuilders.produce(new RunTimeConfigBuilderBuildItem(RunTimeConfigBuilder.class.getName()));
+    }
+
+    @BuildStep
+    void unremoveableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(UnremovableMappingFromBuildItem.class));
     }
 
     @BuildStep(onlyIf = Never.class)

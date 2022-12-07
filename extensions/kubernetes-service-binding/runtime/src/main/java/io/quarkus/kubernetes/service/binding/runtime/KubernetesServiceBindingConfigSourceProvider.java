@@ -33,7 +33,7 @@ public class KubernetesServiceBindingConfigSourceProvider implements ConfigSourc
         this.serviceBindingConverters = serviceBindingConverters;
         Path p = Paths.get(bindingRoot);
         if (!Files.exists(p)) {
-            log.warn("Service Binding root '" + p.toAbsolutePath().toString() + "' does not exist");
+            log.warn("Service Binding root '" + p.toAbsolutePath() + "' does not exist");
             serviceBindings = Collections.emptyList();
             return;
         }
@@ -43,7 +43,7 @@ public class KubernetesServiceBindingConfigSourceProvider implements ConfigSourc
 
         File[] files = p.toFile().listFiles();
         if (files == null) {
-            log.warn("Service Binding root '" + p.toAbsolutePath().toString() + "' does not contain any sub-directories");
+            log.warn("Service Binding root '" + p.toAbsolutePath() + "' does not contain any sub-directories");
             serviceBindings = Collections.emptyList();
         } else {
             log.debug("Found " + files.length + " potential Service Binding directories");
@@ -54,10 +54,10 @@ public class KubernetesServiceBindingConfigSourceProvider implements ConfigSourc
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("Directory '%s' contains %d %s and will be used as Service Binding %s",
                             f.toPath().toAbsolutePath(), sb.getProperties().size(),
-                            sb.getProperties().size() == 1 ? "property" : "properties", sb.toString()));
+                            sb.getProperties().size() == 1 ? "property" : "properties", sb));
                 }
             }
-            serviceBindings.sort(new Comparator<ServiceBinding>() {
+            serviceBindings.sort(new Comparator<>() {
                 @Override
                 public int compare(ServiceBinding o1, ServiceBinding o2) {
                     if (!o1.getName().equals(o2.getName())) {

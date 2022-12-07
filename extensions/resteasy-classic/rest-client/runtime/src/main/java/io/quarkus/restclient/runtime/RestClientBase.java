@@ -24,6 +24,7 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 
@@ -149,6 +150,13 @@ public class RestClientBase {
                 clientConfigByConfigKey().hostnameVerifier, configRoot.hostnameVerifier);
         if (hostnameVerifier.isPresent()) {
             registerHostnameVerifier(hostnameVerifier.get(), builder);
+        } else {
+            // If `verify-host` is disabled, we configure the client using the `NoopHostnameVerifier` verifier.
+            Optional<Boolean> verifyHost = oneOf(clientConfigByClassName().verifyHost, clientConfigByConfigKey().verifyHost,
+                    configRoot.verifyHost);
+            if (verifyHost.isPresent() && !verifyHost.get()) {
+                registerHostnameVerifier(NoopHostnameVerifier.class.getName(), builder);
+            }
         }
     }
 

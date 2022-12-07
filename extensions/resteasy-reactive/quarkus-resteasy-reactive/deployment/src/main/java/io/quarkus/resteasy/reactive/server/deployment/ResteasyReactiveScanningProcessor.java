@@ -123,7 +123,6 @@ public class ResteasyReactiveScanningProcessor {
                 new UnwrappedExceptionBuildItem(RollbackException.class));
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
     public ExceptionMappersBuildItem scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
@@ -163,10 +162,30 @@ public class ResteasyReactiveScanningProcessor {
             ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
             mapper.setPriority(priority);
             mapper.setClassName(additionalExceptionMapper.getClassName());
+            addRuntimeCheckIfNecessary(additionalExceptionMapper, mapper);
             exceptions.addExceptionMapper(additionalExceptionMapper.getHandledExceptionName(), mapper);
         }
         additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
         return new ExceptionMappersBuildItem(exceptions);
+    }
+
+    private static void addRuntimeCheckIfNecessary(ExceptionMapperBuildItem additionalExceptionMapper,
+            ResourceExceptionMapper<Throwable> mapper) {
+        ClassInfo declaringClass = additionalExceptionMapper.getDeclaringClass();
+        if (declaringClass != null) {
+            boolean needsRuntimeCheck = false;
+            List<AnnotationInstance> classAnnotations = declaringClass.declaredAnnotations();
+            for (AnnotationInstance classAnnotation : classAnnotations) {
+                if (CONDITIONAL_BEAN_ANNOTATIONS.contains(classAnnotation.name())) {
+                    needsRuntimeCheck = true;
+                    break;
+                }
+            }
+            if (needsRuntimeCheck) {
+                mapper.setDiscardAtRuntime(new ResourceExceptionMapper.DiscardAtRuntimeIfBeanIsUnavailable(
+                        declaringClass.name().toString()));
+            }
+        }
     }
 
     @BuildStep
@@ -387,10 +406,31 @@ public class ResteasyReactiveScanningProcessor {
             additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             Map<String, String> generatedClassNames = ServerExceptionMapperGenerator.generateGlobalMapper(methodInfo,
                     new GeneratedBeanGizmoAdaptor(generatedBean),
-                    Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
+                    Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()),
+                    (m -> {
+                        List<AnnotationInstance> methodAnnotations = m.annotations();
+                        for (AnnotationInstance methodAnnotation : methodAnnotations) {
+                            if (CONDITIONAL_BEAN_ANNOTATIONS.contains(methodAnnotation.name())) {
+                                throw new RuntimeException(
+                                        "The combination of '@" + methodAnnotation.name().withoutPackagePrefix()
+                                                + "' and '@ServerExceptionMapper' is not allowed. Offending method is '"
+                                                + m.name() + "' of class '" + m.declaringClass().name() + "'");
+                            }
+                        }
+
+                        List<AnnotationInstance> classAnnotations = m.declaringClass().declaredAnnotations();
+                        for (AnnotationInstance classAnnotation : classAnnotations) {
+                            if (CONDITIONAL_BEAN_ANNOTATIONS.contains(classAnnotation.name())) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }));
             for (Map.Entry<String, String> entry : generatedClassNames.entrySet()) {
                 ExceptionMapperBuildItem.Builder builder = new ExceptionMapperBuildItem.Builder(entry.getValue(),
-                        entry.getKey()).setRegisterAsBean(false);// it has already been made a bean
+                        entry.getKey())
+                        .setRegisterAsBean(false) // it has already been made a bean
+                        .setDeclaringClass(methodInfo.declaringClass()); // we'll use this later on
                 AnnotationValue priorityValue = instance.value("priority");
                 if (priorityValue != null) {
                     builder.setPriority(priorityValue.asInt());

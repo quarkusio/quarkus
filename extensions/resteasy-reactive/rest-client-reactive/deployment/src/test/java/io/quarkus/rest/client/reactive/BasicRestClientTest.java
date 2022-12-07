@@ -1,10 +1,7 @@
 package io.quarkus.rest.client.reactive;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,24 +71,5 @@ public class BasicRestClientTest {
         assertThat(map.get("p4")).isEqualTo("4");
         assertThat(map.get("p5")).isEqualTo("5");
         assertThat(map.get("p6")).isEqualTo("6");
-    }
-
-    /**
-     * Test to reproduce https://github.com/quarkusio/quarkus/issues/28818.
-     */
-    @Test
-    void shouldCloseConnectionsWhenFailures() {
-        // It's using 30 seconds because it's the default timeout to release connections. This timeout should not be taken into
-        // account when there are failures, and we should be able to call 3 times to the service without waiting.
-        await().atMost(Duration.ofSeconds(30))
-                .until(() -> {
-                    for (int call = 0; call < 3; call++) {
-                        given()
-                                .when().get("/hello/callClientForImageInfo")
-                                .then()
-                                .statusCode(500);
-                    }
-                    return true;
-                });
     }
 }

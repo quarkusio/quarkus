@@ -5,11 +5,13 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.it.rest.client.wronghost.ExternalWrongHostTestResourceUsingHostnameVerifier;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 @QuarkusTestResource(ExternalTlsTrustAllTestResource.class)
+@QuarkusTestResource(value = ExternalWrongHostTestResourceUsingHostnameVerifier.class, restrictToAnnotatedClass = true)
 public class ExternalTlsTrustAllTestCase {
 
     @Test

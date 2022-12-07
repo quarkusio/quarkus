@@ -87,6 +87,10 @@ The following table matches the legacy RESTEasy annotations with the new RESTEas
 |`org.jboss.resteasy.reactive.RestStreamElementType`
 |
 
+|`org.jboss.resteasy.annotations.Separator`
+|`org.jboss.resteasy.reactive.Separator`
+|
+
 |===
 
 NOTE: The previous table does not include the `org.jboss.resteasy.annotations.Form` annotation because there is no RESTEasy Reactive specific replacement for it.

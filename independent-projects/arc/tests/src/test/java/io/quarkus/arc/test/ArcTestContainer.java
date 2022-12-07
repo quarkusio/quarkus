@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -322,14 +323,14 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         Arc.shutdown();
 
         // Build index
-        Index beanArchiveIndex;
+        IndexView immutableBeanArchiveIndex;
         try {
-            beanArchiveIndex = index(beanClasses);
+            immutableBeanArchiveIndex = BeanArchives.buildImmutableBeanArchiveIndex(index(beanClasses));
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create index", e);
         }
 
-        Index applicationIndex;
+        IndexView applicationIndex;
         if (additionalClasses.isEmpty()) {
             applicationIndex = null;
         } else {
@@ -370,8 +371,9 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
             BeanProcessor.Builder builder = BeanProcessor.builder()
                     .setName(testClass.getSimpleName())
-                    .setBeanArchiveIndex(BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(),
-                            new ConcurrentHashMap<>(), beanArchiveIndex))
+                    .setImmutableBeanArchiveIndex(immutableBeanArchiveIndex)
+                    .setComputingBeanArchiveIndex(BeanArchives.buildComputingBeanArchiveIndex(getClass().getClassLoader(),
+                            new ConcurrentHashMap<>(), immutableBeanArchiveIndex))
                     .setApplicationIndex(applicationIndex);
             if (!resourceAnnotations.isEmpty()) {
                 builder.addResourceAnnotations(resourceAnnotations.stream()

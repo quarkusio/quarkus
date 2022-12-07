@@ -1098,7 +1098,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     @Override
                     public Void apply(Void t) {
                         String logoutUri = buildLogoutRedirectUri(configContext, idToken, context);
-                        LOG.debugf("Logout uri: %s");
+                        LOG.debugf("Logout uri: %s", logoutUri);
                         throw new AuthenticationRedirectException(logoutUri);
                     }
                 });

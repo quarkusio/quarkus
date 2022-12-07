@@ -522,7 +522,9 @@ final class CustomFilterGenerator {
         if (checkForOptionalBean) {
             // generate a constructor that takes the Instance<TargetClass> as an argument
             ctor = cc.getMethodCreator("<init>", void.class, Instance.class).setSignature(
-                    String.format("(Ljavax/enterprise/inject/Instance<L%s;>;)V", declaringClassName.replace('.', '/')));
+                    String.format("(L%s<L%s;>;)V",
+                            Instance.class.getName().replace('.', '/'),
+                            declaringClassName.replace('.', '/')));
         } else {
             // generate a constructor that takes the target class as an argument - this class is a CDI bean so Arc will be able to inject into the generated class
             ctor = cc.getMethodCreator("<init>", void.class, declaringClassName);

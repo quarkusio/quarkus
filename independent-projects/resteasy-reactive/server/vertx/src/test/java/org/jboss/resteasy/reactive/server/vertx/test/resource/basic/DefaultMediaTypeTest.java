@@ -216,4 +216,28 @@ public class DefaultMediaTypeTest {
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
     }
+
+    @Test
+    @DisplayName("Post Multi Media Type Consumer")
+    public void testConsumesMultiMediaType() {
+        WebTarget target = client.target(generateURL("/postMultiMediaTypeConsumer"));
+        Response response = target.request().post(Entity.entity("payload", "application/soap+xml"));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
+                response.getStatus());
+        Assertions.assertEquals("postMultiMediaTypeConsumer", response.readEntity(String.class));
+
+        response = target.request().post(Entity.entity("payload", MediaType.TEXT_XML));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
+                response.getStatus());
+        Assertions.assertEquals("postMultiMediaTypeConsumer", response.readEntity(String.class));
+
+        response = target.request().post(Entity.entity("payload", "any/media-type"));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
+                response.getStatus());
+        Assertions.assertEquals("any/media-type", response.readEntity(String.class));
+
+        response = target.request().post(Entity.entity("payload", "unexpected/media-type"));
+        Assertions.assertEquals(Response.Status.UNSUPPORTED_MEDIA_TYPE.getStatusCode(),
+                response.getStatus());
+    }
 }

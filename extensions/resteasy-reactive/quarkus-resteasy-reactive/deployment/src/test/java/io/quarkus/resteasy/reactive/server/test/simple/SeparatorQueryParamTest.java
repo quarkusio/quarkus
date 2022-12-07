@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.*;
 
 import java.util.List;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -33,8 +34,26 @@ public class SeparatorQueryParamTest {
     }
 
     @Test
+    public void noQueryParamsBean() {
+        get("/hello/bean")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("hello world"))
+                .header("x-size", "0");
+    }
+
+    @Test
     public void singleQueryParam() {
         get("/hello?name=foo")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("hello foo"))
+                .header("x-size", "1");
+    }
+
+    @Test
+    public void singleQueryParamBean() {
+        get("/hello/bean?name=foo")
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("hello foo"))
@@ -55,6 +74,16 @@ public class SeparatorQueryParamTest {
 
         @GET
         public RestResponse<String> hello(@RestQuery("name") @Separator(",") List<String> names) {
+            return toResponse(names);
+        }
+
+        @GET
+        @Path("bean")
+        public RestResponse<String> helloBean(@BeanParam Bean bean) {
+            return toResponse(bean.names);
+        }
+
+        private RestResponse<String> toResponse(List<String> names) {
             int size = names.size();
             String body = "";
             if (names.isEmpty()) {
@@ -65,5 +94,11 @@ public class SeparatorQueryParamTest {
             return RestResponse.ResponseBuilder.ok(body).header("x-size", size).build();
         }
 
+    }
+
+    public static class Bean {
+        @RestQuery("name")
+        @Separator(",")
+        public List<String> names;
     }
 }

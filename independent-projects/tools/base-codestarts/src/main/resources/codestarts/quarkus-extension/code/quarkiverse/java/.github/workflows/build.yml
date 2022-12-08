@@ -46,3 +46,6 @@ jobs:
 
       - name: Build with Maven
         run: mvn -B clean verify -Dno-format
+
+      - name: Build with Maven (Native)
+        run: mvn -B verify -Dnative -Dquarkus.native.container-build -Dnative.surefire.skip

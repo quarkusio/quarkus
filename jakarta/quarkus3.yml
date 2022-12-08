@@ -24,10 +24,10 @@ tags:
 recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus.platform.version
-      newValue: 3.0.0.Alpha1
+      newValue: 3.0.0.Alpha2
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus.version
-      newValue: 3.0.0.Alpha1
+      newValue: 3.0.0.Alpha2
   - org.openrewrite.java.migrate.JavaxMigrationToJakarta
 ---
 type: specs.openrewrite.org/v1beta/recipe

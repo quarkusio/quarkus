@@ -131,7 +131,7 @@
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
-        <infinispan.version>14.0.2.Final</infinispan.version>
+        <infinispan.version>14.0.3.Final</infinispan.version>
         <infinispan.protostream.version>4.5.0.Final</infinispan.protostream.version>
         <caffeine.version>3.1.1</caffeine.version>
         <netty.version>4.1.85.Final</netty.version>
@@ -157,12 +157,12 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.11</jboss-logmanager.version>
-        <flyway.version>9.8.3</flyway.version>
+        <flyway.version>9.9.0</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.17.2</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>4.8.0</mongo-client.version>
+        <mongo-client.version>4.8.1</mongo-client.version>
         <mongo-crypt.version>1.6.1</mongo-crypt.version>
         <proton-j.version>0.34.0</proton-j.version>
         <javaparser.version>3.24.2</javaparser.version>

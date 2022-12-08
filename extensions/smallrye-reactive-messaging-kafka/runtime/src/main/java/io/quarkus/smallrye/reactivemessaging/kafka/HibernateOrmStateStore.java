@@ -29,7 +29,7 @@ import io.vertx.mutiny.core.Vertx;
 
 public class HibernateOrmStateStore implements CheckpointStateStore {
 
-    public static final String QUARKUS_HIBERNATE_ORM = "quarkus-hibernate-orm";
+    public static final String HIBERNATE_ORM_STATE_STORE = "quarkus-hibernate-orm";
     private final String consumerGroupId;
     private final SessionFactory sf;
     private final Class<? extends CheckpointEntity> stateType;
@@ -42,7 +42,7 @@ public class HibernateOrmStateStore implements CheckpointStateStore {
     }
 
     @ApplicationScoped
-    @Identifier(QUARKUS_HIBERNATE_ORM)
+    @Identifier(HIBERNATE_ORM_STATE_STORE)
     public static class Factory implements CheckpointStateStore.Factory {
 
         @Inject
@@ -57,7 +57,7 @@ public class HibernateOrmStateStore implements CheckpointStateStore {
                 throw new IllegalArgumentException("State type needs to extend `CheckpointEntity`");
             }
             String persistenceUnit = config.config().getOptionalValue(KafkaCommitHandler.Strategy.CHECKPOINT + "." +
-                    QUARKUS_HIBERNATE_ORM + ".persistence-unit", String.class)
+                    HIBERNATE_ORM_STATE_STORE + ".persistence-unit", String.class)
                     .orElse(null);
             SessionFactory sf = persistenceUnit != null
                     ? sessionFactories.select(new PersistenceUnit.PersistenceUnitLiteral(persistenceUnit)).get()

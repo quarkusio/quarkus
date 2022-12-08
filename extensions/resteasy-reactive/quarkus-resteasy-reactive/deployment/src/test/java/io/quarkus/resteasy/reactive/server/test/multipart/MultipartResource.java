@@ -37,7 +37,7 @@ public class MultipartResource {
         }
         return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - " + formData.getStatus()
                 + " - "
-                + formData.getHtmlPart().contentType() + " - " + Files.exists(formData.xmlPart) + " - "
+                + Files.exists(formData.getHtmlPart().filePath()) + " - " + Files.exists(formData.xmlPart) + " - "
                 + formData.txtFile.exists();
     }
 
@@ -74,7 +74,7 @@ public class MultipartResource {
         }
         return name + " - " + active + " - " + times * num + " - " + status
                 + " - "
-                + htmlPart.contentType() + " - " + Files.exists(xmlPart) + " - "
+                + Files.exists(htmlPart.filePath()) + " - " + Files.exists(xmlPart) + " - "
                 + txtFile.exists();
     }
 

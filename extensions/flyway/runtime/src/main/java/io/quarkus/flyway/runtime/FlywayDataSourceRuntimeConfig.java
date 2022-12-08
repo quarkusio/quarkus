@@ -52,14 +52,14 @@ public final class FlywayDataSourceRuntimeConfig {
     public Optional<String> username = Optional.empty();
 
     /**
-     * Set a password that will Flyway will use to connect to the datasource.
+     * Set a password that Flyway will use to connect to the datasource.
      */
 
     @ConfigItem
     public Optional<String> password = Optional.empty();
 
     /**
-     * Set a new jdbcurl that will Flyway will use to connect to the datasource.
+     * Set a new jdbcurl that Flyway will use to connect to the datasource.
      */
 
     @ConfigItem

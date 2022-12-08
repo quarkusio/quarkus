@@ -177,6 +177,9 @@
         <!-- google cloud functions invoker-->
         <gcf-invoker.version>1.1.1</gcf-invoker.version>
         <owasp-dependency-check-plugin.version>7.4.4</owasp-dependency-check-plugin.version>
+
+        <!-- Jakarta JMS API -->
+        <jakarta.jms-api.version>2.0.3</jakarta.jms-api.version>
     </properties>
 
     <dependencyManagement>
@@ -349,6 +352,11 @@
                 <groupId>org.webjars.npm</groupId>
                 <artifactId>mermaid</artifactId>
                 <version>${webjar.mermaid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.jms</groupId>
+                <artifactId>jakarta.jms-api</artifactId>
+                <version>${jakarta.jms-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.github.davidmoten</groupId>

@@ -12,6 +12,9 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.runtime.configuration.ConfigurationException;
+
 class FlywayCreator {
 
     private static final String[] EMPTY_ARRAY = new String[0];
@@ -33,7 +36,28 @@ class FlywayCreator {
 
     public Flyway createFlyway(DataSource dataSource) {
         FluentConfiguration configure = Flyway.configure();
-        configure.dataSource(dataSource);
+
+        if (flywayRuntimeConfig.jdbcUrl.isPresent()) {
+            if (flywayRuntimeConfig.username.isPresent() && flywayRuntimeConfig.password.isPresent()) {
+                configure.dataSource(flywayRuntimeConfig.jdbcUrl.get(), flywayRuntimeConfig.username.get(),
+                        flywayRuntimeConfig.password.get());
+            } else {
+                throw new ConfigurationException(
+                        "Username and password must be defined when a JDBC URL is provided in the Flyway configuration");
+            }
+        } else {
+            if (flywayRuntimeConfig.username.isPresent() && flywayRuntimeConfig.password.isPresent()) {
+                AgroalDataSource agroalDataSource = (AgroalDataSource) dataSource;
+                String jdbcUrl = agroalDataSource.getConfiguration().connectionPoolConfiguration()
+                        .connectionFactoryConfiguration().jdbcUrl();
+
+                configure.dataSource(jdbcUrl, flywayRuntimeConfig.username.get(),
+                        flywayRuntimeConfig.password.get());
+            } else {
+
+                configure.dataSource(dataSource);
+            }
+        }
         if (flywayRuntimeConfig.initSql.isPresent()) {
             configure.initSql(flywayRuntimeConfig.initSql.get());
         }

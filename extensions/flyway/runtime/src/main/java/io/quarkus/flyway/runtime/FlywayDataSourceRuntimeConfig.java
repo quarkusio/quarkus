@@ -44,6 +44,28 @@ public final class FlywayDataSourceRuntimeConfig {
     public Optional<String> defaultSchema = Optional.empty();
 
     /**
+     * Sets a specific user that will Flyway will use to connect to the datasource.
+     * Allows to have a specific user that can apply DDL to the schema while the standard user used for the datasource may not.
+     */
+
+    @ConfigItem
+    public Optional<String> username = Optional.empty();
+
+    /**
+     * Set a password that Flyway will use to connect to the datasource.
+     */
+
+    @ConfigItem
+    public Optional<String> password = Optional.empty();
+
+    /**
+     * Set a new jdbcurl that Flyway will use to connect to the datasource.
+     */
+
+    @ConfigItem
+    public Optional<String> jdbcUrl = Optional.empty();
+
+    /**
      * Comma-separated case-sensitive list of schemas managed by Flyway.
      * The first schema in the list will be automatically set as the default one during the migration.
      * It will also be the one containing the schema history table.

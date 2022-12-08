@@ -13,35 +13,49 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
     @Override
     public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
-        markTestAsFailed(context, throwable);
+        if (shouldMarkFailure(context)) {
+            markTestAsFailed(context, throwable);
+        }
 
         throw throwable;
     }
 
     @Override
     public void handleAfterEachMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
-        markTestAsFailed(context, throwable);
+        if (shouldMarkFailure(context)) {
+            markTestAsFailed(context, throwable);
+        }
 
         throw throwable;
     }
 
     @Override
     public void handleBeforeAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
-        markTestAsFailed(context, throwable);
+        if (shouldMarkFailure(context)) {
+            markTestAsFailed(context, throwable);
+        }
 
         throw throwable;
     }
 
     @Override
     public void handleBeforeEachMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
-        markTestAsFailed(context, throwable);
+        if (shouldMarkFailure(context)) {
+            markTestAsFailed(context, throwable);
+        }
 
         throw throwable;
     }
 
     @Override
     public void testFailed(ExtensionContext context, Throwable cause) {
-        markTestAsFailed(context, cause);
+        if (shouldMarkFailure(context)) {
+            markTestAsFailed(context, cause);
+        }
+    }
+
+    protected boolean shouldMarkFailure(ExtensionContext context) {
+        return false;
     }
 
     protected QuarkusTestExtensionState getState(ExtensionContext context) {

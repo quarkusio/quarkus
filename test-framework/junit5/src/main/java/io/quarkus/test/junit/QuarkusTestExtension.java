@@ -1200,6 +1200,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 + "' disabled because 'quarkus.profile.test.tags' don't match the tags of '" + testProfile + "'");
     }
 
+    @Override
+    protected boolean shouldMarkFailure(ExtensionContext context) {
+        return !isNativeOrIntegrationTest(context.getRequiredTestClass());
+    }
+
     public class ExtensionState extends QuarkusTestExtensionState {
 
         public ExtensionState(Closeable testResourceManager, Closeable resource) {

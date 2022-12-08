@@ -303,6 +303,11 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         invocation.proceed();
     }
 
+    @Override
+    protected boolean shouldMarkFailure(ExtensionContext context) {
+        return !isIntegrationTest(context.getRequiredTestClass());
+    }
+
     private boolean isIntegrationTest(Class<?> clazz) {
         for (Class<?> i : currentTestClassStack) {
             if (i.isAnnotationPresent(QuarkusMainIntegrationTest.class)) {

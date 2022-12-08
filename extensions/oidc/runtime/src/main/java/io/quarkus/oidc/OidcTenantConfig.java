@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Set;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -1188,6 +1187,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem(defaultValue = "true")
         public boolean allowOpaqueTokenIntrospection = true;
+
+        /**
+         * Indirectly verify that the opaque (binary) access token is valid by using it to request UserInfo.
+         * Opaque access token is considered valid if the provider accepted this token and returned a valid UserInfo.
+         * You should only enable this option if the opaque access tokens have to be accepted but OpenId Connect
+         * provider does not have a token introspection endpoint.
+         * This property will have no effect when JWT tokens have to be verified.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean verifyAccessTokenWithUserInfo;
 
         public Optional<String> getIssuer() {
             return issuer;

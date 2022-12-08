@@ -21,6 +21,7 @@ public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmento
         if (routingContext != null &&
                 (routingContext.normalizedPath().endsWith("code-flow-user-info-only")
                         || routingContext.normalizedPath().endsWith("code-flow-user-info-github")
+                        || routingContext.normalizedPath().endsWith("bearer-user-info-github-service")
                         || routingContext.normalizedPath().endsWith("code-flow-user-info-dynamic-github")
                         || routingContext.normalizedPath().endsWith("code-flow-user-info-github-cached-in-idtoken"))) {
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);

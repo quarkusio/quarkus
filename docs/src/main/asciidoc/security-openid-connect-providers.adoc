@@ -49,6 +49,8 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Secret>
 ----
 
+TIP: You can also use GitHub provider with `quarkus.oidc.application-type=service`, just set `quarkus.oidc.verify-access-token-with-user-info` configuration property to `true`.
+
 === Google
 
 In order to set up OIDC for Google you need to create a new project in your https://console.cloud.google.com/projectcreate[Google Cloud Platform console]:

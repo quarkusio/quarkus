@@ -69,18 +69,4 @@ public class MultipartFileContentTypeTest extends AbstractMultipartTest {
         // ensure that the 2 uploaded files where created on disk
         Assertions.assertEquals(2, uploadDir.toFile().listFiles().length);
     }
-
-    @Test
-    public void testFilePartWithUnexpectedContentType() throws IOException {
-        RestAssured.given()
-                .multiPart("xmlFile", null, Files.readAllBytes(FILE.toPath()), MediaType.APPLICATION_XML)
-                .accept("text/plain")
-                .when()
-                .post("/multipart/optional")
-                .then()
-                .statusCode(200);
-
-        // ensure that no files are created as the content-type is not supported as a file part
-        Assertions.assertEquals(0, uploadDir.toFile().listFiles().length);
-    }
 }

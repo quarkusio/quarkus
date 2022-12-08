@@ -92,7 +92,7 @@ public class MultipartInputBodyHandlerTest extends AbstractMultipartTest {
                 .post("/multipart/simple/2")
                 .then()
                 .statusCode(200)
-                .body(equalTo("Alice - true - 50 - WORKING - text/html - true - true"));
+                .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
 
         // ensure that the 3 uploaded files where created on disk
         Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);

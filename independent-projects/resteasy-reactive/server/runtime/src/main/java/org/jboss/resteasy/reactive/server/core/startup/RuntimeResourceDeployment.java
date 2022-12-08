@@ -283,7 +283,7 @@ public class RuntimeResourceDeployment {
         boolean checkReadBodyRequestFilters = false;
         if (method.isFormParamRequired()) {
             // read the body as multipart in one go
-            handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier));
+            handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier, method.getFileFormNames()));
             checkReadBodyRequestFilters = true;
         } else if (bodyParameter != null) {
             if (!defaultBlocking) {

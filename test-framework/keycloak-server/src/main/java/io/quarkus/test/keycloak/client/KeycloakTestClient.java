@@ -189,6 +189,13 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
                 .delete(getAuthServerBaseUrl() + "/admin/realms/" + realm).then().statusCode(204);
     }
 
+    /**
+     * Delete a realm
+     */
+    public void deleteRealm(RealmRepresentation realm) {
+        deleteRealm(realm.getRealm());
+    }
+
     private String getPropertyValue(String prop, String defaultValue) {
         return ConfigProvider.getConfig().getOptionalValue(prop, String.class)
                 .orElseGet(() -> getDevProperty(prop, defaultValue));

@@ -54,6 +54,7 @@ import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
 import io.quarkus.paths.PathTree;
@@ -209,21 +210,42 @@ public class ApplicationDependencyTreeResolver {
                 buildTreeConsumer);
         buildDepsVisitor.visit(root);
 
-        if (!CONVERGED_TREE_ONLY && collectReloadableModules) {
-            for (ResolvedDependencyBuilder db : appBuilder.getDependencies()) {
-                if (db.isFlagSet(DependencyFlags.RELOADABLE | DependencyFlags.VISITED)) {
-                    continue;
-                }
-                clearReloadableFlag(db);
+        for (ExtensionInfo e : allExtensions.values()) {
+            if (!e.activated) {
+                continue;
             }
+            e.handleExtensionProperties();
         }
 
-        for (ResolvedDependencyBuilder db : appBuilder.getDependencies()) {
-            db.clearFlag(DependencyFlags.VISITED);
-            appBuilder.addDependency(db);
+        if (!CONVERGED_TREE_ONLY) {
+            if (collectReloadableModules) {
+                for (ResolvedDependencyBuilder db : appBuilder.getDependencies()) {
+                    if (!db.isFlagSet(DependencyFlags.RELOADABLE | DependencyFlags.VISITED)) {
+                        propagateFlags(db, DependencyFlags.RELOADABLE, 0);
+                    }
+                }
+                clearVisitedFlag();
+            }
+            propagateFlag(DependencyFlags.CLASSLOADER_PARENT_FIRST);
+            propagateFlag(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST);
         }
 
         collectPlatformProperties();
+    }
+
+    private void propagateFlag(int flag) {
+        for (ResolvedDependencyBuilder db : appBuilder.getDependencies()) {
+            if (db.isFlagSet(flag) && !db.isFlagSet(DependencyFlags.VISITED)) {
+                propagateFlags(db, 0, flag);
+            }
+        }
+        clearVisitedFlag();
+    }
+
+    private void clearVisitedFlag() {
+        for (ResolvedDependencyBuilder db : appBuilder.getDependencies()) {
+            db.clearFlag(DependencyFlags.VISITED);
+        }
     }
 
     private void collectPlatformProperties() throws AppModelResolverException {
@@ -245,7 +267,7 @@ public class ApplicationDependencyTreeResolver {
         appBuilder.setPlatformImports(platformReleases);
     }
 
-    private void clearReloadableFlag(ResolvedDependencyBuilder db) {
+    private void propagateFlags(ResolvedDependencyBuilder db, int toClear, int toSet) {
         final Set<ArtifactKey> deps = artifactDeps.get(db.getArtifactCoords());
         if (deps == null || deps.isEmpty()) {
             return;
@@ -255,9 +277,9 @@ public class ApplicationDependencyTreeResolver {
             if (dep == null || dep.isFlagSet(DependencyFlags.VISITED)) {
                 continue;
             }
-            dep.setFlags(DependencyFlags.VISITED);
-            dep.clearFlag(DependencyFlags.RELOADABLE);
-            clearReloadableFlag(dep);
+            dep.setFlags(DependencyFlags.VISITED | toSet);
+            dep.clearFlag(toClear);
+            propagateFlags(dep, toClear, toSet);
         }
     }
 
@@ -673,13 +695,79 @@ public class ApplicationDependencyTreeResolver {
                     .parseDependencyCondition(props.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
         }
 
+        public void handleExtensionProperties() {
+            for (Map.Entry<Object, Object> prop : props.entrySet()) {
+                if (prop.getValue() == null) {
+                    continue;
+                }
+                final String value = prop.getValue().toString();
+                if (value.isBlank()) {
+                    continue;
+                }
+                final String name = prop.getKey().toString();
+                switch (name) {
+                    case ApplicationModelBuilder.PARENT_FIRST_ARTIFACTS:
+                        for (String artifact : value.split(",")) {
+                            final ResolvedDependencyBuilder d = appBuilder.getDependency(new GACT(artifact.split(":")));
+                            if (d != null) {
+                                d.setFlags(DependencyFlags.CLASSLOADER_PARENT_FIRST);
+                            }
+                        }
+                        break;
+                    case ApplicationModelBuilder.RUNNER_PARENT_FIRST_ARTIFACTS:
+                        for (String artifact : value.split(",")) {
+                            final ResolvedDependencyBuilder d = appBuilder.getDependency(new GACT(artifact.split(":")));
+                            if (d != null) {
+                                d.setFlags(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST);
+                            }
+                        }
+                        break;
+                    case ApplicationModelBuilder.LESSER_PRIORITY_ARTIFACTS:
+                        String[] artifacts = value.split(",");
+                        for (String artifact : artifacts) {
+                            final ResolvedDependencyBuilder d = appBuilder.getDependency(new GACT(artifact.split(":")));
+                            if (d != null) {
+                                log.debugf("Extension %s is making %s a lesser priority artifact", runtimeArtifact, artifact);
+                                d.setFlags(DependencyFlags.CLASSLOADER_LESSER_PRIORITY);
+                            }
+                        }
+                        break;
+                    case ApplicationModelBuilder.EXCLUDED_ARTIFACTS:
+                        for (String artifact : value.split(",")) {
+                            appBuilder.addExcludedArtifact(new GACT(artifact.split(":")));
+                            log.debugf("Extension %s is excluding %s", runtimeArtifact, artifact);
+                        }
+                        break;
+                    default:
+                        if (name.startsWith(ApplicationModelBuilder.REMOVED_RESOURCES_DOT)) {
+                            final String keyStr = name.substring(ApplicationModelBuilder.REMOVED_RESOURCES_DOT.length());
+                            if (!keyStr.isBlank()) {
+                                ArtifactKey key = null;
+                                try {
+                                    key = ArtifactKey.fromString(keyStr);
+                                } catch (IllegalArgumentException e) {
+                                    log.warnf("Failed to parse artifact key %s in %s from descriptor of extension %s", keyStr,
+                                            name,
+                                            runtimeArtifact);
+                                }
+                                if (key != null) {
+                                    final Set<String> resources = Set.of(value.split(","));
+                                    appBuilder.addRemovedResources(key, resources);
+                                    log.debugf("Extension %s is excluding resources %s from artifact %s", runtimeArtifact,
+                                            resources,
+                                            key);
+                                }
+                            }
+                        }
+                }
+            }
+        }
+
         void ensureActivated() {
             if (activated) {
                 return;
             }
             activated = true;
-            appBuilder.handleExtensionProperties(props, runtimeArtifact.toString());
-
             final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
             final String requiresCapabilities = props.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES);
             if (providesCapabilities != null || requiresCapabilities != null) {

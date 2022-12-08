@@ -33,6 +33,7 @@ import com.gargoylesoftware.htmlunit.util.Cookie;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.json.JsonObject;
@@ -43,6 +44,8 @@ import io.vertx.core.json.JsonObject;
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class CodeFlowTest {
+
+    KeycloakTestClient client = new KeycloakTestClient();
 
     @Test
     public void testCodeFlowNoConsent() throws IOException {
@@ -78,7 +81,7 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/web-app/configMetadataIssuer");
 
             assertEquals(
-                    KeycloakRealmResourceManager.KEYCLOAK_SERVER_URL + "/realms/" + KeycloakRealmResourceManager.KEYCLOAK_REALM,
+                    client.getAuthServerUrl(),
                     page.asText());
 
             page = webClient.getPage("http://localhost:8081/web-app/configMetadataScopes");
@@ -346,7 +349,7 @@ public class CodeFlowTest {
     }
 
     private void verifyLocationHeader(WebClient webClient, String loc, String tenant, String path, boolean httpsScheme) {
-        assertTrue(loc.startsWith("http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/auth"));
+        assertTrue(loc.startsWith(client.getAuthServerUrl() + "/protocol/openid-connect/auth"));
         String scheme = httpsScheme ? "https" : "http";
         assertTrue(loc.contains("redirect_uri=" + scheme + "%3A%2F%2Flocalhost%3A8081%2F" + path));
         assertTrue(loc.contains("state=" + getStateCookieStateParam(webClient, tenant)));

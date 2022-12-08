@@ -700,7 +700,7 @@ public class SecurityEventListener {
 
     public void event(@Observes SecurityEvent event) {
         String tenantId = event.getSecurityIdentity().getAttribute("tenant-id");
-        RoutingContext vertxContext = event.getSecurityIdentity().getCredential(IdTokenCredential.class).getRoutingContext();
+        RoutingContext vertxContext = event.getSecurityIdentity().getAttribute(RoutingContext.class.getName());
         vertxContext.put("listener-message", String.format("event:%s,tenantId:%s", event.getEventType().name(), tenantId));
     }
 }

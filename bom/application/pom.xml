@@ -112,7 +112,7 @@
         <jboss-threads.version>3.4.3.Final</jboss-threads.version>
         <vertx.version>4.3.5</vertx.version>
 
-        <httpclient.version>4.5.13</httpclient.version>
+        <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
         <cronutils.version>9.2.0</cronutils.version>

@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.CreationException;
 import javax.enterprise.inject.IllegalProductException;
 import javax.enterprise.inject.literal.InjectLiteral;
 import javax.enterprise.inject.spi.InterceptionType;
@@ -63,6 +64,8 @@ import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.Gizmo;
+import io.quarkus.gizmo.Gizmo.StringBuilderGenerator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -946,7 +949,25 @@ public class BeanGenerator extends AbstractGenerator {
                     injectionPointToProviderSupplierField, reflectionRegistration,
                     targetPackage, isApplicationClass, create);
         } else if (bean.isSynthetic()) {
-            bean.getCreatorConsumer().accept(create);
+            if (bean.getScope().isNormal()) {
+                // Normal scoped synthetic beans should never return null
+                MethodCreator createSynthetic = beanCreator
+                        .getMethodCreator("createSynthetic", providerType.descriptorName(), CreationalContext.class)
+                        .setModifiers(ACC_PRIVATE);
+                bean.getCreatorConsumer().accept(createSynthetic);
+                ResultHandle ret = create.invokeVirtualMethod(createSynthetic.getMethodDescriptor(), create.getThis(),
+                        create.getMethodParam(0));
+                BytecodeCreator nullBeanInstance = create.ifNull(ret).trueBranch();
+                StringBuilderGenerator message = Gizmo.newStringBuilder(nullBeanInstance);
+                message.append("Null contextual instance was produced by a normal scoped synthetic bean: ");
+                message.append(Gizmo.toString(nullBeanInstance, nullBeanInstance.getThis()));
+                ResultHandle e = nullBeanInstance.newInstance(
+                        MethodDescriptor.ofConstructor(CreationException.class, String.class), message.callToString());
+                nullBeanInstance.throwException(e);
+                create.returnValue(ret);
+            } else {
+                bean.getCreatorConsumer().accept(create);
+            }
         }
 
         // Bridge method needed

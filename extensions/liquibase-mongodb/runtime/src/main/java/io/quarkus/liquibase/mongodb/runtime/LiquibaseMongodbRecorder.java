@@ -26,7 +26,7 @@ public class LiquibaseMongodbRecorder {
                 MongoClientConfig mongoClientConfig = MongoClientBeanUtil.isDefault(config.mongoClientName)
                         ? mongodbConfig.defaultMongoClientConfig
                         : mongodbConfig.mongoClientConfigs.get(config.mongoClientName);
-                return new LiquibaseMongodbFactory(config, buildTimeConfig, config.mongoClientName, mongoClientConfig.database);
+                return new LiquibaseMongodbFactory(config, buildTimeConfig, config.mongoClientName, mongoClientConfig);
             }
         };
     }

@@ -2,6 +2,8 @@ package io.quarkus.liquibase.mongodb;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.literal.NamedLiteral;
@@ -13,6 +15,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.mongodb.runtime.MongoClientConfig;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
@@ -25,27 +28,31 @@ import liquibase.resource.ClassLoaderResourceAccessor;
 public class LiquibaseMongodbFactory {
 
     private final String mongoClientName;
-    private final Optional<String> defaultDatabaseName;
+    private final MongoClientConfig mongoClientConfig;
     private final LiquibaseMongodbConfig liquibaseMongodbConfig;
     private final LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig;
 
+    //connection-string format, see https://docs.mongodb.com/manual/reference/connection-string/
+    Pattern HAS_DB = Pattern
+            .compile("(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
+
     public LiquibaseMongodbFactory(LiquibaseMongodbConfig config,
             LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig, String mongoClientName,
-            Optional<String> defaultDatabaseName) {
+            MongoClientConfig mongoClientConfig) {
         this.liquibaseMongodbConfig = config;
         this.liquibaseMongodbBuildTimeConfig = liquibaseMongodbBuildTimeConfig;
         this.mongoClientName = mongoClientName;
-        this.defaultDatabaseName = defaultDatabaseName;
+        this.mongoClientConfig = mongoClientConfig;
     }
 
     public Liquibase createLiquibase() {
-        String databaseName = this.defaultDatabaseName.orElseThrow(() -> {
+        String databaseName = this.mongoClientConfig.database.orElseGet(() -> getConnectionStringDatabase().orElseThrow(() -> {
             String propertyName = MongoClientBeanUtil.isDefault(this.mongoClientName)
                     ? "quarkus.mongodb.database"
                     : "quarkus.mongodb." + this.mongoClientName + ".database";
-            return new IllegalArgumentException("Config property '" + propertyName + "' must be defined");
-        });
-
+            return new IllegalArgumentException(
+                    "Config property '" + propertyName + "' must be defined when no database exist in the connection string");
+        }));
         return createLiquibase(databaseName);
     }
 
@@ -111,6 +118,15 @@ public class LiquibaseMongodbFactory {
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    private Optional<String> getConnectionStringDatabase() {
+        String connectionString = this.mongoClientConfig.connectionString.orElse("mongodb://localhost:27017");
+        Matcher matcher = HAS_DB.matcher(connectionString);
+        if (!matcher.matches() || matcher.group("db") == null || matcher.group("db").isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(matcher.group("db"));
     }
 
     private AnnotationLiteral getLiteral() {

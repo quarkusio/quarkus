@@ -5,6 +5,8 @@ import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
@@ -34,9 +36,9 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                 String tenantId = path.split("/")[2];
                 if ("tenant-d".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();
-                    config.setTenantId("tenant-d");
+                    config.setTenantId("tenant-c");
                     config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus-d");
-                    config.setClientId("quarkus-d");
+                    config.setClientId("quarkus-app-d");
                     config.getCredentials().setSecret("secret");
                     config.getToken().setIssuer(getIssuerUrl() + "/realms/quarkus-d");
                     config.getAuthentication().setUserInfoRequired(true);
@@ -158,6 +160,6 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private String getIssuerUrl() {
-        return System.getProperty("keycloak.url", "http://localhost:8180/auth");
+        return ConfigProvider.getConfig().getValue("keycloak.url", String.class);
     }
 }

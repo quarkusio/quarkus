@@ -29,8 +29,11 @@ public final class TestClassIndexer {
     }
 
     public static Index indexTestClasses(Class<?> testClass) {
+        return indexTestClasses(getTestClassesLocation(testClass));
+    }
+
+    public static Index indexTestClasses(final Path testClassesLocation) {
         final Indexer indexer = new Indexer();
-        final Path testClassesLocation = getTestClassesLocation(testClass);
         try {
             if (Files.isDirectory(testClassesLocation)) {
                 indexTestClassesDir(indexer, testClassesLocation);
@@ -48,7 +51,11 @@ public final class TestClassIndexer {
     }
 
     public static void writeIndex(Index index, Class<?> testClass) {
-        try (FileOutputStream fos = new FileOutputStream(indexPath(testClass).toFile(), false)) {
+        writeIndex(index, getTestClassesLocation(testClass), testClass);
+    }
+
+    public static void writeIndex(Index index, Path testClassLocation, Class<?> testClass) {
+        try (FileOutputStream fos = new FileOutputStream(indexPath(testClassLocation, testClass).toFile(), false)) {
             IndexWriter indexWriter = new IndexWriter(fos);
             indexWriter.write(index);
         } catch (IOException ignored) {
@@ -58,7 +65,11 @@ public final class TestClassIndexer {
     }
 
     public static Index readIndex(Class<?> testClass) {
-        Path path = indexPath(testClass);
+        return readIndex(getTestClassesLocation(testClass), testClass);
+    }
+
+    public static Index readIndex(Path testClassLocation, Class<?> testClass) {
+        Path path = indexPath(testClassLocation, testClass);
         if (path.toFile().exists()) {
             try (FileInputStream fis = new FileInputStream(path.toFile())) {
                 return new IndexReader(fis).read();
@@ -75,7 +86,11 @@ public final class TestClassIndexer {
     }
 
     private static Path indexPath(Class<?> testClass) {
-        return PathTestHelper.getTestClassesLocation(testClass).resolve(testClass.getSimpleName() + ".idx");
+        return indexPath(PathTestHelper.getTestClassesLocation(testClass), testClass);
+    }
+
+    private static Path indexPath(Path testClassLocation, Class<?> testClass) {
+        return testClassLocation.resolve(testClass.getSimpleName() + ".idx");
     }
 
     private static void indexTestClassesDir(Indexer indexer, final Path testClassesLocation) throws IOException {

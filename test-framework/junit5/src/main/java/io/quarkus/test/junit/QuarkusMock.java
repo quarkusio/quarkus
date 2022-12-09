@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import java.lang.annotation.Annotation;
 
 import javax.enterprise.inject.spi.CDI;
+import javax.enterprise.util.TypeLiteral;
 
 import org.junit.jupiter.api.TestInstance;
 
@@ -55,5 +56,17 @@ public class QuarkusMock {
             }
         }
         MockSupport.installMock(CDI.current().select(instance, qualifiers).get(), mock);
+    }
+
+    /**
+     * Installs a mock for a CDI normal scoped bean by typeLiteral and qualifiers
+     *
+     * @param mock The mock object
+     * @param typeLiteral TypeLiteral representing the required type
+     * @param qualifiers The CDI qualifiers of the bean to mock
+     * @param <T> The bean type
+     */
+    public static <T> void installMockForType(T mock, TypeLiteral<? super T> typeLiteral, Annotation... qualifiers) {
+        MockSupport.installMock(CDI.current().select(typeLiteral, qualifiers).get(), mock);
     }
 }

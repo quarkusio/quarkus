@@ -1,5 +1,6 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.steps.KotlinUtil.isKotlinClass;
 import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -341,12 +343,13 @@ public class MainClassBuildStep {
             if (nameValue != null) {
                 name = nameValue.asString();
             }
+            ClassInfo classInfo = i.target().asClass();
             if (quarkusMainAnnotations.containsKey(name)) {
                 throw new RuntimeException(
                         "More than one @QuarkusMain method found with name '" + name + "': "
-                                + i.target().asClass().name() + " and " + quarkusMainAnnotations.get(name));
+                                + classInfo.name() + " and " + quarkusMainAnnotations.get(name));
             }
-            quarkusMainAnnotations.put(name, i.target().asClass().name().toString());
+            quarkusMainAnnotations.put(name, sanitizeMainClassName(classInfo));
         }
 
         if (packageConfig.mainClass.isPresent()) {
@@ -408,6 +411,19 @@ public class MainClassBuildStep {
         }
 
         return new MainClassBuildItem(mainClassName);
+    }
+
+    private static String sanitizeMainClassName(ClassInfo mainClass) {
+        String className = mainClass.name().toString();
+        if (isKotlinClass(mainClass)) {
+            MethodInfo mainMethod = mainClass.method("main",
+                    ArrayType.create(Type.create(DotName.createSimple(String.class.getName()), Type.Kind.CLASS), 1));
+            if (mainMethod == null) {
+                className += "Kt";
+            }
+
+        }
+        return className;
     }
 
     private void generateMainForQuarkusApplication(String quarkusApplicationClassName,

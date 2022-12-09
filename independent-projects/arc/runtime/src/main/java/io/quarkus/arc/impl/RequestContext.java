@@ -72,6 +72,11 @@ class RequestContext implements ManagedContext {
             // Bean instance does not exist - create one if we have CreationalContext
             instance = new ContextInstanceHandleImpl<T>((InjectableBean<T>) contextual,
                     contextual.create(creationalContext), creationalContext);
+            if (!instance.isAvailable()) {
+                // this is an issue caused by the bean being null so let's provide a clear message instead of falling through to the misleading ContextNotActiveException
+                throw new IllegalStateException(String
+                        .format("Unable to create bean instance for a client proxy of %s because the bean is null", bean));
+            }
             ctxState.map.put(contextual, instance);
         }
         return instance.get();

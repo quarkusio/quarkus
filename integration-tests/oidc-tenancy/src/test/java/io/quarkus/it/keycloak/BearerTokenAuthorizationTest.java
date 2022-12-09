@@ -10,11 +10,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
-import org.keycloak.representations.AccessTokenResponse;
 
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
@@ -26,6 +26,7 @@ import com.gargoylesoftware.htmlunit.util.Cookie;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
 import io.vertx.core.json.JsonObject;
 
@@ -36,8 +37,7 @@ import io.vertx.core.json.JsonObject;
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class BearerTokenAuthorizationTest {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
-    private static final String KEYCLOAK_REALM = "quarkus-";
+    private KeycloakTestClient client = new KeycloakTestClient();
 
     @Test
     public void testResolveTenantIdentifierWebApp() throws IOException {
@@ -334,14 +334,14 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testResolveTenantConfig() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice", "d"))
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "d", "d", List.of("openid")))
                 .when().get("/tenant/tenant-d/api/user")
                 .then()
                 .statusCode(200)
                 .body(equalTo("tenant-d:alice.alice"));
 
         // should give a 401 given that access token from issuer b can not access tenant c
-        RestAssured.given().auth().oauth2(getAccessToken("alice", "b"))
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b", List.of("openid")))
                 .when().get("/tenant/tenant-d/api/user")
                 .then()
                 .statusCode(401);
@@ -349,7 +349,7 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testResolveTenantConfigNoDiscovery() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice", "b"))
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b", List.of("openid")))
                 .when().get("/tenant/tenant-b-no-discovery/api/user/no-discovery")
                 .then()
                 .statusCode(200)
@@ -596,16 +596,12 @@ public class BearerTokenAuthorizationTest {
     }
 
     private String getAccessToken(String userName, String realmId, String clientId) {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", userName)
-                .param("password", userName)
-                .param("client_id", "quarkus-app-" + clientId)
-                .param("client_secret", "secret")
-                .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + realmId + "/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
+        return getAccessToken(userName, realmId, clientId, null);
+    }
+
+    private String getAccessToken(String userName, String realmId, String clientId, List<String> scopes) {
+        return client.getRealmAccessToken("quarkus-" + realmId, userName, userName, "quarkus-app-" + clientId, "secret",
+                scopes);
     }
 
     private String getAccessTokenFromSimpleOidc(String kid) {

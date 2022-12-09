@@ -366,7 +366,8 @@ public final class BuildTimeConfigurationReader {
             buildTimeRunTimeValues.putAll(getDefaults(buildTimeRunTimePatternMap));
 
             SmallRyeConfig runtimeDefaultsConfig = getConfigForRuntimeDefaults();
-            Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getPrefix).collect(toSet());
+            Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getName).collect(toSet());
+            registeredRoots.add("quarkus");
             Set<String> allProperties = getAllProperties(registeredRoots);
             Set<String> unknownBuildProperties = new HashSet<>();
             for (String propertyName : allProperties) {

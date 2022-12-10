@@ -53,4 +53,11 @@ public class RedisConfig {
         return DEFAULT_CLIENT_NAME.equalsIgnoreCase(name);
     }
 
+    public static String propertyKey(String name, String radical) {
+        String prefix = DEFAULT_CLIENT_NAME.equals(name)
+                ? "quarkus.redis."
+                : "quarkus.redis.\"" + name + "\".";
+        return prefix + radical;
+    }
+
 }

@@ -178,4 +178,5 @@ public class RedisClientConfig {
                 ", tls=" + tls +
                 '}';
     }
+
 }

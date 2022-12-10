@@ -1039,8 +1039,8 @@ public final class HibernateOrmProcessor {
                         .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
         // Flush Mode
-        persistenceUnitConfig.flushMode.ifPresent(
-                flushMode -> descriptor.getProperties().setProperty(AvailableSettings.FLUSH_MODE, flushMode));
+        descriptor.getProperties().setProperty(AvailableSettings.FLUSH_MODE,
+                persistenceUnitConfig.flushMode.name().toLowerCase());
 
         // Metadata builder contributor
         persistenceUnitConfig.metadataBuilderContributor.ifPresent(

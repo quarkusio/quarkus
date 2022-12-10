@@ -276,8 +276,8 @@ public final class HibernateReactiveProcessor {
                         .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
         // Flush Mode
-        persistenceUnitConfig.flushMode.ifPresent(
-                flushMode -> desc.getProperties().setProperty(AvailableSettings.FLUSH_MODE, flushMode));
+        desc.getProperties().setProperty(AvailableSettings.FLUSH_MODE,
+                persistenceUnitConfig.flushMode.name().toLowerCase());
 
         //charset
         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME,

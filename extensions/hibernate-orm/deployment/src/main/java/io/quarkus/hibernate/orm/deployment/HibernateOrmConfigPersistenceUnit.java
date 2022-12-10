@@ -10,6 +10,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
+import org.hibernate.FlushMode;
 import org.hibernate.engine.query.spi.QueryPlanCache;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -240,9 +241,8 @@ public class HibernateOrmConfigPersistenceUnit {
      * Represents flushing strategies (AUTO, COMMIT, ALWAYS, MANUAL).
      * The default value is AUTO.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> flushMode;
+    @ConfigItem(defaultValue = "auto")
+    public FlushMode flushMode;
 
     @ConfigItem(generateDocumentation = false)
     @ConfigDocMapKey("full-property-key")
@@ -264,7 +264,7 @@ public class HibernateOrmConfigPersistenceUnit {
                 !cache.isEmpty() ||
                 !secondLevelCachingEnabled ||
                 multitenant.isPresent() ||
-                flushMode.isPresent() ||
+                flushMode != FlushMode.AUTO ||
                 multitenantSchemaDatasource.isPresent() ||
                 fetch.isAnyPropertySet() ||
                 discriminator.isAnyPropertySet() ||

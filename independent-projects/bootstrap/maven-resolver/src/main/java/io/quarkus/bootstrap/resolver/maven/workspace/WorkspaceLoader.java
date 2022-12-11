@@ -153,13 +153,11 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
     }
 
     private Model rawModel(Path pomFile) throws BootstrapMavenException {
-        final Model rawModel = rawModelCache.getOrDefault(pomFile.getParent(),
+        Model rawModel = rawModelCache.getOrDefault(pomFile.getParent(),
                 modelProvider == null ? null : modelProvider.apply(pomFile.getParent()));
-        return rawModel == null ? loadAndCacheRawModel(pomFile) : rawModel;
-    }
-
-    private Model loadAndCacheRawModel(Path pomFile) throws BootstrapMavenException {
-        final Model rawModel = readModel(pomFile);
+        if (rawModel == null) {
+            rawModel = readModel(pomFile);
+        }
         rawModelCache.put(pomFile.getParent(), rawModel);
         return rawModel;
     }

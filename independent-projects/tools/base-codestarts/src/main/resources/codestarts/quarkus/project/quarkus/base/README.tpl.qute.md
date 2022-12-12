@@ -59,4 +59,8 @@ If you want to learn more about building native executables, please consult {bui
 {#if input.provided-code}
 
 ## Provided Code
+
+{#for providedCode in input.provided-code}
+- {providedCode.name}
+{/for}
 {/if}

@@ -15,6 +15,7 @@ import io.quarkus.resteasy.reactive.server.test.multipart.other.OtherPackageForm
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.ExtractableResponse;
 
 public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipartTest {
 
@@ -65,18 +66,20 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
 
     @Test
     public void testWithFormData() {
-        String response = RestAssured.get("/multipart/output/with-form-data")
+        ExtractableResponse<?> extractable = RestAssured.get("/multipart/output/with-form-data")
                 .then()
-                .log().all()
                 .contentType(ContentType.MULTIPART)
                 .statusCode(200)
-                .extract().asString();
+                .extract();
 
-        assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
-        assertContainsValue(response, "custom-surname", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_SURNAME);
-        assertContainsValue(response, "custom-status", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_STATUS);
-        assertContainsValue(response, "active", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_ACTIVE);
-        assertContainsValue(response, "values", MediaType.TEXT_PLAIN, "[one, two]");
+        String body = extractable.asString();
+        assertContainsValue(body, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
+        assertContainsValue(body, "custom-surname", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_SURNAME);
+        assertContainsValue(body, "custom-status", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_STATUS);
+        assertContainsValue(body, "active", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_ACTIVE);
+        assertContainsValue(body, "values", MediaType.TEXT_PLAIN, "[one, two]");
+
+        assertThat(extractable.header("Content-Type")).contains("boundary=");
     }
 
     @Test

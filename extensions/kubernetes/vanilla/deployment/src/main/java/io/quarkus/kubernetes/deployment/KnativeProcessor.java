@@ -36,6 +36,7 @@ import io.dekorate.kubernetes.decorator.AddImagePullSecretToServiceAccountDecora
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
+import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.project.Project;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
@@ -156,6 +157,7 @@ public class KnativeProcessor {
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(KNATIVE, new ApplyContainerImageDecorator(name, i.getImage())));
         });
+        result.add(new DecoratorBuildItem(KNATIVE, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
 
         config.getContainerName().ifPresent(containerName -> result
                 .add(new DecoratorBuildItem(KNATIVE, new ChangeContainerNameDecorator(containerName))));

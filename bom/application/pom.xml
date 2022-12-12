@@ -39,11 +39,12 @@
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
+        <microprofile-openapi.version>2.0.1</microprofile-openapi.version>
         <smallrye-common.version>1.13.2</smallrye-common.version>
         <smallrye-config.version>2.13.0</smallrye-config.version>
         <smallrye-health.version>3.3.1</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
-        <smallrye-open-api.version>2.3.1</smallrye-open-api.version>
+        <smallrye-open-api.version>3.1.1</smallrye-open-api.version>
         <smallrye-graphql.version>1.9.0</smallrye-graphql.version>
         <smallrye-opentracing.version>2.1.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.6.0</smallrye-fault-tolerance.version>
@@ -4214,6 +4215,11 @@
                         <artifactId>org.osgi.annotation.versioning</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.microprofile.openapi</groupId>
+                <artifactId>microprofile-openapi-api</artifactId>
+                <version>${microprofile-openapi.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>

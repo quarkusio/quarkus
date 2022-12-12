@@ -12,13 +12,17 @@ public class IgnoredProperties {
 
     private transient String anotherIgnoredField;
 
+    @TestRecordingAnnotationsProvider.TestIgnoreProperty
+    private String customIgnoredField;
+
     public IgnoredProperties() {
     }
 
-    public IgnoredProperties(String notIgnored, String ignoredField, String anotherIgnoredField) {
+    public IgnoredProperties(String notIgnored, String ignoredField, String anotherIgnoredField, String customIgnoredField) {
         this.notIgnored = notIgnored;
         this.ignoredField = ignoredField;
         this.anotherIgnoredField = anotherIgnoredField;
+        this.customIgnoredField = customIgnoredField;
     }
 
     public String getNotIgnored() {
@@ -45,6 +49,14 @@ public class IgnoredProperties {
         this.anotherIgnoredField = anotherIgnoredField;
     }
 
+    public String getCustomIgnoredField() {
+        return customIgnoredField;
+    }
+
+    public void setCustomIgnoredField(String customIgnoredField) {
+        this.customIgnoredField = customIgnoredField;
+    }
+
     @IgnoreProperty
     public String getSomethingElse() {
         throw new IllegalStateException("This should not have been called");
@@ -59,12 +71,13 @@ public class IgnoredProperties {
         IgnoredProperties that = (IgnoredProperties) o;
         return Objects.equals(notIgnored, that.notIgnored) &&
                 Objects.equals(ignoredField, that.ignoredField) &&
-                Objects.equals(anotherIgnoredField, that.anotherIgnoredField);
+                Objects.equals(anotherIgnoredField, that.anotherIgnoredField) &&
+                Objects.equals(customIgnoredField, that.customIgnoredField);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(notIgnored, ignoredField, anotherIgnoredField);
+        return Objects.hash(notIgnored, ignoredField, anotherIgnoredField, customIgnoredField);
     }
 
     @Override
@@ -72,6 +85,8 @@ public class IgnoredProperties {
         return "IgnoredProperties{" +
                 "notIgnored='" + notIgnored + '\'' +
                 ", ignoredField='" + ignoredField + '\'' +
+                ", anotherIgnoredField='" + anotherIgnoredField + '\'' +
+                ", customIgnoredField='" + customIgnoredField + '\'' +
                 '}';
     }
 }

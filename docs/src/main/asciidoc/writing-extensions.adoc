@@ -1522,6 +1522,13 @@ The following objects can be passed to recorders:
 - Any arbitrary object via the `io.quarkus.deployment.recording.RecorderContext#registerSubstitution(Class, Class, Class)` mechanism
 - Arrays, Lists and Maps of the above
 
+[NOTE]
+====
+In cases where some fields of an object to be recorded should be ignored (i.e. the value that being at build time should not be reflected at runtime), the `@IgnoreProperty` can be placed on the field.
+
+If the class cannot depend on Quarkus, then Quarkus can use any custom annotation, as long as the extension implements the `io.quarkus.deployment.recording.RecordingAnnotationsProvider` SPI.
+====
+
 ==== Injecting Configuration into Recorders
 
 Configuration objects with phase `RUNTIME` or `BUILD_AND_RUNTIME_FIXED` can be injected into recorders via constructor

@@ -2,30 +2,33 @@ package io.quarkus.deployment.steps;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 
+import io.quarkus.builder.Json;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.ReflectionConfigurationResourceBuildItem;
+import io.quarkus.deployment.builditem.SerializationConfigurationResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
@@ -55,12 +58,15 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.NativeImageFeatureUtils;
 import io.quarkus.runtime.ResourceHelper;
-import io.quarkus.runtime.graal.ReflectiveClassesFeature;
 import io.quarkus.runtime.graal.ResourcesFeature;
+import io.quarkus.runtime.graal.WeakReflectionFeature;
 
 public class NativeImageFeatureStep {
 
     public static final String GRAAL_FEATURE = "io.quarkus.runner.Feature";
+    public static final String META_INF_QUARKUS_NATIVE_REFLECTION_JSON = "META-INF/quarkus-native-reflection.json";
+    public static final String META_INF_QUARKUS_NATIVE_SERIALIZATION_JSON = "META-INF/quarkus-native-serialization.json";
+
     private static final MethodDescriptor VERSION_CURRENT = ofMethod(Version.class, "getCurrent", Version.class);
     private static final MethodDescriptor VERSION_COMPARE_TO = ofMethod(Version.class, "compareTo", int.class, int[].class);
 
@@ -138,12 +144,16 @@ public class NativeImageFeatureStep {
     }
 
     @BuildStep
-    GeneratedResourceBuildItem generateNativeReflectiveClassList(List<ReflectiveMethodBuildItem> reflectiveMethods,
+    void generateNativeReflectiveClassList(List<ReflectiveMethodBuildItem> reflectiveMethods,
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
             List<ForceNonWeakReflectiveClassBuildItem> nonWeakReflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
-            BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) throws IOException {
+            BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResourceBuildItemBuildProducer,
+            BuildProducer<ReflectionConfigurationResourceBuildItem> reflectionConfigurationResourceBuildItemBuildProducer,
+            BuildProducer<SerializationConfigurationResourceBuildItem> serializationConfigurationResourceBuildItemBuildProducer)
+            throws IOException {
 
         final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         final Set<String> forcedNonWeakClasses = new HashSet<>();
@@ -152,7 +162,6 @@ public class NativeImageFeatureStep {
         }
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
             addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i.isConstructors(), i.isMethods(), i.isFields(),
-                    i.areFinalFieldsWritable(),
                     i.isWeak(),
                     i.isSerialization(),
                     i.getClassNames().toArray(new String[0]));
@@ -165,24 +174,29 @@ public class NativeImageFeatureStep {
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false, false,
+            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false,
                     i.providers().toArray(new String[] {}));
         }
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-            oos.writeInt(reflectiveClasses.size());
-            for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
-                ReflectionInfo info = entry.getValue();
-                oos.writeUTF(entry.getKey());
-                info.write(oos);
-                oos.flush();
+        Set<String> addedFiles = new HashSet<>();
+        for (NativeImageConfigSerializer serializer : NativeImageConfigSerializer.values()) {
+            byte[] data = serializer.serialize(reflectiveClasses.values());
+            if (data.length > 0) {
+                String fileName = serializer.getFileName();
+                addedFiles.add(fileName);
+                generatedResourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(fileName, data));
+                // we don't want those files in the final image
+                resourcePatternsBuildItemBuildProducer.produce(NativeImageResourcePatternsBuildItem.builder()
+                        .excludePattern(fileName).build());
             }
-
-            //we don't want this file in the final image
-            resourcePatternsBuildItemBuildProducer.produce(NativeImageResourcePatternsBuildItem.builder()
-                    .excludePattern(ReflectiveClassesFeature.META_INF_QUARKUS_NATIVE_REFLECT_DAT).build());
-            return new GeneratedResourceBuildItem(ReflectiveClassesFeature.META_INF_QUARKUS_NATIVE_REFLECT_DAT,
-                    baos.toByteArray());
+        }
+        if (addedFiles.contains(NativeImageConfigSerializer.REFLECTION.getFileName())) {
+            reflectionConfigurationResourceBuildItemBuildProducer
+                    .produce(new ReflectionConfigurationResourceBuildItem(
+                            NativeImageConfigSerializer.REFLECTION.getFileName()));
+        }
+        if (addedFiles.contains(NativeImageConfigSerializer.SERIALIZATION.getFileName())) {
+            serializationConfigurationResourceBuildItemBuildProducer.produce(
+                    new SerializationConfigurationResourceBuildItem(NativeImageConfigSerializer.SERIALIZATION.getFileName()));
         }
     }
 
@@ -668,7 +682,7 @@ public class NativeImageFeatureStep {
         String cl = methodInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(cl, false, false, false, false, false));
         }
         if (methodInfo.getName().equals("<init>")) {
             existing.ctorSet.add(methodInfo);
@@ -679,12 +693,12 @@ public class NativeImageFeatureStep {
 
     public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,
             boolean constructors, boolean method,
-            boolean fields, boolean finalFieldsWritable, boolean weak, boolean serialization,
+            boolean fields, boolean weak, boolean serialization,
             String... className) {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
-                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields, finalFieldsWritable,
+                reflectiveClasses.put(cl, new ReflectionInfo(cl, constructors, method, fields,
                         !forcedNonWeakClasses.contains(cl) && weak, serialization));
             } else {
                 if (constructors) {
@@ -707,63 +721,209 @@ public class NativeImageFeatureStep {
         String cl = fieldInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(cl, false, false, false, false, false));
         }
         existing.fieldSet.add(fieldInfo.getName());
     }
 
     static final class ReflectionInfo {
+        String className;
         boolean constructors;
         boolean methods;
         boolean fields;
-        boolean finalFieldsWritable;
         boolean weak;
         boolean serialization;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
-        private ReflectionInfo(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
+        private ReflectionInfo(String className, boolean constructors, boolean methods, boolean fields,
                 boolean weak, boolean serialization) {
+            this.className = className;
             this.methods = methods;
             this.fields = fields;
             this.constructors = constructors;
-            this.finalFieldsWritable = finalFieldsWritable;
             this.weak = weak;
             this.serialization = serialization;
         }
 
-        void write(ObjectOutputStream oos) throws IOException {
-            oos.writeBoolean(constructors);
-            oos.writeBoolean(methods);
-            oos.writeBoolean(fields);
-            oos.writeBoolean(finalFieldsWritable);
-            oos.writeBoolean(weak);
-            oos.writeBoolean(serialization);
-            oos.writeInt(fieldSet.size());
-            for (String field : fieldSet) {
-                oos.writeUTF(field);
+        /**
+         * @return the current {@code ReflectionInfo} as a Json object in the format expected by the weak reflection
+         *         configuration if applicable, {@code null} otherwise.
+         */
+        Json.JsonObjectBuilder toWeakReflectionJson() {
+            if (weak) {
+                Json.JsonObjectBuilder builder = Json.object();
+                builder.put("name", className);
+                builder.put("constructors", constructors);
+                builder.put("methods", methods);
+                builder.put("fields", fields);
+                return builder;
             }
-            writeItems(oos, methodSet);
-            writeItems(oos, ctorSet);
+            return null;
         }
 
-        private static void writeItems(ObjectOutputStream oos, Set<ReflectiveMethodBuildItem> items) throws IOException {
-            oos.writeInt(items.size());
-            for (ReflectiveMethodBuildItem item : items) {
-                oos.writeUTF(item.getDeclaringClass());
-                oos.writeUTF(item.getName());
-                String[] params = item.getParams();
-                if (params == null) {
-                    oos.writeInt(0);
-                    continue;
+        /**
+         * @return the current {@code ReflectionInfo} as a Json object in the format expected by the reflection
+         *         configuration if applicable, {@code null} otherwise.
+         */
+        Json.JsonObjectBuilder toReflectionJson() {
+            if (weak) {
+                return null;
+            }
+            Json.JsonObjectBuilder builder = Json.object();
+            builder.put("name", className);
+            Json.JsonArrayBuilder arrayMethodsBuilder = Json.array();
+            if (constructors) {
+                builder.put("allDeclaredConstructors", true);
+            } else if (!ctorSet.isEmpty()) {
+                addMethods(arrayMethodsBuilder, ctorSet);
+            }
+            if (methods) {
+                builder.put("allDeclaredMethods", true);
+            } else if (!methodSet.isEmpty()) {
+                addMethods(arrayMethodsBuilder, methodSet);
+            }
+            if (!arrayMethodsBuilder.isEmpty()) {
+                builder.put("methods", arrayMethodsBuilder);
+            }
+            if (fields) {
+                builder.put("allDeclaredFields", true);
+            } else if (!fieldSet.isEmpty()) {
+                Json.JsonArrayBuilder fieldsBuilder = Json.array();
+                for (String field : fieldSet) {
+                    Json.JsonObjectBuilder fieldBuilder = Json.object();
+                    fieldBuilder.put("name", field);
+                    fieldsBuilder.add(fieldBuilder);
                 }
-                oos.writeInt(params.length);
-                for (String param : params) {
-                    oos.writeUTF(param);
+                builder.put("fields", fieldsBuilder);
+            }
+            return builder;
+        }
+
+        /**
+         * @return the current {@code ReflectionInfo} as a Json object in the format expected by the serialization
+         *         configuration if applicable, {@code null} otherwise.
+         */
+        Json.JsonObjectBuilder toSerializationJson() {
+            if (serialization) {
+                Json.JsonObjectBuilder typeBuilder = Json.object();
+                typeBuilder.put("name", className);
+                return typeBuilder;
+            }
+            return null;
+        }
+
+        /**
+         * Add the given methods to be registered for reflection to the given Json array in the format expected by the
+         * reflection configuration.
+         */
+        private static void addMethods(Json.JsonArrayBuilder arrayMethodsBuilder, Set<ReflectiveMethodBuildItem> methods) {
+            for (ReflectiveMethodBuildItem method : methods) {
+                Json.JsonObjectBuilder methodBuilder = Json.object();
+                methodBuilder.put("name", method.getName());
+                Json.JsonArrayBuilder arrayParamsBuilder = Json.array();
+                String[] params = method.getParams();
+                if (params != null) {
+                    for (String param : params) {
+                        arrayParamsBuilder.add(param);
+                    }
+                    methodBuilder.put("parameterTypes", arrayParamsBuilder);
                 }
+                arrayMethodsBuilder.add(methodBuilder);
             }
         }
     }
 
+    /**
+     * {@code NativeImageConfigSerializer} defines a serializer from each configuration file that can be generated from a
+     * collection of {@code ReflectionInfo}.
+     */
+    private enum NativeImageConfigSerializer {
+
+        /**
+         * Serializer to generate the configuration for the reflection (GraalVM format).
+         */
+        REFLECTION(NativeImageFeatureStep.META_INF_QUARKUS_NATIVE_REFLECTION_JSON, ReflectionInfo::toReflectionJson) {
+            @Override
+            protected String asString(Json.JsonArrayBuilder configs) throws IOException {
+                return configs.build();
+            }
+        },
+        /**
+         * Serializer to generate the configuration for the weak reflection (internal format).
+         */
+        WEAK_REFLECTION(WeakReflectionFeature.META_INF_QUARKUS_NATIVE_WEAK_REFLECTION_JSON,
+                ReflectionInfo::toWeakReflectionJson) {
+            @Override
+            protected String asString(Json.JsonArrayBuilder configs) throws IOException {
+                return configs.build();
+            }
+        },
+        /**
+         * Serializer to generate the configuration for the serialization (GraalVM format).
+         */
+        SERIALIZATION(NativeImageFeatureStep.META_INF_QUARKUS_NATIVE_SERIALIZATION_JSON, ReflectionInfo::toSerializationJson) {
+            @Override
+            protected String asString(Json.JsonArrayBuilder configs) throws IOException {
+                Json.JsonObjectBuilder serializationObject = Json.object();
+                serializationObject.put("types", configs);
+                serializationObject.put("lambdaCapturingTypes", Json.array());
+                serializationObject.put("proxies", Json.array());
+                return serializationObject.build();
+            }
+        };
+
+        /**
+         * The name of the generated file.
+         */
+        private final String fileName;
+        /**
+         * The function allowing to convert an instance of {@code ReflectionInfo} into a Json object.
+         */
+        private final Function<ReflectionInfo, Json.JsonObjectBuilder> toJsonObject;
+
+        NativeImageConfigSerializer(String fileName, Function<ReflectionInfo, Json.JsonObjectBuilder> toJsonObject) {
+            this.fileName = fileName;
+            this.toJsonObject = toJsonObject;
+        }
+
+        /**
+         * @return te name of the generated file.
+         */
+        String getFileName() {
+            return fileName;
+        }
+
+        /**
+         * Convert the given array of configurations into a {@code String}. The configurations are then wrapped
+         * according to the type of configuration to generate.
+         *
+         * @param configs the configurations to convert.
+         * @return the configurations in the proper format as a {@code String}.
+         * @throws IOException if the configuration could not be converted.
+         */
+        protected abstract String asString(Json.JsonArrayBuilder configs) throws IOException;
+
+        /**
+         * Serialize the given collection of {@code ReflectionInfo} according to the type of configuration to generate.
+         *
+         * @param infos the {@code ReflectionInfo} to serialize.
+         * @return the content properly serialized as an array of byte if it is not empty, an empty array otherwise.
+         * @throws IOException if a {@code ReflectionInfo} could not be serialized.
+         */
+        byte[] serialize(Collection<ReflectionInfo> infos) throws IOException {
+            Json.JsonArrayBuilder configs = Json.array();
+            for (ReflectionInfo info : infos) {
+                Json.JsonObjectBuilder config = toJsonObject.apply(info);
+                if (config != null) {
+                    configs.add(config);
+                }
+            }
+            if (configs.isEmpty()) {
+                return new byte[0];
+            }
+            return asString(configs).getBytes(StandardCharsets.UTF_8);
+        }
+    }
 }

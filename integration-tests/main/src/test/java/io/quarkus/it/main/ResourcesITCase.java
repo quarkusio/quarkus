@@ -26,7 +26,17 @@ public class ResourcesITCase extends ResourcesTestCase {
                 .statusCode(404);
 
         RestAssured.when()
-                .get("/resources/META-INF/quarkus-native-reflect.dat")
+                .get("/resources/META-INF/quarkus-native-reflection.json")
+                .then()
+                .statusCode(404);
+
+        RestAssured.when()
+                .get("/resources/META-INF/quarkus-native-serialization.json")
+                .then()
+                .statusCode(404);
+
+        RestAssured.when()
+                .get("/resources/META-INF/quarkus-native-weak-reflection.json")
                 .then()
                 .statusCode(404);
     }

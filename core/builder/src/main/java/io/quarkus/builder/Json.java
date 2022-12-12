@@ -14,7 +14,7 @@ import java.util.Objects;
 /**
  * A simple JSON string generator.
  */
-final class Json {
+public final class Json {
 
     private static final String OBJECT_START = "{";
     private static final String OBJECT_END = "}";
@@ -47,7 +47,7 @@ final class Json {
     /**
      * @return the new JSON array builder, empty builders are not ignored
      */
-    static JsonArrayBuilder array() {
+    public static JsonArrayBuilder array() {
         return new JsonArrayBuilder(false);
     }
 
@@ -65,7 +65,7 @@ final class Json {
      *
      * @return the new JSON object builder, empty builders are not ignored
      */
-    static JsonObjectBuilder object() {
+    public static JsonObjectBuilder object() {
         return new JsonObjectBuilder(false);
     }
 
@@ -142,7 +142,7 @@ final class Json {
     /**
      * JSON array builder.
      */
-    static class JsonArrayBuilder extends JsonBuilder<JsonArrayBuilder> {
+    public static class JsonArrayBuilder extends JsonBuilder<JsonArrayBuilder> {
 
         private final List<Object> values;
 
@@ -151,37 +151,37 @@ final class Json {
             this.values = new ArrayList<Object>();
         }
 
-        JsonArrayBuilder add(JsonArrayBuilder value) {
+        public JsonArrayBuilder add(JsonArrayBuilder value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder add(JsonObjectBuilder value) {
+        public JsonArrayBuilder add(JsonObjectBuilder value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder add(String value) {
+        public JsonArrayBuilder add(String value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder add(boolean value) {
+        public JsonArrayBuilder add(boolean value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder add(int value) {
+        public JsonArrayBuilder add(int value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder add(long value) {
+        public JsonArrayBuilder add(long value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder addAll(List<JsonObjectBuilder> value) {
+        public JsonArrayBuilder addAll(List<JsonObjectBuilder> value) {
             if (value != null && !value.isEmpty()) {
                 values.addAll(value);
             }
@@ -194,18 +194,18 @@ final class Json {
             }
         }
 
-        boolean isEmpty() {
+        public boolean isEmpty() {
             return isValuesEmpty(values);
         }
 
-        String build() throws IOException {
+        public String build() throws IOException {
             StringBuilder builder = new StringBuilder();
             appendTo(builder);
             return builder.toString();
         }
 
         @Override
-        void appendTo(Appendable appendable) throws IOException {
+        public void appendTo(Appendable appendable) throws IOException {
             appendable.append(ARRAY_START);
             int idx = 0;
             for (ListIterator<Object> iterator = values.listIterator(); iterator.hasNext();) {
@@ -231,7 +231,7 @@ final class Json {
     /**
      * JSON object builder.
      */
-    static class JsonObjectBuilder extends JsonBuilder<JsonObjectBuilder> {
+    public static class JsonObjectBuilder extends JsonBuilder<JsonObjectBuilder> {
 
         private final Map<String, Object> properties;
 
@@ -240,37 +240,37 @@ final class Json {
             this.properties = new HashMap<String, Object>();
         }
 
-        JsonObjectBuilder put(String name, String value) {
+        public JsonObjectBuilder put(String name, String value) {
             putInternal(name, value);
             return this;
         }
 
-        JsonObjectBuilder put(String name, JsonObjectBuilder value) {
+        public JsonObjectBuilder put(String name, JsonObjectBuilder value) {
             putInternal(name, value);
             return this;
         }
 
-        JsonObjectBuilder put(String name, JsonArrayBuilder value) {
+        public JsonObjectBuilder put(String name, JsonArrayBuilder value) {
             putInternal(name, value);
             return this;
         }
 
-        JsonObjectBuilder put(String name, boolean value) {
+        public JsonObjectBuilder put(String name, boolean value) {
             putInternal(name, value);
             return this;
         }
 
-        JsonObjectBuilder put(String name, int value) {
+        public JsonObjectBuilder put(String name, int value) {
             putInternal(name, value);
             return this;
         }
 
-        JsonObjectBuilder put(String name, long value) {
+        public JsonObjectBuilder put(String name, long value) {
             putInternal(name, value);
             return this;
         }
 
-        boolean has(String name) {
+        public boolean has(String name) {
             return properties.containsKey(name);
         }
 
@@ -288,14 +288,14 @@ final class Json {
             return isValuesEmpty(properties.values());
         }
 
-        String build() throws IOException {
+        public String build() throws IOException {
             StringBuilder builder = new StringBuilder();
             appendTo(builder);
             return builder.toString();
         }
 
         @Override
-        void appendTo(Appendable appendable) throws IOException {
+        public void appendTo(Appendable appendable) throws IOException {
             appendable.append(OBJECT_START);
             int idx = 0;
             for (Iterator<Entry<String, Object>> iterator = properties.entrySet().iterator(); iterator.hasNext();) {

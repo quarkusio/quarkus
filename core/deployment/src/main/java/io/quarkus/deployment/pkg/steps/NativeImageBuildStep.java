@@ -27,6 +27,8 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.ReflectionConfigurationResourceBuildItem;
+import io.quarkus.deployment.builditem.SerializationConfigurationResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
@@ -50,8 +52,8 @@ import io.quarkus.deployment.steps.NativeImageFeatureStep;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
-import io.quarkus.runtime.graal.ReflectiveClassesFeature;
 import io.quarkus.runtime.graal.ResourcesFeature;
+import io.quarkus.runtime.graal.WeakReflectionFeature;
 
 public class NativeImageBuildStep {
 
@@ -89,7 +91,7 @@ public class NativeImageBuildStep {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> features) {
         features.produce(new NativeImageFeatureBuildItem(NativeImageFeatureStep.GRAAL_FEATURE));
-        features.produce(new NativeImageFeatureBuildItem(ReflectiveClassesFeature.class));
+        features.produce(new NativeImageFeatureBuildItem(WeakReflectionFeature.class));
         features.produce(new NativeImageFeatureBuildItem(ResourcesFeature.class));
         features.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
     }
@@ -118,7 +120,9 @@ public class NativeImageBuildStep {
             List<NativeImageEnableModule> enableModules,
             List<JPMSExportBuildItem> jpmsExportBuildItems,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
-            List<NativeImageFeatureBuildItem> nativeImageFeatures) {
+            List<NativeImageFeatureBuildItem> nativeImageFeatures,
+            List<SerializationConfigurationResourceBuildItem> serializationConfigurations,
+            List<ReflectionConfigurationResourceBuildItem> reflectionConfigurations) {
 
         Path outputDir;
         try {
@@ -149,6 +153,8 @@ public class NativeImageBuildStep {
                 .setNativeImageName(nativeImageName)
                 .setGraalVMVersion(GraalVM.Version.CURRENT)
                 .setNativeImageFeatures(nativeImageFeatures)
+                .setReflectionConfigurations(reflectionConfigurations)
+                .setSerializationConfigurations(serializationConfigurations)
                 .build();
         List<String> command = nativeImageArgs.getArgs();
         try (FileOutputStream commandFOS = new FileOutputStream(outputDir.resolve("native-image.args").toFile())) {
@@ -184,7 +190,9 @@ public class NativeImageBuildStep {
             List<UnsupportedOSBuildItem> unsupportedOses,
             Optional<ProcessInheritIODisabled> processInheritIODisabled,
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem,
-            List<NativeImageFeatureBuildItem> nativeImageFeatures) {
+            List<NativeImageFeatureBuildItem> nativeImageFeatures,
+            List<ReflectionConfigurationResourceBuildItem> reflectionConfigurations,
+            List<SerializationConfigurationResourceBuildItem> serializationConfigurations) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
             copySourcesToSourceCache(outputTargetBuildItem);
@@ -252,6 +260,8 @@ public class NativeImageBuildStep {
                     .setNoPIE(noPIE)
                     .setGraalVMVersion(graalVMVersion)
                     .setNativeImageFeatures(nativeImageFeatures)
+                    .setReflectionConfigurations(reflectionConfigurations)
+                    .setSerializationConfigurations(serializationConfigurations)
                     .build();
 
             List<String> nativeImageArgs = commandAndExecutable.args;
@@ -530,6 +540,8 @@ public class NativeImageBuildStep {
             private List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions;
             private List<UnsupportedOSBuildItem> unsupportedOSes;
             private List<NativeImageFeatureBuildItem> nativeImageFeatures;
+            private List<SerializationConfigurationResourceBuildItem> serializationConfigurations;
+            private List<ReflectionConfigurationResourceBuildItem> reflectionConfigurations;
             private Path outputDir;
             private String runnerJarName;
             private String noPIE = "";
@@ -597,6 +609,18 @@ public class NativeImageBuildStep {
 
             public Builder setNativeImageFeatures(List<NativeImageFeatureBuildItem> nativeImageFeatures) {
                 this.nativeImageFeatures = nativeImageFeatures;
+                return this;
+            }
+
+            public Builder setSerializationConfigurations(
+                    List<SerializationConfigurationResourceBuildItem> serializationConfigurations) {
+                this.serializationConfigurations = serializationConfigurations;
+                return this;
+            }
+
+            public Builder setReflectionConfigurations(
+                    List<ReflectionConfigurationResourceBuildItem> reflectionConfigurations) {
+                this.reflectionConfigurations = reflectionConfigurations;
                 return this;
             }
 
@@ -685,6 +709,17 @@ public class NativeImageBuildStep {
                     featuresList.add(nativeImageFeature.getQualifiedName());
                 }
                 nativeImageArgs.add("--features=" + String.join(",", featuresList));
+
+                if (reflectionConfigurations != null && !reflectionConfigurations.isEmpty()) {
+                    nativeImageArgs.add("-H:ReflectionConfigurationResources="
+                            + reflectionConfigurations.stream().map(ReflectionConfigurationResourceBuildItem::getFile)
+                                    .collect(Collectors.joining(",")));
+                }
+                if (serializationConfigurations != null && !serializationConfigurations.isEmpty()) {
+                    nativeImageArgs.add("-H:SerializationConfigurationResources="
+                            + serializationConfigurations.stream().map(SerializationConfigurationResourceBuildItem::getFile)
+                                    .collect(Collectors.joining(",")));
+                }
 
                 if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_22_2_0)) {
                     /*

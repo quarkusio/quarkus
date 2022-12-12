@@ -7,7 +7,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import io.quarkus.oidc.token.propagation.JsonWebToken;
 
-@RegisterRestClient
+@RegisterRestClient(configKey = "jwt-token-propagation")
 @JsonWebToken
 @Path("/")
 public interface JwtTokenPropagationService {

@@ -76,7 +76,8 @@ public class VertxRedisClientFactory {
         options.setPassword(config.password.orElse(null));
         config.poolCleanerInterval.ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
         options.setPoolRecycleTimeout((int) config.poolRecycleTimeout.toMillis());
-        // TODO Pool name?
+
+        options.setPoolName(name);
 
         config.role.ifPresent(options::setRole);
         options.setType(config.clientType);

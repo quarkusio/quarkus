@@ -28,15 +28,9 @@ public class KafkaDevServicesBuildTimeConfig {
     public Optional<Integer> port;
 
     /**
-     * The Kafka container image to use.
+     * Kafka dev service container type.
      * <p>
-     * Only Redpanda and Strimzi images are supported.
-     * Default image is Redpanda.
-     * <p>
-     * Note that Strimzi images are launched in Kraft mode.
-     * In order to use a Strimzi image you need to set a compatible image name such as
-     * {@code quay.io/strimzi-test-container/test-container:0.100.0-kafka-3.1.0} or
-     * {@code quay.io/strimzi/kafka:0.27.1-kafka-3.0.0}
+     * Redpanda, Strimzi and kafka-native container providers are supported. Default is redpanda.
      * <p>
      * For Redpanda:
      * See https://vectorized.io/docs/quick-start-docker/ and https://hub.docker.com/r/vectorized/redpanda
@@ -44,9 +38,37 @@ public class KafkaDevServicesBuildTimeConfig {
      * For Strimzi:
      * See https://github.com/strimzi/test-container and https://quay.io/repository/strimzi-test-container/test-container
      * <p>
+     * For Kafka Native:
+     * See https://github.com/ozangunalp/kafka-native and https://quay.io/repository/ogunalp/kafka-native
+     * <p>
+     * Note that Strimzi and Kafka Native images are launched in Kraft mode.
      */
-    @ConfigItem(defaultValue = "docker.io/vectorized/redpanda:v22.3.4")
-    public String imageName;
+    @ConfigItem(defaultValue = "redpanda")
+    public Provider provider = Provider.REDPANDA;
+
+    public enum Provider {
+        REDPANDA("docker.io/vectorized/redpanda:v22.3.4"),
+        STRIMZI("quay.io/strimzi-test-container/test-container:latest-kafka-3.2.1"),
+        KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest");
+
+        private final String defaultImageName;
+
+        Provider(String imageName) {
+            this.defaultImageName = imageName;
+        }
+
+        public String getDefaultImageName() {
+            return defaultImageName;
+        }
+    }
+
+    /**
+     * The Kafka container image to use.
+     * <p>
+     * Dependent on the provider.
+     */
+    @ConfigItem
+    public Optional<String> imageName;
 
     /**
      * Indicates if the Kafka broker managed by Quarkus Dev Services is shared.

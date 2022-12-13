@@ -370,7 +370,7 @@ public class ResteasyReactiveScanningProcessor {
                         .setPriority(generated.getPriority())
                         .setPreMatching(generated.isPreMatching())
                         .setNonBlockingRequired(generated.isNonBlocking())
-                        .setReadBody(generated.isReadBody())
+                        .setWithFormRead(generated.isWithFormRead())
                         .setFilterSourceMethod(generated.getFilterSourceMethod());
                 if (!generated.getNameBindingNames().isEmpty()) {
                     builder.setNameBindingNames(generated.getNameBindingNames());

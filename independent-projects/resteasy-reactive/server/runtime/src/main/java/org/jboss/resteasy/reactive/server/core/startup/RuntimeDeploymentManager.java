@@ -187,7 +187,7 @@ public class RuntimeDeploymentManager {
                     .entrySet()) {
                 preMatchHandlers
                         .add(new ResourceRequestFilterHandler(entry.getValue(), true, entry.getKey().isNonBlockingRequired(),
-                                entry.getKey().isReadBody()));
+                                entry.getKey().isWithFormRead()));
             }
         }
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {

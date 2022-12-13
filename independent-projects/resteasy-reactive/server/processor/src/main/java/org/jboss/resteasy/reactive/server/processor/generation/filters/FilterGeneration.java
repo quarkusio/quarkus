@@ -19,6 +19,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.server.processor.util.GeneratedClass;
 import org.jboss.resteasy.reactive.server.processor.util.GeneratedClassOutput;
+import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 
 public class FilterGeneration {
     public static List<GeneratedFilter> generate(IndexView index, Set<DotName> unwrappableTypes,
@@ -37,6 +38,7 @@ public class FilterGeneration {
             boolean preMatching = false;
             boolean nonBlockingRequired = false;
             boolean readBody = false;
+            boolean withFormRead = methodInfo.hasAnnotation(ResteasyReactiveServerDotNames.WITH_FORM_READ);
             Set<String> nameBindingNames = new HashSet<>();
 
             AnnotationValue priorityValue = instance.value("priority");
@@ -56,10 +58,17 @@ public class FilterGeneration {
                 readBody = readBodyValue.asBoolean();
             }
 
-            if (readBody && preMatching) {
-                throw new IllegalStateException(
-                        "Setting both 'readBody' and 'preMatching' to 'true' on '@ServerRequestFilter' is invalid. Offending method is '"
-                                + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
+            if (preMatching) {
+                if (readBody) {
+                    throw new IllegalStateException(
+                            "Setting both 'readBody' and 'preMatching' to 'true' on '@ServerRequestFilter' is invalid. Offending method is '"
+                                    + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
+                }
+                if (withFormRead) {
+                    throw new IllegalStateException(
+                            "Setting both '@WithFormRead' and 'preMatching' to 'true' on '@ServerRequestFilter' is invalid. Offending method is '"
+                                    + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
+                }
             }
 
             List<AnnotationInstance> annotations = methodInfo.annotations();
@@ -78,7 +87,7 @@ public class FilterGeneration {
             }
 
             ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    true, priority, preMatching, nonBlockingRequired, nameBindingNames, readBody, methodInfo));
+                    true, priority, preMatching, nonBlockingRequired, nameBindingNames, withFormRead || readBody, methodInfo));
         }
         for (AnnotationInstance instance : index
                 .getAnnotations(SERVER_RESPONSE_FILTER)) {
@@ -128,14 +137,14 @@ public class FilterGeneration {
         final boolean preMatching;
         final boolean nonBlocking;
         final Set<String> nameBindingNames;
-        final boolean readBody;
+        final boolean withFormRead;
 
         final MethodInfo filterSourceMethod;
 
         public GeneratedFilter(List<GeneratedClass> generatedClasses, String generatedClassName,
                 String declaringClassName,
                 boolean requestFilter, Integer priority, boolean preMatching, boolean nonBlocking,
-                Set<String> nameBindingNames, boolean readBody, MethodInfo filterSourceMethod) {
+                Set<String> nameBindingNames, boolean withFormRead, MethodInfo filterSourceMethod) {
             this.generatedClasses = generatedClasses;
             this.generatedClassName = generatedClassName;
             this.declaringClassName = declaringClassName;
@@ -144,7 +153,7 @@ public class FilterGeneration {
             this.preMatching = preMatching;
             this.nonBlocking = nonBlocking;
             this.nameBindingNames = nameBindingNames;
-            this.readBody = readBody;
+            this.withFormRead = withFormRead;
             this.filterSourceMethod = filterSourceMethod;
         }
 
@@ -180,8 +189,8 @@ public class FilterGeneration {
             return nameBindingNames;
         }
 
-        public boolean isReadBody() {
-            return readBody;
+        public boolean isWithFormRead() {
+            return withFormRead;
         }
 
         public MethodInfo getFilterSourceMethod() {

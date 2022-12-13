@@ -22,7 +22,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class ReadBodyRequestFilterTest {
+public class ImpliedReadBodyRequestFilterTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -100,7 +100,7 @@ public class ReadBodyRequestFilterTest {
     public static class Filters {
 
         @WithFormRead
-        @ServerRequestFilter(readBody = true)
+        @ServerRequestFilter
         public void addSuffix(ResteasyReactiveContainerRequestContext containerRequestContext) {
             ResteasyReactiveRequestContext rrContext = (ResteasyReactiveRequestContext) containerRequestContext
                     .getServerRequestContext();

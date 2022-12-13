@@ -6,7 +6,7 @@ public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBu
 
     private final boolean preMatching;
     private final boolean nonBlockingRequired;
-    private final boolean readBody;
+    private final boolean withFormRead;
 
     private final MethodInfo filterSourceMethod;
 
@@ -14,7 +14,7 @@ public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBu
         super(builder);
         this.preMatching = builder.preMatching;
         this.nonBlockingRequired = builder.nonBlockingRequired;
-        this.readBody = builder.readBody;
+        this.withFormRead = builder.withFormRead;
         this.filterSourceMethod = builder.filterSourceMethod;
     }
 
@@ -22,7 +22,7 @@ public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBu
         super(className);
         this.preMatching = false;
         this.nonBlockingRequired = false;
-        this.readBody = false;
+        this.withFormRead = false;
         this.filterSourceMethod = null;
     }
 
@@ -34,8 +34,8 @@ public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBu
         return nonBlockingRequired;
     }
 
-    public boolean isReadBody() {
-        return readBody;
+    public boolean isWithFormRead() {
+        return withFormRead;
     }
 
     public MethodInfo getFilterSourceMethod() {
@@ -45,7 +45,7 @@ public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBu
     public static final class Builder extends AbstractInterceptorBuildItem.Builder<ContainerRequestFilterBuildItem, Builder> {
         boolean preMatching = false;
         boolean nonBlockingRequired = false;
-        boolean readBody = false;
+        boolean withFormRead = false;
 
         MethodInfo filterSourceMethod = null;
 
@@ -63,8 +63,8 @@ public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBu
             return this;
         }
 
-        public Builder setReadBody(boolean readBody) {
-            this.readBody = readBody;
+        public Builder setWithFormRead(boolean withFormRead) {
+            this.withFormRead = withFormRead;
             return this;
         }
 

@@ -410,12 +410,11 @@ public final class RunTimeConfigurationGenerator {
             }
 
             // additional config builders
-            ResultHandle staticConfigBuilderInstances = clinit.newInstance(AL_NEW);
+            ResultHandle configBuilders = clinit.newInstance(AL_NEW);
             for (String configBuilder : staticConfigBuilders) {
-                ResultHandle staticConfigBuilderInstance = clinit.newInstance(MethodDescriptor.ofConstructor(configBuilder));
-                clinit.invokeVirtualMethod(AL_ADD, staticConfigBuilderInstances, staticConfigBuilderInstance);
+                clinit.invokeVirtualMethod(AL_ADD, configBuilders, clinit.load(configBuilder));
             }
-            clinit.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, buildTimeBuilder, staticConfigBuilderInstances);
+            clinit.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, buildTimeBuilder, configBuilders);
 
             clinitConfig = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
                     SmallRyeConfig.class);
@@ -566,15 +565,12 @@ public final class RunTimeConfigurationGenerator {
                 }
 
                 // add bootstrap config builders
-                ResultHandle bootstrapConfigBuilderInstances = readBootstrapConfig.newInstance(AL_NEW);
+                ResultHandle bootstrapConfigBuilders = readBootstrapConfig.newInstance(AL_NEW);
                 for (String configBuilder : staticConfigBuilders) {
-                    ResultHandle staticConfigBuilderInstance = readBootstrapConfig
-                            .newInstance(MethodDescriptor.ofConstructor(configBuilder));
-                    readBootstrapConfig.invokeVirtualMethod(AL_ADD, bootstrapConfigBuilderInstances,
-                            staticConfigBuilderInstance);
+                    readBootstrapConfig.invokeVirtualMethod(AL_ADD, bootstrapConfigBuilders,
+                            readBootstrapConfig.load(configBuilder));
                 }
-                readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, bootstrapBuilder,
-                        bootstrapConfigBuilderInstances);
+                readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, bootstrapBuilder, bootstrapConfigBuilders);
             }
 
             // add in our custom sources
@@ -662,13 +658,11 @@ public final class RunTimeConfigurationGenerator {
             }
 
             // additional config builders
-            ResultHandle runtimeConfigBuilderInstances = readConfig.newInstance(AL_NEW);
+            ResultHandle configBuilders = readConfig.newInstance(AL_NEW);
             for (String configBuilder : runtimeConfigBuilders) {
-                ResultHandle runtimeConfigBuilderInstance = readConfig
-                        .newInstance(MethodDescriptor.ofConstructor(configBuilder));
-                readConfig.invokeVirtualMethod(AL_ADD, runtimeConfigBuilderInstances, runtimeConfigBuilderInstance);
+                readConfig.invokeVirtualMethod(AL_ADD, configBuilders, readConfig.load(configBuilder));
             }
-            readConfig.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, runTimeBuilder, runtimeConfigBuilderInstances);
+            readConfig.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, runTimeBuilder, configBuilders);
 
             ResultHandle bootstrapConfig = null;
             if (bootstrapConfigSetupNeeded()) {

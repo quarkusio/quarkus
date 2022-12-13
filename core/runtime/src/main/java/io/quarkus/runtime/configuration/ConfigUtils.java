@@ -5,10 +5,9 @@ import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
-import static java.lang.Integer.MAX_VALUE;
-import static java.lang.Integer.MIN_VALUE;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,14 +38,12 @@ import io.smallrye.config.ConfigValue;
 import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
-import io.smallrye.config.KeyMap;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
-import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.config.common.utils.ConfigSourceUtil;
 
 /**
@@ -58,8 +55,6 @@ public final class ConfigUtils {
      * The name of the property associated with a random UUID generated at launch time.
      */
     static final String UUID_KEY = "quarkus.uuid";
-    public static final String QUARKUS_BUILD_TIME_RUNTIME_PROPERTIES = "quarkus-build-time-runtime.properties";
-    public static final String QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES = "quarkus-runtime-config-defaults.properties";
 
     private ConfigUtils() {
     }
@@ -116,8 +111,6 @@ public final class ConfigUtils {
             builder.addDiscoveredValidator();
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
             builder.withSources(new DotEnvConfigSourceProvider());
-            builder.withSources(new DefaultsConfigSource(loadBuildTimeRunTimeValues(), "BuildTime RunTime Fixed", MAX_VALUE));
-            builder.withSources(new DefaultsConfigSource(loadRunTimeDefaultValues(), "RunTime Defaults", MIN_VALUE + 100));
         } else {
             List<ConfigSource> sources = new ArrayList<>();
             sources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
@@ -187,16 +180,28 @@ public final class ConfigUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static SmallRyeConfigBuilder configBuilder(SmallRyeConfigBuilder builder, List<ConfigBuilder> configBuilders) {
-        configBuilders.sort(ConfigBuilderComparator.INSTANCE);
-
-        for (ConfigBuilder configBuilder : configBuilders) {
-            builder = configBuilder.configBuilder(builder);
-            if (builder == null) {
-                throw new ConfigurationException(configBuilder.getClass().getName() + " returned a null builder");
+    public static SmallRyeConfigBuilder configBuilder(SmallRyeConfigBuilder builder, List<String> configBuildersNames) {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            List<ConfigBuilder> configBuilders = new ArrayList<>();
+            for (String configBuilderName : configBuildersNames) {
+                Class<ConfigBuilder> configBuilderClass = (Class<ConfigBuilder>) contextClassLoader
+                        .loadClass(configBuilderName);
+                configBuilders.add(configBuilderClass.getDeclaredConstructor().newInstance());
             }
-        }
+            configBuilders.sort(ConfigBuilderComparator.INSTANCE);
 
+            for (ConfigBuilder configBuilder : configBuilders) {
+                builder = configBuilder.configBuilder(builder);
+                if (builder == null) {
+                    throw new ConfigurationException(configBuilder.getClass().getName() + " returned a null builder");
+                }
+            }
+
+        } catch (ClassNotFoundException | InstantiationException | InvocationTargetException | NoSuchMethodException
+                | IllegalAccessException e) {
+            throw new ConfigurationException(e);
+        }
         return builder;
     }
 
@@ -227,25 +232,6 @@ public final class ConfigUtils {
 
     public static void addSourceFactoryProvider(SmallRyeConfigBuilder builder, ConfigSourceFactoryProvider provider) {
         builder.withSources(provider.getConfigSourceFactory(Thread.currentThread().getContextClassLoader()));
-    }
-
-    public static Map<String, String> loadBuildTimeRunTimeValues() {
-        try {
-            URL resource = Thread.currentThread().getContextClassLoader().getResource(QUARKUS_BUILD_TIME_RUNTIME_PROPERTIES);
-            return resource != null ? ConfigSourceUtil.urlToMap(resource) : Collections.emptyMap();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static Map<String, String> loadRunTimeDefaultValues() {
-        try {
-            URL resource = Thread.currentThread().getContextClassLoader()
-                    .getResource(QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES);
-            return resource != null ? ConfigSourceUtil.urlToMap(resource) : Collections.emptyMap();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static void addMapping(SmallRyeConfigBuilder builder, String mappingClass, String prefix) {
@@ -377,38 +363,6 @@ public final class ConfigUtils {
         @Override
         public Set<String> getPropertyNames() {
             return Collections.emptySet();
-        }
-    }
-
-    static class DefaultsConfigSource extends MapBackedConfigSource {
-        private final KeyMap<String> wildcards;
-
-        public DefaultsConfigSource(final Map<String, String> properties, final String name, final int ordinal) {
-            // Defaults may contain wildcards, but we don't want to expose them in getPropertyNames, so we need to filter them
-            super(name, filterWildcards(properties), ordinal);
-            this.wildcards = new KeyMap<>();
-            for (Map.Entry<String, String> entry : properties.entrySet()) {
-                if (entry.getKey().contains("*")) {
-                    this.wildcards.findOrAdd(entry.getKey()).putRootValue(entry.getValue());
-                }
-            }
-        }
-
-        @Override
-        public String getValue(final String propertyName) {
-            String value = super.getValue(propertyName);
-            return value == null ? wildcards.findRootValue(propertyName) : value;
-        }
-
-        private static Map<String, String> filterWildcards(final Map<String, String> properties) {
-            Map<String, String> filtered = new HashMap<>();
-            for (Map.Entry<String, String> entry : properties.entrySet()) {
-                if (entry.getKey().contains("*")) {
-                    continue;
-                }
-                filtered.put(entry.getKey(), entry.getValue());
-            }
-            return filtered;
         }
     }
 

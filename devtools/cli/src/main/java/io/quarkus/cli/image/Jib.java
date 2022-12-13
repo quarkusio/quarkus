@@ -1,7 +1,6 @@
 package io.quarkus.cli.image;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,13 +9,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.cli.BuildToolContext;
 import picocli.CommandLine;
-import picocli.CommandLine.ParentCommand;
 
 @CommandLine.Command(name = "jib", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Jib.", description = "%n"
         + "This command will build or push a container image for the project, using Jib.", footer = "%n"
                 + "For example (using default values), it will create a container image using with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
-public class Jib extends BaseImageCommand {
+public class Jib extends BaseImageSubCommand {
 
     private static final String JIB = "jib";
     private static final String JIB_CONFIG_PREFIX = "quarkus.jib.";
@@ -74,24 +73,26 @@ public class Jib extends BaseImageCommand {
             "--image-id-file" }, description = "The path of a file that will be written containing the id of the generated image.")
     public String imageIdFile;
 
-    @ParentCommand
-    BaseImageCommand parent;
-
     @Override
-    public Integer call() throws Exception {
-        Map<String, String> properties = parent.getPropertiesOptions().properties;
+    public void populateContext(BuildToolContext context) {
+        super.populateContext(context);
+        Map<String, String> properties = context.getPropertiesOptions().properties;
+
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, JIB);
         baseImage.ifPresent(
-                d -> properties.put(JIB_CONFIG_PREFIX + (buildOptions.buildNative ? BASE_NATIVE_IMAGE : BASE_JVM_IMAGE), d));
+                d -> properties.put(
+                        JIB_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? BASE_NATIVE_IMAGE : BASE_JVM_IMAGE),
+                        d));
 
         if (!arguments.isEmpty()) {
             String joinedArgs = arguments.stream().collect(Collectors.joining(","));
-            properties.put(JIB_CONFIG_PREFIX + (buildOptions.buildNative ? NATIVE_ARGUMENTS : JVM_ARGUMENTS), joinedArgs);
+            properties.put(JIB_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_ARGUMENTS : JVM_ARGUMENTS),
+                    joinedArgs);
         }
 
         if (!entrypoint.isEmpty()) {
             String joinedEntrypoint = entrypoint.stream().collect(Collectors.joining(","));
-            properties.put(JIB_CONFIG_PREFIX + (buildOptions.buildNative ? NATIVE_ENTRYPOINT : JVM_ENTRYPOINT),
+            properties.put(JIB_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_ENTRYPOINT : JVM_ENTRYPOINT),
                     joinedEntrypoint);
         }
 
@@ -129,21 +130,11 @@ public class Jib extends BaseImageCommand {
             properties.put(JIB_CONFIG_PREFIX + IMAGE_ID_FILE, imageIdFile);
         }
 
-        if (buildOptions.offline) {
+        if (context.getBuildOptions().offline) {
             properties.put(JIB_CONFIG_PREFIX + OFFLINE_MODE, "true");
         }
 
-        parent.getForcedExtensions().add(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + JIB);
-        parent.runMode = runMode;
-        parent.buildOptions = buildOptions;
-        parent.imageOptions = imageOptions;
-        parent.setOutput(output);
-        return parent.call();
-    }
-
-    @Override
-    public List<String> getForcedExtensions() {
-        return Arrays.asList(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + JIB);
+        context.getForcedExtensions().add(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + JIB);
     }
 
     @Override

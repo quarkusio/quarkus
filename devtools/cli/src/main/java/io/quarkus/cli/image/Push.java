@@ -1,10 +1,9 @@
 package io.quarkus.cli.image;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.cli.BuildToolContext;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
@@ -37,11 +36,11 @@ public class Push extends BaseImageCommand {
     public boolean alsoBuild;
 
     @Override
-    public Integer call() throws Exception {
-        Map<String, String> properties = getPropertiesOptions().properties;
+    public void populateContext(BuildToolContext context) {
+        Map<String, String> properties = context.getPropertiesOptions().properties;
         registryUsername.ifPresent(u -> properties.put(QUARKUS_CONTAINER_IMAGE_USERNAME, u));
 
-        if (registryPasswordStdin && !runMode.isDryRun()) {
+        if (registryPasswordStdin && !context.getRunModeOption().isDryRun()) {
             String password = new String(System.console().readPassword("Registry password:"));
             properties.put(QUARKUS_CONTAINER_IMAGE_PASSWORD, password);
         } else {
@@ -53,23 +52,12 @@ public class Push extends BaseImageCommand {
         } else {
             properties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "false");
         }
-        return super.call();
+        context.getForcedExtensions().add(QUARKUS_CONTAINER_IMAGE_EXTENSION);
     }
 
     @Override
-    public Optional<String> getAction() {
-        return Optional.ofNullable(ACTION_MAPPING.get(getRunner().getBuildTool()));
-    }
-
-    public void prepareMaven() {
-        if (alsoBuild) {
-            super.prepareMaven();
-        }
-    }
-
-    @Override
-    public List<String> getForcedExtensions() {
-        return Arrays.asList(QUARKUS_CONTAINER_IMAGE_EXTENSION);
+    public Map<BuildTool, String> getActionMapping() {
+        return ACTION_MAPPING;
     }
 
     @Override

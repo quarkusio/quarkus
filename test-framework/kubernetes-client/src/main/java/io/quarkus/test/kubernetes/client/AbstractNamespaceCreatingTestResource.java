@@ -39,7 +39,8 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
             final var namespace = namespace();
             logger().info("Deleting namespace '{}'", namespace);
             try {
-                deleted = client.namespaces().withName(namespace).delete();
+                client.namespaces().withName(namespace).delete();
+                deleted = true;
             } catch (Exception e) {
                 logger().warn("Couldn't delete namespace '" + namespace + "'", e);
             }

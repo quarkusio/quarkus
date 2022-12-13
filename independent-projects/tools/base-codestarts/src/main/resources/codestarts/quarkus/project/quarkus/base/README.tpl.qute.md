@@ -1,4 +1,13 @@
-# {project.artifact-id} Project
+{#if readme.include-default-content}
+{#if project.name}
+# {project.name}
+{#else}
+# {project.artifact-id}
+{/if}
+{#if project.description}
+
+> {project.description}
+{/if}
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
@@ -59,4 +68,5 @@ If you want to learn more about building native executables, please consult {bui
 {#if input.provided-code}
 
 ## Provided Code
+{/if}
 {/if}

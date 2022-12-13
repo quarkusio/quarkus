@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+    id 'io.quarkus' apply false
+}
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+        }
+    }
+    mavenCentral()
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}
+
+group = 'io.quarkus.gradle.test'
+version = '1.0'

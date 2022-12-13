@@ -31,3 +31,10 @@ spec:
   selector:
     name: my-service
   type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: foo
+  namespace: foo
+---

@@ -30,7 +30,8 @@ public class WithKubernetesClientAndExistingResourcesTest {
             .withConfigurationResource("kubernetes-with-" + APPLICATION_NAME + ".properties")
             .addCustomResourceEntry(Path.of("src", "main", "kubernetes", "kubernetes.yml"),
                     "manifests/kubernetes-with-" + APPLICATION_NAME + "/kubernetes.yml")
-            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())))
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-kubernetes-client", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion())))
             .addBuildChainCustomizerEntries(
                     new QuarkusProdModeTest.BuildChainCustomizerEntry(
                             KubernetesWithCustomResourcesTest.CustomProjectRootBuildItemProducerProdMode.class,
@@ -58,12 +59,17 @@ public class WithKubernetesClientAndExistingResourcesTest {
             }
         });
 
-        assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).singleElement().satisfies(h -> {
-            assertThat(h.getMetadata().getName()).isEqualTo(APPLICATION_NAME);
-        });
+        assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).singleElement()
+                .satisfies(h -> assertThat(h.getMetadata().getName()).isEqualTo(APPLICATION_NAME));
 
-        assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).singleElement().satisfies(h -> {
-            assertThat(h.getMetadata().getName()).isEqualTo(APPLICATION_NAME + "-view");
+        assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).singleElement()
+                .satisfies(h -> assertThat(h.getMetadata().getName()).isEqualTo(APPLICATION_NAME + "-view"));
+
+        // check that if quarkus.kubernetes.namespace is set, "manually" set namespaces are not overwritten
+        assertThat(kubernetesList).filteredOn(h -> "ConfigMap".equals(h.getKind())).singleElement().satisfies(h -> {
+            final var metadata = h.getMetadata();
+            assertThat(metadata.getName()).isEqualTo("foo");
+            assertThat(metadata.getNamespace()).isEqualTo("foo");
         });
     }
 }

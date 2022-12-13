@@ -17,7 +17,7 @@ import javax.xml.bind.Unmarshaller;
  */
 public interface JaxbContextCustomizer extends Comparable<JaxbContextCustomizer> {
 
-    int DEFAULT_PRIORITY = 0;
+    int DEFAULT_PRIORITY = Integer.MIN_VALUE;
 
     default void customizeContextProperties(Map<String, Object> properties) {
 

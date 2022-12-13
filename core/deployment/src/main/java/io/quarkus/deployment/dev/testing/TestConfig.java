@@ -150,6 +150,12 @@ public class TestConfig {
     String nativeImageProfile;
 
     /**
+     * The profile to use when testing using {@code @QuarkusIntegrationTest}
+     */
+    @ConfigItem(defaultValue = "prod")
+    String integrationTestProfile;
+
+    /**
      * Profile related test settings
      */
     @ConfigItem

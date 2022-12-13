@@ -43,7 +43,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                     ConfigUtil.waitTimeValue(config),
-                    config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
+                    ConfigUtil.integrationTestProfile(config),
                     ConfigUtil.argLineValue(config),
                     context.devServicesLaunchResult(),
                     context.buildOutputDirectory().resolve(pathStr)));

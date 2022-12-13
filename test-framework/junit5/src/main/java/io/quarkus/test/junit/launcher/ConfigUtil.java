@@ -38,4 +38,10 @@ public final class ConfigUtil {
                 .orElseGet(() -> config.getOptionalValue("quarkus.test.jar-wait-time", Duration.class) // legacy value
                         .orElseGet(() -> Duration.ofSeconds(DEFAULT_WAIT_TIME_SECONDS)));
     }
+
+    public static String integrationTestProfile(Config config) {
+        return config.getOptionalValue("quarkus.test.integration-test-profile", String.class)
+                .orElseGet(() -> config.getOptionalValue("quarkus.test.native-image-profile", String.class)
+                        .orElse(null));
+    }
 }

@@ -261,6 +261,9 @@ public final class ResteasyReactiveDotNames {
     public static final DotName RESTEASY_REACTIVE_CONTAINER_REQUEST_CONTEXT = DotName
             .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext");
 
+    public static final DotName WITH_FORM_READ = DotName
+            .createSimple("org.jboss.resteasy.reactive.server.WithFormRead");
+
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     public static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");

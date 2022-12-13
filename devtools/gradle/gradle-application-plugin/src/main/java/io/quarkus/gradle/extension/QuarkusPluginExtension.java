@@ -3,12 +3,15 @@ package io.quarkus.gradle.extension;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
@@ -34,6 +37,8 @@ public class QuarkusPluginExtension {
     private final Project project;
 
     private final Property<String> finalName;
+
+    private Map<String, String> quarkusBuildProperties;
     private final SourceSetExtension sourceSetExtension;
 
     public QuarkusPluginExtension(Project project) {
@@ -43,6 +48,7 @@ public class QuarkusPluginExtension {
         finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
 
         this.sourceSetExtension = new SourceSetExtension();
+        quarkusBuildProperties = new HashMap<>();
     }
 
     public void beforeTest(Test task) {
@@ -182,4 +188,13 @@ public class QuarkusPluginExtension {
         }
         return classesDir;
     }
+
+    public Map<String, String> getQuarkusBuildProperties() {
+        return quarkusBuildProperties;
+    }
+
+    public void set(String name, @Nullable String value) {
+        quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
+    }
+
 }

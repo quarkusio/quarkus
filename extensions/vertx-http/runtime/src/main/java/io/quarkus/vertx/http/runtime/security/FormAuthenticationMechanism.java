@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
@@ -37,7 +38,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final String passwordParameter;
     private final String locationCookie;
     private final String landingPage;
-    private final boolean redirectAfterLogin;
+    private final boolean redirectToLandingPage;
+    private final boolean redirectToErrorPage;
+    private final boolean redirectToLoginPage;
 
     private final PersistentLoginManager loginManager;
 
@@ -51,7 +54,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.locationCookie = locationCookie;
         this.errorPage = errorPage;
         this.landingPage = landingPage;
-        this.redirectAfterLogin = redirectAfterLogin;
+        this.redirectToLandingPage = landingPage != null && redirectAfterLogin;
+        this.redirectToLoginPage = loginPage != null;
+        this.redirectToErrorPage = errorPage != null;
         this.loginManager = loginManager;
     }
 
@@ -85,7 +90,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                         public void accept(SecurityIdentity identity) {
                                             try {
                                                 loginManager.save(identity, exchange, null, exchange.request().isSSL());
-                                                if (redirectAfterLogin || exchange.getCookie(locationCookie) != null) {
+                                                if (redirectToLandingPage
+                                                        || exchange.request().getCookie(locationCookie) != null) {
                                                     handleRedirectBack(exchange);
                                                     //we  have authenticated, but we want to just redirect back to the original page
                                                     //so we don't actually authenticate the current request
@@ -117,7 +123,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     protected void handleRedirectBack(final RoutingContext exchange) {
-        Cookie redirect = exchange.getCookie(locationCookie);
+        Cookie redirect = exchange.request().getCookie(locationCookie);
         String location;
         if (redirect != null) {
             verifyRedirectBackLocation(exchange.request().absoluteURI(), redirect.getValue());
@@ -125,6 +131,12 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             location = redirect.getValue();
             exchange.response().addCookie(redirect.setMaxAge(0));
         } else {
+            if (landingPage == null) {
+                // we know this won't happen with default implementation as we only call handleRedirectBack
+                // when landingPage is not null, however we can't control inheritors
+                throw new IllegalStateException(
+                        "Landing page is no set, please make sure 'quarkus.http.auth.form.landing-page' is configured properly.");
+            }
             location = exchange.request().scheme() + "://" + exchange.request().host() + landingPage;
         }
         exchange.response().setStatusCode(302);
@@ -194,15 +206,22 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
         if (context.normalizedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
-            log.debugf("Serving form auth error page %s for %s", loginPage, context);
-            // This method would no longer be called if authentication had already occurred.
-            return getRedirect(context, errorPage);
+            if (redirectToErrorPage) {
+                log.debugf("Serving form auth error page %s for %s", errorPage, context);
+                // This method would no longer be called if authentication had already occurred.
+                return getRedirect(context, errorPage);
+            }
         } else {
-            log.debugf("Serving login form %s for %s", loginPage, context);
-            // we need to store the URL
-            storeInitialLocation(context);
-            return getRedirect(context, loginPage);
+            if (redirectToLoginPage) {
+                log.debugf("Serving login form %s for %s", loginPage, context);
+                // we need to store the URL
+                storeInitialLocation(context);
+                return getRedirect(context, loginPage);
+            }
         }
+
+        // redirect is disabled
+        return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(), null, null));
     }
 
     @Override

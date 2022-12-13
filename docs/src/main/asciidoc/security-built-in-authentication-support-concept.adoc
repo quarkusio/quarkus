@@ -30,6 +30,18 @@ value. This cookie contains an expiry time as part of the encrypted value, so al
 clocks synchronized. At one minute intervals a new cookie will be generated with an updated expiry time if the session
 is in use.
 
+Single Page Application (SPA) typically wants to avoid redirects, this can be done by removing default page paths:
+
+[source,properties]
+----
+# do not redirect, respond with HTTP 200 OK
+quarkus.http.auth.form.landing-page=
+
+# do not redirect, respond with HTTP 401 Unauthorized
+quarkus.http.auth.form.login-page=
+quarkus.http.auth.form.error-page=
+----
+
 The following properties can be used to configure form based auth:
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-form-auth-config.adoc[opts=optional, leveloffset=+1]

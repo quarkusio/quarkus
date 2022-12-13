@@ -224,6 +224,7 @@ public class HttpSecurityRecorder {
     public Supplier<FormAuthenticationMechanism> setupFormAuth() {
 
         return new Supplier<FormAuthenticationMechanism>() {
+
             @Override
             public FormAuthenticationMechanism get() {
                 String key;
@@ -243,10 +244,10 @@ public class HttpSecurityRecorder {
                 FormAuthConfig form = buildTimeConfig.auth.form;
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
                         form.newCookieInterval.toMillis(), form.httpOnlyCookie);
-                String loginPage = form.loginPage.startsWith("/") ? form.loginPage : "/" + form.loginPage;
-                String errorPage = form.errorPage.startsWith("/") ? form.errorPage : "/" + form.errorPage;
-                String landingPage = form.landingPage.startsWith("/") ? form.landingPage : "/" + form.landingPage;
-                String postLocation = form.postLocation.startsWith("/") ? form.postLocation : "/" + form.postLocation;
+                String loginPage = startWithSlash(form.loginPage.orElse(null));
+                String errorPage = startWithSlash(form.errorPage.orElse(null));
+                String landingPage = startWithSlash(form.landingPage.orElse(null));
+                String postLocation = startWithSlash(form.postLocation);
                 String usernameParameter = form.usernameParameter;
                 String passwordParameter = form.passwordParameter;
                 String locationCookie = form.locationCookie;
@@ -255,6 +256,13 @@ public class HttpSecurityRecorder {
                         errorPage, landingPage, redirectAfterLogin, locationCookie, loginManager);
             }
         };
+    }
+
+    private static String startWithSlash(String page) {
+        if (page == null) {
+            return null;
+        }
+        return page.startsWith("/") ? page : "/" + page;
     }
 
     public Supplier<?> setupBasicAuth(HttpBuildTimeConfig buildTimeConfig) {

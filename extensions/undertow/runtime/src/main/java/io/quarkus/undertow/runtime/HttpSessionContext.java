@@ -16,6 +16,8 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.InjectableBean;
@@ -31,6 +33,10 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
     private static final String CONTEXTUAL_INSTANCES_KEY = HttpSessionContext.class.getName()
             + ".contextualInstances";
 
+    private static final ThreadLocal<HttpSession> DESTRUCT_SESSION = new ThreadLocal<>();
+
+    private static final Logger LOG = Logger.getLogger(HttpSessionContext.class);
+
     @Override
     public Class<? extends Annotation> getScope() {
         return SessionScoped.class;
@@ -39,17 +45,16 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
-        HttpServletRequest request = servletRequest();
-        if (request == null) {
+        HttpSession session = session(true);
+        if (session == null) {
             throw new ContextNotActiveException();
         }
         InjectableBean<T> bean = (InjectableBean<T>) contextual;
-        ComputingCache<Key, ContextInstanceHandle<?>> contextualInstances = getContextualInstances(request);
+        ComputingCache<Key, ContextInstanceHandle<?>> contextualInstances = getContextualInstances(session);
         if (creationalContext != null) {
             return (T) contextualInstances.getValue(new Key(creationalContext, bean.getIdentifier())).get();
         } else {
-            InstanceHandle<T> handle = (InstanceHandle<T>) contextualInstances
-                    .getValueIfPresent(new Key(null, bean.getIdentifier()));
+            InstanceHandle<T> handle = (InstanceHandle<T>) contextualInstances.getValueIfPresent(Key.of(bean.getIdentifier()));
             return handle != null ? handle.get() : null;
         }
     }
@@ -61,7 +66,7 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
 
     @Override
     public boolean isActive() {
-        return servletRequest() != null;
+        return session(true) != null;
     }
 
     @Override
@@ -70,9 +75,9 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
 
             @Override
             public Map<InjectableBean<?>, Object> getContextualInstances() {
-                HttpServletRequest httpServletRequest = servletRequest();
-                if (httpServletRequest != null) {
-                    return HttpSessionContext.this.getContextualInstances(httpServletRequest).getPresentValues().stream()
+                HttpSession session = session(false);
+                if (session != null) {
+                    return HttpSessionContext.this.getContextualInstances(session).getPresentValues().stream()
                             .collect(Collectors.toMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
                 }
                 return Collections.emptyMap();
@@ -82,13 +87,12 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
 
     @Override
     public void destroy(Contextual<?> contextual) {
-        HttpServletRequest httpServletRequest = servletRequest();
-        if (httpServletRequest == null) {
+        HttpSession session = session(true);
+        if (session == null) {
             throw new ContextNotActiveException();
         }
         InjectableBean<?> bean = (InjectableBean<?>) contextual;
-        InstanceHandle<?> instanceHandle = getContextualInstances(httpServletRequest)
-                .remove(new Key(null, bean.getIdentifier()));
+        InstanceHandle<?> instanceHandle = getContextualInstances(session).remove(Key.of(bean.getIdentifier()));
         if (instanceHandle != null) {
             instanceHandle.destroy();
         }
@@ -96,32 +100,36 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
 
     @Override
     public void destroy() {
-        HttpServletRequest httpServletRequest = servletRequest();
-        if (httpServletRequest == null) {
+        HttpSession session = session(true);
+        if (session == null) {
             throw new ContextNotActiveException();
         }
-        HttpSession session = httpServletRequest.getSession(false);
-        if (session != null) {
-            destroy(session);
-        }
+        destroy(session);
     }
 
     private void destroy(HttpSession session) {
         synchronized (this) {
-            ComputingCache<Key, ContextInstanceHandle<?>> contextualInstances = getContextualInstances(session);
-            for (ContextInstanceHandle<?> instance : contextualInstances.getPresentValues()) {
-                try {
-                    instance.destroy();
-                } catch (Exception e) {
-                    throw new IllegalStateException("Unable to destroy instance" + instance.get(), e);
+            ComputingCache<Key, ContextInstanceHandle<?>> instances = getContextualInstances(session);
+            for (ContextInstanceHandle<?> instance : instances.getPresentValues()) {
+                // try to remove the contextual instance from the context
+                ContextInstanceHandle<?> val = instances.remove(Key.of(instance.getBean().getIdentifier()));
+                if (val != null) {
+                    // destroy it afterwards
+                    try {
+                        val.destroy();
+                    } catch (Exception e) {
+                        LOG.errorf(e, "Unable to destroy bean instance: %s", val.get());
+                    }
                 }
             }
-            contextualInstances.clear();
+            if (!instances.isEmpty()) {
+                LOG.warnf(
+                        "Some @SessionScoped beans were created during destruction of the session context: %s\n\t- potential @PreDestroy callbacks declared on the beans were not invoked\n\t- in general, @SessionScoped beans should not call other @SessionScoped beans in a @PreDestroy callback",
+                        instances.getPresentValues().stream().map(ContextInstanceHandle::getBean)
+                                .collect(Collectors.toList()));
+            }
+            instances.clear();
         }
-    }
-
-    private ComputingCache<Key, ContextInstanceHandle<?>> getContextualInstances(HttpServletRequest httpServletRequest) {
-        return getContextualInstances(httpServletRequest.getSession());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -135,6 +143,9 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
                 if (contextualInstances == null) {
                     contextualInstances = new ComputingCache<>(key -> {
                         InjectableBean bean = Arc.container().bean(key.beanIdentifier);
+                        if (key.creationalContext == null) {
+                            throw new IllegalStateException("Cannot create bean ");
+                        }
                         return new ContextInstanceHandleImpl(bean, bean.create(key.creationalContext), key.creationalContext);
                     });
                     session.setAttribute(CONTEXTUAL_INSTANCES_KEY, contextualInstances);
@@ -144,15 +155,21 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
         return contextualInstances;
     }
 
-    private HttpServletRequest servletRequest() {
+    private HttpSession session(boolean create) {
+        HttpSession session = null;
         try {
-            return (HttpServletRequest) ServletRequestContext.requireCurrent().getServletRequest();
-        } catch (IllegalStateException e) {
-            return null;
+            session = ((HttpServletRequest) ServletRequestContext.requireCurrent().getServletRequest()).getSession(create);
+        } catch (IllegalStateException ignored) {
+            session = DESTRUCT_SESSION.get();
         }
+        return session;
     }
 
     static class Key {
+
+        static Key of(String beanIdentifier) {
+            return new Key(null, beanIdentifier);
+        }
 
         CreationalContext<?> creationalContext;
 
@@ -187,7 +204,13 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
 
     @Override
     public void sessionDestroyed(HttpSessionEvent se) {
-        destroy(se.getSession());
+        HttpSession session = se.getSession();
+        try {
+            DESTRUCT_SESSION.set(session);
+            destroy(session);
+        } finally {
+            DESTRUCT_SESSION.remove();
+        }
     }
 
 }

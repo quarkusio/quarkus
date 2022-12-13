@@ -24,4 +24,10 @@ public class SchedulerConfig {
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
 
+    /**
+     * Tracing will be enabled if the OpenTelemetry extension is present and this value is true.
+     */
+    @ConfigItem(name = "tracing.enabled")
+    public boolean tracingEnabled;
+
 }

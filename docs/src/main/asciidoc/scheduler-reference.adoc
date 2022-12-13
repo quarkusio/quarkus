@@ -277,6 +277,7 @@ The main idea is to keep the logic to skip the execution outside the scheduled b
 
 TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
 
+[[non-blocking-methods]]
 === Non-blocking Methods
 
 By default, a scheduled method is executed on the main executor for blocking tasks. 
@@ -376,6 +377,12 @@ Some basic metrics are published out of the box if `quarkus.scheduler.metrics.en
 If the xref:micrometer.adoc[Micrometer extension] is present, then a `@io.micrometer.core.annotation.Timed` interceptor binding is added to all `@Scheduled` methods automatically (unless it's already present) and a `io.micrometer.core.instrument.Timer` with name `scheduled.methods` and a `io.micrometer.core.instrument.LongTaskTimer` with name `scheduled.methods.running` are registered. The fully qualified name of the declaring class and the name of a `@Scheduled` method are used as tags.
 
 If the xref:smallrye-metrics.adoc[SmallRye Metrics extension] is present, then a `@org.eclipse.microprofile.metrics.annotation.Timed`  interceptor binding is added to all `@Scheduled` methods automatically (unless it's already present) and a `org.eclipse.microprofile.metrics.Timer` is created for each `@Scheduled` method. The name consists of the fully qualified name of the declaring class and the name of a `@Scheduled` method. The timer has a tag `scheduled=true`.
+
+== OpenTelemetry Tracing
+
+If `quarkus.scheduler.tracing.enabled` is set to `true` and the xref:opentelemetry.adoc[OpenTelemetry extension] is present then the `@io.opentelemetry.instrumentation.annotations.WithSpan` annotation is added automatically to every `@Scheduled` method. As a result, each execution of this method has a new `io.opentelemetry.api.trace.Span` associated.
+
+IMPORTANT: <<non-blocking-methods,Non-blocking methods>> are not supported, i.e. a new span is associated with the _actual_ invocation but it's not available within the asynchronous computation.
 
 == Configuration Reference
 

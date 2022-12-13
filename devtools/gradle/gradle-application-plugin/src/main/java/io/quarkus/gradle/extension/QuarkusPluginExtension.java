@@ -77,7 +77,7 @@ public class QuarkusPluginExtension {
                             project.relativePath(outputDirectoryAsFile)))
                     .collect(Collectors.joining(","));
             task.environment(BootstrapConstants.TEST_TO_MAIN_MAPPINGS, fileList);
-            project.getLogger().lifecycle("test dir mapping - {}", fileList);
+            project.getLogger().debug("test dir mapping - {}", fileList);
 
             final String nativeRunner = task.getProject().getBuildDir().toPath().resolve(finalName() + "-runner")
                     .toAbsolutePath()

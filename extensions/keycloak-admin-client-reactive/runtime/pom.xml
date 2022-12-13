@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
     <name>Quarkus - Keycloak Admin Client - Reactive - Runtime</name>
-    <description>Administer a Keycloak Instance</description>
+    <description>Administer a Keycloak Instance using Reactive</description>
 
     <dependencies>
         <dependency>

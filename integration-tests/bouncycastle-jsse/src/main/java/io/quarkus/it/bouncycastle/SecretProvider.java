@@ -15,7 +15,7 @@ public class SecretProvider implements CredentialsProvider {
     @Override
     public Map<String, String> getCredentials(String credentialsProviderName) {
         Map<String, String> creds = new HashMap<>();
-        creds.put("keystore-password", "password");
+        creds.put("keystore-password", "secret");
         creds.put("truststore-password", "password");
         return creds;
     }

@@ -727,8 +727,6 @@ public class NativeImageBuildStep {
                  */
                 handleAdditionalProperties(nativeImageArgs);
 
-                nativeImageArgs.add(
-                        "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+AllowFoldMethods");
 
                 if (nativeConfig.headless) {

@@ -116,7 +116,7 @@
         },
         {
             "category": "Misc4",
-            "timeout": 65,
+            "timeout": 75,
             "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, opentelemetry, webjars-locator",
             "os-name": "ubuntu-latest"
         },

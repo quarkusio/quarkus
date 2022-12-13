@@ -247,6 +247,7 @@ For more information about RBAC and other authorization options in Quarkus, see 
 == Quarkus Security customization
 
 Quarkus Security is highly customizable. You can customize the following core security components of Quarkus:
+
 * `HttpAuthenticationMechanism` 
 * `IdentityProvider` 
 * `SecurityidentityAugmentor`

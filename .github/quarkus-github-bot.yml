@@ -30,24 +30,28 @@ triage:
   discussions:
     monitoredCategories: [33575230]
   rules:
-    - labels: [area/amazon-lambda]
+    - id: amazon-lambda
+      labels: [area/amazon-lambda]
       title: "lambda"
       notify: [patriot1burke, matejvasek]
       directories:
         - extensions/amazon-lambda
         - integration-tests/amazon-lambda
-    - labels: [area/persistence]
+    - id: db2
+      labels: [area/persistence]
       title: "db2"
       notify: [mswatosh]
       directories:
         - extensions/reactive-db2-client/
         - extensions/jdbc/jdbc-db2/
-    - labels: [area/funqy]
+    - id: funqy
+      labels: [area/funqy]
       titleBody: "funqy"
       notify: [patriot1burke, matejvasek]
       directories:
         - extensions/funqy/
-    - labels: [area/devmode]
+    - id: devmode
+      labels: [area/devmode]
       title: "dev mode"
     - labels: [area/gradle]
       title: "gradle"
@@ -55,7 +59,8 @@ triage:
       directories:
         - devtools/gradle/
         - integration-tests/gradle/
-    - labels: [area/maven]
+    - id: maven
+      labels: [area/maven]
       title: "maven"
       notify: [quarkusio/devtools]
       directories:
@@ -64,13 +69,15 @@ triage:
         - independent-projects/bootstrap/maven-plugin/
         - integration-tests/maven/
         - test-framework/maven/
-    - labels: [area/jbang]
+    - id: jbang
+      labels: [area/jbang]
       titleBody: "jbang"
       notify: [quarkusio/devtools, maxandersen]
       directories:
         - "**/*JBang*"
         - "**/*jbang*"
-    - labels: [area/codestarts]
+    - id: codestart
+      labels: [area/codestarts]
       title: "codestart"
       notify: [quarkusio/devtools, ia3andy]
       directories:
@@ -78,7 +85,8 @@ triage:
         - devtools/platform-descriptor-json/src/main/resources/bundled-codestarts/
         - devtools/platform-descriptor-json/src/main/resources/codestarts/
         - devtools/platform-descriptor-json/src/main/resources/templates/
-    - labels: [area/hibernate-reactive, area/persistence]
+    - id: hibernate-reactive
+      labels: [area/hibernate-reactive, area/persistence]
       title: "hibernate.reactive"
       expression: |
         matches("hibernate", title) && matches("reactive", title)
@@ -87,7 +95,8 @@ triage:
       notify: [DavideD, gavinking, Sanne]
       directories:
         - extensions/hibernate-reactive
-    - labels: [area/hibernate-orm, area/persistence]
+    - id: hibernate-orm
+      labels: [area/hibernate-orm, area/persistence]
       expression: |
         matches("hibernate", title) && !matches("reactive", title)
         && !matches("hibernate.validator", title)
@@ -104,7 +113,8 @@ triage:
         - integration-tests/hibernate-envers
         - integration-tests/hibernate-orm-tenancy
         - integration-tests/infinispan-cache-jpa
-    - labels: [area/hibernate-search]
+    - id: hibernate-search
+      labels: [area/hibernate-search]
       title: "hibernate.search"
       notify: [gsmet, yrodiere]
       notifyInPullRequest: true
@@ -112,7 +122,8 @@ triage:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/hibernate-search
         - integration-tests/hibernate-search
-    - labels: [area/elasticsearch]
+    - id: elasticsearch
+      labels: [area/elasticsearch]
       title: "elasticsearch"
       notify: [gsmet, yrodiere, loicmathieu]
       notifyInPullRequest: true
@@ -120,31 +131,36 @@ triage:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/elasticsearch
         - integration-tests/elasticsearch
-    - labels: [area/hibernate-validator]
+    - id: hibernate-validator
+      labels: [area/hibernate-validator]
       title: "hibernate.validator"
       notify: [gsmet, yrodiere]
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/hibernate-validator
         - integration-tests/hibernate-validator
-    - labels: [area/jaeger]
+    - id: jaeger
+      labels: [area/jaeger]
       title: "jaeger"
       notify: [radcortez, brunobat]
       directories:
         - extensions/jaeger/
-    - labels: [area/jackson]
+    - id: jackson
+      labels: [area/jackson]
       title: "jackson"
       notify: [geoand, gsmet]
       directories:
         - extensions/jackson/
         - integration-tests/jackson/
-    - labels: [area/kotlin]
+    - id: kotlin
+      labels: [area/kotlin]
       titleBody: "kotlin"
       notify: [evanchooly, geoand]
       directories:
         - extensions/kotlin/
         - integration-tests/kotlin/
-    - labels: [area/mongodb]
+    - id: mongodb
+      labels: [area/mongodb]
       title: "mongo"
       notify: [loicmathieu, evanchooly]
       directories:
@@ -152,12 +168,14 @@ triage:
         - integration-tests/mongodb-client/
         - integration-tests/mongodb-panache/
         - extensions/panache/mongodb-panache/
-    - labels: [area/openapi, area/smallrye]
+    - id: openapi
+      labels: [area/openapi, area/smallrye]
       title: "openapi"
       notify: [EricWittmann, MikeEdgar, phillip-kruger]
       directories:
         - extensions/smallrye-openapi
-    - labels: [area/graphql, area/smallrye]
+    - id: graphql
+      labels: [area/graphql, area/smallrye]
       title: "graphql"
       notify: [phillip-kruger, jmartisk]
       directories:
@@ -167,47 +185,60 @@ triage:
         - integration-tests/vertx-graphql/
         - integration-tests/smallrye-graphql/
         - integration-tests/smallrye-graphql-client/
-    - labels: [area/tracing, area/smallrye]
+    - id: tracing
+      labels: [area/tracing, area/smallrye]
       title: "(trace|tracing)"
       notify: [radcortez, Ladicek, brunobat]
       directories:
         - extensions/smallrye-opentracing/
-    - labels: [area/tracing]
+    - id: opentelemetry
+      labels: [area/tracing]
       title: "(trace|opentelemetry)"
       notify: [radcortez, brunobat]
       notifyInPullRequest: true
       directories:
         - extensions/opentelemetry/
         - extensions/opentelemetry-exporter-jaeger/
-    - labels: [area/security, area/smallrye]
+    - id: jwt
+      labels: [area/security, area/smallrye]
       title: "jwt"
       notify: [sberyozkin]
-    - labels: [area/security]
+    - id: security
+      labels: [area/security]
       title: "security"
       notify: [sberyozkin]
-    - labels: [area/metrics, area/smallrye]
+      directories:
+        - extensions/security/
+        - extensions/elytron
+        - integration-tests/elytron
+    - id: metrics
+      labels: [area/metrics, area/smallrye]
       title: "metrics"
       notify: [jmartisk, ebullient]
       notifyInPullRequest: true
       directories:
         - extensions/smallrye-metrics
-    - labels: [area/metrics]
+    - id: micrometer
+      labels: [area/metrics]
       title: "micrometer"
       notify: [ebullient]
       notifyInPullRequest: true
       directories:
         - extensions/micrometer
-    - labels: [area/health, area/smallrye]
+    - id: health
+      labels: [area/health, area/smallrye]
       title: "health"
       notify: [jmartisk, xstefank]
       directories:
         - extensions/smallrye-health/
-    - labels: [area/fault-tolerance, area/smallrye]
+    - id: fault-tolerance
+      labels: [area/fault-tolerance, area/smallrye]
       title: "fault.tolerance"
       notify: [Ladicek]
       directories:
         - extensions/smallrye-fault-tolerance/
-    - labels: [area/mutiny, area/smallrye]
+    - id: mutiny
+      labels: [area/mutiny, area/smallrye]
       title: "mutiny"
       notify: [cescoffier, jponge]
       directories:
@@ -215,48 +246,58 @@ triage:
         - extensions/rest-client-mutiny/
         - extensions/resteasy-mutiny-common/
         - extensions/resteasy-mutiny/
-    - labels: [area/panache]
+    - id: panache
+      labels: [area/panache]
       title: "panache"
       notify: [FroMage, loicmathieu]
       directories:
         - extensions/panache/
         - integration-tests/hibernate-orm-panache/
-    - labels: [area/panache]
+    - id: rest-data-panache
+      labels: [area/panache]
       title: "(panache.*resource|rest.data.panache)"
       notify: [Sgitario]
-    - labels: [area/qute]
+    - id: qute
+      labels: [area/qute]
       title: "qute"
       notify: [mkouba]
       directories:
         - extensions/qute/
         - extensions/resteasy-qute/
-    - labels: [area/reactive-messaging, area/smallrye]
+    - id: reactive-messaging
+      labels: [area/reactive-messaging, area/smallrye]
       title: "reactive.messaging"
       notify: [cescoffier, ozangunalp]
       directories:
         - extensions/smallrye-reactive-messaging
-    - labels: [area/rest-client]
+    - id: rest-client
+      labels: [area/rest-client]
       title: "rest.client"
       notify: [cescoffier, geoand, Sgitario]
       directories:
         - extensions/rest-client/
-    - labels: [area/smallrye]
+    - id: smallrye
+      labels: [area/smallrye]
       title: "smallrye"
       notify: [phillip-kruger, jmartisk, radcortez, Ladicek]
       directories:
         - extensions/smallrye-
-    - labels: [area/spring]
+    - id: spring
+      labels: [area/spring]
       title: "spring"
       notify: [geoand]
       directories:
         - extensions/spring-
         - integration-tests/spring-
-    - labels: [env/windows]
+    - id: windows
+      labels: [env/windows]
       titleBody: "windows"
-    - labels: [env/m1]
+    - id: m1
+      labels: [env/m1]
       titleBody: "\\bm1\\b"
       notify: [gastaldi]
-    - labels: [area/kubernetes]
+    - id: kubernetes
+      labels: [area/kubernetes]
       titleBody: "kubernetes"
       notify: [geoand, iocanel, Sgitario]
       directories:
@@ -264,76 +305,91 @@ triage:
         - extensions/kubernetes-client/
         - integration-tests/kubernetes/
         - integration-tests/kubernetes-client/
-    - labels: [area/kubernetes]
+    - id: minikube
+      labels: [area/kubernetes]
       titleBody: "minikube"
       notify: [geoand]
-    - labels: [area/kubernetes]
+    - id: openshift
+      labels: [area/kubernetes]
       titleBody: "openshift"
       notify: [geoand, iocanel]
-    - labels: [area/kubernetes]
+    - id: knative
+      labels: [area/kubernetes]
       titleBody: "knative"
       notify: [geoand, iocanel]
-    - labels: [area/container-image]
+    - id: jib
+      labels: [area/container-image]
       titleBody: "jib"
       notify: [geoand]
-    - labels: [area/kafka]
+    - id: kafka
+      labels: [area/kafka]
       notify: [cescoffier, ozangunalp, alesj]
       title: "kafka"
       directories:
         - extensions/kafka-client/
         - integration-tests/kafka/
-    - labels: [area/kafka-streams]
+    - id: kafka-streams
+      labels: [area/kafka-streams]
       title: "k(afka)?(\\s|-)?stream"
       notify: [gunnarmorling, rquinio, alesj, ozangunalp]
       directories:
         - extensions/kafka-streams
         - integration-tests/kafka-streams/
-    - labels: [area/infinispan]
+    - id: infinispan
+      labels: [area/infinispan]
       title: "infinispan"
       notify: [karesti, wburns]
       directories:
         - extensions/infinispan-client/
         - integration-tests/infinispan-cache-jpa/
         - integration-tests/infinispan-client/
-    - labels: [area/grpc]
+    - id: grpc
+      labels: [area/grpc]
       title: "grpc"
       notify: [alesj, cescoffier]
       directories:
         - extensions/grpc-common
         - extensions/grpc
-    - labels: [area/scheduler]
+    - id: scheduler
+      labels: [area/scheduler]
       title: "schedule(r)?"
       notify: [mkouba]
       directories:
         - extensions/scheduler/
-    - labels: [area/scheduler]
+    - id: quartz
+      labels: [area/scheduler]
       title: "quartz"
       notify: [mkouba, machi1990]
       directories:
         - extensions/quartz/
         - integration-tests/quartz/
-    - labels: [area/redis]
+    - id: redis
+      labels: [area/redis]
       title: "redis"
       notify: [machi1990, gsmet, cescoffier]
       directories:
         - extensions/redis-client/
         - integration-tests/redis-client/
-    - labels: [area/arc]
+    - id: arc
+      labels: [area/arc]
       title: "\\b(arc|cdi|injection)\\b"
       notify: [mkouba, manovotn]
       directories:
         - extensions/arc/
         - independent-projects/arc/
-    - labels: [area/google-cloud-functions]
+    - id: google-cloud
+      labels: [area/google-cloud-functions]
       title: "google.cloud"
       notify: [loicmathieu]
       directories:
         - extensions/google-cloud-functions
         - integration-tests/google-cloud-functions
-    - labels: [area/mandrel]
+    - id: mandrel
+      labels: [area/mandrel]
       titleBody: "mandrel"
       notify: [galderz, zakkak, Karm]
-    - labels: [area/graphics]
+    - id: awt
+      labels: [area/graphics]
       expression: |
               matches("sun.font", titleBody)
               || matches("sun.java2d", titleBody)
@@ -345,7 +401,8 @@ triage:
         - extensions/awt/
         - integration-tests/awt/
         - integration-tests/no-awt/
-    - labels: [area/securepipeline]
+    - id: securepipeline
+      labels: [area/securepipeline]
       expression: |
               matches("FIPS", titleBody)
               || matches("SunPKCS11-NSS-FIPS", titleBody)
@@ -353,63 +410,75 @@ triage:
               || matches("libnss", titleBody)
       notify: [jerboaa, Karm]
       notifyInPullRequest: true
-    - labels: [area/artemis]
+    - id: artemis
+      labels: [area/artemis]
       directories:
         - extensions/artemis-core/
         - extensions/artemis-jms/
         - integration-tests/artemis-core/
         - integration-tests/artemis-jms/
-    - labels: [area/cache]
+    - id: cache
+      labels: [area/cache]
       title: "cache"
       notify: [gwenneg]
       directories:
         - extensions/cache/
         - integration-tests/cache/
-    - labels: [area/cli]
+    - id: cli
+      labels: [area/cli]
       title: "\\b(cli)\\b"
       directories:
         - devtools/cli/
       notify: [maxandersen,ebullient]
-    - labels: [area/picocli]
+    - id: picocli
+      labels: [area/picocli]
       title: "picocli"
       directories:
         - extensions/picocli/
         - integration-tests/picocli/
         - integration-tests/picocli-native/
       notify: [ebullient]
-    - labels: [area/config]
+    - id: config
+      labels: [area/config]
       directories:
         - extensions/config-yaml/
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/
         - core/runtime/src/main/java/io/quarkus/runtime/configuration/
-    - labels: [area/core]
+    - id: core
+      labels: [area/core]
       notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]
       directories:
         - core/
-    - labels: [area/dependencies]
+    - id: dependencies
+      labels: [area/dependencies]
       directories:
         - .github/dependabot.yml
         - bom/
         - build-parent/
       allowSecondPass: true
-    - labels: [area/devtools]
+    - id: devtools
+      labels: [area/devtools]
       directories:
         - devtools/
         - independent-projects/bootstrap/
         - independent-projects/tools/
-    - labels: [area/documentation]
+    - id: documentation
+      labels: [area/documentation]
       notify: [ebullient, inoxx03, sunayna15, michelle-purcell, hmanwani-rh, sheilamjones, MichalMaler]
       directories:
         - docs/
-    - labels: [area/infra-automation]
+    - id: infra-automation
+      labels: [area/infra-automation]
       directories:
         - .github/
-    - labels: [area/jaxb]
+    - id: jaxb
+      labels: [area/jaxb]
       title: "jaxb"
       notify: [gsmet, Sgitario]
       directories:
         - extensions/jaxb/
-    - labels: [area/logging]
+    - id: logging
+      labels: [area/logging]
       directories:
         - extensions/logging-gelf/
         - extensions/logging-json/
@@ -417,45 +486,53 @@ triage:
         - integration-tests/logging-gelf/
         - core/runtime/src/main/java/io/quarkus/runtime/logging/
         - core/deployment/src/main/java/io/quarkus/logging/
-    - labels: [area/narayana]
+    - id: narayana
+      labels: [area/narayana]
       directories:
         - extensions/narayana-jta/
         - extensions/narayana-stm/
         - integration-tests/narayana-jta/
         - integration-tests/narayana-stm/
       notify: [mmusgrov]
-    - labels: [area/lra]
+    - id: lra
+      labels: [area/lra]
       title: "lra"
       directories:
         - extensions/narayana-lra/
         - integration-tests/narayana-lra/
       notify: [xstefank, mmusgrov]
-    - labels: [area/neo4j]
+    - id: neo4j
+      labels: [area/neo4j]
       title: "neo4j"
       notify: [michael-simons]
       directories:
         - extensions/neo4j/
         - integration-tests/neo4j/
-    - labels: [area/oidc]
+    - id: oidc
+      labels: [area/oidc]
       title: "oidc"
       notify: [sberyozkin, pedroigor]
       directories:
         - extensions/oidc/
         - integration-tests/oidc/
         - integration-tests/oidc-code-flow/
-    - labels: [area/keycloak]
+    - id: keycloak
+      labels: [area/keycloak]
       title: "keycloak"
       notify: [sberyozkin, pedroigor]
       directories:
         - extensions/keycloak
         - integration-tests/keycloak
-    - labels: [area/platform]
+    - id: platform
+      labels: [area/platform]
       directories:
         - independent-projects/tools/
-    - labels: [area/reactive-streams-operators]
+    - id: reactive-streams-operators
+      labels: [area/reactive-streams-operators]
       directories:
         - extensions/reactive-streams-operators/
-    - labels: [area/resteasy]
+    - id: resteasy
+      labels: [area/resteasy]
       directories:
         - extensions/resteasy/
         - extensions/resteasy-common/
@@ -467,94 +544,107 @@ triage:
         - integration-tests/resteasy-jackson/
         - integration-tests/elytron-resteasy/
         - integration-tests/virtual-http-resteasy/
-    - labels: [area/resteasy-reactive]
+    - id: resteasy-reactive
+      labels: [area/resteasy-reactive]
       title: resteasy.reactive
       notify: [geoand, FroMage, stuartwdouglas]
       directories:
         - extensions/resteasy-reactive/
-    - labels: [area/scala]
+    - id: scala
+      labels: [area/scala]
       directories:
         - extensions/scala/
         - integration-tests/scala/
-    - labels: [area/vault]
+    - id: vault
+      labels: [area/vault]
       title: vault
       notify: [vsevel]
       directories:
         - extensions/vault/
         - integration-tests/vault
-    - labels: [area/vertx]
+    - id: vertx
+      labels: [area/vertx]
       directories:
         - extensions/vertx
         - integration-tests/vertx
-    - labels: [area/tika]
+    - id: tika
+      labels: [area/tika]
       title: tika
       notify: [sberyozkin]
       directories:
         - extensions/tika/
         - integration-tests/tika/
-    - labels: [area/testing]
+    - id: testing
+      title: "quarkusintegrationtest"
+      labels: [area/testing]
+      notify: [geoand]
       directories:
         - test-framework/
-    - labels: [area/undertow]
+    - id: undertow
+      labels: [area/undertow]
       directories:
         - extensions/undertow/
         - integration-tests/elytron-undertow/
-    - labels: [area/websockets]
+    - id: websockets
+      labels: [area/websockets]
       directories:
         - extensions/websockets/
         - integration-tests/websockets/
-    - labels: [area/swagger-ui]
+    - id: swagger-ui
+      labels: [area/swagger-ui]
       title: "swagger"
       notify: [phillip-kruger, MikeEdgar]
       directories:
         - extensions/swagger-ui/
-    - labels: [area/security]
-      directories:
-        - extensions/security/
-        - extensions/elytron
-        - integration-tests/elytron
-    - labels: [area/flyway]
+    - id: flyway
+      labels: [area/flyway]
       title: "flyway"
       notify: [cristhiank, geoand, gastaldi, gsmet]
       directories:
         - extensions/flyway/
         - integration-tests/flyway/
-    - labels: [area/liquibase]
+    - id: liquibase
+      labels: [area/liquibase]
       title: "liquibase"
       notify: [andrejpetras, geoand, gsmet]
       directories:
         - extensions/liquibase/
         - integration-tests/liquibase/
-    - labels: [area/kogito]
+    - id: kogito
+      labels: [area/kogito]
       title: "kogito"
       notify: [evacchi, mariofusco]
-    - labels: [area/optaplanner]
+    - id: optaplanner
+      labels: [area/optaplanner]
       title: "optaplanner"
       notify: [ge0ffrey, rsynek, Christopher-Chianelli]
-    - labels: [kind/extension-proposal,area/quarkiverse]
+    - id: extension-proposal
+      labels: [kind/extension-proposal,area/quarkiverse]
       title: "Extension Proposal"
       notify: [gastaldi, gsmet, aloubyansky, maxandersen]
-    - labels: [area/mailer]
+    - id: mailer
+      labels: [area/mailer]
       title: "\\bmail\\b"
       notify: [cescoffier]
       directories:
         - extensions/mailer/
         - integration-tests/mailer/
-    - labels: [area/agroal]
+    - id: agroal
+      labels: [area/agroal]
       title: "agroal"
       notify: [barreiro, Sanne, yrodiere]
       directories:
         - extensions/agroal/
-    - labels: [area/continuous-testing]
+    - id: continuous-testing
+      labels: [area/continuous-testing]
       title: "continuous.testing"
       notify: [stuartwdouglas]
-    - labels: [area/testing]
-      title: "quarkusintegrationtest"
-      notify: [geoand]
-    - labels: [area/devservices]
+    - id: devservices
+      labels: [area/devservices]
       title: "dev.?services"
       notify: [stuartwdouglas, geoand]
-    - labels: [area/reactive-sql-clients]
+    - id: reactive-sql-clients
+      labels: [area/reactive-sql-clients]
       title: "(reactive sql|reactive pool|pgpool|mysqlpool|db2pool)"
       notify: [tsegismont,vietj]
       directories:
@@ -566,22 +656,26 @@ triage:
         - integration-tests/reactive-mysql-client/
         - integration-tests/reactive-mssql-client/
         - integration-tests/reactive-pg-client/
-    - labels: [area/adr]
+    - id: adr
+      labels: [area/adr]
       title: "adr"
       notify: [cescoffier]
       directories:
         - adr/
-    - labels: [area/context-propagation]
+    - id: context-propagation
+      labels: [area/context-propagation]
       title: "(context propagation|context-propagation)"
       notify: [FroMage, manovotn]
       directories:
         - extensions/smallrye-context-propagation
-    - labels: [area/stork]
+    - id: stork
+      labels: [area/stork]
       title: "stork"
       notify: [aureamunoz, cescoffier, Sgitario]
       directories:
         - extensions/smallrye-stork/
-    - labels: [area/jakarta]
+    - id: jakarta
+      labels: [area/jakarta]
       notify: [sanne,maxandersen,gsmet,manovotn,radcortez]
       notifyInPullRequest: true
       directories:

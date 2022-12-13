@@ -570,7 +570,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     basicResourceClassInfo.getConsumes());
             boolean suspended = false;
             boolean sse = false;
-            boolean formParamRequired = false;
+            boolean formParamRequired = getAnnotationStore().getAnnotation(currentMethodInfo,
+                    ResteasyReactiveDotNames.WITH_FORM_READ) != null;
             Set<String> fileFormNames = new HashSet<>();
             Type bodyParamType = null;
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);

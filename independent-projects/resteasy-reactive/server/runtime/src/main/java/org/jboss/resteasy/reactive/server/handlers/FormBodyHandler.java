@@ -21,7 +21,6 @@ import org.jboss.resteasy.reactive.server.core.multipart.FormParserFactory;
 import org.jboss.resteasy.reactive.server.core.multipart.MultiPartParserDefinition;
 import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
-import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
 public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHandler<RuntimeConfiguration> {
 
@@ -78,14 +77,12 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
             requestContext.setFormData(existingParsedForm);
             return;
         }
-        ServerHttpRequest serverHttpRequest = requestContext.serverRequest();
+        FormDataParser factory = formParserFactory.createParser(requestContext, fileFormNames);
+        if (factory == null) {
+            return;
+        }
         if (BlockingOperationSupport.isBlockingAllowed()) {
             //blocking IO approach
-
-            FormDataParser factory = formParserFactory.createParser(requestContext, fileFormNames);
-            if (factory == null) {
-                return;
-            }
             CapturingInputStream cis = null;
             if (alsoSetInputStream) {
                 // the TCK allows the body to be read as a form param and also as a body param
@@ -99,10 +96,6 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                 requestContext.setInputStream(new ByteArrayInputStream(cis.baos.toByteArray()));
             }
         } else if (alsoSetInputStream) {
-            FormDataParser factory = formParserFactory.createParser(requestContext, fileFormNames);
-            if (factory == null) {
-                return;
-            }
             requestContext.suspend();
             executorSupplier.get().execute(new Runnable() {
                 @Override
@@ -119,10 +112,6 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                 }
             });
         } else {
-            FormDataParser factory = formParserFactory.createParser(requestContext, fileFormNames);
-            if (factory == null) {
-                return;
-            }
             //parse will auto resume
             factory.parse();
         }

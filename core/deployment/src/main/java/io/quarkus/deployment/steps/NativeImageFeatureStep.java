@@ -59,7 +59,6 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.NativeImageFeatureUtils;
 import io.quarkus.runtime.ResourceHelper;
 import io.quarkus.runtime.graal.ResourcesFeature;
-import io.quarkus.runtime.graal.WeakReflectionFeature;
 
 public class NativeImageFeatureStep {
 
@@ -748,30 +747,17 @@ public class NativeImageFeatureStep {
         }
 
         /**
-         * @return the current {@code ReflectionInfo} as a Json object in the format expected by the weak reflection
-         *         configuration if applicable, {@code null} otherwise.
-         */
-        Json.JsonObjectBuilder toWeakReflectionJson() {
-            if (weak) {
-                Json.JsonObjectBuilder builder = Json.object();
-                builder.put("name", className);
-                builder.put("constructors", constructors);
-                builder.put("methods", methods);
-                builder.put("fields", fields);
-                return builder;
-            }
-            return null;
-        }
-
-        /**
          * @return the current {@code ReflectionInfo} as a Json object in the format expected by the reflection
          *         configuration if applicable, {@code null} otherwise.
          */
         Json.JsonObjectBuilder toReflectionJson() {
-            if (weak) {
-                return null;
-            }
             Json.JsonObjectBuilder builder = Json.object();
+            if (weak) {
+                Json.JsonObjectBuilder condition = Json.object();
+                condition.put("typeReachable", className);
+                builder.put("condition", condition);
+                throw new RuntimeException("Found an example with weak reflection");
+            }
             builder.put("name", className);
             Json.JsonArrayBuilder arrayMethodsBuilder = Json.array();
             if (constructors) {
@@ -845,16 +831,6 @@ public class NativeImageFeatureStep {
          * Serializer to generate the configuration for the reflection (GraalVM format).
          */
         REFLECTION(NativeImageFeatureStep.META_INF_QUARKUS_NATIVE_REFLECTION_JSON, ReflectionInfo::toReflectionJson) {
-            @Override
-            protected String asString(Json.JsonArrayBuilder configs) throws IOException {
-                return configs.build();
-            }
-        },
-        /**
-         * Serializer to generate the configuration for the weak reflection (internal format).
-         */
-        WEAK_REFLECTION(WeakReflectionFeature.META_INF_QUARKUS_NATIVE_WEAK_REFLECTION_JSON,
-                ReflectionInfo::toWeakReflectionJson) {
             @Override
             protected String asString(Json.JsonArrayBuilder configs) throws IOException {
                 return configs.build();

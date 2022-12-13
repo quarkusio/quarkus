@@ -53,7 +53,6 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.runtime.graal.ResourcesFeature;
-import io.quarkus.runtime.graal.WeakReflectionFeature;
 
 public class NativeImageBuildStep {
 
@@ -91,7 +90,6 @@ public class NativeImageBuildStep {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> features) {
         features.produce(new NativeImageFeatureBuildItem(NativeImageFeatureStep.GRAAL_FEATURE));
-        features.produce(new NativeImageFeatureBuildItem(WeakReflectionFeature.class));
         features.produce(new NativeImageFeatureBuildItem(ResourcesFeature.class));
         features.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
     }

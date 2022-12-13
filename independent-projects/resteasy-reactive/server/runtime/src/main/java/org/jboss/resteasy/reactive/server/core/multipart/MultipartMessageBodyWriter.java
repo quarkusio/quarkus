@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.server.core.multipart;
 
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -136,7 +138,7 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
             throws IOException {
         part.getHeaders().put(HttpHeaders.CONTENT_DISPOSITION, List.of("form-data; name=\"" + partName + "\""
                 + getFileNameIfFile(partValue, part.getFilename())));
-        part.getHeaders().put(HttpHeaders.CONTENT_TYPE, List.of(part.getMediaType()));
+        part.getHeaders().put(CONTENT_TYPE, List.of(part.getMediaType()));
         for (Map.Entry<String, List<Object>> entry : part.getHeaders().entrySet()) {
             writeLine(outputStream, entry.getKey() + ": " + entry.getValue().stream().map(String::valueOf)
                     .collect(Collectors.joining("; ")), charset);
@@ -206,8 +208,15 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
 
     private void appendBoundaryIntoMediaType(ResteasyReactiveRequestContext requestContext, String boundary,
             MediaType mediaType) {
-        requestContext.setResponseContentType(new MediaType(mediaType.getType(), mediaType.getSubtype(),
-                Collections.singletonMap(BOUNDARY_PARAM, boundary)));
+        MediaType mediaTypeWithBoundary = new MediaType(mediaType.getType(), mediaType.getSubtype(),
+                Collections.singletonMap(BOUNDARY_PARAM, boundary));
+        requestContext.setResponseContentType(mediaTypeWithBoundary);
+
+        // this is a total hack, but it's needed to make RestResponse<MultipartFormDataOutput> work properly
+        requestContext.serverResponse().setResponseHeader(CONTENT_TYPE, mediaTypeWithBoundary.toString());
+        if (requestContext.getResponse().isCreated()) {
+            requestContext.getResponse().get().getHeaders().remove(CONTENT_TYPE);
+        }
     }
 
     private boolean isNotEmpty(String str) {

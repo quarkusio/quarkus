@@ -47,7 +47,7 @@ jobs:
       - name: Maven release ${{steps.metadata.outputs.current-version}}
         run: |
           git checkout -b release
-          mvn -B release:prepare -Prelease -DpreparationGoals="clean install" -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
+          mvn -B release:prepare -Prelease -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
           if ! git diff --quiet docs/modules/ROOT/pages/includes/attributes.adoc; then
             git add docs/modules/ROOT/pages/includes/attributes.adoc
             git commit -m "Update stable version for documentation"
@@ -68,19 +68,11 @@ jobs:
             git commit -m "Update stable version for documentation"
             # Move the tag after inclusion of documentation adjustments
             git tag -f ${{steps.metadata.outputs.current-version}}
+            # Push modified tag
+            git push origin refs/tags/${{steps.metadata.outputs.current-version}} -f          
           fi
           # Go back to base branch
           git checkout ${{github.base_ref}}
 
-      - name: Push changes to ${{github.base_ref}}
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{github.base_ref}}
-
-      - name: Push tags
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tags: true
-          branch: ${{github.base_ref}}
+      - name: Push changes to ${{github.base_ref}} branch
+        run: git push

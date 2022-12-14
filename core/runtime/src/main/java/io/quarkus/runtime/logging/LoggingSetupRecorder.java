@@ -46,6 +46,7 @@ import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
 import io.quarkus.dev.testing.ExceptionReporting;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.ReadOnly;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
@@ -87,13 +88,13 @@ public class LoggingSetupRecorder {
 
     public ShutdownListener initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
             DiscoveredLogComponents discoveredLogComponents,
-            final Map<String, InheritableLevel> categoryDefaultMinLevels,
+            @ReadOnly final Map<String, InheritableLevel> categoryDefaultMinLevels,
             final boolean enableWebStream,
             final RuntimeValue<Optional<Handler>> devUiConsoleHandler,
-            final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
-            final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
-            final List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
-            final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
+            @ReadOnly final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
+            @ReadOnly final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
+            @ReadOnly final List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
+            @ReadOnly final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
             LaunchMode launchMode,
             boolean validateFilters) {

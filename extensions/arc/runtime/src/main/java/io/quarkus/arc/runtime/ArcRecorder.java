@@ -25,6 +25,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.annotations.ReadOnly;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.test.TestApplicationClassPredicate;
 
@@ -62,7 +63,7 @@ public class ArcRecorder {
         supplierMap.putAll(beans);
     }
 
-    public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners)
+    public BeanContainer initBeanContainer(ArcContainer container, @ReadOnly List<BeanContainerListener> listeners)
             throws Exception {
         if (container == null) {
             throw new IllegalArgumentException("Arc container was null");

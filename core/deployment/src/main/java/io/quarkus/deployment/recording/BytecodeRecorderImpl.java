@@ -71,6 +71,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.IgnoreProperty;
+import io.quarkus.runtime.annotations.ReadOnly;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.RelaxedValidation;
 
@@ -108,6 +109,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private static final String PROXY_KEY = "proxykey";
 
     private static final MethodDescriptor COLLECTION_ADD = ofMethod(Collection.class, "add", boolean.class, Object.class);
+    private static final MethodDescriptor COLLECTION_EMPTY_LIST = ofMethod(Collections.class, "emptyList", List.class);
+    private static final MethodDescriptor COLLECTION_EMPTY_MAP = ofMethod(Collections.class, "emptyMap", Map.class);
     private static final MethodDescriptor MAP_PUT = ofMethod(Map.class, "put", Object.class, Object.class, Object.class);
     public static final String CREATE_ARRAY = "$quarkus$createArray";
 
@@ -511,7 +514,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     Annotation[][] parameterAnnotations = call.method.getParameterAnnotations();
                     for (int i = 0; i < call.parameters.length; ++i) {
                         call.deferredParameters[i] = loadObjectInstance(call.parameters[i], parameterMap,
-                                parameterTypes[i], Arrays.stream(parameterAnnotations[i])
+                                parameterTypes[i], parameterAnnotations[i], Arrays.stream(parameterAnnotations[i])
                                         .anyMatch(s -> s.annotationType() == RelaxedValidation.class));
                     }
                 } catch (Exception e) {
@@ -614,14 +617,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
      * Returns a representation of a serialized parameter.
      */
     private DeferredParameter loadObjectInstance(Object param, Map<Object, DeferredParameter> existing, Class<?> expectedType,
-            boolean relaxedValidation) {
+            Annotation[] recorderParamAnnotations, boolean relaxedValidation) {
         if (loadComplete) {
             throw new RuntimeException("All parameters have already been loaded, it is too late to call loadObjectInstance");
         }
         if (existing.containsKey(param)) {
             return existing.get(param);
         }
-        DeferredParameter ret = loadObjectInstanceImpl(param, existing, expectedType, relaxedValidation);
+        DeferredParameter ret = loadObjectInstanceImpl(param, existing, expectedType, recorderParamAnnotations,
+                relaxedValidation);
         existing.put(param, ret);
         return ret;
     }
@@ -630,7 +634,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
      * Returns a representation of a serialized parameter.
      */
     private DeferredParameter loadObjectInstanceImpl(Object param, Map<Object, DeferredParameter> existing,
-            Class<?> expectedType, boolean relaxedValidation) {
+            Class<?> expectedType, Annotation[] recorderParamAnnotations, boolean relaxedValidation) {
         //null is easy
         if (param == null) {
             return new DeferredParameter() {
@@ -647,7 +651,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
 
         //Handle empty collections as returned by the Collections object
-        loadedObject = handleCollectionsObjects(param, existing, relaxedValidation);
+        loadedObject = handleCollectionsObjects(param, existing, recorderParamAnnotations, relaxedValidation);
         if (loadedObject != null) {
             return loadedObject;
         }
@@ -663,7 +667,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
             try {
                 ObjectSubstitution substitution = holder.sub.getDeclaredConstructor().newInstance();
                 Object res = substitution.serialize(param);
-                DeferredParameter serialized = loadObjectInstance(res, existing, holder.to, relaxedValidation);
+                DeferredParameter serialized = loadObjectInstance(res, existing, holder.to, recorderParamAnnotations,
+                        relaxedValidation);
                 SubstitutionHolder finalHolder = holder;
                 return new DeferredArrayStoreParameter(param, expectedType) {
 
@@ -689,7 +694,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
         } else if (param instanceof Optional) {
             Optional val = (Optional) param;
             if (val.isPresent()) {
-                DeferredParameter res = loadObjectInstance(val.get(), existing, Object.class, relaxedValidation);
+                DeferredParameter res = loadObjectInstance(val.get(), existing, Object.class, recorderParamAnnotations,
+                        relaxedValidation);
                 return new DeferredArrayStoreParameter(param, expectedType) {
 
                     @Override
@@ -869,7 +875,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
             for (int i = 0; i < length; ++i) {
                 DeferredParameter component = loadObjectInstance(Array.get(param, i), existing,
-                        expectedType.getComponentType(), relaxedValidation);
+                        expectedType.getComponentType(), recorderParamAnnotations, relaxedValidation);
                 components[i] = component;
             }
             return new DeferredArrayStoreParameter(param, expectedType) {
@@ -907,7 +913,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 Object explicitValue = annotationProxy.getValues().get(valueMethod.name());
                 if (explicitValue != null) {
                     constructorParamsHandles[iterator.previousIndex()] = loadObjectInstance(explicitValue, existing,
-                            explicitValue.getClass(), relaxedValidation);
+                            explicitValue.getClass(), recorderParamAnnotations, relaxedValidation);
                 } else {
                     AnnotationValue value = annotationValues.get(valueMethod.name());
                     if (value == null) {
@@ -916,7 +922,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         Object defaultValue = annotationProxy.getDefaultValues().get(valueMethod.name());
                         if (defaultValue != null) {
                             constructorParamsHandles[iterator.previousIndex()] = loadObjectInstance(defaultValue, existing,
-                                    defaultValue.getClass(), relaxedValidation);
+                                    defaultValue.getClass(), recorderParamAnnotations, relaxedValidation);
                             continue;
                         }
                         if (value == null) {
@@ -949,7 +955,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             };
 
         } else {
-            return loadComplexObject(param, existing, expectedType, relaxedValidation);
+            return loadComplexObject(param, existing, expectedType, recorderParamAnnotations, relaxedValidation);
         }
     }
 
@@ -963,7 +969,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
      * @return
      */
     private DeferredParameter handleCollectionsObjects(Object param, Map<Object, DeferredParameter> existing,
-            boolean relaxedValidation) {
+            Annotation[] paramAnnotations, boolean relaxedValidation) {
         if (param instanceof Collection) {
             if (param.getClass().equals(Collections.emptyList().getClass())) {
                 return new DeferredParameter() {
@@ -997,7 +1003,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 };
             } else if (param.getClass().equals(SINGLETON_LIST_CLASS)) {
                 DeferredParameter deferred = loadObjectInstance(((List) param).get(0), existing, Object.class,
-                        relaxedValidation);
+                        paramAnnotations, relaxedValidation);
                 return new DeferredParameter() {
                     @Override
                     void doPrepare(MethodContext context) {
@@ -1014,7 +1020,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 };
             } else if (param.getClass().equals(SINGLETON_SET_CLASS)) {
                 DeferredParameter deferred = loadObjectInstance(((Set) param).iterator().next(), existing, Object.class,
-                        relaxedValidation);
+                        paramAnnotations, relaxedValidation);
                 return new DeferredParameter() {
                     @Override
                     void doPrepare(MethodContext context) {
@@ -1057,8 +1063,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
             } else if (param.getClass().equals(SINGLETON_MAP_CLASS)) {
                 Map.Entry<?, ?> entry = ((Map<?, ?>) param).entrySet().iterator().next();
 
-                DeferredParameter key = loadObjectInstance(entry.getKey(), existing, Object.class, relaxedValidation);
-                DeferredParameter value = loadObjectInstance(entry.getValue(), existing, Object.class, relaxedValidation);
+                DeferredParameter key = loadObjectInstance(entry.getKey(), existing, Object.class, paramAnnotations,
+                        relaxedValidation);
+                DeferredParameter value = loadObjectInstance(entry.getValue(), existing, Object.class, paramAnnotations,
+                        relaxedValidation);
                 return new DeferredParameter() {
                     @Override
                     void doPrepare(MethodContext context) {
@@ -1085,7 +1093,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     /**
      * Created a {@link DeferredParameter} to load a complex object, such as a javabean or collection. This is basically
-     * just an extension of {@link #loadObjectInstanceImpl(Object, Map, Class, boolean)} but it removes some of the more complex
+     * just an extension of {@link #loadObjectInstanceImpl(Object, Map, Class, Annotation[], boolean)} but it removes some of
+     * the more complex
      * code from that method.
      *
      * @param param The object to load
@@ -1095,7 +1104,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
      * @return
      */
     private DeferredParameter loadComplexObject(Object param, Map<Object, DeferredParameter> existing,
-            Class<?> expectedType, boolean relaxedValidation) {
+            Class<?> expectedType, Annotation[] recorderParamAnnotations, boolean relaxedValidation) {
         //a list of steps that are performed on the object after it has been created
         //we need to create all these first, to ensure the required objects have already
         //been deserialized
@@ -1107,8 +1116,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
             //if this is a collection we want to serialize every element
             for (Object i : (Collection) param) {
                 DeferredParameter val = i != null
-                        ? loadObjectInstance(i, existing, i.getClass(), relaxedValidation)
-                        : loadObjectInstance(null, existing, Object.class, relaxedValidation);
+                        ? loadObjectInstance(i, existing, i.getClass(), recorderParamAnnotations, relaxedValidation)
+                        : loadObjectInstance(null, existing, Object.class, recorderParamAnnotations, relaxedValidation);
                 setupSteps.add(new SerializationStep() {
                     @Override
                     public void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out) {
@@ -1129,11 +1138,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
             //map works the same as collection
             for (Map.Entry<?, ?> i : ((Map<?, ?>) param).entrySet()) {
                 DeferredParameter key = i.getKey() != null
-                        ? loadObjectInstance(i.getKey(), existing, i.getKey().getClass(), relaxedValidation)
-                        : loadObjectInstance(null, existing, Object.class, relaxedValidation);
+                        ? loadObjectInstance(i.getKey(), existing, i.getKey().getClass(), recorderParamAnnotations,
+                                relaxedValidation)
+                        : loadObjectInstance(null, existing, Object.class, recorderParamAnnotations, relaxedValidation);
                 DeferredParameter val = i.getValue() != null
-                        ? loadObjectInstance(i.getValue(), existing, i.getValue().getClass(), relaxedValidation)
-                        : loadObjectInstance(null, existing, Object.class, relaxedValidation);
+                        ? loadObjectInstance(i.getValue(), existing, i.getValue().getClass(), recorderParamAnnotations,
+                                relaxedValidation)
+                        : loadObjectInstance(null, existing, Object.class, recorderParamAnnotations, relaxedValidation);
                 setupSteps.add(new SerializationStep() {
                     @Override
                     public void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out) {
@@ -1171,7 +1182,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             for (int i = 0; i < params.size(); i++) {
                 Object obj = params.get(i);
                 nonDefaultConstructorHandles[i] = loadObjectInstance(obj, existing,
-                        parameterTypes[count++], relaxedValidation);
+                        parameterTypes[count++], recorderParamAnnotations, relaxedValidation);
             }
         } else if (classesToUseRecordableConstructor.contains(param.getClass())) {
             Constructor<?> current = null;
@@ -1246,7 +1257,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                             List<DeferredParameter> params = new ArrayList<>();
                             for (Object c : propertyValue) {
-                                DeferredParameter toAdd = loadObjectInstance(c, existing, Object.class, relaxedValidation);
+                                DeferredParameter toAdd = loadObjectInstance(c, existing, Object.class,
+                                        recorderParamAnnotations,
+                                        relaxedValidation);
                                 params.add(toAdd);
                             }
                             setupSteps.add(new SerializationStep() {
@@ -1284,9 +1297,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             Map<DeferredParameter, DeferredParameter> def = new LinkedHashMap<>();
                             for (Map.Entry<Object, Object> entry : propertyValue.entrySet()) {
                                 DeferredParameter key = loadObjectInstance(entry.getKey(), existing,
-                                        Object.class, relaxedValidation);
+                                        Object.class, recorderParamAnnotations, relaxedValidation);
                                 DeferredParameter val = loadObjectInstance(entry.getValue(), existing, Object.class,
-                                        relaxedValidation);
+                                        recorderParamAnnotations, relaxedValidation);
                                 def.put(key, val);
                             }
                             setupSteps.add(new SerializationStep() {
@@ -1371,7 +1384,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         }
                     }
                     DeferredParameter val = loadObjectInstance(propertyValue, existing,
-                            i.getPropertyType(), relaxedValidation);
+                            i.getPropertyType(), recorderParamAnnotations, relaxedValidation);
                     if (ctorParamIndex != null) {
                         nonDefaultConstructorHandles[ctorParamIndex] = val;
                         ctorSetupSteps.add(new SerializationStep() {
@@ -1425,7 +1438,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                     try {
                         DeferredParameter val = loadObjectInstance(field.get(param), existing, field.getType(),
-                                relaxedValidation);
+                                recorderParamAnnotations, relaxedValidation);
                         if (ctorParamIndex != null) {
                             nonDefaultConstructorHandles[ctorParamIndex] = val;
                             ctorSetupSteps.add(new SerializationStep() {
@@ -1475,7 +1488,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         DeferredArrayStoreParameter objectValue = new DeferredArrayStoreParameter(param, expectedType) {
             @Override
             ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
-                ResultHandle out;
+                ResultHandle out = null;
                 //do the creation
                 if (finalNonDefaultConstructorHolder != null) {
                     out = method.newInstance(
@@ -1488,11 +1501,21 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         // list is a common special case, so let's handle it
                         List listParam = (List) param;
                         if (listParam.isEmpty()) {
-                            out = method.newInstance(ofConstructor(ArrayList.class));
+                            if (isReadOnly(recorderParamAnnotations)) {
+                                out = method.invokeStaticMethod(COLLECTION_EMPTY_LIST);
+                            } else {
+                                out = method.newInstance(ofConstructor(ArrayList.class));
+                            }
                         } else {
                             out = method.newInstance(ofConstructor(ArrayList.class, int.class), method.load(listParam.size()));
                         }
-                    } else {
+                    } else if (Map.class.isAssignableFrom(param.getClass()) && expectedType == Map.class) {
+                        Map mapParam = (Map) param;
+                        if (mapParam.isEmpty() && isReadOnly(recorderParamAnnotations)) {
+                            out = method.invokeStaticMethod(COLLECTION_EMPTY_MAP);
+                        }
+                    }
+                    if (out == null) {
                         try {
                             param.getClass().getDeclaredConstructor();
                             out = method.newInstance(ofConstructor(param.getClass()));
@@ -1517,6 +1540,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 }
                 return out;
             }
+
         };
 
         //now return the actual deferred parameter that represents the result of construction
@@ -1550,6 +1574,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return context.loadDeferred(objectValue);
             }
         };
+    }
+
+    private static boolean isReadOnly(Annotation[] anns) {
+        return Arrays.stream(anns).anyMatch(a -> a.annotationType() == ReadOnly.class);
     }
 
     /**
@@ -1667,7 +1695,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         var constantHolder = findConstantForParam(param);
                         if (constantHolder != null) {
                             deferredParameters.add(loadObjectInstance(constantHolder.value, parameterMap,
-                                    constantHolder.type, Arrays.stream(parameterAnnotations[i])
+                                    constantHolder.type, parameterAnnotations[i], Arrays.stream(parameterAnnotations[i])
                                             .anyMatch(s -> s.annotationType() == RelaxedValidation.class)));
                             continue;
                         }

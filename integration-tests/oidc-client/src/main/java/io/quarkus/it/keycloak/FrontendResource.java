@@ -26,6 +26,10 @@ public class FrontendResource {
     ProtectedResourceServiceNoOidcClient protectedResourceServiceNoOidcClient;
 
     @Inject
+    @RestClient
+    ProtectedResourceServiceNonDefaultOidcClient protectedResourceServiceNonDefaultOidcClient;
+
+    @Inject
     ManagedExecutor managedExecutor;
 
     private Object lock = new Object();
@@ -35,6 +39,12 @@ public class FrontendResource {
     @Path("userOidcClient")
     public String userNameOidcClient() {
         return protectedResourceServiceOidcClient.getUserName();
+    }
+
+    @GET
+    @Path("userNonDefaultOidcClient")
+    public String userNameNonDefaultOidcClient() {
+        return protectedResourceServiceNonDefaultOidcClient.getUserName();
     }
 
     @GET

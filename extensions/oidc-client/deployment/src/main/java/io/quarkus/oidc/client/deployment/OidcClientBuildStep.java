@@ -1,5 +1,7 @@
 package io.quarkus.oidc.client.deployment;
 
+import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.sanitize;
+
 import java.lang.reflect.Modifier;
 import java.util.Objects;
 import java.util.Optional;
@@ -199,10 +201,6 @@ public class OidcClientBuildStep {
         }
 
         return generatedName.replace('/', '.');
-    }
-
-    private String sanitize(String oidcClientName) {
-        return oidcClientName.replaceAll("\\W+", "");
     }
 
     public static class IsEnabled implements BooleanSupplier {

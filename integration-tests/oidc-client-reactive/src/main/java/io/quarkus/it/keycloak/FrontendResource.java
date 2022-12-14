@@ -19,6 +19,10 @@ public class FrontendResource {
     @RestClient
     ProtectedResourceServiceReactiveFilter protectedResourceServiceReactiveFilter;
 
+    @Inject
+    @RestClient
+    ProtectedResourceServiceNamedFilter protectedResourceServiceNamedFilter;
+
     @GET
     @Path("userNameCustomFilter")
     @Produces("text/plain")
@@ -31,5 +35,12 @@ public class FrontendResource {
     @Produces("text/plain")
     public Uni<String> userNameReactive() {
         return protectedResourceServiceReactiveFilter.getUserName();
+    }
+
+    @GET
+    @Path("userNameNamedFilter")
+    @Produces("text/plain")
+    public Uni<String> userNameNamedFilter() {
+        return protectedResourceServiceNamedFilter.getUserName();
     }
 }

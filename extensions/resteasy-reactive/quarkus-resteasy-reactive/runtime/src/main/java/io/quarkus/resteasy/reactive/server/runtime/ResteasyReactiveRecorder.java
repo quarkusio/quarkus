@@ -50,6 +50,7 @@ import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.annotations.ReadOnly;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
@@ -128,7 +129,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return currentDeployment;
     }
 
-    public RuntimeValue<Deployment> createDeployment(DeploymentInfo info,
+    public RuntimeValue<Deployment> createDeployment(@ReadOnly DeploymentInfo info,
             BeanContainer beanContainer,
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,

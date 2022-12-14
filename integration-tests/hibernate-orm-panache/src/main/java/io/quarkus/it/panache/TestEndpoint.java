@@ -45,6 +45,7 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 @Path("test")
 public class TestEndpoint {
 
+    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests
     @Inject
     MockablePersonRepository mockablePersonRepository;
@@ -1186,6 +1187,13 @@ public class TestEndpoint {
         Assertions.assertEquals("2", person.name);
 
         person = Person.find("name = ?1", "2").project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find(String.format(
+                "select uniqueName, name%sfrom io.quarkus.it.panache.Person%swhere name = ?1",
+                LINE_SEPARATOR, LINE_SEPARATOR), "2")
+                .project(PersonName.class)
+                .firstResult();
         Assertions.assertEquals("2", person.name);
 
         person = Person.find("name = :name", Parameters.with("name", "2")).project(PersonName.class).firstResult();

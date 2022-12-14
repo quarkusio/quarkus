@@ -116,8 +116,14 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
             volumeOutputPath = FileUtil.translateToVolumePath(volumeOutputPath);
         }
 
+        String selinuxBindOption = ":z";
+        if (SystemUtils.IS_OS_MAC
+                && ContainerRuntimeUtil.detectContainerRuntime() == ContainerRuntimeUtil.ContainerRuntime.PODMAN) {
+            selinuxBindOption = "";
+        }
+
         Collections.addAll(containerRuntimeArgs, "-v",
-                volumeOutputPath + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + ":z");
+                volumeOutputPath + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + selinuxBindOption);
         return containerRuntimeArgs;
     }
 

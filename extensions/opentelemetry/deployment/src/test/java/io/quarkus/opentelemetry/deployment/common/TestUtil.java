@@ -56,7 +56,7 @@ public final class TestUtil {
     public static TextMapPropagator[] getTextMapPropagators(OpenTelemetry openTelemetry)
             throws NoSuchFieldException, IllegalAccessException {
         TextMapPropagator textMapPropagator = openTelemetry.getPropagators().getTextMapPropagator();
-        Field privatePropagatorsField = textMapPropagator.getClass().getDeclaredField("textPropagators");
+        Field privatePropagatorsField = textMapPropagator.getClass().getDeclaredField("textMapPropagators");
         privatePropagatorsField.setAccessible(true);
         return (TextMapPropagator[]) privatePropagatorsField.get(textMapPropagator);
     }

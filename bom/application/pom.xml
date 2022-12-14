@@ -24,8 +24,10 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.19.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.19.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.21.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.21.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry-aws.contrib.version>1.20.1-alpha</opentelemetry-aws.contrib.version>
+        <opentelemetry-aws-xray.contrib.version>1.20.1</opentelemetry-aws-xray.contrib.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>4.2.1</quarkus-http.version>
         <micrometer.version>1.10.2</micrometer.version><!-- keep in sync with hdrhistogram -->
@@ -3350,6 +3352,76 @@
                 <groupId>io.reactivex.rxjava2</groupId>
                 <artifactId>rxjava</artifactId>
                 <version>${rxjava.version}</version>
+            </dependency>
+            <!-- OpenTelemetry contrib libraries don't have a bom and are independently released -->
+            <dependency>
+                <groupId>io.opentelemetry.contrib</groupId>
+                <artifactId>opentelemetry-aws-xray-propagator</artifactId>
+                <version>${opentelemetry-aws.contrib.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.opentelemetry</groupId>
+                        <artifactId>opentelemetry-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry.contrib</groupId>
+                <artifactId>opentelemetry-aws-resources</artifactId>
+                <version>${opentelemetry-aws.contrib.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.opentelemetry</groupId>
+                        <artifactId>opentelemetry-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.opentelemetry</groupId>
+                        <artifactId>opentelemetry-sdk</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.opentelemetry</groupId>
+                        <artifactId>opentelemetry-semconv</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.squareup.okhttp3</groupId>
+                        <artifactId>okhttp</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry.contrib</groupId>
+                <artifactId>opentelemetry-aws-xray</artifactId>
+                <version>${opentelemetry-aws-xray.contrib.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.opentelemetry</groupId>
+                        <artifactId>opentelemetry-sdk</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.opentelemetry</groupId>
+                        <artifactId>opentelemetry-sdk-trace</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.opentelemetry</groupId>
+                        <artifactId>opentelemetry-semconv</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-databind</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.squareup.okhttp3</groupId>
+                        <artifactId>okhttp</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.opentracing</groupId>

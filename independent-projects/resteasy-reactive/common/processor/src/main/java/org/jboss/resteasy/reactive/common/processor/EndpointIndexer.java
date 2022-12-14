@@ -285,7 +285,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(),
                     clazz.getPathParameters(), clazz.getPath(), considerApplication);
-            clazz.getMethods().addAll(methods);
+            clazz.setMethods(methods);
 
             // get an InjectableBean view of our class
             InjectableBean injectableBean = scanInjectableBean(classInfo, classInfo,

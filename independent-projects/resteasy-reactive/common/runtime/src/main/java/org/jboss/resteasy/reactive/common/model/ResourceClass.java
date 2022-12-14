@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.common.model;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +29,7 @@ public class ResourceClass {
     /**
      * The resource methods
      */
-    private final List<ResourceMethod> methods = new ArrayList<>();
+    private List<ResourceMethod> methods = Collections.emptyList();
 
     private BeanFactory<Object> factory;
     private boolean perRequestResource;
@@ -43,7 +42,7 @@ public class ResourceClass {
      * Contains class level exception mappers
      * The key is the exception type and the value is the exception mapper class
      */
-    private Map<String, String> classLevelExceptionMappers = new HashMap<>();
+    private Map<String, String> classLevelExceptionMappers = Collections.emptyMap();
 
     public String getClassName() {
         return className;
@@ -78,6 +77,10 @@ public class ResourceClass {
 
     public List<ResourceMethod> getMethods() {
         return methods;
+    }
+
+    public void setMethods(List<ResourceMethod> methods) {
+        this.methods = methods;
     }
 
     public boolean isPerRequestResource() {

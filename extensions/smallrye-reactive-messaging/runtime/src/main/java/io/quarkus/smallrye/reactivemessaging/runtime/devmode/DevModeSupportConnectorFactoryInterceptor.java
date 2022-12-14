@@ -12,8 +12,12 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.eclipse.microprofile.reactive.streams.operators.SubscriberBuilder;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @Interceptor
 @DevModeSupportConnectorFactory
@@ -45,6 +49,19 @@ public class DevModeSupportConnectorFactoryInterceptor {
                 return future;
             });
         }
+        if (ctx.getMethod().getName().equals("getPublisher")) {
+            Publisher<Message<?>> result = (Publisher<Message<?>>) ctx.proceed();
+            return Multi.createFrom().publisher(result)
+                    .onItem().transformToUniAndConcatenate(msg -> Uni.createFrom().emitter(e -> {
+                        onMessage.get().whenComplete((restarted, error) -> {
+                            if (!restarted) {
+                                // if restarted, a new stream is already running,
+                                // no point in emitting an event to the old stream
+                                e.complete(msg);
+                            }
+                        });
+                    }));
+        }
 
         if (ctx.getMethod().getName().equals("getSubscriberBuilder")) {
             SubscriberBuilder<Message<?>, Void> result = (SubscriberBuilder<Message<?>, Void>) ctx.proceed();
@@ -75,6 +92,36 @@ public class DevModeSupportConnectorFactoryInterceptor {
                     onMessage.get();
                 }
             });
+        }
+        if (ctx.getMethod().getName().equals("getSubscriber")) {
+            Subscriber<Message<?>> result = (Subscriber<Message<?>>) ctx.proceed();
+            return new Subscriber<Message<?>>() {
+                private Subscriber<Message<?>> subscriber;
+
+                @Override
+                public void onSubscribe(Subscription s) {
+                    subscriber = result;
+                    subscriber.onSubscribe(s);
+                }
+
+                @Override
+                public void onNext(Message<?> o) {
+                    subscriber.onNext(o);
+                    onMessage.get();
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    subscriber.onError(t);
+                    onMessage.get();
+                }
+
+                @Override
+                public void onComplete() {
+                    subscriber.onComplete();
+                    onMessage.get();
+                }
+            };
         }
 
         return ctx.proceed();

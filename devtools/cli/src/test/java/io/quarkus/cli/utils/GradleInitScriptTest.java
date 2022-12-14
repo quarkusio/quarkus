@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ public class GradleInitScriptTest {
 
     @Test
     public void testReadInitScriptDependencies() throws IOException {
-        Path path = GradleInitScript.createInitScript(List.of("g1:a1:v1", "g2:a2:v2"));
+        Path path = GradleInitScript.createInitScript(Set.of("g1:a1:v1", "g2:a2:v2"));
         System.out.println("path:" + path.toAbsolutePath().toString());
         System.out.println("content:" + Files.readString(path));
         List<String> gavs = GradleInitScript.readInitScriptDependencies(path);

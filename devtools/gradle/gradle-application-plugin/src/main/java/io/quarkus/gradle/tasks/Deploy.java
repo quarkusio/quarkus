@@ -14,11 +14,17 @@ import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
+import io.quarkus.deployment.util.DeploymentUtil;
+
 public abstract class Deploy extends QuarkusBuildProviderTask {
 
     public enum Deployer {
 
         kubernetes("quarkus-kubernetes", "quarkus-container-image-docker", "quarkus-container-image-jib",
+                "quarkus-container-image-buildpack"),
+        minikube("quarkus-minikube", "quarkus-container-image-docker", "quarkus-container-image-jib",
+                "quarkus-container-image-buildpack"),
+        kind("quarkus-kind", "quarkus-container-image-docker", "quarkus-container-image-jib",
                 "quarkus-container-image-buildpack"),
         knative("quarkus-kubernetes", "quarkus-container-image-docker", "quarkus-container-image-jib",
                 "quarkus-container-image-buildpack"),
@@ -88,15 +94,17 @@ public abstract class Deploy extends QuarkusBuildProviderTask {
         // So, let's give users a meaningful warning message.
         Deployer deployer = getDeployer();
         String requiredDeployerExtension = deployer.getExtension();
-        Optional<String> requiredContainerImageExtension = imageBuilder.map(b -> "quarkus-container-image-" + b);
+        Optional<String> requiredContainerImageExtension = requiredContainerImageExtension();
+
         List<String> projectDependencies = getProject().getConfigurations().stream().flatMap(c -> c.getDependencies().stream())
                 .map(d -> d.getName())
                 .collect(Collectors.toList());
-
         if (!projectDependencies.contains(requiredDeployerExtension)) {
-            getProject().getLogger().warn("Task: {} requires extensions: {}", getName(), requiredDeployerExtension);
-            getProject().getLogger().warn("To add the extensions to the project you can run the following command:");
-            getProject().getLogger().warn("\tgradle addExtension --extensions={}", requiredDeployerExtension);
+            abort("Task: {} requires extensions: {}\n" +
+                    "To add the extensions to the project you can run the following command:\n" +
+                    "\tgradle addExtension --extensions={}",
+                    getName(), requiredDeployerExtension,
+                    requiredDeployerExtension);
         } else if (!requiredContainerImageExtension.map(b -> projectDependencies.stream().anyMatch(d -> d.equals(b)))
                 .orElse(true)) {
             abort("Task: {} using: {} is explicitly configured with missing container image builder extension: {}. Aborting.",
@@ -114,6 +122,11 @@ public abstract class Deploy extends QuarkusBuildProviderTask {
 
     public Deployer getDeployer() {
         return deployer.or(() -> DeploymentUtil.getEnabledDeployer()).map(d -> Deployer.valueOf(d)).orElse(Deployer.kubernetes);
+    }
+
+    public Optional<String> requiredContainerImageExtension() {
+        return imageBuilder.map(b -> "quarkus-container-image-" + b)
+                .or(() -> imageBuild ? Arrays.stream(getDeployer().requiresOneOf).findFirst() : Optional.empty());
     }
 
     private void abort(String message, Object... args) {

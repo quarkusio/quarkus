@@ -19,6 +19,10 @@ public class AbstractDeploymentMojo extends BuildMojo {
 
         kubernetes("quarkus-kubernetes", "quarkus-container-image-docker", "quarkus-container-image-jib",
                 "quarkus-container-image-buildpack"),
+        minikube("quarkus-minikube", "quarkus-container-image-docker", "quarkus-container-image-jib",
+                "quarkus-container-image-buildpack"),
+        kind("quarkus-kind", "quarkus-container-image-docker", "quarkus-container-image-jib",
+                "quarkus-container-image-buildpack"),
         knative("quarkus-kubernetes", "quarkus-container-image-docker", "quarkus-container-image-jib",
                 "quarkus-container-image-buildpack"),
         openshift("quarkus-openshift");

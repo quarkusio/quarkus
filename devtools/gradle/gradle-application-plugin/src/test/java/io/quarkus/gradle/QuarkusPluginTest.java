@@ -48,6 +48,7 @@ public class QuarkusPluginTest {
         assertNotNull(tasks.getByName(QuarkusPlugin.ADD_EXTENSION_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.IMAGE_BUILD_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.IMAGE_PUSH_TASK_NAME));
+        assertNotNull(tasks.getByName(QuarkusPlugin.DEPLOY_TASK_NAME));
     }
 
     @Test

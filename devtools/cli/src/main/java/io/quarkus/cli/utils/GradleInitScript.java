@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,10 +48,10 @@ public class GradleInitScript {
                 .map(p -> readInitScriptDependencies(p))
                 .orElse(new ArrayList<String>());
 
-        List<String> gavs = Stream.concat(existingGavs.stream(), forcedExtensions.stream()
+        Set<String> gavs = Stream.concat(existingGavs.stream(), forcedExtensions.stream()
                 .map(String::trim)
                 .map(e -> e + ":${quarkusPlatformVersion}"))
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
 
         existingInitScript.map(Path::of).ifPresentOrElse(s -> createInitScript(s, gavs), () -> {
             Path initScriptPath = GradleInitScript.createInitScript(gavs);
@@ -74,7 +75,7 @@ public class GradleInitScript {
         }
     }
 
-    public static Path createInitScript(List<String> gavs) {
+    public static Path createInitScript(Set<String> gavs) {
         try {
             Path path = Files.createTempFile("quarkus-gradle-init", "");
             createInitScript(path, gavs);
@@ -84,7 +85,7 @@ public class GradleInitScript {
         }
     }
 
-    public static void createInitScript(Path path, List<String> gavs) {
+    public static void createInitScript(Path path, Set<String> gavs) {
         StringBuilder sb = new StringBuilder();
         sb.append(ALL_PROJECTS).append(NEWLINE);
         sb.append(TAB).append(APPLY_PLUGIN_JAVA).append(NEWLINE);

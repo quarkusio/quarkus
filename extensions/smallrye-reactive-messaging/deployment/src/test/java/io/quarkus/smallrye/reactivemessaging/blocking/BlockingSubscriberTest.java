@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.Flow;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -13,7 +14,6 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.IncomingCustomTwoBlockingBean;
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.IncomingCustomUnorderedBlockingBean;
@@ -72,7 +72,7 @@ public class BlockingSubscriberTest {
     public static class ProduceIn {
         @Outgoing("in")
         @Broadcast(2)
-        public Publisher<String> produce() {
+        public Flow.Publisher<String> produce() {
             return Multi.createFrom().items("a", "b", "c", "d", "e", "f");
         }
     }

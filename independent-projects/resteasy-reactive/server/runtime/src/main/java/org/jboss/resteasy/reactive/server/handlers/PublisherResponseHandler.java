@@ -6,6 +6,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Flow.Publisher;
+import java.util.concurrent.Flow.Subscriber;
+import java.util.concurrent.Flow.Subscription;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -23,9 +26,8 @@ import org.jboss.resteasy.reactive.server.jaxrs.OutboundSseEventImpl;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer.Phase;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.StreamingResponse;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+
+import mutiny.zero.flow.adapters.AdaptersToFlow;
 
 /**
  * This handler is used to push streams of data to the client.
@@ -246,8 +248,12 @@ public class PublisherResponseHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         // FIXME: handle Response with entity being a Multi
-        if (requestContext.getResult() instanceof Publisher) {
-            Publisher<?> result = (Publisher<?>) requestContext.getResult();
+        Object requestContextResult = requestContext.getResult();
+        if (requestContextResult instanceof org.reactivestreams.Publisher) {
+            requestContextResult = AdaptersToFlow.publisher((org.reactivestreams.Publisher<?>) requestContextResult);
+        }
+        if (requestContextResult instanceof Publisher) {
+            Publisher<?> result = (Publisher<?>) requestContextResult;
             // FIXME: if we make a pretend Response and go through the normal route, we will get
             // media type negotiation and fixed entity writer set up, perhaps it's better than
             // cancelling the normal route?

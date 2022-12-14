@@ -114,11 +114,8 @@ public final class QuarkusMediatorConfigurationUtil {
         configuration.setProduction(validationOutput.getProduction());
         configuration.setConsumption(validationOutput.getConsumption());
         configuration.setIngestedPayloadType(validationOutput.getIngestedPayloadType());
-        if (validationOutput.getUseBuilderTypes()) {
-            configuration.setUseBuilderTypes(validationOutput.getUseBuilderTypes());
-        } else {
-            configuration.setUseBuilderTypes(false);
-        }
+        configuration.setUseBuilderTypes(validationOutput.getUseBuilderTypes());
+        configuration.setUseReactiveStreams(validationOutput.getUseReactiveStreams());
 
         if (acknowledgment == null) {
             acknowledgment = mediatorConfigurationSupport.processDefaultAcknowledgement(shape,

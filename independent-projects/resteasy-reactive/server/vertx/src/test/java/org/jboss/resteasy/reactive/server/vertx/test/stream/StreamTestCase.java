@@ -104,6 +104,10 @@ public class StreamTestCase {
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/text/stream/legacy-publisher")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foobar"));
         RestAssured.get("/stream/text/collect")
                 .then()
                 .statusCode(200)

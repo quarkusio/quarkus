@@ -1198,7 +1198,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
         } else {
             for (Constructor<?> ctor : param.getClass().getConstructors()) {
-                if (ctor.isAnnotationPresent(RecordableConstructor.class)) {
+                if (RecordingAnnotationsUtil.isRecordableConstructor(ctor)) {
                     nonDefaultConstructorHolder = new NonDefaultConstructorHolder(ctor, null);
                     nonDefaultConstructorHandles = new DeferredParameter[ctor.getParameterCount()];
 

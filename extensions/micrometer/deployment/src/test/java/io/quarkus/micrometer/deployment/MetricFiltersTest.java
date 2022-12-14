@@ -21,7 +21,8 @@ public class MetricFiltersTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(AnnotatedFilter.class, NonAnnotatedFilter.class,
-                            MeterFilterProducer.class));
+                            MeterFilterProducer.class))
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false");
 
     @Test
     public void testCDIFilters() {

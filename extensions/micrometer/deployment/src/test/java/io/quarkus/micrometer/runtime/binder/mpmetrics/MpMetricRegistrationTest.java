@@ -17,7 +17,8 @@ public class MpMetricRegistrationTest {
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder.mp-metrics.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
-            .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false");
+            .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false");
 
     @Inject
     MetricRegistryAdapter mpRegistry;

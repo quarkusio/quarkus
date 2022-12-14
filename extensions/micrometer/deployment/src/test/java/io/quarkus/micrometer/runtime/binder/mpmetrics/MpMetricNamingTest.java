@@ -18,6 +18,7 @@ public class MpMetricNamingTest {
             .overrideConfigKey("quarkus.micrometer.binder.mp-metrics.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClass(MpColorResource.class));
 

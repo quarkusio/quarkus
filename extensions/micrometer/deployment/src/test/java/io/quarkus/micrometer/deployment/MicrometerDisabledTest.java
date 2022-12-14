@@ -20,6 +20,7 @@ public class MicrometerDisabledTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("quarkus.micrometer.enabled=false"), "application.properties"))
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .assertException(t -> {
                 Assertions.assertEquals(DeploymentException.class, t.getClass());
             });

@@ -15,6 +15,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Set;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
@@ -43,6 +44,17 @@ public class CodeFlowAuthorizationTest {
 
     @OidcWireMock
     WireMockServer wireMockServer;
+
+    @BeforeAll
+    public static void clearCache() {
+        // clear token cache to make tests idempotent as we experienced failures
+        // on Windows when BearerTokenAuthorizationTest run before CodeFlowAuthorizationTest
+        RestAssured
+                .given()
+                .get("http://localhost:8081/clear-token-cache")
+                .then()
+                .statusCode(204);
+    }
 
     @Test
     public void testCodeFlow() throws IOException {

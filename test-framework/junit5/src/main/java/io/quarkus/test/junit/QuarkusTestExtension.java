@@ -225,12 +225,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             //must be done after the TCCL has been set
             testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
-                    .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class)
+                    .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class, Path.class)
                     .newInstance(requiredTestClass,
                             profile != null ? profile : null,
                             getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
                             profileInstance != null && profileInstance.disableGlobalTestResources(),
-                            startupAction.getDevServicesProperties(), Optional.empty());
+                            startupAction.getDevServicesProperties(), Optional.empty(), result.testClassLocation);
             testResourceManager.getClass().getMethod("init", String.class).invoke(testResourceManager,
                     profile != null ? profile.getName() : null);
             Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
@@ -1251,7 +1251,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         public List<Consumer<BuildChainBuilder>> apply(Map<String, Object> stringObjectMap) {
             Path testLocation = (Path) stringObjectMap.get(TEST_LOCATION);
             // the index was written by the extension
-            Index testClassesIndex = TestClassIndexer.readIndex((Class<?>) stringObjectMap.get(TEST_CLASS));
+            Index testClassesIndex = TestClassIndexer.readIndex(testLocation, (Class<?>) stringObjectMap.get(TEST_CLASS));
 
             List<Consumer<BuildChainBuilder>> allCustomizers = new ArrayList<>(1);
             Consumer<BuildChainBuilder> defaultCustomizer = new Consumer<BuildChainBuilder>() {

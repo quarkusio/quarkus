@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,6 +57,13 @@ public class TestResourceManager implements Closeable {
     public TestResourceManager(Class<?> testClass, Class<?> profileClass, List<TestResourceClassEntry> additionalTestResources,
             boolean disableGlobalTestResources, Map<String, String> devServicesProperties,
             Optional<String> containerNetworkId) {
+        this(testClass, profileClass, additionalTestResources, disableGlobalTestResources, devServicesProperties,
+                containerNetworkId, PathTestHelper.getTestClassesLocation(testClass));
+    }
+
+    public TestResourceManager(Class<?> testClass, Class<?> profileClass, List<TestResourceClassEntry> additionalTestResources,
+            boolean disableGlobalTestResources, Map<String, String> devServicesProperties,
+            Optional<String> containerNetworkId, Path testClassLocation) {
         this.parallelTestResourceEntries = new ArrayList<>();
         this.sequentialTestResourceEntries = new ArrayList<>();
 
@@ -65,7 +73,8 @@ public class TestResourceManager implements Closeable {
         if (disableGlobalTestResources) {
             uniqueEntries = new HashSet<>(additionalTestResources);
         } else {
-            uniqueEntries = getUniqueTestResourceClassEntries(testClass, profileClass, additionalTestResources);
+            uniqueEntries = getUniqueTestResourceClassEntries(testClassLocation, testClass, profileClass,
+                    additionalTestResources);
         }
         Set<TestResourceClassEntry> remainingUniqueEntries = initParallelTestResources(uniqueEntries);
         initSequentialTestResources(remainingUniqueEntries);
@@ -247,9 +256,10 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    private Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Class<?> testClass, Class<?> profileClass,
+    private Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Path testClassLocation, Class<?> testClass,
+            Class<?> profileClass,
             List<TestResourceClassEntry> additionalTestResources) {
-        IndexView index = TestClassIndexer.readIndex(testClass);
+        IndexView index = TestClassIndexer.readIndex(testClassLocation, testClass);
         Set<TestResourceClassEntry> uniqueEntries = new LinkedHashSet<>();
         // reload the test and profile classes in the right CL
         Class<?> testClassFromTCCL;

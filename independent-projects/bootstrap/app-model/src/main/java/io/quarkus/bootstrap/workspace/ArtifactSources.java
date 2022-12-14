@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.paths.EmptyPathTree;
 import io.quarkus.paths.MultiRootPathTree;
 import io.quarkus.paths.PathTree;
 
 public interface ArtifactSources {
 
-    String MAIN = "";
+    String MAIN = ArtifactCoords.DEFAULT_CLASSIFIER;
     String TEST = "tests";
 
     static ArtifactSources main(SourceDir sources, SourceDir resources) {

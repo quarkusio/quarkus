@@ -1527,6 +1527,8 @@ The following objects can be passed to recorders:
 In cases where some fields of an object to be recorded should be ignored (i.e. the value that being at build time should not be reflected at runtime), the `@IgnoreProperty` can be placed on the field.
 
 If the class cannot depend on Quarkus, then Quarkus can use any custom annotation, as long as the extension implements the `io.quarkus.deployment.recording.RecordingAnnotationsProvider` SPI.
+
+This same SPI can also be used to provide a custom annotation that will substitute for `@RecordableConstructor`.
 ====
 
 ==== Injecting Configuration into Recorders

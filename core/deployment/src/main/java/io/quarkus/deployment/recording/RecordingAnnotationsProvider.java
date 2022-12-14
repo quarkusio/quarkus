@@ -4,5 +4,11 @@ import java.lang.annotation.Annotation;
 
 public interface RecordingAnnotationsProvider {
 
-    Class<? extends Annotation> ignoredProperty();
+    default Class<? extends Annotation> ignoredProperty() {
+        return null;
+    }
+
+    default Class<? extends Annotation> recordableConstructor() {
+        return null;
+    }
 }

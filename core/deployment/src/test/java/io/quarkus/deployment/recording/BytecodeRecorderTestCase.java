@@ -293,6 +293,13 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.bean(bean);
         }, new TestConstructorBean("John", "Citizen").setAge(30));
+
+        runTest(generator -> {
+            OtherTestConstructorBean bean = new OtherTestConstructorBean("Jane", "Citizen");
+            bean.setAge(30);
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(bean);
+        }, new OtherTestConstructorBean("Jane", "Citizen").setAge(30));
     }
 
     @Test

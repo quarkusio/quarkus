@@ -13,8 +13,18 @@ public class TestRecordingAnnotationsProvider implements RecordingAnnotationsPro
     public @interface TestIgnoreProperty {
     }
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.CONSTRUCTOR)
+    public @interface TestRecordableConstructor {
+    }
+
     @Override
     public Class<? extends Annotation> ignoredProperty() {
         return TestIgnoreProperty.class;
+    }
+
+    @Override
+    public Class<? extends Annotation> recordableConstructor() {
+        return TestRecordableConstructor.class;
     }
 }

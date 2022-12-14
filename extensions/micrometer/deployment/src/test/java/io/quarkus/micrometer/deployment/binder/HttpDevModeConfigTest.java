@@ -23,6 +23,7 @@ public class HttpDevModeConfigTest {
                             "quarkus.micrometer.binder.http-server.enabled=true\n" +
                             "quarkus.micrometer.binder.http-server.ignore-patterns=/http\n" +
                             "quarkus.micrometer.binder.vertx.enabled=true\n" +
+                            "quarkus.redis.devservices.enabled=false\n" +
                             "orange=banana"), "application.properties"));
 
     @Test

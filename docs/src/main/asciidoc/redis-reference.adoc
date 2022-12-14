@@ -134,9 +134,9 @@ public class RedisExample {
 }
 ----
 
-TIP: When using `@RedisClientName`, you can omit the `@Inject` annotation.
+TIP: You can omit the `@Inject` annotation when using `@RedisClientName`.
 
-== Connecting to Redis
+== Connection to Redis
 
 The Redis extension can operate in 4 distinct modes:
 
@@ -152,7 +152,7 @@ The connection url is configured with the `quarkus.redis.hosts` (or `quarkus.red
 quarkus.redis.hosts=redis://[:password@]host[:port][/db-number]
 ----
 
-=== Using Unix Socket
+=== Unix Socket
 
 When using unix-socket, you need:
 
@@ -196,7 +196,7 @@ quarkus.redis.hosts=redis://localhost:7000
 quarkus.redis.client-type=replication
 ----
 
-=== Connecting to Redis Cloud
+=== Redis Cloud
 
 To connect to redis cloud, you need the following properties:
 
@@ -213,13 +213,13 @@ We recommend the latter, and if possible, using secrets or an environment variab
 
 The associated environment variable is `QUARKUS_REDIS_PASSWORD`, or `QUARKUS_REDIS_<NAME>_PASSWORD` for named clients.
 
-== Using the high-level clients (data sources)
+== Quarkus client API for data sources
 
 Quarkus exposes a high-level API on top of Redis.
 This API is type-safe and structured around the notion of _group_, inherited from the https://redis.io/commands/command-docs/[Redis command organization].
 This API lets you execute Redis commands more conveniently and safely.
 
-=== Injecting data sources
+=== Inject data sources
 
 For each configured Redis client, two Redis data sources are exposed:
 
@@ -334,7 +334,7 @@ To store binary data, use `byte[]`.
 The `value` group is used to manipulate https://redis.io/docs/manual/data-types/#strings[Redis Strings].
 Thus, this group is not limited to Java Strings but can be used for integers (like a counter) or binary content (like images).
 
-==== Caching values
+==== Work with cached values
 
 You can use Redis as a cache using the `setex` command, which stores a given value to a given key for a given duration.
 The following snippet shows how such a command can be used to store `BusinessObject` for 1 second.
@@ -377,7 +377,7 @@ The `set` method can also receive a `SetArgs` argument that modify the behavior:
 - `keepttl()` - Retain the time to live associated with the key.
 ====
 
-==== Storing binary data
+==== Store binary data
 
 Redis _strings_ can be used to store binary data, such as images.
 In this case, we will use `byte[]` as value type:
@@ -411,7 +411,7 @@ public static class MyBinaryRepository {
 }
 ----
 
-==== Storing a counter
+==== Store a counter
 
 You can store counters in Redis as demonstrated below:
 
@@ -454,10 +454,10 @@ There are other methods that can be useful to manipulate counters, such as:
 - `set` - to set an initial value if needed
 - `decr` and `decrby` - allows decrementing the stored value
 
-==== Using pub/sub
+==== Communicate with pub/sub
 
 Redis allows sending _messages_ to channels and listening for these messages.
-These features are available from the the `pubsub` group.
+These features are available from the `pubsub` group.
 
 The following snippets shows how a _cache_ can emit a `Notification` after every `set`, and how a subscriber can receive the notification.
 
@@ -521,7 +521,7 @@ public static class MyCache {
 }
 ----
 
-==== Using transactions
+==== Redis transactions
 
 Redis transactions are slightly different from relational database transactions.
 Redis transactions are a batch of commands executed altogether.
@@ -585,7 +585,7 @@ TransactionResult result = ds.withTransaction(tx -> {
 
 IMPORTANT: You cannot use the pub/sub feature from within a transaction.
 
-==== Using optimistic locking
+==== Optimistic locking
 
 To use optimistic locking, you need to use a variant of the `withTransaction` method, allowing the execution of code before the transaction starts.
 In other words, it will be executed as follows:
@@ -634,7 +634,7 @@ These commands must not modify the watched keys.
 
 The transaction is aborted if the pre-transaction block throws an exception (or produces a failure when using the reactive API).
 
-==== Executing custom commands
+==== Execute custom commands
 
 To execute a custom command, or a command not supported by the API, use the following approach:
 
@@ -708,7 +708,7 @@ INCR counter
 EXEC
 ----
 
-=== Loading configuration
+=== Configuration
 
 The data is loaded when the application starts.
 By default, it drops the whole database before importing.
@@ -744,7 +744,7 @@ So when you access the `/q/health/ready` endpoint of your application you will h
 
 This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
 
-== Providing Redis Hosts Programmatically
+== Programmatic Redis Hosts
 
 The `RedisHostsProvider` programmatically provides redis hosts.
 This allows for configuration of properties like redis connection password coming from other sources.
@@ -775,7 +775,7 @@ The host provider can be used to configure the redis client like shown below
 quarkus.redis.hosts-provider-name=hosts-provider
 ----
 
-== Customizing the Redis options programmatically
+== Customize the Redis options programmatically
 
 You can expose a bean implementing the `io.quarkus.redis.client.RedisOptionsCustomizer` interface to customize the Redis client options.
 The bean is called for each configured Redis client:
@@ -802,7 +802,78 @@ public static class MyExampleCustomizer implements RedisOptionsCustomizer {
 
 See xref:redis-dev-services.adoc[Redis Dev Service].
 
+== Redis client metrics
+
+=== Enable metrics collection
+
+Redis client metrics are automatically enabled when the application also uses the xref:micrometer.adoc[`quarkus-micrometer`] extension.
+Micrometer collects the metrics of all the Redis clients implemented by the application.
+
+As an example, if you export the metrics to Prometheus, you will get:
+
+[source, text]
+----
+# HELP redis_commands_duration_seconds The duration of the operations (commands of batches
+# TYPE redis_commands_duration_seconds summary
+redis_commands_duration_seconds_count{client_name="<default>",} 3.0
+redis_commands_duration_seconds_sum{client_name="<default>",} 0.047500042
+# HELP redis_commands_duration_seconds_max The duration of the operations (commands of batches
+# TYPE redis_commands_duration_seconds_max gauge
+redis_commands_duration_seconds_max{client_name="<default>",} 0.033273167
+# HELP redis_pool_active The number of resources from the pool currently used
+# TYPE redis_pool_active gauge
+redis_pool_active{pool_name="<default>",pool_type="redis",} 0.0
+# HELP redis_pool_ratio Pool usage ratio
+# TYPE redis_pool_ratio gauge
+redis_pool_ratio{pool_name="<default>",pool_type="redis",} 0.0
+# HELP redis_pool_queue_size Number of pending elements in the waiting queue
+# TYPE redis_pool_queue_size gauge
+redis_pool_queue_size{pool_name="<default>",pool_type="redis",} 0.0
+# HELP redis_commands_failure_total The number of operations (commands or batches) that have been failed
+# TYPE redis_commands_failure_total counter
+redis_commands_failure_total{client_name="<default>",} 0.0
+# HELP redis_commands_success_total The number of operations (commands or batches) that have been executed successfully
+# TYPE redis_commands_success_total counter
+redis_commands_success_total{client_name="<default>",} 3.0
+# HELP redis_pool_idle The number of resources from the pool currently used
+# TYPE redis_pool_idle gauge
+redis_pool_idle{pool_name="<default>",pool_type="redis",} 6.0
+# HELP redis_pool_completed_total Number of times resources from the pool have been acquired
+# TYPE redis_pool_completed_total counter
+redis_pool_completed_total{pool_name="<default>",pool_type="redis",} 3.0
+# HELP redis_commands_count_total The number of operations (commands or batches) executed
+# TYPE redis_commands_count_total counter
+redis_commands_count_total{client_name="<default>",} 3.0
+# HELP redis_pool_usage_seconds Time spent using resources from the pool
+# TYPE redis_pool_usage_seconds summary
+redis_pool_usage_seconds_count{pool_name="<default>",pool_type="redis",} 3.0
+redis_pool_usage_seconds_sum{pool_name="<default>",pool_type="redis",} 0.024381375
+# HELP redis_pool_usage_seconds_max Time spent using resources from the pool
+# TYPE redis_pool_usage_seconds_max gauge
+redis_pool_usage_seconds_max{pool_name="<default>",pool_type="redis",} 0.010671542
+# HELP redis_pool_queue_delay_seconds Time spent in the waiting queue before being processed
+# TYPE redis_pool_queue_delay_seconds summary
+redis_pool_queue_delay_seconds_count{pool_name="<default>",pool_type="redis",} 3.0
+redis_pool_queue_delay_seconds_sum{pool_name="<default>",pool_type="redis",} 0.022341249
+# HELP redis_pool_queue_delay_seconds_max Time spent in the waiting queue before being processed
+# TYPE redis_pool_queue_delay_seconds_max gauge
+redis_pool_queue_delay_seconds_max{pool_name="<default>",pool_type="redis",} 0.021926083
+----
+
+The Redis client name can be found in the _tags_.
+
+The metrics contain both the Redis connection pool metrics (`redis_pool_*`) and the metrics about the command execution (`redis_commands_*`) such as the number of command, successes, failures, and durations.
+
+=== Disable metrics collection
+
+To disable the Redis client metrics when `quarkus-micrometer` is used, add the following property to the application configuration:
+
+[source, properties]
+----
+quarkus.micrometer.binder.redis.enabled=false
+----
+
 [[redis-configuration-reference]]
-== Configuration Reference
+== Configuration reference
 
 include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional, leveloffset=+1]

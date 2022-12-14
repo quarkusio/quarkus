@@ -17,6 +17,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -30,7 +31,8 @@ public class NativeImageReflectConfigStep {
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
             List<ForceNonWeakReflectiveClassBuildItem> nonWeakReflectiveClassBuildItems,
-            List<ServiceProviderBuildItem> serviceProviderBuildItems) {
+            List<ServiceProviderBuildItem> serviceProviderBuildItems,
+            List<ReflectiveClassConditionBuildItem> reflectiveClassConditionBuildItems) {
 
         final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         final Set<String> forcedNonWeakClasses = new HashSet<>();
@@ -53,20 +55,29 @@ public class NativeImageReflectConfigStep {
                     i.providers().toArray(new String[] {}));
         }
 
+        // Perform this as last step, since it augments the already added reflective classes
+        for (ReflectiveClassConditionBuildItem i : reflectiveClassConditionBuildItems) {
+            reflectiveClasses.computeIfPresent(i.getClassName(), (key, value) -> {
+                value.typeReachable = i.getTypeReachable();
+                return value;
+            });
+        }
+
         JsonArrayBuilder root = Json.array();
         for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
             JsonObjectBuilder json = Json.object();
 
             json.put("name", entry.getKey());
 
-            if (entry.getValue().weak) {
-                json.put("condition", Json.object().put("typeReachable", entry.getKey()));
+            ReflectionInfo info = entry.getValue();
+            if (info.typeReachable != null) {
+                json.put("condition", Json.object().put("typeReachable", info.typeReachable));
             }
-            if (entry.getValue().constructors) {
+            if (info.constructors) {
                 json.put("allDeclaredConstructors", true);
-            } else if (!entry.getValue().ctorSet.isEmpty()) {
+            } else if (!info.ctorSet.isEmpty()) {
                 JsonArrayBuilder methodsArray = Json.array();
-                for (ReflectiveMethodBuildItem ctor : entry.getValue().ctorSet) {
+                for (ReflectiveMethodBuildItem ctor : info.ctorSet) {
                     JsonObjectBuilder methodObject = Json.object();
                     methodObject.put("name", ctor.getName());
                     JsonArrayBuilder paramsArray = Json.array();
@@ -78,11 +89,11 @@ public class NativeImageReflectConfigStep {
                 }
                 json.put("methods", methodsArray);
             }
-            if (entry.getValue().methods) {
+            if (info.methods) {
                 json.put("allDeclaredMethods", true);
-            } else if (!entry.getValue().methodSet.isEmpty()) {
+            } else if (!info.methodSet.isEmpty()) {
                 JsonArrayBuilder methodsArray = Json.array();
-                for (ReflectiveMethodBuildItem method : entry.getValue().methodSet) {
+                for (ReflectiveMethodBuildItem method : info.methodSet) {
                     JsonObjectBuilder methodObject = Json.object();
                     methodObject.put("name", method.getName());
                     JsonArrayBuilder paramsArray = Json.array();
@@ -94,11 +105,11 @@ public class NativeImageReflectConfigStep {
                 }
                 json.put("methods", methodsArray);
             }
-            if (entry.getValue().fields) {
+            if (info.fields) {
                 json.put("allDeclaredFields", true);
-            } else if (!entry.getValue().fieldSet.isEmpty()) {
+            } else if (!info.fieldSet.isEmpty()) {
                 JsonArrayBuilder fieldsArray = Json.array();
-                for (String fieldName : entry.getValue().fieldSet) {
+                for (String fieldName : info.fieldSet) {
                     fieldsArray.add(Json.object().put("name", fieldName));
                 }
                 json.put("fields", fieldsArray);
@@ -120,7 +131,7 @@ public class NativeImageReflectConfigStep {
         String cl = methodInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo());
         }
         if (methodInfo.getName().equals("<init>")) {
             existing.ctorSet.add(methodInfo);
@@ -136,8 +147,9 @@ public class NativeImageReflectConfigStep {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
+                String typeReachable = (!forcedNonWeakClasses.contains(cl) && weak) ? cl : null;
                 reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields,
-                        !forcedNonWeakClasses.contains(cl) && weak, serialization));
+                        typeReachable, serialization));
             } else {
                 if (constructors) {
                     existing.constructors = true;
@@ -159,7 +171,7 @@ public class NativeImageReflectConfigStep {
         String cl = fieldInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo());
         }
         existing.fieldSet.add(fieldInfo.getName());
     }
@@ -168,17 +180,22 @@ public class NativeImageReflectConfigStep {
         boolean constructors;
         boolean methods;
         boolean fields;
-        boolean weak;
         boolean serialization;
+        String typeReachable;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
-        private ReflectionInfo(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization) {
+        private ReflectionInfo() {
+            this(false, false, false, null, false);
+        }
+
+        private ReflectionInfo(boolean constructors, boolean methods, boolean fields, String typeReachable,
+                boolean serialization) {
             this.methods = methods;
             this.fields = fields;
+            this.typeReachable = typeReachable;
             this.constructors = constructors;
-            this.weak = weak;
             this.serialization = serialization;
         }
     }

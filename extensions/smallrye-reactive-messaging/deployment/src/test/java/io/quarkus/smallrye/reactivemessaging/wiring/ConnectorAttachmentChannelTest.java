@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
+import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
 public class ConnectorAttachmentChannelTest {
 
@@ -45,7 +46,8 @@ public class ConnectorAttachmentChannelTest {
 
         @Override
         public PublisherBuilder<? extends Message<?>> getPublisherBuilder(Config config) {
-            return ReactiveStreams.fromPublisher(Multi.createFrom().range(0, 5).map(Message::of));
+            return ReactiveStreams
+                    .fromPublisher(AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
         }
     }
 

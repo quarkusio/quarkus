@@ -13,6 +13,7 @@ import org.reactivestreams.Publisher;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.messaging.annotations.Channel;
+import mutiny.zero.flow.adapters.AdaptersToFlow;
 
 @ApplicationScoped
 public class DeprecatedChannelConsumer {
@@ -22,7 +23,7 @@ public class DeprecatedChannelConsumer {
     Publisher<Message<String>> sourceStream;
 
     public List<String> consume() {
-        return Multi.createFrom().publisher(sourceStream)
+        return Multi.createFrom().publisher(AdaptersToFlow.publisher(sourceStream))
                 .onItem().transform(Message::getPayload)
                 .collect().asList()
                 .await().indefinitely();

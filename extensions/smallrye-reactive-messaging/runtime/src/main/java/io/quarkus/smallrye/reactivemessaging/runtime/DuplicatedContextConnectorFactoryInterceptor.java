@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.runtime;
 
 import java.util.Optional;
+import java.util.concurrent.Flow;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
@@ -9,7 +10,6 @@ import jakarta.interceptor.InvocationContext;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
@@ -29,7 +29,7 @@ public class DuplicatedContextConnectorFactoryInterceptor {
             return result.map(DuplicatedContextConnectorFactoryInterceptor::setMessageContextSafe);
         }
         if (ctx.getMethod().getName().equals("getPublisher")) {
-            Publisher<Message<?>> result = (Publisher<Message<?>>) ctx.proceed();
+            Flow.Publisher<Message<?>> result = (Flow.Publisher<Message<?>>) ctx.proceed();
             return Multi.createFrom().publisher(result)
                     .map(DuplicatedContextConnectorFactoryInterceptor::setMessageContextSafe);
         }

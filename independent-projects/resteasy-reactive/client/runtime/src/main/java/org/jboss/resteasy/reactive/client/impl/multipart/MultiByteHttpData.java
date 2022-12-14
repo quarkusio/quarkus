@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Flow.Subscription;
 import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
-import org.reactivestreams.Subscription;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

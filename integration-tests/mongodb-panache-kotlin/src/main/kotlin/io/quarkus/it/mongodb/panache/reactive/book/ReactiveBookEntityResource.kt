@@ -19,9 +19,9 @@ import jakarta.ws.rs.core.Response
 import org.bson.types.ObjectId
 import org.jboss.logging.Logger
 import org.jboss.resteasy.reactive.RestStreamElementType
-import org.reactivestreams.Publisher
 import java.net.URI
 import java.time.LocalDate.parse
+import java.util.concurrent.Flow
 
 @Path("/reactive/books/entity")
 class ReactiveBookEntityResource {
@@ -43,7 +43,7 @@ class ReactiveBookEntityResource {
     @Path("/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.APPLICATION_JSON)
-    fun streamBooks(@QueryParam("sort") sort: String?): Publisher<ReactiveBookEntity> {
+    fun streamBooks(@QueryParam("sort") sort: String?): Flow.Publisher<ReactiveBookEntity> {
         return if (sort != null) {
             ReactiveBookEntity.streamAll(Sort.ascending(sort))
         } else ReactiveBookEntity.streamAll()

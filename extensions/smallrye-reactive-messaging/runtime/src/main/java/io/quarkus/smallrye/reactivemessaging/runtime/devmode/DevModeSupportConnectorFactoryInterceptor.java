@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.runtime.devmode;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 import java.util.function.Supplier;
 
 import jakarta.annotation.Priority;
@@ -12,7 +13,6 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.eclipse.microprofile.reactive.streams.operators.SubscriberBuilder;
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -50,7 +50,7 @@ public class DevModeSupportConnectorFactoryInterceptor {
             });
         }
         if (ctx.getMethod().getName().equals("getPublisher")) {
-            Publisher<Message<?>> result = (Publisher<Message<?>>) ctx.proceed();
+            Flow.Publisher<Message<?>> result = (Flow.Publisher<Message<?>>) ctx.proceed();
             return Multi.createFrom().publisher(result)
                     .onItem().transformToUniAndConcatenate(msg -> Uni.createFrom().emitter(e -> {
                         onMessage.get().whenComplete((restarted, error) -> {
@@ -94,12 +94,12 @@ public class DevModeSupportConnectorFactoryInterceptor {
             });
         }
         if (ctx.getMethod().getName().equals("getSubscriber")) {
-            Subscriber<Message<?>> result = (Subscriber<Message<?>>) ctx.proceed();
-            return new Subscriber<Message<?>>() {
-                private Subscriber<Message<?>> subscriber;
+            Flow.Subscriber<Message<?>> result = (Flow.Subscriber<Message<?>>) ctx.proceed();
+            return new Flow.Subscriber<Message<?>>() {
+                private Flow.Subscriber<Message<?>> subscriber;
 
                 @Override
-                public void onSubscribe(Subscription s) {
+                public void onSubscribe(Flow.Subscription s) {
                     subscriber = result;
                     subscriber.onSubscribe(s);
                 }

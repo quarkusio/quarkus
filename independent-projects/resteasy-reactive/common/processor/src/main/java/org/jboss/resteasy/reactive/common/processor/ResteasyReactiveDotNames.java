@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow.Publisher;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -93,7 +94,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.Separator;
-import org.reactivestreams.Publisher;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
@@ -205,6 +205,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     public static final DotName COMPLETABLE_FUTURE = DotName.createSimple(CompletableFuture.class.getName());
     public static final DotName PUBLISHER = DotName.createSimple(Publisher.class.getName());
+    public static final DotName LEGACY_PUBLISHER = DotName.createSimple(org.reactivestreams.Publisher.class.getName());
     public static final DotName REST_RESPONSE = DotName.createSimple(RestResponse.class.getName());
 
     public static final DotName INTEGER = DotName.createSimple(Integer.class.getName());

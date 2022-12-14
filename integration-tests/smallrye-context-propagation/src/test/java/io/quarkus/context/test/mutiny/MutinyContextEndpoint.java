@@ -4,6 +4,7 @@ import java.net.MalformedURLException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Flow;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Inject;
@@ -23,7 +24,6 @@ import jakarta.ws.rs.core.UriInfo;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.junit.jupiter.api.Assertions;
-import org.reactivestreams.Publisher;
 import org.wildfly.common.Assert;
 
 import io.quarkus.arc.Arc;
@@ -455,7 +455,7 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-multi-2")
-    public Publisher<String> transactionPropagationWithMulti2() {
+    public Flow.Publisher<String> transactionPropagationWithMulti2() {
         Multi<String> ret = Multi.createFrom().item("OK");
         // now delete both entities
         Assertions.assertEquals(2, Person.deleteAll());

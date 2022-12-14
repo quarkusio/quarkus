@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Flow;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -12,8 +13,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import com.google.protobuf.ByteString;
 
@@ -233,15 +232,15 @@ public class GrpcReflectionTest {
         assertThat(list).containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    private static class ResettableSubscriber<T> implements Subscriber<T> {
+    private static class ResettableSubscriber<T> implements Flow.Subscriber<T> {
 
-        private Subscription subscription;
+        private Flow.Subscription subscription;
         private volatile T last;
         private boolean completed;
         private Throwable failure;
 
         @Override
-        public void onSubscribe(Subscription subscription) {
+        public void onSubscribe(Flow.Subscription subscription) {
             this.subscription = subscription;
         }
 

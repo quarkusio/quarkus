@@ -428,7 +428,9 @@ public class SmallRyeReactiveMessagingProcessor {
             public void transform(TransformationContext ctx) {
                 ClassInfo clazz = ctx.getTarget().asClass();
                 if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
-                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY, index.getIndex())) {
+                        || doesImplement(clazz, ReactiveMessagingDotNames.INBOUND_CONNECTOR, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTBOUND_CONNECTOR, index.getIndex())) {
                     ctx.transform().add(DevModeSupportConnectorFactory.class).done();
                 }
             }
@@ -505,7 +507,8 @@ public class SmallRyeReactiveMessagingProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 ClassInfo clazz = ctx.getTarget().asClass();
-                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())) {
+                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.INBOUND_CONNECTOR, index.getIndex())) {
                     ctx.transform().add(DuplicatedContextConnectorFactory.class).done();
                 }
             }

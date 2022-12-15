@@ -10,4 +10,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface OidcClientFilter {
+
+    /**
+     * @return name of the OIDC client that should be used to acquire the tokens.
+     */
+    String value() default "";
+
 }

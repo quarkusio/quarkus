@@ -208,6 +208,7 @@ public class OidcClientResource {
 }
 ----
 
+[[use-oidc-clients]]
 === Use OidcClients
 
 `io.quarkus.oidc.client.OidcClients` is a container of ``OidcClient``s - it includes a default `OidcClient` and named clients which can be configured like this:
@@ -419,7 +420,25 @@ public interface ProtectedResourceService {
 ----
 
 `OidcClientRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-client-reactive-filter.client-name` configuration property.
+You can also select `OidcClient` by setting `value` attribute of the `@OidcClientFilter` annotation. The client name set through annotation has higher priority than the `quarkus.oidc-client-reactive-filter.client-name` configuration property.
+For example, given <<use-oidc-clients, this>> `jwt-secret` named OIDC client declaration, you can refer to this client like this:
 
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import io.quarkus.oidc.client.filter.OidcClientFilter;
+import io.smallrye.mutiny.Uni;
+
+@RegisterRestClient
+@OidcClientFilter("jwt-secret")
+@Path("/")
+public interface ProtectedResourceService {
+
+    @GET
+    Uni<String> getUserName();
+}
+----
 
 [[oidc-client-filter]]
 === Use OidcClient in RestClient ClientFilter
@@ -478,6 +497,23 @@ public interface ProtectedResourceService {
 Alternatively, `OidcClientRequestFilter` can be registered automatically with all MP Rest or JAX-RS clients if `quarkus.oidc-client-filter.register-filter=true` property is set.
 
 `OidcClientRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-client-filter.client-name` configuration property.
+You can also select `OidcClient` by setting `value` attribute of the `@OidcClientFilter` annotation. The client name set through annotation has higher priority than the `quarkus.oidc-client-filter.client-name` configuration property.
+For example, given <<use-oidc-clients, this>> `jwt-secret` named OIDC client declaration, you can refer to this client like this:
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import io.quarkus.oidc.client.filter.OidcClientFilter;
+
+@RegisterRestClient
+@OidcClientFilter("jwt-secret")
+@Path("/")
+public interface ProtectedResourceService {
+
+    @GET
+    String getUserName();
+}
+----
 
 === Use Custom RestClient ClientFilter
 

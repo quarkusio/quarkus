@@ -36,6 +36,15 @@ public class OidcClientTest {
     }
 
     @Test
+    public void testGetUserNameNamedFilter() {
+        RestAssured.given().header("Accept", "text/plain")
+                .when().get("/frontend/userNameNamedFilter")
+                .then()
+                .statusCode(200)
+                .body(equalTo("jdoe"));
+    }
+
+    @Test
     public void testGetUserNameReactive() {
         RestAssured.given().header("Accept", "text/plain")
                 .when().get("/frontend/userNameReactive")

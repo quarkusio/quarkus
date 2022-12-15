@@ -200,8 +200,8 @@ public class DevServicesDatasourceProcessor {
         boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices.enabled.orElse(true));
         if (explicitlyDisabled) {
             //explicitly disabled
-            log.debug("Not starting devservices for " + (dbName == null ? "default datasource" : dbName)
-                    + " as it has been disabled in the config");
+            log.debug("Not starting Dev Services for " + (dbName == null ? "default datasource" : dbName)
+                    + " as it has been disabled in the configuration");
             return null;
         }
 
@@ -222,8 +222,8 @@ public class DevServicesDatasourceProcessor {
         List<DevServicesDatasourceConfigurationHandlerBuildItem> configHandlers = configurationHandlerBuildItems
                 .get(defaultDbKind.get());
         if (devDbProvider == null || configHandlers == null) {
-            log.warn("Unable to start devservices for " + (dbName == null ? "default datasource" : dbName)
-                    + " as this datasource type (" + defaultDbKind.get() + ") does not support devservices");
+            log.warn("Unable to start Dev Services for " + (dbName == null ? "default datasource" : dbName)
+                    + " as this datasource type (" + defaultDbKind.get() + ") does not support Dev Services");
             return null;
         }
 
@@ -232,7 +232,7 @@ public class DevServicesDatasourceProcessor {
                 if (i.getCheckConfiguredFunction().test(dbName)) {
                     //this database has explicit configuration
                     //we don't start the devservices
-                    log.debug("Not starting devservices for " + (dbName == null ? "default datasource" : dbName)
+                    log.debug("Not starting Dev Services for " + (dbName == null ? "default datasource" : dbName)
                             + " as it has explicit configuration");
                     return null;
                 }

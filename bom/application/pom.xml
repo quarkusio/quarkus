@@ -153,7 +153,7 @@
         <kotlin.version>1.7.22</kotlin.version>
         <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
         <kotlin-serialization.version>1.4.1</kotlin-serialization.version>
-        <kubernetes-client.version>6.2.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <kubernetes-client.version>6.3.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <dekorate.version>3.1.2</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>

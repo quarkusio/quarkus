@@ -273,10 +273,6 @@ public class KafkaProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, RoundRobinAssignor.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, StickyAssignor.class.getName()));
 
-        // classes needed to perform reflection on DirectByteBuffer - only really needed for Java 8
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.nio.DirectByteBuffer"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "sun.misc.Cleaner"));
-
         handleAvro(reflectiveClass, proxies, serviceProviders, sslNativeSupport, capabilities);
         handleOpenTracing(reflectiveClass, capabilities);
         handleStrimziOAuth(reflectiveClass);

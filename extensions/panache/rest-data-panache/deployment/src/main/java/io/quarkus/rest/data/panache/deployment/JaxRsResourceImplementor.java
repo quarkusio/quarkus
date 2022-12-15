@@ -8,6 +8,7 @@ import javax.inject.Inject;
 import javax.ws.rs.Path;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.Capabilities;
@@ -37,16 +38,16 @@ class JaxRsResourceImplementor {
 
     private final List<MethodImplementor> methodImplementors;
 
-    JaxRsResourceImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache) {
-        this.methodImplementors = Arrays.asList(new GetMethodImplementor(isResteasyClassic, isReactivePanache),
-                new ListMethodImplementor(isResteasyClassic, isReactivePanache),
-                new CountMethodImplementor(isResteasyClassic, isReactivePanache),
-                new AddMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
-                new UpdateMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
-                new DeleteMethodImplementor(isResteasyClassic, isReactivePanache),
+    JaxRsResourceImplementor(Capabilities capabilities) {
+        this.methodImplementors = Arrays.asList(new GetMethodImplementor(capabilities),
+                new ListMethodImplementor(capabilities),
+                new CountMethodImplementor(capabilities),
+                new AddMethodImplementor(capabilities),
+                new UpdateMethodImplementor(capabilities),
+                new DeleteMethodImplementor(capabilities),
                 // The list hal endpoint needs to be added for both resteasy classic and resteasy reactive
                 // because the pagination links are programmatically added.
-                new ListHalMethodImplementor(isResteasyClassic, isReactivePanache));
+                new ListHalMethodImplementor(capabilities));
     }
 
     /**
@@ -87,6 +88,11 @@ class JaxRsResourceImplementor {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
             String className = StringUtils.substringAfterLast(resourceMetadata.getResourceInterface(), ".");
             classCreator.addAnnotation(OPENAPI_TAG_ANNOTATION).add("name", className);
+        }
+        if (resourceProperties.getClassAnnotations() != null) {
+            for (AnnotationInstance classAnnotation : resourceProperties.getClassAnnotations()) {
+                classCreator.addAnnotation(classAnnotation);
+            }
         }
     }
 

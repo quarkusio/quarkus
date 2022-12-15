@@ -10,6 +10,7 @@ import java.util.List;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -41,8 +42,8 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
 
     private final SortImplementor sortImplementor = new SortImplementor();
 
-    public ListMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    public ListMethodImplementor(Capabilities capabilities) {
+        super(capabilities);
 
         this.paginationImplementor = new PaginationImplementor();
     }
@@ -142,6 +143,9 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
+        addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType(), true);
+        addSecurityAnnotations(methodCreator, resourceProperties);
         addSortQueryParamValidatorAnnotation(methodCreator);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "page");
@@ -207,6 +211,9 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
+        addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType(), true);
+        addSecurityAnnotations(methodCreator, resourceProperties);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
 
         ResultHandle sortQuery = methodCreator.getMethodParam(0);

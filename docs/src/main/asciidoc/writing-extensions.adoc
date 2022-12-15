@@ -560,7 +560,7 @@ The name of the deployment module can be configured in the plugin by setting the
 ----
 plugins {
     id 'java'
-    id 'io.quarkus.extensions'
+    id 'io.quarkus.extension'
 }
 
 quarkusExtension {

@@ -19,6 +19,7 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import io.fabric8.kubernetes.client.ExtensionAdapter;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -32,6 +33,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
@@ -85,7 +87,8 @@ public class KubernetesClientProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
             BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses,
-            BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer) {
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer,
+            BuildProducer<ServiceProviderBuildItem> serviceProviderProducer) {
 
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
         if (kubernetesClientConfig.generateRbac) {
@@ -200,6 +203,8 @@ public class KubernetesClientProcessor {
             Collections.sort(modelClasses);
             log.debugv("Model Classes:\n{0}", String.join("\n", modelClasses));
         }
+
+        serviceProviderProducer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(ExtensionAdapter.class.getName()));
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KUBERNETES_CLIENT));

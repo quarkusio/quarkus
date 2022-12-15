@@ -1,6 +1,10 @@
 package io.quarkus.rest.data.panache.deployment.properties;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+
+import org.jboss.jandex.AnnotationInstance;
 
 public class ResourceProperties {
 
@@ -14,15 +18,22 @@ public class ResourceProperties {
 
     private final String halCollectionName;
 
+    private final String[] rolesAllowed;
+
+    private final Collection<AnnotationInstance> classAnnotations;
+
     private final Map<String, MethodProperties> methodProperties;
 
     public ResourceProperties(boolean exposed, String path, boolean paged, boolean hal, String halCollectionName,
+            String[] rolesAllowed, Collection<AnnotationInstance> classAnnotations,
             Map<String, MethodProperties> methodProperties) {
         this.exposed = exposed;
         this.path = path;
         this.paged = paged;
         this.hal = hal;
         this.halCollectionName = halCollectionName;
+        this.rolesAllowed = rolesAllowed;
+        this.classAnnotations = classAnnotations;
         this.methodProperties = methodProperties;
     }
 
@@ -67,5 +78,25 @@ public class ResourceProperties {
 
     public String getHalCollectionName() {
         return halCollectionName;
+    }
+
+    public String[] getRolesAllowed(String methodName) {
+        if (methodProperties.containsKey(methodName)) {
+            return methodProperties.get(methodName).getRolesAllowed();
+        }
+
+        return rolesAllowed;
+    }
+
+    public Collection<AnnotationInstance> getClassAnnotations() {
+        return classAnnotations;
+    }
+
+    public Collection<AnnotationInstance> getMethodAnnotations(String methodName) {
+        if (methodProperties.containsKey(methodName)) {
+            return methodProperties.get(methodName).getMethodAnnotations();
+        }
+
+        return Collections.emptyList();
     }
 }

@@ -22,7 +22,7 @@ public class DatasourceTestBase {
     public static RedisAPI api;
 
     static GenericContainer<?> server = new GenericContainer<>(
-            DockerImageName.parse(System.getProperty("redis.base.image", "redis:7-alpine")))
+            DockerImageName.parse(System.getProperty("redis.base.image", "redis:7.0.5-alpine")))
             .withExposedPorts(6379);
 
     @BeforeAll

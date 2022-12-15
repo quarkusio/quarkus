@@ -55,4 +55,10 @@ public class BodyConfig {
      */
     @ConfigItem
     public boolean preallocateBodyBuffer;
+
+    /**
+     * HTTP multipart request related settings
+     */
+    @ConfigItem
+    public MultiPartConfig multipart;
 }

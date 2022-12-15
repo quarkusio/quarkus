@@ -4,6 +4,7 @@ import io.quarkus.it.kotser.model.Person
 import io.quarkus.it.kotser.model.Person2
 import io.quarkus.runtime.annotations.RegisterForReflection
 import kotlinx.coroutines.flow.flowOf
+import org.jboss.resteasy.reactive.RestResponse
 import java.lang.reflect.Method
 import javax.ws.rs.Consumes
 import javax.ws.rs.GET
@@ -27,6 +28,16 @@ class GreetingResource {
     fun hello(): Person {
         return Person("Jim Halpert")
     }
+
+    @Path("restResponse")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    fun restResponse() = RestResponse.ok(Person("Jim Halpert"))
+
+    @Path("restResponseList")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    fun restResponseList() = RestResponse.ok(mutableListOf(Person("Jim Halpert")))
 
     @Path("unknownType")
     @GET

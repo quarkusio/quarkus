@@ -117,7 +117,7 @@
         <cronutils.version>9.2.0</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.1.214</h2.version>
-        <postgresql-jdbc.version>42.5.0</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.5.1</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.0.8</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>11.2.0.jre11</mssql-jdbc.version>
@@ -205,6 +205,7 @@
         <strimzi-oauth.nimbus.version>9.24.4</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.1</org-crac.version>
+        <sshd-common.version>2.9.2</sshd-common.version>
     </properties>
 
     <dependencyManagement>
@@ -4719,6 +4720,16 @@
                         <artifactId>jcl-over-slf4j</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-common</artifactId>
+                <version>${sshd-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-core</artifactId>
+                <version>${sshd-common.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.wildfly.security</groupId>

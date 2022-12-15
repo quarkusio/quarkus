@@ -5,6 +5,7 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 
 import javax.ws.rs.core.Response;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -28,8 +29,8 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "remove";
 
-    public DeleteMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    public DeleteMethodImplementor(Capabilities capabilities) {
+        super(capabilities);
     }
 
     /**
@@ -89,6 +90,9 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
         addDeleteAnnotation(methodCreator);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
+        addOpenApiResponseAnnotation(methodCreator, Response.Status.NO_CONTENT);
+        addSecurityAnnotations(methodCreator, resourceProperties);
 
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle id = methodCreator.getMethodParam(0);

@@ -62,6 +62,14 @@ public class SubResourceTest {
     }
 
     @Test
+    void shouldPassPathParamsToSubSubResource() {
+        // should result in sending GET /path/rt/mthd/sub/s/ss
+        RootClient rootClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(RootClient.class);
+        String result = rootClient.sub("rt", "mthd").sub("s").get("ss");
+        assertThat(result).isEqualTo("rt/mthd/sub/s/ss");
+    }
+
+    @Test
     void shouldDoMultiplePosts() {
         RootClient rootClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(RootClient.class);
         SubClient sub = rootClient.sub("rt", "mthd");
@@ -129,6 +137,9 @@ public class SubResourceTest {
         @Path("/sub")
         SubSubClient sub();
 
+        @Path("/sub/{methodParam}")
+        SubSubClient sub(@PathParam("methodParam") String methodParam);
+
         @POST
         @ClientHeaderParam(name = "overridable", value = "SubClient")
         @ClientHeaderParam(name = "fromSubMethod", value = "{fillingMethod}")
@@ -145,6 +156,10 @@ public class SubResourceTest {
         @GET
         @Path("/subSimple")
         String simpleSub();
+
+        @GET
+        @Path("/{methodParam}")
+        String get(@PathParam("methodParam") String methodParam);
 
         @POST
         @ClientHeaderParam(name = "overridable", value = "SubSubClient")

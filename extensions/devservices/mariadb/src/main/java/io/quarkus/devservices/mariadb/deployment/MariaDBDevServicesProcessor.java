@@ -118,7 +118,7 @@ public class MariaDBDevServicesProcessor {
         }
 
         public String getReactiveUrl() {
-            return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
+            return getEffectiveJdbcUrl().replaceFirst("jdbc:mariadb:", "vertx-reactive:mysql:");
         }
     }
 }

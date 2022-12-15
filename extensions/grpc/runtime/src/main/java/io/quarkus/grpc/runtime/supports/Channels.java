@@ -255,6 +255,11 @@ public class Channels {
                 options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
             }
 
+            // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with grpc.<name>.
+            // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+            // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+            options.setMetricsName("grpc|" + name);
+
             Vertx vertx = Arc.container().instance(Vertx.class).get();
             io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(vertx, options);
             Channel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, host));

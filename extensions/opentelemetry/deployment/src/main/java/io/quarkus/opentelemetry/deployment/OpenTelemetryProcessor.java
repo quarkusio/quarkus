@@ -34,6 +34,8 @@ import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.jaxrs.JaxRsBinding;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.jaxrs.JaxRsInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -124,6 +126,38 @@ public class OpenTelemetryProcessor {
                 }
             }
         }));
+    }
+
+    @BuildStep
+    AnnotationsTransformerBuildItem transformJaxRsAnnotations() {
+        System.out.println("transformJaxRsAnnotations...");
+        return new AnnotationsTransformerBuildItem(new JaxRsAnnotationsTransformer());
+    }
+
+    @BuildStep
+    void registerJaxRsAnnotations(
+            BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindingRegistrar,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+
+        System.out.println("registerJaxRsAnnotations...");
+
+        interceptorBindingRegistrar.produce(new InterceptorBindingRegistrarBuildItem(
+                new InterceptorBindingRegistrar() {
+                    @Override
+                    public List<InterceptorBinding> getAdditionalBindings() {
+                        return List.of(
+                                InterceptorBinding.of(JaxRsBinding.class),
+                                //                                InterceptorBinding.of(javax.ws.rs.DELETE.class),
+                                //                                InterceptorBinding.of(javax.ws.rs.GET.class),
+                                //                                InterceptorBinding.of(javax.ws.rs.HEAD.class),
+                                //                                InterceptorBinding.of(javax.ws.rs.OPTIONS.class),
+                                //                                InterceptorBinding.of(javax.ws.rs.PATCH.class),
+                                //                                InterceptorBinding.of(javax.ws.rs.POST.class),
+                                InterceptorBinding.of(javax.ws.rs.PUT.class));
+                    }
+                }));
+
+        additionalBeans.produce(new AdditionalBeanBuildItem(JaxRsInterceptor.class));
     }
 
     @BuildStep

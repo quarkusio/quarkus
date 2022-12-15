@@ -65,6 +65,11 @@ public class RedisClientMetricsTest {
 
         Assertions.assertThrows(Exception.class, () -> ds.value(String.class).incr("foo"));
         Assertions.assertEquals(fail + 1, registry.get("redis.commands.failure").counter().count());
+
+        // Verify we have TCP client metrics
+        Assertions.assertNotNull(registry.get("redis.connections").longTaskTimer());
+        Assertions.assertNotNull(registry.get("redis.bytes.read").summary());
+        Assertions.assertNotNull(registry.get("redis.bytes.written").summary());
     }
 
     @Test
@@ -96,6 +101,10 @@ public class RedisClientMetricsTest {
         Assertions.assertEquals(count + 1, registry.get("redis.commands.duration").timer().count());
         Assertions.assertTrue(registry.get("redis.commands.duration").timer().mean(TimeUnit.NANOSECONDS) > 0);
 
+        // Verify we have TCP client metrics
+        Assertions.assertNotNull(registry.get("redis.connections").longTaskTimer());
+        Assertions.assertNotNull(registry.get("redis.bytes.read").summary());
+        Assertions.assertNotNull(registry.get("redis.bytes.written").summary());
     }
 
 }

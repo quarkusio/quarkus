@@ -24,6 +24,7 @@ If any organization would like get added or removed please make a pull request b
 |Logicdrop              | https://quarkus.io/blog/logicdrop-customer-story/                                |
 |Payair                 | https://quarkus.io/blog/why-did-payair-technologies-switch-to-quarkus/           |
 |Sedona                 | https://quarkus.io/blog/sedona-rewrites-insurance-premium/                       |
+|Stargate               | https://quarkus.io/blog/stargate-selects-quarkus-for-its-v2-implementation/      |
 |Suomen Asiakastieto Oy | https://quarkus.io/blog/asiakastieto-chooses-quarkus-for-microservices/          |
 |Talkdesk               | https://quarkus.io/blog/talkdesk-chooses-quarkus-for-fast-innovation/            |
 |UTN Faculty Córdoba    | https://www.frc.utn.edu.ar/computos/tech/                                        |

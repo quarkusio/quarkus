@@ -447,7 +447,6 @@ public final class TestProcessor {
                 .builder(FinalFieldReflectionObject.class.getName())
                 .methods(true)
                 .fields(true)
-                .finalFieldsWritable(true)
                 .build();
         classes.produce(finalField);
     }

@@ -39,7 +39,6 @@ public class NativeImageReflectConfigStep {
         }
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
             addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i.isConstructors(), i.isMethods(), i.isFields(),
-                    i.areFinalFieldsWritable(),
                     i.isWeak(), i.isSerialization(), i.getClassNames().toArray(new String[0]));
         }
         for (ReflectiveFieldBuildItem i : reflectiveFields) {
@@ -50,7 +49,7 @@ public class NativeImageReflectConfigStep {
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false, false,
+            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false,
                     i.providers().toArray(new String[] {}));
         }
 
@@ -121,7 +120,7 @@ public class NativeImageReflectConfigStep {
         String cl = methodInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false));
         }
         if (methodInfo.getName().equals("<init>")) {
             existing.ctorSet.add(methodInfo);
@@ -132,12 +131,12 @@ public class NativeImageReflectConfigStep {
 
     public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,
             boolean constructors, boolean method,
-            boolean fields, boolean finalFieldsWritable, boolean weak, boolean serialization,
+            boolean fields, boolean weak, boolean serialization,
             String... className) {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
-                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields, finalFieldsWritable,
+                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields,
                         !forcedNonWeakClasses.contains(cl) && weak, serialization));
             } else {
                 if (constructors) {
@@ -160,7 +159,7 @@ public class NativeImageReflectConfigStep {
         String cl = fieldInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false));
         }
         existing.fieldSet.add(fieldInfo.getName());
     }
@@ -169,19 +168,16 @@ public class NativeImageReflectConfigStep {
         boolean constructors;
         boolean methods;
         boolean fields;
-        boolean finalFieldsWritable;
         boolean weak;
         boolean serialization;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
-        private ReflectionInfo(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-                boolean weak, boolean serialization) {
+        private ReflectionInfo(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization) {
             this.methods = methods;
             this.fields = fields;
             this.constructors = constructors;
-            this.finalFieldsWritable = finalFieldsWritable;
             this.weak = weak;
             this.serialization = serialization;
         }

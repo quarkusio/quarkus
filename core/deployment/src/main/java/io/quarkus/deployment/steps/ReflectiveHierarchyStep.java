@@ -214,7 +214,6 @@ public class ReflectiveHierarchyStep {
                         .builder(name.toString())
                         .methods(true)
                         .fields(true)
-                        .finalFieldsWritable(doFinalFieldsNeedToBeWritable(info, finalFieldsWritable))
                         .serialization(reflectiveHierarchyBuildItem.isSerialization())
                         .build());
 
@@ -279,10 +278,4 @@ public class ReflectiveHierarchyStep {
         return fieldType;
     }
 
-    private static boolean doFinalFieldsNeedToBeWritable(ClassInfo classInfo, Predicate<ClassInfo> finalFieldsWritable) {
-        if (classInfo == null) {
-            return false;
-        }
-        return finalFieldsWritable.test(classInfo);
-    }
 }

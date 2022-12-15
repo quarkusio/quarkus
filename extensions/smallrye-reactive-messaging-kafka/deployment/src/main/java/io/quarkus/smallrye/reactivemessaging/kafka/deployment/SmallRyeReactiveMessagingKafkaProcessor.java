@@ -70,7 +70,6 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         .fields(true)
                         .methods(true)
                         .constructors(true)
-                        .finalFieldsWritable(true)
                         .build());
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ProcessingState.class));
     }

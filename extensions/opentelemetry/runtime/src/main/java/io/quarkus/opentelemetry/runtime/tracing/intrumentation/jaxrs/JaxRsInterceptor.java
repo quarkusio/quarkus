@@ -1,23 +1,22 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.jaxrs;
 
-import java.lang.reflect.Method;
+import io.quarkus.arc.ArcInvocationContext;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
+import java.lang.reflect.Method;
 
-import io.quarkus.arc.ArcInvocationContext;
-
-@SuppressWarnings("CdiInterceptorInspection")
+@JaxRsBinding
 @Interceptor
-@Priority(Interceptor.Priority.PLATFORM_BEFORE)
+@Priority(Interceptor.Priority.LIBRARY_BEFORE + 50)
 public class JaxRsInterceptor {
 
     private boolean logToConsole = true;
 
     public JaxRsInterceptor() {
-        logToConsole = !System.getenv("OTEL_LOG_TO_CONSOLE").equalsIgnoreCase("false");
-        System.out.println("JaxrsInterceptor. logToConsole=" + logToConsole);
+        logToConsole = evalIsLogToConsole();
+        System.out.println("JaxRsInterceptor. logToConsole=" + logToConsole);
     }
 
     @AroundInvoke
@@ -26,8 +25,14 @@ public class JaxRsInterceptor {
         Class<?> targetClass = method.getDeclaringClass();
         if (logToConsole) {
             System.out.println(
-                    "JaxrsInterceptor. intercepted method=" + method.getName() + ", on class=" + targetClass.getName());
+                "JaxRsInterceptor. intercepted method=" + method.getName() + ", on class=" + targetClass.getName());
         }
         return invocationContext.proceed();
+    }
+
+    private static boolean evalIsLogToConsole() {
+        String envVal = System.getenv("OTEL_LOG_TO_CONSOLE");
+        boolean retVal = !("false".equalsIgnoreCase(envVal));
+        return retVal;
     }
 }

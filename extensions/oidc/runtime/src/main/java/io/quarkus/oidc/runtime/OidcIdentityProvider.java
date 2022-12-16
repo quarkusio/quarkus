@@ -199,7 +199,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             OidcUtils.setSecurityIdentityConfigMetadata(builder, resolvedContext);
                             final String userName;
                             if (result.introspectionResult == null) {
-                                if (resolvedContext.oidcConfig.token.allowJwtIntrospection) {
+                                if (resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection &&
+                                        resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo) {
                                     userName = "";
                                 } else {
                                     // we don't expect this to ever happen

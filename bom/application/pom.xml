@@ -160,7 +160,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.11</jboss-logmanager.version>
-        <flyway.version>9.10.0</flyway.version>
+        <flyway.version>9.10.1</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.18.0</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>
@@ -5547,6 +5547,12 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-core</artifactId>
                 <version>${flyway.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.cloud</groupId>
+                        <artifactId>google-cloud-secretmanager</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.flywaydb</groupId>

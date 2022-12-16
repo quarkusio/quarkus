@@ -32,6 +32,7 @@ swap:
   Disk druid|disk druid|diskdruid: Disk Druid
   dns: DNS
   DVD burner|burner: DVD writer
+  Etcd|ETCD: etcd
   Exec Shield: Exec-Shield
   EXIF|exif: Exif
   Faq|faq|F.A.Q: FAQ
@@ -113,6 +114,7 @@ swap:
   Red Hat Satellite Capsule server: Red Hat Satellite Capsule Server
   Red Hat Network Satellite server: Red Hat Network Satellite Server
   Redboot|Red Boot: RedBoot
+  redis: Redis
   RESTEASY|resteasy|Resteasy: RESTEasy
   Rom|rom: ROM
   rpm: RPM
@@ -139,7 +141,7 @@ swap:
   ttl: TTL
   uid: UID
   ULTRASPARC|UltraSparc: UltraSPARC
-  Unix|unix|UNIX-like: UNIX
+  unix socket|unix Socket|UNIX Socket: Unix socket
   url: URL
   "(?<!/)var": VAR
   VI: vi

@@ -25,6 +25,7 @@
                         <parentFirstArtifact>org.jetbrains.kotlin:kotlin-reflect</parentFirstArtifact>
                         <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib</parentFirstArtifact>
                         <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-common</parentFirstArtifact>
+                        <parentFirstArtifact>org.jetbrains:annotations</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-jdk8</runnerParentFirstArtifact>
@@ -32,6 +33,7 @@
                         <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-reflect</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-common</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jetbrains:annotations</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>
                     <lesserPriorityArtifacts>
                         <!--

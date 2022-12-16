@@ -432,6 +432,30 @@ public final class Types {
         }
     }
 
+    static void detectWildcardAndThrow(Type type, AnnotationTarget producerFieldOrMethod) {
+        if (producerFieldOrMethod == null) {
+            // not a producer, no further analysis required
+            return;
+        }
+        if (type.kind().equals(Kind.WILDCARD_TYPE)) {
+            throw new DefinitionException("Producer " +
+                    (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD) ? "field " : "method ") +
+                    producerFieldOrMethod +
+                    " declared on class " +
+                    (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD)
+                            ? producerFieldOrMethod.asField().declaringClass().name()
+                            : producerFieldOrMethod.asMethod().declaringClass().name())
+                    +
+                    " contains a parameterized type with a wildcard. This type is not a legal bean type" +
+                    " according to CDI specification.");
+        } else if (type.kind().equals(Kind.PARAMETERIZED_TYPE)) {
+            for (Type t : type.asParameterizedType().arguments()) {
+                // recursive check of all parameterized types
+                detectWildcardAndThrow(t, producerFieldOrMethod);
+            }
+        }
+    }
+
     static Set<Type> getTypeClosure(ClassInfo classInfo, AnnotationTarget producerFieldOrMethod,
             Map<String, Type> resolvedTypeParameters,
             BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<String, Type>> resolvedTypeVariablesConsumer) {
@@ -445,19 +469,12 @@ public final class Types {
         } else {
             // Canonical ParameterizedType with unresolved type variables
             Type[] typeParams = new Type[typeParameters.size()];
-            boolean skipThisType = false;
             for (int i = 0; i < typeParameters.size(); i++) {
                 typeParams[i] = resolvedTypeParameters.get(typeParameters.get(i).identifier());
-                // this should only be the case for producers; wildcard is not a legal bean type
+                // for producers, wildcard is not a legal bean type and results in a definition error
                 // see https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#legal_bean_types
-                if (typeParams[i].kind().equals(Kind.WILDCARD_TYPE) && producerFieldOrMethod != null) {
-                    LOGGER.info("Producer " +
-                            (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD) ? "field " : "method ") +
-                            producerFieldOrMethod +
-                            " contains a parameterized typed with a wildcard. This type is not a legal bean type" +
-                            " according to CDI specification and will be ignored during bean resolution.");
-                    skipThisType = true;
-                }
+                // NOTE: wildcard can be nested, such as List<Set<? extends Number>>
+                detectWildcardAndThrow(typeParams[i], producerFieldOrMethod);
             }
             if (resolvedTypeVariablesConsumer != null) {
                 Map<String, Type> resolved = new HashMap<>();
@@ -466,9 +483,7 @@ public final class Types {
                 }
                 resolvedTypeVariablesConsumer.accept(classInfo, resolved);
             }
-            if (!skipThisType) {
-                types.add(ParameterizedType.create(classInfo.name(), typeParams, null));
-            }
+            types.add(ParameterizedType.create(classInfo.name(), typeParams, null));
         }
         // Interfaces
         for (Type interfaceType : classInfo.interfaceTypes()) {

@@ -170,11 +170,11 @@ exceptions:
   - qeth
   - Quarkiverse
   - Quarkus
-  
   - Quarkus Security
   - Quiltflower
   - Qute
   - Red Hat
+  - Redis
   - RedBoot
   - Redistributions
   - RESTEasy

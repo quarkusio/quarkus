@@ -113,7 +113,7 @@ First, add the plugin to your `pom.xml`:
 <plugin>
     <groupId>com.google.cloud.tools</groupId>
     <artifactId>appengine-maven-plugin</artifactId>
-    <version>2.4.0</version>
+    <version>2.4.4</version>
     <configuration>
         <projectId>GCLOUD_CONFIG</projectId> <1>
         <version>gettingstarted</version>
@@ -163,7 +163,7 @@ It uses Cloud Build to build your Docker image and deploy it to Google Container
 
 When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
-NOTE: App Engine Flexible custom runtimes support link:https://cloud.google.com/appengine/docs/flexible/custom-runtimes/configuring-your-app-with-app-yaml#updated_health_checks[health checks],
+NOTE: App Engine Flexible custom runtimes support link:https://cloud.google.com/appengine/docs/flexible/reference/app-yaml?tab=java#updated_health_checks[health checks],
 it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[Smallrye Health] support.
 
 == Deploying to Google Cloud Run
@@ -211,13 +211,16 @@ Finally, use Cloud Run to launch your application.
 
 [source, shell script]
 ----
-gcloud run deploy --image gcr.io/PROJECT-ID/helloworld --platform managed
+gcloud run deploy --image gcr.io/PROJECT-ID/helloworld
 ----
 
 Cloud run will ask you questions on the service name, the region and whether unauthenticated calls are allowed.
 After you answer to these questions, it will deploy your application.
 
 When the deployment is done, the output will display the URL to access your application.
+
+NOTE: Cloud Run supports link:https://cloud.google.com/run/docs/configuring/healthchecks[health checks],
+it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[Smallrye Health] support.
 
 == Using Cloud SQL
 
@@ -295,4 +298,4 @@ WARNING: This only works when your application is running inside a Google Cloud 
 You can find a set of extensions to access various Google Cloud Services in the Quarkiverse (a GitHub organization for Quarkus extensions maintained by the community),
 including PubSub, BigQuery, Storage, Spanner, Firestore, Secret Manager (visit the repository for an accurate list of supported services).
 
-You can find some documentation about them in the link:https://github.com/quarkiverse/quarkiverse-google-cloud-services[Quarkiverse Google Cloud Services repository].
+You can find some documentation about them in the link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-google-cloud-services/main/index.html[Quarkiverse Google Cloud Services documentation].

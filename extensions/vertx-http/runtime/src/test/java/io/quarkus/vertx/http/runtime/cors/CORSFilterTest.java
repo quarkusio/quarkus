@@ -2,7 +2,9 @@ package io.quarkus.vertx.http.runtime.cors;
 
 import static io.quarkus.vertx.http.runtime.cors.CORSFilter.isConfiguredWithWildcard;
 import static io.quarkus.vertx.http.runtime.cors.CORSFilter.isOriginAllowedByRegex;
+import static io.quarkus.vertx.http.runtime.cors.CORSFilter.isSameOrigin;
 import static io.quarkus.vertx.http.runtime.cors.CORSFilter.parseAllowedOriginsRegex;
+import static io.quarkus.vertx.http.runtime.cors.CORSFilter.substringMatch;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,6 +14,9 @@ import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import io.vertx.core.http.HttpServerRequest;
 
 public class CORSFilterTest {
 
@@ -36,5 +41,47 @@ public class CORSFilterTest {
                 Optional.of(Collections.singletonList("/https://([a-z0-9\\-_]+)\\.app\\.mydomain\\.com/")));
         Assertions.assertEquals(regexList.size(), 1);
         Assertions.assertTrue(isOriginAllowedByRegex(regexList, "https://abc-123.app.mydomain.com"));
+    }
+
+    @Test
+    public void sameOriginTest() {
+        var request = Mockito.mock(HttpServerRequest.class);
+        Mockito.when(request.scheme()).thenReturn("http");
+        Mockito.when(request.host()).thenReturn("localhost");
+        Mockito.when(request.absoluteURI()).thenReturn("http://localhost");
+        Assertions.assertTrue(isSameOrigin(request, "http://localhost"));
+        Assertions.assertTrue(isSameOrigin(request, "http://localhost:80"));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:8080"));
+        Assertions.assertFalse(isSameOrigin(request, "https://localhost"));
+        Mockito.when(request.host()).thenReturn("localhost:8080");
+        Mockito.when(request.absoluteURI()).thenReturn("http://localhost:8080");
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost"));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:80"));
+        Assertions.assertTrue(isSameOrigin(request, "http://localhost:8080"));
+        Assertions.assertFalse(isSameOrigin(request, "https://localhost:8080"));
+        Mockito.when(request.scheme()).thenReturn("https");
+        Mockito.when(request.host()).thenReturn("localhost");
+        Mockito.when(request.absoluteURI()).thenReturn("http://localhost");
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost"));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:443"));
+        Assertions.assertFalse(isSameOrigin(request, "https://localhost:8080"));
+        Assertions.assertTrue(isSameOrigin(request, "https://localhost"));
+        Mockito.when(request.host()).thenReturn("localhost:8443");
+        Mockito.when(request.absoluteURI()).thenReturn("https://localhost:8443");
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost"));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:80"));
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost:8443"));
+        Assertions.assertTrue(isSameOrigin(request, "https://localhost:8443"));
+
+    }
+
+    @Test
+    public void testSubstringMatches() {
+        Assertions.assertTrue(substringMatch("localhost", 0, "local", false));
+        Assertions.assertFalse(substringMatch("localhost", 0, "local", true));
+        Assertions.assertFalse(substringMatch("localhost", 1, "local", false));
+        Assertions.assertTrue(substringMatch("localhost", 5, "host", false));
+        Assertions.assertTrue(substringMatch("localhost", 5, "host", true));
+
     }
 }

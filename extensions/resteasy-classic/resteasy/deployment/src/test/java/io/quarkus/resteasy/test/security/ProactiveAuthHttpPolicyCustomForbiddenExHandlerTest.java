@@ -1,10 +1,13 @@
-package io.quarkus.resteasy.reactive.server.test.security;
+package io.quarkus.resteasy.test.security;
 
+import static io.quarkus.resteasy.test.security.ProactiveAuthHttpPolicyCustomForbiddenExHandlerTest.CustomForbiddenFailureHandler.CUSTOM_FORBIDDEN_EXCEPTION_HANDLER;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.util.function.Supplier;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -19,11 +22,12 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.vertx.web.Route;
 import io.restassured.RestAssured;
-import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 
-public class ProactiveAuthHttpPolicyForbiddenHandlerTest {
+public class ProactiveAuthHttpPolicyCustomForbiddenExHandlerTest {
 
     private static final String PROPERTIES = "quarkus.http.auth.basic=true\n" +
             "quarkus.http.auth.policy.user-policy.roles-allowed=user\n" +
@@ -35,7 +39,7 @@ public class ProactiveAuthHttpPolicyForbiddenHandlerTest {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, CustomForbiddenFailureHandler.class)
+                    .addClasses(TestIdentityProvider.class, TestIdentityController.class)
                     .addAsResource(new StringAsset(PROPERTIES), "application.properties");
         }
     });
@@ -52,7 +56,7 @@ public class ProactiveAuthHttpPolicyForbiddenHandlerTest {
                 .when().get("/secured")
                 .then()
                 .statusCode(403)
-                .body(equalTo(CustomForbiddenFailureHandler.CUSTOM_FORBIDDEN_EXCEPTION_MAPPER));
+                .body(equalTo(CUSTOM_FORBIDDEN_EXCEPTION_HANDLER));
     }
 
     @Path("/secured")
@@ -65,13 +69,22 @@ public class ProactiveAuthHttpPolicyForbiddenHandlerTest {
 
     }
 
+    @ApplicationScoped
     public static final class CustomForbiddenFailureHandler {
 
-        public static final String CUSTOM_FORBIDDEN_EXCEPTION_MAPPER = CustomForbiddenFailureHandler.class.getName();
+        public static final String CUSTOM_FORBIDDEN_EXCEPTION_HANDLER = CustomForbiddenFailureHandler.class.getName();
 
-        @Route(type = Route.HandlerType.FAILURE)
-        void handle(ForbiddenException e, HttpServerResponse response) {
-            response.setStatusCode(FORBIDDEN.getStatusCode()).end(CUSTOM_FORBIDDEN_EXCEPTION_MAPPER);
+        public void init(@Observes Router router) {
+            router.route().failureHandler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext event) {
+                    if (event.failure() instanceof ForbiddenException) {
+                        event.response().setStatusCode(FORBIDDEN.getStatusCode()).end(CUSTOM_FORBIDDEN_EXCEPTION_HANDLER);
+                    } else {
+                        event.next();
+                    }
+                }
+            });
         }
 
     }

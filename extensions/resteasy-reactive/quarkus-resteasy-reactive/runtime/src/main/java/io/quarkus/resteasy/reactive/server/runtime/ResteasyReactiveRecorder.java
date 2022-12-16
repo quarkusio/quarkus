@@ -54,6 +54,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
+import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -218,16 +219,10 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             @Override
             public void handle(RoutingContext event) {
 
-                // this condition prevent exception mappers from handling auth failure exceptions when proactive
-                // security is enabled as for now, community decided that's expected behavior and only way for
-                // users to handle the exceptions is to define their own failure handler as in Reactive Routes
-                // more info here: https://github.com/quarkusio/quarkus/pull/28648#issuecomment-1287203946
-                final boolean eventFailedByRESTEasyReactive = event
-                        .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof FailingDefaultAuthFailureHandler;
-
-                if (eventFailedByRESTEasyReactive && (event.failure() instanceof AuthenticationFailedException
+                if (event.failure() instanceof AuthenticationFailedException
                         || event.failure() instanceof AuthenticationCompletionException
-                        || event.failure() instanceof AuthenticationRedirectException)) {
+                        || event.failure() instanceof AuthenticationRedirectException
+                        || event.failure() instanceof ForbiddenException) {
                     restInitialHandler.beginProcessing(event, event.failure());
                 } else {
                     event.next();

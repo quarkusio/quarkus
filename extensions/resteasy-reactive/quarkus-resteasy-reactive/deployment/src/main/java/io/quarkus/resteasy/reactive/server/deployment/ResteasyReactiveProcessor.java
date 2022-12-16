@@ -1204,7 +1204,10 @@ public class ResteasyReactiveProcessor {
             RuntimeValue<RestInitialHandler> restInitialHandler = recorder.restInitialHandler(deployment);
             Handler<RoutingContext> handler = recorder.handler(restInitialHandler);
             Handler<RoutingContext> failureHandler = recorder.failureHandler(restInitialHandler);
-            filterBuildItemBuildProducer.produce(new FilterBuildItem(failureHandler, order, true));
+
+            // we add failure handler right before QuarkusErrorHandler
+            // so that user can define failure handlers that precede exception mappers
+            filterBuildItemBuildProducer.produce(FilterBuildItem.ofAuthenticationFailureHandler(failureHandler));
 
             // Exact match for resources matched to the root path
             routes.produce(RouteBuildItem.builder()

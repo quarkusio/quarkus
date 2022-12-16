@@ -70,6 +70,7 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 }
 ----
 
+[[dealing-with-more-than-one-http-auth-mechanisms]]
 == Dealing with more than one HttpAuthenticationMechanism
 
 More than one `HttpAuthenticationMechanism` can be combined, for example, the built-in `Basic` or `JWT` mechanism provided by `quarkus-smallrye-jwt` has to be used to verify the service clients credentials passed as the HTTP `Authorization` `Basic` or `Bearer` scheme values while the `Authorization Code` mechanism provided by `quarkus-oidc` has to be used to authenticate the users with Keycloak or other OpenID Connect providers.

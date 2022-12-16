@@ -7,7 +7,9 @@ import java.util.function.Supplier;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -19,11 +21,9 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.vertx.web.Route;
 import io.restassured.RestAssured;
-import io.vertx.core.http.HttpServerResponse;
 
-public class ProactiveAuthHttpPolicyForbiddenHandlerTest {
+public class ProactiveAuthHttpPolicyForbiddenExMapperTest {
 
     private static final String PROPERTIES = "quarkus.http.auth.basic=true\n" +
             "quarkus.http.auth.policy.user-policy.roles-allowed=user\n" +
@@ -35,7 +35,7 @@ public class ProactiveAuthHttpPolicyForbiddenHandlerTest {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, CustomForbiddenFailureHandler.class)
+                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, CustomForbiddenExceptionMapper.class)
                     .addAsResource(new StringAsset(PROPERTIES), "application.properties");
         }
     });
@@ -52,7 +52,7 @@ public class ProactiveAuthHttpPolicyForbiddenHandlerTest {
                 .when().get("/secured")
                 .then()
                 .statusCode(403)
-                .body(equalTo(CustomForbiddenFailureHandler.CUSTOM_FORBIDDEN_EXCEPTION_MAPPER));
+                .body(equalTo(CustomForbiddenExceptionMapper.CUSTOM_FORBIDDEN_EXCEPTION_MAPPER));
     }
 
     @Path("/secured")
@@ -65,13 +65,13 @@ public class ProactiveAuthHttpPolicyForbiddenHandlerTest {
 
     }
 
-    public static final class CustomForbiddenFailureHandler {
+    public static final class CustomForbiddenExceptionMapper {
 
-        public static final String CUSTOM_FORBIDDEN_EXCEPTION_MAPPER = CustomForbiddenFailureHandler.class.getName();
+        public static final String CUSTOM_FORBIDDEN_EXCEPTION_MAPPER = CustomForbiddenExceptionMapper.class.getName();
 
-        @Route(type = Route.HandlerType.FAILURE)
-        void handle(ForbiddenException e, HttpServerResponse response) {
-            response.setStatusCode(FORBIDDEN.getStatusCode()).end(CUSTOM_FORBIDDEN_EXCEPTION_MAPPER);
+        @ServerExceptionMapper(value = ForbiddenException.class)
+        public Response forbidden() {
+            return Response.status(FORBIDDEN).entity(CUSTOM_FORBIDDEN_EXCEPTION_MAPPER).build();
         }
 
     }

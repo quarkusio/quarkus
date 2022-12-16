@@ -162,7 +162,7 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
             this.config = config;
             this.imports = getImports(config);
 
-            stringType = GenericData.StringType.valueOf(prop("avro.codegen.stringType", "String"));
+            stringType = GenericData.StringType.valueOf(prop("avro.codegen.stringType", "CharSequence"));
             createOptionalGetters = getBooleanProperty("avro.codegen.createOptionalGetters", false);
             enableDecimalLogicalType = getBooleanProperty("avro.codegen.enableDecimalLogicalType", false);
             createSetters = getBooleanProperty("avro.codegen.createSetters", true);

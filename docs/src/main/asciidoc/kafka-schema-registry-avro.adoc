@@ -780,7 +780,7 @@ You can use the following configuration properties to alter how it works:
 importable by subsequently compiled schemas. Note that imported files should not reference each other. All paths should be relative
 to the `src/[main|test]/avro` directory, or `avro` sub-directory in any source directory configured by the build system. Passed as a comma-separated list.
 - `avro.codegen.stringType` - the Java type to use for Avro strings. May be one of `CharSequence`, `String` or
-`Utf8`. Defaults to `String`
+`Utf8`. Defaults to `CharSequence`
 - `avro.codegen.createOptionalGetters` - enables generating the `getOptional...`
 methods that return an Optional of the requested type. Defaults to `false`
 - `avro.codegen.enableDecimalLogicalType` - determines whether to use Java classes for decimal types, defaults to `false`

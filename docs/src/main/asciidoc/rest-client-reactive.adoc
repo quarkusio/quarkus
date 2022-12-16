@@ -215,7 +215,7 @@ Because we used the `${...}` syntax, the actual value of the parameter will be o
 
 [IMPORTANT]
 ====
-Note that if an interface method contains an argument annotated with `@QueryParam``</code>``, that argument will take
+Note that if an interface method contains an argument annotated with `@QueryParam`, that argument will take
 priority over anything specified in any `@ClientQueryParam` annotation.
 ====
 

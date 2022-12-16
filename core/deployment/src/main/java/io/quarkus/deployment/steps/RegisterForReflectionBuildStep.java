@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.steps.KotlinUtil.isKotlinClass;
+
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
@@ -33,8 +35,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 public class RegisterForReflectionBuildStep {
 
     private static final Logger log = Logger.getLogger(RegisterForReflectionBuildStep.class);
-
-    private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
 
     @BuildStep
     public void build(CombinedIndexBuildItem combinedIndexBuildItem, Capabilities capabilities,
@@ -96,10 +96,6 @@ public class RegisterForReflectionBuildStep {
                 }
             }
         }
-    }
-
-    private static boolean isKotlinClass(ClassInfo classInfo) {
-        return classInfo.hasDeclaredAnnotation(KOTLIN_METADATA_ANNOTATION);
     }
 
     /**

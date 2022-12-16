@@ -260,6 +260,10 @@ public class ArcProcessor {
                     // If it declares a scope no action is needed
                     return;
                 }
+                if (customScopes.isScopeIn(transformationContext.getAnnotations())) {
+                    // if one of annotations (even if added via transformer) is a scope, no action is needed
+                    return;
+                }
                 DotName defaultScope = additionalBeanTypes.get(beanClassName);
                 if (defaultScope != null) {
                     transformationContext.transform().add(defaultScope).done();
@@ -273,7 +277,8 @@ public class ArcProcessor {
             }
         });
 
-        builder.setBeanArchiveIndex(index);
+        builder.setComputingBeanArchiveIndex(index);
+        builder.setImmutableBeanArchiveIndex(beanArchiveIndex.getImmutableIndex());
         builder.setApplicationIndex(combinedIndex.getIndex());
         List<BeanDefiningAnnotation> beanDefiningAnnotations = additionalBeanDefiningAnnotations.stream()
                 .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope())).collect(Collectors.toList());

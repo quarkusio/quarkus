@@ -7,6 +7,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
 
 /**
@@ -35,4 +36,22 @@ public @interface RedisClientName {
      * The Redis client name.
      */
     String value() default "";
+
+    class Literal extends AnnotationLiteral<RedisClientName> implements RedisClientName {
+
+        public static Literal of(String value) {
+            return new Literal(value);
+        }
+
+        private final String value;
+
+        public Literal(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String value() {
+            return value;
+        }
+    }
 }

@@ -10,7 +10,6 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
 
 Quarkus extensions add a new developer focused behavior to the core offering, and consist of two distinct parts, buildtime augmentation and runtime container. The augmentation part is responsible for all metadata processing, such as reading annotations, XML descriptors etc. The output of this augmentation phase is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
 
@@ -560,7 +559,7 @@ The name of the deployment module can be configured in the plugin by setting the
 ----
 plugins {
     id 'java'
-    id 'io.quarkus.extensions'
+    id 'io.quarkus.extension'
 }
 
 quarkusExtension {
@@ -963,12 +962,12 @@ using the `optional` attribute of the `@io.quarkus.deployment.annotations.Record
 @BuildStep
 @Record(value = ExecutionTime.RUNTIME_INIT, optional = true) // <1>
 ExecutorBuildItem createExecutor( // <2>
-        ExecutorTemplate executorTemplate,
+        ExecutorRecorder recorder,
         ThreadPoolConfig threadPoolConfig
 ) {
 
     return new ExecutorBuildItem(
-        setupTemplate.setupRunTime(
+        recorder.setupRunTime(
             shutdownContextBuildItem,
             threadPoolConfig,
             launchModeBuildItem.getLaunchMode()
@@ -1522,6 +1521,15 @@ The following objects can be passed to recorders:
 - Objects with a constructor annotated with `@RecordableConstructor` with parameter names that match field names
 - Any arbitrary object via the `io.quarkus.deployment.recording.RecorderContext#registerSubstitution(Class, Class, Class)` mechanism
 - Arrays, Lists and Maps of the above
+
+[NOTE]
+====
+In cases where some fields of an object to be recorded should be ignored (i.e. the value that being at build time should not be reflected at runtime), the `@IgnoreProperty` can be placed on the field.
+
+If the class cannot depend on Quarkus, then Quarkus can use any custom annotation, as long as the extension implements the `io.quarkus.deployment.recording.RecordingAnnotationsProvider` SPI.
+
+This same SPI can also be used to provide a custom annotation that will substitute for `@RecordableConstructor`.
+====
 
 ==== Injecting Configuration into Recorders
 

@@ -85,7 +85,11 @@ public class YamlMetadataGenerator {
     }
 
     public YamlMetadataGenerator setFileFilterPattern(String filter) {
-        if (filter != null && !filter.isBlank()) {
+        if ("true".equals(filter)) {
+            filePatternFilter = x -> true;
+        } else if ("false".equals(filter)) {
+            filePatternFilter = x -> false;
+        } else if (filter == null || filter.isBlank()) {
             filePatternFilter = Pattern.compile(filter).asPredicate();
         }
         return this;
@@ -161,6 +165,13 @@ public class YamlMetadataGenerator {
                                 if (prefix.contains("\n\n")) {
                                     errors.record("detached-attributes", path);
                                 }
+                            }
+
+                            int titlePos = str.indexOf("\n= ");
+                            int documentHeaderEnd = str.indexOf("\n\n", titlePos);
+                            String documentHeader = str.substring(0, documentHeaderEnd);
+                            if (documentHeader.contains(":toc:")) {
+                                errors.record("toc", path);
                             }
 
                             String title = doc.getDoctitle();
@@ -293,18 +304,24 @@ public class YamlMetadataGenerator {
     }
 
     enum Type {
-        concepts("concepts", "Concepts"),
-        howto("howto", "How-To Guides"),
+        concept("concepts", "Concept", "concept"),
+        howto("howto", "How-To Guide"),
         tutorial("tutorial", "Tutorial"),
         reference("reference", "Reference"),
-        other("guide", "General Guides");
+        other("guide", "General Guide");
 
         final String name;
         final String id;
+        final String suffix;
 
         Type(String id, String name) {
+            this(id, name, id);
+        }
+
+        Type(String id, String name, String suffix) {
             this.name = name;
             this.id = id;
+            this.suffix = suffix;
         }
     }
 
@@ -350,6 +367,8 @@ public class YamlMetadataGenerator {
                     return "Document does not specify associated categories";
                 case "not-diataxis-type":
                     return "Document does not follow naming conventions (type not recognized).";
+                case "toc":
+                    return "A :toc: attribute is present in the Document header (remove it)";
             }
             return errorKey;
         }
@@ -431,8 +450,8 @@ public class YamlMetadataGenerator {
 
             if (this.categories.contains(Category.getting_started)) {
                 this.type = Type.tutorial;
-            } else if (filename.endsWith("-concepts.adoc")) {
-                this.type = Type.concepts;
+            } else if (filename.endsWith("-concept.adoc")) {
+                this.type = Type.concept;
             } else if (filename.endsWith("-howto.adoc")) {
                 this.type = Type.howto;
             } else if (filename.endsWith("-tutorial.adoc")) {
@@ -446,11 +465,11 @@ public class YamlMetadataGenerator {
 
             if (id == null) {
                 errors.record("missing-id", path);
-            } else if (type != Type.other && !id.startsWith(type.id)) {
+            } else if (type != Type.other && !id.endsWith(type.suffix)) {
                 errors.record("incorrect-id", path,
                         String.format(
-                                "The document id (%s) does not start with the correct prefix, should start with '%s-'%n",
-                                id, type.id));
+                                "The document id (%s) does not end with the correct suffix, should end with '-%s'%n",
+                                id, type.suffix));
             }
 
             if (this.categories.isEmpty()) {

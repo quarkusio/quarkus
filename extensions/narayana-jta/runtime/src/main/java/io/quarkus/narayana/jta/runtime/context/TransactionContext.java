@@ -4,6 +4,8 @@ import java.lang.annotation.Annotation;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -33,6 +35,8 @@ import io.quarkus.arc.impl.LazyValue;
 public class TransactionContext implements InjectableContext {
     // marker object to be put as a key for SynchronizationRegistry to gather all beans created in the scope
     private static final Object TRANSACTION_CONTEXT_MARKER = new Object();
+
+    private final Lock transactionLock = new ReentrantLock();
 
     private final LazyValue<TransactionSynchronizationRegistry> transactionSynchronizationRegistry = new LazyValue<>(
             new Supplier<TransactionSynchronizationRegistry>() {
@@ -107,26 +111,45 @@ public class TransactionContext implements InjectableContext {
             throw new IllegalArgumentException("Contextual parameter must not be null");
         }
 
+        TransactionSynchronizationRegistry registryInstance = transactionSynchronizationRegistry.get();
         TransactionContextState contextState;
-        contextState = (TransactionContextState) transactionSynchronizationRegistry.get()
-                .getResource(TRANSACTION_CONTEXT_MARKER);
 
-        if (contextState == null) {
-            contextState = new TransactionContextState(getCurrentTransaction());
-            transactionSynchronizationRegistry.get().putResource(TRANSACTION_CONTEXT_MARKER, contextState);
+        // Prevent concurrent contextState creation from multiple threads sharing the same transaction,
+        // since TransactionSynchronizationRegistry has no atomic compute if absent mechanism.
+        transactionLock.lock();
+
+        try {
+            contextState = (TransactionContextState) registryInstance.getResource(TRANSACTION_CONTEXT_MARKER);
+
+            if (contextState == null) {
+                contextState = new TransactionContextState(getCurrentTransaction());
+                registryInstance.putResource(TRANSACTION_CONTEXT_MARKER, contextState);
+            }
+
+        } finally {
+            transactionLock.unlock();
         }
 
         ContextInstanceHandle<T> instanceHandle = contextState.get(contextual);
         if (instanceHandle != null) {
             return instanceHandle.get();
         } else if (creationalContext != null) {
-            T createdInstance = contextual.create(creationalContext);
-            instanceHandle = new ContextInstanceHandleImpl<>((InjectableBean<T>) contextual, createdInstance,
-                    creationalContext);
+            Lock beanLock = contextState.getLock();
+            beanLock.lock();
+            try {
+                instanceHandle = contextState.get(contextual);
+                if (instanceHandle != null) {
+                    return instanceHandle.get();
+                }
 
-            contextState.put(contextual, instanceHandle);
-
-            return createdInstance;
+                T createdInstance = contextual.create(creationalContext);
+                instanceHandle = new ContextInstanceHandleImpl<>((InjectableBean<T>) contextual, createdInstance,
+                        creationalContext);
+                contextState.put(contextual, instanceHandle);
+                return createdInstance;
+            } finally {
+                beanLock.unlock();
+            }
         } else {
             return null;
         }
@@ -174,6 +197,8 @@ public class TransactionContext implements InjectableContext {
      * It's filled during bean usage and cleared on destroy.
      */
     private static class TransactionContextState implements ContextState, Synchronization {
+
+        private final Lock lock = new ReentrantLock();
 
         private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> mapBeanToInstanceHandle = new ConcurrentHashMap<>();
 
@@ -245,6 +270,15 @@ public class TransactionContext implements InjectableContext {
         @Override
         public void afterCompletion(int status) {
             this.destroy();
+        }
+
+        /**
+         * Gets the lock associated with this ContextState for synchronization purposes
+         *
+         * @return the lock for this ContextState
+         */
+        public Lock getLock() {
+            return lock;
         }
     }
 }

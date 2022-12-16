@@ -1,9 +1,11 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.Map;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.jboss.logging.Logger;
 
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -35,6 +37,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     final String nameWebsocketConnections;
     final String nameHttpServerPush;
     final String nameHttpServerRequests;
+    final LongAdder activeRequests;
 
     VertxHttpServerMetrics(MeterRegistry registry, HttpBinderConfiguration config) {
         super(registry, "http.server");
@@ -44,6 +47,10 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         nameWebsocketConnections = config.getHttpServerWebSocketConnectionsName();
         nameHttpServerPush = config.getHttpServerPushName();
         nameHttpServerRequests = config.getHttpServerRequestsName();
+
+        activeRequests = new LongAdder();
+        Gauge.builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
+                .register(registry);
     }
 
     /**
@@ -58,7 +65,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     @Override
     public HttpRequestMetric responsePushed(Map<String, Object> socketMetric, HttpMethod method, String uri,
             HttpResponse response) {
-        HttpRequestMetric requestMetric = new HttpRequestMetric(uri);
+        HttpRequestMetric requestMetric = new HttpRequestMetric(uri, activeRequests);
         String path = requestMetric.getNormalizedUriPath(
                 config.getServerMatchPatterns(),
                 config.getServerIgnorePatterns());
@@ -94,8 +101,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      */
     @Override
     public HttpRequestMetric requestBegin(Map<String, Object> socketMetric, HttpRequest request) {
-        HttpRequestMetric requestMetric = new HttpRequestMetric(request);
+        HttpRequestMetric requestMetric = new HttpRequestMetric(request, activeRequests);
         requestMetric.setSample(Timer.start(registry));
+        requestMetric.requestStarted();
 
         log.debugf("requestBegin %s, %s", socketMetric, requestMetric);
         return requestMetric;
@@ -125,6 +133,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
 
             sample.stop(builder.register(registry));
         }
+        requestMetric.requestEnded();
     }
 
     /**
@@ -152,6 +161,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
 
             sample.stop(builder.register(registry));
         }
+        requestMetric.requestEnded();
     }
 
     /**

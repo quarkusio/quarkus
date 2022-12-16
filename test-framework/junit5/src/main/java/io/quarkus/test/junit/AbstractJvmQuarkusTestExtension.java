@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,10 +26,12 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.dev.testing.CurrentTestApplication;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.configuration.ProfileManager;
@@ -53,25 +56,86 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     protected PrepareResult createAugmentor(ExtensionContext context, Class<? extends QuarkusTestProfile> profile,
             Collection<Runnable> shutdownTasks) throws Exception {
 
-        Class<?> requiredTestClass = context.getRequiredTestClass();
-        currentJUnitTestClass = requiredTestClass;
-        Path testClassLocation = getTestClassesLocation(requiredTestClass);
-        final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
-
         final PathList.Builder rootBuilder = PathList.builder();
-
         Consumer<Path> addToBuilderIfConditionMet = path -> {
             if (path != null && Files.exists(path) && !rootBuilder.contains(path)) {
                 rootBuilder.add(path);
             }
         };
 
-        if (!appClassLocation.equals(testClassLocation)) {
-            addToBuilderIfConditionMet.accept(testClassLocation);
-            // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)
-            // TODO: this whole app/test path resolution logic is pretty dumb, it needs be re-worked using proper workspace discovery
-            final Path testResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(testClassLocation, "test");
-            addToBuilderIfConditionMet.accept(testResourcesLocation);
+        final Class<?> requiredTestClass = context.getRequiredTestClass();
+        currentJUnitTestClass = requiredTestClass;
+
+        final Path testClassLocation;
+        final Path appClassLocation;
+        final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
+
+        final ApplicationModel gradleAppModel = getGradleAppModelForIDE(projectRoot);
+        // If gradle project running directly with IDE
+        if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
+            final WorkspaceModule module = gradleAppModel.getApplicationModule();
+            final String testClassFileName = requiredTestClass.getName().replace('.', '/') + ".class";
+            Path testClassesDir = null;
+            for (String classifier : module.getSourceClassifiers()) {
+                final ArtifactSources sources = module.getSources(classifier);
+                if (sources.isOutputAvailable() && sources.getOutputTree().contains(testClassFileName)) {
+                    for (SourceDir src : sources.getSourceDirs()) {
+                        addToBuilderIfConditionMet.accept(src.getOutputDir());
+                        if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
+                            testClassesDir = src.getOutputDir();
+                        }
+                    }
+                    for (SourceDir src : sources.getResourceDirs()) {
+                        addToBuilderIfConditionMet.accept(src.getOutputDir());
+                    }
+                    for (SourceDir src : module.getMainSources().getSourceDirs()) {
+                        addToBuilderIfConditionMet.accept(src.getOutputDir());
+                    }
+                    for (SourceDir src : module.getMainSources().getResourceDirs()) {
+                        addToBuilderIfConditionMet.accept(src.getOutputDir());
+                    }
+                    break;
+                }
+            }
+            if (testClassesDir == null) {
+                final StringBuilder sb = new StringBuilder();
+                sb.append("Failed to locate ").append(requiredTestClass.getName()).append(" in ");
+                for (String classifier : module.getSourceClassifiers()) {
+                    final ArtifactSources sources = module.getSources(classifier);
+                    if (sources.isOutputAvailable()) {
+                        for (SourceDir d : sources.getSourceDirs()) {
+                            if (Files.exists(d.getOutputDir())) {
+                                sb.append(System.lineSeparator()).append(d.getOutputDir());
+                            }
+                        }
+                    }
+                }
+                throw new RuntimeException(sb.toString());
+            }
+            testClassLocation = testClassesDir;
+
+        } else {
+            if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
+                final String[] sourceDirectories = System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR).split(",");
+                for (String sourceDirectory : sourceDirectories) {
+                    final Path directory = Paths.get(sourceDirectory);
+                    addToBuilderIfConditionMet.accept(directory);
+                }
+            }
+
+            testClassLocation = getTestClassesLocation(requiredTestClass);
+            appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
+            if (!appClassLocation.equals(testClassLocation)) {
+                addToBuilderIfConditionMet.accept(testClassLocation);
+                // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)
+                // TODO: this whole app/test path resolution logic is pretty dumb, it needs be re-worked using proper workspace discovery
+                final Path testResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(testClassLocation, "test");
+                addToBuilderIfConditionMet.accept(testResourcesLocation);
+            }
+
+            addToBuilderIfConditionMet.accept(appClassLocation);
+            final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
+            addToBuilderIfConditionMet.accept(appResourcesLocation);
         }
 
         originalCl = Thread.currentThread().getContextClassLoader();
@@ -105,52 +169,18 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             shutdownTasks.add(RestorableSystemProperties.setProperties(additional)::close);
         }
 
-        final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
-
-        addToBuilderIfConditionMet.accept(appClassLocation);
-        final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
-        addToBuilderIfConditionMet.accept(appResourcesLocation);
-
-        // If gradle project running directly with IDE
-        if (System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null) {
-            ApplicationModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
-            if (model != null && model.getApplicationModule() != null) {
-                final ArtifactSources artifactSrc = model.getApplicationModule().getTestSources();
-                if (artifactSrc != null) {
-                    for (SourceDir src : artifactSrc.getSourceDirs()) {
-                        if (Files.exists(src.getOutputDir())) {
-                            final Path classesDir = src.getOutputDir();
-                            addToBuilderIfConditionMet.accept(classesDir);
-                        }
-                    }
-                }
-                for (SourceDir src : model.getApplicationModule().getMainSources().getSourceDirs()) {
-                    if (Files.exists(src.getOutputDir())) {
-                        final Path classesDir = src.getOutputDir();
-                        addToBuilderIfConditionMet.accept(classesDir);
-                    }
-                }
-            }
-        } else if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
-            final String[] sourceDirectories = System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR).split(",");
-            for (String sourceDirectory : sourceDirectories) {
-                final Path directory = Paths.get(sourceDirectory);
-                addToBuilderIfConditionMet.accept(directory);
-            }
-        }
         CuratedApplication curatedApplication;
         if (CurrentTestApplication.curatedApplication != null) {
             curatedApplication = CurrentTestApplication.curatedApplication;
         } else {
-            final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
+            curatedApplication = QuarkusBootstrap.builder()
+                    //.setExistingModel(gradleAppModel) unfortunately this model is not re-usable due to PathTree serialization by Gradle
                     .setIsolateDeployment(true)
-                    .setMode(QuarkusBootstrap.Mode.TEST);
-            runnerBuilder.setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation));
-            runnerBuilder.setProjectRoot(projectRoot);
-            runnerBuilder.setApplicationRoot(rootBuilder.build());
-
-            curatedApplication = runnerBuilder
+                    .setMode(QuarkusBootstrap.Mode.TEST)
                     .setTest(true)
+                    .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation))
+                    .setProjectRoot(projectRoot)
+                    .setApplicationRoot(rootBuilder.build())
                     .build()
                     .bootstrap();
             shutdownTasks.add(curatedApplication::close);
@@ -161,9 +191,9 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                     "The tests were run against a directory that does not contain a Quarkus project. Please ensure that the test is configured to use the proper working directory.");
         }
 
-        Index testClassesIndex = TestClassIndexer.indexTestClasses(requiredTestClass);
+        Index testClassesIndex = TestClassIndexer.indexTestClasses(testClassLocation);
         // we need to write the Index to make it reusable from other parts of the testing infrastructure that run in different ClassLoaders
-        TestClassIndexer.writeIndex(testClassesIndex, requiredTestClass);
+        TestClassIndexer.writeIndex(testClassesIndex, testClassLocation, requiredTestClass);
 
         Timing.staticInitStarted(curatedApplication.getBaseRuntimeClassLoader(),
                 curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication());
@@ -173,7 +203,13 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         quarkusTestProfile = profile;
         return new PrepareResult(curatedApplication
                 .createAugmentor(QuarkusTestExtension.TestBuildChainFunction.class.getName(), props), profileInstance,
-                curatedApplication);
+                curatedApplication, testClassLocation);
+    }
+
+    private ApplicationModel getGradleAppModelForIDE(Path projectRoot) throws IOException, AppModelResolverException {
+        return System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null
+                ? BuildToolHelper.enableGradleAppModelForTest(projectRoot)
+                : null;
     }
 
     protected Class<? extends QuarkusTestProfile> getQuarkusTestProfile(ExtensionContext extensionContext) {
@@ -222,12 +258,14 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         protected final AugmentAction augmentAction;
         protected final QuarkusTestProfile profileInstance;
         protected final CuratedApplication curatedApplication;
+        protected final Path testClassLocation;
 
         public PrepareResult(AugmentAction augmentAction, QuarkusTestProfile profileInstance,
-                CuratedApplication curatedApplication) {
+                CuratedApplication curatedApplication, Path testClassLocation) {
             this.augmentAction = augmentAction;
             this.profileInstance = profileInstance;
             this.curatedApplication = curatedApplication;
+            this.testClassLocation = testClassLocation;
         }
     }
 }

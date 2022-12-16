@@ -1,8 +1,11 @@
 package io.quarkus.vertx.http.runtime.cors;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -78,7 +81,7 @@ public class CORSFilter implements Handler<RoutingContext> {
      * If any regular expression origins are configured, try to match on them.
      * Regular expressions must begin and end with '/'
      *
-     * @param allowedOrigins the configured regex origins.
+     * @param allowOriginsRegex the configured regex origins.
      * @param origin the specified origin
      * @return true if any configured regular expressions match the specified origin, false otherwise
      */
@@ -98,24 +101,25 @@ public class CORSFilter implements Handler<RoutingContext> {
         if (isConfiguredWithWildcard(corsConfig.headers)) {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowHeadersValue);
         } else {
-            List<String> requestedHeaders;
+            Map<String, String> requestedHeaders;
             String[] allowedParts = COMMA_SEPARATED_SPLIT_REGEX.split(allowHeadersValue);
-            requestedHeaders = new ArrayList<>(allowedParts.length);
+            requestedHeaders = new HashMap<>();
             for (String requestedHeader : allowedParts) {
-                requestedHeaders.add(requestedHeader.toLowerCase());
+                requestedHeaders.put(requestedHeader.toLowerCase(), requestedHeader);
             }
 
             List<String> corsConfigHeaders = corsConfig.headers.get();
             StringBuilder allowedHeaders = new StringBuilder();
             boolean isFirst = true;
             for (String configHeader : corsConfigHeaders) {
-                if (requestedHeaders.contains(configHeader.toLowerCase())) {
+                String configHeaderLowerCase = configHeader.toLowerCase();
+                if (requestedHeaders.containsKey(configHeaderLowerCase)) {
                     if (isFirst) {
                         isFirst = false;
                     } else {
                         allowedHeaders.append(',');
                     }
-                    allowedHeaders.append(configHeader);
+                    allowedHeaders.append(requestedHeaders.get(configHeaderLowerCase));
                 }
             }
 
@@ -176,7 +180,7 @@ public class CORSFilter implements Handler<RoutingContext> {
             }
 
             boolean allowsOrigin = isConfiguredWithWildcard(corsConfig.origins) || corsConfig.origins.get().contains(origin)
-                    || isOriginAllowedByRegex(allowedOriginsRegex, origin);
+                    || isOriginAllowedByRegex(allowedOriginsRegex, origin) || isSameOrigin(request, origin);
 
             if (allowsOrigin) {
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
@@ -195,7 +199,11 @@ public class CORSFilter implements Handler<RoutingContext> {
                         String.join(",", exposedHeaders.orElse(Collections.emptyList())));
             }
 
-            if (request.method().equals(HttpMethod.OPTIONS) && (requestedHeaders != null || requestedMethods != null)) {
+            if (!allowsOrigin) {
+                response.setStatusCode(403);
+                response.setStatusMessage("CORS Rejected - Invalid origin");
+                response.end();
+            } else if (request.method().equals(HttpMethod.OPTIONS) && (requestedHeaders != null || requestedMethods != null)) {
                 if (corsConfig.accessControlMaxAge.isPresent()) {
                     response.putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
                             String.valueOf(corsConfig.accessControlMaxAge.get().getSeconds()));
@@ -204,6 +212,82 @@ public class CORSFilter implements Handler<RoutingContext> {
             } else {
                 event.next();
             }
+        }
+    }
+
+    static boolean isSameOrigin(HttpServerRequest request, String origin) {
+        //fast path check, when everything is the same
+        if (origin.startsWith(request.scheme())) {
+            if (!substringMatch(origin, request.scheme().length(), "://", false)) {
+                return false;
+            }
+            if (substringMatch(origin, request.scheme().length() + 3, request.host(), true)) {
+                //they are a simple match
+                return true;
+            }
+            return isSameOriginSlowPath(request, origin);
+        } else {
+            return false;
+        }
+    }
+
+    static boolean isSameOriginSlowPath(HttpServerRequest request, String origin) {
+        String absUriString = request.absoluteURI();
+        //we already know the scheme is correct, as the fast path will reject that
+        URI baseUri = URI.create(absUriString);
+        URI originUri = URI.create(origin);
+        if (!originUri.getPath().isEmpty()) {
+            //origin should not contain a path component
+            //just reject it in this case
+            return false;
+        }
+        if (!baseUri.getHost().equals(originUri.getHost())) {
+            return false;
+        }
+        if (baseUri.getPort() == originUri.getPort()) {
+            return true;
+        }
+        if (baseUri.getPort() != -1 && originUri.getPort() != -1) {
+            //ports are explictly set
+            return false;
+        }
+        if (baseUri.getScheme().equals("http")) {
+            if (baseUri.getPort() == 80 || baseUri.getPort() == -1) {
+                if (originUri.getPort() == 80 || originUri.getPort() == -1) {
+                    //port is either unset or 80
+                    return true;
+                }
+            }
+        } else if (baseUri.getScheme().equals("https")) {
+            if (baseUri.getPort() == 443 || baseUri.getPort() == -1) {
+                if (originUri.getPort() == 443 || originUri.getPort() == -1) {
+                    //port is either unset or 443
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    static boolean substringMatch(String str, int pos, String substring, boolean requireFull) {
+        int length = str.length();
+        int subLength = substring.length();
+        int strPos = pos;
+        int subPos = 0;
+        if (pos + subLength > length) {
+            //too long, avoid checking in the loop
+            return false;
+        }
+        for (;;) {
+            if (subPos == subLength) {
+                //if we are at the end return the correct value, depending on if we are also at the end of the origin
+                return !requireFull || strPos == length;
+            }
+            if (str.charAt(strPos) != substring.charAt(subPos)) {
+                return false;
+            }
+            strPos++;
+            subPos++;
         }
     }
 }

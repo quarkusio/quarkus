@@ -76,7 +76,7 @@ public class ServerExceptionMappingFeature implements FeatureScanner {
             // the user class itself is made to be a bean as we want the user to be able to declare dependencies
             //additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             Map<String, String> generatedClassNames = ServerExceptionMapperGenerator.generateGlobalMapper(methodInfo,
-                    classOutput, unwrappableTypes, additionalBeanAnnotations);
+                    classOutput, unwrappableTypes, additionalBeanAnnotations, (m) -> false);
             for (Map.Entry<String, String> entry : generatedClassNames.entrySet()) {
                 ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>().setClassName(entry.getValue());
                 scannedApplication.getExceptionMappers().addExceptionMapper(entry.getKey(), mapper);

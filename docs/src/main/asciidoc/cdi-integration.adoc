@@ -8,7 +8,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :summary: Learn how to integrate your extension with Quarkus' CDI container.
 include::_attributes.adoc[]
 :numbered:
-:toc:
 :toclevels: 2
 
 ArC, the CDI container, is bootstrapped at build time.
@@ -207,6 +206,18 @@ void queryAnnotations(TransformedAnnotationsBuildItem transformedAnnotations, Bu
 <1> `TransformedAnnotationsBuildItem.getAnnotations()` will return a possibly transformed set of annotations.
 
 NOTE: There are other build items specialized in transformation: <<additional_interceptor_bindings>> and <<injection_point_transformation>>.
+
+=== How to Enable Trace Logging for Annotation Transformers
+
+You can set the `TRACE` level for the category `io.quarkus.arc.processor` and try to analyze the log output afterwards.
+
+.`application.properties` Example
+[source,properties]
+----
+quarkus.log.category."io.quarkus.arc.processor".min-level=TRACE <1>
+quarkus.log.category."io.quarkus.arc.processor".level=TRACE
+----
+<1> You also need to adjust the minimum log level for the relevant category.
 
 [[inspect_beans]]
 == Use Case - Inspect Beans, Observers and Injection Points

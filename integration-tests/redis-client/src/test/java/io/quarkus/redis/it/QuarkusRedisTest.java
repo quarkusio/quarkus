@@ -1,6 +1,7 @@
 package io.quarkus.redis.it;
 
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -18,6 +19,7 @@ class QuarkusRedisTest {
             "/quarkus-redis",
             "/quarkus-redis-with-name",
             "/quarkus-redis-with-name-legacy",
+            "/quarkus-redis-with-instance",
             "/quarkus-redis-provided-hosts",
             "/quarkus-redis-parameter-injection-legacy"
     };
@@ -76,5 +78,12 @@ class QuarkusRedisTest {
                     .statusCode(200)
                     .body(CoreMatchers.is(REACTIVE_VALUE));
         }
+    }
+
+    @Test
+    public void testPreloading() {
+        RestAssured.get("/quarkus-redis/import").then()
+                .statusCode(200)
+                .body(Matchers.equalTo("6"));
     }
 }

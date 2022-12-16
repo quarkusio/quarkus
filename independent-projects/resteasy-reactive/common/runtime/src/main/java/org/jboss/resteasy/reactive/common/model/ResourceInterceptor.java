@@ -16,7 +16,7 @@ public class ResourceInterceptor<T>
     private BeanFactory<T> factory;
     private int priority = Priorities.USER; // default priority as defined by spec
     private boolean nonBlockingRequired; // whether or not @NonBlocking was specified on the class
-    private boolean readBody; // whether or not 'readBody' was set true for this filter
+    private boolean withFormRead; // whether or not '@WithFormRead' was set on this filter
 
     /**
      * The class names of the {@code @NameBinding} annotations that the method is annotated with.
@@ -76,12 +76,12 @@ public class ResourceInterceptor<T>
         this.nonBlockingRequired = nonBlockingRequired;
     }
 
-    public boolean isReadBody() {
-        return readBody;
+    public boolean isWithFormRead() {
+        return withFormRead;
     }
 
-    public void setReadBody(boolean readBody) {
-        this.readBody = readBody;
+    public void setWithFormRead(boolean withFormRead) {
+        this.withFormRead = withFormRead;
     }
 
     // spec says that writer interceptors are sorted in ascending order

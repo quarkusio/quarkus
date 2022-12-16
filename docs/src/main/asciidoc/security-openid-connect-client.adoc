@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide explains how to use OpenID Connect and OAuth2 Client and Filters to acquire, refresh and propagate access tokens.
-:toc:
 
 This quickstart demonstrates how to use `OpenID Connect Client Reactive Filter` to acquire and propagate access tokens as `HTTP Authorization Bearer` access tokens, alongside `OpenID Token Propagation Reactive Filter` which propagates the incoming `HTTP Authorization Bearer` access tokens.
 
@@ -503,4 +502,4 @@ will return `403` status code.
 
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect Client and Token Propagation Reference Guide]
 * xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

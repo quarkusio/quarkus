@@ -888,7 +888,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleBeanParamMethod = classContext.classCreator.getMethodCreator(
-                                    handleBeanParamDescriptor);
+                                    handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
@@ -921,7 +921,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleHeaderMethod = classContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
@@ -939,7 +939,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleCookieMethod = classContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                     .createVariable(Invocation.Builder.class);
@@ -962,6 +962,12 @@ public class JaxrsClientReactiveProcessor {
                                     param.mimeType, param.partFileName,
                                     jandexMethod.declaringClass().name() + "." + jandexMethod.name());
                         }
+                    }
+
+                    for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {
+                        enricher.getEnricher()
+                                .forWebTarget(methodCreator, index, interfaceClass, jandexMethod, methodTarget,
+                                        generatedClasses);
                     }
 
                     AssignableResultHandle builder = methodCreator.createVariable(Invocation.Builder.class);
@@ -1155,8 +1161,31 @@ public class JaxrsClientReactiveProcessor {
             ownerContext.constructor.writeInstanceField(forMethodTargetDesc, ownerContext.constructor.getThis(),
                     constructorTarget);
 
-            ResultHandle subInstance = ownerMethod.newInstance(subConstructorDescriptor,
-                    ownerMethod.readInstanceField(forMethodTargetDesc, ownerMethod.getThis()));
+            Supplier<FieldDescriptor> methodParamAnnotationsField = ownerContext.getLazyJavaMethodParamAnnotationsField(
+                    methodIndex);
+            Supplier<FieldDescriptor> methodGenericParametersField = ownerContext.getLazyJavaMethodGenericParametersField(
+                    methodIndex);
+
+            AssignableResultHandle client = createRestClientField(name, ownerContext.classCreator, ownerMethod);
+            AssignableResultHandle webTarget = ownerMethod.createVariable(WebTarget.class);
+            ownerMethod.assign(webTarget, ownerMethod.readInstanceField(forMethodTargetDesc, ownerMethod.getThis()));
+            // Setup Path param from current method
+            for (int i = 0; i < method.getParameters().length; i++) {
+                MethodParameter param = method.getParameters()[i];
+                if (param.parameterType == ParameterType.PATH) {
+                    ResultHandle paramValue = ownerMethod.getMethodParam(i);
+                    // methodTarget = methodTarget.resolveTemplate(paramname, paramvalue);
+                    addPathParam(ownerMethod, webTarget, param.name, paramValue,
+                            param.type,
+                            client,
+                            ownerMethod.readStaticField(methodGenericParametersField.get()),
+                            ownerMethod.readStaticField(methodParamAnnotationsField.get()),
+                            i);
+                }
+            }
+
+            // Continue creating the subresource instance with the web target updated
+            ResultHandle subInstance = ownerMethod.newInstance(subConstructorDescriptor, webTarget);
 
             List<SubResourceParameter> subParamFields = new ArrayList<>();
 
@@ -1173,23 +1202,24 @@ public class JaxrsClientReactiveProcessor {
                         ownerParameter.paramIndex));
             }
 
-            FieldDescriptor clientField = createRestClientField(name, ownerContext.classCreator, ownerMethod,
-                    subContext.classCreator, subInstance);
-
-            Supplier<FieldDescriptor> methodParamAnnotationsField = ownerContext.getLazyJavaMethodParamAnnotationsField(
-                    methodIndex);
-            Supplier<FieldDescriptor> methodGenericParametersField = ownerContext.getLazyJavaMethodGenericParametersField(
-                    methodIndex);
-            // method parameters are rewritten to sub client fields (directly, public fields):
+            FieldDescriptor clientField = subContext.classCreator.getFieldCreator("client", RestClientBase.class)
+                    .setModifiers(Modifier.PUBLIC)
+                    .getFieldDescriptor();
+            ownerMethod.writeInstanceField(clientField, subInstance, client);
+            // method parameters (except path parameters) are rewritten to sub client fields (directly, public fields):
             for (int i = 0; i < method.getParameters().length; i++) {
-                FieldDescriptor paramField = subContext.classCreator.getFieldCreator("param" + i,
-                        method.getParameters()[i].type)
-                        .setModifiers(Modifier.PUBLIC)
-                        .getFieldDescriptor();
-                ownerMethod.writeInstanceField(paramField, subInstance, ownerMethod.getMethodParam(i));
-                subParamFields.add(new SubResourceParameter(method.getParameters()[i], method.getParameters()[i].type,
-                        jandexMethod.parameterType(i), paramField, methodParamAnnotationsField, methodGenericParametersField,
-                        i));
+                MethodParameter param = method.getParameters()[i];
+                if (param.parameterType != ParameterType.PATH) {
+                    FieldDescriptor paramField = subContext.classCreator.getFieldCreator("param" + i, param.type)
+                            .setModifiers(Modifier.PUBLIC)
+                            .getFieldDescriptor();
+                    ownerMethod.writeInstanceField(paramField, subInstance, ownerMethod.getMethodParam(i));
+                    subParamFields.add(new SubResourceParameter(method.getParameters()[i], param.type,
+                            jandexMethod.parameterType(i), paramField, methodParamAnnotationsField,
+                            methodGenericParametersField,
+                            i));
+                }
+
             }
 
             int subMethodIndex = 0;
@@ -1272,7 +1302,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleBeanParamMethod = subContext.classCreator.getMethodCreator(
-                                    handleBeanParamDescriptor);
+                                    handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1308,7 +1338,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleHeaderMethod = subContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1330,7 +1360,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleCookieMethod = subContext.classCreator.getMethodCreator(
-                                    handleCookieDescriptor);
+                                    handleCookieDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1379,7 +1409,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleBeanParamMethod = ownerContext.classCreator.getMethodCreator(
-                                    handleBeanParamDescriptor);
+                                    handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1414,7 +1444,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleHeaderMethod = subContext.classCreator.getMethodCreator(
-                                    handleHeaderDescriptor);
+                                    handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1432,7 +1462,7 @@ public class JaxrsClientReactiveProcessor {
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
                             MethodCreator handleCookieMethod = subContext.classCreator.getMethodCreator(
-                                    handleCookieDescriptor);
+                                    handleCookieDescriptor).setModifiers(Modifier.PRIVATE);
 
                             AssignableResultHandle invocationBuilderRef = handleCookieMethod
                                     .createVariable(Invocation.Builder.class);
@@ -1456,6 +1486,12 @@ public class JaxrsClientReactiveProcessor {
 
                     // if the response is multipart, let's add it's class to the appropriate collection:
                     addResponseTypeIfMultipart(multipartResponseTypes, jandexSubMethod, index);
+
+                    for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {
+                        enricher.getEnricher()
+                                .forSubResourceWebTarget(subMethodCreator, index, interfaceClass, subInterface,
+                                        jandexMethod, jandexSubMethod, methodTarget, generatedClasses);
+                    }
 
                     AssignableResultHandle builder = subMethodCreator.createVariable(Invocation.Builder.class);
                     if (method.getProduces() == null || method.getProduces().length == 0) { // this should never happen!
@@ -1543,22 +1579,19 @@ public class JaxrsClientReactiveProcessor {
      * Create the `client` field into the `c` class that represents a RestClientBase instance.
      * The RestClientBase instance is coming from either a root client or a sub client (clients generated from root clients).
      */
-    private FieldDescriptor createRestClientField(String name, ClassCreator c, MethodCreator methodCreator, ClassCreator sub,
-            ResultHandle subInstance) {
-        FieldDescriptor clientField = sub.getFieldCreator("client", RestClientBase.class)
-                .setModifiers(Modifier.PUBLIC)
-                .getFieldDescriptor();
+    private AssignableResultHandle createRestClientField(String name, ClassCreator c, MethodCreator methodCreator) {
+        AssignableResultHandle client = methodCreator.createVariable(RestClientBase.class);
 
         if (c.getSuperClass().contains(RestClientBase.class.getSimpleName())) {
             // We're in a root client, so we can set the client field with: sub.client = (RestClientBase) this
-            methodCreator.writeInstanceField(clientField, subInstance, methodCreator.getThis());
+            methodCreator.assign(client, methodCreator.getThis());
         } else {
             FieldDescriptor subClientField = FieldDescriptor.of(name, "client", RestClientBase.class);
-            // We're in a sub sub resource, so we need to get the client from the field: subSub.client = sub.client
-            methodCreator.writeInstanceField(clientField, subInstance,
-                    methodCreator.readInstanceField(subClientField, methodCreator.getThis()));
+            // We're in a sub-sub resource, so we need to get the client from the field: subSub.client = sub.client
+            methodCreator.assign(client, methodCreator.readInstanceField(subClientField, methodCreator.getThis()));
         }
-        return clientField;
+
+        return client;
     }
 
     private void handleMultipartField(String formParamName, String partType, String partFilename,
@@ -2293,9 +2326,7 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle paramAnnotations, int paramIndex) {
 
         AssignableResultHandle result = methodCreator.createVariable(WebTarget.class);
-        BranchResult isValueNull = methodCreator.ifNull(webTarget);
-        BytecodeCreator notNullValue = isValueNull.falseBranch();
-        BranchResult isParamNull = notNullValue.ifNull(queryParamHandle);
+        BranchResult isParamNull = methodCreator.ifNull(queryParamHandle);
         BytecodeCreator notNullParam = isParamNull.falseBranch();
         if (isMap(type, index)) {
             var resolvesTypes = resolveMapTypes(type, index, jandexMethod);
@@ -2371,11 +2402,7 @@ public class JaxrsClientReactiveProcessor {
                     paramArray, componentType, result);
         }
 
-        BytecodeCreator nullParam = isParamNull.trueBranch();
-        nullParam.assign(result, webTarget);
-
-        BytecodeCreator nullValue = isValueNull.trueBranch();
-        nullValue.assign(result, nullValue.loadNull());
+        isParamNull.trueBranch().assign(result, webTarget);
 
         return result;
     }

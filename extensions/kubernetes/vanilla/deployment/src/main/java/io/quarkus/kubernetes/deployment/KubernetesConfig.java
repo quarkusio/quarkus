@@ -105,8 +105,6 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * The arguments
-     *
-     * @return The arguments
      */
     @ConfigItem
     Optional<List<String>> arguments;
@@ -123,6 +121,7 @@ public class KubernetesConfig implements PlatformConfiguration {
      * @deprecated Use the {@code quarkus.kubernetes.ingress.host} instead
      */
     @ConfigItem
+    @Deprecated
     Optional<String> host;
 
     /**
@@ -271,6 +270,7 @@ public class KubernetesConfig implements PlatformConfiguration {
      * @deprecated Use the {@code quarkus.kubernetes.ingress.expose} instead
      */
     @ConfigItem
+    @Deprecated
     boolean expose;
 
     /**

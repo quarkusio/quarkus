@@ -70,6 +70,7 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 }
 ----
 
+[[dealing-with-more-than-one-http-auth-mechanisms]]
 == Dealing with more than one HttpAuthenticationMechanism
 
 More than one `HttpAuthenticationMechanism` can be combined, for example, the built-in `Basic` or `JWT` mechanism provided by `quarkus-smallrye-jwt` has to be used to verify the service clients credentials passed as the HTTP `Authorization` `Basic` or `Bearer` scheme values while the `Authorization Code` mechanism provided by `quarkus-oidc` has to be used to authenticate the users with Keycloak or other OpenID Connect providers.
@@ -174,7 +175,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 }
 ----
 
-Here is another example showing how to use the client certificate available in the current xref:security-built-in-authentication.adoc#mutual-tls[Mutual TLS] request to add more roles:
+Here is another example showing how to use the client certificate available in the current xref:security-built-in-authentication-support-concept.adoc#mutual-tls[Mutual TLS] request to add more roles:
 
 [source,java]
 ----
@@ -593,4 +594,4 @@ xref:context-propagation.adoc[Context Propagation Guide].
 
 == References
 
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

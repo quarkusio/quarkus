@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -29,6 +30,10 @@ public class AnnotationLiteralProcessorTest {
         FOO,
         BAR,
         BAZ,
+    }
+
+    @Retention(RetentionPolicy.CLASS)
+    public @interface ClassRetainedAnnotation {
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -325,6 +330,35 @@ public class AnnotationLiteralProcessorTest {
         assertEquals(
                 "@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$ComplexAnnotation(bool=true, b=1, s=2, i=3, l=4, f=5.0, d=6.0, ch=a, str=bc, en=FOO, cls=class java.lang.Object, nested=@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$SimpleAnnotation(value=one), boolArray=[true, false], bArray=[7, 8], sArray=[9, 10], iArray=[11, 12], lArray=[13, 14], fArray=[15.0, 16.0], dArray=[17.0, 18.0], chArray=[d, e], strArray=[fg, hi], enArray=[BAR, BAZ], clsArray=[class java.lang.String, class java.lang.Number], nestedArray=[@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$SimpleAnnotation(value=two), @io.quarkus.arc.processor.AnnotationLiteralProcessorTest$SimpleAnnotation(value=three)])",
                 annotation.toString());
+    }
+
+    @Test
+    public void missingAnnotationClass() {
+        AnnotationLiteralProcessor literals = new AnnotationLiteralProcessor(index, ignored -> true);
+
+        TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className(generatedClass).build()) {
+            MethodCreator method = creator.getMethodCreator("hello", void.class);
+
+            assertThrows(NullPointerException.class, () -> {
+                literals.create(method, null, simpleAnnotationJandex("foobar"));
+            });
+        }
+    }
+
+    @Test
+    public void classRetainedAnnotation() {
+        AnnotationLiteralProcessor literals = new AnnotationLiteralProcessor(index, ignored -> true);
+
+        TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className(generatedClass).build()) {
+            MethodCreator method = creator.getMethodCreator("hello", void.class);
+
+            assertThrows(IllegalArgumentException.class, () -> {
+                literals.create(method, Index.singleClass(ClassRetainedAnnotation.class),
+                        AnnotationInstance.builder(ClassRetainedAnnotation.class).build());
+            });
+        }
     }
 
     private static void verify(ComplexAnnotation ann) {

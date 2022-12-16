@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -11,11 +12,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.enterprise.inject.spi.DefinitionException;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -26,13 +27,14 @@ public class TypesTest {
     @Test
     public void testGetTypeClosure() throws IOException {
         IndexView index = Basics.index(Foo.class, Baz.class, Producer.class, Object.class, List.class, Collection.class,
-                Iterable.class);
+                Iterable.class, Set.class);
         DotName bazName = DotName.createSimple(Baz.class.getName());
         DotName fooName = DotName.createSimple(Foo.class.getName());
         DotName producerName = DotName.createSimple(Producer.class.getName());
         ClassInfo fooClass = index.getClassByName(fooName);
         Map<ClassInfo, Map<String, Type>> resolvedTypeVariables = new HashMap<>();
-        BeanDeployment dummyDeployment = BeanProcessor.builder().setBeanArchiveIndex(index).build().getBeanDeployment();
+        BeanDeployment dummyDeployment = BeanProcessor.builder().setImmutableBeanArchiveIndex(index).build()
+                .getBeanDeployment();
 
         // Baz, Foo<String>, Object
         Set<Type> bazTypes = Types.getTypeClosure(index.getClassByName(bazName), null,
@@ -63,18 +65,19 @@ public class TypesTest {
             }
         }
         ClassInfo producerClass = index.getClassByName(producerName);
-        String producersName = "produce";
-        MethodInfo producerMethod = producerClass.method(producersName);
-        // Object is the sole type
-        Set<Type> producerMethodTypes = Types.getProducerMethodTypeClosure(producerMethod,
-                dummyDeployment);
-        assertEquals(1, producerMethodTypes.size());
+        final String producersName = "produce";
+        assertThrows(DefinitionException.class,
+                () -> Types.getProducerMethodTypeClosure(producerClass.method(producersName), dummyDeployment));
+        assertThrows(DefinitionException.class,
+                () -> Types.getProducerFieldTypeClosure(producerClass.field(producersName), dummyDeployment));
 
-        // Object is the sole type
-        FieldInfo producerField = producerClass.field(producersName);
-        Set<Type> producerFieldTypes = Types.getProducerFieldTypeClosure(producerField,
-                dummyDeployment);
-        assertEquals(1, producerFieldTypes.size());
+        // now assert the same with nested wildcard
+        final String nestedWildCardProducersName = "produceNested";
+        assertThrows(DefinitionException.class,
+                () -> Types.getProducerMethodTypeClosure(producerClass.method(nestedWildCardProducersName), dummyDeployment));
+        assertThrows(DefinitionException.class,
+                () -> Types.getProducerFieldTypeClosure(producerClass.field(nestedWildCardProducersName), dummyDeployment));
+
     }
 
     static class Foo<T> {
@@ -93,6 +96,12 @@ public class TypesTest {
             return null;
         }
 
+        public List<Set<? extends Number>> produceNested() {
+            return null;
+        }
+
         List<? extends Number> produce;
+
+        List<Set<? extends Number>> produceNested;
     }
 }

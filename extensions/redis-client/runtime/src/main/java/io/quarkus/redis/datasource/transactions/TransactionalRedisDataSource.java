@@ -1,5 +1,6 @@
 package io.quarkus.redis.datasource.transactions;
 
+import io.quarkus.redis.datasource.autosuggest.TransactionalAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
 import io.quarkus.redis.datasource.bloom.TransactionalBloomCommands;
 import io.quarkus.redis.datasource.countmin.TransactionalCountMinCommands;
@@ -11,9 +12,11 @@ import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.TransactionalJsonCommands;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
 import io.quarkus.redis.datasource.list.TransactionalListCommands;
+import io.quarkus.redis.datasource.search.TransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
+import io.quarkus.redis.datasource.timeseries.TransactionalTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
 import io.quarkus.redis.datasource.value.TransactionalValueCommands;
 import io.smallrye.common.annotation.Experimental;
@@ -406,6 +409,69 @@ public interface TransactionalRedisDataSource {
      */
     @Experimental("The Redis graph support is experimental")
     <K> TransactionalGraphCommands<K> graph(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to search documents
+     */
+    @Experimental("The Redis search support is experimental")
+    <K> TransactionalSearchCommands search(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @return the object to search documents
+     */
+    @Experimental("The Redis Search support is experimental")
+    default TransactionalSearchCommands search() {
+        return search(String.class);
+    }
+
+    /**
+     * Gets the object to emit commands from the {@code auto-suggest} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to get suggestions
+     */
+    @Experimental("The Redis auto-suggest support is experimental")
+    <K> TransactionalAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code auto-suggest} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @return the object to get suggestions
+     */
+    @Experimental("The Redis auto-suggest support is experimental")
+    default TransactionalAutoSuggestCommands<String> autosuggest() {
+        return autosuggest(String.class);
+    }
+
+    /**
+     * Gets the object to emit commands from the {@code time series} group.
+     * This group requires the <a href="https://redis.io/docs/stack/timeseries/">Redis Time Series module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate time series
+     */
+    @Experimental("The Redis time series support is experimental")
+    <K> TransactionalTimeSeriesCommands<K> timeseries(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code time series} group.
+     * This group requires the <a href="https://redis.io/docs/stack/timeseries/">Redis Time Series module</a>.
+     *
+     * @return the object to manipulate time series
+     */
+    @Experimental("The Redis time series support is experimental")
+    default TransactionalTimeSeriesCommands<String> timeseries() {
+        return timeseries(String.class);
+    }
 
     /**
      * Executes a command.

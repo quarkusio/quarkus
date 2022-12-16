@@ -69,7 +69,6 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.configuration.RuntimeConfigSource;
@@ -209,9 +208,6 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor OPT_GET = MethodDescriptor.ofMethod(Optional.class, "get", Object.class);
     static final MethodDescriptor OPT_IS_PRESENT = MethodDescriptor.ofMethod(Optional.class, "isPresent", boolean.class);
     static final MethodDescriptor OPT_OF = MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class);
-
-    static final MethodDescriptor PM_SET_RUNTIME_DEFAULT_PROFILE = MethodDescriptor.ofMethod(ProfileManager.class,
-            "setRuntimeDefaultProfile", void.class, String.class);
 
     static final MethodDescriptor SB_NEW = MethodDescriptor.ofConstructor(StringBuilder.class);
     static final MethodDescriptor SB_NEW_STR = MethodDescriptor.ofConstructor(StringBuilder.class, String.class);
@@ -365,7 +361,6 @@ public final class RunTimeConfigurationGenerator {
             cc.getFieldCreator(C_UNKNOWN_RUNTIME).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
             clinit.writeStaticField(C_UNKNOWN_RUNTIME, clinit.newInstance(AL_NEW));
 
-            clinit.invokeStaticMethod(PM_SET_RUNTIME_DEFAULT_PROFILE, clinit.load(ProfileManager.getActiveProfile()));
             clinitNameBuilder = clinit.newInstance(SB_NEW);
 
             // static field containing the instance of the class - is set when createBootstrapConfig is run

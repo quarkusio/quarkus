@@ -25,7 +25,7 @@ public class RedisClientConfig {
      *
      * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
      */
-    @ConfigItem(defaultValueDocumentation = "redis://localhost:6379", name = RedisConfig.HOSTS_CONFIG_NAME)
+    @ConfigItem(name = RedisConfig.HOSTS_CONFIG_NAME)
     public Optional<Set<URI>> hosts;
 
     /**
@@ -178,4 +178,5 @@ public class RedisClientConfig {
                 ", tls=" + tls +
                 '}';
     }
+
 }

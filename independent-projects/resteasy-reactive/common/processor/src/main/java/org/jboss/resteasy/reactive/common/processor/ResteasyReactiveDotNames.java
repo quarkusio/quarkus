@@ -92,6 +92,7 @@ import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.RestStreamElementType;
+import org.jboss.resteasy.reactive.Separator;
 import org.reactivestreams.Publisher;
 
 import io.smallrye.common.annotation.Blocking;
@@ -136,6 +137,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName MULTI_PART_FORM_PARAM = DotName.createSimple(MultipartForm.class.getName());
     public static final DotName PART_TYPE_NAME = DotName.createSimple(PartType.class.getName());
     public static final DotName PART_FILE_NAME = DotName.createSimple(PartFilename.class.getName());
+    public static final DotName SEPARATOR = DotName.createSimple(Separator.class.getName());
     public static final DotName REST_MATRIX_PARAM = DotName.createSimple(RestMatrix.class.getName());
     public static final DotName REST_COOKIE_PARAM = DotName.createSimple(RestCookie.class.getName());
     public static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());
@@ -258,6 +260,9 @@ public final class ResteasyReactiveDotNames {
 
     public static final DotName RESTEASY_REACTIVE_CONTAINER_REQUEST_CONTEXT = DotName
             .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext");
+
+    public static final DotName WITH_FORM_READ = DotName
+            .createSimple("org.jboss.resteasy.reactive.server.WithFormRead");
 
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 

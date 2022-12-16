@@ -1,0 +1,6 @@
+-- Run inside a transaction
+MULTI
+SET key value
+SET space:key 'another value'
+INCR counter
+EXEC

@@ -8,7 +8,10 @@ import java.util.concurrent.TimeUnit;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.sse.OutboundSseEvent;
+import javax.ws.rs.sse.Sse;
 
 import org.jboss.resteasy.reactive.common.util.MultiCollectors;
 import org.reactivestreams.Publisher;
@@ -151,5 +154,14 @@ public class StreamResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public Multi<String> sseThrows() {
         throw new IllegalStateException("STOP");
+    }
+
+    @Path("sse/raw")
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    public Multi<OutboundSseEvent> sseRaw(@Context Sse sse) {
+        return Multi.createFrom().items(sse.newEventBuilder().id("one").data("uno").name("eins").build(),
+                sse.newEventBuilder().id("two").data("dos").name("zwei").build(),
+                sse.newEventBuilder().id("three").data("tres").name("drei").build());
     }
 }

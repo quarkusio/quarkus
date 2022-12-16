@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how to use the OpenID Connect Extension to protect your web application based on the Authorization Code Flow using Quarkus.
-:toc:
 
 The Quarkus OpenID Connect (OIDC) extension can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism supported by OIDC-compliant authorization servers, such as https://www.keycloak.org[Keycloak].
 
@@ -190,7 +189,7 @@ The `quarkus.oidc.client-id` property references the `client_id` issued by the O
 The `quarkus.oidc.application-type` property is set to `web-app` in order to tell Quarkus that you want to enable the OpenID Connect Authorization Code Flow, so that your users are redirected to the OpenID Connect Provider to authenticate.
 
 For last, the `quarkus.http.auth.permission.authenticated` permission is set to tell Quarkus about the paths you want to protect. In this case,
-all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access. For more details check xref:security-authorization.adoc[Security Authorization Guide].
+all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access. For more details check xref:security-authorization-of-web-endpoints-reference.adoc[Security Authorization Guide].
 
 === Starting and Configuring the Keycloak Server
 
@@ -360,7 +359,7 @@ If only the access token contains the roles and this access token is not meant t
 
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
-Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security.adoc#security-identity-customization[here].
+Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security-overview-concept.adoc#security-identity-customization[here].
 
 [[token-verification-introspection]]
 === Token Verification And Introspection
@@ -508,6 +507,25 @@ quarkus.oidc.logout.backchannel.path=/back-channel-logout
 Absolute `Back-Channel Logout` URL is calculated by adding `quarkus.oidc.back-channel-logout.path` to the current endpoint URL, for example, `http://localhost:8080/back-channel-logout`. You will need to configure this URL in the Admin Console of your OpenID Connect Provider.
 
 Note that you will also need to configure a token age property for the logout token verification to succeed if your OpenID Connect Provider does not set an expiry claim in the current logout token, for example, `quarkus.oidc.token.age=10S` sets a number of seconds that must not elapse since the logout token's `iat` (issued at) time to 10.
+
+[[front-channel-logout]]
+==== Front-Channel Logout
+
+link:https://openid.net/specs/openid-connect-frontchannel-1_0.html[Front-Channel Logout] can be used to logout the current user directly from the user agent.
+
+You can configure Quarkus to support `Front-Channel Logout` as follows:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+quarkus.oidc.client-id=frontend
+quarkus.oidc.credentials.secret=secret
+quarkus.oidc.application-type=web-app
+
+quarkus.oidc.logout.frontchannel.path=/front-channel-logout
+----
+
+This path will be compared against the current request's path and the user will be logged out if these paths match.
 
 [[local-logout]]
 ==== Local Logout
@@ -659,7 +677,7 @@ quarkus.oidc.authentication.pkce-required=true
 quarkus.oidc.authentication.pkce-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 ----
 
-If you already have a 32 character long client secret then `quarkus.oidc.authentication.pkce-secret` does not have to be set unless you prefer to use a different secret key.
+If you already have a 32 characters long client secret then `quarkus.oidc.authentication.pkce-secret` does not have to be set unless you prefer to use a different secret key.
 
 The secret key is required for encrypting a randomly generated `PKCE` `code_verifier` while the user is being redirected with the `code_challenge` query parameter to OpenID Connect Provider to authenticate. The `code_verifier` will be decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret and other parameters to complete the code exchange. The provider will fail the code exchange if a `SHA256` digest of the `code_verifier` does not match the `code_challenge` provided during the authentication request.
 
@@ -682,7 +700,7 @@ public class SecurityEventListener {
 
     public void event(@Observes SecurityEvent event) {
         String tenantId = event.getSecurityIdentity().getAttribute("tenant-id");
-        RoutingContext vertxContext = event.getSecurityIdentity().getCredential(IdTokenCredential.class).getRoutingContext();
+        RoutingContext vertxContext = event.getSecurityIdentity().getAttribute(RoutingContext.class.getName());
         vertxContext.put("listener-message", String.format("event:%s,tenantId:%s", event.getEventType().name(), tenantId));
     }
 }
@@ -1439,5 +1457,5 @@ include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
 * xref:security-openid-connect-providers.adoc[Well Known OpenID Connect providers].
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
-* xref:security.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

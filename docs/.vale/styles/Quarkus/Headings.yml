@@ -16,12 +16,15 @@ exceptions:
   - API
   - AsciiDoc
   - Asciidoctor
+  - AssertJ
   - AWS
   - Azure
   - Bierner
   - Bitbucket
+  - BOM
   - Bonjour
   - Btrfs
+  - Bouncy Castle
   - Bugzilla
   - Camel
   - CapEx
@@ -69,7 +72,10 @@ exceptions:
   - Esprima
   - Exif
   - Fabrice
+  - Failsafe
+  - Fernflower
   - Fortran
+  - Funqy
   - GCC
   - Git
   - GitHub
@@ -79,17 +85,19 @@ exceptions:
   - Gluster
   - GraalVM
   - Gradle
+  - GraphQL
   - Grayscale
   - GTKplus
   - GUI
   - Hashicorp
   - Helgrind
   - Helm
-  - Hibernate ORM
+  - Hibernate
   - Homebrew
   - HTTP
   - HTTPS
   - IBM
+  - IBM Cloud
   - IDE
   - IDEs
   - InfiniBand
@@ -100,9 +108,10 @@ exceptions:
   - ISeries
   - Itanium
   - Jakarta
+  - Jandex
   - Java
   - Jave
-  - Jetbrains
+  - JetBrains
   - Jira
   - Jolokia
   - Joyent
@@ -110,6 +119,7 @@ exceptions:
   - JVM
   - Kibana
   - Knative
+  - Knowledgebase
   - Kogito
   - Kompose
   - Kubespray
@@ -120,17 +130,18 @@ exceptions:
   - Mandrel
   - Mattermost
   - Maven
-  - Maven Failsafe
   - MicroProfile
   - Microsoft
   - Middleware
   - Minikube
   - Minishift
   - Mirantis
+  - Mockito
   - MongoDB
   - mutual TLS
   - MySQL
   - Nagios
+  - Narayana
   - Neoverse
   - NetcoredebugOutput
   - Netty
@@ -150,6 +161,7 @@ exceptions:
   - PostgreSQL
   - PostScript
   - PowerPC
+  - PowerShell
   - Productize
   - Productized
   - Proof Key for Code Exchange
@@ -158,7 +170,10 @@ exceptions:
   - qeth
   - Quarkiverse
   - Quarkus
+  
   - Quarkus Security
+  - Quiltflower
+  - Qute
   - Red Hat
   - RedBoot
   - Redistributions
@@ -170,6 +185,7 @@ exceptions:
   - Semeru
   - SmallRye
   - Shadowman
+  - Spotify
   - StarOffice
   - startx
   - Suchow
@@ -197,6 +213,7 @@ exceptions:
   - WebAuthn
   - Webview
   - Webviews
+  - WebSocket
   - Wildfly
   - Window Maker
   - Woopra
@@ -206,4 +223,3 @@ exceptions:
   - Yana
   - Yeoman
   - Zowe
-  - GitLab Code Quality

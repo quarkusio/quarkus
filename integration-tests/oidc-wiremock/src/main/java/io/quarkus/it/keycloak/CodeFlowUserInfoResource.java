@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -47,5 +48,12 @@ public class CodeFlowUserInfoResource {
     @Path("/code-flow-user-info-dynamic-github")
     public String accessDynamicGitHub() {
         return access();
+    }
+
+    @GET
+    @PermitAll
+    @Path("/clear-token-cache")
+    public void clearTokenCache() {
+        tokenCache.clearCache();
     }
 }

@@ -232,7 +232,7 @@ public class FortuneResource {
         var fortunes = repository.findAllBlocking();
 
         // we get the list of quotes
-        var quotes = getQuotes(fortunes.size()).await().indefinitely();
+        var quotes = getQuotesAsync(fortunes.size()).await().indefinitely();
 
         // we append each quote to each fortune
         for(int i=0; i  < fortunes.size(); i ++){
@@ -243,14 +243,14 @@ public class FortuneResource {
 
     @GET
     @Path("/quoted-reactive")
-    public Uni<List<Fortune>> getAllQuoted() {
+    public Uni<List<Fortune>> getAllQuotedReactive() {
         // we first fetch the list of resource and we memoize it
         // to avoid fetching it again everytime need it
         var fortunes = repository.findAllAsync().memoize().indefinitely();
 
         // once we get a result for fortunes,
         // we know its size and can thus query the right number of quotes
-        var quotes = fortunes.onItem().transformToUni(list -> getQuotes(list.size()));
+        var quotes = fortunes.onItem().transformToUni(list -> getQuotesAsync(list.size()));
 
         // we now need to combine the two reactive streams
         // before returning the result to the user
@@ -268,12 +268,12 @@ public class FortuneResource {
     @GET
     @RunOnVirtualThread
     @Path("/quoted-virtual-thread")
-    public List<Fortune> getAllQuotedBlocking() {
+    public List<Fortune> getAllQuotedVirtualThread() {
         //we get the list of fortunes
         var fortunes = repository.findAllAsyncAndAwait();
 
         //we get the list of quotes
-        var quotes = getQuotes(fortunes.size()).await().indefinitely();
+        var quotes = getQuotesAsync(fortunes.size()).await().indefinitely();
 
         //we append each quote to each fortune
         for(int i=0; i  < fortunes.size(); i ++){

@@ -41,6 +41,22 @@ Type: _long_ | false | `2000`
 
 Type: _boolean_ | false | `true`
 
+| [.no-hyphens]#*client-id-prefix*# | Prefix for Kafka client `client.id` attribute. If defined configured or generated `client.id` will be prefixed with the given value, otherwise `kafka-consumer-` is the prefix.
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*checkpoint.state-store*# | While using the `checkpoint` commit-strategy, the name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.StateStore.Factory` to specify the state store implementation.
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*checkpoint.state-type*# | While using the `checkpoint` commit-strategy, the fully qualified type name of the state object to persist in the state store. When provided, it can be used by the state store implementation to help persisting the processing state object.
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*checkpoint.unsynced-state-max-age.ms*# | While using the `checkpoint` commit-strategy, specify the max age in milliseconds that the processing state must be persisted before the connector is marked as unhealthy. Setting this attribute to `0` disables this monitoring.
+
+Type: _int_ | false | `10000`
+
 | [.no-hyphens]#*cloud-events*# | Enables (default) or disables the Cloud Event support. If enabled on an _incoming_ channel, the connector analyzes the incoming records and try to create Cloud Event metadata. If enabled on an _outgoing_, the connector sends the outgoing messages as Cloud Event if the message includes Cloud Event Metadata.
 
 Type: _boolean_ | false | `true`
@@ -60,6 +76,10 @@ Type: _boolean_ | false | `false`
 | [.no-hyphens]#*key.deserializer*# | The deserializer classname used to deserialize the record's key
 
 Type: _string_ | false | `org.apache.kafka.common.serialization.StringDeserializer`
+
+| [.no-hyphens]#*lazy-client*# | Whether Kafka client is created lazily or eagerly.
+
+Type: _boolean_ | false | `false`
 
 | [.no-hyphens]#*value.deserializer*# | The deserializer classname used to deserialize the record's value
 

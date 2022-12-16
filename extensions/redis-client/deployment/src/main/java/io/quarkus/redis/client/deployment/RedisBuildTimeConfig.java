@@ -10,6 +10,44 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot
 public class RedisBuildTimeConfig {
+
+    /**
+     * The default redis client
+     */
+    @ConfigItem(name = ConfigItem.PARENT)
+    public RedisClientBuildTimeConfig defaultRedisClient;
+
+    /**
+     * Configures additional (named) Redis clients.
+     * <p>
+     * Each client has a unique name which must be identified to select the right client.
+     * For example:
+     * <p>
+     *
+     * <pre>
+     * quarkus.redis.client1.hosts = redis://localhost:6379
+     * quarkus.redis.client2.hosts = redis://localhost:6380
+     * </pre>
+     * <p>
+     * And then use the {@link io.quarkus.redis.client.RedisClientName} annotation to select the
+     * {@link io.vertx.mutiny.redis.client.Redis},
+     * {@link io.vertx.redis.client.Redis}, {@link io.vertx.mutiny.redis.client.RedisAPI} and
+     * {@link io.vertx.redis.client.RedisAPI} beans.
+     * <p>
+     *
+     * <pre>
+     * {
+     *     &#64;code
+     *     &#64;RedisClientName("client1")
+     *     &#64;Inject
+     *     RedisAPI redis;
+     * }
+     * </pre>
+     */
+    @ConfigItem(name = ConfigItem.PARENT)
+    @ConfigDocMapKey("redis-client-name")
+    public Map<String, RedisClientBuildTimeConfig> namedRedisClients;
+
     /**
      * Whether a health check is published in case the smallrye-health extension is present.
      */

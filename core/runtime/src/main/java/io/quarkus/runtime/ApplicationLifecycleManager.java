@@ -25,8 +25,8 @@ import org.wildfly.common.lock.Locks;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.runner.RunnerClassLoader;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.graal.DiagnosticPrinter;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -77,7 +77,6 @@ public class ApplicationLifecycleManager {
     private static int exitCode = -1;
     private static volatile boolean shutdownRequested;
     private static Application currentApplication;
-    private static boolean hooksRegistered;
     private static boolean vmShuttingDown;
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
@@ -192,8 +191,9 @@ public class ApplicationLifecycleManager {
                 } else if (rootCause instanceof ConfigurationException) {
                     System.err.println(rootCause.getMessage());
                 } else {
+                    // If it is not a ConfigurationException it should be safe to call ConfigProvider.getConfig here
                     applicationLogger.errorv(rootCause, "Failed to start application (with profile {0})",
-                            ProfileManager.getActiveProfile());
+                            ConfigUtils.getProfiles());
                     ensureConsoleLogsDrained();
                 }
             }

@@ -7,7 +7,7 @@ metadata:
   - "jpa"
   - "orm"
   - "panache"
-  guide: "https://quarkus.io/guides/security-jpa"
+  guide: "https://quarkus.io/guides/security-getting-started"
   categories:
   - "security"
   status: "stable"

@@ -92,11 +92,11 @@ public class RestDataProcessor {
             ResourceMetadata resourceMetadata, List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems) {
         for (ResourcePropertiesBuildItem resourcePropertiesBuildItem : resourcePropertiesBuildItems) {
             if (resourcePropertiesBuildItem.getResourceType().equals(resourceMetadata.getResourceClass())
-                    || resourcePropertiesBuildItem.getResourceType().equals(resourceMetadata.getResourceInterface())) {
+                    || resourcePropertiesBuildItem.getResourceType().equals(resourceMetadata.getResourceName())) {
                 return resourcePropertiesBuildItem.getResourcePropertiesInfo();
             }
         }
-        return resourcePropertiesProvider.getForInterface(resourceMetadata.getResourceInterface());
+        return resourcePropertiesProvider.getFromClass(resourceMetadata.getResourceName());
     }
 
     private boolean hasAnyJsonCapabilityForResteasyClassic(Capabilities capabilities) {

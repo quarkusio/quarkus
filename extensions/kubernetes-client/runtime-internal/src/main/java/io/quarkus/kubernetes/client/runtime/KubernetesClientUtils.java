@@ -43,6 +43,8 @@ public class KubernetesClientUtils {
                 .withProxyPassword(buildConfig.proxyPassword.orElse(base.getProxyPassword()))
                 .withNoProxy(buildConfig.noProxy.orElse(base.getNoProxy()))
                 .withHttp2Disable(base.isHttp2Disable())
+                .withRequestRetryBackoffInterval((int) buildConfig.requestRetryBackoffInterval.toMillis())
+                .withRequestRetryBackoffLimit(buildConfig.requestRetryBackoffLimit)
                 .build();
     }
 

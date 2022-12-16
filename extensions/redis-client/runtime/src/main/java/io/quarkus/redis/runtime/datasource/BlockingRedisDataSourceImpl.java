@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.autosuggest.AutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.datasource.bloom.BloomCommands;
 import io.quarkus.redis.datasource.countmin.CountMinCommands;
@@ -21,9 +22,11 @@ import io.quarkus.redis.datasource.json.JsonCommands;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.timeseries.TimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
@@ -255,6 +258,21 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K> GraphCommands<K> graph(Class<K> redisKeyType) {
         return new BlockingGraphCommandsImpl<>(this, reactive.graph(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> SearchCommands<K> search(Class<K> redisKeyType) {
+        return new BlockingSearchCommandsImpl<>(this, reactive.search(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> AutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
+        return new BlockingAutoSuggestCommandsImpl<>(this, reactive.autosuggest(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TimeSeriesCommands<K> timeseries(Class<K> redisKeyType) {
+        return new BlockingTimeSeriesCommandsImpl<>(this, reactive.timeseries(redisKeyType), timeout);
     }
 
     @Override

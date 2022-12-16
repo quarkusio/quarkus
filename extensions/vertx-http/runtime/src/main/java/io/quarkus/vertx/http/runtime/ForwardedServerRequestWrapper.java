@@ -25,12 +25,11 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.StreamPriority;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.http.impl.HttpServerRequestWrapper;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
-class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequestInternal {
-
-    private final HttpServerRequestInternal delegate;
+class ForwardedServerRequestWrapper extends HttpServerRequestWrapper implements HttpServerRequest {
     private final ForwardedParser forwardedParser;
 
     private boolean modified;
@@ -42,7 +41,7 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     private String absoluteURI;
 
     ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions) {
-        delegate = (HttpServerRequestInternal) request;
+        super((HttpServerRequestInternal) request);
         forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions);
     }
 

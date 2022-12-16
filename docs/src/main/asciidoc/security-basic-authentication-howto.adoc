@@ -1,0 +1,50 @@
+[id="security-basic-authentication-howto"]
+= Enable Basic authentication
+include::_attributes.adoc[]
+:categories: security
+
+Enable Basic authentication for your Quarkus project and allow users to authenticate with a username and password.
+ 
+== Prerequisites
+ 
+* You have installed at least one extension that provides an `IdentityProvider` based on username and password, such as xref:security-jdbc.adoc[Elytron JDBC].
+
+== Procedure
+
+. Enable Basic authentication by setting the value of `quarkus.http.auth.basic` property to `true`.
++
+[source,properties]
+----
+quarkus.http.auth.basic=true
+----
+ 
+An easy way to configure the required user credentials for Basic authentication to work is to configure the user name, secret, and roles directly in the `application.properties` file.
+
+.Example of Basic authentication properties
+
+[source,properties]
+----
+quarkus.http.auth.basic=true
+quarkus.security.users.embedded.plain-text=true
+quarkus.security.users.embedded.users.alice=alice
+quarkus.security.users.embedded.users.bob=bob
+quarkus.security.users.embedded.roles.alice=admin
+quarkus.security.users.embedded.roles.bob=user
+----
+
+In this configuration the credentials for users `alice` and `bob` are configured: `alice` has a password `alice` and an `admin` role, `bob` has a password `bob` and a `user` role.
+
+For more information, see xref:security-testing.adoc#configuring-user-information[Configuring User Information] in the "Security Testing" guide.
+
+[IMPORTANT]
+====
+Configuring user names, secrets, and roles in the `application.properties` file is only suitable for testing scenarios. If you are securing an application for production, always use a database to store this information.
+====
+
+To walk through how to configure Basic authentication together with JPA for storing user credentials in a database, see the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication] tutorial.
+ 
+== Additional resources
+
+* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-overview-concept.adoc#identity-providers[Security Identity Providers]
+* xref:security-testing.adoc#configuring-user-information[Configuring User Information in application.properties]

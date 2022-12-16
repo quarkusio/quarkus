@@ -14,6 +14,9 @@ import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
 
 @ConfigGroup
 public class OidcTenantConfig extends OidcCommonConfig {
@@ -157,7 +160,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Token token = new Token();
 
     /**
-     * RP Initiated and BackChannel Logout configuration
+     * RP Initiated, BackChannel and FrontChannel Logout configuration
      */
     @ConfigItem
     public Logout logout = new Logout();
@@ -241,6 +244,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Backchannel backchannel = new Backchannel();
 
+        /**
+         * Front-Channel Logout configuration
+         */
+        @ConfigItem
+        public Frontchannel frontchannel = new Frontchannel();
+
         public void setPath(Optional<String> path) {
             this.path = path;
         }
@@ -280,12 +289,37 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public void setBackchannel(Backchannel backchannel) {
             this.backchannel = backchannel;
         }
+
+        public Frontchannel getFrontchannel() {
+            return frontchannel;
+        }
+
+        public void setFrontchannel(Frontchannel frontchannel) {
+            this.frontchannel = frontchannel;
+        }
     }
 
     @ConfigGroup
     public static class Backchannel {
         /**
          * The relative path of the Back-Channel Logout endpoint at the application.
+         */
+        @ConfigItem
+        public Optional<String> path = Optional.empty();
+
+        public void setPath(Optional<String> path) {
+            this.path = path;
+        }
+
+        public String getPath() {
+            return path.get();
+        }
+    }
+
+    @ConfigGroup
+    public static class Frontchannel {
+        /**
+         * The relative path of the Front-Channel Logout endpoint at the application.
          */
         @ConfigItem
         public Optional<String> path = Optional.empty();
@@ -676,7 +710,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Additional properties which will be added as the query parameters to the authentication redirect URI.
          */
         @ConfigItem
-        public Map<String, String> extraParams;
+        public Map<String, String> extraParams = new HashMap<>();
+
+        /**
+         * Request URL query parameters which, if present, will be added to the authentication redirect URI.
+         */
+        @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
+        public Optional<List<String>> forwardParams = Optional.empty();
 
         /**
          * If enabled the state, session and post logout cookies will have their 'secure' parameter set to 'true'
@@ -934,6 +975,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public void setResponseMode(ResponseMode responseMode) {
             this.responseMode = Optional.of(responseMode);
         }
+
+        public Optional<List<String>> getForwardParams() {
+            return forwardParams;
+        }
+
+        public void setForwardParams(List<String> forwardParams) {
+            this.forwardParams = Optional.of(forwardParams);
+        }
     }
 
     /**
@@ -1138,6 +1187,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem(defaultValue = "true")
         public boolean allowOpaqueTokenIntrospection = true;
+
+        /**
+         * Indirectly verify that the opaque (binary) access token is valid by using it to request UserInfo.
+         * Opaque access token is considered valid if the provider accepted this token and returned a valid UserInfo.
+         * You should only enable this option if the opaque access tokens have to be accepted but OpenId Connect
+         * provider does not have a token introspection endpoint.
+         * This property will have no effect when JWT tokens have to be verified.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean verifyAccessTokenWithUserInfo;
 
         public Optional<String> getIssuer() {
             return issuer;

@@ -11,6 +11,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.sse.OutboundSseEvent;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
@@ -49,7 +50,12 @@ public class PublisherResponseHandler implements ServerRestHandler {
 
         @Override
         public void onNext(Object item) {
-            OutboundSseEventImpl event = new OutboundSseEventImpl.BuilderImpl().data(item).build();
+            OutboundSseEvent event;
+            if (item instanceof OutboundSseEvent) {
+                event = (OutboundSseEvent) item;
+            } else {
+                event = new OutboundSseEventImpl.BuilderImpl().data(item).build();
+            }
             SseUtil.send(requestContext, event, customizers).whenComplete(new BiConsumer<Object, Throwable>() {
                 @Override
                 public void accept(Object v, Throwable t) {

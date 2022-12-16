@@ -18,6 +18,8 @@ import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniCreate;
 import io.smallrye.mutiny.groups.UniOnFailure;
+import io.smallrye.mutiny.groups.UniSubscribe;
+import io.smallrye.mutiny.subscription.Cancellable;
 
 public final class UniImplementor {
 
@@ -29,6 +31,32 @@ public final class UniImplementor {
         ResultHandle uniItem = creator.invokeVirtualMethod(ofMethod(UniCreate.class, "item", Uni.class, Object.class),
                 createFrom, item);
         return uniItem;
+    }
+
+    /**
+     * Given an uni, it will subscribe to the item when set.
+     *
+     * @param creator
+     * @param uniInstance
+     * @param function
+     */
+    public static void subscribeWith(BytecodeCreator creator, ResultHandle uniInstance,
+            BiConsumer<BytecodeCreator, ResultHandle> function) {
+        ResultHandle rrContext = creator
+                .invokeStaticMethod(ofMethod(CurrentRequestManager.class, "get", ResteasyReactiveRequestContext.class));
+
+        FunctionCreator lambda = creator.createFunction(Consumer.class);
+        BytecodeCreator body = lambda.getBytecode();
+        ResultHandle item = body.getMethodParam(0);
+        body.invokeStaticMethod(ofMethod(CurrentRequestManager.class, "set", void.class, ResteasyReactiveRequestContext.class),
+                rrContext);
+
+        function.accept(body, item);
+
+        ResultHandle uniSubscribe = creator.invokeInterfaceMethod(ofMethod(Uni.class, "subscribe", UniSubscribe.class),
+                uniInstance);
+        creator.invokeVirtualMethod(ofMethod(UniSubscribe.class, "with", Cancellable.class, Consumer.class), uniSubscribe,
+                lambda.getInstance());
     }
 
     /**

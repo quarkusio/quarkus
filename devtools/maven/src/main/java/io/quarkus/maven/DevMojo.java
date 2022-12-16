@@ -391,6 +391,11 @@ public class DevMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
 
+        if (project.getPackaging().equals(ArtifactCoords.TYPE_POM)) {
+            getLog().info("Type of the artifact is POM, skipping dev goal");
+            return;
+        }
+
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
 
         initToolchain();
@@ -1268,7 +1273,7 @@ public class DevMojo extends AbstractMojo {
             final List<Exclusion> exclusions;
             if (!d.getExclusions().isEmpty()) {
                 exclusions = new ArrayList<>(d.getExclusions().size());
-                d.getExclusions().forEach(e -> exclusions.add(new Exclusion(e.getGroupId(), e.getArtifactId(), null, null)));
+                d.getExclusions().forEach(e -> exclusions.add(new Exclusion(e.getGroupId(), e.getArtifactId(), "*", "*")));
             } else {
                 exclusions = List.of();
             }

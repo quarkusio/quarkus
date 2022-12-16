@@ -4,15 +4,20 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 ////
-TODO: Title should have an implied "How to.." in front. See
+TODO: See Quarkus documentation reference for details
+- Title should have an implied "How to..." in front. 
+- ID should end with '-howto' (using the filename works)
+- choose appropriate categories
 ////
-[id="howto-..."]
+[id="...-howto"]
 = Title using sentence capitalization
-////
-TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following and set the appropriate status (otherwise delete)
-:extension-status: preview
-////
 include::_attributes.adoc[]
+:categories: ...
+////
+:extension-status: preview
+TODO: uncomment the above for for an experimental or tech-preview content. 
+The document header ends at the first blank line.
+////
 
 How-to guides are goal-oriented, and should help the reader accomplish a task (where there may be forks in the path).
 
@@ -28,7 +33,7 @@ Your user will also be in the middle of something: define the starting-point tha
 == Resources
 
 - xref:{doc-guides}/doc-create-howto-tutorial.adoc[Tutorial: Create a How-To]
-- xref:{doc-guides}/doc-concepts.adoc#howto-guide[Documentation concepts: How-to guides]
+- xref:{doc-guides}/doc-concept.adoc#howto-guide[Documentation concepts: How-to guides]
 - xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
 
 == Guidelines for good How-To guides

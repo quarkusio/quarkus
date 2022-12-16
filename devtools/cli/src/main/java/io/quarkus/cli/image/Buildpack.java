@@ -1,6 +1,8 @@
 package io.quarkus.cli.image;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -51,10 +53,9 @@ public class Buildpack extends BaseImageCommand {
     BaseImageCommand parent;
 
     @Override
-    public void populateImageConfiguration(Map<String, String> properties) {
-        super.populateImageConfiguration(properties);
+    public Integer call() throws Exception {
+        Map<String, String> properties = parent.getPropertiesOptions().properties;
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, BUILDPACK);
-        properties.put(QUARKUS_FORCED_EXTENSIONS, QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + BUILDPACK);
 
         builderImage.ifPresent(i -> properties
                 .put(BUILDPACK_CONFIG_PREFIX + (buildOptions.buildNative ? NATIVE_BUILDER_IMAGE : JVM_BUILDER_IMAGE), i));
@@ -64,16 +65,18 @@ public class Buildpack extends BaseImageCommand {
         dockerHost.ifPresent(h -> properties.put(BUILDPACK_CONFIG_PREFIX + DOCKER_HOST, h));
         runImage.ifPresent(i -> properties.put(BUILDPACK_CONFIG_PREFIX + RUN_IMAGE, i));
         buildEnv.forEach((k, v) -> properties.put(BUILDPACK_CONFIG_PREFIX + BUILDER_ENV + "." + k, v));
+
+        parent.getForcedExtensions().add(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + BUILDPACK);
+        parent.runMode = runMode;
+        parent.buildOptions = buildOptions;
+        parent.imageOptions = imageOptions;
+        parent.setOutput(output);
+        return parent.call();
     }
 
     @Override
-    public Integer call() throws Exception {
-        try {
-            populateImageConfiguration(parent.getPropertiesOptions().properties);
-            return parent.call();
-        } catch (Exception e) {
-            return output.handleCommandException(e, "Unable to build image: " + e.getMessage());
-        }
+    public List<String> getForcedExtensions() {
+        return Arrays.asList(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + BUILDPACK);
     }
 
     @Override

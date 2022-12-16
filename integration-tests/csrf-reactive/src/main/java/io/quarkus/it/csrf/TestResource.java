@@ -1,5 +1,7 @@
 package io.quarkus.it.csrf;
 
+import java.io.File;
+
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
@@ -11,6 +13,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.resteasy.reactive.RestForm;
+
+import io.quarkus.csrf.reactive.runtime.CsrfTokenUtils;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.vertx.ext.web.RoutingContext;
@@ -54,9 +60,19 @@ public class TestResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
     public String postCsrfTokenMultipart(@FormParam("name") String name,
-            @FormParam("csrf-token") String csrfTokenParam, @CookieParam("csrftoken") Cookie csrfTokenCookie) {
+            @FormParam("csrf-token") String csrfTokenParam,
+            MultiPart multiPart,
+            @CookieParam("csrftoken") Cookie csrfTokenCookie) throws Exception {
         return name + ":" + routingContext.get("csrf_token_verified", false) + ":"
-                + csrfTokenCookie.getValue().equals(csrfTokenParam);
+                + isResteasyReactiveUpload(multiPart.file) + ":"
+                + csrfTokenCookie.getValue().equals(
+                        CsrfTokenUtils.signCsrfToken(csrfTokenParam,
+                                ConfigProvider.getConfig().getValue("quarkus.csrf-reactive.token-signature-key",
+                                        String.class)));
+    }
+
+    private boolean isResteasyReactiveUpload(File file) throws Exception {
+        return file.getName().startsWith("resteasy-reactive");
     }
 
     @GET
@@ -64,5 +80,10 @@ public class TestResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String getSimpleGet() {
         return "hello";
+    }
+
+    public static class MultiPart {
+        @RestForm
+        File file;
     }
 }

@@ -80,6 +80,10 @@
 
                         <!-- TODO fix this-->
                         <exclude>org.eclipse.microprofile.rest.client.tck.jsonb.InvokeWithJsonBProviderTest</exclude>
+
+                        <!-- These are flaky -->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.FollowRedirectsTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.cditests.CDIFollowRedirectsTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.SessionScoped;
@@ -175,13 +176,30 @@ class RestClientProcessor {
     }
 
     @BuildStep
+    List<RestClientPredicateProviderBuildItem> transformAnnotationProvider(
+            List<RestClientAnnotationProviderBuildItem> annotationProviders) {
+        List<RestClientPredicateProviderBuildItem> result = new ArrayList<>();
+        for (RestClientAnnotationProviderBuildItem annotationProvider : annotationProviders) {
+            result.add(new RestClientPredicateProviderBuildItem(annotationProvider.getProviderClass().getName(),
+                    new Predicate<ClassInfo>() {
+                        @Override
+                        public boolean test(ClassInfo classInfo) {
+                            // register the provider to every Rest client annotated with annotationName
+                            return classInfo.hasAnnotation(annotationProvider.getAnnotationName());
+                        }
+                    }));
+        }
+        return result;
+    }
+
+    @BuildStep
     void processInterfaces(
             CombinedIndexBuildItem combinedIndexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             PackageConfig packageConfig,
-            List<RestClientAnnotationProviderBuildItem> restClientAnnotationProviders,
+            List<RestClientPredicateProviderBuildItem> restClientProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
@@ -244,28 +262,28 @@ class RestClientProcessor {
             configurator.addQualifier(REST_CLIENT);
             final Optional<String> configKey = getConfigKey(entry.getValue());
             final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configKey);
-            final List<Class<?>> annotationProviders = checkAnnotationProviders(entry.getValue(),
-                    restClientAnnotationProviders);
+            final List<String> clientProviders = checkRestClientProviders(entry.getValue(),
+                    restClientProviders);
             configurator.scope(scope);
             configurator.creator(m -> {
                 // return new RestClientBase(proxyType, baseUri).create();
                 ResultHandle interfaceHandle = m.loadClassFromTCCL(restClientName.toString());
                 ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
                 ResultHandle configKeyHandle = configKey.isPresent() ? m.load(configKey.get()) : m.loadNull();
-                ResultHandle annotationProvidersHandle;
-                if (!annotationProviders.isEmpty()) {
-                    annotationProvidersHandle = m.newArray(Class.class, annotationProviders.size());
-                    for (int i = 0; i < annotationProviders.size(); i++) {
-                        m.writeArrayValue(annotationProvidersHandle, i, m.loadClassFromTCCL(annotationProviders.get(i)));
+                ResultHandle restClientProvidersHandle;
+                if (!clientProviders.isEmpty()) {
+                    restClientProvidersHandle = m.newArray(Class.class, clientProviders.size());
+                    for (int i = 0; i < clientProviders.size(); i++) {
+                        m.writeArrayValue(restClientProvidersHandle, i, m.loadClassFromTCCL(clientProviders.get(i)));
                     }
                 } else {
-                    annotationProvidersHandle = m.loadNull();
+                    restClientProvidersHandle = m.loadNull();
                 }
                 ResultHandle baseHandle = m.newInstance(
                         MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class,
                                 String.class,
                                 Class[].class),
-                        interfaceHandle, baseUriHandle, configKeyHandle, annotationProvidersHandle);
+                        interfaceHandle, baseUriHandle, configKeyHandle, restClientProvidersHandle);
                 ResultHandle ret = m.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                 m.returnValue(ret);
@@ -292,9 +310,9 @@ class RestClientProcessor {
                         && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
     }
 
-    private static List<Class<?>> checkAnnotationProviders(ClassInfo classInfo,
-            List<RestClientAnnotationProviderBuildItem> restClientAnnotationProviders) {
-        return restClientAnnotationProviders.stream().filter(p -> (classInfo.classAnnotation(p.getAnnotationName()) != null))
+    private static List<String> checkRestClientProviders(ClassInfo classInfo,
+            List<RestClientPredicateProviderBuildItem> restClientProviders) {
+        return restClientProviders.stream().filter(p -> p.appliesTo(classInfo))
                 .map(p -> p.getProviderClass()).collect(Collectors.toList());
     }
 

@@ -4,6 +4,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.jboss.jandex.FieldInfo;
@@ -44,7 +45,8 @@ public class CrudMethodsImplementor implements ResourceMethodsImplementor {
     }
 
     public void implementList(ClassCreator classCreator, String repositoryInterface) {
-        MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class, Sort.class);
+        MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class, Sort.class,
+                String.class, Map.class);
 
         ResultHandle repository = getRepositoryInstance(methodCreator, repositoryInterface);
         ResultHandle result = methodCreator.invokeInterfaceMethod(LIST, repository);

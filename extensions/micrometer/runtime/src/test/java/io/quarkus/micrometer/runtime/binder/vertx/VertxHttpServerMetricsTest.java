@@ -1,5 +1,7 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
+import java.util.concurrent.atomic.LongAdder;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +24,7 @@ public class VertxHttpServerMetricsTest {
 
     @BeforeEach
     public void init() {
-        requestMetric = new HttpRequestMetric("/irrelevant");
+        requestMetric = new HttpRequestMetric("/irrelevant", new LongAdder());
 
         routingContext = Mockito.mock(RoutingContext.class);
         request = Mockito.mock(HttpServerRequestInternal.class);

@@ -101,6 +101,11 @@ public class Name implements Comparable<Name> {
 
     @Override
     public int compareTo(Name other) {
+        // Quarkus classes should be last
+        int result = Boolean.compare(isQuarkusClassName(), other.isQuarkusClassName());
+        if (result != 0) {
+            return result;
+        }
         return name.compareTo(other.name);
     }
 
@@ -109,4 +114,7 @@ public class Name implements Comparable<Name> {
         return name;
     }
 
+    private boolean isQuarkusClassName() {
+        return name.startsWith("io.quarkus");
+    }
 }

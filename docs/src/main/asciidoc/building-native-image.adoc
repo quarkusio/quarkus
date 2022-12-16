@@ -326,7 +326,7 @@ Adding `<argLine>--enable-preview</argLine>` to its `configuration` section is o
 
 === Excluding tests when running as a native executable
 
-When running tests this way, the only things that actually run natively are you application endpoints, which
+When running tests this way, the only things that actually run natively are your application endpoints, which
 you can only test via HTTP calls. Your test code does not actually run natively, so if you are testing code
 that does not call your HTTP endpoints, it's probably not a good idea to run them as part of native tests.
 
@@ -484,7 +484,7 @@ Then, if you didn't delete the generated native executable, you can build the do
 
 [source,bash]
 ----
-docker build -f src/main/docker/Dockerfile.native -t quarkus-quickstart/getting-started .
+docker build -f src/main/docker/Dockerfile.native-micro -t quarkus-quickstart/getting-started .
 ----
 
 And finally, run it with:
@@ -522,6 +522,12 @@ That approach is possible with a multi-stage Docker build:
 
 1. The first stage builds the native executable using Maven or Gradle
 2. The second stage is a minimal image copying the produced native executable
+
+
+[WARNING]
+====
+Before building a container image from the Dockerfiles shown below, you need to update the default `.dockerignore` file, as it filters everything except the `target` directory. In order to build inside a container, you need to copy the `src` directory. Thus, edit your `.dockerignore` and remove the `*` line.
+====
 
 Such a multi-stage build can be achieved as follows:
 
@@ -590,11 +596,6 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
 If you are using Gradle in your project, you can use this sample Dockerfile.  Save it in `src/main/docker/Dockerfile.multistage`.
-
-[WARNING]
-====
-Before launching our Docker build, we need to update the default `.dockerignore` file as it filters everything except the `target` directory. As we plan to build inside a container, we need to copy the `src` directory. Thus, edit your `.dockerignore` and update the content.
-====
 
 [source,bash]
 ----

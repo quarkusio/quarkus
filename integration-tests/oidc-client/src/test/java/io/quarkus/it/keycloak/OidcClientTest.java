@@ -37,6 +37,14 @@ public class OidcClientTest {
     }
 
     @Test
+    public void testGetUserNameNonDefaultOidcClient() {
+        RestAssured.when().get("/frontend/userNonDefaultOidcClient")
+                .then()
+                .statusCode(200)
+                .body(equalTo("bob"));
+    }
+
+    @Test
     public void testGetUserNameOidcClientManagedExecutor() {
         RestAssured.when().get("/frontend/userOidcClientManagedExecutor")
                 .then()

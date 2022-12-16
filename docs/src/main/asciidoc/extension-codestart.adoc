@@ -69,6 +69,91 @@ Each codestart consists of:
 
 The https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus[base codestarts, window="_blank"] contains templates to create project, buildtool, languages, config and tooling files.
 
+In addition, Quarkus also provides the following ways to initialize a new extension project with a Codestart:
+
+[role="primary asciidoc-tabs-sync-cli"]
+.CLI
+****
+To create a new extension with a Codestart skeleton provide the `--codestart` flag to the `create extension` command:
+
+[source,bash,subs=attributes+]
+----
+quarkus create extension --codestart org.acme:greeting-extension
+----
+[source,shell,subs=attributes+]
+----
+Detected layout type is 'standalone'
+Generated runtime artifactId is 'greeting-extension'
+
+
+applying codestarts...
+📚  java
+🔨  maven
+📦  quarkus-extension
+🚀  devmode-test
+🚀  extension-base
+🚀  extension-codestart
+🚀  integration-tests
+🚀  unit-test
+
+-----------
+ 👍  extension has been successfully generated in:
+--> /Users/.../greeting-extension
+-----------
+Navigate into this directory and get started: quarkus build
+----
+
+_For more information about how to install the Quarkus CLI and use it, please refer to xref:cli-tooling.adoc[the Quarkus CLI guide]._
+****
+
+[role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+****
+Quarkus provides the <<building-my-first-extension.adoc#maven-setup,`create-extension` Maven Mojo>> to initialize an extension project.
+
+To generate a new extension with a Codestart skeleton provide the `-DwithCodestart` flag to this Mojo:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
+    -DgroupId=org.acme \
+    -DextensionId=greeting-extension \
+    -DwithCodestart
+----
+[source,shell,subs=attributes+]
+----
+[INFO] --- quarkus-maven-plugin:{quarkus-version}:create-extension (default-cli) @ standalone-pom ---
+
+Detected layout type is 'standalone'
+Generated runtime artifactId is 'greeting-extension'
+
+
+applying codestarts...
+📚  java
+🔨  maven
+📦  quarkus-extension
+🚀  devmode-test
+🚀  extension-base
+🚀  extension-codestart
+🚀  integration-tests
+🚀  unit-test
+
+-----------
+ 👍  extension has been successfully generated in:
+--> /Users/.../greeting-extension
+-----------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.638 s
+[INFO] Finished at: 2022-10-24T21:27:51+02:00
+[INFO] ------------------------------------------------------------------------
+----
+
+****
+
+
+
 == Writing an Extension Codestart
 
 Here is a step-by-step guide to write an extension codestart. You may also watch the https://www.youtube.com/watch?v=lLyVDqVK8cE[Quarkus Insight #99] with a live-coding session.
@@ -80,7 +165,8 @@ Let's take `io.quarkiverse.aloha:quarkus-aloha` as an example extension GAV (don
 === The code
 
 A Codestart is a template for scaffolding new project.
-The easiest way to prepare a Codestart is to generate a Quarkus project, add the content you want in your template and then create your Codestart from there.
+
+In this tutorial a Codestart project is created from a Quarkus project and adding the needed templates.
 
 Therefore, go to https://code.quarkus.io[code.quarkus.io, window="_blank"], create a new project with the aloha extension and `org.acme` as Group (i.e <<org-acme-package>>). Prepare a nice starter. It should not include any business logic, instead, it should contain some stub data/hello world that compiles and gives an overview of how to use the extension. The idea is to bring code that is the most common starting point for the extension.
 

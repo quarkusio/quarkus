@@ -167,8 +167,9 @@ public class BytecodeRecorderTestCase {
             ignoredProperties.setNotIgnored("Shows up");
             ignoredProperties.setIgnoredField("Does not show up");
             ignoredProperties.setAnotherIgnoredField("Does not show up either");
+            ignoredProperties.setCustomIgnoredField("Does not show up either");
             recorder.ignoredProperties(ignoredProperties);
-        }, new IgnoredProperties("Shows up", null, null));
+        }, new IgnoredProperties("Shows up", null, null, null));
     }
 
     @Test
@@ -292,6 +293,13 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.bean(bean);
         }, new TestConstructorBean("John", "Citizen").setAge(30));
+
+        runTest(generator -> {
+            OtherTestConstructorBean bean = new OtherTestConstructorBean("Jane", "Citizen");
+            bean.setAge(30);
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(bean);
+        }, new OtherTestConstructorBean("Jane", "Citizen").setAge(30));
     }
 
     @Test

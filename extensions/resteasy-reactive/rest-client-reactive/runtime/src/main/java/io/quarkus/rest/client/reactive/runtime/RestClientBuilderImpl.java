@@ -89,6 +89,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         return this;
     }
 
+    public RestClientBuilderImpl verifyHost(boolean verifyHost) {
+        clientBuilder.verifyHost(verifyHost);
+        return this;
+    }
+
     @Override
     public RestClientBuilderImpl trustStore(KeyStore trustStore) {
         clientBuilder.trustStore(trustStore);
@@ -319,6 +324,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                 .orElse(false);
 
         clientBuilder.trustAll(trustAll);
+        restClientsConfig.verifyHost.ifPresent(clientBuilder::verifyHost);
 
         String userAgent = (String) getConfiguration().getProperty(QuarkusRestClientProperties.USER_AGENT);
         if (userAgent != null) {

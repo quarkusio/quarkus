@@ -1,7 +1,6 @@
 package io.quarkus.bootstrap.resolver;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.List;
 
 import org.gradle.tooling.GradleConnector;
@@ -14,7 +13,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 public class QuarkusGradleModelFactory {
 
     public static ApplicationModel create(File projectDir, String mode, String... tasks) {
-        return create(projectDir, mode, Collections.emptyList(), tasks);
+        return create(projectDir, mode, List.of(), tasks);
     }
 
     public static ApplicationModel create(File projectDir, String mode, List<String> jvmArgs, String... tasks) {

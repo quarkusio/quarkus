@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -11,16 +12,16 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class FormAuthConfig {
     /**
-     * If form authentication is enabled
+     * If form authentication is enabled.
      */
     @ConfigItem
     public boolean enabled;
 
     /**
-     * The login page
+     * The login page. Redirect to login page can be disabled by setting `quarkus.http.auth.form.login-page=`.
      */
     @ConfigItem(defaultValue = "/login.html")
-    public String loginPage;
+    public Optional<String> loginPage;
 
     /**
      * The post location.
@@ -41,22 +42,28 @@ public class FormAuthConfig {
     public String passwordParameter;
 
     /**
-     * The error page
+     * The error page. Redirect to error page can be disabled by setting `quarkus.http.auth.form.error-page=`.
      */
     @ConfigItem(defaultValue = "/error.html")
-    public String errorPage;
+    public Optional<String> errorPage;
 
     /**
-     * The landing page to redirect to if there is no saved page to redirect back to
+     * The landing page to redirect to if there is no saved page to redirect back to.
+     * Redirect to landing page can be disabled by setting `quarkus.http.auth.form.landing-page=`.
      */
     @ConfigItem(defaultValue = "/index.html")
-    public String landingPage;
+    public Optional<String> landingPage;
 
     /**
      * Option to disable redirect to landingPage if there is no saved page to redirect back to. Form Auth POST is followed
      * by redirect to landingPage by default.
+     *
+     * @deprecated redirect to landingPage can be disabled by removing default landing page
+     *             (via `quarkus.http.auth.form.landing-page=`). Quarkus will ignore this configuration property
+     *             if there is no landing page.
      */
     @ConfigItem(defaultValue = "true")
+    @Deprecated
     public boolean redirectAfterLogin;
 
     /**

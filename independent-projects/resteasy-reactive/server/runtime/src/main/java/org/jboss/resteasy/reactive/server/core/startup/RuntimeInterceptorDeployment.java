@@ -98,7 +98,7 @@ public class RuntimeInterceptorDeployment {
                 .entrySet()) {
             globalRequestInterceptorHandlers
                     .add(new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired(),
-                            entry.getKey().isReadBody()));
+                            entry.getKey().isWithFormRead()));
         }
 
         InterceptorHandler globalInterceptorHandler = null;
@@ -330,7 +330,7 @@ public class RuntimeInterceptorDeployment {
                         .entrySet()) {
                     handlers.add(
                             new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired(),
-                                    entry.getKey().isNonBlockingRequired()));
+                                    entry.getKey().isWithFormRead()));
                 }
             }
             return handlers;

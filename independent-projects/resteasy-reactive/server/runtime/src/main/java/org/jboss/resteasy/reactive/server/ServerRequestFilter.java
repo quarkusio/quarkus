@@ -113,6 +113,9 @@ public @interface ServerRequestFilter {
      * Resource Methods that the filter applies to, it will be executed in normal fashion.
      *
      * Also note that this setting and {@link ServerRequestFilter#preMatching()} cannot be both set to true.
+     *
+     * @deprecated use {@link WithFormRead} on your filter to force reading the form values before your filter is invoked.
      */
+    @Deprecated
     boolean readBody() default false;
 }

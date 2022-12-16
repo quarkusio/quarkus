@@ -1,15 +1,26 @@
 package io.quarkus.rest.client.reactive.jackson.runtime.serialisers;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 import javax.inject.Inject;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
@@ -21,6 +32,16 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
     @Inject
     public ClientJacksonMessageBodyReader(ObjectMapper mapper) {
         super(mapper);
+    }
+
+    @Override
+    public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+        try {
+            return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
+        } catch (StreamReadException | DatabindException e) {
+            throw new ClientWebApplicationException(e, Response.Status.BAD_REQUEST);
+        }
     }
 
     @Override

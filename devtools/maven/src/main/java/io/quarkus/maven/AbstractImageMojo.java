@@ -38,7 +38,7 @@ public class AbstractImageMojo extends BuildMojo {
     @Override
     protected void doExecute() throws MojoExecutionException {
         if (dryRun) {
-            getLog().info("Container image confiugration:");
+            getLog().info("Container image configuration:");
             systemProperties.entrySet().stream()
                     .filter(e -> e.getKey().contains("quarkus.container-image"))
                     .forEach(e -> {
@@ -63,7 +63,8 @@ public class AbstractImageMojo extends BuildMojo {
     protected Optional<ArtifactDependency> getExtension(String artifactId) {
         return mavenProject().getDependencyManagement().getDependencies().stream()
                 .filter(d -> "io.quarkus".equals(d.getGroupId()) && artifactId.equals(d.getArtifactId()))
-                .map(d -> new ArtifactDependency(d.getGroupId(), d.getArtifactId(), null, ArtifactCoords.TYPE_JAR,
+                .map(d -> new ArtifactDependency(d.getGroupId(), d.getArtifactId(), null,
+                        io.quarkus.maven.dependency.ArtifactCoords.TYPE_JAR,
                         d.getVersion()))
                 .findFirst();
     }

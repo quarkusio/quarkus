@@ -24,6 +24,7 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 
@@ -35,22 +36,22 @@ public class RestClientBase {
 
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;
-    private final Class<?>[] annotationProviders;
+    private final Class<?>[] clientProviders;
     private final RestClientsConfig configRoot;
     private final String configKey;
 
     public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey,
-            Class<?>[] annotationProviders) {
-        this(proxyType, baseUriFromAnnotation, configKey, annotationProviders,
+            Class<?>[] clientProviders) {
+        this(proxyType, baseUriFromAnnotation, configKey, clientProviders,
                 RestClientsConfig.getInstance());
     }
 
     RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey,
-            Class<?>[] annotationProviders, RestClientsConfig configRoot) {
+            Class<?>[] clientProviders, RestClientsConfig configRoot) {
         this.proxyType = proxyType;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.configKey = configKey;
-        this.annotationProviders = annotationProviders;
+        this.clientProviders = clientProviders;
         this.configRoot = configRoot;
     }
 
@@ -149,6 +150,13 @@ public class RestClientBase {
                 clientConfigByConfigKey().hostnameVerifier, configRoot.hostnameVerifier);
         if (hostnameVerifier.isPresent()) {
             registerHostnameVerifier(hostnameVerifier.get(), builder);
+        } else {
+            // If `verify-host` is disabled, we configure the client using the `NoopHostnameVerifier` verifier.
+            Optional<Boolean> verifyHost = oneOf(clientConfigByClassName().verifyHost, clientConfigByConfigKey().verifyHost,
+                    configRoot.verifyHost);
+            if (verifyHost.isPresent() && !verifyHost.get()) {
+                registerHostnameVerifier(NoopHostnameVerifier.class.getName(), builder);
+            }
         }
     }
 
@@ -256,8 +264,8 @@ public class RestClientBase {
         if (providers.isPresent()) {
             registerProviders(builder, providers.get());
         }
-        if (annotationProviders != null) {
-            for (Class<?> annotationProvider : annotationProviders) {
+        if (clientProviders != null) {
+            for (Class<?> annotationProvider : clientProviders) {
                 builder.register(annotationProvider);
             }
         }

@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Build, Sign and Encrypt JSON Web Tokens
 
 include::_attributes.adoc[]
-:toc:
 
 According to link:https://datatracker.ietf.org/doc/html/rfc7519[RFC7519], JSON Web Token (JWT) is a compact, URL-safe means of representing claims which are encoded as a JSON object that is used as the payload of a JSON Web Signature (JWS) structure or as the plaintext of a JSON Web Encryption (JWE) structure, enabling the claims to be digitally signed or integrity protected with a Message Authentication Code(MAC) and/or encrypted.
 
@@ -349,4 +348,4 @@ SmallRye JWT supports the following properties which can be used to customize th
 * link:https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J]
 * xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications]
 * xref:security-jwt.adoc[Using Smallrye JWT to Protect Service Applications]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

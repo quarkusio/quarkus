@@ -128,7 +128,8 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
         }
 
         /**
-         * The default scope is only used if there is no scope declared on the bean class.
+         * The default scope is only used if there is no scope declared on the bean class or added by an annotation transformer
+         * with priority higher than {@code io.quarkus.arc.processor.BuildExtension.DEFAULT_PRIORITY}
          * <p>
          * The default scope should be used in cases where a bean class source is not controlled by the extension and the
          * scope annotation cannot be declared directly on the class.

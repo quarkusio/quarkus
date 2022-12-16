@@ -2,6 +2,7 @@ package io.quarkus.redis.client.deployment;
 
 import static io.quarkus.redis.client.deployment.RedisClientProcessor.REDIS_CLIENT_ANNOTATION;
 import static io.quarkus.redis.client.deployment.RedisClientProcessor.configureAndCreateSyntheticBean;
+import static io.quarkus.redis.client.deployment.RedisClientProcessor.configuredClientNames;
 import static io.quarkus.redis.runtime.client.config.RedisConfig.DEFAULT_CLIENT_NAME;
 
 import java.util.Collection;
@@ -9,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -34,14 +36,10 @@ public class RedisDatasourceProcessor {
             DotName.createSimple(ReactiveRedisDataSource.class.getName()));
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void init(RedisClientRecorder recorder,
+    public void detectUsage(BuildProducer<RequestedRedisClientBuildItem> request,
+            RedisBuildTimeConfig buildTimeConfig,
             BeanArchiveIndexBuildItem indexBuildItem,
-            BeanDiscoveryFinishedBuildItem beans,
-            ShutdownContextBuildItem shutdown,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            VertxBuildItem vertxBuildItem) {
-
+            BeanDiscoveryFinishedBuildItem beans) {
         // Collect the used redis datasource, the unused clients will not be instantiated.
         Set<String> names = new HashSet<>();
         IndexView indexView = indexBuildItem.getIndex();
@@ -56,6 +54,32 @@ public class RedisDatasourceProcessor {
                 .findAny()
                 .ifPresent(x -> names.add(DEFAULT_CLIENT_NAME));
 
+        beans.getInjectionPoints().stream()
+                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
+                .filter(InjectionPointInfo::isProgrammaticLookup)
+                .findAny()
+                .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, ConfigProvider.getConfig())));
+
+        for (String name : names) {
+            request.produce(new RequestedRedisClientBuildItem(name));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void init(RedisClientRecorder recorder,
+            List<RequestedRedisClientBuildItem> clients,
+            ShutdownContextBuildItem shutdown,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            VertxBuildItem vertxBuildItem) {
+
+        if (clients.isEmpty()) {
+            return;
+        }
+        Set<String> names = new HashSet<>();
+        for (RequestedRedisClientBuildItem client : clients) {
+            names.add(client.name);
+        }
         // Inject the creation of the client when the application starts.
         recorder.initialize(vertxBuildItem.getVertx(), names);
 

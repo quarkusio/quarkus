@@ -930,7 +930,7 @@ quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-l
 
 === Proactive Authentication
 
-If you'd like to skip the token verification when the public endpoint methods are invoked then please disable the xref:security-built-in-authentication.adoc#proactive-authentication[proactive authentication].
+If you'd like to skip the token verification when the public endpoint methods are invoked then please disable the xref:security-built-in-authentication-support-concept.adoc#proactive-authentication[proactive authentication].
 
 Note that you can't access the injected `JsonWebToken` in the public methods if the token verification has not been done.
 
@@ -1042,5 +1042,5 @@ SmallRye JWT provides more properties which can be used to customize the token p
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* xref:security.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

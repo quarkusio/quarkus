@@ -10,6 +10,8 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 import io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder;
+import io.smallrye.graphql.client.vertx.VertxManager;
+import io.vertx.core.Vertx;
 
 @Recorder
 public class SmallRyeGraphQLClientRecorder {
@@ -46,6 +48,10 @@ public class SmallRyeGraphQLClientRecorder {
         GraphQLClientConfigurationMergerBean merger = Arc.container()
                 .instance(GraphQLClientConfigurationMergerBean.class).get();
         merger.nothing();
+    }
+
+    public void setGlobalVertxInstance(Supplier<Vertx> vertx) {
+        VertxManager.setFromGlobal(vertx.get());
     }
 
 }

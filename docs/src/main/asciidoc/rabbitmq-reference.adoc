@@ -579,7 +579,7 @@ Type: _boolean_ | false | `false`
 
 Type: _string_ | false | `/`
 
-| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used
+| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used. If set to `""`, the default exchange is used
 
 Type: _string_ | false |
 
@@ -631,9 +631,25 @@ Type: _boolean_ | false | `true`
 
 Type: _long_ | false |
 
+| [.no-hyphens]#*queue.single-active-consumer*# | If set to true, only one consumer can actively consume messages
+
+Type: _boolean_ | false | `false`
+
+| [.no-hyphens]#*queue.x-queue-type*# | If automatically declare queue, we can choose different types of queue [quorum, classic, stream]
+
+Type: _string_ | false | `classic`
+
+| [.no-hyphens]#*queue.x-queue-mode*# | If automatically declare queue, we can choose different modes of queue [lazy, default]
+
+Type: _string_ | false | `default`
+
 | [.no-hyphens]#*max-incoming-internal-queue-size*# | The maximum size of the incoming internal queue
 
 Type: _int_ | false |
+
+| [.no-hyphens]#*connection-count*# | The number of RabbitMQ connections to create for consuming from this queue. This might be necessary to consume from a sharded queue with a single client.
+
+Type: _int_ | false | `1`
 
 | [.no-hyphens]#*auto-bind-dlq*# | Whether to automatically declare the DLQ and bind it to the binder DLX
 
@@ -659,6 +675,14 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `false`
 
+| [.no-hyphens]#*dead-letter-queue-type*# | If automatically declare DLQ, we can choose different types of DLQ [quorum, classic, stream]
+
+Type: _string_ | false | `classic`
+
+| [.no-hyphens]#*dead-letter-queue-mode*# | If automatically declare DLQ, we can choose different modes of DLQ [lazy, default]
+
+Type: _string_ | false | `default`
+
 | [.no-hyphens]#*failure-strategy*# | The failure strategy to apply when a RabbitMQ message is nacked. Accepted values are `fail`, `accept`, `reject` (default)
 
 Type: _string_ | false | `reject`
@@ -679,6 +703,13 @@ Type: _boolean_ | false | `false`
 
 Type: _string_ | false | `#`
 
+| [.no-hyphens]#*content-type-override*# | Override the content_type attribute of the incoming message, should be a valid MINE type
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*max-outstanding-messages*# | The maximum number of outstanding/unacknowledged messages being processed by the connector at a time; must be a positive number
+
+Type: _int_ | false |
 |===
 
 
@@ -720,7 +751,7 @@ Type: _boolean_ | false | `true`
 
 Type: _boolean_ | false | `true`
 
-| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used
+| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used. If set to `""`, the default exchange is used
 
 Type: _string_ | false |
 

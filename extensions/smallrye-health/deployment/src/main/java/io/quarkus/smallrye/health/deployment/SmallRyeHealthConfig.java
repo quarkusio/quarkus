@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.health.deployment;
 
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -62,6 +63,12 @@ public class SmallRyeHealthConfig {
      */
     @ConfigItem
     OptionalInt maxGroupRegistriesCount;
+
+    /**
+     * The name of the default health group used when no other health group is defined on the health check.
+     */
+    @ConfigItem
+    Optional<String> defaultHealthGroup;
 
     /**
      * SmallRye Health UI configuration

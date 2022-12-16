@@ -38,6 +38,7 @@ import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientConfigurationMerg
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientSupport;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientsConfig;
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
+import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 public class SmallRyeGraphQLClientProcessor {
 
@@ -203,6 +204,13 @@ public class SmallRyeGraphQLClientProcessor {
     @BuildStep
     ServiceProviderBuildItem overrideErrorMessageProvider() {
         return ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.impl.ErrorMessageProvider");
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void setGlobalVertxInstance(CoreVertxBuildItem vertxBuildItem,
+            SmallRyeGraphQLClientRecorder recorder) {
+        recorder.setGlobalVertxInstance(vertxBuildItem.getVertx());
     }
 
 }

@@ -205,7 +205,8 @@ class SpringDIProcessorTest {
     private IndexView getIndex(final Class<?>... classes) {
         try {
             Index index = Index.of(classes);
-            return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), new ConcurrentHashMap<>(), index);
+            return BeanArchives.buildComputingBeanArchiveIndex(getClass().getClassLoader(), new ConcurrentHashMap<>(),
+                    BeanArchives.buildImmutableBeanArchiveIndex(index));
         } catch (IOException e) {
             throw new IllegalStateException("Failed to index classes", e);
         }

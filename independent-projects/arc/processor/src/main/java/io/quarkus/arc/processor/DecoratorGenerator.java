@@ -183,24 +183,14 @@ public class DecoratorGenerator extends BeanGenerator {
             ClassInfo decoratedTypeClass = index
                     .getClassByName(decoratedType.name());
             if (decoratedTypeClass == null) {
-                throw new IllegalStateException("TODO");
+                throw new IllegalStateException("Decorated type not found in the bean archive index: " + decoratedType);
             }
 
             // A decorated type can declare type parameters
             // For example Converter<String> should result in a T -> String mapping
             List<TypeVariable> typeParameters = decoratedTypeClass.typeParameters();
-            Map<String, org.jboss.jandex.Type> resolvedTypeParameters = Collections.emptyMap();
-            if (!typeParameters.isEmpty()) {
-                resolvedTypeParameters = new HashMap<>();
-                // The delegate type can be used to infer the parameter types
-                org.jboss.jandex.Type type = decorator.getDelegateType();
-                if (type.kind() == Kind.PARAMETERIZED_TYPE) {
-                    List<org.jboss.jandex.Type> typeArguments = type.asParameterizedType().arguments();
-                    for (int i = 0; i < typeParameters.size(); i++) {
-                        resolvedTypeParameters.put(typeParameters.get(i).identifier(), typeArguments.get(i));
-                    }
-                }
-            }
+            Map<String, org.jboss.jandex.Type> resolvedTypeParameters = Types.resolveDecoratedTypeParams(decoratedTypeClass,
+                    decorator);
 
             for (MethodInfo method : decoratedTypeClass.methods()) {
                 if (Methods.skipForDelegateSubclass(method)) {

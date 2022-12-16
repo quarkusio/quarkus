@@ -340,8 +340,8 @@ public class ProtectedResource {
 
     @Inject
     SecurityIdentity identity;
-    
-    
+
+
     @GET
     public Uni<List<Permission>> get() {
         return identity.checkPermission(new AuthPermission("{resource_name}")).onItem()
@@ -382,17 +382,17 @@ If you want to disable this behavior and fetch resources during startup, you can
 quarkus.keycloak.policy-enforcer.lazy-load-paths=false
 ----
 
-Note that, depending on how many resources you have in Keycloak the time taken to fetch them may impact your application startup time. 
+Note that, depending on how many resources you have in Keycloak the time taken to fetch them may impact your application startup time.
 
 == More About Configuring Protected Resources
 
-In the default configuration, Keycloak is responsible for managing the roles and deciding who can access which routes. 
+In the default configuration, Keycloak is responsible for managing the roles and deciding who can access which routes.
 
-To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the xref:security-openid-connect.adoc[Using OpenID Connect Adapter to Protect JAX-RS Applications] and xref:security-authorization.adoc[Security Authorization] guides. For more details, check the xref:security.adoc[Security guide].
+To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the xref:security-openid-connect.adoc[Using OpenID Connect Adapter to Protect JAX-RS Applications] and xref:security-authorization-of-web-endpoints-reference.adoc[Security Authorization] guides. For more details, check the xref:security-overview-concept.adoc[Security guide].
 
 == Access to Public Resources
 
-If you'd like to access a public resource without `quarkus-keycloak-authorization` trying to apply its policies to it then you need to create a `permit` HTTP Policy configuration in `application.properties` as documented in the xref:security-authorization.adoc[Security Authorization] guide.
+If you'd like to access a public resource without `quarkus-keycloak-authorization` trying to apply its policies to it then you need to create a `permit` HTTP Policy configuration in `application.properties` as documented in the xref:security-authorization-of-web-endpoints-reference.adoc[Security Authorization] guide.
 
 Disabling a policy check using a Keycloak Authorization Policy such as:
 
@@ -472,5 +472,5 @@ include::{generated-dir}/config/quarkus-keycloak-keycloak-policy-enforcer-config
 * https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

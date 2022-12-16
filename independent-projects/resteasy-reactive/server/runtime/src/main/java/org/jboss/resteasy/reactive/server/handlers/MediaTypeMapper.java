@@ -28,6 +28,9 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
  */
 public class MediaTypeMapper implements ServerRestHandler {
 
+    private static final MediaType[] DEFAULT_MEDIA_TYPES = new MediaType[] { MediaType.WILDCARD_TYPE };
+    private static final List<MediaType> DEFAULT_MEDIA_TYPES_LIST = List.of(DEFAULT_MEDIA_TYPES);
+
     final Map<MediaType, Holder> resourcesByConsumes;
     final List<MediaType> consumesTypes;
 
@@ -35,20 +38,17 @@ public class MediaTypeMapper implements ServerRestHandler {
         resourcesByConsumes = new HashMap<>();
         consumesTypes = new ArrayList<>();
         for (RuntimeResource runtimeResource : runtimeResources) {
-            MediaType consumesMT = runtimeResource.getConsumes().isEmpty() ? MediaType.WILDCARD_TYPE
-                    : runtimeResource.getConsumes().get(0);
-            if (!resourcesByConsumes.containsKey(consumesMT)) {
-                consumesTypes.add(consumesMT);
-                resourcesByConsumes.put(consumesMT, new Holder());
+            List<MediaType> consumesMediaTypes = getConsumesMediaTypes(runtimeResource);
+            for (MediaType consumedMediaType : consumesMediaTypes) {
+                if (!resourcesByConsumes.containsKey(consumedMediaType)) {
+                    consumesTypes.add(consumedMediaType);
+                    resourcesByConsumes.put(consumedMediaType, new Holder());
+                }
             }
-            MediaType[] produces = runtimeResource.getProduces() != null
-                    ? runtimeResource.getProduces().getSortedOriginalMediaTypes()
-                    : null;
-            if (produces == null) {
-                produces = new MediaType[] { MediaType.WILDCARD_TYPE };
-            }
-            for (MediaType producesMT : produces) {
-                resourcesByConsumes.get(consumesMT).setResource(runtimeResource, producesMT);
+            for (MediaType producesMT : getProducesMediaTypes(runtimeResource)) {
+                for (MediaType consumedMediaType : consumesMediaTypes) {
+                    resourcesByConsumes.get(consumedMediaType).setResource(runtimeResource, producesMT);
+                }
             }
         }
         for (Holder holder : resourcesByConsumes.values()) {
@@ -114,6 +114,17 @@ public class MediaTypeMapper implements ServerRestHandler {
             return MediaType.APPLICATION_OCTET_STREAM_TYPE;
         }
         return selected;
+    }
+
+    private MediaType[] getProducesMediaTypes(RuntimeResource runtimeResource) {
+        return runtimeResource.getProduces() == null
+                ? DEFAULT_MEDIA_TYPES
+                : runtimeResource.getProduces().getSortedOriginalMediaTypes();
+    }
+
+    private List<MediaType> getConsumesMediaTypes(RuntimeResource runtimeResource) {
+        return runtimeResource.getConsumes().isEmpty() ? DEFAULT_MEDIA_TYPES_LIST
+                : runtimeResource.getConsumes();
     }
 
     private static final class Holder {

@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment.dev;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -58,7 +57,6 @@ public class KafkaDevServicesDevModeTestCase {
             source.open();
 
             Awaitility.await()
-                    .atMost(Duration.ofSeconds(1))
                     .until(() -> received.size() >= 2);
         }
 
@@ -77,7 +75,6 @@ public class KafkaDevServicesDevModeTestCase {
             source.open();
 
             Awaitility.await()
-                    .atMost(Duration.ofSeconds(3))
                     .until(() -> received.size() >= 2);
         }
 

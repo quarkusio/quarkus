@@ -1,0 +1,46 @@
+[id="security-basic-authentication-concept"]
+= Basic Authentication
+include::_attributes.adoc[]
+:categories: security,web
+
+HTTP Basic Authentication is one of the least resource-demanding techniques that enforce access controls to the Web resources.
+It uses fields in the HTTP header and does not require HTTP cookies, session identifiers, or login pages.
+
+An HTTP user agent, such as a web browser, uses an `Authorization` header to provide a user name and password in each HTTP request.
+The header is specified as `Authorization: Basic <credentials>`, where credentials are the Base64 encoding of the user ID and password joined by a colon, as shown in the following example.
+
+====
+.Example
+
+If the user name is `Alice` and the password is `secret`, the HTTP authorization header would be `Authorization: Basic QWxjZTpzZWNyZXQ=`, where `QWxjZTpzZWNyZXQ=` is a Base64 encoded representation of the `Alice:secret` string.
+====
+
+The Basic Authentication mechanism does not provide confidentiality protection for the transmitted credentials.
+The credentials are merely encoded with Base64 when in transit and not encrypted or hashed in any way.
+Therefore, Basic Authentication is used with HTTPS to provide confidentiality.
+
+Basic Authentication is a well-specified, simple challenge and response scheme that all web browsers and most web servers understand.
+However, there are a few limitations associated with Basic Authentication, which include:
+
+Credentials are sent as plain text::
++
+--
+Use HTTPS with Basic Authentication to avoid exposing the credentials.
+The risk of exposing credentials as plain text increases if a load balancer terminates HTTPS, as the request is forwarded to Quarkus over HTTP.
+
+Also, in multi-hop deployments, the credentials can be exposed if HTTPS is used between the client and the first Quarkus endpoint only, and the credentials are propagated to the next Quarkus endpoint over HTTP.
+--
+
+Credentials are sent with each request::
++
+--
+In Basic Authentication, a username and password need to be sent with each request, which increases the risk of credentials being exposed.
+--
+
+Application complexity increases::
++
+--
+The Quarkus application must validate that usernames, passwords, and roles are managed securely.
+This process, however, can introduce significant complexity to the application.
+Depending on the use case, other authentication mechanisms that delegate username, password, and role management to specialized services might be a better choice.
+--

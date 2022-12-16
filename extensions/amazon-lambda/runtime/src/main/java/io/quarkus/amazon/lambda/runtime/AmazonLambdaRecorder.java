@@ -36,7 +36,7 @@ public class AmazonLambdaRecorder {
     private static BeanContainer beanContainer;
     private static LambdaInputReader objectReader;
     private static LambdaOutputWriter objectWriter;
-    private static Set<Class<?>> expectedExceptionClasses;
+    protected static Set<Class<?>> expectedExceptionClasses;
 
     private final LambdaConfig config;
 
@@ -46,10 +46,6 @@ public class AmazonLambdaRecorder {
 
     public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler) {
         streamHandlerClass = handler;
-    }
-
-    public void setExpectedExceptionClasses(Set<Class<?>> classes) {
-        expectedExceptionClasses = classes;
     }
 
     static void initializeHandlerClass(Class<? extends RequestHandler<?, ?>> handler) {

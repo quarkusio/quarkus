@@ -167,6 +167,11 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+            </plugin>
             
             <!-- So we don't have to keep a version of these javascript libs in our repo -->
             <plugin>

@@ -214,6 +214,23 @@ public class OidcRecorder {
             }
         }
 
+        if (oidcConfig.token.verifyAccessTokenWithUserInfo) {
+            if (!oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
+                throw new ConfigurationException(
+                        "UserInfo is not required but 'verifyAccessTokenWithUserInfo' is enabled");
+            }
+            if (!oidcConfig.isDiscoveryEnabled().orElse(true)) {
+                if (oidcConfig.userInfoPath.isEmpty()) {
+                    throw new ConfigurationException(
+                            "UserInfo path is missing but 'verifyAccessTokenWithUserInfo' is enabled");
+                }
+                if (oidcConfig.introspectionPath.isPresent()) {
+                    throw new ConfigurationException(
+                            "Introspection path is configured and 'verifyAccessTokenWithUserInfo' is enabled, these options are mutually exclusive");
+                }
+            }
+        }
+
         return createOidcProvider(oidcConfig, tlsConfig, vertx)
                 .onItem().transform(p -> new TenantConfigContext(p, oidcConfig));
     }

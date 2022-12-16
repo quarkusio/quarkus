@@ -109,4 +109,4 @@ See xref:security-oauth2.adoc#integration-testing[OAuth2 Integration testing], x
 
 == References
 
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

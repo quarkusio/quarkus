@@ -88,11 +88,11 @@ participants:
   - username: "maxandersen"
     timezone: "Europe/Paris"
     triage:
-      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      days: ["WEDNESDAY", "FRIDAY"]
       maxIssues: 3
     maintenance:
       labels: ["area/build", "area/cli", "area/devmode", "area/dev-ui", "area/gradle", "area/jbang", "area/devtools"]
-      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      days: ["WEDNESDAY", "FRIDAY"]
       reproducer:
         needed:
           maxIssues: 4

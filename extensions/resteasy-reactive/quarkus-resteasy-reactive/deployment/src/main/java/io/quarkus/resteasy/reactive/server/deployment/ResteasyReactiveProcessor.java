@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -103,6 +104,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
+import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
@@ -171,6 +173,7 @@ import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.HandlerConfigurationProviderBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ResumeOn404BuildItem;
@@ -194,7 +197,6 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyReactiveProcessor {
@@ -728,7 +730,7 @@ public class ResteasyReactiveProcessor {
         return ab.get();
     }
 
-    // We want to add @Typed to resources and providers so that they can be resolved as CDI bean using purely their
+    // We want to add @Typed to resources, beanparams and providers so that they can be resolved as CDI bean using purely their
     // class as a bean type. This removes any ambiguity that potential subclasses may have.
     @BuildStep
     public void transformEndpoints(
@@ -741,6 +743,10 @@ public class ResteasyReactiveProcessor {
         Set<DotName> allResources = new HashSet<>();
         allResources.addAll(resourceScanningResultBuildItem.getResult().getScannedResources().keySet());
         allResources.addAll(resourceScanningResultBuildItem.getResult().getPossibleSubResources().keySet());
+
+        // all found bean params
+        Set<String> beanParams = resourceScanningResultBuildItem.getResult()
+                .getBeanParams();
 
         // discovered filters and interceptors
         Set<String> filtersAndInterceptors = new HashSet<>();
@@ -786,6 +792,14 @@ public class ResteasyReactiveProcessor {
                                 && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
                             // Add @Typed(MyResource.class)
                             context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                            return;
+                        }
+                        // check if the class is a bean param
+                        if (beanParams.contains(clazz.name().toString())
+                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                            // Add @Typed(MyBean.class)
+                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                            return;
                         }
                     }
                 }));
@@ -1055,6 +1069,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<ResteasyReactiveDeploymentBuildItem> quarkusRestDeploymentBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RouteBuildItem> routes,
+            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             ApplicationResultBuildItem applicationResultBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             ExceptionMappersBuildItem exceptionMappersBuildItem,
@@ -1091,8 +1106,9 @@ public class ResteasyReactiveProcessor {
         Function<String, BeanFactory<?>> factoryFunction = s -> FactoryUtils.factory(s, singletonClasses, recorder,
                 beanContainerBuildItem);
         interceptors.initializeDefaultFactories(factoryFunction);
-        exceptionMapping.initializeDefaultFactories(factoryFunction);
         contextResolvers.initializeDefaultFactories(factoryFunction);
+        exceptionMapping.initializeDefaultFactories(factoryFunction);
+        exceptionMapping.replaceDiscardAtRuntimeIfBeanIsUnavailable(className -> recorder.beanUnavailable(className));
 
         paramConverterProviders.initializeDefaultFactories(factoryFunction);
         paramConverterProviders.sort();
@@ -1187,11 +1203,15 @@ public class ResteasyReactiveProcessor {
         if (!requestContextFactoryBuildItem.isPresent()) {
             RuntimeValue<RestInitialHandler> restInitialHandler = recorder.restInitialHandler(deployment);
             Handler<RoutingContext> handler = recorder.handler(restInitialHandler);
-            Consumer<Route> addFailureHandler = recorder.addFailureHandler(restInitialHandler);
+            Handler<RoutingContext> failureHandler = recorder.failureHandler(restInitialHandler);
+
+            // we add failure handler right before QuarkusErrorHandler
+            // so that user can define failure handlers that precede exception mappers
+            filterBuildItemBuildProducer.produce(FilterBuildItem.ofAuthenticationFailureHandler(failureHandler));
 
             // Exact match for resources matched to the root path
             routes.produce(RouteBuildItem.builder()
-                    .orderedRoute(deploymentPath, order, addFailureHandler).handler(handler).build());
+                    .orderedRoute(deploymentPath, order).handler(handler).build());
             String matchPath = deploymentPath;
             if (matchPath.endsWith("/")) {
                 matchPath += "*";
@@ -1200,7 +1220,7 @@ public class ResteasyReactiveProcessor {
             }
             // Match paths that begin with the deployment path
             routes.produce(
-                    RouteBuildItem.builder().orderedRoute(matchPath, order, addFailureHandler)
+                    RouteBuildItem.builder().orderedRoute(matchPath, order)
                             .handler(handler).build());
         }
     }
@@ -1302,13 +1322,32 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void applyRuntimeConfig(ResteasyReactiveRuntimeRecorder recorder,
+    public void runtimeConfiguration(ResteasyReactiveRuntimeRecorder recorder,
             Optional<ResteasyReactiveDeploymentBuildItem> deployment,
-            ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf) {
-        if (!deployment.isPresent()) {
+            ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf,
+            BuildProducer<HandlerConfigurationProviderBuildItem> producer) {
+        if (deployment.isEmpty()) {
             return;
         }
-        recorder.configure(deployment.get().getDeployment(), resteasyReactiveServerRuntimeConf);
+        producer.produce(new HandlerConfigurationProviderBuildItem(RuntimeConfiguration.class,
+                recorder.runtimeConfiguration(deployment.get().getDeployment(), resteasyReactiveServerRuntimeConf)));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void configureHandlers(ResteasyReactiveRuntimeRecorder recorder,
+            Optional<ResteasyReactiveDeploymentBuildItem> deployment,
+            List<HandlerConfigurationProviderBuildItem> items) {
+        if (deployment.isEmpty()) {
+            return;
+        }
+
+        Map<Class<?>, Supplier<?>> runtimeConfigMap = new HashMap<>();
+        for (HandlerConfigurationProviderBuildItem item : items) {
+            runtimeConfigMap.put(item.getConfigClass(), item.getValueSupplier());
+        }
+
+        recorder.configureHandlers(deployment.get().getDeployment(), runtimeConfigMap);
     }
 
     @BuildStep

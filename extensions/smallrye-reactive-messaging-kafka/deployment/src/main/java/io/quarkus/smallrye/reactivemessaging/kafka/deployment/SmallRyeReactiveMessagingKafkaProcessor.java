@@ -1,9 +1,14 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
+import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore.HIBERNATE_ORM_STATE_STORE;
+import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore.HIBERNATE_REACTIVE_STATE_STORE;
+import static io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore.REDIS_STATE_STORE;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -19,6 +24,9 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -32,13 +40,21 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
+import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
+import io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
+import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
+import io.smallrye.reactive.messaging.kafka.KafkaConnector;
 import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
 public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye-reactive-messaging-kafka.deployment.processor");
+
+    public static final String CHECKPOINT_STATE_STORE_MESSAGE = "Quarkus detected the use of `%s` for the" +
+            " Kafka checkpoint commit strategy but the extension has not been added. Consider adding '%s'.";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -64,6 +80,64 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             log.produce(new LogCleanupFilterBuildItem(
                     "org.apache.kafka.common.utils.AppInfoParser",
                     "Error registering AppInfo mbean"));
+        }
+    }
+
+    static boolean hasStateStoreConfig(String stateStoreName, Config config) {
+        Optional<String> connectorStrategy = getConnectorProperty("checkpoint.state-store", config);
+        if (connectorStrategy.isPresent() && connectorStrategy.get().equals(stateStoreName)) {
+            return true;
+        }
+        List<String> stateStores = getChannelProperties("checkpoint.state-store", config);
+        return stateStores.contains(stateStoreName);
+    }
+
+    private static Optional<String> getConnectorProperty(String keySuffix, Config config) {
+        return config.getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + "." + keySuffix,
+                String.class);
+    }
+
+    private static List<String> getChannelProperties(String keySuffix, Config config) {
+        List<String> values = new ArrayList<>();
+        for (String propertyName : config.getPropertyNames()) {
+            if (propertyName.startsWith("mp.messaging.incoming.") && propertyName.endsWith("." + keySuffix)) {
+                values.add(config.getValue(propertyName, String.class));
+            }
+        }
+        return values;
+    }
+
+    @BuildStep
+    public void checkpointRedis(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
+        if (hasStateStoreConfig(REDIS_STATE_STORE, ConfigProvider.getConfig())) {
+            if (capabilities.isPresent(Capability.REDIS_CLIENT)) {
+                additionalBean.produce(new AdditionalBeanBuildItem(RedisStateStore.Factory.class));
+                additionalBean.produce(new AdditionalBeanBuildItem(DatabindProcessingStateCodec.Factory.class));
+            } else {
+                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, REDIS_STATE_STORE, "quarkus-redis-client");
+            }
+        }
+    }
+
+    @BuildStep
+    public void checkpointHibernateReactive(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
+        if (hasStateStoreConfig(HIBERNATE_REACTIVE_STATE_STORE, ConfigProvider.getConfig())) {
+            if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+                additionalBean.produce(new AdditionalBeanBuildItem(HibernateReactiveStateStore.Factory.class));
+            } else {
+                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, HIBERNATE_REACTIVE_STATE_STORE, "quarkus-hibernate-reactive");
+            }
+        }
+    }
+
+    @BuildStep
+    public void checkpointHibernateOrm(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
+        if (hasStateStoreConfig(HIBERNATE_ORM_STATE_STORE, ConfigProvider.getConfig())) {
+            if (capabilities.isPresent(Capability.HIBERNATE_ORM)) {
+                additionalBean.produce(new AdditionalBeanBuildItem(HibernateOrmStateStore.Factory.class));
+            } else {
+                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, HIBERNATE_ORM_STATE_STORE, "quarkus-hibernate-orm");
+            }
         }
     }
 

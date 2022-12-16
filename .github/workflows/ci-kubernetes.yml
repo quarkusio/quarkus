@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.7.1
+        uses: manusa/actions-setup-minikube@v2.7.2
         with:
           minikube version: v1.16.0
           kubernetes version: ${{ matrix.kubernetes }}
@@ -91,7 +91,7 @@ jobs:
   openshift:
     name: OpenShift Integration Tests
     needs: cache
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     strategy:
       fail-fast: false

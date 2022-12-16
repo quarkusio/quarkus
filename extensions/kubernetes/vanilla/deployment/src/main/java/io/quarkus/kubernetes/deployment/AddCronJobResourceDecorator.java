@@ -64,11 +64,11 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
 
         // defaults for:
         // - match labels
-        if (jobTemplateSpec.getSelector().getMatchLabels() == null) {
+        if (jobTemplateSpec.buildSelector().getMatchLabels() == null) {
             jobTemplateSpec.editSelector().withMatchLabels(new HashMap<>()).endSelector();
         }
         // - termination grace period seconds
-        if (jobTemplateSpec.getTemplate().getSpec().getTerminationGracePeriodSeconds() == null) {
+        if (jobTemplateSpec.buildTemplate().getSpec().getTerminationGracePeriodSeconds() == null) {
             jobTemplateSpec.editTemplate().editSpec().withTerminationGracePeriodSeconds(10L).endSpec().endTemplate();
         }
         // - container
@@ -107,7 +107,7 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
     }
 
     private boolean containsContainerWithName(CronJobFluent.SpecNested<CronJobBuilder> spec) {
-        var jobTemplate = spec.getJobTemplate();
+        var jobTemplate = spec.buildJobTemplate();
         if (jobTemplate == null
                 || jobTemplate.getSpec() == null
                 || jobTemplate.getSpec().getTemplate() == null

@@ -42,7 +42,7 @@
         <maven.compiler.release>11</maven.compiler.release>
         <version.junit>5.9.1</version.junit>
         <version.assertj>3.23.1</version.assertj>
-        <version.jandex>3.0.3</version.jandex>
+        <version.jandex>3.0.5</version.jandex>
         <version.gizmo>1.4.0.Final</version.gizmo>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
@@ -185,7 +185,7 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.7.0</version>
+                    <version>1.8.0</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>

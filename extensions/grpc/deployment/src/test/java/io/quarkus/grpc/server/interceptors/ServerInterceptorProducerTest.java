@@ -77,6 +77,11 @@ public class ServerInterceptorProducerTest {
         public Uni<HelloReply> sayHello(HelloRequest request) {
             return Uni.createFrom().item(HelloReply.newBuilder().setMessage("Hello, " + request.getName()).build());
         }
+
+        @Override
+        public Uni<HelloReply> wEIRD(HelloRequest request) {
+            return sayHello(request);
+        }
     }
 
     @Singleton

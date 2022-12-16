@@ -5,6 +5,7 @@ import static org.wildfly.common.os.Process.getProcessName;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -631,6 +632,13 @@ public class LoggingSetupRecorder {
         handler.setErrorManager(errorManager);
         handler.setLevel(config.level);
         handler.setFilter(cleanupFilter);
+        if (config.encoding.isPresent()) {
+            try {
+                handler.setEncoding(config.encoding.get().name());
+            } catch (UnsupportedEncodingException e) {
+                errorManager.error("Failed to set character encoding", e, ErrorManager.GENERIC_FAILURE);
+            }
+        }
         applyFilter(validateFilters, errorManager, cleanupFilter, config.filter, namedFilters, handler);
 
         if (formatterWarning) {

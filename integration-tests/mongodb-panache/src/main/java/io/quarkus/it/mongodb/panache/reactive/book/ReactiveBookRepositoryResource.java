@@ -12,7 +12,7 @@ import javax.ws.rs.core.Response;
 
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.annotations.SseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.reactivestreams.Publisher;
 
 import io.quarkus.it.mongodb.panache.book.Book;
@@ -44,7 +44,7 @@ public class ReactiveBookRepositoryResource {
     @GET
     @Path("/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Publisher<Book> streamBooks(@QueryParam("sort") String sort) {
         if (sort != null) {
             return reactiveBookRepository.streamAll(Sort.ascending(sort));

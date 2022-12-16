@@ -322,6 +322,24 @@ Default is `false`.
 * `path` - operation path (this is appended to the resource base path). Default is an empty string.
 * `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus security extension to be present, otherwise it will be ignored. Default is empty.
 
+== Adding additional methods to the generated resource
+
+You can add additional methods to the generated resources by the REST Data with Panache extension by adding these methods to the resource interface, for example:
+
+[source,java]
+----
+@ResourceProperties
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+    @GET
+    @Path("/name/{name}")
+    default List<Person> findByName(@PathParam("name") String name) {
+        return Person.find("name = :name", Collections.singletonMap("name", name)).list();
+    }
+}
+----
+
+And this method will be exposed along with the generated methods using `http://localhost:8080/people/name/Johan`.
+
 == Securing endpoints
 
 REST Data with Panache will use the Security annotations within the package `javax.annotation.security` that are defined on your resource interfaces:
@@ -342,9 +360,9 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 
 Additionally, if you are only interested in specifying the roles that are allowed to use the resources, the `@ResourceProperties` and `@MethodProperties` annotations have the field `rolesAllowed` to list the security roles permitted to access the resource or operation.
 
-== Query parameters
+== Query parameters to list entities
 
-REST Data with Panache supports the following query parameters with the generated resources.
+REST Data with Panache supports the following query parameters to get the list of entities:
 
 * `page` - a page number which should be returned by a list operation.
 It applies to the paged resources only and is a number starting with 0. Default is 0.
@@ -353,6 +371,80 @@ It applies to the paged resources only and is a number starting with 1. Default 
 * `sort` - a comma separated list of fields which should be used for sorting a result of a list operation.
 Fields are sorted in the ascending order unless they're prefixed with a `-`.
 E.g. `?sort=name,-age` will sort the result by the name ascending by the age descending.
+* `namedQuery` - a named query that should be configured at entity level using the annotation `@NamedQuery`.
+
+For example, if you want to get two `People` entities in the first page, you should call `http://localhost:8080/people?page=0&size=2`, and the response should look like:
+
+[source,json]
+----
+[
+  {
+    "id": 1,
+    "name": "John Johnson",
+    "birth": "1988-01-10"
+  },
+  {
+    "id": 2,
+    "name": "Peter Peterson",
+    "birth": "1986-11-20"
+  }
+]
+----
+
+Additionally, you can also filter by the entity fields by adding a query param with the name of the field and the value, for example, calling `http://localhost:8080/people?name=Peter Peterson` would return:
+
+[source,json]
+----
+[
+  {
+    "id": 2,
+    "name": "Peter Peterson",
+    "birth": "1986-11-20"
+  }
+]
+----
+
+IMPORTANT: Filtering by fields is only supported for primitive types.
+
+== Complex filtering to list entities using @NamedQuery
+
+You can specify a named query to filter when listing the entities. For example, having the following named query in your entity:
+
+[source,java]
+----
+@Entity
+@NamedQuery(name = "Person.containsInName", query = "from Person where name like CONCAT('%', CONCAT(:name, '%'))")
+public class Person extends PanacheEntity {
+  String name;
+}
+----
+
+In this example, we have added a named query to list all the persons that contains some text in the `name` field. 
+
+Next, we can set a query param `namedQuery` when listing the entities using the generated resource with the name of the named query that we want to use, for example, calling `http://localhost:8080/people?namedQuery=Person.containsInName&name=ter` would return all the persons which name contains the text "ter".
+
+For more information about how named queries work, go to https://quarkus.io/guides/hibernate-orm-panache#named-queries[the Hibernate ORM guide] or to https://quarkus.io/guides/hibernate-reactive-panache#named-queries[the Hibernate Reactive guide].
+
+== Resource Method Before/After Listeners
+
+REST Data with Panache supports the subscription to the following resource method hooks: 
+
+* Before/After add resource
+* Before/After update resource
+* Before/After delete resource
+
+To register your resource method listener, you need to provide a bean that implements the interface `RestDataResourceMethodListener`, for example:
+
+[source,java]
+----
+@ApplicationScoped
+public class PeopleRestDataResourceMethodListener implements RestDataResourceMethodListener<Person> {
+    @Override
+    public void onBeforeAdd(Person person) {
+        System.out.println("Before Save Person: " + person.name);
+    }
+}
+----
 
 == Response body examples
 

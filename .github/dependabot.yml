@@ -124,6 +124,7 @@ updates:
       - dependency-name: biz.paluch.logging:logstash-gelf
       # MongoDB
       - dependency-name: org.mongodb:*
+      - dependency-name: de.flapdoodle.embed:*
       # Avro
       - dependency-name: org.apache.avro:*
       # gRPC

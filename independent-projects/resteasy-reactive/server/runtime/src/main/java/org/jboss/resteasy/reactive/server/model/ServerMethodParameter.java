@@ -21,10 +21,10 @@ public class ServerMethodParameter extends MethodParameter {
             ParameterConverterSupplier converter, String defaultValue, boolean obtainedAsCollection, boolean optional,
             boolean encoded,
             ParameterExtractor customParameterExtractor,
-            String mimeType) {
+            String mimeType, String separator) {
         super(name, type, declaredType, declaredUnresolvedType, signature, parameterType, single, defaultValue,
                 obtainedAsCollection, optional,
-                encoded, mimeType, null /* not useful for server params */);
+                encoded, mimeType, null /* not useful for server params */, separator);
         this.converter = converter;
         this.customParameterExtractor = customParameterExtractor;
     }

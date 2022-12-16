@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.CreationException;
 import javax.enterprise.inject.IllegalProductException;
 import javax.enterprise.inject.literal.InjectLiteral;
 import javax.enterprise.inject.spi.InterceptionType;
@@ -63,6 +64,8 @@ import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.Gizmo;
+import io.quarkus.gizmo.Gizmo.StringBuilderGenerator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -946,7 +949,25 @@ public class BeanGenerator extends AbstractGenerator {
                     injectionPointToProviderSupplierField, reflectionRegistration,
                     targetPackage, isApplicationClass, create);
         } else if (bean.isSynthetic()) {
-            bean.getCreatorConsumer().accept(create);
+            if (bean.getScope().isNormal()) {
+                // Normal scoped synthetic beans should never return null
+                MethodCreator createSynthetic = beanCreator
+                        .getMethodCreator("createSynthetic", providerType.descriptorName(), CreationalContext.class)
+                        .setModifiers(ACC_PRIVATE);
+                bean.getCreatorConsumer().accept(createSynthetic);
+                ResultHandle ret = create.invokeVirtualMethod(createSynthetic.getMethodDescriptor(), create.getThis(),
+                        create.getMethodParam(0));
+                BytecodeCreator nullBeanInstance = create.ifNull(ret).trueBranch();
+                StringBuilderGenerator message = Gizmo.newStringBuilder(nullBeanInstance);
+                message.append("Null contextual instance was produced by a normal scoped synthetic bean: ");
+                message.append(Gizmo.toString(nullBeanInstance, nullBeanInstance.getThis()));
+                ResultHandle e = nullBeanInstance.newInstance(
+                        MethodDescriptor.ofConstructor(CreationException.class, String.class), message.callToString());
+                nullBeanInstance.throwException(e);
+                create.returnValue(ret);
+            } else {
+                bean.getCreatorConsumer().accept(create);
+            }
         }
 
         // Bridge method needed
@@ -956,14 +977,15 @@ public class BeanGenerator extends AbstractGenerator {
                 bridgeCreate.getMethodParam(0)));
     }
 
-    private List<ResultHandle> newProviderHandles(BeanInfo bean, ClassCreator beanCreator, MethodCreator createMethod,
+    private void newProviderHandles(BeanInfo bean, ClassCreator beanCreator, MethodCreator createMethod,
             Map<InjectionPointInfo, String> injectionPointToProviderField,
             Map<InterceptorInfo, String> interceptorToProviderField,
             Map<DecoratorInfo, String> decoratorToProviderSupplierField,
             Map<InterceptorInfo, ResultHandle> interceptorToWrap,
-            List<TransientReference> transientReferences) {
+            List<TransientReference> transientReferences,
+            List<ResultHandle> injectableParamHandles,
+            List<ResultHandle> allOtherParamHandles) {
 
-        List<ResultHandle> providerHandles = new ArrayList<>();
         Optional<Injection> constructorInjection = bean.getConstructorInjection();
 
         if (constructorInjection.isPresent()) {
@@ -978,7 +1000,7 @@ public class BeanGenerator extends AbstractGenerator {
                         providerHandle, createMethod.getMethodParam(0));
                 ResultHandle referenceHandle = createMethod.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
                         providerHandle, childCtx);
-                providerHandles.add(referenceHandle);
+                injectableParamHandles.add(referenceHandle);
                 if (injectionPoint.isDependentTransientReference()) {
                     transientReferences.add(new TransientReference(providerHandle, referenceHandle, childCtx));
                 }
@@ -988,7 +1010,7 @@ public class BeanGenerator extends AbstractGenerator {
             for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
                 ResultHandle wrapped = interceptorToWrap.get(interceptor);
                 if (wrapped != null) {
-                    providerHandles.add(wrapped);
+                    allOtherParamHandles.add(wrapped);
                 } else {
                     ResultHandle interceptorProviderSupplierHandle = createMethod.readInstanceField(
                             FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderField.get(interceptor),
@@ -996,7 +1018,7 @@ public class BeanGenerator extends AbstractGenerator {
                             createMethod.getThis());
                     ResultHandle interceptorProviderHandle = createMethod.invokeInterfaceMethod(
                             MethodDescriptors.SUPPLIER_GET, interceptorProviderSupplierHandle);
-                    providerHandles.add(interceptorProviderHandle);
+                    allOtherParamHandles.add(interceptorProviderHandle);
                 }
             }
             for (DecoratorInfo decorator : bean.getBoundDecorators()) {
@@ -1006,10 +1028,9 @@ public class BeanGenerator extends AbstractGenerator {
                         createMethod.getThis());
                 ResultHandle decoratorProviderHandle = createMethod.invokeInterfaceMethod(
                         MethodDescriptors.SUPPLIER_GET, decoratorProviderSupplierHandle);
-                providerHandles.add(decoratorProviderHandle);
+                allOtherParamHandles.add(decoratorProviderHandle);
             }
         }
-        return providerHandles;
     }
 
     private ResultHandle newInstanceHandle(BeanInfo bean, ClassCreator beanCreator, BytecodeCreator creator,
@@ -1402,14 +1423,20 @@ public class BeanGenerator extends AbstractGenerator {
             }
 
             List<TransientReference> transientReferences = new ArrayList<>();
-            List<ResultHandle> providerHandles = newProviderHandles(bean, beanCreator, create,
+            // List of handles representing injectable parameters
+            List<ResultHandle> injectableCtorParams = new ArrayList<>();
+            // list of handles representing all other parameters, such as injectable interceptors
+            List<ResultHandle> allOtherCtorParams = new ArrayList<>();
+            newProviderHandles(bean, beanCreator, create,
                     injectionPointToProviderSupplierField, interceptorToProviderSupplierField, decoratorToProviderSupplierField,
-                    interceptorToWrap, transientReferences);
+                    interceptorToWrap, transientReferences, injectableCtorParams, allOtherCtorParams);
 
             // Forwarding function
             // Supplier<Object> forward = () -> new SimpleBean_Subclass(ctx,lifecycleInterceptorProvider1)
             FunctionCreator func = create.createFunction(Supplier.class);
             BytecodeCreator funcBytecode = func.getBytecode();
+            List<ResultHandle> providerHandles = new ArrayList<>(injectableCtorParams);
+            providerHandles.addAll(allOtherCtorParams);
             ResultHandle retHandle = newInstanceHandle(bean, beanCreator, funcBytecode, create, providerType.className(),
                     baseName,
                     providerHandles,
@@ -1427,11 +1454,10 @@ public class BeanGenerator extends AbstractGenerator {
                 create.writeArrayValue(bindingsArray, bindingsIndex++,
                         annotationLiterals.create(create, bindingClass, binding));
             }
-
             // ResultHandle of Object[] holding all constructor args
-            ResultHandle ctorArgsArray = create.newArray(Object.class, create.load(providerHandles.size()));
-            for (int i = 0; i < providerHandles.size(); i++) {
-                create.writeArrayValue(ctorArgsArray, i, providerHandles.get(i));
+            ResultHandle ctorArgsArray = create.newArray(Object.class, create.load(injectableCtorParams.size()));
+            for (int i = 0; i < injectableCtorParams.size(); i++) {
+                create.writeArrayValue(ctorArgsArray, i, injectableCtorParams.get(i));
             }
             ResultHandle invocationContextHandle = create.invokeStaticMethod(
                     MethodDescriptors.INVOCATION_CONTEXTS_AROUND_CONSTRUCT, constructorHandle,
@@ -1452,11 +1478,13 @@ public class BeanGenerator extends AbstractGenerator {
 
         } else {
             List<TransientReference> transientReferences = new ArrayList<>();
+            List<ResultHandle> providerHandles = new ArrayList<>();
+            newProviderHandles(bean, beanCreator, create, injectionPointToProviderSupplierField,
+                    interceptorToProviderSupplierField, decoratorToProviderSupplierField,
+                    interceptorToWrap, transientReferences, providerHandles, providerHandles);
             create.assign(instanceHandle,
                     newInstanceHandle(bean, beanCreator, create, create, providerType.className(), baseName,
-                            newProviderHandles(bean, beanCreator, create, injectionPointToProviderSupplierField,
-                                    interceptorToProviderSupplierField, decoratorToProviderSupplierField,
-                                    interceptorToWrap, transientReferences),
+                            providerHandles,
                             reflectionRegistration, isApplicationClass));
             // Destroy injected transient references
             destroyTransientReferences(create, transientReferences);
@@ -1932,9 +1960,14 @@ public class BeanGenerator extends AbstractGenerator {
                 annotationHandle = constructor
                         .readStaticField(FieldDescriptor.of(InjectLiteral.class, "INSTANCE", InjectLiteral.class));
             } else {
-                // Create annotation literal if needed
-                ClassInfo literalClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
-                annotationHandle = annotationLiterals.create(constructor, literalClass, annotation);
+                if (!annotation.runtimeVisible()) {
+                    continue;
+                }
+                ClassInfo annotationClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
+                if (annotationClass == null) {
+                    continue;
+                }
+                annotationHandle = annotationLiterals.create(constructor, annotationClass, annotation);
             }
             constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
                     annotationHandle);

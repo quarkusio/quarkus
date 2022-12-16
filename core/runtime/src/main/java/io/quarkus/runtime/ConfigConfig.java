@@ -11,18 +11,17 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * We don't really use this, because these are configurations for the config itself, so it causes a chicken / egg
  * problem, but we have it so the configurations can be properly documented.
- *
+ * <br>
  * Relocation of the Config configurations to the Quarkus namespace is done in
  * {@link io.quarkus.runtime.configuration.ConfigUtils#configBuilder}.
  */
 @ConfigRoot(name = ConfigItem.PARENT, phase = ConfigPhase.RUN_TIME)
 public class ConfigConfig {
     /**
-     * Additional config locations to be loaded with the Config. The configuration support multiple locations
-     * separated by a comma and each must represent a valid {@link java.net.URI}.
+     * Profile that will be active when Quarkus launches.
      */
-    @ConfigItem(name = "config.locations")
-    public Optional<List<URI>> locations;
+    @ConfigItem(name = "profile", defaultValue = "prod")
+    public Optional<String> profile;
 
     /**
      * Accepts a single configuration profile name. If a configuration property cannot be found in the current active
@@ -32,9 +31,16 @@ public class ConfigConfig {
     public Optional<String> profileParent;
 
     /**
+     * Additional config locations to be loaded with the Config. The configuration support multiple locations
+     * separated by a comma and each must represent a valid {@link java.net.URI}.
+     */
+    @ConfigItem(name = "config.locations")
+    public Optional<List<URI>> locations;
+
+    /**
      * A property that allows accessing a generated UUID.
      * It generates that UUID at startup time. So it changes between two starts including in dev mode.
-     *
+     * <br>
      * Access this generated UUID using expressions: `${quarkus.uuid}`.
      */
     @ConfigItem(name = "uuid")

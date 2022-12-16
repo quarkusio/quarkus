@@ -3,9 +3,11 @@ package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 import java.util.Date;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -74,5 +76,19 @@ public class DefaultMediaTypeResource {
     @POST
     public Response postInteger(String source) throws Exception {
         return Response.ok().entity(5).build();
+    }
+
+    @Path("postMultiMediaTypeConsumer")
+    @Consumes({ "application/soap+xml", MediaType.TEXT_XML })
+    @POST
+    public Response postMultiMediaTypeConsumer() {
+        return Response.ok("postMultiMediaTypeConsumer").build();
+    }
+
+    @Path("postMultiMediaTypeConsumer")
+    @Consumes({ "any/media-type" })
+    @POST
+    public Response postMultiMediaTypeConsumerAnyContentType(@HeaderParam(HttpHeaders.CONTENT_TYPE) String contentType) {
+        return Response.ok(contentType).build();
     }
 }

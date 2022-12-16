@@ -329,6 +329,7 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
                 .audience(TOKEN_AUDIENCE)
+                .claim("sid", "session-id")
                 .subject("123456")
                 .jws()
                 .keyId("1")
@@ -340,6 +341,7 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 .audience(TOKEN_AUDIENCE)
                 .subject("123456")
                 .claim("events", createEventsClaim())
+                .claim("sid", "session-id")
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");

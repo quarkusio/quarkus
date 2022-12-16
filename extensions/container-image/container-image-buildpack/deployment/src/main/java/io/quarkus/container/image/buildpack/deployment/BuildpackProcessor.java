@@ -1,5 +1,7 @@
 package io.quarkus.container.image.buildpack.deployment;
 
+import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
+import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 
 import java.nio.file.Path;
@@ -18,6 +20,7 @@ import com.github.dockerjava.api.model.PushResponseItem;
 
 import dev.snowdrop.buildpack.Buildpack;
 import dev.snowdrop.buildpack.BuildpackBuilder;
+import dev.snowdrop.buildpack.docker.DockerClientUtils;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
@@ -73,17 +76,20 @@ public class BuildpackProcessor {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
+        boolean buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
+        boolean pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
+
+        if (!buildContainerImage && !pushContainerImage) {
+            return;
+        }
+
         if (containerImageConfig.isBuildExplicitlyDisabled()) {
             return;
         }
 
-        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
-                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
-            return;
-        }
-
         log.info("Starting (local) container image build for jar using buildpack.");
-        String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, pushRequest,
+        String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, buildContainerImage,
+                pushContainerImage,
                 outputTarget, false /* isNative */);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
@@ -102,12 +108,14 @@ public class BuildpackProcessor {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
-        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+        boolean buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
+        boolean pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
+
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
-        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
-                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
             return;
         }
 
@@ -117,7 +125,8 @@ public class BuildpackProcessor {
         }
 
         log.info("Starting (local) container image build for native binary using buildpack.");
-        String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, pushRequest,
+        String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, buildContainerImage,
+                pushContainerImage,
                 outputTarget, true /* isNative */);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
@@ -149,7 +158,8 @@ public class BuildpackProcessor {
     private String runBuildpackBuild(BuildpackConfig buildpackConfig,
             ContainerImageInfoBuildItem containerImage,
             ContainerImageConfig containerImageConfig,
-            Optional<ContainerImagePushRequestBuildItem> pushRequest,
+            boolean buildContainerImage,
+            boolean pushContainerImage,
             OutputTargetBuildItem outputTarget,
             boolean isNativeBuild) {
 
@@ -171,39 +181,42 @@ public class BuildpackProcessor {
         envMap.put(QUARKUS_CONTAINER_IMAGE_BUILD, "false");
         envMap.put(QUARKUS_CONTAINER_IMAGE_PUSH, "false");
 
-        log.info("Initiating Buildpack build");
-        Buildpack buildpack = Buildpack.builder()
-                .addNewFileContent(dirs.get(ProjectDirs.ROOT).toFile())
-                .withFinalImage(targetImageName)
-                .withEnvironment(envMap)
-                .withLogLevel(buildpackConfig.logLevel)
-                .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds)
-                .withLogger(new BuildpackLogger())
-                .accept(BuildpackBuilder.class, b -> {
+        if (buildContainerImage) {
+            log.info("Initiating Buildpack build");
+            Buildpack buildpack = Buildpack.builder()
+                    .addNewFileContent(dirs.get(ProjectDirs.ROOT).toFile())
+                    .withFinalImage(targetImageName)
+                    .withEnvironment(envMap)
+                    .withLogLevel(buildpackConfig.logLevel)
+                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds)
+                    .withLogger(new BuildpackLogger())
+                    .accept(BuildpackBuilder.class, b -> {
 
-                    if (isNativeBuild) {
-                        buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuilderImage(i));
-                    } else {
-                        buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuilderImage(i));
-                    }
+                        if (isNativeBuild) {
+                            buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuilderImage(i));
+                        } else {
+                            buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuilderImage(i));
+                        }
 
-                    if (buildpackConfig.runImage.isPresent()) {
-                        log.info("Using Run image of " + buildpackConfig.runImage.get());
-                        b.withRunImage(buildpackConfig.runImage.get());
-                    }
-                    if (buildpackConfig.dockerHost.isPresent()) {
-                        log.info("Using DockerHost of " + buildpackConfig.dockerHost.get());
-                        b.withDockerHost(buildpackConfig.dockerHost.get());
-                    }
+                        if (buildpackConfig.runImage.isPresent()) {
+                            log.info("Using Run image of " + buildpackConfig.runImage.get());
+                            b.withRunImage(buildpackConfig.runImage.get());
+                        }
+                        if (buildpackConfig.dockerHost.isPresent()) {
+                            log.info("Using DockerHost of " + buildpackConfig.dockerHost.get());
+                            b.withDockerHost(buildpackConfig.dockerHost.get());
+                        }
 
-                }).build();
+                    }).build();
 
-        if (buildpack.getExitCode() != 0) {
-            throw new IllegalStateException("Buildpack build failed");
+            if (buildpack.getExitCode() != 0) {
+                throw new IllegalStateException("Buildpack build failed");
+            }
+
+            log.info("Buildpack build complete");
         }
 
-        log.info("Buildpack build complete");
-        if (containerImageConfig.isPushExplicitlyEnabled() || pushRequest.isPresent()) {
+        if (pushContainerImage) {
             var registry = containerImage.getRegistry()
                     .orElseGet(() -> {
                         log.info("No container image registry was set, so 'docker.io' will be used");
@@ -216,7 +229,10 @@ public class BuildpackProcessor {
 
             log.info("Pushing image to " + authConfig.getRegistryAddress());
             Stream.concat(Stream.of(containerImage.getImage()), containerImage.getAdditionalImageTags().stream()).forEach(i -> {
-                ResultCallback.Adapter<PushResponseItem> callback = buildpack.getDockerClient().pushImageCmd(i).start();
+                //If no dockerHost is specified use empty String. The util will take care of the rest.
+                String dockerHost = buildpackConfig.dockerHost.orElse("");
+                ResultCallback.Adapter<PushResponseItem> callback = DockerClientUtils.getDockerClient(dockerHost)
+                        .pushImageCmd(i).start();
                 try {
                     callback.awaitCompletion();
                     log.info("Push complete");

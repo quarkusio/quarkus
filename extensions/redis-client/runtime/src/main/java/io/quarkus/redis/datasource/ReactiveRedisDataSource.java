@@ -3,6 +3,7 @@ package io.quarkus.redis.datasource;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands;
@@ -15,9 +16,11 @@ import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
+import io.quarkus.redis.datasource.search.ReactiveSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
+import io.quarkus.redis.datasource.timeseries.ReactiveTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
@@ -516,6 +519,69 @@ public interface ReactiveRedisDataSource {
      */
     @Experimental("The Redis graph support is experimental")
     <K> ReactiveGraphCommands<K> graph(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to search documents
+     */
+    @Experimental("The Redis search support is experimental")
+    <K> ReactiveSearchCommands<K> search(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @return the object to search documents
+     */
+    @Experimental("The Redis Search support is experimental")
+    default ReactiveSearchCommands<String> search() {
+        return search(String.class);
+    }
+
+    /**
+     * Gets the object to emit commands from the {@code auto-suggest} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to get suggestions
+     */
+    @Experimental("The Redis auto-suggest support is experimental")
+    <K> ReactiveAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code auto-suggest} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @return the object to get suggestions
+     */
+    @Experimental("The Redis auto-suggest support is experimental")
+    default ReactiveAutoSuggestCommands<String> autosuggest() {
+        return autosuggest(String.class);
+    }
+
+    /**
+     * Gets the object to emit commands from the {@code time series} group.
+     * This group requires the <a href="https://redis.io/docs/stack/timeseries/">Redis Time Series module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate time series
+     */
+    @Experimental("The Redis time series support is experimental")
+    <K> ReactiveTimeSeriesCommands<K> timeseries(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code time series} group.
+     * This group requires the <a href="https://redis.io/docs/stack/timeseries/">Redis Time Series module</a>.
+     *
+     * @return the object to manipulate time series
+     */
+    @Experimental("The Redis time series support is experimental")
+    default ReactiveTimeSeriesCommands<String> timeseries() {
+        return timeseries(String.class);
+    }
 
     /**
      * Executes a command.

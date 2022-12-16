@@ -10,6 +10,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands;
@@ -22,9 +23,11 @@ import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
+import io.quarkus.redis.datasource.search.ReactiveSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
+import io.quarkus.redis.datasource.timeseries.ReactiveTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
@@ -316,6 +319,21 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public <V> ReactivePubSubCommands<V> pubsub(Class<V> messageType) {
         return new ReactivePubSubCommandsImpl<>(this, messageType);
+    }
+
+    @Override
+    public <K> ReactiveSearchCommands<K> search(Class<K> redisKeyType) {
+        return new ReactiveSearchCommandsImpl<>(this, redisKeyType);
+    }
+
+    @Override
+    public <K> ReactiveAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
+        return new ReactiveAutoSuggestCommandsImpl<>(this, redisKeyType);
+    }
+
+    @Override
+    public <K> ReactiveTimeSeriesCommands<K> timeseries(Class<K> redisKeyType) {
+        return new ReactiveTimeSeriesCommandsImpl<>(this, redisKeyType);
     }
 
     @Override

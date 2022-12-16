@@ -45,6 +45,7 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 @Path("test")
 public class TestEndpoint {
 
+    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests
     @Inject
     MockablePersonRepository mockablePersonRepository;
@@ -1188,6 +1189,13 @@ public class TestEndpoint {
         person = Person.find("name = ?1", "2").project(PersonName.class).firstResult();
         Assertions.assertEquals("2", person.name);
 
+        person = Person.find(String.format(
+                "select uniqueName, name%sfrom io.quarkus.it.panache.Person%swhere name = ?1",
+                LINE_SEPARATOR, LINE_SEPARATOR), "2")
+                .project(PersonName.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
         person = Person.find("name = :name", Parameters.with("name", "2")).project(PersonName.class).firstResult();
         Assertions.assertEquals("2", person.name);
 
@@ -1252,6 +1260,18 @@ public class TestEndpoint {
 
         long countDistinct = projectionDistinctQuery.count();
         Assertions.assertEquals(1L, countDistinct);
+
+        // We are checking that not everything gets lowercased
+        PanacheQuery<CatProjectionBean> letterCaseQuery = Cat
+                // The spaces at the beginning are intentional
+                .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ",
+                        Parameters.with("NamE", bubulle.name))
+                .project(CatProjectionBean.class);
+
+        CatProjectionBean catView = letterCaseQuery.firstResult();
+        // Must keep the letter case
+        Assertions.assertEquals("GARFIELD", catView.getName());
+        Assertions.assertEquals("JoN ArBuCkLe", catView.getOwnerName());
 
         Cat.deleteAll();
         CatOwner.deleteAll();

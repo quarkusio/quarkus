@@ -3,6 +3,7 @@ package io.quarkus.cli;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.quarkus.cli.common.DataOptions;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
@@ -31,26 +32,29 @@ public class CreateApp extends BaseCreateCommand {
             "--extension", "--extensions" }, description = "Extension(s) to add to the project.", split = ",")
     Set<String> extensions = new HashSet<>();
 
-    @CommandLine.Option(paramLabel = "NAME", names = { "--name" }, description = "Name of the project.")
+    @CommandLine.Option(order = 2, paramLabel = "NAME", names = { "--name" }, description = "Name of the project.")
     String name;
 
-    @CommandLine.Option(paramLabel = "DESCRIPTION", names = {
+    @CommandLine.Option(order = 3, paramLabel = "DESCRIPTION", names = {
             "--description" }, description = "Description of the project.")
     String description;
 
-    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version:%n")
+    @CommandLine.ArgGroup(order = 4, heading = "%nQuarkus version:%n")
     TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
 
-    @CommandLine.ArgGroup(order = 3, heading = "%nBuild tool (Maven):%n")
+    @CommandLine.ArgGroup(order = 5, heading = "%nBuild tool (Maven):%n")
     TargetBuildToolGroup targetBuildTool = new TargetBuildToolGroup();
 
-    @CommandLine.ArgGroup(order = 4, exclusive = false, heading = "%nTarget language:%n")
+    @CommandLine.ArgGroup(order = 6, exclusive = false, heading = "%nTarget language:%n")
     TargetLanguageGroup targetLanguage = new TargetLanguageGroup();
 
-    @CommandLine.ArgGroup(order = 5, exclusive = false, heading = "%nCode Generation:%n")
+    @CommandLine.ArgGroup(order = 7, exclusive = false, heading = "%nCode Generation:%n")
     CodeGenerationGroup codeGeneration = new CodeGenerationGroup();
 
-    @CommandLine.ArgGroup(order = 6, exclusive = false, validate = false)
+    @CommandLine.ArgGroup(order = 8, exclusive = false, validate = false)
+    DataOptions dataOptions = new DataOptions();
+
+    @CommandLine.ArgGroup(order = 9, exclusive = false, validate = false)
     PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     @Override
@@ -72,6 +76,7 @@ public class CreateApp extends BaseCreateCommand {
             setCodegenOptions(codeGeneration);
             setValue(CreateProjectKey.PROJECT_NAME, name);
             setValue(CreateProjectKey.PROJECT_DESCRIPTION, description);
+            setValue(CreateProjectKey.DATA, dataOptions.data);
 
             QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion,
                     propertiesOptions.properties, extensions);
@@ -112,6 +117,7 @@ public class CreateApp extends BaseCreateCommand {
                 + ", name=" + name
                 + ", description=" + description
                 + ", project=" + super.toString()
+                + ", data=" + dataOptions.data
                 + ", properties=" + propertiesOptions.properties
                 + '}';
     }

@@ -67,12 +67,17 @@ class JaxRsResourceImplementor {
      */
     void implement(ClassOutput classOutput, ResourceMetadata resourceMetadata, ResourceProperties resourceProperties,
             Capabilities capabilities) {
-        String controllerClassName = resourceMetadata.getResourceInterface() + "JaxRs_" +
-                HashUtil.sha1(resourceMetadata.getResourceInterface());
+        String controllerClassName = resourceMetadata.getResourceName() + "JaxRs_" +
+                HashUtil.sha1(resourceMetadata.getResourceName());
         LOGGER.tracef("Starting generation of '%s'", controllerClassName);
-        ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(classOutput).className(controllerClassName)
-                .build();
+        ClassCreator.Builder classCreatorBuilder = ClassCreator.builder()
+                .classOutput(classOutput).className(controllerClassName);
+
+        if (resourceMetadata.getResourceInterface() != null) {
+            classCreatorBuilder.interfaces(resourceMetadata.getResourceInterface());
+        }
+
+        ClassCreator classCreator = classCreatorBuilder.build();
 
         implementClassAnnotations(classCreator, resourceMetadata, resourceProperties, capabilities);
         FieldDescriptor resourceField = implementResourceField(classCreator, resourceMetadata);
@@ -86,7 +91,7 @@ class JaxRsResourceImplementor {
             ResourceProperties resourceProperties, Capabilities capabilities) {
         classCreator.addAnnotation(Path.class).addValue("value", resourceProperties.getPath());
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
-            String className = StringUtils.substringAfterLast(resourceMetadata.getResourceInterface(), ".");
+            String className = StringUtils.substringAfterLast(resourceMetadata.getResourceName(), ".");
             classCreator.addAnnotation(OPENAPI_TAG_ANNOTATION).add("name", className);
         }
         if (resourceProperties.getClassAnnotations() != null) {

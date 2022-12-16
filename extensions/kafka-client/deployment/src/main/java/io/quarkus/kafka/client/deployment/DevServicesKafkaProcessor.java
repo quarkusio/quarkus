@@ -225,39 +225,53 @@ public class DevServicesKafkaProcessor {
 
         // Starting the broker
         final Supplier<RunningDevService> defaultKafkaBrokerSupplier = () -> {
-            if (config.imageName.contains("strimzi")) {
-                StrimziKafkaContainer container = new StrimziKafkaContainer(config.imageName)
-                        .withBrokerId(1)
-                        .withKraft()
-                        .waitForRunning();
-                ConfigureUtil.configureSharedNetwork(container, "kafka");
-                if (config.serviceName != null) {
-                    container.withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, config.serviceName);
-                }
-                if (config.fixedExposedPort != 0) {
-                    container.withPort(config.fixedExposedPort);
-                }
-                timeout.ifPresent(container::withStartupTimeout);
+            switch (config.provider) {
+                case REDPANDA:
+                    RedPandaKafkaContainer redpanda = new RedPandaKafkaContainer(
+                            DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("vectorized/redpanda"),
+                            config.fixedExposedPort,
+                            launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                            useSharedNetwork, config.redpanda);
+                    timeout.ifPresent(redpanda::withStartupTimeout);
+                    redpanda.start();
 
-                container.start();
-                return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
-                        container.getContainerId(),
-                        container::close,
-                        KAFKA_BOOTSTRAP_SERVERS, container.getBootstrapServers());
-            } else {
-                RedPandaKafkaContainer container = new RedPandaKafkaContainer(
-                        DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("vectorized/redpanda"),
-                        config.fixedExposedPort,
-                        launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
-                        useSharedNetwork, config.redpanda);
-                timeout.ifPresent(container::withStartupTimeout);
-                container.start();
+                    return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
+                            redpanda.getContainerId(),
+                            redpanda::close,
+                            KAFKA_BOOTSTRAP_SERVERS, redpanda.getBootstrapServers());
+                case STRIMZI:
+                    StrimziKafkaContainer strimzi = new StrimziKafkaContainer(config.imageName)
+                            .withBrokerId(1)
+                            .withKraft()
+                            .waitForRunning();
+                    ConfigureUtil.configureSharedNetwork(strimzi, "kafka");
+                    if (config.serviceName != null) {
+                        strimzi.withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, config.serviceName);
+                    }
+                    if (config.fixedExposedPort != 0) {
+                        strimzi.withPort(config.fixedExposedPort);
+                    }
+                    timeout.ifPresent(strimzi::withStartupTimeout);
 
-                return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
-                        container.getContainerId(),
-                        container::close,
-                        KAFKA_BOOTSTRAP_SERVERS, container.getBootstrapServers());
+                    strimzi.start();
+                    return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
+                            strimzi.getContainerId(),
+                            strimzi::close,
+                            KAFKA_BOOTSTRAP_SERVERS, strimzi.getBootstrapServers());
+                case KAFKA_NATIVE:
+                    KafkaNativeContainer kafkaNative = new KafkaNativeContainer(DockerImageName.parse(config.imageName),
+                            config.fixedExposedPort,
+                            launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                            useSharedNetwork);
+                    timeout.ifPresent(kafkaNative::withStartupTimeout);
+                    kafkaNative.start();
+
+                    return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
+                            kafkaNative.getContainerId(),
+                            kafkaNative::close,
+                            KAFKA_BOOTSTRAP_SERVERS, kafkaNative.getBootstrapServers());
             }
+            return null;
         };
 
         return maybeContainerAddress
@@ -300,11 +314,15 @@ public class DevServicesKafkaProcessor {
         private final String serviceName;
         private final Map<String, Integer> topicPartitions;
         private final Duration topicPartitionsTimeout;
+
+        private final KafkaDevServicesBuildTimeConfig.Provider provider;
+
         private final RedPandaBuildTimeConfig redpanda;
 
         public KafkaDevServiceCfg(KafkaDevServicesBuildTimeConfig config) {
             this.devServicesEnabled = config.enabled.orElse(true);
-            this.imageName = config.imageName;
+            this.provider = config.provider;
+            this.imageName = config.imageName.orElseGet(provider::getDefaultImageName);
             this.fixedExposedPort = config.port.orElse(0);
             this.shared = config.shared;
             this.serviceName = config.serviceName;
@@ -323,13 +341,15 @@ public class DevServicesKafkaProcessor {
                 return false;
             }
             KafkaDevServiceCfg that = (KafkaDevServiceCfg) o;
-            return devServicesEnabled == that.devServicesEnabled && Objects.equals(imageName, that.imageName)
+            return devServicesEnabled == that.devServicesEnabled
+                    && Objects.equals(provider, that.provider)
+                    && Objects.equals(imageName, that.imageName)
                     && Objects.equals(fixedExposedPort, that.fixedExposedPort);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort);
+            return Objects.hash(devServicesEnabled, provider, imageName, fixedExposedPort);
         }
     }
 

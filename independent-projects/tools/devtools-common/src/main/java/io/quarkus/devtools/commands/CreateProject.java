@@ -48,6 +48,8 @@ public class CreateProject {
         String NO_CODE = "codegen.no-code";
         String EXAMPLE = "codegen.example";
         String EXTRA_CODESTARTS = "codegen.extra-codestarts";
+
+        String DATA = "data";
     }
 
     private QuarkusProject quarkusProject;
@@ -193,6 +195,13 @@ public class CreateProject {
 
     public CreateProject noDockerfiles() {
         return noDockerfiles(true);
+    }
+
+    public CreateProject data(String dataAsString) {
+        setValue(DATA, StringUtils.isNoneBlank(dataAsString) ? ToolsUtils.stringToMap(dataAsString, ",", "=")
+                : Collections.emptyMap());
+
+        return this;
     }
 
     public CreateProject setValue(String name, Object value) {

@@ -57,7 +57,14 @@ public class CliImageMavenTest {
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.tag=1.0"));
 
         // 3 image push --dry-run
-        result = CliDriver.execute(project, "image", "push", "--help");
+        result = CliDriver.execute(project, "image", "push", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertTrue(result.getStdout().contains("-Dquarkus.container-image.build=false"));
+
+        // 4 image push --also-build --dry-run
+        result = CliDriver.execute(project, "image", "push", "--also-build", "--dry-run");
+        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertTrue(result.getStdout().contains("-Dquarkus.container-image.build=true"));
+
     }
 }

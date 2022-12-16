@@ -1,5 +1,7 @@
 package io.quarkus.test.vertx;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -10,8 +12,15 @@ import io.smallrye.mutiny.Uni;
 
 class DefaultUniAsserter implements UniAsserter {
 
-    // use a Uni to chain the various operations together and allow us to subscribe to the result
-    Uni<?> execution = Uni.createFrom().item(new Object());
+    private final ConcurrentMap<String, Object> data;
+
+    // A Uni used to chain the various operations together and allow us to subscribe to the result
+    Uni<?> execution;
+
+    public DefaultUniAsserter() {
+        this.execution = Uni.createFrom().item(new Object());
+        this.data = new ConcurrentHashMap<>();
+    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -139,17 +148,22 @@ class DefaultUniAsserter implements UniAsserter {
         return this;
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Consumer<Throwable> c) {
-        execution = uniFromSupplier(uni)
-                // return a new uni so we can avoid io.smallrye.mutiny.CompositeException
-                .onItemOrFailure().transformToUni((o, t) -> {
-                    if (t == null) {
-                        return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
-                    } else {
-                        return Uni.createFrom().item(() -> {
-                            c.accept(t);
-                            return null;
+        execution = execution.onItem()
+                .transformToUni((Function) new Function<Object, Uni<T>>() {
+                    @Override
+                    public Uni<T> apply(Object obj) {
+                        return uni.get().onItemOrFailure().transformToUni((o, t) -> {
+                            if (t == null) {
+                                return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
+                            } else {
+                                return Uni.createFrom().item(() -> {
+                                    c.accept(t);
+                                    return null;
+                                });
+                            }
                         });
                     }
                 });
@@ -165,4 +179,20 @@ class DefaultUniAsserter implements UniAsserter {
             }
         });
     }
+
+    @Override
+    public Object getData(String key) {
+        return data.get(key);
+    }
+
+    @Override
+    public Object putData(String key, Object value) {
+        return data.put(key, value);
+    }
+
+    @Override
+    public void clearData() {
+        data.clear();
+    }
+
 }

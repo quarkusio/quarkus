@@ -34,7 +34,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
  */
 public final class OracleMetadataOverrides {
 
-    static final String DRIVER_JAR_MATCH_REGEX = ".*com\\.oracle\\.database\\.jdbc.*";
+    static final String DRIVER_JAR_MATCH_REGEX = "com\\.oracle\\.database\\.jdbc";
     static final String NATIVE_IMAGE_RESOURCE_MATCH_REGEX = "/META-INF/native-image/native-image\\.properties";
     static final String NATIVE_IMAGE_REFLECT_CONFIG_MATCH_REGEX = "/META-INF/native-image/reflect-config\\.json";
 

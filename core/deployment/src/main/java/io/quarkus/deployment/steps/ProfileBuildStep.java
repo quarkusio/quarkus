@@ -1,23 +1,15 @@
 package io.quarkus.deployment.steps;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.runtime.LaunchMode;
 
 public class ProfileBuildStep {
     @BuildStep
     RunTimeConfigurationDefaultBuildItem defaultProfile(LaunchModeBuildItem launchModeBuildItem) {
-        return new RunTimeConfigurationDefaultBuildItem("quarkus.profile",
-                getProfileValue(launchModeBuildItem.getLaunchMode()));
-    }
-
-    private String getProfileValue(LaunchMode launchMode) {
-        if (launchMode == LaunchMode.DEVELOPMENT) {
-            return "dev";
-        } else if (launchMode == LaunchMode.TEST) {
-            return "test";
-        }
-        return "prod";
+        return new RunTimeConfigurationDefaultBuildItem(launchModeBuildItem.getLaunchMode().getProfileKey(),
+                ConfigProvider.getConfig().getConfigValue(launchModeBuildItem.getLaunchMode().getProfileKey()).getValue());
     }
 }

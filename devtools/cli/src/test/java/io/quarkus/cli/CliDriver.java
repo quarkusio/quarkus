@@ -250,7 +250,7 @@ public class CliDriver {
         Assertions.assertFalse(path.toFile().exists());
     }
 
-    public static String readFileAsString(Path projectRoot, Path path) throws Exception {
+    public static String readFileAsString(Path path) throws Exception {
         return new String(Files.readAllBytes(path));
     }
 
@@ -293,7 +293,7 @@ public class CliDriver {
         Assertions.assertTrue(result.stdout.contains("quarkus-qute"),
                 "Expected quarkus-qute to be in the list of extensions. Result:\n" + result);
 
-        String content = readFileAsString(projectRoot, file);
+        String content = readFileAsString(file);
         Assertions.assertTrue(content.contains("quarkus-qute"),
                 "quarkus-qute should be listed as a dependency. Result:\n" + content);
 
@@ -311,7 +311,7 @@ public class CliDriver {
         Assertions.assertFalse(result.stdout.contains("quarkus-qute"),
                 "Expected quarkus-qute to be missing from the list of extensions. Result:\n" + result);
 
-        String content = readFileAsString(projectRoot, file);
+        String content = readFileAsString(file);
         Assertions.assertFalse(content.contains("quarkus-qute"),
                 "quarkus-qute should not be listed as a dependency. Result:\n" + content);
 
@@ -333,7 +333,7 @@ public class CliDriver {
         Assertions.assertTrue(result.stdout.contains("quarkus-jackson"),
                 "Expected quarkus-jackson to be in the list of extensions. Result:\n" + result);
 
-        String content = CliDriver.readFileAsString(projectRoot, file);
+        String content = CliDriver.readFileAsString(file);
         Assertions.assertTrue(content.contains("quarkus-qute"),
                 "quarkus-qute should still be listed as a dependency. Result:\n" + content);
         Assertions.assertTrue(content.contains("quarkus-amazon-lambda-http"),
@@ -359,7 +359,7 @@ public class CliDriver {
         Assertions.assertFalse(result.stdout.contains("quarkus-jackson"),
                 "quarkus-jackson should not be in the list of extensions. Result:\n" + result);
 
-        String content = CliDriver.readFileAsString(projectRoot, file);
+        String content = CliDriver.readFileAsString(file);
         Assertions.assertFalse(content.contains("quarkus-qute"),
                 "quarkus-qute should not be listed as a dependency. Result:\n" + content);
         Assertions.assertFalse(content.contains("quarkus-amazon-lambda-http"),
@@ -455,7 +455,7 @@ public class CliDriver {
         Path properties = projectRoot.resolve("src/main/resources/application.properties");
         Assertions.assertTrue(properties.toFile().exists(),
                 "application.properties should exist: " + properties.toAbsolutePath().toString());
-        String propertiesFile = CliDriver.readFileAsString(projectRoot, properties);
+        String propertiesFile = CliDriver.readFileAsString(properties);
         configs.forEach(conf -> Assertions.assertTrue(propertiesFile.contains(conf),
                 "Properties file should contain " + conf + ". Found:\n" + propertiesFile));
     }

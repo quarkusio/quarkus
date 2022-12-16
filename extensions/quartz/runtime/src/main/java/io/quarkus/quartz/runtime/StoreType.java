@@ -5,8 +5,8 @@ public enum StoreType {
     JDBC_TX("org.quartz.impl.jdbcjobstore.JobStoreTX", "JobStoreTX"),
     JDBC_CMT("org.quartz.impl.jdbcjobstore.JobStoreCMT", "JobStoreCMT");
 
-    public String clazz;
-    public String simpleName;
+    public final String clazz;
+    public final String simpleName;
 
     StoreType(String clazz, String simpleName) {
         this.clazz = clazz;

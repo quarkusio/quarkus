@@ -86,6 +86,11 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
+/**
+ * Although this class is not part of the public API it must not be renamed in order to preserve backward compatibility. The
+ * name of this class can be stored in a Quartz table in the database. See https://github.com/quarkusio/quarkus/issues/29177
+ * for more information.
+ */
 @Typed({ QuartzScheduler.class, Scheduler.class })
 @Singleton
 public class QuartzSchedulerImpl implements QuartzScheduler {
@@ -552,6 +557,10 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, "AUTO");
         props.put("org.quartz.scheduler.skipUpdateCheck", "true");
         props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, quartzSupport.getRuntimeConfig().instanceName);
+        props.put(StdSchedulerFactory.PROP_SCHED_BATCH_TIME_WINDOW,
+                quartzSupport.getRuntimeConfig().batchTriggerAcquisitionFireAheadTimeWindow);
+        props.put(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE,
+                quartzSupport.getRuntimeConfig().batchTriggerAcquisitionMaxCount);
         props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, "false");
         props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD, "true");
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
@@ -576,9 +585,9 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                     quartzSupport.getDriverDialect().get());
             props.put(StdSchedulerFactory.PROP_DATASOURCE_PREFIX + "." + dataSource + ".connectionProvider.class",
                     QuarkusQuartzConnectionPoolProvider.class.getName());
+            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".acquireTriggersWithinLock", "true");
             if (buildTimeConfig.clustered) {
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".isClustered", "true");
-                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".acquireTriggersWithinLock", "true");
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".clusterCheckinInterval",
                         "" + quartzSupport.getBuildTimeConfig().clusterCheckinInterval);
                 if (buildTimeConfig.selectWithLockSql.isPresent()) {
@@ -611,6 +620,11 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         return props;
     }
 
+    /**
+     * Although this class is not part of the public API it must not be renamed in order to preserve backward compatibility. The
+     * name of this class can be stored in a Quartz table in the database. See https://github.com/quarkusio/quarkus/issues/29177
+     * for more information.
+     */
     static class InvokerJob implements Job {
 
         final QuartzTrigger trigger;

@@ -71,43 +71,49 @@ This action only needs to be done once.
 === Linux
 
 The Podman package is available in several Linux distributions.
-Podman can be used the same way as Docker with the `podman-docker` package.
-To install it for your OS, please refer to the  https://podman.io/getting-started/installation[Podman installation guide].
-Below is the short installation instruction for popular Linux distributions:
-
-==== Fedora
-
-[source,bash]
-----
-sudo dnf install podman podman-docker docker-compose
-----
-
-==== Ubuntu (21.04 and later)
-
-[source,bash]
-----
-sudo apt install podman podman-docker docker-compose
-----
+Podman can in most cases be used as an drop-in-replacement for Docker, either with the `podman-docker` package, or using an alias (`alias docker=podman`).
+To install it for your Linux OS, please refer to the https://podman.io/getting-started/installation#installing-on-linux[Podman installation guide].
 
 === Setting DOCKER_HOST on Linux
 
 Podman supports two modes of operation: rootful, in which case the container runs as root on the host system, and rootless, where the container runs under a standard Unix user account.
 On Linux, the REST API Unix socket is, by default, restricted to only allow the root user to access it.
-This prevents someone from using a container to achieve a privilege escalation on the syetem.
+This prevents someone from using a container to achieve a privilege escalation on the system.
 While these restrictions can be softened to allow a special group instead of just root, the recommended approach is to use rootless Podman on Linux.
-To use rootless Podman, you need to set a DOCKER_HOST environment variable to point to the user-specific socket.
-In both cases, you need to start the REST API by enabling the Podman socket service through systemd.
+To use rootless Podman, you need to set a `DOCKER_HOST` environment variable to point to the user-specific socket.
 
-[source]
+NOTE: In both cases, you need to start the REST API by enabling the Podman socket service through systemd, or at least by making sure Podman is running as a service.
+
+[source,bash]
 ----
-
-# Enable the podman socket with Docker REST API (only needs to be done once)
+# Example 1: Enable the podman socket with Docker REST API with systemd (only needs to be done once)
 systemctl --user enable podman.socket --now
-# Set the required environment variables (need to be run everytime or added to profile)
-
-export DOCKER_HOST=unix:///run/user/${UID}/podman/podman.sock
-
 ----
+
+[source,bash]
+----
+# Example 2: Enable the podman socket with Docker REST API on a system where systemd is not running (WSL etc)
+podman system service --time=0
+----
+
+Then, you can obtain the path of the socket with the following command:
+
+[source,bash]
+----
+$ podman info | grep -A2 'remoteSocket'
+
+remoteSocket:
+  exists: true
+  path: /path/to/podman.sock
+----
+
+Setting the `DOCKER_HOST` environment variable must be done every time or added to the profile:
+
+[source,bash]
+----
+export DOCKER_HOST=unix:///path/to/podman.sock <1>
+----
+<1> Replace `/path/to/podman.sock` with the path you obtained previously.
 
 For a detailed explanation, see this https://quarkus.io/blog/quarkus-devservices-testcontainers-podman/[blog article].
 

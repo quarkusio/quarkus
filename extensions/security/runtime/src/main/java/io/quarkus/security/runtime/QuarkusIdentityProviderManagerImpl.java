@@ -102,16 +102,24 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     }
 
     private Uni<SecurityIdentity> handleSingleProvider(IdentityProvider identityProvider, AuthenticationRequest request) {
-        if (augmenters.isEmpty()) {
-            return identityProvider.authenticate(request, blockingRequestContext);
+        Uni<SecurityIdentity> authenticated = identityProvider.authenticate(request, blockingRequestContext)
+                .onItem().ifNull().failWith(new Supplier<Throwable>() {
+                    @Override
+                    public Throwable get() {
+                        // reject request with the invalid credential
+                        return new AuthenticationFailedException();
+                    }
+                });
+        if (!augmenters.isEmpty()) {
+            authenticated = authenticated
+                    .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                        @Override
+                        public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
+                            return handleIdentityFromProvider(0, securityIdentity, blockingRequestContext);
+                        }
+                    });
         }
-        Uni<SecurityIdentity> authenticated = identityProvider.authenticate(request, blockingRequestContext);
-        return authenticated.flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
-            @Override
-            public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                return handleIdentityFromProvider(0, securityIdentity, blockingRequestContext);
-            }
-        });
+        return authenticated;
     }
 
     /**

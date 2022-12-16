@@ -20,6 +20,17 @@ public class QuartzRuntimeConfig {
     public String instanceName;
 
     /**
+     * The amount of time in milliseconds that a trigger is allowed to be acquired and fired ahead of its scheduled fire time.
+     */
+    @ConfigItem(defaultValue = "0")
+    public long batchTriggerAcquisitionFireAheadTimeWindow;
+
+    /**
+     * The maximum number of triggers that a scheduler node is allowed to acquire (for firing) at once.
+     */
+    @ConfigItem(defaultValue = "1")
+    public int batchTriggerAcquisitionMaxCount;
+    /**
      * The size of scheduler thread pool. This will initialize the number of worker threads in the pool.
      */
     @ConfigItem(defaultValue = "25")

@@ -177,6 +177,50 @@ public interface ExtensionsService {
 <2> Each `Map` entry represents exactly one query parameter
 <3> `MultivaluedMap` allows you to send array values
 
+==== Using @ClientQueryParam
+
+Another way to add query parameters to a request is to use `@io.quarkus.rest.client.reactive.ClientQueryParam` on either the REST client interface or a specific method of the interface.
+The annotation can specify the query parameter name while the value can either be a constant, a configuration property or it can be determined by invoking a method.
+
+The following example shows the various possible usages:
+
+[source, java]
+----
+@ClientQueryParam(name = "my-param", value = "${my.property-value}") // <1>
+public interface Client {
+    @GET
+    String getWithParam();
+
+    @GET
+    @ClientQueryParam(name = "some-other-param", value = "other") // <2>
+    String getWithOtherParam();
+
+    @GET
+    @ClientQueryParam(name = "param-from-method", value = "{with-param}") // <3>
+    String getFromMethod();
+
+    default String withParam(String name) {
+        if ("param-from-method".equals(name)) {
+            return "test";
+        }
+        throw new IllegalArgumentException();
+    }
+}
+----
+
+<1> By placing `@ClientQueryParam` on the interface, we ensure that `my-param` will be added to all requests of the client.
+Because we used the `${...}` syntax, the actual value of the parameter will be obtained using the `my.property-value` configuration property.
+<2> When `getWithOtherParam` is called, in addition to the `my-param` query parameter, `some-other-param` with the value of `other` will also be added.
+<3> when `getFromMethod` is called, in addition to the `my-param` query parameter, `param-from-method` with the value of `test` (because that's what the `withParam` method returns when invoked with `param-from-method`) will also be added.
+
+[IMPORTANT]
+====
+Note that if an interface method contains an argument annotated with `@QueryParam`, that argument will take
+priority over anything specified in any `@ClientQueryParam` annotation.
+====
+
+More information about this annotation can be found on the javadoc of
+
 === Path Parameters
 
 If the GET request requires path parameters you can leverage the `@PathParam("parameter-name")` annotation instead of
@@ -238,6 +282,19 @@ public interface ExtensionsService {
 quarkus.rest-client.extensions-api.url=https://stage.code.quarkus.io/api
 quarkus.rest-client.extensions-api.scope=javax.inject.Singleton
 ----
+
+=== Disabling Hostname Verification
+
+To disable the SSL hostname verification for a specific REST client, add the following property to your configuration:
+
+[source,properties]
+----
+quarkus.rest-client.extensions-api.verify-host=false
+----
+[WARNING]
+====
+This setting should not be used in production as it will disable the SSL hostname verification.
+====
 
 == Create the JAX-RS resource
 
@@ -614,7 +671,7 @@ extensionsService.getByIdAsUni(id)
 
 If you use a `CompletionStage`, you would need to call the service's method to retry.
 This difference comes from the laziness aspect of Mutiny and its subscription protocol.
-More details about this can be found in https://smallrye.io/smallrye-mutiny/#_uni_and_multi[the Mutiny documentation].
+More details about this can be found in https://smallrye.io/smallrye-mutiny/latest/reference/uni-and-multi/[the Mutiny documentation].
 
 == Custom headers support
 
@@ -845,7 +902,7 @@ Naturally, you can also group these parameters into a containing class:
     public static class Parameters {
         @RestForm
         File file;
-        
+
         @RestForm
         String otherField;
     }
@@ -859,7 +916,7 @@ Any `@RestForm` parameter of the type `File`, `Path`, `byte[]` or `Buffer`, as w
 annotated with `@PartType` automatically imply a `@Consumes(MediaType.MULTIPART_FORM_DATA)`
 on the method if there is no `@Consumes` present.
 
-NOTE: If there are `@RestForm` parameters that are not multipart-implying, then 
+NOTE: If there are `@RestForm` parameters that are not multipart-implying, then
 `@Consumes(MediaType.APPLICATION_FORM_URLENCODED)` is implied.
 
 There are a few modes in which the form data can be encoded. By default,
@@ -1050,9 +1107,11 @@ Then, in your test you can simply use `@InjectMock` to create and inject a mock:
 
 [source,java]
 ----
-import static org.assertj.core.api.Assertions.assertThat;
+package io.quarkus.it.rest.client.main;
+
 import static org.mockito.Mockito.when;
 
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -1063,6 +1122,7 @@ import io.quarkus.test.junit.mockito.InjectMock;
 public class InjectMockTest {
 
     @InjectMock
+    @RestClient
     Client mock;
 
     @BeforeEach
@@ -1082,6 +1142,8 @@ If Mockito doesn't meet your needs, you can create a mock programmatically using
 
 [source,java]
 ----
+package io.quarkus.it.rest.client.main;
+
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -22,6 +22,8 @@ public class DevServicesConfig {
 
     /**
      * The container image name to use, for container based DevServices providers.
+     * If you want to use Redis Stack modules (bloom, graph, search...), use:
+     * {@code redis/redis-stack-server:latest}.
      */
     @ConfigItem
     public Optional<String> imageName;

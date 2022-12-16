@@ -566,3 +566,7 @@ discussed earlier.
 If you are testing your application with `sam local` you can
 hardcode a principal name to use when your application runs by setting
 the `QUARKUS_AWS_LAMBDA_FORCE_USER_NAME` environment variable
+
+== SnapStart
+
+To optimize your application for Lambda SnapStart, check xref:amazon-snapstart.adoc[the SnapStart Configuration Documentation].

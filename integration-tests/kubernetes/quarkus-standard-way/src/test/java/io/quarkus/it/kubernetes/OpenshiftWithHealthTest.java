@@ -67,13 +67,13 @@ public class OpenshiftWithHealthTest {
                     podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getReadinessProbe()).isNotNull().satisfies(p -> {
-                                assertThat(p.getPeriodSeconds()).isEqualTo(10);
+                                assertThat(p.getPeriodSeconds()).isEqualTo(15);
                                 assertThat(p.getHttpGet()).satisfies(h1 -> {
                                     assertThat(h1.getPath()).isEqualTo("/q/health/ready");
                                 });
                             });
                             assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {
-                                assertThat(p.getPeriodSeconds()).isEqualTo(30);
+                                assertThat(p.getPeriodSeconds()).isEqualTo(10);
                                 assertThat(p.getHttpGet()).isNull();
                                 assertThat(p.getExec()).satisfies(e -> {
                                     assertThat(e.getCommand()).containsOnly("kill");

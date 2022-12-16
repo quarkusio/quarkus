@@ -2,11 +2,15 @@ package io.quarkus.bootstrap.resolver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
 
 public class TsQuarkusExt {
 
@@ -16,6 +20,7 @@ public class TsQuarkusExt {
     protected final TsJar rtContent;
     protected final PropsBuilder rtDescr = PropsBuilder.newInstance();
     private boolean installed;
+    private Map<Integer, List<ArtifactKey>> flags = new HashMap<>();
 
     public TsQuarkusExt(String artifactId) {
         this(artifactId, TsArtifact.DEFAULT_VERSION);
@@ -28,6 +33,11 @@ public class TsQuarkusExt {
         rtContent = new TsJar();
         runtime.setContent(rtContent);
         rtDescr.set(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment.toString());
+    }
+
+    public TsQuarkusExt setDependencyFlag(ArtifactKey dep, int flag) {
+        this.flags.computeIfAbsent(flag, k -> new ArrayList<>()).add(dep);
+        return this;
     }
 
     public TsQuarkusExt setConditionalDeps(TsQuarkusExt... exts) {
@@ -83,15 +93,25 @@ public class TsQuarkusExt {
         }
         installed = true;
 
-        rtContent.addEntry(rtDescr.build(), BootstrapConstants.DESCRIPTOR_PATH);
-
         if (!extDeps.isEmpty()) {
             for (TsQuarkusExt e : extDeps) {
                 e.install(repo);
             }
         }
-        Properties props = rtDescr.build();
-        rtContent.addEntry(props, BootstrapConstants.DESCRIPTOR_PATH);
+        for (Map.Entry<Integer, List<ArtifactKey>> e : flags.entrySet()) {
+            switch (e.getKey()) {
+                case DependencyFlags.CLASSLOADER_PARENT_FIRST:
+                    final StringJoiner sj = new StringJoiner(",");
+                    for (ArtifactKey k : e.getValue()) {
+                        sj.add(k.toString());
+                    }
+                    rtDescr.set(BootstrapConstants.PARENT_FIRST_ARTIFACTS, sj.toString());
+                    break;
+                default:
+                    throw new RuntimeException("Not yet supported flag " + e.getKey());
+            }
+        }
+        rtContent.addEntry(rtDescr.build(), BootstrapConstants.DESCRIPTOR_PATH);
         deployment.install(repo);
         runtime.install(repo);
     }

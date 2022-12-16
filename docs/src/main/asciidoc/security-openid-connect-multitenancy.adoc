@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how your OpenID Connect application can support multi-tenancy so that you can serve multiple tenants from a single application.
-:toc:
 
 This guide demonstrates how your OpenID Connect (OIDC) application can support multi-tenancy so that you can serve multiple tenants from a single application. Tenants can be distinct realms or security domains within the same OpenID Provider or even distinct OpenID Providers.
 
@@ -583,7 +582,7 @@ annotation per tenant ID other than default:
 [NOTE]
 ====
 Proactive HTTP authentication needs to be disabled (`quarkus.http.auth.proactive=false`) for this to work. See
-xref:security-built-in-authentication.adoc#proactive-authentication[Proactive Authentication] section for further details.
+xref:security-built-in-authentication-support-concept.adoc#proactive-authentication[Proactive Authentication] section for further details.
 ====
 
 [source,java]
@@ -750,4 +749,4 @@ include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * https://developers.google.com/identity/protocols/OpenIDConnect[Google OpenID Connect]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

@@ -1,10 +1,36 @@
 package io.quarkus.rest.data.panache.deployment.utils;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.MethodCreator;
 
 public final class SignatureMethodCreator {
+
+    /**
+     * Creates a method using a signature (which allows declaring parameterized types like lists).
+     *
+     * For example, for the method: "List<String> list(List<String> sort, int size, int other, String uri)"
+     * It will use the following signature the generated the method:
+     * "(Ljava/util/List<Ljava/lang/String;>;IILjava/lang/String;)Ljava/util/List<Ljava/lang/String;>;".
+     *
+     * One useful utility to verify the method signatures is using "javap -v Test.class" where the Test java class is a compiled
+     * version of the method you want to see the signature.
+     */
+    public static MethodCreator getMethodCreator(String methodName, ClassCreator classCreator, ReturnType returnType,
+            List<Parameter> parameters) {
+        List<Object> paramTypes = new ArrayList<>();
+        List<String> paramNames = new ArrayList<>();
+        for (Parameter param : parameters) {
+            paramNames.add(param.name);
+            paramTypes.add(param.type);
+        }
+        MethodCreator methodCreator = getMethodCreator(methodName, classCreator, returnType, paramTypes.toArray(new Object[0]));
+        methodCreator.setParameterNames(paramNames.toArray(new String[0]));
+        return methodCreator;
+    }
 
     /**
      * Creates a method using a signature (which allows declaring parameterized types like lists).
@@ -62,6 +88,22 @@ public final class SignatureMethodCreator {
         returnType.type = type;
         returnType.parameterTypes = parameterTypes;
         return returnType;
+    }
+
+    public static Parameter param(String name, Object type) {
+        Parameter parameter = new Parameter();
+        parameter.name = name;
+        parameter.type = type;
+        return parameter;
+    }
+
+    public static class Parameter {
+        private String name;
+        private Object type;
+
+        public String getName() {
+            return name;
+        }
     }
 
     public static class ReturnType {

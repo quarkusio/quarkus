@@ -77,11 +77,13 @@ public class CliProjectMavenTest {
 
         List<String> configs = Arrays.asList("custom.app.config1=val1",
                 "custom.app.config2=val2", "lib.config=val3");
+        List<String> data = Arrays.asList("resteasy-reactive-codestart.resource.response=An awesome response");
 
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--verbose", "-e", "-B",
                 "--no-wrapper", "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
+                "--data=" + String.join(",", data),
                 "-x resteasy-reactive,micrometer-registry-prometheus",
                 "silly:my-project:0.1.0");
 
@@ -110,6 +112,9 @@ public class CliProjectMavenTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code. " + result);
         Assertions.assertTrue(result.stdout.contains("WARN"),
                 "Expected a warning that the directory already exists. " + result);
+
+        String greetingResource = CliDriver.readFileAsString(project.resolve("src/main/java/custom/pkg/GreetingResource.java"));
+        Assertions.assertTrue(greetingResource.contains("return \"An awesome response\";"));
     }
 
     @Test
@@ -118,7 +123,7 @@ public class CliProjectMavenTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
         Assertions.assertFalse(pomContent.contains("quarkus-qute"),
                 "Dependencies should not contain qute extension by default. Found:\n" + pomContent);
 
@@ -329,7 +334,7 @@ public class CliProjectMavenTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
 
         Assertions.assertTrue(pomContent.contains("maven.compiler.release>11<"),
                 "Java 11 should be used when specified. Found:\n" + pomContent);
@@ -345,7 +350,7 @@ public class CliProjectMavenTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
 
         Assertions.assertTrue(pomContent.contains("maven.compiler.release>17<"),
                 "Java 17 should be used when specified. Found:\n" + pomContent);
@@ -377,7 +382,7 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(pom.toFile().exists(),
                 "pom.xml should exist: " + pom.toAbsolutePath().toString());
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
         Assertions.assertTrue(pomContent.contains("<groupId>" + group + "</groupId>"),
                 "pom.xml should contain group id:\n" + pomContent);
         Assertions.assertTrue(pomContent.contains("<artifactId>" + artifact + "</artifactId>"),

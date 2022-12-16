@@ -19,11 +19,11 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
-        <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <kotlin.version>1.7.20</kotlin.version>
+        <compiler-plugin.version>3.10.1</compiler-plugin.version>
+        <kotlin.version>1.7.22</kotlin.version>
         <dokka.version>1.7.20</dokka.version>
         <scala.version>2.13.8</scala.version>
-        <scala-maven-plugin.version>4.7.2</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.8.0</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
@@ -34,7 +34,7 @@
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.0.3</jandex.version>
+        <jandex.version>3.0.5</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.7</asciidoctorj.version>
@@ -45,7 +45,7 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
-        <commonmark.version>0.20.0</commonmark.version>
+        <commonmark.version>0.21.0</commonmark.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Alpha10</arquillian.version>
@@ -67,8 +67,8 @@
 
         <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
 
-        <!-- Antlr is used by the PanacheQL parser-->
-        <antlr.version>4.9.2</antlr.version>
+        <!-- Antlr 4 is used by the PanacheQL parser but also needs to match the requirements of Hibernate ORM 6.x-->
+        <antlr.version>4.10.1</antlr.version>
 
         <!-- SELinux access label, used when mounting local volumes into containers in tests -->
         <volume.access.modifier>:Z</volume.access.modifier>
@@ -97,11 +97,12 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>19.0.3</keycloak.version>
+        <keycloak.version>20.0.1</keycloak.version>
+        <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
-        <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.version}-legacy</keycloak.docker.legacy.image>
+        <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
-        <unboundid-ldap.version>6.0.6</unboundid-ldap.version>
+        <unboundid-ldap.version>6.0.7</unboundid-ldap.version>
 
         <assertj.version>3.23.1</assertj.version>
 
@@ -109,7 +110,7 @@
         <wiremock-maven-plugin.version>7.2.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.26.0</artemis.version>
+        <artemis.version>2.27.1</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -119,7 +120,7 @@
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
         <formatter-maven-plugin.version>2.21.0</formatter-maven-plugin.version>
-        <impsort-maven-plugin.version>1.7.0</impsort-maven-plugin.version>
+        <impsort-maven-plugin.version>1.8.0</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
@@ -159,7 +160,7 @@
         <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
-        <platform.quarkus.native.builder-image>graalvm</platform.quarkus.native.builder-image>
+        <platform.quarkus.native.builder-image>mandrel</platform.quarkus.native.builder-image>
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
@@ -698,6 +699,25 @@
                     <groupId>de.thetaphi</groupId>
                     <artifactId>forbiddenapis</artifactId>
                     <version>${forbiddenapis-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>verify-forbidden-apis</id>
+                            <configuration>
+                                <!-- if the used Java version is too new, don't fail, just do nothing: -->
+                                <failOnUnsupportedJava>false</failOnUnsupportedJava>
+                                <signaturesFiles>
+                                    <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
+                                </signaturesFiles>
+                                <failOnMissingClasses>false</failOnMissingClasses>
+                                <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
+                                <suppressAnnotations><annotation>**.SuppressForbidden</annotation></suppressAnnotations>
+                            </configuration>
+                            <phase>compile</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>

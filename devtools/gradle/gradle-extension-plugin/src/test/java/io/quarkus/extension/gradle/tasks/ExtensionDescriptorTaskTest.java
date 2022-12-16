@@ -200,10 +200,9 @@ public class ExtensionDescriptorTaskTest {
         File extensionDescriptorFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.yaml");
         assertThat(extensionDescriptorFile).exists();
         ObjectNode extensionDescriptor = TestUtils.readExtensionFile(extensionDescriptorFile.toPath());
-        assertThat(extensionDescriptor.get("scm")).isNotNull();
-        assertThat(extensionDescriptor.get("scm").get("url")).isNotNull();
-        assertThat(extensionDescriptor.get("scm").get("url").asText())
-                .as("Check source location %s", extensionDescriptor.get("scm"))
+        assertThat(extensionDescriptor.get("metadata").get("scm-url")).isNotNull();
+        assertThat(extensionDescriptor.get("metadata").get("scm-url").asText())
+                .as("Check source location %s", extensionDescriptor.get("scm-url"))
                 .isEqualTo("https://github.com/some/repo");
     }
 

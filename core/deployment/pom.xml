@@ -203,18 +203,11 @@
                     <execution>
                         <id>verify-forbidden-apis</id>
                         <configuration>
-                            <!-- if the used Java version is too new, don't fail, just do nothing: -->
-                            <failOnUnsupportedJava>false</failOnUnsupportedJava>
                             <signaturesFiles>
                                 <signaturesFile>./banned-signatures.txt</signaturesFile>
+                                <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
                             </signaturesFiles>
-                            <failOnMissingClasses>false</failOnMissingClasses>
-                            <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
                         </configuration>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>

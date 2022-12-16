@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import java.time.Duration;
 
+import io.quarkus.redis.datasource.autosuggest.TransactionalAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
 import io.quarkus.redis.datasource.bloom.TransactionalBloomCommands;
 import io.quarkus.redis.datasource.countmin.TransactionalCountMinCommands;
@@ -13,9 +14,11 @@ import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.TransactionalJsonCommands;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
 import io.quarkus.redis.datasource.list.TransactionalListCommands;
+import io.quarkus.redis.datasource.search.TransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
+import io.quarkus.redis.datasource.timeseries.TransactionalTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
@@ -123,6 +126,21 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K> TransactionalGraphCommands<K> graph(Class<K> redisKeyType) {
         return new BlockingTransactionalGraphCommandsImpl<>(this, reactive.graph(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TransactionalSearchCommands search(Class<K> redisKeyType) {
+        return new BlockingTransactionalSearchCommandsImpl(this, reactive.search(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TransactionalAutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
+        return new BlockingTransactionalAutoSuggestCommandsImpl<>(this, reactive.autosuggest(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TransactionalTimeSeriesCommands<K> timeseries(Class<K> redisKeyType) {
+        return new BlockingTransactionalTimeSeriesCommandsImpl<>(this, reactive.timeseries(redisKeyType), timeout);
     }
 
     @Override

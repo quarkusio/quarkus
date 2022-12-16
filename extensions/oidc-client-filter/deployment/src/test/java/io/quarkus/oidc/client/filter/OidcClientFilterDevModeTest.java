@@ -26,10 +26,12 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class OidcClientFilterDevModeTest {
 
-    private static Class<?>[] testClasses = {
+    private static final Class<?>[] testClasses = {
             FrontendResource.class,
             ProtectedResource.class,
-            ProtectedResourceService.class
+            ProtectedResourceService.class,
+            ProtectedResourceServiceNamedOidcClient.class,
+            NamedOidcClientResource.class
     };
 
     @RegisterExtension
@@ -60,6 +62,13 @@ public class OidcClientFilterDevModeTest {
                 .statusCode(200)
                 .body(equalTo("alice"));
         checkLog();
+
+        // here we test that user can optionally select named OidcClient like this @OidcClient("clientName")
+        // even though 'quarkus.oidc-client-filter.register-filter' is enabled
+        RestAssured.when().get("/named-oidc-client/user-name")
+                .then()
+                .statusCode(200)
+                .body(equalTo("jdoe"));
     }
 
     private void checkLog() {

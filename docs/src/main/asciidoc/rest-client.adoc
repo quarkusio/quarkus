@@ -232,8 +232,24 @@ To disable the SSL hostname verification for a specific REST client, add the fol
 
 [source,properties]
 ----
-quarkus.rest-client.extensions-api.hostname-verifier=io.quarkus.restclient.NoopHostnameVerifier
+quarkus.rest-client.extensions-api.verify-host=false
 ----
+[WARNING]
+====
+This setting should not be used in production as it will disable the SSL hostname verification.
+====
+
+Moreover, you can configure a REST client to use your custom hostname verify strategy. All you need to do is to provide a class that implements the interface `javax.net.ssl.HostnameVerifier` and add the following property to your configuration:
+
+[source,properties]
+----
+quarkus.rest-client.extensions-api.hostname-verifier=<full qualified custom hostname verifier class name>
+----
+
+[NOTE]
+====
+Quarkus REST client provides an embedded hostname verifier strategy to disable the hostname verification called `io.quarkus.restclient.NoopHostnameVerifier`.
+====
 
 === Disabling SSL verifications
 
@@ -498,7 +514,7 @@ extensionsService.getByIdAsUni(id)
 
 If you use a `CompletionStage`, you would need to call the service's method to retry.
 This difference comes from the laziness aspect of Mutiny and its subscription protocol.
-More details about this can be found in https://smallrye.io/smallrye-mutiny/#_uni_and_multi[the Mutiny documentation].
+More details about this can be found in https://smallrye.io/smallrye-mutiny/latest/reference/uni-and-multi/[the Mutiny documentation].
 
 == Custom headers support
 

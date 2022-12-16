@@ -17,7 +17,7 @@ import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingPolicy;
 
 @SuppressWarnings("unchecked")
-interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOperation, SpanOperation> {
+public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOperation, SpanOperation> {
     @Override
     default <R> SpanOperation receiveRequest(
             // The Vert.x context passed to use is already duplicated.

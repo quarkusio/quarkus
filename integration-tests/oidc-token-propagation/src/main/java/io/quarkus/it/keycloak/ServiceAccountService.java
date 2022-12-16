@@ -7,7 +7,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import io.quarkus.oidc.client.filter.OidcClientFilter;
 
-@RegisterRestClient
+@RegisterRestClient(configKey = "service-account-service")
 @OidcClientFilter
 @Path("/")
 public interface ServiceAccountService {

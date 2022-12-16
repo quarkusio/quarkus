@@ -3,6 +3,9 @@ package io.quarkus.test.keycloak.client;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.keycloak.representations.AccessTokenResponse;
@@ -59,10 +62,18 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     /**
      * Get an access token from the default tenant realm using a password grant with the provided user name, user secret, client
      * id and secret.
-     * Set the client secret to an empty string or null if it is not required.
      */
     public String getAccessToken(String userName, String userSecret, String clientId, String clientSecret) {
-        return getAccessTokenInternal(userName, userSecret, clientId, clientSecret, getAuthServerUrl());
+        return getAccessToken(userName, userSecret, clientId, clientSecret, null);
+    }
+
+    /**
+     * Get an access token from the default tenant realm using a password grant with the provided user name, user secret, client
+     * id and secret, and scopes.
+     */
+    public String getAccessToken(String userName, String userSecret, String clientId, String clientSecret,
+            List<String> scopes) {
+        return getAccessTokenInternal(userName, userSecret, clientId, clientSecret, scopes, getAuthServerUrl());
     }
 
     /**
@@ -94,18 +105,31 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
      * Set the client secret to an empty string or null if it is not required.
      */
     public String getRealmAccessToken(String realm, String userName, String userSecret, String clientId, String clientSecret) {
-        return getAccessTokenInternal(userName, userSecret, clientId, clientSecret,
+        return getRealmAccessToken(realm, userName, userSecret, clientId, clientSecret, null);
+    }
+
+    /**
+     * Get a realm access token using a password grant with the provided user name, user secret, client id and secret, and
+     * scopes.
+     * Set the client secret to an empty string or null if it is not required.
+     */
+    public String getRealmAccessToken(String realm, String userName, String userSecret, String clientId, String clientSecret,
+            List<String> scopes) {
+        return getAccessTokenInternal(userName, userSecret, clientId, clientSecret, scopes,
                 getAuthServerBaseUrl() + "/realms/" + realm);
     }
 
     private String getAccessTokenInternal(String userName, String userSecret, String clientId, String clientSecret,
-            String authServerUrl) {
+            List<String> scopes, String authServerUrl) {
         RequestSpecification requestSpec = RestAssured.given().param("grant_type", "password")
                 .param("username", userName)
                 .param("password", userSecret)
                 .param("client_id", clientId);
         if (clientSecret != null && !clientSecret.isBlank()) {
             requestSpec = requestSpec.param("client_secret", clientSecret);
+        }
+        if (scopes != null && !scopes.isEmpty()) {
+            requestSpec = requestSpec.param("scope", urlEncode(String.join(" ", scopes)));
         }
         return requestSpec.when().post(authServerUrl + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
@@ -123,7 +147,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
      * Get an admin access token which can be used to create Keycloak realms and perform other Keycloak administration tasks.
      */
     public String getAdminAccessToken() {
-        return getAccessTokenInternal("admin", "admin", "admin-cli", null, getAuthServerBaseUrl() + "/realms/master");
+        return getAccessTokenInternal("admin", "admin", "admin-cli", null, null, getAuthServerBaseUrl() + "/realms/master");
     }
 
     /**
@@ -189,6 +213,13 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
                 .delete(getAuthServerBaseUrl() + "/admin/realms/" + realm).then().statusCode(204);
     }
 
+    /**
+     * Delete a realm
+     */
+    public void deleteRealm(RealmRepresentation realm) {
+        deleteRealm(realm.getRealm());
+    }
+
     private String getPropertyValue(String prop, String defaultValue) {
         return ConfigProvider.getConfig().getOptionalValue(prop, String.class)
                 .orElseGet(() -> getDevProperty(prop, defaultValue));
@@ -202,5 +233,13 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     @Override
     public void setIntegrationTestContext(DevServicesContext context) {
         this.testContext = context;
+    }
+
+    private static String urlEncode(String value) {
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

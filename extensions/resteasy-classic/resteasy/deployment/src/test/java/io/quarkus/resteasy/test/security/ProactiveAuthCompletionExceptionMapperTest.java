@@ -1,9 +1,16 @@
 package io.quarkus.resteasy.test.security;
 
+import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import javax.annotation.Priority;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Priorities;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -19,11 +26,8 @@ import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
-import io.vertx.core.Handler;
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
 
-public class ProactiveAuthCompletionExceptionHandlerTest {
+public class ProactiveAuthCompletionExceptionMapperTest {
 
     private static final String AUTHENTICATION_COMPLETION_EX = "AuthenticationCompletionException";
 
@@ -32,8 +36,7 @@ public class ProactiveAuthCompletionExceptionHandlerTest {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class,
-                            CustomAuthCompletionExceptionHandler.class)
+                    .addClasses(TestIdentityProvider.class, TestIdentityController.class)
                     .addAsResource(new StringAsset("quarkus.http.auth.form.enabled=true\n"), "application.properties");
         }
     });
@@ -61,22 +64,23 @@ public class ProactiveAuthCompletionExceptionHandlerTest {
                 .body(Matchers.equalTo(AUTHENTICATION_COMPLETION_EX));
     }
 
-    @ApplicationScoped
-    public static final class CustomAuthCompletionExceptionHandler {
+    @Path("/hello")
+    public static class HelloResource {
 
-        public void init(@Observes Router router) {
-            router.route().failureHandler(new Handler<RoutingContext>() {
-                @Override
-                public void handle(RoutingContext event) {
-                    if (event.failure() instanceof AuthenticationCompletionException) {
-                        event.response().setStatusCode(401).end(AUTHENTICATION_COMPLETION_EX);
-                    } else {
-                        event.next();
-                    }
-                }
-            });
+        @GET
+        public String hello() {
+            return "Hello";
         }
 
     }
 
+    @Priority(Priorities.USER)
+    @Provider
+    public static class CustomAuthCompletionExceptionMapper implements ExceptionMapper<AuthenticationCompletionException> {
+
+        @Override
+        public Response toResponse(AuthenticationCompletionException e) {
+            return Response.status(UNAUTHORIZED).entity(AUTHENTICATION_COMPLETION_EX).build();
+        }
+    }
 }

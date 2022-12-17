@@ -61,9 +61,7 @@ When updating extension configuration:
 == Lint documentation changes with Vale
 
 Our builds use https://vale.sh[Vale] to check grammar, style, and word usage in the English versions of our documents.
-The configuration for vale is in the `docs/.vale` directory.
-
-NOTE: The Vale configuration file is `docs/.vale/vale.ini`.
+The configuration file for vale is at `docs/.vale.ini` and the various style and checks defined in the `docs/.vale` directory.
 
 === Containerized Vale
 
@@ -90,12 +88,15 @@ Include errors in the results.
 
 === Use the Vale CLI
 
-If you install the https://vale.sh/docs/vale-cli/installation/[install the Vale CLI], you must specify the configuration file along with the directory or list of files to scan:
+If you install the https://vale.sh/docs/vale-cli/installation/[install the Vale CLI], you can run the checks from the `docs` directory:
 
 [source,shell]
 ----
-vale --config=docs/.vale/vale.ini --minAlertLevel=warning docs/src/main/asciidoc
+cd docs
+vale --minAlertLevel=warning src/main/asciidoc
 ----
+
+If you want to run it from another directory use `--config=/path/to/quarks/docs/.vale.ini`.
 
 See the https://vale.sh/manual/[Vale CLI Manual] for details.
 
@@ -103,13 +104,14 @@ See the https://vale.sh/manual/[Vale CLI Manual] for details.
 
 https://vale.sh/docs/integrations/guide/[Vale IDE integrations] rely on installation the Vale CLI.
 
-Each has it's own configuration requirements. The Visual Studio Code IDE extension, for example, requires two workspace settings:
+Each has it's own configuration requirements. The Visual Studio Code IDE extension, for example, requires you to tell where valeCLI is installed in workspace settings:
 
 [source,json]
 ----
-"vale.valeCLI.config": "/path/to/quarkus/docs/.vale/vale.ini",
 "vale.valeCLI.path": "/path/to/vale"
 ----
+
+The plugin will pick up the `.vale.ini` settings automatically relatively to the documentation files.
 
 == Creating pull requests for doc updates
 

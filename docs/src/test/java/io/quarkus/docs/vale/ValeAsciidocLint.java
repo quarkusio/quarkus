@@ -154,7 +154,10 @@ public class ValeAsciidocLint {
 
         DockerImageName valeImage = DockerImageName.parse(imageName);
 
-        List<String> command = new ArrayList<>(List.of("--config=/vale/vale.ini",
+        // --config=vale.ini is not really necessary as it is the default
+        // location, but using it here explicitly to have the test case fail
+        // if the file is missing.
+        List<String> command = new ArrayList<>(List.of("--config=vale.ini",
                 "--minAlertLevel=" + minAlertLevel.name(),
                 "--output=JSON",
                 "--no-exit"));

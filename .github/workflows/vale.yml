@@ -26,7 +26,7 @@ jobs:
         uses: errata-ai/vale-action@reviewdog
         with:
           fail_on_error: false
-          vale_flags: "--no-exit --config=docs/.vale/vale.ini"
+          vale_flags: "--no-exit --config=docs/.vale.ini"
           filter_mode: diff_context
           files: docs/src/main/asciidoc/
         env:

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.opentelemetry.deployment.WithSpanInterceptorTest.SpanBean;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -21,8 +20,9 @@ public class JaxRsInterceptorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClass(SpanBean.class).addClass(TestSpanExporter.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(JaxRsBean.class)
+                    .addClass(TestSpanExporter.class));
 
     @Inject
     JaxRsBean jaxRsBean;

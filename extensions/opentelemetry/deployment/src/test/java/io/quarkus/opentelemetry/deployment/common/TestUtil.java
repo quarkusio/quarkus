@@ -1,15 +1,19 @@
 package io.quarkus.opentelemetry.deployment.common;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.Unremovable;
 
@@ -60,4 +64,9 @@ public final class TestUtil {
         privatePropagatorsField.setAccessible(true);
         return (TextMapPropagator[]) privatePropagatorsField.get(textMapPropagator);
     }
+
+    public static void assertStringAttribute(SpanData spanData, AttributeKey<String> attributeKey, String expectedValue) {
+        assertEquals(expectedValue, spanData.getAttributes().get(attributeKey), "Attribute Key Named:" + attributeKey.getKey());
+    }
+
 }

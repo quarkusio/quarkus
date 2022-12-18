@@ -17,6 +17,7 @@ public class NamedOidcClientFilterDevModeTest {
             ProtectedResource.class,
             ProtectedResourceServiceAnnotationOidcClient.class,
             ProtectedResourceServiceConfigPropertyOidcClient.class,
+            ProtectedResourceServiceCustomProviderConfigPropOidcClient.class,
             OidcClientResource.class
     };
 
@@ -36,8 +37,14 @@ public class NamedOidcClientFilterDevModeTest {
                 .statusCode(200)
                 .body(equalTo("jdoe"));
 
-        // OidcClient selected via `quarkus.oidc-client-filter.client-name=config-property`
+        // @OidcClientFilter: OidcClient selected via `quarkus.oidc-client-filter.client-name=config-property`
         RestAssured.when().get("/oidc-client/config-property/user-name")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice"));
+
+        // @RegisterProvider(OidcClientRequestReactiveFilter.class): OidcClient selected via `quarkus.oidc-client-filter.client-name=config-property`
+        RestAssured.when().get("/oidc-client/custom-provider-config-property/user-name")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));

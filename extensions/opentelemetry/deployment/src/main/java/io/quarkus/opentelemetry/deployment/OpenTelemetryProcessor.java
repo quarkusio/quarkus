@@ -130,14 +130,11 @@ public class OpenTelemetryProcessor {
 
     @BuildStep
     AnnotationsTransformerBuildItem transformJaxRsAnnotations() {
-        System.out.println("OpenTelemetryProcessor. transformJaxRsAnnotations ...");
         return new AnnotationsTransformerBuildItem(new JaxRsAnnotationsTransformer());
     }
 
     @BuildStep()
     AdditionalBeanBuildItem registerJaxRsAdditionalBeans() {
-        System.out.println("OpenTelemetryProcessor. registerJaxRsAdditionalBeans ...");
-
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(JaxRsBinding.class)
                 .addBeanClass(JaxRsInterceptor.class)

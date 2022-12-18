@@ -139,9 +139,9 @@ public class OpenTelemetryProcessor {
         System.out.println("OpenTelemetryProcessor. registerJaxRsAdditionalBeans ...");
 
         return AdditionalBeanBuildItem.builder()
-            .addBeanClass(JaxRsBinding.class)
-            .addBeanClass(JaxRsInterceptor.class)
-            .build();
+                .addBeanClass(JaxRsBinding.class)
+                .addBeanClass(JaxRsInterceptor.class)
+                .build();
     }
 
     @BuildStep

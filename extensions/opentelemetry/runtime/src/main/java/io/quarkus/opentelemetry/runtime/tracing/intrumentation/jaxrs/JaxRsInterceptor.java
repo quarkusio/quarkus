@@ -13,7 +13,7 @@ import io.quarkus.arc.ArcInvocationContext;
 
 @JaxRsBinding
 @Interceptor
-@Priority(Interceptor.Priority.LIBRARY_BEFORE + 50)
+@Priority(Interceptor.Priority.LIBRARY_AFTER + 50)
 public class JaxRsInterceptor {
 
     private boolean logToConsole = true;

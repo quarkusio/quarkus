@@ -24,6 +24,7 @@ public class NoDefaultPrometheusTest {
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.default-registry", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(Util.class,
                             PrometheusRegistryProcessor.REGISTRY_CLASS,

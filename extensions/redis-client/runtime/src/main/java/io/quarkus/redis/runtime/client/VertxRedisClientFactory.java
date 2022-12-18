@@ -22,10 +22,10 @@ import io.quarkus.redis.runtime.client.config.RedisClientConfig;
 import io.quarkus.redis.runtime.client.config.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.common.annotation.Identifier;
+import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.ProxyOptions;
-import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.redis.client.Redis;
+import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisClientType;
 import io.vertx.redis.client.RedisOptions;
 

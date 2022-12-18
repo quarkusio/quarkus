@@ -20,6 +20,7 @@ public class GrpcMetricsDisabledTest {
 
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withEmptyApplication();
 
     @Inject

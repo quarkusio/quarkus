@@ -26,6 +26,7 @@ public class JsonAndPrometheusRegistryEnabledTest {
             .overrideConfigKey("quarkus.micrometer.export.json.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withEmptyApplication();
 
     @Inject

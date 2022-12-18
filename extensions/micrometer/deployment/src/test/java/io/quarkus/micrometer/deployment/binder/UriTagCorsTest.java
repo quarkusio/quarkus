@@ -24,6 +24,7 @@ public class UriTagCorsTest {
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("quarkus.http.cors", "true")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(Util.class,
                             VertxWebEndpoint.class,

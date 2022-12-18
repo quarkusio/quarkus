@@ -27,6 +27,7 @@ public class UriWithMaxTagMeterFilterTest {
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, PingPongResource.class, PingPongResource.PingPongRestClient.class));
 

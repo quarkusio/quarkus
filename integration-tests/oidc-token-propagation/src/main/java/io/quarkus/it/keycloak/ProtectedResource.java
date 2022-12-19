@@ -21,4 +21,10 @@ public class ProtectedResource {
     public String principalName() {
         return principal.getName();
     }
+
+    @GET
+    @Path("client")
+    public String clientName() {
+        return principal.getName();
+    }
 }

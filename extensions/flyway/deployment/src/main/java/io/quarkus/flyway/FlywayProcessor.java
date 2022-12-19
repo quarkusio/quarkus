@@ -74,6 +74,10 @@ class FlywayProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
 
+    private static final Set<String> BANNED_PLUGINS = Set.of(
+            "org.flywaydb.core.internal.configuration.resolvers.GoogleSecretsResolver",
+            "org.flywaydb.core.internal.configuration.resolvers.HashicorpVaultResolver");
+
     FlywayBuildTimeConfig flywayBuildConfig;
 
     @BuildStep
@@ -301,7 +305,7 @@ class FlywayProcessor {
 
     @BuildStep
     public ServiceProviderBuildItem flywayPlugins() {
-        return ServiceProviderBuildItem.allProvidersFromClassPath(Plugin.class.getName());
+        return ServiceProviderBuildItem.allProvidersFromClassPath(Plugin.class.getName(), BANNED_PLUGINS::contains);
     }
 
     public static final class MigrationStateBuildItem extends SimpleBuildItem {

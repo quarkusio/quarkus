@@ -9,6 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -66,10 +67,28 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
      * thread.
      *
      * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
+     *        (must not be {@code null})
      * @return a new {@link ServiceProviderBuildItem}
      * @throws RuntimeException wrapping any {@link IOException}s thrown when accessing class path resources
      */
     public static ServiceProviderBuildItem allProvidersFromClassPath(final String serviceInterfaceClassName) {
+        return allProvidersFromClassPath(serviceInterfaceClassName, null);
+    }
+
+    /**
+     * Creates and returns a new {@link ServiceProviderBuildItem} for the given {@code serviceInterfaceClassName} by
+     * including all the providers that are listed in service interface descriptor files
+     * {@code "META-INF/services/" + serviceInterfaceClassName} findable in the Context Class Loader of the current
+     * thread, filtering out services matching the filter {@link java.util.function.Predicate} .
+     *
+     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
+     *        (must not be {@code null})
+     * @param filter a {@link java.util.function.Predicate} to filter out providers (may be {@code null})
+     * @return a new {@link ServiceProviderBuildItem}
+     * @throws RuntimeException wrapping any {@link IOException}s thrown when accessing class path resources
+     */
+    public static ServiceProviderBuildItem allProvidersFromClassPath(final String serviceInterfaceClassName,
+            final Predicate<String> filter) {
         if (serviceInterfaceClassName == null || serviceInterfaceClassName.trim().isEmpty()) {
             throw new IllegalArgumentException("service interface name cannot be null or blank");
         }
@@ -78,6 +97,10 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
             Set<String> implementations = ServiceUtil.classNamesNamedIn(
                     Thread.currentThread().getContextClassLoader(),
                     resourcePath);
+            if (filter != null) {
+                implementations = new LinkedHashSet<>(implementations);
+                implementations.removeIf(filter);
+            }
             return new ServiceProviderBuildItem(
                     serviceInterfaceClassName,
                     List.copyOf(implementations),

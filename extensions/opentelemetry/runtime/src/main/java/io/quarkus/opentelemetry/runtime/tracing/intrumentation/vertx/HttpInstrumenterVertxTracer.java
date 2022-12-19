@@ -28,7 +28,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesGetter;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
@@ -118,8 +117,8 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
         return serverBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
-                .addAttributesExtractor(HttpServerAttributesExtractor.create(serverAttributesExtractor))
-                .addAttributesExtractor(NetServerAttributesExtractor.create(new HttpServerNetAttributesGetter()))
+                .addAttributesExtractor(
+                        HttpServerAttributesExtractor.create(serverAttributesExtractor, new HttpServerNetAttributesGetter()))
                 .addAttributesExtractor(new AdditionalServerAttributesExtractor())
                 .addContextCustomizer(HttpRouteHolder.get())
                 .buildServerInstrumenter(new HttpRequestTextMapGetter());

@@ -266,7 +266,7 @@ public class KeycloakDevServicesProcessor {
         String clientAuthServerBaseUrl = hostURL != null ? hostURL : internalURL;
         String clientAuthServerUrl = realmsURL(clientAuthServerBaseUrl, realmName);
 
-        boolean createDefaultRealm = realmReps.isEmpty() && capturedDevServicesConfiguration.createRealm;
+        boolean createDefaultRealm = (realmReps == null || realmReps.isEmpty()) && capturedDevServicesConfiguration.createRealm;
 
         String oidcClientId = getOidcClientId(createDefaultRealm);
         String oidcClientSecret = getOidcClientSecret(createDefaultRealm);
@@ -283,9 +283,11 @@ public class KeycloakDevServicesProcessor {
                 createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret, errors);
                 realmNames.add(realmName);
             } else {
-                for (RealmRepresentation realmRep : realmReps) {
-                    createRealm(client, adminToken, clientAuthServerBaseUrl, realmRep, errors);
-                    realmNames.add(realmRep.getRealm());
+                if (realmReps != null) {
+                    for (RealmRepresentation realmRep : realmReps) {
+                        createRealm(client, adminToken, clientAuthServerBaseUrl, realmRep, errors);
+                        realmNames.add(realmRep.getRealm());
+                    }
                 }
             }
         } finally {

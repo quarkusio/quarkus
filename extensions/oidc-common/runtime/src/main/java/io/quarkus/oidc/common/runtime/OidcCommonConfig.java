@@ -14,7 +14,7 @@ public class OidcCommonConfig {
      * The base URL of the OpenID Connect (OIDC) server, for example, `https://host:port/auth`.
      * OIDC discovery endpoint will be called by default by appending a '.well-known/openid-configuration' path to this URL.
      * Note if you work with Keycloak OIDC server, make sure the base URL is in the following format:
-     * `https://host:port/auth/realms/{realm}` where `{realm}` has to be replaced by the name of the Keycloak realm.
+     * `https://host:port/realms/{realm}` where `{realm}` has to be replaced by the name of the Keycloak realm.
      */
     @ConfigItem
     public Optional<String> authServerUrl = Optional.empty();

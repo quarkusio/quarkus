@@ -10,6 +10,7 @@ public class BootstrapProfile {
     public static final String QUARKUS_PROFILE_ENV = "QUARKUS_PROFILE";
     public static final String QUARKUS_PROFILE_PROP = "quarkus.profile";
     public static final String QUARKUS_TEST_PROFILE_PROP = "quarkus.test.profile";
+    public static final String QUARKUS_TEST_PROFILE_ENV = "QUARKUS_TEST_PROFILE";
     private static final String BACKWARD_COMPATIBLE_QUARKUS_PROFILE_PROP = "quarkus-profile";
     public static final String DEV = "dev";
     public static final String PROD = "prod";
@@ -24,6 +25,10 @@ public class BootstrapProfile {
     public static String getActiveProfile(QuarkusBootstrap.Mode mode) {
         if (mode == QuarkusBootstrap.Mode.TEST) {
             String profile = System.getProperty(QUARKUS_TEST_PROFILE_PROP);
+            if (profile != null) {
+                return profile;
+            }
+            profile = System.getenv(QUARKUS_TEST_PROFILE_ENV);
             if (profile != null) {
                 return profile;
             }

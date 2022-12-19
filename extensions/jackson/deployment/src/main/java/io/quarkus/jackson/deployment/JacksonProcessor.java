@@ -54,6 +54,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -113,17 +114,25 @@ public class JacksonProcessor {
 
     @BuildStep
     void register(
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         reflectiveClass.produce(
-                new ReflectiveClassBuildItem(true, false, "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
+                new ReflectiveClassBuildItem(true, false,
                         "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer",
                         "com.fasterxml.jackson.databind.ser.std.SqlTimeSerializer",
                         "com.fasterxml.jackson.databind.deser.std.DateDeserializers$SqlDateDeserializer",
                         "com.fasterxml.jackson.databind.deser.std.DateDeserializers$TimestampDeserializer",
                         "com.fasterxml.jackson.annotation.SimpleObjectIdResolver"));
+
+        if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
+                x -> x.getGroupId().equals("com.fasterxml.jackson.module")
+                        && x.getArtifactId().equals("jackson-module-jaxb-annotations"))) {
+            reflectiveClass.produce(
+                    new ReflectiveClassBuildItem(true, false, "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector"));
+        }
 
         IndexView index = combinedIndexBuildItem.getIndex();
 

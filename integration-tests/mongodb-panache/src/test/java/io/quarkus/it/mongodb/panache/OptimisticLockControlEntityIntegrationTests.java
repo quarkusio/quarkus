@@ -388,10 +388,10 @@ public class OptimisticLockControlEntityIntegrationTests {
         CarV carV3 = new CarV(id, 2023, 5L);
         CarV carV4 = new CarV("carv4", 2022, 0L);
 
-        System.out.println(" c: "+carV);
-        System.out.println(" c: "+carV2);
-        System.out.println(" c: "+carV3);
-        System.out.println(" c: "+carV4);
+        System.out.println(" c: " + carV);
+        System.out.println(" c: " + carV2);
+        System.out.println(" c: " + carV3);
+        System.out.println(" c: " + carV4);
 
         try {
             BikeVEntity.persistOrUpdate(List.of(carV, carV2, carV3, carV4));
@@ -401,19 +401,19 @@ public class OptimisticLockControlEntityIntegrationTests {
             assertEquals(5L, carV3.version); //failed
             assertEquals(0L, carV4.version); //failed
 
-            System.out.println(" c2: "+carV);
-            System.out.println(" c2: "+carV2);
-            System.out.println(" c2: "+carV3);
-            System.out.println(" c2: "+carV4);
+            System.out.println(" c2: " + carV);
+            System.out.println(" c2: " + carV2);
+            System.out.println(" c2: " + carV3);
+            System.out.println(" c2: " + carV4);
             try {
                 BikeVEntity.persistOrUpdate(List.of(carV, carV2, carV3, carV4));
             } catch (Exception ignored) {
             }
         } finally {
-            System.out.println(" c3: "+carV);
-            System.out.println(" c3: "+carV2);
-            System.out.println(" c3: "+carV3);
-            System.out.println(" c3: "+carV4);
+            System.out.println(" c3: " + carV);
+            System.out.println(" c3: " + carV2);
+            System.out.println(" c3: " + carV3);
+            System.out.println(" c3: " + carV4);
             assertEquals(1L, carV.version); //updated in catch
             assertEquals(2L, carV2.version); //updated in catch
             assertEquals(5L, carV3.version); //failed

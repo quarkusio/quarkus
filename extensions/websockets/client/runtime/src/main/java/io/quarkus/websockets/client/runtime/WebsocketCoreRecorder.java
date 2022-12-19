@@ -169,12 +169,12 @@ public class WebsocketCoreRecorder {
                                 boolean required = !requestContext.isActive();
                                 if (required) {
                                     requestContext.activate();
-                                    Principal p = session.getUserPrincipal();
-                                    if (p instanceof WebSocketPrincipal) {
-                                        var current = getCurrentIdentityAssociation();
-                                        if (current != null) {
-                                            current.setIdentity(((WebSocketPrincipal) p).getSecurityIdentity());
-                                        }
+                                }
+                                Principal p = session.getUserPrincipal();
+                                if (p instanceof WebSocketPrincipal) {
+                                    var current = getCurrentIdentityAssociation();
+                                    if (current != null) {
+                                        current.setIdentity(((WebSocketPrincipal) p).getSecurityIdentity());
                                     }
                                 }
                                 try {

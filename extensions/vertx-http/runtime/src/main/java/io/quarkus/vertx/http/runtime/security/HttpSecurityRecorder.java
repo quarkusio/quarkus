@@ -176,9 +176,7 @@ public class HttpSecurityRecorder {
                                 public void accept(SecurityIdentity identity, Throwable throwable, Boolean aBoolean) {
                                     if (identity != null) {
                                         //when the result is evaluated we set the user, even if it is evaluated lazily
-                                        if (identity != null) {
-                                            event.setUser(new QuarkusHttpUser(identity));
-                                        }
+                                        event.setUser(new QuarkusHttpUser(identity));
                                     } else if (throwable != null) {
                                         //handle the auth failure
                                         //this can be customised

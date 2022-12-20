@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Instance;
@@ -15,6 +16,8 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
+import io.quarkus.test.util.annotations.AnnotationContainer;
+import io.quarkus.test.util.annotations.AnnotationUtils;
 
 public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallback, QuarkusTestAfterEachCallback {
 
@@ -41,26 +44,18 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                             throw new RuntimeException(e);
                         }
                     }).toArray(Class<?>[]::new));
-            Annotation[] allAnnotations = new Annotation[] {};
-            TestSecurity testSecurity = method.getAnnotation(TestSecurity.class);
-            if (testSecurity == null) {
-                testSecurity = original.getAnnotation(TestSecurity.class);
-                if (testSecurity != null) {
-                    allAnnotations = original.getAnnotations();
-                }
-                while (testSecurity == null && original != Object.class) {
-                    original = original.getSuperclass();
-                    testSecurity = original.getAnnotation(TestSecurity.class);
-                    if (testSecurity != null) {
-                        allAnnotations = original.getAnnotations();
-                    }
-                }
-            } else {
-                allAnnotations = method.getAnnotations();
+            Annotation[] allAnnotations;
+            Optional<AnnotationContainer<TestSecurity>> annotationContainerOptional = AnnotationUtils.findAnnotation(method,
+                    TestSecurity.class);
+            if (annotationContainerOptional.isEmpty()) {
+                annotationContainerOptional = AnnotationUtils.findAnnotation(original, TestSecurity.class);
             }
-            if (testSecurity == null) {
+            if (annotationContainerOptional.isEmpty()) {
                 return;
             }
+            var annotationContainer = annotationContainerOptional.get();
+            allAnnotations = annotationContainer.getElement().getAnnotations();
+            TestSecurity testSecurity = annotationContainer.getAnnotation();
             CDI.current().select(TestAuthController.class).get().setEnabled(testSecurity.authorizationEnabled());
             if (testSecurity.user().isEmpty()) {
                 if (testSecurity.roles().length != 0) {

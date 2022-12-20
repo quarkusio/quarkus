@@ -96,6 +96,23 @@ See xref:security-openid-connect.adoc#integration-testing-security-annotation[Op
 The feature is only available for `@QuarkusTest` and will **not** work on a `@NativeImageTest` or `@QuarkusIntegrationTest`.
 ====
 
+[TIP]
+====
+`@TestSecurity` can also be used in meta-annotations, for example like so:
+
+[source, java]
+----
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    @TestSecurity(user = "testUser", roles = {"admin", "user"})
+    public @interface TestSecurityMetaAnnotation {
+
+    }
+----
+
+This is particularly useful if the same set of security settings needs to be used in multiple test methods.
+====
+
 === Mixing security tests
 
 If it becomes necessary to test security features using both `@TestSecurity` and Basic Auth (which is the fallback auth

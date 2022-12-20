@@ -26,6 +26,15 @@ public class OidcTokenPropagationTest {
     }
 
     @Test
+    public void testGetClientNameWithJwtTokenPropagation() {
+        RestAssured.given().auth().oauth2(getClientAccessToken())
+                .when().get("/frontend/client-jwt-token-propagation")
+                .then()
+                .statusCode(200)
+                .body(equalTo("service-account-quarkus-app"));
+    }
+
+    @Test
     public void testGetUserNameWithAccessTokenPropagation() {
         // At the moment it is not possible to configure Keycloak Token Exchange permissions
         // vi the admin API or export the realm with such permissions.
@@ -57,5 +66,9 @@ public class OidcTokenPropagationTest {
 
     public String getAccessToken(String userName) {
         return client.getAccessToken(userName, userName, "quarkus-app", "secret");
+    }
+
+    public String getClientAccessToken() {
+        return client.getClientAccessToken();
     }
 }

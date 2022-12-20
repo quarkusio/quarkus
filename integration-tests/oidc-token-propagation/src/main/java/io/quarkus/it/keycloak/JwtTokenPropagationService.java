@@ -14,4 +14,8 @@ public interface JwtTokenPropagationService {
 
     @GET
     String getUserName();
+
+    @GET
+    @Path("client")
+    String getClientName();
 }

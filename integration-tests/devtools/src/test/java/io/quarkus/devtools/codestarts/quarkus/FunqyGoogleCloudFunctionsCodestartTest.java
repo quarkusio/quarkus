@@ -19,6 +19,10 @@ public class FunqyGoogleCloudFunctionsCodestartTest {
     void testContent() throws Throwable {
         codestartTest.checkGeneratedSource("org.acme.funqygooglecloudfunctions.GreetingFunctions");
         codestartTest.checkGeneratedSource("org.acme.funqygooglecloudfunctions.GreetingService");
+
+        codestartTest.checkGeneratedTestSource("org.acme.funqygooglecloudfunctions.GreetingFunctionsCloudEventsTest");
+        codestartTest.checkGeneratedTestSource("org.acme.funqygooglecloudfunctions.GreetingFunctionsPubSubTest");
+        codestartTest.checkGeneratedTestSource("org.acme.funqygooglecloudfunctions.GreetingFunctionsStorageTest");
     }
 
     @Test

@@ -74,7 +74,12 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     }
 
     public static ReflectiveClassBuildItem weakClass(String... className) {
-        return new ReflectiveClassBuildItem(true, true, true, false, true, className);
+        return weakClass(true, true, true, className);
+    }
+
+    public static ReflectiveClassBuildItem weakClass(boolean constructors, boolean methods, boolean fields,
+            String... className) {
+        return new ReflectiveClassBuildItem(constructors, methods, fields, false, true, className);
     }
 
     public static ReflectiveClassBuildItem serializationClass(String... className) {

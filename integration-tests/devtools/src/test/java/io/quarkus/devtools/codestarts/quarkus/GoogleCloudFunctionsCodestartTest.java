@@ -20,6 +20,10 @@ public class GoogleCloudFunctionsCodestartTest {
         codestartTest.checkGeneratedSource("org.acme.googlecloudfunctions.HelloWorldCloudEventsFunction");
         codestartTest.checkGeneratedSource("org.acme.googlecloudfunctions.HelloWorldBackgroundFunction");
         codestartTest.checkGeneratedSource("org.acme.googlecloudfunctions.HelloWorldHttpFunction");
+
+        codestartTest.checkGeneratedTestSource("org.acme.googlecloudfunctions.HelloWorldCloudEventsFunctionTest");
+        codestartTest.checkGeneratedTestSource("org.acme.googlecloudfunctions.HelloWorldBackgroundFunctionTest");
+        codestartTest.checkGeneratedTestSource("org.acme.googlecloudfunctions.HelloWorldHttpFunctionTest");
     }
 
     @Test

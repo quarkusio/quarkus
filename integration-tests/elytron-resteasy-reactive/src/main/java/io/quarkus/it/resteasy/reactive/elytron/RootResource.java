@@ -58,6 +58,13 @@ public class RootResource {
     }
 
     @GET
+    @Path("/employee")
+    @RolesAllowed("${employees-config-property}")
+    public String employee(@Context SecurityContext sec) {
+        return sec.getUserPrincipal().getName();
+    }
+
+    @GET
     @Path("/attributes")
     @Authenticated
     public String getAttributes() {

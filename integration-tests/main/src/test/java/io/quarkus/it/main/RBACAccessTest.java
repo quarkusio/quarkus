@@ -26,6 +26,15 @@ public class RBACAccessTest {
     }
 
     @Test
+    public void shouldRestrictAccessToSpecificRoleConfigExp() {
+        String path = "/rbac-secured/forTesterOnlyConfigExp";
+        assertForAnonymous(path, 401, Optional.empty());
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("stuart", "test"), path, 403, Optional.empty());
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("scott", "jb0ss"), path, 200,
+                Optional.of("forTesterOnlyConfigExp"));
+    }
+
+    @Test
     public void shouldRestrictAccessToSpecificRoleAndMethodParameterAnnotationsShouldntAffectAnything() {
         String path = "/rbac-secured/forTesterOnlyWithMethodParamAnnotations";
         assertForAnonymous(path, 401, Optional.empty());

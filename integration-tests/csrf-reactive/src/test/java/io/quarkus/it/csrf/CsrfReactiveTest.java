@@ -47,6 +47,31 @@ public class CsrfReactiveTest {
     }
 
     @Test
+    public void testCsrfTokenWithFormRead() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+
+            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithFormRead");
+
+            assertEquals("CSRF Token With Form Read Test", htmlPage.getTitleText());
+
+            HtmlForm loginForm = htmlPage.getForms().get(0);
+
+            loginForm.getInputByName("name").setValueAttribute("alice");
+
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            TextPage textPage = loginForm.getInputByName("submit").click();
+
+            assertEquals("verified:true", textPage.getContent());
+
+            textPage = webClient.getPage("http://localhost:8081/service/hello");
+            assertEquals("hello", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testCsrfTokenInFormButNoCookie() throws Exception {
         try (final WebClient webClient = createWebClient()) {
 
@@ -142,6 +167,25 @@ public class CsrfReactiveTest {
             RestAssured.given().urlEncodingEnabled(true)
                     .param("csrf-token", "wrong-value")
                     .post("/service/csrfTokenForm")
+                    .then().statusCode(400);
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testWrongCsrfTokenWithFormRead() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+
+            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithFormRead");
+
+            assertEquals("CSRF Token With Form Read Test", htmlPage.getTitleText());
+
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            RestAssured.given().urlEncodingEnabled(true)
+                    .param("csrf-token", "wrong-value")
+                    .post("/service/csrfTokenWithFormRead")
                     .then().statusCode(400);
 
             webClient.getCookieManager().clearCookies();

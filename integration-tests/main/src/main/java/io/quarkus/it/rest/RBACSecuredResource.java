@@ -30,6 +30,13 @@ public class RBACSecuredResource {
     }
 
     @GET
+    @RolesAllowed("${tester-config-exp}")
+    @Path("forTesterOnlyConfigExp")
+    public String forTesterOnlyConfigExp() {
+        return "forTesterOnlyConfigExp";
+    }
+
+    @GET
     @RolesAllowed("tester")
     @Path("forTesterOnlyWithMethodParamAnnotations")
     public String forTesterOnlyWithMethodParamAnnotations(@Context SecurityContext ctx, @Context UriInfo uriInfo,

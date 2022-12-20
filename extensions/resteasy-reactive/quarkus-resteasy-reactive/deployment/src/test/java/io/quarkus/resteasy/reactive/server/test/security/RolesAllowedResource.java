@@ -32,6 +32,13 @@ public class RolesAllowedResource {
         return "admin";
     }
 
+    @Path("/admin-config-exp")
+    @RolesAllowed("${admin-config-property:missing}")
+    @GET
+    public String adminConfigExp() {
+        return "admin-config-exp";
+    }
+
     @NonBlocking
     @Path("/admin/security-identity")
     @RolesAllowed("admin")

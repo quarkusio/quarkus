@@ -44,6 +44,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -171,7 +172,7 @@ public class ValueResolverGenerator {
         AnnotationInstance templateData = nameToTemplateData.get(className);
         if (templateData == null) {
             // @TemplateData declared on the class
-            for (AnnotationInstance annotation : clazz.classAnnotations()) {
+            for (AnnotationInstance annotation : clazz.declaredAnnotations()) {
                 if (annotation.name().equals(TEMPLATE_DATA)) {
                     AnnotationValue targetValue = annotation.value(TARGET);
                     if (targetValue == null || targetValue.asClass().name().equals(className)) {
@@ -306,136 +307,136 @@ public class ValueResolverGenerator {
                 fields.add(field);
             }
         }
-        if (!fields.isEmpty()) {
-            BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
-            for (FieldInfo field : fields) {
-                String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
-                if (getterName != null && noneMethodMatches(methods, getterName)) {
-                    LOGGER.debugf("Forced getter added: %s", field);
-                    BytecodeCreator getterMatch = zeroParamsBranch.createScope();
-                    // Match the getter name
-                    BytecodeCreator notMatched = getterMatch.ifNonZero(getterMatch.invokeVirtualMethod(Descriptors.EQUALS,
-                            getterMatch.load(getterName),
-                            name))
-                            .falseBranch();
-                    // Match the property name
-                    notMatched.ifNonZero(notMatched.invokeVirtualMethod(Descriptors.EQUALS,
-                            notMatched.load(field.name()),
-                            name)).falseBranch().breakScope(getterMatch);
-                    ResultHandle value = getterMatch.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
-                                    DescriptorUtils.typeToString(field.type())),
-                            base);
-                    getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
-                } else {
-                    LOGGER.debugf("Field added: %s", field);
-                    // Match field name
-                    BytecodeCreator fieldMatch = zeroParamsBranch
-                            .ifNonZero(
-                                    zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
-                                            resolve.load(field.name()), name))
-                            .trueBranch();
-                    ResultHandle value = fieldMatch
-                            .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
-                                    base);
-                    fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
-                }
-            }
-        }
 
         if (methods.isEmpty() && fields.isEmpty()) {
+            // No members
             return false;
         }
 
-        if (!methods.isEmpty()) {
-            // name, number of params -> list of methods
-            Map<Match, List<MethodInfo>> matches = new HashMap<>();
-            Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
+        // Collect methods
+        List<MethodKey> noParamMethods = new ArrayList<>();
+        // name, number of params -> list of methods
+        Map<Match, List<MethodInfo>> matches = new HashMap<>();
+        Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
 
-            for (MethodKey methodKey : methods) {
-                MethodInfo method = methodKey.method;
-                List<Type> methodParams = method.parameterTypes();
-                if (methodParams.isEmpty()) {
-                    // No params - just invoke the method
-                    LOGGER.debugf("Method added %s", method);
-                    try (BytecodeCreator matchScope = createMatchScope(resolve, method.name(), 0, method.returnType(), name,
-                            params, paramsCount)) {
-                        ResultHandle ret;
-                        boolean hasCompletionStage = !skipMemberType(method.returnType())
-                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
-                        ResultHandle invokeRet;
-                        if (Modifier.isInterface(clazz.flags())) {
-                            invokeRet = matchScope.invokeInterfaceMethod(MethodDescriptor.of(method), base);
-                        } else {
-                            invokeRet = matchScope.invokeVirtualMethod(MethodDescriptor.of(method), base);
-                        }
-                        if (hasCompletionStage) {
-                            ret = invokeRet;
-                        } else {
-                            ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE, invokeRet);
-                        }
-                        matchScope.returnValue(ret);
-                    }
-                } else {
-                    // Collect methods with params
-                    Match match = new Match(method.name(), method.parametersCount());
-                    List<MethodInfo> methodMatches = matches.get(match);
+        for (MethodKey methodKey : methods) {
+            MethodInfo method = methodKey.method;
+            if (method.parametersCount() == 0) {
+                noParamMethods.add(methodKey);
+            } else {
+                Match match = new Match(method.name(), method.parametersCount());
+                List<MethodInfo> methodMatches = matches.get(match);
+                if (methodMatches == null) {
+                    methodMatches = new ArrayList<>();
+                    matches.put(match, methodMatches);
+                }
+                methodMatches.add(method);
+
+                if (isVarArgs(method)) {
+                    // The last argument is a sequence of arguments -> match name and min number of params
+                    // getList(int age, String... names) -> "getList", 1
+                    match = new Match(method.name(), method.parametersCount() - 1);
+                    methodMatches = varargsMatches.get(match);
                     if (methodMatches == null) {
                         methodMatches = new ArrayList<>();
-                        matches.put(match, methodMatches);
+                        varargsMatches.put(match, methodMatches);
                     }
                     methodMatches.add(method);
-
-                    if (isVarArgs(method)) {
-                        // The last argument is a sequence of arguments -> match name and min number of params
-                        // getList(int age, String... names) -> "getList", 1
-                        match = new Match(method.name(), method.parametersCount() - 1);
-                        methodMatches = varargsMatches.get(match);
-                        if (methodMatches == null) {
-                            methodMatches = new ArrayList<>();
-                            varargsMatches.put(match, methodMatches);
-                        }
-                        methodMatches.add(method);
-                    }
                 }
-            }
-
-            // Match methods by name and number of params
-            for (Entry<Match, List<MethodInfo>> entry : matches.entrySet()) {
-                Match match = entry.getKey();
-
-                // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
-                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
-                Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
-                varargsMatches.entrySet().stream()
-                        .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
-                        .forEach(e -> methodMatches.addAll(e.getValue()));
-
-                if (methodMatches.size() == 1) {
-                    // Single method matches the name and number of params
-                    matchMethod(methodMatches.iterator().next(), clazz, resolve, base, name, params, paramsCount, evalContext);
-                } else {
-                    // Multiple methods match the name and number of params
-                    matchMethods(match.name, match.paramsCount, methodMatches, clazz, resolve, base, name,
-                            params, paramsCount, evalContext);
-                }
-            }
-
-            // For varargs methods we also need to match name and any number of params
-            Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
-            for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
-                List<MethodInfo> list = varargsMap.get(entry.getKey().name);
-                if (list == null) {
-                    list = new ArrayList<>();
-                    varargsMap.put(entry.getKey().name, list);
-                }
-                list.addAll(entry.getValue());
-            }
-            for (Entry<String, List<MethodInfo>> entry : varargsMap.entrySet()) {
-                matchMethods(entry.getKey(), Integer.MIN_VALUE, entry.getValue(), clazz, resolve, base, name, params,
-                        paramsCount, evalContext);
             }
         }
+
+        BytecodeCreator zeroParamsBranch = resolve.ifZero(paramsCount).trueBranch();
+
+        for (FieldInfo field : fields) {
+            String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
+            if (getterName != null && noneMethodMatches(methods, getterName)) {
+                LOGGER.debugf("Forced getter added: %s", field);
+                BytecodeCreator getterMatch = zeroParamsBranch.createScope();
+                // Match the getter name
+                BytecodeCreator notMatched = getterMatch.ifTrue(Gizmo.equals(getterMatch, getterMatch.load(getterName),
+                        name)).falseBranch();
+                // Match the property name
+                notMatched.ifTrue(Gizmo.equals(notMatched, notMatched.load(field.name()),
+                        name)).falseBranch().breakScope(getterMatch);
+                ResultHandle value = getterMatch.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
+                                DescriptorUtils.typeToString(field.type())),
+                        base);
+                getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
+            } else {
+                LOGGER.debugf("Field added: %s", field);
+                // Match field name
+                BytecodeCreator fieldMatch = zeroParamsBranch
+                        .ifTrue(Gizmo.equals(zeroParamsBranch, resolve.load(field.name()), name))
+                        .trueBranch();
+                ResultHandle value = fieldMatch
+                        .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
+                                base);
+                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
+            }
+        }
+
+        for (MethodKey methodKey : noParamMethods) {
+            // No params - just invoke the method if the name matches
+            MethodInfo method = methodKey.method;
+            LOGGER.debugf("No-args method added %s", method);
+            try (BytecodeCreator matchScope = createMatchScope(zeroParamsBranch, method.name(), -1, method.returnType(), name,
+                    params, paramsCount)) {
+                ResultHandle ret;
+                boolean hasCompletionStage = !skipMemberType(method.returnType())
+                        && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
+                ResultHandle invokeRet;
+                if (Modifier.isInterface(clazz.flags())) {
+                    invokeRet = matchScope.invokeInterfaceMethod(MethodDescriptor.of(method), base);
+                } else {
+                    invokeRet = matchScope.invokeVirtualMethod(MethodDescriptor.of(method), base);
+                }
+                if (hasCompletionStage) {
+                    ret = invokeRet;
+                } else {
+                    ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE, invokeRet);
+                }
+                matchScope.returnValue(ret);
+            }
+        }
+
+        // Match methods by name and number of params
+        for (Entry<Match, List<MethodInfo>> entry : matches.entrySet()) {
+            Match match = entry.getKey();
+
+            // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
+            // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
+            Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
+            varargsMatches.entrySet().stream()
+                    .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
+                    .forEach(e -> methodMatches.addAll(e.getValue()));
+
+            if (methodMatches.size() == 1) {
+                // Single method matches the name and number of params
+                matchMethod(methodMatches.iterator().next(), clazz, resolve, base, name, params, paramsCount, evalContext);
+            } else {
+                // Multiple methods match the name and number of params
+                matchMethods(match.name, match.paramsCount, methodMatches, clazz, resolve, base, name,
+                        params, paramsCount, evalContext);
+            }
+        }
+
+        // For varargs methods we also need to match name and any number of params
+        Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
+        for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
+            List<MethodInfo> list = varargsMap.get(entry.getKey().name);
+            if (list == null) {
+                list = new ArrayList<>();
+                varargsMap.put(entry.getKey().name, list);
+            }
+            list.addAll(entry.getValue());
+        }
+        for (Entry<String, List<MethodInfo>> entry : varargsMap.entrySet()) {
+            matchMethods(entry.getKey(), Integer.MIN_VALUE, entry.getValue(), clazz, resolve, base, name, params,
+                    paramsCount, evalContext);
+        }
+
         resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
         return true;
     }
@@ -477,9 +478,7 @@ public class ValueResolverGenerator {
                 LOGGER.debugf("Static field added: %s", field);
                 // Match field name
                 BytecodeCreator fieldMatch = zeroParamsBranch
-                        .ifNonZero(
-                                zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
-                                        resolve.load(field.name()), name))
+                        .ifTrue(Gizmo.equals(zeroParamsBranch, resolve.load(field.name()), name))
                         .trueBranch();
                 ResultHandle value = fieldMatch
                         .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
@@ -899,19 +898,21 @@ public class ValueResolverGenerator {
             Type returnType, ResultHandle name, ResultHandle params, ResultHandle paramsCount) {
 
         BytecodeCreator matchScope = bytecodeCreator.createScope();
+
         // Match name
-        BytecodeCreator notMatched = matchScope.ifTrue(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
-                matchScope.load(methodName),
-                name))
-                .falseBranch();
-        // Match the property name for getters,  ie. "foo" for "getFoo"
-        if (methodParams == 0 && isGetterName(methodName, returnType)) {
-            notMatched.ifNonZero(notMatched.invokeVirtualMethod(Descriptors.EQUALS,
-                    notMatched.load(getPropertyName(methodName)),
-                    name)).falseBranch().breakScope(matchScope);
+        if (methodParams <= 0 && isGetterName(methodName, returnType)) {
+            // Getter found - match the property name first
+            BytecodeCreator notMatched = matchScope
+                    .ifTrue(Gizmo.equals(matchScope, matchScope.load(getPropertyName(methodName)), name))
+                    .falseBranch();
+            // If the property does not match then use the exact method name
+            notMatched.ifTrue(Gizmo.equals(notMatched, matchScope.load(methodName), name)).falseBranch().breakScope(matchScope);
         } else {
-            notMatched.breakScope(matchScope);
+            // No getter - only match the exact method name
+            matchScope.ifTrue(Gizmo.equals(matchScope, matchScope.load(methodName), name))
+                    .falseBranch().breakScope(matchScope);
         }
+
         // Match number of params
         if (methodParams >= 0) {
             matchScope.ifIntegerEqual(matchScope.load(methodParams), paramsCount).falseBranch().breakScope(matchScope);

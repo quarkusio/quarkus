@@ -10,9 +10,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.ImageMode;
 import io.smallrye.config.common.utils.StringUtil;
 
 /**
@@ -107,7 +107,7 @@ public final class ConfigDiagnostic {
     }
 
     public static void unknownRunTime(String name) {
-        if (ImageInfo.inImageRuntimeCode()) {
+        if (ImageMode.current() == ImageMode.NATIVE_RUN) {
             // only warn at run time for native images, otherwise the user will get warned twice for every property
             unknown(name);
         }
@@ -118,7 +118,7 @@ public final class ConfigDiagnostic {
     }
 
     public static void unknownPropertiesRuntime(List<String> properties) {
-        if (ImageInfo.inImageRuntimeCode()) {
+        if (ImageMode.current() == ImageMode.NATIVE_RUN) {
             unknownProperties(properties);
         }
     }

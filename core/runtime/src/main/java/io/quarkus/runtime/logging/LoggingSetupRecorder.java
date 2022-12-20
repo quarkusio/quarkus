@@ -26,7 +26,6 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
@@ -44,6 +43,7 @@ import org.jboss.logmanager.handlers.SyslogHandler;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
 import io.quarkus.dev.testing.ExceptionReporting;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -492,7 +492,7 @@ public class LoggingSetupRecorder {
     }
 
     public void initializeLoggingForImageBuild() {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (ImageMode.current() == ImageMode.NATIVE_BUILD) {
             final ConsoleHandler handler = new ConsoleHandler(new PatternFormatter(
                     "%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"));
             handler.setLevel(Level.INFO);

@@ -1,23 +1,29 @@
 package io.quarkus.csrf.reactive.runtime;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+import javax.enterprise.inject.Instance;
+import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.server.ServerRequestFilter;
+import org.jboss.resteasy.reactive.server.ServerResponseFilter;
+import org.jboss.resteasy.reactive.server.WithFormRead;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.impl.CookieImpl;
+import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
 
-public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<CsrfReactiveConfig> {
-    private static final Logger LOG = Logger.getLogger(CsrfHandler.class);
+public class CsrfRequestResponseReactiveFilter {
+    private static final Logger LOG = Logger.getLogger(CsrfRequestResponseReactiveFilter.class);
 
     /**
      * CSRF token key.
@@ -30,27 +36,12 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
      */
     private static final String CSRF_TOKEN_VERIFIED = "csrf_token_verified";
 
-    // although technically the field does not need to be volatile (since the access mode is determined by the VarHandle use)
-    // it is a recommended practice by Doug Lea meant to catch cases where the field is accessed directly (by accident)
-    @SuppressWarnings("unused")
-    private volatile SecureRandom secureRandom;
+    private final SecureRandom secureRandom = new SecureRandom();
 
-    // use a VarHandle to access the secureRandom as the value is written only by the main thread
-    // and all other threads simply read the value, and thus we can use the Release / Acquire access mode
-    private static final VarHandle SECURE_RANDOM_VH;
+    @Inject
+    Instance<CsrfReactiveConfig> configInstance;
 
-    static {
-        try {
-            SECURE_RANDOM_VH = MethodHandles.lookup().findVarHandle(CsrfHandler.class, "secureRandom",
-                    SecureRandom.class);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new Error(e);
-        }
-    }
-
-    private CsrfReactiveConfig config;
-
-    public CsrfHandler() {
+    public CsrfRequestResponseReactiveFilter() {
     }
 
     /**
@@ -68,10 +59,10 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
      * {@value #CSRF_TOKEN_KEY} and value that is equal to the one supplied in the cookie.</li>
      * </ul>
      */
-    public void handle(ResteasyReactiveRequestContext reactiveRequestContext) {
-        final ContainerRequestContext requestContext = reactiveRequestContext.getContainerRequestContext();
-
-        final RoutingContext routing = reactiveRequestContext.serverRequest().unwrap(RoutingContext.class);
+    @ServerRequestFilter
+    @WithFormRead
+    public void filter(ResteasyReactiveContainerRequestContext requestContext, RoutingContext routing) {
+        final CsrfReactiveConfig config = this.configInstance.get();
 
         String cookieToken = getCookieToken(routing, config);
         if (cookieToken != null) {
@@ -99,7 +90,7 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
             if (cookieToken == null && isCsrfTokenRequired(routing, config)) {
                 // Set the CSRF cookie with a randomly generated value
                 byte[] tokenBytes = new byte[config.tokenSize];
-                getSecureRandom().nextBytes(tokenBytes);
+                secureRandom.nextBytes(tokenBytes);
                 routing.put(CSRF_TOKEN_BYTES_KEY, tokenBytes);
                 routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes));
             }
@@ -115,7 +106,6 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
                 } else {
                     LOG.debugf("Request has the  media type: %s, skipping the token verification",
                             requestContext.getMediaType().toString());
-                    requestContext.abortWith(badClientRequest());
                     return;
                 }
             }
@@ -132,8 +122,9 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
                 return;
             }
 
-            String csrfToken = (String) reactiveRequestContext.getFormParameter(config.formFieldName, true, true);
-
+            ResteasyReactiveRequestContext rrContext = (ResteasyReactiveRequestContext) requestContext
+                    .getServerRequestContext();
+            String csrfToken = (String) rrContext.getFormParameter(config.formFieldName, true, false);
             if (csrfToken == null) {
                 LOG.debug("CSRF token is not found");
                 requestContext.abortWith(badClientRequest());
@@ -148,16 +139,13 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
                     return;
                 } else {
                     routing.put(CSRF_TOKEN_VERIFIED, true);
+                    return;
                 }
             }
         } else if (cookieToken == null) {
             LOG.debug("CSRF token is not found");
             requestContext.abortWith(badClientRequest());
         }
-    }
-
-    private SecureRandom getSecureRandom() {
-        return (SecureRandom) SECURE_RANDOM_VH.getAcquire(this);
     }
 
     private static boolean isMatchingMediaType(MediaType contentType, MediaType expectedType) {
@@ -167,6 +155,47 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
 
     private static Response badClientRequest() {
         return Response.status(400).build();
+    }
+
+    /**
+     * If the requirements below are true, sets a cookie by the name {@value #CSRF_TOKEN_KEY} that contains a CSRF token.
+     * <ul>
+     * <li>The request method is {@code GET}.</li>
+     * <li>The request does not contain a valid CSRF token cookie.</li>
+     * </ul>
+     *
+     * @throws IllegalStateException if the {@link RoutingContext} does not have a value for the key {@value #CSRF_TOKEN_KEY}
+     *         and a cookie needs to be set.
+     */
+    @ServerResponseFilter
+    public void filter(ContainerRequestContext requestContext,
+            ContainerResponseContext responseContext, RoutingContext routing) {
+        final CsrfReactiveConfig config = configInstance.get();
+        if (requestContext.getMethod().equals("GET") && isCsrfTokenRequired(routing, config)
+                && getCookieToken(routing, config) == null) {
+
+            String cookieValue = null;
+            if (config.tokenSignatureKey.isPresent()) {
+                byte[] csrfTokenBytes = (byte[]) routing.get(CSRF_TOKEN_BYTES_KEY);
+
+                if (csrfTokenBytes == null) {
+                    throw new IllegalStateException(
+                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                }
+                cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey.get());
+            } else {
+                String csrfToken = (String) routing.get(CSRF_TOKEN_KEY);
+
+                if (csrfToken == null) {
+                    throw new IllegalStateException(
+                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                }
+                cookieValue = csrfToken;
+            }
+
+            createCookie(cookieValue, routing, config);
+        }
+
     }
 
     /**
@@ -189,6 +218,19 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
         return config.createTokenPath.isPresent() ? config.createTokenPath.get().contains(routing.request().path()) : true;
     }
 
+    private void createCookie(String csrfToken, RoutingContext routing, CsrfReactiveConfig config) {
+
+        ServerCookie cookie = new CookieImpl(config.cookieName, csrfToken);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(config.cookieForceSecure || routing.request().isSSL());
+        cookie.setMaxAge(config.cookieMaxAge.toSeconds());
+        cookie.setPath(config.cookiePath);
+        if (config.cookieDomain.isPresent()) {
+            cookie.setDomain(config.cookieDomain.get());
+        }
+        routing.response().addCookie(cookie);
+    }
+
     private static boolean requestMethodIsSafe(ContainerRequestContext context) {
         switch (context.getMethod()) {
             case "GET":
@@ -198,15 +240,5 @@ public class CsrfHandler implements GenericRuntimeConfigurableServerRestHandler<
             default:
                 return false;
         }
-    }
-
-    public void configure(CsrfReactiveConfig configuration) {
-        this.config = configuration;
-        SECURE_RANDOM_VH.setRelease(this, new SecureRandom());
-    }
-
-    @Override
-    public Class<CsrfReactiveConfig> getConfigurationClass() {
-        return CsrfReactiveConfig.class;
     }
 }

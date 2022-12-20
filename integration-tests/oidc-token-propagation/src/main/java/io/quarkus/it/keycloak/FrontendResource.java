@@ -8,6 +8,8 @@ import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import io.quarkus.security.Authenticated;
+
 @Path("/frontend")
 public class FrontendResource {
     @Inject
@@ -27,6 +29,13 @@ public class FrontendResource {
     @RolesAllowed("user")
     public String userNameJwtTokenPropagation() {
         return jwtTokenPropagationService.getUserName();
+    }
+
+    @GET
+    @Path("client-jwt-token-propagation")
+    @Authenticated
+    public String clientUserNameJwtTokenPropagation() {
+        return jwtTokenPropagationService.getClientName();
     }
 
     @GET

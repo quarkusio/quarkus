@@ -220,10 +220,11 @@ public class KubernetesClientProcessor {
             log.debugv("Model Classes:\n{0}", String.join("\n", modelClasses));
         }
 
-        // Register the default HttpClient implementation
-        serviceProviderProducer.produce(new ServiceProviderBuildItem(
-                HttpClient.Factory.class.getName(), "io.fabric8.kubernetes.client.okhttp.OkHttpClientFactory"));
-
+        // Register all HttpClient implementations
+        serviceProviderProducer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(HttpClient.Factory.class.getName()));
+        // Register all KubernetesResource providers (needed for the KubernetesDeserializer)
+        serviceProviderProducer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(KubernetesResource.class.getName()));
+        // Register all KubernetesClient extensions
         serviceProviderProducer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(ExtensionAdapter.class.getName()));
 
         // Enable SSL support by default

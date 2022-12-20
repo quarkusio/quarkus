@@ -13,7 +13,7 @@ import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_B
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_BINDING_CONTAINERS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.MULTI;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.REGISTER_REST_CLIENT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.runtime.metrics.MetricsFactory.MICROMETER;
 import static java.util.stream.Collectors.toList;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
@@ -54,13 +54,8 @@ import io.quarkus.cache.deployment.exception.UnsupportedRepeatedAnnotationExcept
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
 import io.quarkus.cache.runtime.CacheInvalidateInterceptor;
+import io.quarkus.cache.runtime.CacheManagerRecorder;
 import io.quarkus.cache.runtime.CacheResultInterceptor;
-import io.quarkus.cache.runtime.caffeine.CaffeineCacheBuildRecorder;
-import io.quarkus.cache.runtime.caffeine.CaffeineCacheInfo;
-import io.quarkus.cache.runtime.caffeine.metrics.MetricsInitializer;
-import io.quarkus.cache.runtime.caffeine.metrics.MicrometerMetricsInitializer;
-import io.quarkus.cache.runtime.caffeine.metrics.NoOpMetricsInitializer;
-import io.quarkus.cache.runtime.noop.NoOpCacheBuildRecorder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -230,37 +225,24 @@ class CacheProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
-    SyntheticBeanBuildItem configureCacheManagerSyntheticBean(CacheNamesBuildItem cacheNames, CacheConfig config,
-            CaffeineCacheBuildRecorder caffeineRecorder, NoOpCacheBuildRecorder noOpRecorder,
-            Optional<MetricsCapabilityBuildItem> metricsCapability) {
+    @Record(RUNTIME_INIT)
+    SyntheticBeanBuildItem configureCacheManagerSyntheticBean(CacheNamesBuildItem cacheNames,
+            CacheManagerRecorder cacheManagerRecorder, Optional<MetricsCapabilityBuildItem> metricsCapability) {
+
+        boolean micrometerSupported = metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MICROMETER);
 
         Supplier<CacheManager> cacheManagerSupplier;
-        if (config.enabled) {
-            switch (config.type) {
-                case CacheDeploymentConstants.CAFFEINE_CACHE_TYPE:
-                    Set<CaffeineCacheInfo> cacheInfos = CaffeineCacheInfoBuilder.build(cacheNames.getNames(), config);
-                    MetricsInitializer metricsInitializer = getMetricsInitializer(metricsCapability);
-                    cacheManagerSupplier = caffeineRecorder.getCacheManagerSupplier(cacheInfos, metricsInitializer);
-                    break;
-                default:
-                    throw new DeploymentException("Unknown cache type: " + config.type);
-            }
+        if (micrometerSupported) {
+            cacheManagerSupplier = cacheManagerRecorder.getCacheManagerSupplierWithMicrometerMetrics(cacheNames.getNames());
         } else {
-            cacheManagerSupplier = noOpRecorder.getCacheManagerSupplier(cacheNames.getNames());
+            cacheManagerSupplier = cacheManagerRecorder.getCacheManagerSupplierWithoutMetrics(cacheNames.getNames());
         }
 
         return SyntheticBeanBuildItem.configure(CacheManager.class)
                 .scope(ApplicationScoped.class)
                 .supplier(cacheManagerSupplier)
+                .setRuntimeInit()
                 .done();
-    }
-
-    private MetricsInitializer getMetricsInitializer(Optional<MetricsCapabilityBuildItem> metricsCapability) {
-        if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MICROMETER)) {
-            return new MicrometerMetricsInitializer();
-        }
-        return new NoOpMetricsInitializer();
     }
 
     @BuildStep

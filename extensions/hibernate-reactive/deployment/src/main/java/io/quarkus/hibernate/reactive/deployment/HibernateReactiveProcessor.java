@@ -310,6 +310,13 @@ public final class HibernateReactiveProcessor {
                 String.valueOf(persistenceUnitConfig.query.inClauseParameterPadding));
 
         // JDBC
+        persistenceUnitConfig.jdbc.timezone.ifPresent(
+                timezone -> desc.getProperties().setProperty(AvailableSettings.JDBC_TIME_ZONE, timezone));
+
+        persistenceUnitConfig.jdbc.statementFetchSize.ifPresent(
+                fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_FETCH_SIZE,
+                        String.valueOf(fetchSize)));
+
         persistenceUnitConfig.jdbc.statementBatchSize.ifPresent(
                 statementBatchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
                         String.valueOf(statementBatchSize)));

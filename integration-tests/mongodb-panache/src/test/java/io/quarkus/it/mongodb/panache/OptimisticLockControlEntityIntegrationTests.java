@@ -396,6 +396,11 @@ public class OptimisticLockControlEntityIntegrationTests {
         try {
             BikeVEntity.persistOrUpdate(List.of(carV, carV2, carV3, carV4));
         } catch (Exception ex) {
+            System.out.println(" c1: " + carV);
+            System.out.println(" c1: " + carV2);
+            System.out.println(" c1: " + carV3);
+            System.out.println(" c1: " + carV4);
+
             assertEquals(0, carV.version); //inserted
             assertEquals(1L, carV2.version); //updated
             assertEquals(5L, carV3.version); //failed

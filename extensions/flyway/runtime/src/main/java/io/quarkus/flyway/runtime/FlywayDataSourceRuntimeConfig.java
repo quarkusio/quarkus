@@ -210,7 +210,7 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     @ConfigDocSection
-    public PostgresSQL postgress = new PostgresSQL();
+    public PostgresSQL postgresExtension = new PostgresSQL();
 
     @ConfigGroup
     public static class PostgresSQL {

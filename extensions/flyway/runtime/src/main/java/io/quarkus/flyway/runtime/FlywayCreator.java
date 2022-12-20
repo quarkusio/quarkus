@@ -36,9 +36,10 @@ class FlywayCreator {
         FluentConfiguration configure = Flyway.configure();
         configure.dataSource(dataSource);
 
-        flywayRuntimeConfig.postgress.isTransactionalLock
-                .ifPresent(isTransactionalLock -> configure.getPluginRegister().getPlugin(PostgreSQLConfigurationExtension.class)
-                        .setTransactionalLock(isTransactionalLock));
+        flywayRuntimeConfig.postgresExtension.isTransactionalLock
+                .ifPresent(
+                        isTransactionalLock -> configure.getPluginRegister().getPlugin(PostgreSQLConfigurationExtension.class)
+                                .setTransactionalLock(isTransactionalLock));
         if (flywayRuntimeConfig.initSql.isPresent()) {
             configure.initSql(flywayRuntimeConfig.initSql.get());
         }

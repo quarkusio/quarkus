@@ -1128,6 +1128,28 @@ public class ProtectedResource {
 
 Note that `@TestSecurity` `user` and `roles` attributes are available as `TokenIntrospection` `username` and `scope` properties and you can use `io.quarkus.test.security.oidc.TokenIntrospection` to add the additional introspection response properties such as an `email`, etc.
 
+[TIP]
+====
+`@TestSecurity` and `@OidcSecurity` can be combined in a meta-annotation, for example like so:
+
+[source, java]
+----
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    @TestSecurity(user = "userOidc", roles = "viewer")
+    @OidcSecurity(introspectionRequired = true,
+        introspection = {
+            @TokenIntrospection(key = "email", value = "user@gmail.com")
+        }
+    )
+    public @interface TestSecurityMetaAnnotation {
+
+    }
+----
+
+This is particularly useful if the same set of security settings needs to be used in multiple test methods.
+====
+
 === How to check the errors in the logs
 
 Please enable `io.quarkus.oidc.runtime.OidcProvider` `TRACE` level logging to see more details about the token verification errors:

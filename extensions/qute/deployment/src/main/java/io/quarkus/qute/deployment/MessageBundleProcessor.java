@@ -71,6 +71,7 @@ import io.quarkus.gizmo.ClassCreator.Builder;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -960,8 +961,7 @@ public class MessageBundleProcessor {
         ResultHandle ret = resolve.newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
 
         // First handle dynamic messages, i.e. the "message" virtual method
-        BytecodeCreator dynamicMessage = resolve.ifTrue(resolve.invokeVirtualMethod(Descriptors.EQUALS,
-                resolve.load(MESSAGE), name))
+        BytecodeCreator dynamicMessage = resolve.ifTrue(Gizmo.equals(resolve, resolve.load(MESSAGE), name))
                 .trueBranch();
         ResultHandle evaluatedMessageKey = dynamicMessage.invokeStaticMethod(Descriptors.EVALUATED_PARAMS_EVALUATE_MESSAGE_KEY,
                 evalContext);
@@ -988,8 +988,8 @@ public class MessageBundleProcessor {
         nameIsNull.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
                 resultNotFound);
         nameIsNull.returnValue(null);
-        BytecodeCreator nameNotFound = success.ifTrue(success.invokeVirtualMethod(Descriptors.EQUALS,
-                whenComplete.getMethodParam(0), resultNotFound)).trueBranch();
+        BytecodeCreator nameNotFound = success.ifTrue(Gizmo.equals(success, whenComplete.getMethodParam(0), resultNotFound))
+                .trueBranch();
         nameNotFound.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, resultNotFound);
         nameNotFound.returnValue(null);
 
@@ -1067,8 +1067,7 @@ public class MessageBundleProcessor {
             ResultHandle ret, String bundleClass) {
         List<Type> methodParams = method.parameterTypes();
 
-        BytecodeCreator matched = resolve.ifTrue(resolve.invokeVirtualMethod(Descriptors.EQUALS,
-                resolve.load(key), name))
+        BytecodeCreator matched = resolve.ifTrue(Gizmo.equals(resolve, resolve.load(key), name))
                 .trueBranch();
         if (method.parameterTypes().isEmpty()) {
             matched.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, ret,

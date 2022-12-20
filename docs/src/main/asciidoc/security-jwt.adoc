@@ -918,6 +918,28 @@ public class ProtectedResource {
 Note that `@TestSecurity` annotation must always be used and its `user` property is returned as `JsonWebToken.getName()` and `roles` property - as `JsonWebToken.getGroups()`.
 `@JwtSecurity` annotation is optional and can be used to set the additional token claims.
 
+[TIP]
+====
+`@TestSecurity` and `@JwtSecurity` can be combined in a meta-annotation, for example like so:
+
+[source, java]
+----
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    @TestSecurity(user = "userOidc", roles = "viewer")
+    @OidcSecurity(introspectionRequired = true,
+        introspection = {
+            @TokenIntrospection(key = "email", value = "user@gmail.com")
+        }
+    )
+    public @interface TestSecurityMetaAnnotation {
+
+    }
+----
+
+This is particularly useful if the same set of security settings needs to be used in multiple test methods.
+====
+
 === How to check the errors in the logs
 
 Please enable `io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator` `TRACE` level logging to see more details about the token verification or decryption errors:

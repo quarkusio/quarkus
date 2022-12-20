@@ -19,6 +19,7 @@ import org.rocksdb.util.Environment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -38,6 +39,8 @@ import io.quarkus.kafka.streams.runtime.KafkaStreamsSupport;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class KafkaStreamsProcessor {
+
+    public static final String DEFAULT_PARTITION_GROUPER = "org.apache.kafka.streams.processor.DefaultPartitionGrouper";
 
     @BuildStep
     void build(BuildProducer<FeatureBuildItem> feature,
@@ -64,9 +67,11 @@ class KafkaStreamsProcessor {
 
     private void registerCompulsoryClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, StreamsPartitionAssignor.class));
-        // Class DefaultPartitionGrouper deprecated in Kafka 2.8.x and removed in 3.0.0
-        reflectiveClasses.produce(
-                new ReflectiveClassBuildItem(true, false, false, "org.apache.kafka.streams.processor.DefaultPartitionGrouper"));
+        if (QuarkusClassLoader.isClassPresentAtRuntime(DEFAULT_PARTITION_GROUPER)) {
+            // Class DefaultPartitionGrouper deprecated in Kafka 2.8.x and removed in 3.0.0
+            reflectiveClasses.produce(
+                    new ReflectiveClassBuildItem(true, false, false, DEFAULT_PARTITION_GROUPER));
+        }
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultProductionExceptionHandler.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, FailOnInvalidTimestamp.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,

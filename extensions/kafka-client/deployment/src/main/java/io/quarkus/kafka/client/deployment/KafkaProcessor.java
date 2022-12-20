@@ -228,8 +228,10 @@ public class KafkaProcessor {
         collectImplementors(toRegister, indexBuildItem, Serializer.class);
         collectImplementors(toRegister, indexBuildItem, Deserializer.class);
         collectImplementors(toRegister, indexBuildItem, Partitioner.class);
-        // PartitionAssignor is now deprecated, replaced by ConsumerPartitionAssignor
-        collectImplementors(toRegister, indexBuildItem, PARTITION_ASSIGNER);
+        if (QuarkusClassLoader.isClassPresentAtRuntime(PARTITION_ASSIGNER.toString())) {
+            // PartitionAssignor is now deprecated, replaced by ConsumerPartitionAssignor
+            collectImplementors(toRegister, indexBuildItem, PARTITION_ASSIGNER);
+        }
         collectImplementors(toRegister, indexBuildItem, ConsumerPartitionAssignor.class);
         collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);

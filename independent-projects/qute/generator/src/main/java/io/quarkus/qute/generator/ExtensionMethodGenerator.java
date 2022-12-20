@@ -42,6 +42,7 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -393,14 +394,12 @@ public class ExtensionMethodGenerator {
                 // Any of the name matches
                 BytecodeCreator namesMatch = appliesTo.createScope();
                 for (String match : matchNames) {
-                    ResultHandle nameTest = namesMatch.invokeVirtualMethod(Descriptors.EQUALS, name,
-                            namesMatch.load(match));
+                    ResultHandle nameTest = Gizmo.equals(namesMatch, name, namesMatch.load(match));
                     namesMatch.ifTrue(nameTest).trueBranch().breakScope(namesMatch);
                 }
                 namesMatch.returnValue(namesMatch.load(false));
             } else {
-                ResultHandle nameTest = appliesTo.invokeVirtualMethod(Descriptors.EQUALS, name,
-                        appliesTo.load(matchName));
+                ResultHandle nameTest = Gizmo.equals(appliesTo, name, appliesTo.load(matchName));
                 BytecodeCreator nameNotMatched = appliesTo.ifFalse(nameTest).trueBranch();
                 nameNotMatched.returnValue(nameNotMatched.load(false));
             }
@@ -634,15 +633,12 @@ public class ExtensionMethodGenerator {
                 // Any of the name matches
                 BytecodeCreator namesMatch = matchScope.createScope();
                 for (String match : matchNames) {
-                    ResultHandle nameTest = namesMatch.invokeVirtualMethod(Descriptors.EQUALS, name,
-                            namesMatch.load(match));
+                    ResultHandle nameTest = Gizmo.equals(namesMatch, name, namesMatch.load(match));
                     namesMatch.ifTrue(nameTest).trueBranch().breakScope(namesMatch);
                 }
                 namesMatch.breakScope(matchScope);
             } else {
-                matchScope.ifTrue(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
-                        matchScope.load(matchName),
-                        name))
+                matchScope.ifTrue(Gizmo.equals(matchScope, matchScope.load(matchName), name))
                         .falseBranch().breakScope(matchScope);
             }
         }

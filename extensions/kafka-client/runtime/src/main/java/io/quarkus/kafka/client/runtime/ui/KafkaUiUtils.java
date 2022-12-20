@@ -2,7 +2,12 @@ package io.quarkus.kafka.client.runtime.ui;
 
 import static io.quarkus.kafka.client.runtime.ui.util.ConsumerFactory.createConsumer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -17,7 +22,10 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.ui.model.Order;
@@ -37,12 +45,15 @@ public class KafkaUiUtils {
 
     private final Map<String, Object> config;
 
-    public KafkaUiUtils(KafkaAdminClient kafkaAdminClient, KafkaTopicClient kafkaTopicClient, ObjectMapper objectMapper,
+    public KafkaUiUtils(KafkaAdminClient kafkaAdminClient, KafkaTopicClient kafkaTopicClient,
             @Identifier("default-kafka-broker") Map<String, Object> config) {
         this.kafkaAdminClient = kafkaAdminClient;
         this.kafkaTopicClient = kafkaTopicClient;
-        this.objectMapper = objectMapper;
         this.config = config;
+        this.objectMapper = JsonMapper.builder()
+                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     }
 
     public KafkaInfo getKafkaInfo() throws ExecutionException, InterruptedException {

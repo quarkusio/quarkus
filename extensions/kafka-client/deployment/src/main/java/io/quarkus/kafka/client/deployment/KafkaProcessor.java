@@ -84,6 +84,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleWebjarBuildItem;
@@ -215,7 +216,7 @@ public class KafkaProcessor {
 
     @BuildStep
     public void build(
-            KafkaBuildTimeConfig config,
+            KafkaBuildTimeConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem,
             CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServiceProviderBuildItem> serviceProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
@@ -279,7 +280,7 @@ public class KafkaProcessor {
 
         handleAvro(reflectiveClass, proxies, serviceProviders, sslNativeSupport, capabilities);
         handleOpenTracing(reflectiveClass, capabilities);
-        handleStrimziOAuth(reflectiveClass);
+        handleStrimziOAuth(curateOutcomeBuildItem, reflectiveClass);
         if (config.snappyEnabled) {
             handleSnappy(reflectiveClass, nativeLibs, nativeConfig);
         }
@@ -336,7 +337,8 @@ public class KafkaProcessor {
                 "io.opentracing.contrib.kafka.TracingConsumerInterceptor"));
     }
 
-    private void handleStrimziOAuth(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    private void handleStrimziOAuth(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         if (!QuarkusClassLoader.isClassPresentAtRuntime("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")) {
             return;
         }
@@ -344,17 +346,20 @@ public class KafkaProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
                 "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
-                "org.keycloak.jose.jws.JWSHeader",
-                "org.keycloak.representations.AccessToken",
-                "org.keycloak.representations.AccessToken$Access",
-                "org.keycloak.representations.AccessTokenResponse",
-                "org.keycloak.representations.IDToken",
-                "org.keycloak.representations.JsonWebToken",
-                "org.keycloak.jose.jwk.JSONWebKeySet",
-                "org.keycloak.jose.jwk.JWK",
-                "org.keycloak.json.StringOrArrayDeserializer",
-                "org.keycloak.json.StringListMapDeserializer"));
+        if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
+                x -> x.getGroupId().equals("org.keycloak") && x.getArtifactId().equals("keycloak-core"))) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
+                    "org.keycloak.jose.jws.JWSHeader",
+                    "org.keycloak.representations.AccessToken",
+                    "org.keycloak.representations.AccessToken$Access",
+                    "org.keycloak.representations.AccessTokenResponse",
+                    "org.keycloak.representations.IDToken",
+                    "org.keycloak.representations.JsonWebToken",
+                    "org.keycloak.jose.jwk.JSONWebKeySet",
+                    "org.keycloak.jose.jwk.JWK",
+                    "org.keycloak.json.StringOrArrayDeserializer",
+                    "org.keycloak.json.StringListMapDeserializer"));
+        }
     }
 
     private void handleAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

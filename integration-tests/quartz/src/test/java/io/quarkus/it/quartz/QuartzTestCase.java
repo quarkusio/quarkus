@@ -28,6 +28,11 @@ public class QuartzTestCase {
         assertEmptyValueForDisabledMethod("/scheduler/disabled/every");
     }
 
+    @Test
+    public void testFixedInstanceIdGenerator() {
+        assertExpectedBodyString("/scheduler/instance-id", "myInstanceId");
+    }
+
     private void assertCounter(String counterPath) {
         Response response = given().when().get(counterPath);
         String body = response.asString();
@@ -39,9 +44,13 @@ public class QuartzTestCase {
     }
 
     private void assertEmptyValueForDisabledMethod(String path) {
+        assertExpectedBodyString(path, "");
+    }
+
+    private void assertExpectedBodyString(String path, String expectedBody) {
         Response response = given().when().get(path);
         String body = response.asString();
-        assertEquals("", body);
+        assertEquals(expectedBody, body);
         response
                 .then()
                 .statusCode(200);

@@ -417,6 +417,27 @@ include::{includes}/devtools/build-native.adoc[]
 
 WARNING: It's the responsibility of the deployer to clear/remove the previous state, i.e. stale jobs and triggers. Moreover, the applications that form the "Quartz cluster" should be identical, otherwise an unpredictable result may occur.
 
+[[quartz-configure-instance-id]]
+== Configuring the Instance ID
+
+By default, the scheduler is configured with a simple instance ID generator using the machine hostname and the current timestamp, so you don't need to worry about setting a appropriate `instance-id` for each node when running in clustered mode. However, you can define a specific `instance-id` by yourself setting a configuration property reference or using other generators.
+
+[source,properties]
+----
+quarkus.quartz.instance-id=${HOST:AUTO} <1>
+----
+<1> This will expand the `HOST` environment variable and use `AUTO` as the default value if `HOST` is not set.
+
+The example below configure the generator `org.quartz.simpl.HostnameInstanceIdGenerator` named as `hostname`, so you can use its name as `instance-id` to be used. That generator uses just the machine hostname and can be appropriate in environments providing unique names for the nodes.
+
+[source,properties]
+----
+quarkus.quartz.instance-id=hostname
+quarkus.quartz.instance-id-generators.hostname.class=org.quartz.simpl.HostnameInstanceIdGenerator
+----
+
+WARNING: It's the responsibility of the deployer to define appropriate instance identifiers. Moreover, the applications that form the "Quartz cluster" should contain unique instance identifiers, otherwise an unpredictable result may occur. It's recommended to use an appropriate instance ID generator rather than specifying explicit identifiers.
+
 [[quartz-register-plugin-listeners]]
 == Registering Plugin and Listeners
 

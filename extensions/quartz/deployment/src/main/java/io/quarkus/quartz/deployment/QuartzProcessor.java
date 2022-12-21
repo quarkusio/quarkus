@@ -30,6 +30,7 @@ import org.quartz.impl.triggers.SimpleTriggerImpl;
 import org.quartz.simpl.CascadingClassLoadHelper;
 import org.quartz.simpl.SimpleInstanceIdGenerator;
 import org.quartz.simpl.SimpleThreadPool;
+import org.quartz.spi.InstanceIdGenerator;
 import org.quartz.spi.SchedulerPlugin;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
@@ -170,6 +171,8 @@ public class QuartzProcessor {
                     .add(new ReflectiveClassBuildItem(true, false, QuarkusQuartzConnectionPoolProvider.class.getName()));
         }
 
+        reflectiveClasses
+                .addAll(getAdditionalConfigurationReflectiveClasses(config.instanceIdGenerators, InstanceIdGenerator.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.triggerListeners, TriggerListener.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.jobListeners, JobListener.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.plugins, SchedulerPlugin.class));

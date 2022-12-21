@@ -223,7 +223,7 @@ uid
 UltraSparc
 ULTRASPARC
 unix
-Unix
+unix Socket
 UNIX-like
 url
 var

@@ -64,6 +64,12 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
@@ -97,7 +103,7 @@
             <artifactId>quarkus-reactive-routes-deployment</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
@@ -109,7 +115,6 @@
             <artifactId>microprofile-metrics-api</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>

@@ -23,8 +23,8 @@ class QuarkusTransactionImpl {
     private static TransactionManager cachedTransactionManager;
     private static UserTransaction cachedUserTransaction;
 
-    public static <T> T call(RunOptions options, Callable<T> task) {
-        switch (options.semantic) {
+    public static <T> T call(RunOptionsBase options, Callable<T> task) {
+        switch (options.semantics) {
             case REQUIRE_NEW:
                 return callRequireNew(options, task);
             case DISALLOW_EXISTING:
@@ -34,10 +34,10 @@ class QuarkusTransactionImpl {
             case SUSPEND_EXISTING:
                 return callSuspendExisting(options, task);
         }
-        throw new IllegalArgumentException("Unknown semantic");
+        throw new IllegalArgumentException("Unknown semantics");
     }
 
-    private static <T> T callSuspendExisting(RunOptions options, Callable<T> task) {
+    private static <T> T callSuspendExisting(RunOptionsBase options, Callable<T> task) {
         if (options.exceptionHandler != null) {
             throw new IllegalStateException("Cannot specify both an exception handler and SUSPEND_EXISTING");
         }
@@ -72,7 +72,7 @@ class QuarkusTransactionImpl {
         }
     }
 
-    private static <T> T callJoinExisting(RunOptions options, Callable<T> task) {
+    private static <T> T callJoinExisting(RunOptionsBase options, Callable<T> task) {
         if (isTransactionActive()) {
             return callInTheirTx(options, task);
         } else {
@@ -89,14 +89,14 @@ class QuarkusTransactionImpl {
         }
     }
 
-    private static <T> T callDisallowExisting(RunOptions options, Callable<T> task) {
+    private static <T> T callDisallowExisting(RunOptionsBase options, Callable<T> task) {
         if (isTransactionActive()) {
             throw new QuarkusTransactionException(new IllegalStateException("Transaction already active"));
         }
         return callInOurTx(options, task);
     }
 
-    private static <T> T callRequireNew(RunOptions options, Callable<T> task) {
+    private static <T> T callRequireNew(RunOptionsBase options, Callable<T> task) {
         TransactionManager transactionManager = getTransactionManager();
         Transaction transaction = null;
         try {
@@ -128,18 +128,18 @@ class QuarkusTransactionImpl {
         }
     }
 
-    private static <T> T callInOurTx(RunOptions options, Callable<T> task) {
+    private static <T> T callInOurTx(RunOptionsBase options, Callable<T> task) {
         begin(options);
         try {
             T ret;
             try {
                 ret = task.call();
             } catch (Throwable t) {
-                RunOptions.ExceptionResult handling = RunOptions.ExceptionResult.ROLLBACK;
+                TransactionExceptionResult handling = TransactionExceptionResult.ROLLBACK;
                 if (options.exceptionHandler != null) {
                     handling = options.exceptionHandler.apply(t);
                 }
-                if (handling == RunOptions.ExceptionResult.ROLLBACK) {
+                if (handling == TransactionExceptionResult.ROLLBACK) {
                     getUserTransaction().rollback();
                 } else {
                     getUserTransaction().commit();
@@ -166,17 +166,17 @@ class QuarkusTransactionImpl {
         }
     }
 
-    private static <T> T callInTheirTx(RunOptions options, Callable<T> task) {
+    private static <T> T callInTheirTx(RunOptionsBase options, Callable<T> task) {
         try {
             T ret;
             try {
                 ret = task.call();
             } catch (Throwable t) {
-                RunOptions.ExceptionResult handling = RunOptions.ExceptionResult.ROLLBACK;
+                TransactionExceptionResult handling = TransactionExceptionResult.ROLLBACK;
                 if (options.exceptionHandler != null) {
                     handling = options.exceptionHandler.apply(t);
                 }
-                if (handling == RunOptions.ExceptionResult.ROLLBACK) {
+                if (handling == TransactionExceptionResult.ROLLBACK) {
                     getUserTransaction().setRollbackOnly();
                 }
                 if (t instanceof RuntimeException) {
@@ -196,7 +196,7 @@ class QuarkusTransactionImpl {
         }
     }
 
-    private static void begin(RunOptions options) {
+    private static void begin(RunOptionsBase options) {
         int timeout = options != null ? options.timeout : 0;
         try {
             if (timeout > 0) {

@@ -38,4 +38,15 @@ class RootResourceTest {
                 .body(is("get success"));
     }
 
+    @Test
+    void testRolesAllowedConfigExpression() {
+        given()
+                .auth().preemptive().basic("john", Users.password("john"))
+                .when()
+                .get("/employee")
+                .then()
+                .statusCode(200)
+                .body(is("john"));
+    }
+
 }

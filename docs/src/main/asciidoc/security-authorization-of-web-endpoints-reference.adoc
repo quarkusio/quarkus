@@ -273,6 +273,75 @@ public class SubjectExposingResource {
 
 CAUTION: Please refer to the xref:security-built-in-authentication-support-concept.adoc#proactive-authentication[Proactive Authentication] section of the Built-In Authentication Support guide if you plan to use standard security annotations on IO thread.
 
+The `@RolesAllowed` annotation value supports <<config-reference#property-expressions,Property Expressions>> including default values and nested Property Expressions.
+Configuration properties used with the annotation are resolved at runtime.
+
+[source,properties]
+----
+admin=Administrator
+tester.group=Software
+tester.role=Tester
+%prod.secured=User
+%dev.secured=**
+----
+
+[source,java]
+----
+import java.security.Principal;
+
+import javax.annotation.security.DenyAll;
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.SecurityContext;
+
+@Path("subject")
+public class SubjectExposingResource {
+
+    @GET
+    @Path("admin")
+    @RolesAllowed("${admin}") <1>
+    public String getSubjectSecuredAdmin(@Context SecurityContext sec) {
+        Principal user = sec.getUserPrincipal();
+        String name = user != null ? user.getName() : "anonymous";
+        return name;
+    }
+
+    @GET
+    @Path("software-tester")
+    @RolesAllowed("${tester.group}-${tester.role}") <2>
+    public String getSubjectSoftwareTester(@Context SecurityContext sec) {
+        Principal user = sec.getUserPrincipal();
+        String name = user != null ? user.getName() : "anonymous";
+        return name;
+    }
+
+    @GET
+    @Path("user")
+    @RolesAllowed("${customer:User}") <3>
+    public String getSubjectUser(@Context SecurityContext sec) {
+        Principal user = sec.getUserPrincipal();
+        String name = user != null ? user.getName() : "anonymous";
+        return name;
+    }
+
+    @GET
+    @Path("secured")
+    @RolesAllowed("${secured}") <4>
+    public String getSubjectSecured(@Context SecurityContext sec) {
+        Principal user = sec.getUserPrincipal();
+        String name = user != null ? user.getName() : "anonymous";
+        return name;
+    }
+}
+----
+<1> The `@RolesAllowed` annotation value is set to the value of the `admin`.
+<2> This `/subject/software-tester` endpoint requires an authenticated user that has been granted the role "Software-Tester". It is possible to use multiple expressions in the role definition.
+<3> This `/subject/user` endpoint requires an authenticated user that has been granted the role "User" through the use of the `@RolesAllowed("${customer:User}")` annotation, as we did not set the configuration property `customer`.
+<4> This `/subject/secured` endpoint requires an authenticated user that has been granted the role `User` in production, but allows any authenticated user in development mode.
+
 == References
 
 * xref:security-overview-concept.adoc[Quarkus Security overview]

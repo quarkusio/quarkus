@@ -131,7 +131,7 @@ SysV
 TTL
 UID
 UltraSPARC
-UNIX
+Unix socket
 URL
 VAR
 VDSM

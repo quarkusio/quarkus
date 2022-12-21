@@ -160,21 +160,18 @@ The result of the previous command is a single JAR file inside the `target/deplo
 
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 
+NOTE: We will use the Java 17 runtime but you can switch to the Java 11 runtime by using `--runtime=java11` instead of `--runtime=java17` on the deploy commands.
+
 [source,bash]
 ----
 gcloud functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
-  --runtime=java11 --trigger-http --allow-unauthenticated --source=target/deployment
+  --runtime=java17 --trigger-http --allow-unauthenticated --source=target/deployment
 ----
 
 [IMPORTANT]
 ====
 The entry point must always be set to `io.quarkus.gcp.functions.http.QuarkusHttpFunction` as this is the class that integrates Cloud Functions with Quarkus.
-====
-
-[NOTE]
-====
-You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 [WARNING]

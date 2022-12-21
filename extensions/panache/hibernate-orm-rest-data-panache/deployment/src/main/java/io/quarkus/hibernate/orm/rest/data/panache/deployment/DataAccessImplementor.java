@@ -22,6 +22,25 @@ public interface DataAccessImplementor {
      *
      * @param creator Bytecode creator that should be used for implementation.
      * @param page Page instance that should be used in a query. Might be null if pagination is disabled.
+     * @return Entity list
+     */
+    ResultHandle findAll(BytecodeCreator creator, ResultHandle page);
+
+    /**
+     * Find all entities.
+     *
+     * @param creator Bytecode creator that should be used for implementation.
+     * @param page Page instance that should be used in a query. Might be null if pagination is disabled.
+     * @param sort Sort instance that should be used in a query.
+     * @return Entity list
+     */
+    ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort);
+
+    /**
+     * Find all entities.
+     *
+     * @param creator Bytecode creator that should be used for implementation.
+     * @param page Page instance that should be used in a query. Might be null if pagination is disabled.
      * @param query HQL query to list entities.
      * @param queryParams Map of parameters to use by the HQL query.
      * @return Entity list

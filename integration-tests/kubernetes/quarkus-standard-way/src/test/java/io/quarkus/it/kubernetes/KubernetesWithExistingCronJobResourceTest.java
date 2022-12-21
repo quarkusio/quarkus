@@ -37,7 +37,7 @@ public class KubernetesWithExistingCronJobResourceTest {
             .addBuildChainCustomizerEntries(
                     new QuarkusProdModeTest.BuildChainCustomizerEntry(
                             KubernetesWithCustomResourcesTest.CustomProjectRootBuildItemProducerProdMode.class,
-                            Collections.singletonList(CustomProjectRootBuildItem.class), Collections.emptyList()));;
+                            Collections.singletonList(CustomProjectRootBuildItem.class), Collections.emptyList()));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

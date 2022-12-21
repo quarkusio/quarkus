@@ -154,7 +154,7 @@ public class KubernetesDeployer {
 
         boolean checkForMissingRegistry = true;
         boolean checkForNamespaceGroupAlignment = false;
-        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
+        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getExplictilyDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty()) {
             selectedTarget = targets.getEntriesSortedByPriority().get(0);
             if (targets.getEntriesSortedByPriority().size() > 1) {

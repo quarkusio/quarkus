@@ -311,6 +311,7 @@
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>opentelemetry</module>
+                <module>opentelemetry-jdbc-instrumentation</module>
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
                 <module>opentelemetry-grpc</module>

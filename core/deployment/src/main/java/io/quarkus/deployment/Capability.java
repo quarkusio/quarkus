@@ -141,4 +141,5 @@ public interface Capability {
     String REDIS_CLIENT = QUARKUS_PREFIX + "redis";
 
     String CACHE = QUARKUS_PREFIX + "cache";
+    String JDBC_ORACLE = QUARKUS_PREFIX + "jdbc.oracle";
 }

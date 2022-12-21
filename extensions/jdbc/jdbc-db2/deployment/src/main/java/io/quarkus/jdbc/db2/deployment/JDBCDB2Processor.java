@@ -16,11 +16,14 @@ import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jdbc.db2.runtime.DB2AgroalConnectionConfigurer;
 import io.quarkus.jdbc.db2.runtime.DB2ServiceBindingConverter;
 
 public class JDBCDB2Processor {
+
+    private static final String DB2_DRIVER_CLASS = "com.ibm.db2.jcc.DB2Driver";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -30,7 +33,7 @@ public class JDBCDB2Processor {
     @BuildStep
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {
-        jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.DB2, "com.ibm.db2.jcc.DB2Driver",
+        jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.DB2, DB2_DRIVER_CLASS,
                 "com.ibm.db2.jcc.DB2XADataSource"));
     }
 
@@ -49,6 +52,15 @@ public class JDBCDB2Processor {
                             .setUnremovable()
                             .build());
         }
+    }
+
+    @BuildStep
+    void registerDriverForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        //Not strictly necessary when using Agroal, as it also registers
+        //any JDBC driver being configured explicitly through its configuration.
+        //We register it for the sake of people not using Agroal,
+        //for example when the driver is used with OpenTelemetry JDBC instrumentation.
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, DB2_DRIVER_CLASS));
     }
 
     @BuildStep

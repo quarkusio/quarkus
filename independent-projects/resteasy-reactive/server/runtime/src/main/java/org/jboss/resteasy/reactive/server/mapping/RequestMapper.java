@@ -116,8 +116,11 @@ public class RequestMapper<T> {
             boolean doPrefixMatch = false;
             if (!fullMatch) {
                 //according to the spec every template ends with (/.*)?
-                doPrefixMatch = (matchPos == 1 || path.charAt(matchPos) == '/') //matchPos == 1 corresponds to '/' as a root level match
-                        && (prefixAllowed || matchPos == pathLength - 1); //if prefix is allowed, or the remainder is only a trailing /
+                if (matchPos == 1) { //matchPos == 1 corresponds to '/' as a root level match
+                    doPrefixMatch = prefixAllowed || pathLength == 1; //if prefix is allowed, or we've matched the whole thing
+                } else if (path.charAt(matchPos) == '/') {
+                    doPrefixMatch = prefixAllowed || matchPos == pathLength - 1; //if prefix is allowed, or the remainder is only a trailing /
+                }
             }
             if (fullMatch || doPrefixMatch) {
                 String remaining;

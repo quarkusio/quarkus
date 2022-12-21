@@ -39,6 +39,14 @@ public class EndingSlashTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("Hello World!"));
+
+        get("/hello/world/1")
+                .then()
+                .statusCode(404);
+
+        get("/hello/world/22")
+                .then()
+                .statusCode(404);
     }
 
     @Path("/hello")

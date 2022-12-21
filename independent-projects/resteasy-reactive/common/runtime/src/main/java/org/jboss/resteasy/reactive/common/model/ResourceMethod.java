@@ -68,6 +68,8 @@ public class ResourceMethod {
 
     private boolean isFormParamRequired;
 
+    private Set<String> fileFormNames;
+
     private List<ResourceMethod> subResourceMethods;
 
     public ResourceMethod() {
@@ -221,6 +223,15 @@ public class ResourceMethod {
 
     public ResourceMethod setFormParamRequired(boolean isFormParamRequired) {
         this.isFormParamRequired = isFormParamRequired;
+        return this;
+    }
+
+    public Set<String> getFileFormNames() {
+        return fileFormNames;
+    }
+
+    public ResourceMethod setFileFormNames(Set<String> fileFormNames) {
+        this.fileFormNames = fileFormNames;
         return this;
     }
 

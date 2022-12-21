@@ -16,6 +16,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
@@ -53,6 +54,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
     private long maxAttributeSize = 2048;
     private long maxEntitySize = -1;
+    private List<String> fileContentTypes;
 
     public MultiPartParserDefinition(Supplier<Executor> executorSupplier) {
         this.executorSupplier = executorSupplier;
@@ -65,7 +67,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
     }
 
     @Override
-    public FormDataParser create(final ResteasyReactiveRequestContext exchange) {
+    public FormDataParser create(final ResteasyReactiveRequestContext exchange, Set<String> fileFormNames) {
         String mimeType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (mimeType != null && mimeType.startsWith(MULTIPART_FORM_DATA)) {
             String boundary = HeaderUtil.extractQuotedValueFromHeader(mimeType, "boundary");
@@ -76,7 +78,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 return null;
             }
             final MultiPartUploadHandler parser = new MultiPartUploadHandler(exchange, boundary, maxIndividualFileSize,
-                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize);
+                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, fileFormNames);
             exchange.registerCompletionCallback(new CompletionCallback() {
                 @Override
                 public void onComplete(Throwable throwable) {
@@ -152,6 +154,15 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
+    public List<String> getFileContentTypes() {
+        return fileContentTypes;
+    }
+
+    public MultiPartParserDefinition setFileContentTypes(List<String> fileContentTypes) {
+        this.fileContentTypes = fileContentTypes;
+        return this;
+    }
+
     private final class MultiPartUploadHandler implements FormDataParser, MultipartParser.PartHandler {
 
         private final ResteasyReactiveRequestContext exchange;
@@ -161,6 +172,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         private final long fileSizeThreshold;
         private final long maxAttributeSize;
         private final long maxEntitySize;
+        private final Set<String> fileFormNames;
         private String defaultEncoding;
 
         private final ByteArrayOutputStream contentBytes = new ByteArrayOutputStream();
@@ -175,13 +187,15 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
         private MultiPartUploadHandler(final ResteasyReactiveRequestContext exchange, final String boundary,
                 final long maxIndividualFileSize, final long fileSizeThreshold, final String defaultEncoding,
-                String contentType, long maxAttributeSize, long maxEntitySize) {
+                String contentType, long maxAttributeSize, long maxEntitySize,
+                Set<String> fileFormNames) {
             this.exchange = exchange;
             this.maxIndividualFileSize = maxIndividualFileSize;
             this.defaultEncoding = defaultEncoding;
             this.fileSizeThreshold = fileSizeThreshold;
             this.maxAttributeSize = maxAttributeSize;
             this.maxEntitySize = maxEntitySize;
+            this.fileFormNames = fileFormNames;
             int maxParameters = 1000;
             this.data = new FormData(maxParameters);
             String charset = defaultEncoding;
@@ -236,7 +250,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 if (disposition.startsWith("form-data")) {
                     currentName = HeaderUtil.extractQuotedValueFromHeader(disposition, "name");
                     fileName = HeaderUtil.extractQuotedValueFromHeaderWithEncoding(disposition, "filename");
-                    if (fileName != null && fileSizeThreshold == 0) {
+                    String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
+                    if (((fileName != null) || isFileContentType(contentType) || fileFormNames.contains(currentName))
+                            && fileSizeThreshold == 0) {
                         try {
                             if (tempFileLocation != null) {
                                 Files.createDirectories(tempFileLocation);
@@ -252,6 +268,14 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     }
                 }
             }
+        }
+
+        private boolean isFileContentType(String contentType) {
+            if (contentType == null || fileContentTypes == null) {
+                return false;
+            }
+
+            return fileContentTypes.contains(contentType);
         }
 
         @Override

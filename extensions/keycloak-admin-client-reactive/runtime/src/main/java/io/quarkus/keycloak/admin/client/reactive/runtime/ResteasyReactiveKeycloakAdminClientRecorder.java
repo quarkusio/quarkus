@@ -30,10 +30,11 @@ public class ResteasyReactiveKeycloakAdminClientRecorder {
         final KeycloakAdminClientConfig config = keycloakAdminClientConfigRuntimeValue.getValue();
         validate(config);
         if (config.serverUrl.isEmpty()) {
-            return new Supplier<Keycloak>() {
+            return new Supplier<>() {
                 @Override
                 public Keycloak get() {
-                    return null;
+                    throw new IllegalStateException(
+                            "'quarkus.keycloak.admin-client.server-url' must be set in order to use the Keycloak admin client as a CDI bean");
                 }
             };
         }

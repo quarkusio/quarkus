@@ -570,7 +570,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     basicResourceClassInfo.getConsumes());
             boolean suspended = false;
             boolean sse = false;
-            boolean formParamRequired = false;
+            boolean formParamRequired = getAnnotationStore().getAnnotation(currentMethodInfo,
+                    ResteasyReactiveDotNames.WITH_FORM_READ) != null;
+            Set<String> fileFormNames = new HashSet<>();
             Type bodyParamType = null;
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);
             for (int i = 0; i < methodParameters.length; ++i) {
@@ -604,12 +606,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
                 methodParameters[i] = createMethodParameter(currentClassInfo, actualEndpointInfo, encoded, paramType,
                         parameterResult, name, defaultValue, type, elementType, single,
-                        AsmUtil.getSignature(paramType, typeArgMapper));
+                        AsmUtil.getSignature(paramType, typeArgMapper), fileFormNames);
 
                 if (type == ParameterType.BEAN
                         || type == ParameterType.MULTI_PART_FORM) {
                     // transform the bean param
-                    formParamRequired |= handleBeanParam(actualEndpointInfo, paramType, methodParameters, i);
+                    formParamRequired |= handleBeanParam(actualEndpointInfo, paramType, methodParameters, i, fileFormNames);
                 } else if (type == ParameterType.FORM) {
                     formParamRequired = true;
                 }
@@ -731,6 +733,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     .setSse(sse)
                     .setStreamElementType(streamElementType)
                     .setFormParamRequired(formParamRequired)
+                    .setFileFormNames(fileFormNames)
                     .setParameters(methodParameters)
                     .setSimpleReturnType(
                             toClassName(currentMethodInfo.returnType(), currentClassInfo, actualEndpointInfo, index))
@@ -885,7 +888,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected abstract boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters,
-            int i);
+            int i, Set<String> fileFormNames);
 
     protected void handleAdditionalMethodProcessing(METHOD method, ClassInfo currentClassInfo, MethodInfo info,
             AnnotationStore annotationStore) {
@@ -901,7 +904,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected abstract MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             boolean encoded, Type paramType, PARAM parameterResult, String name, String defaultValue,
-            ParameterType type, String elementType, boolean single, String signature);
+            ParameterType type, String elementType, boolean single, String signature,
+            Set<String> fileFormNames);
 
     private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType,
             DotName httpMethod) {

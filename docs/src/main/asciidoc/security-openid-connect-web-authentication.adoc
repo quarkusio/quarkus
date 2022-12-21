@@ -677,7 +677,7 @@ quarkus.oidc.authentication.pkce-required=true
 quarkus.oidc.authentication.pkce-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 ----
 
-If you already have a 32 character long client secret then `quarkus.oidc.authentication.pkce-secret` does not have to be set unless you prefer to use a different secret key.
+If you already have a 32 characters long client secret then `quarkus.oidc.authentication.pkce-secret` does not have to be set unless you prefer to use a different secret key.
 
 The secret key is required for encrypting a randomly generated `PKCE` `code_verifier` while the user is being redirected with the `code_challenge` query parameter to OpenID Connect Provider to authenticate. The `code_verifier` will be decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret and other parameters to complete the code exchange. The provider will fail the code exchange if a `SHA256` digest of the `code_verifier` does not match the `code_challenge` provided during the authentication request.
 
@@ -700,7 +700,7 @@ public class SecurityEventListener {
 
     public void event(@Observes SecurityEvent event) {
         String tenantId = event.getSecurityIdentity().getAttribute("tenant-id");
-        RoutingContext vertxContext = event.getSecurityIdentity().getCredential(IdTokenCredential.class).getRoutingContext();
+        RoutingContext vertxContext = event.getSecurityIdentity().getAttribute(RoutingContext.class.getName());
         vertxContext.put("listener-message", String.format("event:%s,tenantId:%s", event.getEventType().name(), tenantId));
     }
 }

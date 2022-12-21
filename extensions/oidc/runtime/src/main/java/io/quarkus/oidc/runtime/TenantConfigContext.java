@@ -50,8 +50,8 @@ public class TenantConfigContext {
             if (pkceSecret == null) {
                 throw new RuntimeException("Secret key for encrypting PKCE code verifier is missing");
             }
-            if (pkceSecret.length() < 32) {
-                throw new RuntimeException("Secret key for encrypting PKCE code verifier must be at least 32 characters long");
+            if (pkceSecret.length() != 32) {
+                throw new RuntimeException("Secret key for encrypting PKCE code verifier must be 32 characters long");
             }
             return KeyUtils.createSecretKeyFromSecret(pkceSecret);
         }
@@ -65,8 +65,8 @@ public class TenantConfigContext {
             if (encSecret == null) {
                 throw new RuntimeException("Secret key for encrypting tokens is missing");
             }
-            if (encSecret.length() < 32) {
-                throw new RuntimeException("Secret key for encrypting tokens must be at least 32 characters long");
+            if (encSecret.length() != 32) {
+                throw new RuntimeException("Secret key for encrypting tokens must be 32 characters long");
             }
             return KeyUtils.createSecretKeyFromSecret(encSecret);
         }

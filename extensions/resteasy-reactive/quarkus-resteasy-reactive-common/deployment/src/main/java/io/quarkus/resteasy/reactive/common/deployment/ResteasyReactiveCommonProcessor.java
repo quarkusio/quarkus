@@ -187,7 +187,7 @@ public class ResteasyReactiveCommonProcessor {
         if (filterItem instanceof ContainerRequestFilterBuildItem) {
             ContainerRequestFilterBuildItem crfbi = (ContainerRequestFilterBuildItem) filterItem;
             interceptor.setNonBlockingRequired(crfbi.isNonBlockingRequired());
-            interceptor.setReadBody(crfbi.isReadBody());
+            interceptor.setWithFormRead(crfbi.isWithFormRead());
             MethodInfo filterSourceMethod = crfbi.getFilterSourceMethod();
             if (filterSourceMethod != null) {
                 interceptor.metadata = Map.of(FILTER_SOURCE_METHOD_METADATA_KEY, filterSourceMethod);

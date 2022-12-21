@@ -11,14 +11,14 @@ public class ResourceRequestFilterHandler implements ServerRestHandler {
     private final ContainerRequestFilter filter;
     private final boolean preMatch;
     private final boolean nonBlockingRequired;
-    private final boolean readBody;
+    private final boolean withFormRead;
 
     public ResourceRequestFilterHandler(ContainerRequestFilter filter, boolean preMatch, boolean nonBlockingRequired,
-            boolean readBody) {
+            boolean withFormRead) {
         this.filter = filter;
         this.preMatch = preMatch;
         this.nonBlockingRequired = nonBlockingRequired;
-        this.readBody = readBody;
+        this.withFormRead = withFormRead;
     }
 
     public ContainerRequestFilter getFilter() {
@@ -33,8 +33,8 @@ public class ResourceRequestFilterHandler implements ServerRestHandler {
         return nonBlockingRequired;
     }
 
-    public boolean isReadBody() {
-        return readBody;
+    public boolean isWithFormRead() {
+        return withFormRead;
     }
 
     @Override

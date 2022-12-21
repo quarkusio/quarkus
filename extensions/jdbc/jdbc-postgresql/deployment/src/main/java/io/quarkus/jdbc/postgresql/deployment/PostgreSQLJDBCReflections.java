@@ -19,6 +19,9 @@ public final class PostgreSQLJDBCReflections {
         //We register it for the sake of other users.
         final String driverName = "org.postgresql.Driver";
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, driverName));
+
+        // Needed when quarkus.datasource.jdbc.transactions=xa for the setting of the username and password
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false, "org.postgresql.ds.common.BaseDataSource"));
     }
 
 }

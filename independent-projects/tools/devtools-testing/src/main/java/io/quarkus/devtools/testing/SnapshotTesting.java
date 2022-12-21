@@ -174,7 +174,7 @@ public class SnapshotTesting {
 
             final String snapshotNotFoundDescription = "corresponding snapshot file not found for " + snapshotIdentifier
                     + " (Use -Dsnap to create it automatically)";
-            final String description = "Snapshot is not matching (use -Dsnap to udpate it automatically): "
+            final String description = "Snapshot is not matching (use -Dsnap to update it automatically): "
                     + snapshotIdentifier;
             if (isUTF8File(fileToCheck)) {
                 assertThat(snapshotFile).as(snapshotNotFoundDescription).isRegularFile();
@@ -264,7 +264,7 @@ public class SnapshotTesting {
                     .collect(toList());
 
             return assertThat(tree)
-                    .as("Snapshot is not matching (use -Dsnap to udpate it automatically):" + snapshotName)
+                    .as("Snapshot is not matching (use -Dsnap to update it automatically):" + snapshotName)
                     .containsExactlyInAnyOrderElementsOf(content);
         });
     }

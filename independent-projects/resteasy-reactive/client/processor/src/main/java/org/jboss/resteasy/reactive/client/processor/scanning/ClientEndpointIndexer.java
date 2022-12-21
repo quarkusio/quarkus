@@ -11,6 +11,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
 
@@ -115,7 +116,8 @@ public class ClientEndpointIndexer
     }
 
     @Override
-    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters, int i) {
+    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters, int i,
+            Set<String> fileFormNames) {
         ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
         methodParameters[i] = parseClientBeanParam(beanParamClassInfo, index);
 
@@ -127,15 +129,18 @@ public class ClientEndpointIndexer
         return new ClientBeanParamInfo(items, beanParamClassInfo.name().toString());
     }
 
+    @Override
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             Map<String, String> existingConverters, AdditionalReaders additionalReaders,
             Map<String, InjectableBean> injectableBeans, boolean hasRuntimeConverters) {
         throw new RuntimeException("Injectable beans not supported in client");
     }
 
+    @Override
     protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo, boolean encoded,
             Type paramType, ClientIndexedParam parameterResult, String name, String defaultValue, ParameterType type,
-            String elementType, boolean single, String signature) {
+            String elementType, boolean single, String signature,
+            Set<String> fileFormNames) {
         DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
         String mimePart = getPartMime(parameterResult.getAnns());
         String partFileName = getPartFileName(parameterResult.getAnns());

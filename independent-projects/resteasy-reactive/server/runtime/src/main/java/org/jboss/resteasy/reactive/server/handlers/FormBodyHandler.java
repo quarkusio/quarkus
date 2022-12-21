@@ -8,6 +8,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
@@ -20,17 +21,18 @@ import org.jboss.resteasy.reactive.server.core.multipart.FormParserFactory;
 import org.jboss.resteasy.reactive.server.core.multipart.MultiPartParserDefinition;
 import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
-import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
 public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHandler<RuntimeConfiguration> {
 
     private final boolean alsoSetInputStream;
     private final Supplier<Executor> executorSupplier;
+    private final Set<String> fileFormNames;
     private volatile FormParserFactory formParserFactory;
 
-    public FormBodyHandler(boolean alsoSetInputStream, Supplier<Executor> executorSupplier) {
+    public FormBodyHandler(boolean alsoSetInputStream, Supplier<Executor> executorSupplier, Set<String> fileFormNames) {
         this.alsoSetInputStream = alsoSetInputStream;
         this.executorSupplier = executorSupplier;
+        this.fileFormNames = fileFormNames;
     }
 
     @Override
@@ -46,6 +48,7 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                         .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
                         .setMaxEntitySize(configuration.limits().maxBodySize().orElse(-1L))
                         .setDeleteUploadsOnEnd(configuration.body().deleteUploadedFilesOnEnd())
+                        .setFileContentTypes(configuration.body().multiPart().fileContentTypes())
                         .setDefaultCharset(configuration.body().defaultCharset().name())
                         .setTempFileLocation(Path.of(configuration.body().uploadsDirectory())))
 
@@ -74,14 +77,12 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
             requestContext.setFormData(existingParsedForm);
             return;
         }
-        ServerHttpRequest serverHttpRequest = requestContext.serverRequest();
+        FormDataParser factory = formParserFactory.createParser(requestContext, fileFormNames);
+        if (factory == null) {
+            return;
+        }
         if (BlockingOperationSupport.isBlockingAllowed()) {
             //blocking IO approach
-
-            FormDataParser factory = formParserFactory.createParser(requestContext);
-            if (factory == null) {
-                return;
-            }
             CapturingInputStream cis = null;
             if (alsoSetInputStream) {
                 // the TCK allows the body to be read as a form param and also as a body param
@@ -95,10 +96,6 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                 requestContext.setInputStream(new ByteArrayInputStream(cis.baos.toByteArray()));
             }
         } else if (alsoSetInputStream) {
-            FormDataParser factory = formParserFactory.createParser(requestContext);
-            if (factory == null) {
-                return;
-            }
             requestContext.suspend();
             executorSupplier.get().execute(new Runnable() {
                 @Override
@@ -115,10 +112,6 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                 }
             });
         } else {
-            FormDataParser factory = formParserFactory.createParser(requestContext);
-            if (factory == null) {
-                return;
-            }
             //parse will auto resume
             factory.parse();
         }

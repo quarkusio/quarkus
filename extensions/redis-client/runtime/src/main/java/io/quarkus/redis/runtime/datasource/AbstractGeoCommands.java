@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import io.quarkus.redis.datasource.codecs.Codec;
 import io.quarkus.redis.datasource.codecs.Codecs;
@@ -33,6 +34,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
     protected final Class<V> typeOfValue;
     protected final Codec<K> keyCodec;
     protected final Codec<V> valueCodec;
+
+    private static final Pattern NOISE_REMOVER_PATTERN = Pattern.compile("[^a-zA-Z0-9\\.]");
 
     AbstractGeoCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
         super(redis, new Marshaller(k, v));
@@ -233,7 +236,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         if (r == null) {
             return null;
         }
-        return r.toDouble();
+        return parseDouble(r);
     }
 
     List<GeoPosition> decodeGeoPositions(Response response) {
@@ -241,7 +244,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
             if (nested == null) {
                 return null;
             } else {
-                return GeoPosition.of(nested.get(0).toDouble(), nested.get(1).toDouble());
+                return GeoPosition.of(parseDouble(nested.get(0)), parseDouble(nested.get(1)));
             }
         });
     }
@@ -261,33 +264,33 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
 
             V member = marshaller.decode(typeOfValue, response.get(0));
             if (withCoordinates && withDistance && withHash) {
-                double dist = response.get(1).toDouble();
+                double dist = parseDouble(response.get(1));
                 long hash = response.get(2).toLong();
-                double longitude = response.get(3).get(0).toDouble();
-                double latitude = response.get(3).get(1).toDouble();
+                double longitude = parseDouble(response.get(3).get(0));
+                double latitude = parseDouble(response.get(3).get(1));
                 list.add(new GeoValue<>(member, OptionalDouble.of(dist), OptionalLong.of(hash),
                         OptionalDouble.of(longitude), OptionalDouble.of(latitude)));
             } else if (withCoordinates && withDistance) {
-                double dist = response.get(1).toDouble();
-                double longitude = response.get(2).get(0).toDouble();
-                double latitude = response.get(2).get(1).toDouble();
+                double dist = parseDouble(response.get(1));
+                double longitude = parseDouble(response.get(2).get(0));
+                double latitude = parseDouble(response.get(2).get(1));
                 list.add(new GeoValue<>(member, OptionalDouble.of(dist), OptionalLong.empty(),
                         OptionalDouble.of(longitude), OptionalDouble.of(latitude)));
             } else if (withCoordinates && withHash) {
                 long hash = response.get(1).toLong();
-                double longitude = response.get(2).get(0).toDouble();
-                double latitude = response.get(2).get(1).toDouble();
+                double longitude = parseDouble(response.get(2).get(0));
+                double latitude = parseDouble(response.get(2).get(1));
                 list.add(new GeoValue<>(member, OptionalDouble.empty(), OptionalLong.of(hash),
                         OptionalDouble.of(longitude), OptionalDouble.of(latitude)));
             } else if (withCoordinates) {
                 // Only coordinates
-                double longitude = response.get(1).get(0).toDouble();
-                double latitude = response.get(1).get(1).toDouble();
+                double longitude = parseDouble(response.get(1).get(0));
+                double latitude = parseDouble(response.get(1).get(1));
                 list.add(new GeoValue<>(member, OptionalDouble.empty(), OptionalLong.empty(), OptionalDouble.of(longitude),
                         OptionalDouble.of(latitude)));
             } else if (withDistance && !withHash) {
                 // Only distance
-                double dist = response.get(1).toDouble();
+                double dist = parseDouble(response.get(1));
                 list.add(new GeoValue<>(member, OptionalDouble.of(dist), OptionalLong.empty(), OptionalDouble.empty(),
                         OptionalDouble.empty()));
             } else if (!withDistance) {
@@ -297,12 +300,23 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
                         OptionalDouble.empty()));
             } else {
                 // Distance and Hash
-                double dist = response.get(1).toDouble();
+                double dist = parseDouble(response.get(1));
                 long hash = response.get(2).toLong();
                 list.add(new GeoValue<>(member, OptionalDouble.of(dist), OptionalLong.of(hash),
                         OptionalDouble.empty(), OptionalDouble.empty()));
             }
         }
         return list;
+    }
+
+    private static double parseDouble(Response response) {
+        double dist;
+        try {
+            dist = response.toDouble();
+        } catch (NumberFormatException e) {
+            String s = NOISE_REMOVER_PATTERN.matcher(response.toString()).replaceAll("");
+            dist = Double.parseDouble(s);
+        }
+        return dist;
     }
 }

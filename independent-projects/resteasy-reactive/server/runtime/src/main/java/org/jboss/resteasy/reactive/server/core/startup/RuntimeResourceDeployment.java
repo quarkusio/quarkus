@@ -242,7 +242,7 @@ public class RuntimeResourceDeployment {
 
         //spec doesn't seem to test this, but RESTEasy does not run request filters for both root and sub resources (which makes sense)
         //so only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
-        boolean hasReadBodyRequestFilters = false;
+        boolean hasWithFormReadRequestFilters = false;
         if (method.getHttpMethod() != null) {
             List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment
                     .setupRequestFilterHandler();
@@ -257,12 +257,14 @@ public class RuntimeResourceDeployment {
                     } else {
                         handlers.add(handler);
                     }
-                    if (handler.isReadBody()) {
-                        hasReadBodyRequestFilters = true;
-                    }
                 }
             } else {
                 handlers.addAll(containerRequestFilterHandlers);
+            }
+            for (ResourceRequestFilterHandler handler : containerRequestFilterHandlers) {
+                if (handler.isWithFormRead()) {
+                    hasWithFormReadRequestFilters = true;
+                }
             }
         }
 
@@ -280,28 +282,28 @@ public class RuntimeResourceDeployment {
             }
         }
         // form params can be everywhere (field, beanparam, param)
-        boolean checkReadBodyRequestFilters = false;
-        if (method.isFormParamRequired()) {
+        boolean checkWithFormReadRequestFilters = false;
+        if (method.isFormParamRequired() || hasWithFormReadRequestFilters) {
             // read the body as multipart in one go
-            handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier));
-            checkReadBodyRequestFilters = true;
+            handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier, method.getFileFormNames()));
+            checkWithFormReadRequestFilters = true;
         } else if (bodyParameter != null) {
             if (!defaultBlocking) {
                 if (!method.isBlocking()) {
                     // allow the body to be read by chunks
                     handlers.add(new InputHandler(resteasyReactiveConfig.getInputBufferSize(), executorSupplier));
-                    checkReadBodyRequestFilters = true;
+                    checkWithFormReadRequestFilters = true;
                 }
             }
         }
-        if (checkReadBodyRequestFilters && hasReadBodyRequestFilters) {
+        if (checkWithFormReadRequestFilters && hasWithFormReadRequestFilters) {
             // we need to remove the corresponding filters from the handlers list and add them to its end in the same order
             List<ServerRestHandler> readBodyRequestFilters = new ArrayList<>(1);
             for (int i = handlers.size() - 2; i >= 0; i--) {
                 var serverRestHandler = handlers.get(i);
                 if (serverRestHandler instanceof ResourceRequestFilterHandler) {
                     ResourceRequestFilterHandler resourceRequestFilterHandler = (ResourceRequestFilterHandler) serverRestHandler;
-                    if (resourceRequestFilterHandler.isReadBody()) {
+                    if (resourceRequestFilterHandler.isWithFormRead()) {
                         readBodyRequestFilters.add(handlers.remove(i));
                     }
                 }

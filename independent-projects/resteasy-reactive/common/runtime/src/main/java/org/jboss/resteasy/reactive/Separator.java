@@ -11,7 +11,7 @@ import java.util.List;
  * parameter (using the value of the annotation) and populate the list with those values.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.PARAMETER })
+@Target({ ElementType.PARAMETER, ElementType.FIELD })
 public @interface Separator {
 
     String value();

@@ -99,6 +99,7 @@ public class CodeFlowAuthorizationTest {
         }
     }
 
+    @Test
     public void testCodeFlowFormPostAndBackChannelLogout() throws IOException {
         defineCodeFlowLogoutStub();
         try (final WebClient webClient = createWebClient()) {

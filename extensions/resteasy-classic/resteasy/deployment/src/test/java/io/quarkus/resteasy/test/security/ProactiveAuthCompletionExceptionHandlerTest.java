@@ -61,9 +61,6 @@ public class ProactiveAuthCompletionExceptionHandlerTest {
                 .body(Matchers.equalTo(AUTHENTICATION_COMPLETION_EX));
     }
 
-    /**
-     * Use failure handler as when proactive security is enabled, JAX-RS exception mappers won't do.
-     */
     @ApplicationScoped
     public static final class CustomAuthCompletionExceptionHandler {
 

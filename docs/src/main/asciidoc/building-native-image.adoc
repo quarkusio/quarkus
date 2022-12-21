@@ -326,7 +326,7 @@ Adding `<argLine>--enable-preview</argLine>` to its `configuration` section is o
 
 === Excluding tests when running as a native executable
 
-When running tests this way, the only things that actually run natively are you application endpoints, which
+When running tests this way, the only things that actually run natively are your application endpoints, which
 you can only test via HTTP calls. Your test code does not actually run natively, so if you are testing code
 that does not call your HTTP endpoints, it's probably not a good idea to run them as part of native tests.
 
@@ -484,7 +484,7 @@ Then, if you didn't delete the generated native executable, you can build the do
 
 [source,bash]
 ----
-docker build -f src/main/docker/Dockerfile.native -t quarkus-quickstart/getting-started .
+docker build -f src/main/docker/Dockerfile.native-micro -t quarkus-quickstart/getting-started .
 ----
 
 And finally, run it with:
@@ -653,7 +653,7 @@ Just add your application on top of this image, and you will get a tiny containe
 
 Distroless images should not be used in production without rigorous testing.
 
-=== Using a scratch base image
+=== Build a container image from scratch
 
 IMPORTANT: Scratch image support is experimental.
 
@@ -671,9 +671,9 @@ COPY --chown=quarkus:quarkus mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
 RUN mkdir /musl && \
-    curl -L -o musl.tar.gz https://more.musl.cc/10.2.1/x86_64-linux-musl/x86_64-linux-musl-native.tgz && \
+    curl -L -o musl.tar.gz https://more.musl.cc/11.2.1/x86_64-linux-musl/x86_64-linux-musl-native.tgz && \
     tar -xvzf musl.tar.gz -C /musl --strip-components 1 && \
-    curl -L -o zlib.tar.gz https://zlib.net/zlib-1.2.12.tar.gz && \
+    curl -L -o zlib.tar.gz https://www.zlib.net/zlib-1.2.13.tar.gz && \
     mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
     cd zlib && ./configure --static --prefix=/musl && \
     make && make install && \
@@ -683,17 +683,20 @@ USER quarkus
 WORKDIR /code
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
 COPY src /code/src
-RUN ./mvnw package -Pnative -Dquarkus.native.additional-build-args="--static","--libc=musl"
+RUN ./mvnw package -Pnative -DskipTests -Dquarkus.native.additional-build-args="--static","--libc=musl"
 
-## Stage 2 : create the docker final image
+## Stage 2 : create the final image
 FROM scratch
 COPY --from=build /code/target/*-runner /application
+EXPOSE 8080
 ENTRYPOINT [ "/application" ]
 ----
 
 Scratch images should not be used in production without rigorous testing.
 
-=== Native executable compression
+NOTE: The versions of musl and zlib may need to be updated to meet the native-image executable requirements (and UPX if you use native image compression).
+
+=== Compress native images
 
 Quarkus can compress the produced native executable using UPX.
 More details on xref:./upx.adoc[UPX Compression documentation].

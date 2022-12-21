@@ -65,9 +65,6 @@ public class ProactiveAuthHttpPolicyForbiddenHandlerTest {
 
     }
 
-    /**
-     * Use failure handler as when proactive security is enabled, JAX-RS exception mappers won't do.
-     */
     public static final class CustomForbiddenFailureHandler {
 
         public static final String CUSTOM_FORBIDDEN_EXCEPTION_MAPPER = CustomForbiddenFailureHandler.class.getName();

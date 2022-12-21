@@ -1,4 +1,4 @@
-# test-codestart Project
+# test-codestart
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 

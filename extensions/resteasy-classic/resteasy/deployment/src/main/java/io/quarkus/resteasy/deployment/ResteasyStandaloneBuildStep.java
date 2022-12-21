@@ -91,10 +91,11 @@ public class ResteasyStandaloneBuildStep {
                 executorBuildItem.getExecutorProxy(), resteasyVertxConfig);
 
         // failure handler for auth failures that occurred before the handler defined right above started processing the request
+        // we add the failure handler right before QuarkusErrorHandler
+        // so that user can define failure handlers that precede exception mappers
         final Handler<RoutingContext> failureHandler = recorder.vertxFailureHandler(vertx.getVertx(),
                 executorBuildItem.getExecutorProxy(), resteasyVertxConfig);
-        filterBuildItemBuildProducer.produce(new FilterBuildItem(failureHandler,
-                VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET, true));
+        filterBuildItemBuildProducer.produce(FilterBuildItem.ofAuthenticationFailureHandler(failureHandler));
 
         // Exact match for resources matched to the root path
         routes.produce(

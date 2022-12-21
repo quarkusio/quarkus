@@ -215,7 +215,7 @@ Because we used the `${...}` syntax, the actual value of the parameter will be o
 
 [IMPORTANT]
 ====
-Note that if an interface method contains an argument annotated with `@QueryParam``</code>``, that argument will take
+Note that if an interface method contains an argument annotated with `@QueryParam`, that argument will take
 priority over anything specified in any `@ClientQueryParam` annotation.
 ====
 
@@ -671,7 +671,7 @@ extensionsService.getByIdAsUni(id)
 
 If you use a `CompletionStage`, you would need to call the service's method to retry.
 This difference comes from the laziness aspect of Mutiny and its subscription protocol.
-More details about this can be found in https://smallrye.io/smallrye-mutiny/#_uni_and_multi[the Mutiny documentation].
+More details about this can be found in https://smallrye.io/smallrye-mutiny/latest/reference/uni-and-multi/[the Mutiny documentation].
 
 == Custom headers support
 

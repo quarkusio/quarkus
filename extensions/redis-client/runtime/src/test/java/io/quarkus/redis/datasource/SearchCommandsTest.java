@@ -455,7 +455,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
                     .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country").addReduceFunction("count",
                             "num_visits"))
                     .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country")));
-            assertThat(result.count()).isEqualTo(3);
+            assertThat(result.count()).isGreaterThanOrEqualTo(3);
             assertThat(result.documents()).allSatisfy(d -> {
                 assertThat(d.property("day").asInteger()).isPositive();
                 assertThat(d.property("country").asString()).isNotNull();

@@ -33,7 +33,7 @@ import io.vertx.mutiny.core.Vertx;
 
 public class RedisStateStore implements CheckpointStateStore {
 
-    public static final String REDIS_CHECKPOINT_NAME = "quarkus-redis";
+    public static final String REDIS_STATE_STORE = "quarkus-redis";
 
     private final ReactiveRedisDataSource redis;
     private final String consumerGroupId;
@@ -47,7 +47,7 @@ public class RedisStateStore implements CheckpointStateStore {
     }
 
     @ApplicationScoped
-    @Identifier(REDIS_CHECKPOINT_NAME)
+    @Identifier(REDIS_STATE_STORE)
     public static class Factory implements CheckpointStateStore.Factory {
 
         @Inject
@@ -62,7 +62,7 @@ public class RedisStateStore implements CheckpointStateStore {
                 KafkaConsumer<?, ?> consumer, Class<?> stateType) {
             String consumerGroupId = (String) consumer.configuration().get(ConsumerConfig.GROUP_ID_CONFIG);
             String clientName = config.config().getOptionalValue(KafkaCommitHandler.Strategy.CHECKPOINT + "." +
-                    REDIS_CHECKPOINT_NAME + ".client-name", String.class)
+                    REDIS_STATE_STORE + ".client-name", String.class)
                     .orElse(null);
             ReactiveRedisDataSource rds = clientName != null
                     ? redisDataSource.select(RedisClientName.Literal.of(clientName)).get()

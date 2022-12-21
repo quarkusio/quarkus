@@ -84,8 +84,9 @@ class ReactiveMySQLClientProcessor {
     }
 
     @BuildStep
-    DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MYSQL);
+    List<DevServicesDatasourceConfigurationHandlerBuildItem> devDbHandler() {
+        return List.of(DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MYSQL),
+                DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MARIADB));
     }
 
     @BuildStep

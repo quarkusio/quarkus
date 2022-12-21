@@ -120,6 +120,10 @@ public final class VertxContextSafetyToggle {
             throw new IllegalStateException(
                     "Can't set the context safety flag: the current context is not a duplicated context");
         } else {
+            // save storm of true -> true transitions by shielding it
+            if (safe && context.getLocal(ACCESS_TOGGLE_KEY) == Boolean.TRUE) {
+                return;
+            }
             context.putLocal(ACCESS_TOGGLE_KEY, Boolean.valueOf(safe));
         }
     }

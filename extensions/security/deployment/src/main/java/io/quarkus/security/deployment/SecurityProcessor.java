@@ -14,12 +14,16 @@ import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -49,6 +53,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -64,6 +69,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
+import io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder;
 import io.quarkus.security.runtime.SecurityBuildTimeConfig;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
@@ -473,8 +479,10 @@ public class SecurityProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void gatherSecurityChecks(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
             BeanArchiveIndexBuildItem beanArchiveBuildItem,
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
+            BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityCheckRecorder recorder,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
@@ -489,8 +497,8 @@ public class SecurityProcessor {
         }
 
         IndexView index = beanArchiveBuildItem.getIndex();
-        Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(
-                index, additionalSecured.values(), config.denyUnannotated, recorder);
+        Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(index, configExpSecurityCheckProducer,
+                additionalSecured.values(), config.denyUnannotated, recorder, configBuilderProducer);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
@@ -520,22 +528,38 @@ public class SecurityProcessor {
                         }).done());
     }
 
-    private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(
-            IndexView index,
-            Collection<AdditionalSecured> additionalSecuredMethods, boolean denyUnannotated, SecurityCheckRecorder recorder) {
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void resolveConfigExpressionRoles(Optional<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpRolesChecks,
+            SecurityCheckRecorder recorder) {
+        if (configExpRolesChecks.isPresent()) {
+            // we created supplier security check for each role set with at least one config expression
+            // now we need to resolve config expression so that if there are any failures they happen when app starts
+            // rather than first time request is checked (which would be more likely to affect end user)
+            recorder.resolveRolesAllowedConfigExpRoles();
+        }
+    }
+
+    private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(IndexView index,
+            BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
+            Collection<AdditionalSecured> additionalSecuredMethods, boolean denyUnannotated, SecurityCheckRecorder recorder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer) {
 
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
-        Map<MethodInfo, SecurityCheck> result = new HashMap<>(gatherSecurityAnnotations(
-                index, ROLES_ALLOWED, methodToInstanceCollector, classAnnotations,
-                (instance -> recorder.rolesAllowed(instance.value().asStringArray()))));
-        result.putAll(gatherSecurityAnnotations(index, DotNames.PERMIT_ALL, methodToInstanceCollector, classAnnotations,
-                (instance -> recorder.permitAll())));
-        result.putAll(gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, methodToInstanceCollector, classAnnotations,
-                (instance -> recorder.authenticated())));
+        Map<MethodInfo, SecurityCheck> result = new HashMap<>();
+        gatherSecurityAnnotations(index, DotNames.PERMIT_ALL, methodToInstanceCollector, classAnnotations,
+                ((m, i) -> result.put(m, recorder.permitAll())));
+        gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, methodToInstanceCollector, classAnnotations,
+                ((m, i) -> result.put(m, recorder.authenticated())));
+        gatherSecurityAnnotations(index, DENY_ALL, methodToInstanceCollector, classAnnotations,
+                ((m, i) -> result.put(m, recorder.denyAll())));
 
-        result.putAll(gatherSecurityAnnotations(index, DENY_ALL, methodToInstanceCollector, classAnnotations,
-                (instance -> recorder.denyAll())));
+        // here we just collect all methods annotated with @RolesAllowed
+        Map<MethodInfo, String[]> methodToRoles = new HashMap<>();
+        gatherSecurityAnnotations(
+                index, ROLES_ALLOWED, methodToInstanceCollector, classAnnotations,
+                ((methodInfo, instance) -> methodToRoles.put(methodInfo, instance.value().asStringArray())));
 
         /*
          * Handle additional secured methods by adding the denyAll/rolesAllowed check to all public non-static methods
@@ -548,8 +572,8 @@ public class SecurityProcessor {
             AnnotationInstance alreadyExistingInstance = methodToInstanceCollector.get(additionalSecuredMethod.methodInfo);
             if (additionalSecuredMethod.rolesAllowed.isPresent()) {
                 if (alreadyExistingInstance == null) {
-                    result.put(additionalSecuredMethod.methodInfo, recorder
-                            .rolesAllowed(additionalSecuredMethod.rolesAllowed.get().toArray(String[]::new)));
+                    methodToRoles.put(additionalSecuredMethod.methodInfo,
+                            additionalSecuredMethod.rolesAllowed.get().toArray(String[]::new));
                 } else if (alreadyHasAnnotation(alreadyExistingInstance, ROLES_ALLOWED)) {
                     // we should not try to add second @RolesAllowed
                     throw new IllegalStateException("Method " + additionalSecuredMethod.methodInfo.declaringClass() + "#"
@@ -566,6 +590,50 @@ public class SecurityProcessor {
                             + "secured method as it's already annotated with @DenyAll.");
                 }
             }
+        }
+
+        // create roles allowed security checks
+        // we create only one security check for each role set
+        Map<Set<String>, SecurityCheck> cache = new HashMap<>();
+        final AtomicInteger keyIndex = new AtomicInteger(0);
+        final AtomicBoolean hasRolesAllowedCheckWithConfigExp = new AtomicBoolean(false);
+        for (Map.Entry<MethodInfo, String[]> entry : methodToRoles.entrySet()) {
+            final MethodInfo methodInfo = entry.getKey();
+            final String[] allowedRoles = entry.getValue();
+            result.put(methodInfo,
+                    cache.computeIfAbsent(getSetForKey(allowedRoles), new Function<Set<String>, SecurityCheck>() {
+                        @Override
+                        public SecurityCheck apply(Set<String> allowedRolesSet) {
+                            final int[] configExpressionPositions = configExpressionPositions(allowedRoles);
+                            if (configExpressionPositions.length > 0) {
+                                // we need to use supplier check as security checks are created during static init
+                                // while config expressions are resolved during runtime
+                                hasRolesAllowedCheckWithConfigExp.set(true);
+
+                                // we don't create security check for each method, therefore we need artificial keys
+                                // we can safely use numbers as RolesAllowed config source prefix all keys
+                                final int[] configKeys = new int[configExpressionPositions.length];
+                                for (int i = 0; i < configExpressionPositions.length; i++) {
+                                    // now we just collect artificial keys, but
+                                    // before we add the property to the Config system, we prefix it, e.g.
+                                    // @RolesAllowed("${admin}") -> QuarkusSecurityRolesAllowedConfigSource.property-0=${admin}
+                                    configKeys[i] = keyIndex.getAndIncrement();
+                                }
+                                return recorder.rolesAllowedSupplier(allowedRoles, configExpressionPositions, configKeys);
+                            }
+                            return recorder.rolesAllowed(allowedRoles);
+                        }
+                    }));
+        }
+
+        if (hasRolesAllowedCheckWithConfigExp.get()) {
+            // make sure config expressions are resolved when app starts
+            configExpSecurityCheckProducer
+                    .produce(new ConfigExpRolesAllowedSecurityCheckBuildItem());
+
+            // register config source with the Config system
+            configBuilderProducer
+                    .produce(new RunTimeConfigBuilderBuildItem(QuarkusSecurityRolesAllowedConfigBuilder.class.getName()));
         }
 
         /*
@@ -593,6 +661,31 @@ public class SecurityProcessor {
         return result;
     }
 
+    public static int[] configExpressionPositions(String[] allowedRoles) {
+        final Set<Integer> expPositions = new HashSet<>();
+        for (int i = 0; i < allowedRoles.length; i++) {
+            final int exprStart = allowedRoles[i].indexOf("${");
+            if (exprStart >= 0 && allowedRoles[i].indexOf('}', exprStart + 2) > 0) {
+                expPositions.add(i);
+            }
+        }
+
+        if (expPositions.isEmpty()) {
+            return new int[0];
+        }
+        return expPositions.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private static Set<String> getSetForKey(String[] allowedRoles) {
+        if (allowedRoles.length == 0) { // shouldn't happen, but let's be on the safe side
+            return Collections.emptySet();
+        } else if (allowedRoles.length == 1) {
+            return Collections.singleton(allowedRoles[0]);
+        }
+        // use a set in order to avoid caring about the order of elements
+        return new HashSet<>(Arrays.asList(allowedRoles));
+    }
+
     private boolean alreadyHasAnnotation(AnnotationInstance alreadyExistingInstance, DotName annotationName) {
         return alreadyExistingInstance.target().kind() == AnnotationTarget.Kind.METHOD
                 && alreadyExistingInstance.name().equals(annotationName);
@@ -603,13 +696,11 @@ public class SecurityProcessor {
                 && !"<init>".equals(methodInfo.name());
     }
 
-    private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(
+    private void gatherSecurityAnnotations(
             IndexView index, DotName dotName,
             Map<MethodInfo, AnnotationInstance> alreadyCheckedMethods,
             Map<ClassInfo, AnnotationInstance> classLevelAnnotations,
-            Function<AnnotationInstance, SecurityCheck> securityCheckInstanceCreator) {
-
-        Map<MethodInfo, SecurityCheck> result = new HashMap<>();
+            BiConsumer<MethodInfo, AnnotationInstance> putResult) {
 
         Collection<AnnotationInstance> instances = index.getAnnotations(dotName);
         // make sure we process annotations on methods first
@@ -622,7 +713,7 @@ public class SecurityProcessor {
                             + " is annotated with multiple security annotations");
                 }
                 alreadyCheckedMethods.put(methodInfo, instance);
-                result.put(methodInfo, securityCheckInstanceCreator.apply(instance));
+                putResult.accept(methodInfo, instance);
             }
         }
         // now add the class annotations to methods if they haven't already been annotated
@@ -636,7 +727,7 @@ public class SecurityProcessor {
                     for (MethodInfo methodInfo : methods) {
                         AnnotationInstance alreadyExistingInstance = alreadyCheckedMethods.get(methodInfo);
                         if ((alreadyExistingInstance == null)) {
-                            result.put(methodInfo, securityCheckInstanceCreator.apply(instance));
+                            putResult.accept(methodInfo, instance);
                         }
                     }
                 } else {
@@ -647,8 +738,6 @@ public class SecurityProcessor {
             }
 
         }
-
-        return result;
     }
 
     @BuildStep

@@ -7,11 +7,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
+import io.dekorate.servicebinding.model.ServiceBinding;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.openshift.api.model.DeploymentConfig;
 import io.quarkus.builder.Version;
@@ -22,12 +21,14 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 public class OpenshiftWithServiceBindingTest {
 
+    private static final String APP_NAME = "openshift-with-service-binding";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("openshift-with-service-binding")
+            .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-service-binding.properties")
+            .withConfigurationResource(APP_NAME + ".properties")
             .setLogFileName("k8s.log")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion()),
@@ -48,23 +49,31 @@ public class OpenshiftWithServiceBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "DeploymentConfig".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(DeploymentConfig.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("openshift-with-service-binding");
+                    assertThat(m.getName()).isEqualTo(APP_NAME);
                 });
             });
         });
 
-        assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement()
-                .isInstanceOfSatisfying(GenericKubernetesResource.class, sb -> assertThat(sb)
-                        .hasFieldOrPropertyWithValue("metadata.name", "openshift-with-service-binding-my-db")
-                        .returns("apps.openshift.io", s -> s.get("spec", "application", "group"))
-                        .returns("v1", s -> s.get("spec", "application", "version"))
-                        .returns("DeploymentConfig", s -> s.get("spec", "application", "kind"))
-                        .extracting(s -> s.get("spec", "services"))
-                        .asList()
-                        .singleElement().asInstanceOf(InstanceOfAssertFactories.MAP)
-                        .containsEntry("group", "apps")
-                        .containsEntry("version", "v1")
-                        .containsEntry("kind", "Deployment")
-                        .containsEntry("name", "my-postgres"));
+        assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
+            assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
+                assertThat(s.getMetadata()).satisfies(m -> {
+                    assertThat(m.getName()).isEqualTo(APP_NAME + "-my-db");
+                });
+                assertThat(s.getSpec()).satisfies(spec -> {
+                    assertThat(spec.getApplication()).satisfies(a -> {
+                        assertThat(a.getGroup()).isEqualTo("apps.openshift.io");
+                        assertThat(a.getVersion()).isEqualTo("v1");
+                        assertThat(a.getKind()).isEqualTo("DeploymentConfig");
+                    });
+
+                    assertThat(spec.getServices()).hasOnlyOneElementSatisfying(service -> {
+                        assertThat(service.getGroup()).isEqualTo("apps");
+                        assertThat(service.getVersion()).isEqualTo("v1");
+                        assertThat(service.getKind()).isEqualTo("Deployment");
+                        assertThat(service.getName()).isEqualTo("my-postgres");
+                    });
+                });
+            });
+        });
     }
 }

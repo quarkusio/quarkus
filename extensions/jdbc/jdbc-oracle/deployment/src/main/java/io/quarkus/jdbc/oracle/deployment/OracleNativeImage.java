@@ -25,7 +25,14 @@ public final class OracleNativeImage {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, driverName));
 
         // for ldap style jdbc urls. e.g. jdbc:oracle:thin:@ldap://oid:5000/mydb1,cn=OracleContext,dc=myco,dc=com
+        //
+        // Note that all JDK provided InitialContextFactory impls from the JDK registered via module descriptors
+        // available at build time need to be reflectively accessible via ServiceLoader for runtime consistency.
+        // These are:
+        // com.sun.jndi.ldap.LdapCtxFactory, com.sun.jndi.dns.DnsContextFactory and com.sun.jndi.rmi.registry.RegistryContextFactory
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jndi.ldap.LdapCtxFactory"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jndi.dns.DnsContextFactory"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jndi.rmi.registry.RegistryContextFactory"));
     }
 
     @BuildStep

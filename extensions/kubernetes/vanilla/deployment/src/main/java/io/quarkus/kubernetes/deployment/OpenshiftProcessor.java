@@ -73,7 +73,7 @@ public class OpenshiftProcessor {
     public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenshiftConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        List<String> targets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
+        List<String> targets = KubernetesConfigUtil.getConfiguratedDeploymentTargets();
         boolean openshiftEnabled = targets.contains(OPENSHIFT);
 
         DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);

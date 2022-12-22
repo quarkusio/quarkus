@@ -433,9 +433,23 @@ public class KafkaProcessor {
         for (ClassInfo loginModule : index.getIndex().getAllKnownImplementors(LOGIN_MODULE)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, loginModule.name().toString()));
         }
+        // Kafka oauth login internally iterates over all ServiceLoader available LoginModule's
+        registerJDKLoginModules(reflectiveClass);
         for (ClassInfo authenticateCallbackHandler : index.getIndex().getAllKnownImplementors(AUTHENTICATE_CALLBACK_HANDLER)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, authenticateCallbackHandler.name().toString()));
         }
+    }
+
+    private void registerJDKLoginModules(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        // jdk.security.auth module provided LoginModule's
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.security.auth.module.Krb5LoginModule"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.security.auth.module.UnixLoginModule"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.security.auth.module.JndiLoginModule"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.security.auth.module.KeyStoreLoginModule"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.security.auth.module.LdapLoginModule"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.security.auth.module.NTLoginModule"));
+        // java.management module provided LoginModule's
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jmx.remote.security.FileLoginModule"));
     }
 
     private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {

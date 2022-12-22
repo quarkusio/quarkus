@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.openapi.deployment;
+package io.quarkus.smallrye.openapi.runtime;
 
 import java.util.Collections;
 import java.util.HashMap;

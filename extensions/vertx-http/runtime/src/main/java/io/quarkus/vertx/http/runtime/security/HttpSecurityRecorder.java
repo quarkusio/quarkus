@@ -310,6 +310,9 @@ public class HttpSecurityRecorder {
 
         @Override
         public void accept(RoutingContext event, Throwable throwable) {
+            if (event.response().ended()) {
+                return;
+            }
             throwable = extractRootCause(throwable);
             //auth failed
             if (throwable instanceof AuthenticationFailedException) {

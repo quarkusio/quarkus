@@ -212,12 +212,47 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return new ResteasyReactiveVertxHandler(eventCustomizer, initialHandler);
     }
 
-    public Handler<RoutingContext> failureHandler(RuntimeValue<RestInitialHandler> restInitialHandlerRuntimeValue) {
+    public Handler<RoutingContext> failureHandler(RuntimeValue<RestInitialHandler> restInitialHandlerRuntimeValue,
+            boolean noCustomAuthCompletionExMapper, boolean noCustomAuthFailureExMapper, boolean noCustomAuthRedirectExMapper,
+            boolean proactive) {
         final RestInitialHandler restInitialHandler = restInitialHandlerRuntimeValue.getValue();
         // process auth failures with abort handlers
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
+
+                // special handling when proactive auth is enabled as then we know default auth failure handler already run
+                if (proactive && event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+                    // we want to prevent repeated handling of exceptions if user don't want to handle exception himself
+                    // we do not pass exception to abort handlers if proactive auth is enabled and user did not
+                    // provide custom ex. mapper; we replace default auth failure handler as soon as we can, so that
+                    // we can handle Quarkus Security Exceptions ourselves
+                    if (event.failure() instanceof AuthenticationFailedException) {
+                        if (noCustomAuthFailureExMapper) {
+                            event.next();
+                        } else {
+                            // allow response customization
+                            restInitialHandler.beginProcessing(event, event.failure());
+                        }
+                        return;
+                    } else if (event.failure() instanceof AuthenticationCompletionException) {
+                        if (noCustomAuthCompletionExMapper) {
+                            event.next();
+                        } else {
+                            // allow response customization
+                            restInitialHandler.beginProcessing(event, event.failure());
+                        }
+                        return;
+                    } else if (event.failure() instanceof AuthenticationRedirectException) {
+                        if (noCustomAuthRedirectExMapper) {
+                            event.next();
+                        } else {
+                            // allow response customization
+                            restInitialHandler.beginProcessing(event, event.failure());
+                        }
+                        return;
+                    }
+                }
 
                 if (event.failure() instanceof AuthenticationFailedException
                         || event.failure() instanceof AuthenticationCompletionException

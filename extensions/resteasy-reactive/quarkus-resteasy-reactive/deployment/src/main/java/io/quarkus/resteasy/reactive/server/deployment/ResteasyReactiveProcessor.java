@@ -188,6 +188,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.AuthenticationCompletionException;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
@@ -1203,7 +1204,26 @@ public class ResteasyReactiveProcessor {
         if (!requestContextFactoryBuildItem.isPresent()) {
             RuntimeValue<RestInitialHandler> restInitialHandler = recorder.restInitialHandler(deployment);
             Handler<RoutingContext> handler = recorder.handler(restInitialHandler);
-            Handler<RoutingContext> failureHandler = recorder.failureHandler(restInitialHandler);
+
+            final boolean noCustomAuthCompletionExMapper;
+            final boolean noCustomAuthFailureExMapper;
+            final boolean noCustomAuthRedirectExMapper;
+            if (vertxConfig.auth.proactive) {
+                noCustomAuthCompletionExMapper = notFoundCustomExMapper(AuthenticationCompletionException.class.getName(),
+                        AuthenticationCompletionExceptionMapper.class.getName(), exceptionMapping);
+                noCustomAuthFailureExMapper = notFoundCustomExMapper(AuthenticationFailedException.class.getName(),
+                        AuthenticationFailedExceptionMapper.class.getName(), exceptionMapping);
+                noCustomAuthRedirectExMapper = notFoundCustomExMapper(AuthenticationRedirectException.class.getName(),
+                        AuthenticationRedirectExceptionMapper.class.getName(), exceptionMapping);
+            } else {
+                // with disabled proactive auth we need to handle exceptions anyway as default auth failure handler did not
+                noCustomAuthCompletionExMapper = false;
+                noCustomAuthFailureExMapper = false;
+                noCustomAuthRedirectExMapper = false;
+            }
+
+            Handler<RoutingContext> failureHandler = recorder.failureHandler(restInitialHandler, noCustomAuthCompletionExMapper,
+                    noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth.proactive);
 
             // we add failure handler right before QuarkusErrorHandler
             // so that user can define failure handlers that precede exception mappers
@@ -1223,6 +1243,26 @@ public class ResteasyReactiveProcessor {
                     RouteBuildItem.builder().orderedRoute(matchPath, order)
                             .handler(handler).build());
         }
+    }
+
+    private static boolean notFoundCustomExMapper(String builtInExSignature, String builtInMapperSignature,
+            ExceptionMapping exceptionMapping) {
+        for (var entry : exceptionMapping.getMappers().entrySet()) {
+            if (builtInExSignature.equals(entry.getKey())
+                    && !entry.getValue().getClassName().startsWith(builtInMapperSignature)) {
+                return false;
+            }
+        }
+        for (var entry : exceptionMapping.getRuntimeCheckMappers().entrySet()) {
+            if (builtInExSignature.equals(entry.getKey())) {
+                for (var resourceExceptionMapper : entry.getValue()) {
+                    if (!resourceExceptionMapper.getClassName().startsWith(builtInMapperSignature)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     @BuildStep

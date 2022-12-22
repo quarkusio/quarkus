@@ -4,7 +4,8 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
+
+import org.hibernate.validator.HibernateValidatorFactory;
 
 @Singleton
 public class ValidatorProvider {
@@ -12,7 +13,7 @@ public class ValidatorProvider {
     @Produces
     @Named("quarkus-hibernate-validator-factory")
     @Singleton
-    public ValidatorFactory factory() {
+    public HibernateValidatorFactory factory() {
         return ValidatorHolder.getValidatorFactory();
     }
 

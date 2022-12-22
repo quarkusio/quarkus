@@ -103,7 +103,7 @@ public class InfinispanDevServiceProcessor {
             }
             newDevServices.add(devService);
             log.infof("The infinispan server is ready to accept connections on %s",
-                    devService.getConfig().get(getConfigPrefix() + "server-list"));
+                    devService.getConfig().get(getConfigPrefix() + "hosts"));
             compressor.close();
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
@@ -144,14 +144,17 @@ public class InfinispanDevServiceProcessor {
 
         String configPrefix = getConfigPrefix();
 
-        boolean needToStart = !ConfigUtils.isPropertyPresent(configPrefix + "server-list");
+        boolean needToStart = !ConfigUtils.isPropertyPresent(configPrefix + "hosts")
+                && !ConfigUtils.isPropertyPresent(configPrefix + "server-list");
+
         if (!needToStart) {
-            log.debug("Not starting devservices for Infinispan as 'server-list' have been provided");
+            log.debug("Not starting devservices for Infinispan as 'hosts', 'uri' or 'server-list' have been provided");
             return null;
         }
 
         if (!dockerStatusBuildItem.isDockerAvailable()) {
-            log.warn("Please configure 'quarkus.infinispan-client.server-list' or get a working docker instance");
+            log.warn(
+                    "Please configure 'quarkus.infinispan-client.hosts' or 'quarkus.infinispan-client.uri' or get a working docker instance");
             return null;
         }
 
@@ -176,10 +179,10 @@ public class InfinispanDevServiceProcessor {
     private RunningDevService getRunningDevService(String containerId, Closeable closeable, String serverList,
             String username, String password) {
         Map<String, String> config = new HashMap<>();
-        config.put(getConfigPrefix() + "server-list", serverList);
+        config.put(getConfigPrefix() + "hosts", serverList);
         config.put(getConfigPrefix() + "client-intelligence", "BASIC");
-        config.put(getConfigPrefix() + "auth-username", username);
-        config.put(getConfigPrefix() + "auth-password", password);
+        config.put(getConfigPrefix() + "username", username);
+        config.put(getConfigPrefix() + "password", password);
         return new RunningDevService(Feature.INFINISPAN_CLIENT.getName(), containerId, closeable, config);
     }
 

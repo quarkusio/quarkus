@@ -48,7 +48,7 @@ public class InfinispanTestResource implements QuarkusTestResourceLifecycleManag
         INFINISPAN.start();
 
         final String hosts = INFINISPAN.getHost() + ":" + INFINISPAN.getMappedPort(HOTROD_PORT);
-        return Collections.singletonMap("quarkus.infinispan-client.server-list", hosts);
+        return Collections.singletonMap("quarkus.infinispan-client.hosts", hosts);
     }
 
     @Override

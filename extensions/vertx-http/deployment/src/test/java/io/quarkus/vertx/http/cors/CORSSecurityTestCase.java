@@ -22,6 +22,7 @@ public class CORSSecurityTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.cors=true\n" +
+            "quarkus.http.cors.origins=*\n" +
             "quarkus.http.cors.methods=GET, OPTIONS, POST\n" +
             "quarkus.http.auth.basic=true\n" +
             "quarkus.http.auth.policy.r1.roles-allowed=test\n" +

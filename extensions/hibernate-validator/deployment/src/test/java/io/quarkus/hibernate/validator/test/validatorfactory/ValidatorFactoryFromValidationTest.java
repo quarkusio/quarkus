@@ -6,6 +6,7 @@ import javax.inject.Inject;
 import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
 
+import org.hibernate.validator.HibernateValidatorFactory;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -23,9 +24,10 @@ public class ValidatorFactoryFromValidationTest {
             .create(JavaArchive.class));
 
     @Test
-    public void testOverrideConstraintValidatorConstraint() {
+    public void testValidatorFactoryManuallyCreatedIsManagedByQuarkus() {
         ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
-        assertThat(validatorFactoryFromInjection).isSameAs(validatorFactory);
+        // we need to unwrap here as we have a small wrapper around the manually created one
+        assertThat(validatorFactoryFromInjection).isSameAs(validatorFactory.unwrap(HibernateValidatorFactory.class));
     }
 
 }

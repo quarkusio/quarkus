@@ -16,6 +16,7 @@ import java.util.function.Supplier;
 
 import javax.ws.rs.core.Application;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
@@ -342,6 +343,20 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             @Override
             public BeanFactory<?> apply(Class<?> aClass) {
                 return new ArcBeanFactory<>(aClass, container);
+            }
+        };
+    }
+
+    public Supplier<Boolean> disableIfPropertyMatches(String propertyName, String propertyValue, boolean disableIfMissing) {
+        return new Supplier<>() {
+            @Override
+            public Boolean get() {
+                String value = ConfigProvider.getConfig().getConfigValue(propertyName).getValue();
+                if (value == null) {
+                    return disableIfMissing;
+                } else {
+                    return value.equals(propertyValue);
+                }
             }
         };
     }

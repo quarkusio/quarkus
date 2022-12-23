@@ -23,6 +23,7 @@ import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 
@@ -41,12 +42,12 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final boolean redirectToLandingPage;
     private final boolean redirectToErrorPage;
     private final boolean redirectToLoginPage;
-
+    private final CookieSameSite cookieSameSite;
     private final PersistentLoginManager loginManager;
 
     public FormAuthenticationMechanism(String loginPage, String postLocation,
             String usernameParameter, String passwordParameter, String errorPage, String landingPage,
-            boolean redirectAfterLogin, String locationCookie, PersistentLoginManager loginManager) {
+            boolean redirectAfterLogin, String locationCookie, String cookieSameSite, PersistentLoginManager loginManager) {
         this.loginPage = loginPage;
         this.postLocation = postLocation;
         this.usernameParameter = usernameParameter;
@@ -57,6 +58,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.redirectToLandingPage = landingPage != null && redirectAfterLogin;
         this.redirectToLoginPage = loginPage != null;
         this.redirectToErrorPage = errorPage != null;
+        this.cookieSameSite = CookieSameSite.valueOf(cookieSameSite);
         this.loginManager = loginManager;
     }
 
@@ -128,6 +130,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         if (redirect != null) {
             verifyRedirectBackLocation(exchange.request().absoluteURI(), redirect.getValue());
             redirect.setSecure(exchange.request().isSSL());
+            redirect.setSameSite(cookieSameSite);
             location = redirect.getValue();
             exchange.response().addCookie(redirect.setMaxAge(0));
         } else {
@@ -158,7 +161,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     protected void storeInitialLocation(final RoutingContext exchange) {
         exchange.response().addCookie(Cookie.cookie(locationCookie, exchange.request().absoluteURI())
-                .setPath("/").setSecure(exchange.request().isSSL()));
+                .setPath("/").setSameSite(cookieSameSite).setSecure(exchange.request().isSSL()));
     }
 
     protected void servePage(final RoutingContext exchange, final String location) {

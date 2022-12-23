@@ -603,6 +603,15 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public static class Authentication {
 
         /**
+         * SameSite attribute values for the session, state and post logout cookies.
+         */
+        public enum CookieSameSite {
+            STRICT,
+            LAX,
+            NONE
+        }
+
+        /**
          * Authorization code flow response mode
          */
         public enum ResponseMode {
@@ -756,6 +765,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem
         public Optional<String> cookieDomain = Optional.empty();
+
+        /**
+         * SameSite attribute for the session, state and post logout cookies.
+         */
+        @ConfigItem(defaultValue = "strict")
+        public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
 
         /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.
@@ -982,6 +997,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setForwardParams(List<String> forwardParams) {
             this.forwardParams = Optional.of(forwardParams);
+        }
+
+        public CookieSameSite getCookieSameSite() {
+            return cookieSameSite;
+        }
+
+        public void setCookieSameSite(CookieSameSite cookieSameSite) {
+            this.cookieSameSite = cookieSameSite;
         }
     }
 

@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.security;
 
+import static io.restassured.matcher.RestAssuredMatchers.detailedCookie;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -61,7 +62,7 @@ public class CombinedFormBasicAuthTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/login"))
-                .cookie("quarkus-redirect-location", containsString("/admin"));
+                .cookie("quarkus-redirect-location", detailedCookie().sameSite("Strict").value(containsString("/admin")));
 
         RestAssured
                 .given()
@@ -75,7 +76,7 @@ public class CombinedFormBasicAuthTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/admin"))
-                .cookie("quarkus-credential", notNullValue());
+                .cookie("quarkus-credential", detailedCookie().sameSite("Strict"));
 
         RestAssured
                 .given()

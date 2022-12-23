@@ -46,6 +46,10 @@ public class CodeFlowTest {
                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
             verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"), null, "web-app", false);
 
+            String stateCookieString = webResponse.getResponseHeaderValue("Set-Cookie");
+            assertTrue(stateCookieString.startsWith("q_auth_Default_test="));
+            assertTrue(stateCookieString.contains("SameSite=Strict"));
+
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
 
@@ -98,6 +102,10 @@ public class CodeFlowTest {
             String keycloakUrl = webResponse.getResponseHeaderValue("location");
             verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "xforwarded%2Ftenant-https",
                     true);
+
+            String stateCookieString = webResponse.getResponseHeaderValue("Set-Cookie");
+            assertTrue(stateCookieString.startsWith("q_auth_tenant-https_test="));
+            assertTrue(stateCookieString.contains("SameSite=Lax"));
 
             HtmlPage page = webClient.getPage(keycloakUrl);
 

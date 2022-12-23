@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -35,11 +36,13 @@ public class PersistentLoginManager {
     private final long timeoutMillis;
     private final SecureRandom secureRandom = new SecureRandom();
     private final long newCookieIntervalMillis;
+    private final CookieSameSite cookieSameSite;
 
-    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieIntervalMillis) {
+    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieIntervalMillis, String cookieSameSite) {
         this.cookieName = cookieName;
         this.newCookieIntervalMillis = newCookieIntervalMillis;
         this.timeoutMillis = timeoutMillis;
+        this.cookieSameSite = CookieSameSite.valueOf(cookieSameSite);
         try {
             if (encryptionKey == null) {
                 this.secretKey = KeyGenerator.getInstance("AES").generateKey();
@@ -122,7 +125,8 @@ public class PersistentLoginManager {
             message.put(iv);
             message.put(encrypted);
             String cookieValue = Base64.getEncoder().encodeToString(message.array());
-            context.addCookie(Cookie.cookie(cookieName, cookieValue).setPath("/").setSecure(secureCookie));
+            context.addCookie(
+                    Cookie.cookie(cookieName, cookieValue).setPath("/").setSameSite(cookieSameSite).setSecure(secureCookie));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -9,6 +9,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.vertx.http.runtime.FormAuthConfig.CookieSameSite;
 import io.vertx.ext.auth.webauthn.Attestation;
 import io.vertx.ext.auth.webauthn.AuthenticatorAttachment;
 import io.vertx.ext.auth.webauthn.AuthenticatorTransport;
@@ -20,6 +21,15 @@ import io.vertx.ext.auth.webauthn.UserVerification;
  */
 @ConfigRoot(name = "webauthn", phase = ConfigPhase.RUN_TIME)
 public class WebAuthnRunTimeConfig {
+
+    /**
+     * SameSite attribute values for the session cookie.
+     */
+    public enum CookieSameSite {
+        STRICT,
+        LAX,
+        NONE
+    }
 
     /**
      * The origin of the application. The origin is basically protocol, host and port.
@@ -222,4 +232,10 @@ public class WebAuthnRunTimeConfig {
      */
     @ConfigItem(defaultValue = "quarkus-credential")
     public String cookieName;
+
+    /**
+     * SameSite attribute for the session cookie.
+     */
+    @ConfigItem(defaultValue = "strict")
+    public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
 }

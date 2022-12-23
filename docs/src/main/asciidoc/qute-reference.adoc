@@ -1987,6 +1987,9 @@ TIP: A list element can be accessed directly via an index: `{list.10}` or even `
 * `str:fmt` or `str:format`: Formats the supplied string value via `java.lang.String.format()`
 ** `{str:format("Hello %s!",name)}`
 ** `{str:fmt(locale,'%tA',now)}`
+* `+`: Concatenation
+** `{item.name + '_' + mySuffix}`
+** `{name + 10}`
 
 ===== Config 
 

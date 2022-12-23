@@ -2637,12 +2637,14 @@ TIP: By default, the following list of media types is compressed: `text/html`, `
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
 
 
-== Include/Exclude JAX-RS classes with build time conditions
+== Include/Exclude JAX-RS classes
+
+=== Using Build time conditions
 
 Quarkus enables the inclusion or exclusion of JAX-RS Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
 Thus, the various JAX-RS classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these JAX-RS classes should be included.
 
-In the following example, Quarkus includes the endpoint `sayHello` if and only if the build profile `app1` has been enabled.
+In the following example, Quarkus includes the `ResourceForApp1Only` Resource class if and only if the build profile `app1` has been enabled.
 
 [source,java]
 ----
@@ -2658,6 +2660,25 @@ public class ResourceForApp1Only {
 ----
 
 Please note that if a JAX-RS Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the JAX-RS Application.
+
+=== Using a runtime property
+
+Quarkus can also conditionally disable JAX-RS Resources based on the value of runtime properties using the `@io.quarkus.resteasy.reactive.server.EndpointDisabled` annotation.
+
+In the following example, Quarkus will exclude `RuntimeResource` at runtime if the application has `some.property` configured to `"disable"`.
+
+[source,java]
+----
+@EndpointDisabled(name = "some.property", stringValue = "disable")
+public class RuntimeResource {
+
+    @GET
+    @Path("sayHello")
+    public String sayHello() {
+        return "hello";
+     }
+}
+----
 
 
 == RESTEasy Reactive client

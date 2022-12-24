@@ -13,6 +13,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.impl.MimeMapping;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.StaticHandler;
 
 @Recorder
@@ -41,15 +42,17 @@ public class StaticResourcesRecorder {
             this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
         }
         List<Handler<RoutingContext>> handlers = new ArrayList<>();
+        StaticResourcesConfig config = httpConfiguration.getValue().staticResources;
 
         if (hotDeploymentResourcePaths != null && !hotDeploymentResourcePaths.isEmpty()) {
             for (Path resourcePath : hotDeploymentResourcePaths) {
                 String root = resourcePath.toAbsolutePath().toString();
-                StaticHandler staticHandler = StaticHandler.create();
-                staticHandler.setCachingEnabled(false);
-                staticHandler.setAllowRootFileSystemAccess(true);
-                staticHandler.setWebRoot(root);
-                staticHandler.setDefaultContentEncoding("UTF-8");
+                StaticHandler staticHandler = StaticHandler.create(FileSystemAccess.ROOT, root)
+                        .setDefaultContentEncoding("UTF-8")
+                        .setCachingEnabled(false)
+                        .setIndexPage(config.indexPage)
+                        .setIncludeHidden(config.includeHidden)
+                        .setEnableRangeSupport(config.enableRangeSupport);
                 handlers.add(new Handler<>() {
                     @Override
                     public void handle(RoutingContext ctx) {
@@ -67,7 +70,20 @@ public class StaticResourcesRecorder {
         }
         if (!knownPaths.isEmpty()) {
             ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
-            StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES).setDefaultContentEncoding("UTF-8");
+            StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES)
+                    .setDefaultContentEncoding("UTF-8")
+                    .setCachingEnabled(config.cachingEnabled)
+                    .setIndexPage(config.indexPage)
+                    .setIncludeHidden(config.includeHidden)
+                    .setEnableRangeSupport(config.enableRangeSupport)
+                    .setMaxCacheSize(config.maxCacheSize)
+                    .setCacheEntryTimeout(config.cacheEntryTimeout.toMillis())
+                    .setMaxAgeSeconds(config.maxAge.toSeconds());
+            // normalize index page like StaticHandler because its not expose
+            // TODO: create a converter to normalize filename in config.indexPage?
+            final String indexPage = (config.indexPage.charAt(0) == '/')
+                    ? config.indexPage.substring(1)
+                    : config.indexPage;
             handlers.add(new Handler<>() {
                 @Override
                 public void handle(RoutingContext ctx) {
@@ -75,7 +91,8 @@ public class StaticResourcesRecorder {
                             : ctx.normalizedPath().substring(
                                     // let's be extra careful here in case Vert.x normalizes the mount points at some point
                                     ctx.mountPoint().endsWith("/") ? ctx.mountPoint().length() - 1 : ctx.mountPoint().length());
-                    if (knownPaths.contains(rel)) {
+                    // check effective path, otherwise the index page when path ends with '/'
+                    if (knownPaths.contains(rel) || (rel.endsWith("/") && knownPaths.contains(rel.concat(indexPage)))) {
                         compressIfNeeded(ctx, rel);
                         staticHandler.handle(ctx);
                     } else {

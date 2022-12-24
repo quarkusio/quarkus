@@ -92,6 +92,11 @@ public class HttpConfiguration {
     public ServerSslConfig ssl;
 
     /**
+     * The Static Resources config
+     */
+    public StaticResourcesConfig staticResources;
+
+    /**
      * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE`
      * response when the request expects it (with the `Expect: 100-Continue` header).
      */

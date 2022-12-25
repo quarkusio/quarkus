@@ -26,6 +26,10 @@ import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingC
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingServerInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient.OpenTelemetryClientFilter;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryClassicServerFilter;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryReactiveServerFilter;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.vertx.core.VertxOptions;
@@ -110,6 +114,40 @@ public class InstrumentationProcessor {
         return new VertxOptionsConsumerBuildItem(
                 vertxTracingOptions,
                 LIBRARY_AFTER);
+    }
+
+    // RESTEasy and Vert.x web
+    @BuildStep
+    void registerResteasyClassicAndOrResteasyReactiveProvider(
+            Capabilities capabilities,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer) {
+
+        boolean isResteasyClassicAvailable = capabilities.isPresent(Capability.RESTEASY);
+
+        if (!isResteasyClassicAvailable) {
+            // if RestEasy is not available then no need to continue
+            return;
+        }
+
+        resteasyJaxrsProviderBuildItemBuildProducer
+                .produce(new ResteasyJaxrsProviderBuildItem(OpenTelemetryClassicServerFilter.class.getName()));
+    }
+
+    @BuildStep
+    void registerResteasyReactiveProvider(
+            Capabilities capabilities,
+            BuildProducer<ContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer) {
+
+        boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE);
+
+        if (isResteasyReactiveAvailable) {
+            // if RestEasy is not available then no need to continue
+            return;
+        }
+
+        containerRequestFilterBuildItemBuildProducer
+                .produce(new ContainerRequestFilterBuildItem.Builder(OpenTelemetryReactiveServerFilter.class.getName())
+                        .build());
     }
 
 }

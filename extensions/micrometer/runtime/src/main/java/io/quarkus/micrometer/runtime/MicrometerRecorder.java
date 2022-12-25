@@ -14,7 +14,6 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Meter;
@@ -37,6 +36,7 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -113,7 +113,7 @@ public class MicrometerRecorder {
             new JvmMemoryMetrics().bindTo(Metrics.globalRegistry);
             new JvmThreadMetrics().bindTo(Metrics.globalRegistry);
             new JVMInfoBinder().bindTo(Metrics.globalRegistry);
-            if (!ImageInfo.inImageCode()) {
+            if (ImageMode.current() == ImageMode.JVM) {
                 new JvmGcMetrics().bindTo(Metrics.globalRegistry);
             }
         }

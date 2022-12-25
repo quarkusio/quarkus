@@ -57,7 +57,6 @@ import org.eclipse.microprofile.rest.client.ext.AsyncInvocationInterceptorFactor
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -84,6 +83,7 @@ import org.jboss.resteasy.spi.ResteasyUriBuilder;
 
 import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.graal.DisabledSSLContext;
 import io.quarkus.runtime.ssl.SslContextConfiguration;
 
@@ -324,7 +324,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         configureTrustAll(resteasyClientBuilder);
         // we need to push a disabled SSL context when SSL has been disabled
         // because otherwise Apache HTTP Client will try to initialize one and will fail
-        if (ImageInfo.inImageRuntimeCode() && !SslContextConfiguration.isSslNativeEnabled()) {
+        if (ImageMode.current() == ImageMode.NATIVE_RUN && !SslContextConfiguration.isSslNativeEnabled()) {
             resteasyClientBuilder.sslContext(new DisabledSSLContext());
         }
 

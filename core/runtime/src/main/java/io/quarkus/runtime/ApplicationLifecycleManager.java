@@ -18,7 +18,6 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.wildfly.common.lock.Locks;
@@ -269,7 +268,7 @@ public class ApplicationLifecycleManager {
     }
 
     private static void registerHooks(final BiConsumer<Integer, Throwable> exitCodeHandler) {
-        if (ImageInfo.inImageRuntimeCode() && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
+        if (ImageMode.current() == ImageMode.NATIVE_RUN && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
             registerSignalHandlers(exitCodeHandler);
         }
         shutdownHookThread = new ShutdownHookThread();

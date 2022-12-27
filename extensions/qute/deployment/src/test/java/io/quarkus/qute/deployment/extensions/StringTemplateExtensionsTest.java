@@ -42,6 +42,10 @@ public class StringTemplateExtensionsTest {
                 engine.parse("{str:fmt(locale,'%tA',now)}")
                         .data("now", LocalDateTime.of(2016, 7, 26, 12, 0), "locale", Locale.GERMAN)
                         .render());
+        assertEquals("barbar1",
+                engine.parse("{foo + 'bar' + 1}")
+                        .data("foo", "bar")
+                        .render());
     }
 
 }

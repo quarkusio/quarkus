@@ -22,7 +22,7 @@ Brings under one programming model non-blocking and imperative styles of develop
 * **Standards-based**:
 Based on the standards and frameworks you love and use (RESTEasy and JAX-RS, Hibernate ORM and JPA, Netty, Eclipse Vert.x, Eclipse MicroProfile, Apache Camel...).
 * **Microservice First**:
-Brings lightning fast startup time and code turn around to Java apps.
+Brings lightning fast startup time and code turnaround to Java apps.
 * **Developer Joy**:
 Development centric experience without compromise to bring your amazing apps to life in no time.
 

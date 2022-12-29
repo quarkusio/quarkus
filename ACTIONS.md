@@ -77,7 +77,7 @@ softwareupdate --install-rosetta --agree-to-license
 
 #### Download the runner scripts
 
-GitHub provides an installation package of customised runner scripts for each repository. 
+GitHub provides an installation package of customized runner scripts for each repository. 
 Follow [the instructions](https://docs.github.com/en/actions/hosting-your-own-runners/adding-self-hosted-runners)
 to install the scripts for the repository to be built. 
 

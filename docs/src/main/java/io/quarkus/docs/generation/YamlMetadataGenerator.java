@@ -155,7 +155,7 @@ public class YamlMetadataGenerator {
                             }
                             Document doc = asciidoctor.load(str, options);
 
-                            // Find position of "include::_attributes.adoc[]"
+                            // Find the position of "include::_attributes.adoc[]"
                             // it should be part of the document header
                             int includeAttr = str.indexOf(INCL_ATTRIBUTES);
                             if (includeAttr < 0) {
@@ -368,7 +368,7 @@ public class YamlMetadataGenerator {
                 case "not-diataxis-type":
                     return "Document does not follow naming conventions (type not recognized).";
                 case "toc":
-                    return "A :toc: attribute is present in the Document header (remove it)";
+                    return "A :toc: attribute is present in the document header (remove it)";
             }
             return errorKey;
         }

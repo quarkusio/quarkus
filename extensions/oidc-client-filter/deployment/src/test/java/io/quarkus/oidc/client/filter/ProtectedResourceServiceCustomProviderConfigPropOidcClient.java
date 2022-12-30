@@ -11,6 +11,6 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 @Path("/")
 public interface ProtectedResourceServiceCustomProviderConfigPropOidcClient {
 
-	@GET
-	String getUserName();
+    @GET
+    String getUserName();
 }

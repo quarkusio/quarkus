@@ -60,7 +60,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
-                                              AuthenticationRequestContext context) {
+            AuthenticationRequestContext context) {
         if (!(request.getToken() instanceof AccessTokenCredential || request.getToken() instanceof IdTokenCredential)) {
             return Uni.createFrom().nullItem();
         }
@@ -85,8 +85,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
-                                               RoutingContext vertxContext,
-                                               TenantConfigContext resolvedContext) {
+            RoutingContext vertxContext,
+            TenantConfigContext resolvedContext) {
         if (resolvedContext.oidcConfig.publicKey.isPresent()) {
             LOG.debug("Performing token verification with a configured public key");
             return validateTokenWithoutOidcServer(request, resolvedContext);
@@ -96,8 +96,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<SecurityIdentity> validateAllTokensWithOidcServer(RoutingContext vertxContext,
-                                                                  TokenAuthenticationRequest request,
-                                                                  TenantConfigContext resolvedContext) {
+            TokenAuthenticationRequest request,
+            TenantConfigContext resolvedContext) {
 
         Uni<UserInfo> userInfo = resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)
                 ? getUserInfoUni(vertxContext, request, resolvedContext)
@@ -116,7 +116,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<SecurityIdentity> validateTokenWithOidcServer(RoutingContext vertxContext, TokenAuthenticationRequest request,
-                                                              TenantConfigContext resolvedContext, UserInfo userInfo) {
+            TenantConfigContext resolvedContext, UserInfo userInfo) {
 
         Uni<TokenVerificationResult> codeAccessTokenUni = verifyCodeFlowAccessTokenUni(vertxContext, request, resolvedContext,
                 userInfo);
@@ -139,7 +139,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<SecurityIdentity> createSecurityIdentityWithOidcServer(RoutingContext vertxContext,
-                                                                       TokenAuthenticationRequest request, TenantConfigContext resolvedContext, final UserInfo userInfo) {
+            TokenAuthenticationRequest request, TenantConfigContext resolvedContext, final UserInfo userInfo) {
         Uni<TokenVerificationResult> tokenUni = null;
         if (isInternalIdToken(request)) {
             if (vertxContext.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
@@ -188,7 +188,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             }
                         } else if (tokenCred instanceof IdTokenCredential
                                 || tokenCred instanceof AccessTokenCredential
-                                && !((AccessTokenCredential) tokenCred).isOpaque()) {
+                                        && !((AccessTokenCredential) tokenCred).isOpaque()) {
                             return Uni.createFrom()
                                     .failure(new AuthenticationFailedException("JWT token can not be converted to JSON"));
                         } else {
@@ -249,7 +249,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private static boolean tokenAutoRefreshPrepared(JsonObject tokenJson, RoutingContext vertxContext,
-                                                    OidcTenantConfig oidcConfig) {
+            OidcTenantConfig oidcConfig) {
         if (tokenJson != null
                 && oidcConfig.token.refreshExpired
                 && oidcConfig.token.getRefreshTokenTimeSkew().isPresent()
@@ -264,8 +264,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private static JsonObject getRolesJson(RoutingContext vertxContext, TenantConfigContext resolvedContext,
-                                           TokenCredential tokenCred,
-                                           JsonObject tokenJson, UserInfo userInfo) {
+            TokenCredential tokenCred,
+            JsonObject tokenJson, UserInfo userInfo) {
         JsonObject rolesJson = tokenJson;
         if (resolvedContext.oidcConfig.roles.source.isPresent()) {
             if (resolvedContext.oidcConfig.roles.source.get() == Source.userinfo) {
@@ -285,11 +285,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<TokenVerificationResult> verifyCodeFlowAccessTokenUni(RoutingContext vertxContext,
-                                                                      TokenAuthenticationRequest request,
-                                                                      TenantConfigContext resolvedContext, UserInfo userInfo) {
+            TokenAuthenticationRequest request,
+            TenantConfigContext resolvedContext, UserInfo userInfo) {
         if (request.getToken() instanceof IdTokenCredential
                 && (resolvedContext.oidcConfig.authentication.verifyAccessToken
-                || resolvedContext.oidcConfig.roles.source.orElse(null) == Source.accesstoken)) {
+                        || resolvedContext.oidcConfig.roles.source.orElse(null) == Source.accesstoken)) {
             final String codeAccessToken = (String) vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
             return verifyTokenUni(resolvedContext, codeAccessToken, userInfo);
         } else {
@@ -357,7 +357,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         TokenIntrospectionCache tokenIntrospectionCache = tenantResolver.getTokenIntrospectionCache();
         Uni<TokenIntrospection> tokenIntrospectionUni = tokenIntrospectionCache == null ? null
                 : tokenIntrospectionCache
-                .getIntrospection(token, resolvedContext.oidcConfig, getIntrospectionRequestContext);
+                        .getIntrospection(token, resolvedContext.oidcConfig, getIntrospectionRequestContext);
         if (tokenIntrospectionUni == null) {
             tokenIntrospectionUni = newTokenIntrospectionUni(resolvedContext, token);
         } else {
@@ -384,7 +384,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private static Uni<SecurityIdentity> validateTokenWithoutOidcServer(TokenAuthenticationRequest request,
-                                                                        TenantConfigContext resolvedContext) {
+            TenantConfigContext resolvedContext) {
 
         try {
             TokenVerificationResult result = resolvedContext.provider.verifyJwtToken(request.getToken().getToken());
@@ -397,7 +397,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<UserInfo> getUserInfoUni(RoutingContext vertxContext, TokenAuthenticationRequest request,
-                                         TenantConfigContext resolvedContext) {
+            TenantConfigContext resolvedContext) {
         if (isInternalIdToken(request) && resolvedContext.oidcConfig.cacheUserInfoInIdtoken) {
             JsonObject userInfo = OidcUtils.decodeJwtContent(request.getToken().getToken())
                     .getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE);

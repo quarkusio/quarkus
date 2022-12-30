@@ -165,7 +165,7 @@ public class KeycloakDevServicesProcessor {
                 String usersString = result.getConfig().get(OIDC_USERS);
                 Map<String, String> users = (usersString == null || usersString.isBlank()) ? Map.of()
                         : Arrays.stream(usersString.split(","))
-                        .map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
+                                .map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
                 String realmsString = result.getConfig().get(KEYCLOAK_REALMS);
                 List<String> realms = (realmsString == null || realmsString.isBlank()) ? List.of()
                         : Arrays.stream(realmsString.split(",")).collect(Collectors.toList());
@@ -321,9 +321,9 @@ public class KeycloakDevServicesProcessor {
     }
 
     private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem,
-                                             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
-                                             boolean useSharedNetwork, Optional<Duration> timeout,
-                                             List<String> errors) {
+            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
+            boolean useSharedNetwork, Optional<Duration> timeout,
+            List<String> errors) {
         if (!capturedDevServicesConfiguration.enabled) {
             // explicitly disabled
             LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
@@ -375,7 +375,7 @@ public class KeycloakDevServicesProcessor {
             String hostUrl = oidcContainer.useSharedNetwork
                     // we need to use auto-detected host and port, so it works when docker host != localhost
                     ? startURL(oidcContainer.getSharedNetworkExternalHost(), oidcContainer.getSharedNetworkExternalPort(),
-                    oidcContainer.keycloakX)
+                            oidcContainer.keycloakX)
                     : null;
 
             Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, internalUrl, hostUrl,
@@ -423,9 +423,9 @@ public class KeycloakDevServicesProcessor {
         private final List<String> errors;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
-                                    List<String> realmPaths, String containerLabelValue,
-                                    boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs,
-                                    List<String> errors) {
+                List<String> realmPaths, String containerLabelValue,
+                boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs,
+                List<String> errors) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
@@ -604,9 +604,9 @@ public class KeycloakDevServicesProcessor {
     }
 
     private void createDefaultRealm(WebClient client, String token, String keycloakUrl, Map<String, String> users,
-                                    String oidcClientId,
-                                    String oidcClientSecret,
-                                    List<String> errors) {
+            String oidcClientId,
+            String oidcClientSecret,
+            List<String> errors) {
         RealmRepresentation realm = createDefaultRealmRep();
 
         realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
@@ -631,7 +631,7 @@ public class KeycloakDevServicesProcessor {
     }
 
     private void createRealm(WebClient client, String token, String keycloakUrl, RealmRepresentation realm,
-                             List<String> errors) {
+            List<String> errors) {
         try {
             LOG.tracef("Creating the realm %s", realm.getRealm());
             HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")

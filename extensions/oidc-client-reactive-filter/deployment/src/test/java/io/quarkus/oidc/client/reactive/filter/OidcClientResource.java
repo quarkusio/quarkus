@@ -17,6 +17,10 @@ public class OidcClientResource {
     @RestClient
     ProtectedResourceServiceConfigPropertyOidcClient protectedResourceServiceConfigPropertyOidcClient;
 
+    @Inject
+    @RestClient
+    ProtectedResourceServiceCustomProviderConfigPropOidcClient protectedResourceServiceCustomProviderConfigPropOidcClient;
+
     @GET
     @Path("/annotation/user-name")
     public String annotationUserName() {
@@ -27,5 +31,11 @@ public class OidcClientResource {
     @Path("/config-property/user-name")
     public String configPropertyUserName() {
         return protectedResourceServiceConfigPropertyOidcClient.getUserName();
+    }
+
+    @GET
+    @Path("/custom-provider-config-property/user-name")
+    public String customProviderConfigPropertyUserName() {
+        return protectedResourceServiceCustomProviderConfigPropOidcClient.getUserName();
     }
 }

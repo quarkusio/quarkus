@@ -104,7 +104,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index,
-            CustomScopeAnnotationsBuildItem scopes) {
+                                                       CustomScopeAnnotationsBuildItem scopes) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             @Override
             public boolean appliesTo(AnnotationTarget.Kind kind) {
@@ -149,7 +149,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     public AnnotationsTransformerBuildItem enableMetrics(Optional<MetricsCapabilityBuildItem> metricsCapability,
-            ReactiveMessagingConfiguration configuration) {
+                                                         ReactiveMessagingConfiguration configuration) {
         boolean isMetricEnabled = metricsCapability.isPresent() && configuration.metricsEnabled;
         boolean useMicrometer = isMetricEnabled && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER);
         LOGGER.debug("Metrics Enabled: " + isMetricEnabled + "; Using Micrometer: " + useMicrometer);
@@ -183,7 +183,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     public void enableHealth(ReactiveMessagingBuildTimeConfig buildTimeConfig,
-            BuildProducer<HealthBuildItem> producer) {
+                             BuildProducer<HealthBuildItem> producer) {
         producer.produce(
                 new HealthBuildItem(SmallRyeReactiveMessagingLivenessCheck.class.getName(),
                         buildTimeConfig.healthEnabled));
@@ -198,13 +198,13 @@ public class SmallRyeReactiveMessagingProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public void build(SmallRyeReactiveMessagingRecorder recorder, RecorderContext recorderContext,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            List<MediatorBuildItem> mediatorMethods,
-            List<InjectedEmitterBuildItem> emitterFields,
-            List<InjectedChannelBuildItem> channelFields,
-            BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            ReactiveMessagingConfiguration conf) {
+                      BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+                      List<MediatorBuildItem> mediatorMethods,
+                      List<InjectedEmitterBuildItem> emitterFields,
+                      List<InjectedChannelBuildItem> channelFields,
+                      BuildProducer<GeneratedClassBuildItem> generatedClass,
+                      BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+                      ReactiveMessagingConfiguration conf) {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
@@ -298,8 +298,8 @@ public class SmallRyeReactiveMessagingProcessor {
      * </pre>
      */
     private String generateInvoker(BeanInfo bean, MethodInfo method, boolean isSuspendMethod,
-            QuarkusMediatorConfiguration mediatorConfiguration,
-            ClassOutput classOutput) {
+                                   QuarkusMediatorConfiguration mediatorConfiguration,
+                                   ClassOutput classOutput) {
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
             baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
@@ -414,7 +414,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void devmodeSupport(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> beans,
-            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
+                        BuildProducer<AnnotationsTransformerBuildItem> transformations) {
         beans.produce(new AdditionalBeanBuildItem(DevModeSupportConnectorFactory.class,
                 DevModeSupportConnectorFactoryInterceptor.class));
 
@@ -428,7 +428,9 @@ public class SmallRyeReactiveMessagingProcessor {
             public void transform(TransformationContext ctx) {
                 ClassInfo clazz = ctx.getTarget().asClass();
                 if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
-                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY, index.getIndex())) {
+                        || doesImplement(clazz, ReactiveMessagingDotNames.INBOUND_CONNECTOR, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTBOUND_CONNECTOR, index.getIndex())) {
                     ctx.transform().add(DevModeSupportConnectorFactory.class).done();
                 }
             }
@@ -469,7 +471,7 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     private void ensureKotlinCoroutinesEnabled(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem,
-            MethodInfo method) {
+                                               MethodInfo method) {
         if (!coroutineConfigurationBuildItem.isEnabled()) {
             String format = String.format(
                     "Method %s.%s is suspendable but kotlinx-coroutines-jdk8 dependency not detected",
@@ -492,7 +494,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     void duplicatedContextSupport(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> beans,
-            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
+                                  BuildProducer<AnnotationsTransformerBuildItem> transformations) {
         beans.produce(new AdditionalBeanBuildItem(DuplicatedContextConnectorFactory.class,
                 DuplicatedContextConnectorFactoryInterceptor.class));
 
@@ -505,7 +507,8 @@ public class SmallRyeReactiveMessagingProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 ClassInfo clazz = ctx.getTarget().asClass();
-                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())) {
+                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.INBOUND_CONNECTOR, index.getIndex())) {
                     ctx.transform().add(DuplicatedContextConnectorFactory.class).done();
                 }
             }

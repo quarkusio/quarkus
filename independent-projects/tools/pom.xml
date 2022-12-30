@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
-    child.project.url.inherit.append.path="false">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jboss</groupId>
@@ -55,7 +55,7 @@
         <commons-compress.version>1.22</commons-compress.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <maven-core.version>3.8.6</maven-core.version>
-        <mockito.version>4.9.0</mockito.version>
+        <mockito.version>4.10.0</mockito.version>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
@@ -289,7 +289,7 @@
                         <groupId>io.quarkus</groupId>
                         <version>${project.version}</version>
                     </dependency>
-                  </dependencies>
+                </dependencies>
                 <configuration>
                     <!-- store outside of target to speed up formatting when mvn clean is used -->
                     <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>

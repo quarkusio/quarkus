@@ -110,8 +110,8 @@ public class WiringHelper {
      * @return {@code true} if the class implements the inbound connector interface
      */
     static boolean isInboundConnector(ClassInfo ci) {
-        // TODO Add the internal interface support
-        return ci.interfaceNames().contains(ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY);
+        return ci.interfaceNames().contains(ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY)
+                || ci.interfaceNames().contains(ReactiveMessagingDotNames.INBOUND_CONNECTOR);
     }
 
     /**
@@ -121,8 +121,8 @@ public class WiringHelper {
      * @return {@code true} if the class implements the outbound connector interface
      */
     static boolean isOutboundConnector(ClassInfo ci) {
-        // TODO Add the internal interface support
-        return ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY);
+        return ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY)
+                || ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTBOUND_CONNECTOR);
     }
 
     /**
@@ -134,7 +134,7 @@ public class WiringHelper {
      * @return the list of connector attributes, empty if none
      */
     static List<ConnectorAttribute> getConnectorAttributes(BeanInfo bi, CombinedIndexBuildItem index,
-            ConnectorAttribute.Direction... directions) {
+                                                           ConnectorAttribute.Direction... directions) {
         List<AnnotationInstance> attributes = bi.getImplClazz()
                 .classAnnotationsWithRepeatable(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTES, index.getIndex())
                 .stream().flatMap(ai -> Arrays.stream(ai.value().asNestedArray())).collect(Collectors.toList());
@@ -166,7 +166,7 @@ public class WiringHelper {
      * @return the connector attribute.
      */
     private static ConnectorAttribute createConnectorAttribute(AnnotationInstance instance,
-            ConnectorAttribute.Direction direction) {
+                                                               ConnectorAttribute.Direction direction) {
         String name = instance.value("name").asString();
         String type = instance.value("type").asString();
         String description = instance.value("description").asString();
@@ -262,8 +262,8 @@ public class WiringHelper {
     }
 
     static Optional<AnnotationInstance> getAnnotation(TransformedAnnotationsBuildItem transformedAnnotations,
-            InjectionPointInfo injectionPoint,
-            DotName annotationName) {
+                                                      InjectionPointInfo injectionPoint,
+                                                      DotName annotationName) {
         Collection<AnnotationInstance> annotations = transformedAnnotations.getAnnotations(injectionPoint.getTarget());
         for (AnnotationInstance annotation : annotations) {
             if (annotationName.equals(annotation.name())) {

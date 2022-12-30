@@ -6,7 +6,7 @@ language:
   base:
     data:
       maven:
-        version: 3.8.6
+        version: 3.8.7
         wrapper-version: 3.1.1
     shared-data:
       buildtool:

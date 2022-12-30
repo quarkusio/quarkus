@@ -7,7 +7,7 @@
 @REM "License"); you may not use this file except in compliance
 @REM with the License.  You may obtain a copy of the License at
 @REM
-@REM    https://www.apache.org/licenses/LICENSE-2.0
+@REM    http://www.apache.org/licenses/LICENSE-2.0
 @REM
 @REM Unless required by applicable law or agreed to in writing,
 @REM software distributed under the License is distributed on an
@@ -18,13 +18,12 @@
 @REM ----------------------------------------------------------------------------
 
 @REM ----------------------------------------------------------------------------
-@REM Maven Start Up Batch script
+@REM Apache Maven Wrapper startup batch script, version {maven.wrapper-version}
 @REM
 @REM Required ENV vars:
 @REM JAVA_HOME - location of a JDK home dir
 @REM
 @REM Optional ENV vars
-@REM M2_HOME - location of maven2's installed home dir
 @REM MAVEN_BATCH_ECHO - set to 'on' to enable the echoing of the batch commands
 @REM MAVEN_BATCH_PAUSE - set to 'on' to wait for a keystroke before ending
 @REM MAVEN_OPTS - parameters passed to the Java VM when running Maven
@@ -120,10 +119,10 @@ SET MAVEN_JAVA_EXE="%JAVA_HOME%\bin\java.exe"
 set WRAPPER_JAR="%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.jar"
 set WRAPPER_LAUNCHER=org.apache.maven.wrapper.MavenWrapperMain
 
-set DOWNLOAD_URL="https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/{maven.wrapper-version}/maven-wrapper-{maven.wrapper-version}.jar"
+set WRAPPER_URL="https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/{maven.wrapper-version}/maven-wrapper-{maven.wrapper-version}.jar"
 
 FOR /F "usebackq tokens=1,2 delims==" %%A IN ("%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.properties") DO (
-    IF "%%A"=="wrapperUrl" SET DOWNLOAD_URL=%%B
+    IF "%%A"=="wrapperUrl" SET WRAPPER_URL=%%B
 )
 
 @REM Extension to allow automatically downloading the maven-wrapper.jar from Maven-central
@@ -134,11 +133,11 @@ if exist %WRAPPER_JAR% (
     )
 ) else (
     if not "%MVNW_REPOURL%" == "" (
-        SET DOWNLOAD_URL="%MVNW_REPOURL%/org/apache/maven/wrapper/maven-wrapper/{maven.wrapper-version}/maven-wrapper-{maven.wrapper-version}.jar"
+        SET WRAPPER_URL="%MVNW_REPOURL%/org/apache/maven/wrapper/maven-wrapper/{maven.wrapper-version}/maven-wrapper-{maven.wrapper-version}.jar"
     )
     if "%MVNW_VERBOSE%" == "true" (
         echo Couldn't find %WRAPPER_JAR%, downloading it ...
-        echo Downloading from: %DOWNLOAD_URL%
+        echo Downloading from: %WRAPPER_URL%
     )
 
     powershell -Command "&{"^
@@ -146,7 +145,7 @@ if exist %WRAPPER_JAR% (
 		"if (-not ([string]::IsNullOrEmpty('%MVNW_USERNAME%') -and [string]::IsNullOrEmpty('%MVNW_PASSWORD%'))) {"^
 		"$webclient.Credentials = new-object System.Net.NetworkCredential('%MVNW_USERNAME%', '%MVNW_PASSWORD%');"^
 		"}"^
-		"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $webclient.DownloadFile('%DOWNLOAD_URL%', '%WRAPPER_JAR%')"^
+		"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $webclient.DownloadFile('%WRAPPER_URL%', '%WRAPPER_JAR%')"^
 		"}"
     if "%MVNW_VERBOSE%" == "true" (
         echo Finished downloading %WRAPPER_JAR%

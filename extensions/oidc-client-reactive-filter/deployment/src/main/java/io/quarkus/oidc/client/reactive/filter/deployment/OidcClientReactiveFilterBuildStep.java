@@ -38,7 +38,7 @@ public class OidcClientReactiveFilterBuildStep {
     // we simply pretend that @OidcClientFilter means @RegisterProvider(OidcClientRequestReactiveFilter.class)
     @BuildStep
     void oidcClientFilterSupport(CombinedIndexBuildItem indexBuildItem, BuildProducer<GeneratedBeanBuildItem> generatedBean,
-             BuildProducer<RegisterProviderAnnotationInstanceBuildItem> producer) {
+            BuildProducer<RegisterProviderAnnotationInstanceBuildItem> producer) {
         final var helper = new OidcClientFilterDeploymentHelper<>(AbstractOidcClientRequestReactiveFilter.class, generatedBean);
 
         Collection<AnnotationInstance> instances = indexBuildItem.getIndex().getAnnotations(OIDC_CLIENT_FILTER);
@@ -70,8 +70,8 @@ public class OidcClientReactiveFilterBuildStep {
 
     @BuildStep
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-              BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-              BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(OidcClientRequestReactiveFilter.class));
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(OidcClientRequestReactiveFilter.class.getName()));

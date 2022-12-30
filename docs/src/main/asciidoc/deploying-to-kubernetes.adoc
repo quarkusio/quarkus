@@ -76,7 +76,7 @@ The full source of the `kubernetes.json` file looks something like this:
     "kind" : "Deployment",
     "metadata" : {
       "annotations": {
-       "app.quarkus.io/vcs-url" : "<some url>",
+       "app.quarkus.io/vcs-uri" : "<some url>",
        "app.quarkus.io/commit-id" : "<some git SHA>",
       },
       "labels" : {
@@ -123,7 +123,7 @@ The full source of the `kubernetes.json` file looks something like this:
   "kind" : "Service",
     "metadata" : {
       "annotations": {
-       "app.quarkus.io/vcs-url" : "<some url>",
+       "app.quarkus.io/vcs-uri" : "<some url>",
        "app.quarkus.io/commit-id" : "<some git SHA>",
       },
       "labels" : {
@@ -305,7 +305,7 @@ Out of the box, the generated resources will be annotated with version control r
 [source,json]
 ----
   "annotations": {
-    "app.quarkus.io/vcs-url" : "<some url>",
+    "app.quarkus.io/vcs-uri" : "<some url>",
     "app.quarkus.io/commit-id" : "<some git SHA>",
    }
 ----
@@ -1065,7 +1065,7 @@ The full source of the `knative.json` file looks something like this:
     "kind" : "Service",
     "metadata" : {
       "annotations": {
-       "app.quarkus.io/vcs-url" : "<some url>",
+       "app.quarkus.io/vcs-uri" : "<some url>",
        "app.quarkus.io/commit-id" : "<some git SHA>"
       },
       "labels" : {

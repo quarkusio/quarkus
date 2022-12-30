@@ -14,6 +14,7 @@ import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
 import javax.validation.valueextraction.ValueExtractor;
 
+import org.hibernate.validator.HibernateValidatorFactory;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
 import org.hibernate.validator.internal.engine.resolver.JPATraversableResolver;
@@ -160,7 +161,7 @@ public class HibernateValidatorRecorder {
                 }
 
                 ValidatorFactory validatorFactory = configuration.buildValidatorFactory();
-                ValidatorHolder.initialize(validatorFactory);
+                ValidatorHolder.initialize(validatorFactory.unwrap(HibernateValidatorFactory.class));
 
                 // Close the ValidatorFactory on shutdown
                 shutdownContext.addShutdownTask(new Runnable() {

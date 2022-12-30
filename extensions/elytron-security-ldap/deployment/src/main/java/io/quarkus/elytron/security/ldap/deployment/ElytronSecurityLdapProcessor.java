@@ -61,7 +61,11 @@ class ElytronSecurityLdapProcessor {
     }
 
     @BuildStep
-    ReflectiveClassBuildItem enableReflection() {
-        return new ReflectiveClassBuildItem(true, true, QuarkusDirContextFactory.INITIAL_CONTEXT_FACTORY);
+    void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection) {
+        // All JDK provided InitialContextFactory impls via the module descriptors:
+        // com.sun.jndi.ldap.LdapCtxFactory, com.sun.jndi.dns.DnsContextFactory and com.sun.jndi.rmi.registry.RegistryContextFactory
+        reflection.produce(new ReflectiveClassBuildItem(true, true, QuarkusDirContextFactory.INITIAL_CONTEXT_FACTORY));
+        reflection.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jndi.dns.DnsContextFactory"));
+        reflection.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jndi.rmi.registry.RegistryContextFactory"));
     }
 }

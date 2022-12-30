@@ -28,10 +28,10 @@ import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.Tag;
 import org.eclipse.microprofile.metrics.Timer;
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.metrics.MetricsFactory;
@@ -328,7 +328,7 @@ public class SmallRyeMetricsRecorder {
         // some metrics are only available in jdk internal class 'com.sun.management.OperatingSystemMXBean': cast to it.
         // com.sun.management.OperatingSystemMXBean is not available in SubstratVM
         // the cast will fail for some JVM not derived from HotSpot (J9 for example) so we check if it is assignable to it
-        if (!ImageInfo.inImageCode()
+        if (ImageMode.current() == ImageMode.JVM
                 && com.sun.management.OperatingSystemMXBean.class.isAssignableFrom(operatingSystemMXBean.getClass())) {
             try {
                 com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
@@ -367,7 +367,7 @@ public class SmallRyeMetricsRecorder {
         // some metrics are only available in jdk internal class 'com.sun.management.OperatingSystemMXBean': cast to it.
         // com.sun.management.OperatingSystemMXBean is not available in SubstratVM
         // the cast will fail for some JVM not derived from HotSpot (J9 for example) so we check if it is assignable to it
-        if (!ImageInfo.inImageCode()
+        if (ImageMode.current() == ImageMode.JVM
                 && com.sun.management.OperatingSystemMXBean.class.isAssignableFrom(operatingSystemMXBean.getClass())) {
             try {
                 com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
@@ -608,7 +608,7 @@ public class SmallRyeMetricsRecorder {
 
     private void memoryPoolMetrics(MetricRegistry registry) {
         // MemoryPoolMXBean doesn't work in native mode
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             List<MemoryPoolMXBean> mps = ManagementFactory.getMemoryPoolMXBeans();
             Metadata usageMetadata = Metadata.builder()
                     .withName("memoryPool.usage")
@@ -665,7 +665,7 @@ public class SmallRyeMetricsRecorder {
     }
 
     private void micrometerJvmGcMetrics(MetricRegistry registry, ShutdownContext shutdownContext) {
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             MicrometerGCMetrics gcMetrics = new MicrometerGCMetrics();
 
             registry.register(new ExtendedMetadataBuilder()
@@ -815,7 +815,7 @@ public class SmallRyeMetricsRecorder {
                     }
                 });
 
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             ExtendedMetadata threadStatesMetadata = new ExtendedMetadataBuilder()
                     .withName("jvm.threads.states")
                     .withType(MetricType.GAUGE)
@@ -837,7 +837,7 @@ public class SmallRyeMetricsRecorder {
     }
 
     private void micrometerJvmMemoryMetrics(MetricRegistry registry) {
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             for (MemoryPoolMXBean memoryPoolMXBean : ManagementFactory.getMemoryPoolMXBeans()) {
                 String area = MemoryType.HEAP.equals(memoryPoolMXBean.getType()) ? "heap" : "nonheap";
                 Tag[] tags = new Tag[] { new Tag("id", memoryPoolMXBean.getName()),
@@ -951,7 +951,7 @@ public class SmallRyeMetricsRecorder {
 
     private void micrometerJvmClassLoaderMetrics(MetricRegistry registry) {
         // The ClassLoadingMXBean can be used in native mode, but it only returns zeroes, so there's no point in including such metrics.
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             ClassLoadingMXBean classLoadingBean = ManagementFactory.getClassLoadingMXBean();
 
             registry.register(

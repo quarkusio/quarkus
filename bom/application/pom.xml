@@ -50,7 +50,7 @@
         <smallrye-graphql.version>1.9.0</smallrye-graphql.version>
         <smallrye-opentracing.version>2.1.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.6.0</smallrye-fault-tolerance.version>
-        <smallrye-jwt.version>3.5.4</smallrye-jwt.version>
+        <smallrye-jwt.version>3.6.0</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.2.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>2.7.0</smallrye-reactive-types-converter.version>
@@ -134,8 +134,8 @@
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
-        <infinispan.version>14.0.3.Final</infinispan.version>
-        <infinispan.protostream.version>4.5.0.Final</infinispan.protostream.version>
+        <infinispan.version>14.0.4.Final</infinispan.version>
+        <infinispan.protostream.version>4.5.1.Final</infinispan.protostream.version>
         <caffeine.version>3.1.1</caffeine.version>
         <netty.version>4.1.86.Final</netty.version>
         <brotli4j.version>1.8.0</brotli4j.version>
@@ -160,7 +160,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.11</jboss-logmanager.version>
-        <flyway.version>9.10.0</flyway.version>
+        <flyway.version>9.10.2</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.18.0</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>

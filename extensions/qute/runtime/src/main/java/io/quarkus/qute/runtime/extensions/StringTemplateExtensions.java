@@ -67,4 +67,9 @@ public class StringTemplateExtensions {
         return String.format(locale, format, args);
     }
 
+    @TemplateExtension(matchName = "+")
+    static String plus(String str, Object val) {
+        return str + val;
+    }
+
 }

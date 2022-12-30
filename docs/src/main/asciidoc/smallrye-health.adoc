@@ -393,9 +393,9 @@ public class LivenessAsync implements AsyncHealthCheck {
 Some extension may provide default health checks, including the extension will automatically register its health checks.
 
 For example, `quarkus-agroal` that is used to manage Quarkus datasource(s) automatically register a readiness health check
-that will validate each datasources: xref:datasource.adoc#datasource-health-check[Datasource Health Check].
+that will validate each datasource: xref:datasource.adoc#datasource-health-check[Datasource Health Check].
 
-You can disable extension health check via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
+You can disable extension health checks via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
 
 [[ui]]
 == Health UI 

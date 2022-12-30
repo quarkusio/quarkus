@@ -44,9 +44,9 @@ This command adds the following dependency to your build file:
 .build.gradle
 ----
 implementation 'io.quarkus:quarkus-infinispan-client'
-annotationProcessor 'org.infinispan.protostream:protostream-processor:4.5.0.Final' <1>
+annotationProcessor 'org.infinispan.protostream:protostream-processor:4.5.1.Final' <1>
 ----
-<1> Mandatory in the gradle build to enable the generation of the files in the annotation based serialization
+<1> Mandatory in the Gradle build to enable the generation of the files in the annotation based serialization
 
 == Configuring the Infinispan client
 

@@ -1,43 +1,41 @@
-package io.quarkus.oidc.client;
+package io.quarkus.oidc.client.reactive.filter;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
 
-import io.smallrye.mutiny.Uni;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-@Path("/client")
+@Path("/oidc-client")
 public class OidcClientResource {
 
     @Inject
-    OidcClient client;
+    @RestClient
+    ProtectedResourceServiceAnnotationOidcClient protectedResourceServiceAnnotationOidcClient;
+
+    @Inject
+    @RestClient
+    ProtectedResourceServiceConfigPropertyOidcClient protectedResourceServiceConfigPropertyOidcClient;
+
+    @Inject
+    @RestClient
+    ProtectedResourceServiceCustomProviderConfigPropOidcClient protectedResourceServiceCustomProviderConfigPropOidcClient;
 
     @GET
-    @Path("token")
-    public Uni<String> tokenUni() {
-        return client.getTokens().flatMap(tokens -> Uni.createFrom().item(tokens.getAccessToken()));
+    @Path("/annotation/user-name")
+    public String annotationUserName() {
+        return protectedResourceServiceAnnotationOidcClient.getUserName();
     }
 
     @GET
-    @Path("tokens")
-    public Uni<String> grantTokensUni() {
-        return client.getTokens().flatMap(tokens -> createTokensString(tokens));
+    @Path("/config-property/user-name")
+    public String configPropertyUserName() {
+        return protectedResourceServiceConfigPropertyOidcClient.getUserName();
     }
 
     @GET
-    @Path("refresh-tokens")
-    public Uni<String> refreshGrantTokens(@QueryParam("refreshToken") String refreshToken) {
-        return client.refreshTokens(refreshToken).flatMap(tokens -> createTokensString(tokens));
-    }
-
-    private Uni<String> createTokensString(Tokens tokens) {
-        return tokensAreInitialized(tokens) ? Uni.createFrom().item(tokens.getAccessToken() + " " + tokens.getRefreshToken())
-                : Uni.createFrom().failure(new InternalServerErrorException());
-    }
-
-    private boolean tokensAreInitialized(Tokens tokens) {
-        return tokens.getAccessToken() != null && tokens.getAccessTokenExpiresAt() != null && tokens.getRefreshToken() != null;
+    @Path("/custom-provider-config-property/user-name")
+    public String customProviderConfigPropertyUserName() {
+        return protectedResourceServiceCustomProviderConfigPropOidcClient.getUserName();
     }
 }

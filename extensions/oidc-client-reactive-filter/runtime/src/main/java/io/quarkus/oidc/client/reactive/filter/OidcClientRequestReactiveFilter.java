@@ -12,11 +12,11 @@ import io.quarkus.oidc.client.reactive.filter.runtime.OidcClientReactiveFilterCo
 @Priority(Priorities.AUTHENTICATION)
 public class OidcClientRequestReactiveFilter extends AbstractOidcClientRequestReactiveFilter {
 
-	@Inject
-	OidcClientReactiveFilterConfig config;
+    @Inject
+    OidcClientReactiveFilterConfig config;
 
-	@Override
-	protected Optional<String> clientId() {
-		return config.clientName;
-	}
+    @Override
+    protected Optional<String> clientId() {
+        return config.clientName;
+    }
 }

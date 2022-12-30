@@ -44,7 +44,7 @@ public class WebsocketCoreRecorder {
 
     @SuppressWarnings("unchecked")
     public RuntimeValue<WebSocketDeploymentInfo> createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints,
-                                                                      Set<String> serverApplicationConfigClasses, int maxFrameSize, boolean dispatchToWorker) {
+            Set<String> serverApplicationConfigClasses, int maxFrameSize, boolean dispatchToWorker) {
         WebSocketDeploymentInfo container = new WebSocketDeploymentInfo();
         container.setMaxFrameSize(maxFrameSize);
         container.setDispatchToWorkerThread(dispatchToWorker);
@@ -111,7 +111,7 @@ public class WebsocketCoreRecorder {
     }
 
     public RuntimeValue<ServerWebSocketContainer> createServerContainer(BeanContainer beanContainer,
-                                                                        RuntimeValue<WebSocketDeploymentInfo> infoVal, ServerWebSocketContainerFactory serverContainerFactory)
+            RuntimeValue<WebSocketDeploymentInfo> infoVal, ServerWebSocketContainerFactory serverContainerFactory)
             throws DeploymentException {
         WebSocketDeploymentInfo info = infoVal.getValue();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -123,33 +123,33 @@ public class WebsocketCoreRecorder {
                 .select(CurrentIdentityAssociation.class);
 
         ServerWebSocketContainer container = serverContainerFactory.create(new ObjectIntrospecter() {
-                                                                               @Override
-                                                                               public <T> ObjectFactory<T> createInstanceFactory(Class<T> clazz) {
-                                                                                   BeanContainer.Factory<T> factory = beanContainer.beanInstanceFactory(clazz);
-                                                                                   return new ObjectFactory<T>() {
-                                                                                       @Override
-                                                                                       public ObjectHandle<T> createInstance() {
-                                                                                           BeanContainer.Instance<T> instance = factory.create();
-                                                                                           return new ObjectHandle<T>() {
-                                                                                               @Override
-                                                                                               public T getInstance() {
-                                                                                                   return instance.get();
-                                                                                               }
-
-                                                                                               @Override
-                                                                                               public void release() {
-                                                                                                   instance.close();
-                                                                                               }
-                                                                                           };
-                                                                                       }
-                                                                                   };
-                                                                               }
-                                                                           }, Thread.currentThread().getContextClassLoader(), new Supplier<EventLoopGroup>() {
+            @Override
+            public <T> ObjectFactory<T> createInstanceFactory(Class<T> clazz) {
+                BeanContainer.Factory<T> factory = beanContainer.beanInstanceFactory(clazz);
+                return new ObjectFactory<T>() {
                     @Override
-                    public EventLoopGroup get() {
-                        return ((VertxInternal) VertxCoreRecorder.getVertx().get()).getEventLoopGroup();
+                    public ObjectHandle<T> createInstance() {
+                        BeanContainer.Instance<T> instance = factory.create();
+                        return new ObjectHandle<T>() {
+                            @Override
+                            public T getInstance() {
+                                return instance.get();
+                            }
+
+                            @Override
+                            public void release() {
+                                instance.close();
+                            }
+                        };
                     }
-                },
+                };
+            }
+        }, Thread.currentThread().getContextClassLoader(), new Supplier<EventLoopGroup>() {
+            @Override
+            public EventLoopGroup get() {
+                return ((VertxInternal) VertxCoreRecorder.getVertx().get()).getEventLoopGroup();
+            }
+        },
                 Collections.singletonList(new ContextSetupHandler() {
                     @Override
                     public <T, C> Action<T, C> create(Action<T, C> action) {

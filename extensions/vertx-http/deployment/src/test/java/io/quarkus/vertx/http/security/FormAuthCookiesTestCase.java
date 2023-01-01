@@ -107,7 +107,7 @@ public class FormAuthCookiesTestCase {
                 .statusCode(302)
                 .header("location", containsString("/admin%E2%9D%A4"))
                 .cookie("laitnederc-sukrauq", detailedCookie().value(notNullValue())
-                        sameSite("Lax"));
+                        .sameSite("Lax"));
 
         RestAssured
                 .given()

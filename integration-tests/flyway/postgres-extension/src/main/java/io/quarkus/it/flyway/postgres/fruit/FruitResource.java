@@ -41,12 +41,6 @@ public class FruitResource {
         return get();
     }
 
-    @GET
-    @Path("{tenant}/fruits")
-    public Fruit[] getTenant() {
-        return get();
-    }
-
     private Fruit[] get() {
         return entityManager.createNamedQuery("Fruits.findAll", Fruit.class)
                 .getResultList().toArray(new Fruit[0]);
@@ -55,12 +49,6 @@ public class FruitResource {
     @GET
     @Path("fruits/{id}")
     public Fruit getSingleDefault(@PathParam("id") int id) {
-        return findById(id);
-    }
-
-    @GET
-    @Path("{tenant}/fruits/{id}")
-    public Fruit getSingleTenant(@PathParam("id") int id) {
         return findById(id);
     }
 
@@ -76,13 +64,6 @@ public class FruitResource {
     @Transactional
     @Path("fruits")
     public Response createDefault(@NotNull Fruit fruit) {
-        return create(fruit);
-    }
-
-    @POST
-    @Transactional
-    @Path("{tenant}/fruits")
-    public Response createTenant(@NotNull Fruit fruit) {
         return create(fruit);
     }
 
@@ -102,12 +83,6 @@ public class FruitResource {
         return update(id, fruit);
     }
 
-    @PUT
-    @Path("{tenant}/fruits/{id}")
-    @Transactional
-    public Fruit updateTenant(@PathParam("id") int id, @NotNull Fruit fruit) {
-        return update(id, fruit);
-    }
 
     private Fruit update(@NotNull @PathParam("id") int id, @NotNull Fruit fruit) {
         if (fruit.getName() == null) {
@@ -132,13 +107,6 @@ public class FruitResource {
         return delete(id);
     }
 
-    @DELETE
-    @Path("{tenant}/fruits/{id}")
-    @Transactional
-    public Response deleteTenant(@PathParam("id") int id) {
-        return delete(id);
-    }
-
     private Response delete(int id) {
         Fruit fruit = entityManager.getReference(Fruit.class, id);
         if (fruit == null) {
@@ -155,11 +123,7 @@ public class FruitResource {
         return findBy(type, value);
     }
 
-    @GET
-    @Path("{tenant}/fruitsFindBy")
-    public Response findByTenant(@NotNull @QueryParam("type") String type, @NotNull @QueryParam("value") String value) {
-        return findBy(type, value);
-    }
+
 
     @GET
     @Path("fruits/index")

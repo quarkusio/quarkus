@@ -1,5 +1,7 @@
 package io.quarkus.it.flyway.postgres.fruit;
 
+import java.util.List;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -7,7 +9,6 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import java.util.List;
 
 @ApplicationScoped
 @Produces("application/json")
@@ -28,9 +29,6 @@ public class FruitResource {
         return entityManager.createNamedQuery("Fruits.findAll", Fruit.class)
                 .getResultList().toArray(new Fruit[0]);
     }
-
-
-
 
     @GET
     @Path("fruits/index")

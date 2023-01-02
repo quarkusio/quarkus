@@ -6,13 +6,13 @@ import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 
+import java.util.ArrayList;
+
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-
-import java.util.ArrayList;
 
 /**
  * Test various Hibernate Multitenancy operations running in Quarkus
@@ -21,7 +21,7 @@ import java.util.ArrayList;
 public class PostgresExtensionTest {
 
     /**
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -33,6 +33,7 @@ public class PostgresExtensionTest {
         assertThat(fruits, arrayContaining(new Fruit(2, "Apple"), new Fruit(3, "Banana"), new Fruit(1, "Cherry")));
 
     }
+
     @Test
     public void testMandatoryDisabledTransactionalLockForConcurrentOperation() throws Exception {
         int firstRow = 0;
@@ -41,8 +42,7 @@ public class PostgresExtensionTest {
                 .extract()
                 .as(ArrayList.class);
 
-
-                assertThat(fruits.get(0).toArray(), hasItemInArray("concurently_added_fruit_name"));
+        assertThat(fruits.get(0).toArray(), hasItemInArray("concurently_added_fruit_name"));
 
     }
 

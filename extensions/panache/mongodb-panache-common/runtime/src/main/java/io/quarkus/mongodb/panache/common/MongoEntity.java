@@ -26,4 +26,10 @@ public @interface MongoEntity {
      * The name of the MongoDB client (if not set the default client will be used).
      */
     String clientName() default "";
+
+    /**
+     * Configures the read preference for the collection of this entity.
+     * Supported values are: {@code primary|primaryPreferred|secondary|secondaryPreferred|nearest}
+     */
+    String readPreference() default "";
 }

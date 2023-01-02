@@ -22,6 +22,7 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
 import org.jboss.logging.Logger;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.model.InsertOneModel;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
@@ -216,8 +217,20 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public ReactiveMongoCollection mongoCollection(Class<?> entityClass) {
         MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
         ReactiveMongoDatabase database = mongoDatabase(mongoEntity);
-        if (mongoEntity != null && !mongoEntity.collection().isEmpty()) {
-            return database.getCollection(mongoEntity.collection(), entityClass);
+        if (mongoEntity != null) {
+            ReactiveMongoCollection collection = mongoEntity.collection().isEmpty()
+                    ? database.getCollection(entityClass.getSimpleName(), entityClass)
+                    : database.getCollection(mongoEntity.collection(), entityClass);
+            if (!mongoEntity.readPreference().isEmpty()) {
+                try {
+                    collection = collection.withReadPreference(ReadPreference.valueOf(mongoEntity.readPreference()));
+                } catch (IllegalArgumentException iae) {
+                    throw new IllegalArgumentException("Illegal read preference " + mongoEntity.readPreference()
+                            + " configured in the @MongoEntity annotation of " + entityClass.getName() + "."
+                            + " Supported values are primary|primaryPreferred|secondary|secondaryPreferred|nearest");
+                }
+            }
+            return collection;
         }
         return database.getCollection(entityClass.getSimpleName(), entityClass);
     }

@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 
-@MongoEntity(collection = "TheBookEntity", clientName = "cl2")
+@MongoEntity(collection = "TheBookEntity", clientName = "cl2", readPreference = "primary")
 public class BookEntity extends PanacheMongoEntity {
     @BsonProperty("bookTitle")
     private String title;

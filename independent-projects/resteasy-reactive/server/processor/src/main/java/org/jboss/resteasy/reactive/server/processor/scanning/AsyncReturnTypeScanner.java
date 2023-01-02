@@ -42,7 +42,7 @@ public class AsyncReturnTypeScanner implements MethodScanner {
     @Override
     public boolean isMethodSignatureAsync(MethodInfo method) {
         DotName returnTypeName = method.returnType().name();
-        return returnTypeName.equals(COMPLETION_STAGE) || returnTypeName.equals(UNI) || returnTypeName.equals(MULTI)
-                || returnTypeName.equals(PUBLISHER);
+        return returnTypeName.equals(COMPLETION_STAGE) || returnTypeName.equals(COMPLETABLE_FUTURE) ||
+                returnTypeName.equals(UNI) || returnTypeName.equals(MULTI) || returnTypeName.equals(PUBLISHER);
     }
 }

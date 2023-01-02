@@ -160,29 +160,6 @@ public class FruitResource {
     public Response findByTenant(@NotNull @QueryParam("type") String type, @NotNull @QueryParam("value") String value) {
         return findBy(type, value);
     }
-    @GET
-    @Path("fruits/index")
-    public List<Object> getIndexDefault() {
-        return entityManager.createNativeQuery("select\n" +
-                "    t.relname as table_name,\n" +
-                "    i.relname as index_name,\n" +
-                "    a.attname as column_name\n" +
-                "from\n" +
-                "    pg_class t,\n" +
-                "    pg_class i,\n" +
-                "    pg_index ix,\n" +
-                "    pg_attribute a\n" +
-                "where\n" +
-                "    t.oid = ix.indrelid\n" +
-                "    and i.oid = ix.indexrelid\n" +
-                "    and a.attrelid = t.oid\n" +
-                "    and a.attnum = ANY(ix.indkey)\n" +
-                "    and t.relkind = 'r'\n" +
-                "    and t.relname like 'known_fruits'\n" +
-                "order by\n" +
-                "    t.relname,\n" +
-                "    i.relname;").getResultList();
-    }
 
     private Response findBy(@NotNull String type, @NotNull String value) {
         if (!"name".equalsIgnoreCase(type)) {

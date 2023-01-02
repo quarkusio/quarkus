@@ -17,6 +17,7 @@
 
     <modules>
         <module>h2-extension</module>
+        <module>postgres-extension</module>
     </modules>
 
 </project>

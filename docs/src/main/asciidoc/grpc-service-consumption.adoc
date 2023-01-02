@@ -240,9 +240,9 @@ quarkus.grpc.clients.hello.ssl.key=tls/client.key
 quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 ----
 
-=== Client Deadlines
+=== Client Stub Deadlines
 
-It's always reasonable to set a deadline (timeout) for a gRPC client, i.e. to specify a duration of time after which the RPC times out and the client receives the status error `DEADLINE_EXCEEDED`.
+If you need to configure a deadline for a gRPC stub, i.e. to specify a duration of time after which the stub will always return the status error `DEADLINE_EXCEEDED`.
 You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.: 
 
 [source,properties]
@@ -250,7 +250,10 @@ You can specify the deadline via the `quarkus.grpc.clients."service-name".deadli
 quarkus.grpc.clients.hello.host=localhost
 quarkus.grpc.clients.hello.deadline=2s <1>
 ----
-<1> Set the  deadline for all injected clients.
+<1> Set the  deadline for all injected stubs.
+
+IMPORTANT: Do not use this feature to implement an RPC timeout.
+To implement an RPC timeout, either use Mutiny `call.ifNoItem().after(...)` or Fault Tolerance `@Timeout`.
 
 == gRPC Headers
 Similarly to HTTP, alongside the message, gRPC calls can carry headers.

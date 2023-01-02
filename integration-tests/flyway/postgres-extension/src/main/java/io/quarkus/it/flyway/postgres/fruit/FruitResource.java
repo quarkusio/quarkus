@@ -34,7 +34,7 @@ public class FruitResource {
 
     @GET
     @Path("fruits/index")
-    public List getIndexDefault() {
+    public List getIndexNames() {
         return entityManager.createNativeQuery("select" +
                 "    t.relname as table_name, " +
                 "    i.relname as index_name, " +

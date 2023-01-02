@@ -8,7 +8,6 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import io.quarkus.flyway.runtime.database.PostgresConfig;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
@@ -20,8 +19,6 @@ class FlywayCreator {
 
     private final FlywayDataSourceRuntimeConfig flywayRuntimeConfig;
     private final FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig;
-    // TODO find a way to populate it with FlywayDataSourceRuntimeConfig
-    public final PostgresConfig postgresConfig = new PostgresConfig();
     private Collection<Callback> callbacks = Collections.emptyList();
 
     public FlywayCreator(FlywayDataSourceRuntimeConfig flywayRuntimeConfig,
@@ -38,10 +35,10 @@ class FlywayCreator {
     public Flyway createFlyway(DataSource dataSource) {
         FluentConfiguration configure = Flyway.configure();
         configure.dataSource(dataSource);
-
-        // TODO if datasource is postgres then configure pluging
-        configure.getPluginRegister().getPlugin(PostgreSQLConfigurationExtension.class).setTransactionalLock(false);
-
+        //TODO how to know database is postgres? maybe add a new private field ?
+        flywayRuntimeConfig.postgress.isTransactionalLock
+                .ifPresent(isTransactionalLock -> configure.getPluginRegister().getPlugin(PostgreSQLConfigurationExtension.class)
+                        .setTransactionalLock(isTransactionalLock));
         if (flywayRuntimeConfig.initSql.isPresent()) {
             configure.initSql(flywayRuntimeConfig.initSql.get());
         }
@@ -116,5 +113,15 @@ class FlywayCreator {
         configure.resourceProvider(new QuarkusFlywayResourceProvider(quarkusPathLocationScanner.scanForResources()));
 
         return configure.load();
+    }
+    // TODO delete
+    public static boolean isPostgres(DataSource dataSource) {
+
+        //        try {
+        //            return "PostgresSQL".equals(dataSource.getConnection().getMetaData().getDatabaseProductName());
+        //        } catch (SQLException e) {
+        //            System.out.println(e);
+        //        }
+        return false;
     }
 }

@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.flyway.runtime.database.PostgresConfig;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -205,6 +205,22 @@ public final class FlywayDataSourceRuntimeConfig {
     @ConfigItem
     public Optional<String[]> ignoreMigrationPatterns = Optional.empty();
 
+    /**
+     * Config replicationg org.flywaydb.core.internal.database
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public PostgresSQL postgress = new PostgresSQL();
 
-    //TODO Specific postgres proterties
+    @ConfigGroup
+    public static class PostgresSQL {
+
+        /**
+         * Whether or not transactional advisory locks should be used with PostgreSQL.
+         * If false, session-level locks will be used instead.
+         */
+        @ConfigItem()
+        public Optional<Boolean> isTransactionalLock = Optional.empty();
+    }
+
 }

@@ -13,7 +13,6 @@ import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.quarkus.flyway.runtime.database.PostgresConfig;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
@@ -43,7 +42,6 @@ class FlywayCreatorTest {
     void testPostgreSQLConfigurationExtensionDefault() {
         buildConfig.locations = Arrays.asList("db/migrations", "db/postgres");
         // TODO Link postgres plugins to build path or PostgresConfig group
-        PostgresConfig postgresConfig;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertEquals(false,
                 (

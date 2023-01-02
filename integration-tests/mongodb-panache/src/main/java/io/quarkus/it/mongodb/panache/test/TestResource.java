@@ -11,6 +11,7 @@ import javax.ws.rs.core.Response;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
 import com.mongodb.client.model.CollationStrength;
 
@@ -76,6 +77,13 @@ public class TestResource {
         Assertions.assertEquals(0, TestImperativeEntity.list("category", (Object) null).size());
         Assertions.assertEquals(0, TestImperativeEntity.list("category = :category",
                 Parameters.with("category", null)).size());
+
+        // find with options
+        Assertions.assertEquals(5, TestImperativeEntity.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .size());
 
         // regex
         TestImperativeEntity entityWithUpperCase = new TestImperativeEntity("title11", "upperCaseCategory", "desc");
@@ -236,6 +244,13 @@ public class TestResource {
         Assertions.assertEquals(0, testImperativeRepository.list("category", (Object) null).size());
         Assertions.assertEquals(0, testImperativeRepository.list("category = :category",
                 Parameters.with("category", null)).size());
+
+        // find with options
+        Assertions.assertEquals(5, testImperativeRepository.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .size());
 
         // regex
         TestImperativeEntity entityWithUpperCase = new TestImperativeEntity("title11", "upperCaseCategory", "desc");
@@ -474,6 +489,14 @@ public class TestResource {
         Assertions.assertEquals(0, TestReactiveEntity.list("category = :category",
                 Parameters.with("category", null)).await().indefinitely().size());
 
+        // find with options
+        Assertions.assertEquals(5, TestReactiveEntity.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .await().indefinitely()
+                .size());
+
         // regex
         TestReactiveEntity entityWithUpperCase = new TestReactiveEntity("title11", "upperCaseCategory", "desc");
         entityWithUpperCase.persist().await().indefinitely();
@@ -649,6 +672,14 @@ public class TestResource {
         Assertions.assertEquals(0, testReactiveRepository.list("category", (Object) null).await().indefinitely().size());
         Assertions.assertEquals(0, testReactiveRepository.list("category = :category",
                 Parameters.with("category", null)).await().indefinitely().size());
+
+        // find with options
+        Assertions.assertEquals(5, testReactiveRepository.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .await().indefinitely()
+                .size());
 
         // regex
         TestReactiveEntity entityWithUpperCase = new TestReactiveEntity("title11", "upperCaseCategory", "desc");

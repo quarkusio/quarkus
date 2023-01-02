@@ -107,6 +107,12 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     }
 
     @Override
+    public <T extends Entity> ReactivePanacheQuery<T> withBatchSize(int batchSize) {
+        delegate.withBatchSize(batchSize);
+        return (ReactivePanacheQuery<T>) this;
+    }
+
+    @Override
     public Uni<Long> count() {
         return delegate.count();
     }

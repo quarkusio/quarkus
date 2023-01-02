@@ -153,6 +153,14 @@ public interface PanacheQuery<Entity> {
      */
     public <T extends Entity> PanacheQuery<T> withReadPreference(ReadPreference readPreference);
 
+    /**
+     * Define the batch size for this query.
+     *
+     * @param batchSize the batch size to be used for this query.
+     * @return this query, modified
+     */
+    public <T extends Entity> PanacheQuery<T> withBatchSize(int batchSize);
+
     // Results
 
     /**

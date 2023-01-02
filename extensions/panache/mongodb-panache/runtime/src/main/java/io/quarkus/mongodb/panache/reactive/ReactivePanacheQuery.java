@@ -155,6 +155,13 @@ public interface ReactivePanacheQuery<Entity> {
      */
     public <T extends Entity> ReactivePanacheQuery<T> withReadPreference(ReadPreference readPreference);
 
+    /**
+     * Define the batch size for this query.
+     *
+     * @param batchSize the batch size to be used for this query.
+     * @return this query, modified
+     */
+    public <T extends Entity> ReactivePanacheQuery<T> withBatchSize(int batchSize);
     // Results
 
     /**

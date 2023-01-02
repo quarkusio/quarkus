@@ -13,7 +13,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Entity
 @Table(name = "known_fruits")
 @NamedQuery(name = "Fruits.findAll", query = "SELECT f FROM Fruit f ORDER BY f.name")
-@NamedQuery(name = "Fruits.findByName", query = "SELECT f FROM Fruit f WHERE f.name=:name")
 @XmlRootElement(name = "fruit")
 public class Fruit {
 

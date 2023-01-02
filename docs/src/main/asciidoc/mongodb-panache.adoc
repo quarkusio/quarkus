@@ -770,6 +770,8 @@ MongoDB offers ACID transactions since version 4.0.
 
 To use them with MongoDB with Panache you need to annotate the method that starts the transaction with the `@Transactional` annotation.
 
+Inside methods annotated with `@Transactional` you can access the `ClientSession` with `Panache.getClientSession()` if needed.
+
 In MongoDB, a transaction is only possible on a replicaset,
 luckily our xref:mongodb.adoc#dev-services[Dev Services for MongoDB] setups a single node replicaset so it is compatible with transactions.
 

@@ -15,7 +15,7 @@ import javax.persistence.Id;
  *
  *     public void doSomething() {
  *         MyEntity entity1 = new MyEntity();
- *         entity1.setField("field-1");
+ *         entity1.field = "field-1";
  *         em.persist(entity1);
  *
  *         List<MyEntity> entities = em.createQuery("from MyEntity", MyEntity.class).getResultList();
@@ -24,24 +24,9 @@ import javax.persistence.Id;
  */
 @Entity
 public class MyEntity {
-    private Long id;
-    private String field;
-
     @Id
     @GeneratedValue
-    public Long getId() {
-        return id;
-    }
+    public Long id;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getField() {
-        return field;
-    }
-
-    public void setField(String field) {
-        this.field = field;
-    }
+    public String field;
 }

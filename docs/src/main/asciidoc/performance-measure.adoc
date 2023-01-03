@@ -224,13 +224,6 @@ all services it's able to find on the classpath.
 
 We prefer listing services explicitly as it produces better optimised binaries. Disable it as well by setting `-H:-UseServiceLoaderFeature`.
 
-=== Better default for Garbage Collection implementation
-
-The default in GraalVM seems meant to optimise for short-lived processes.
-
-Quarkus defaults to server applications, so we switch to a better default by setting
- `-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime`.
-
 === Others ...
 
 This section is provided as high level guidance, but can't presume to be comprehensive as some flags are controlled

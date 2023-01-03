@@ -828,6 +828,42 @@ public Person findById(String id) {
 ----
 ====
 
+== Optimistic Lock Control
+
+Aiming to guarantee concurrency control, panache now supports Optimistic lock control, for this you just need to use the `@Version`, and panache does the rest.
+
+[source,java]
+----
+@MongoEntity
+public class Person extends PanacheMongoEntityBase {
+
+    @BsonId
+    public Integer myId;
+
+    @Version
+    public Long version;
+
+    //...
+}
+----
+
+It is important to notice that you can use any variable name, what matters is the `@Version` annotation,
+you can have some like:
+[source,java]
+----
+@MongoEntity
+public class Person extends PanacheMongoEntityBase {
+
+    @BsonId
+    public Integer myId;
+
+    @Version
+    public Long customVersion;
+
+    //...
+}
+----
+
 == Working with Kotlin Data classes
 
 Kotlin data classes are a very convenient way of defining data carrier classes, making them a great match to define an entity class.

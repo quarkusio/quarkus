@@ -237,7 +237,10 @@ include::{includes}/devtools/build.adoc[]
 
 The result of the previous command is a single JAR file inside the `target/deployment` repository that contains classes and dependencies of the project.
 
-Then you will be able to use `gcloud functions deploy` command to deploy your function to Google Cloud.
+Then you will be able to use `gcloud` to deploy your function to Google Cloud.
+The `gcloud` command will be different depending on which event triggers your function.
+
+NOTE: We will use the Java 17 runtime but you can switch to the Java 11 runtime by using `--runtime=java11` instead of `--runtime=java17` on the deploy commands.
 
 [WARNING]
 ====
@@ -257,17 +260,12 @@ This is an example command to deploy your `HttpFunction` to Google Cloud:
 ----
 gcloud functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.QuarkusHttpFunction \
-  --runtime=java11 --trigger-http --allow-unauthenticated --source=target/deployment
+  --runtime=java17 --trigger-http --allow-unauthenticated --source=target/deployment
 ----
 
 [IMPORTANT]
 ====
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusHttpFunction` as this is the class that integrates Cloud Functions with Quarkus.
-====
-
-[NOTE]
-====
-You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 This command will give you as output a `httpsTrigger.url` that points to your function.
@@ -289,17 +287,12 @@ it needs to use `--trigger-event google.storage.object.finalize` and the `--trig
 gcloud functions deploy quarkus-example-storage \
     --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
     --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
-    --runtime=java11 --source=target/deployment
+    --runtime=java17 --source=target/deployment
 ----
 
 [IMPORTANT]
 ====
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
-====
-
-[NOTE]
-====
-You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 To trigger the event, you can send a file to the GCS `quarkus-hello` bucket, or you can use gcloud to simulate one:
@@ -320,17 +313,12 @@ it needs to use `--trigger-event google.pubsub.topic.publish` and the `--trigger
 ----
 gcloud functions deploy quarkus-example-pubsub \
   --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
-  --runtime=java11 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish --source=target/deployment
+  --runtime=java17 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish --source=target/deployment
 ----
 
 [IMPORTANT]
 ====
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
-====
-
-[NOTE]
-====
-You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 To trigger the event, you can send a file to the `hello_topic` topic, or you can use gcloud to simulate one:
@@ -351,17 +339,12 @@ it needs to use `--trigger-bucket` parameter with the name of a previously creat
 ----
 gcloud functions deploy quarkus-example-cloud-event --gen2 \
   --entry-point=io.quarkus.gcp.functions.QuarkusCloudEventsFunction \
-  --runtime=java11 --trigger-bucket=example-cloud-event --source=target/deployment
+  --runtime=java17 --trigger-bucket=example-cloud-event --source=target/deployment
 ----
 
 [IMPORTANT]
 ====
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusCloudEventsFunction` as this is the class that integrates Cloud Functions with Quarkus.
-====
-
-[NOTE]
-====
-You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 To trigger the event, you can send a file to the GCS `example-cloud-event` bucket.

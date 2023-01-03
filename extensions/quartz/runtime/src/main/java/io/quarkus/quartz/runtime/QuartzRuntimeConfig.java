@@ -20,6 +20,15 @@ public class QuartzRuntimeConfig {
     public String instanceName;
 
     /**
+     * The identifier of Quartz instance that must be unique for all schedulers working as if they are the same
+     * <em>logical</em> Scheduler within a cluster. Use the default value {@code AUTO} or some of the configured
+     * <a href="https://quarkus.io/guides/quartz#quarkus-quartz_quarkus.quartz.instance-id-generators-instance-id-generators">
+     * instance ID generators</a> if you wish the identifier to be generated for you.
+     */
+    @ConfigItem(defaultValue = "AUTO")
+    public String instanceId;
+
+    /**
      * The amount of time in milliseconds that a trigger is allowed to be acquired and fired ahead of its scheduled fire time.
      */
     @ConfigItem(defaultValue = "0")

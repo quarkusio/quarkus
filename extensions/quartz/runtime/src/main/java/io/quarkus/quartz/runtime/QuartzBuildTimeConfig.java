@@ -69,6 +69,14 @@ public class QuartzBuildTimeConfig {
     public Optional<String> selectWithLockSql;
 
     /**
+     * Instance ID generators.
+     */
+    @ConfigItem
+    @ConfigDocMapKey("generator-name")
+    @ConfigDocSection
+    public Map<String, QuartzExtensionPointConfig> instanceIdGenerators;
+
+    /**
      * Trigger listeners.
      */
     @ConfigItem

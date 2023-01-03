@@ -33,12 +33,15 @@ import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.common.runtime.util.EntityVersionInfo;
+import io.quarkus.mongodb.panache.common.runtime.util.VersionHandler;
 import io.quarkus.mongodb.panache.common.transaction.MongoTransactionException;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -70,7 +73,10 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public void persist(Object entity) {
         MongoCollection collection = mongoCollection(entity);
-        persist(collection, entity);
+        ClientSession session = getSession(entity);
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(entity,
+                getBsonDocument(collection, entity));
+        persist(collection, session, entityVersionInfo);
     }
 
     public void persist(Iterable<?> entities) {
@@ -84,14 +90,17 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     public void persist(Object firstEntity, Object... entities) {
+        MongoCollection collection = mongoCollection(firstEntity);
+        ClientSession session = getSession(firstEntity);
         if (entities == null || entities.length == 0) {
-            MongoCollection collection = mongoCollection(firstEntity);
-            persist(collection, firstEntity);
+            EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(firstEntity,
+                    getBsonDocument(collection, firstEntity));
+            persist(collection, session, entityVersionInfo);
         } else {
             List<Object> entityList = new ArrayList<>();
             entityList.add(firstEntity);
             entityList.addAll(Arrays.asList(entities));
-            persist(entityList);
+            persist(collection, session, entityList);
         }
     }
 
@@ -144,7 +153,11 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public void persistOrUpdate(Object entity) {
         MongoCollection collection = mongoCollection(entity);
-        persistOrUpdate(collection, entity);
+        ClientSession session = getSession(entity);
+        BsonDocument document = getBsonDocument(collection, entity);
+
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(entity, document);
+        persistOrUpdate(collection, session, entityVersionInfo);
     }
 
     public void persistOrUpdate(Iterable<?> entities) {
@@ -159,8 +172,12 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public void persistOrUpdate(Object firstEntity, Object... entities) {
         MongoCollection collection = mongoCollection(firstEntity);
+
         if (entities == null || entities.length == 0) {
-            persistOrUpdate(collection, firstEntity);
+            ClientSession session = getSession(firstEntity);
+            EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(firstEntity,
+                    getBsonDocument(collection, firstEntity));
+            persistOrUpdate(collection, session, entityVersionInfo);
         } else {
             List<Object> entityList = new ArrayList<>();
             entityList.add(firstEntity);
@@ -204,12 +221,46 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     //
     // Private stuff
 
-    private void persist(MongoCollection collection, Object entity) {
-        ClientSession session = getSession(entity);
-        if (session == null) {
-            collection.insertOne(entity);
-        } else {
-            collection.insertOne(session, entity);
+    private void persist(MongoCollection collection, ClientSession session, EntityVersionInfo entityVersionInfo) {
+        try {
+            VersionHandler.incrementVersionValue(entityVersionInfo);
+            if (session == null) {
+                collection.insertOne(entityVersionInfo.entity);
+            } else {
+                collection.insertOne(session, entityVersionInfo.entity);
+            }
+        } catch (Throwable ex) {
+            VersionHandler.rollbackVersion(entityVersionInfo);
+            throw ex;
+        }
+    }
+
+    private void persist(MongoCollection collection, ClientSession session, List<Object> entities) {
+        if (entities.size() > 0) {
+            List<Object> entitiesWithoutVersion = new ArrayList<>();
+            List<EntityVersionInfo> entityVersionInfosWithVersion = new ArrayList<>();
+
+            //handle version and create two distinct lists.
+            entities.stream()
+                    .map(entity -> VersionHandler.buildEntityVersionInfo(entity, getBsonDocument(collection, entity)))
+                    .forEach(entityVersionInfo -> {
+                        if (entityVersionInfo.hasVersionAnnotation) {
+                            entityVersionInfosWithVersion.add(entityVersionInfo);
+                        } else {
+                            entitiesWithoutVersion.add(entityVersionInfo.entity);
+                        }
+                    });
+
+            //first persist without version
+            if (!entitiesWithoutVersion.isEmpty()) {
+                if (session == null) {
+                    collection.insertMany(entitiesWithoutVersion);
+                } else {
+                    collection.insertMany(session, entitiesWithoutVersion);
+                }
+            }
+
+            entityVersionInfosWithVersion.forEach(entityVersionInfo -> persist(collection, session, entityVersionInfo));
         }
     }
 
@@ -219,26 +270,32 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             Object firstEntity = entities.get(0);
             MongoCollection collection = mongoCollection(firstEntity);
             ClientSession session = getSession(firstEntity);
-            if (session == null) {
-                collection.insertMany(entities);
-            } else {
-                collection.insertMany(session, entities);
-            }
+
+            persist(collection, session, entities);
         }
     }
 
     private void update(MongoCollection collection, Object entity) {
-        //we transform the entity as a document first
-        BsonDocument document = getBsonDocument(collection, entity);
-
-        //then we get its id field and create a new Document with only this one that will be our replace query
-        BsonValue id = document.get(ID);
-        BsonDocument query = new BsonDocument().append(ID, id);
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(entity,
+                getBsonDocument(collection, entity));
         ClientSession session = getSession(entity);
-        if (session == null) {
-            collection.replaceOne(query, entity);
-        } else {
-            collection.replaceOne(session, query, entity);
+        update(collection, session, entityVersionInfo);
+    }
+
+    private void update(MongoCollection collection, ClientSession session, EntityVersionInfo entityVersionInfo) {
+        try {
+            VersionHandler.incrementVersionValue(entityVersionInfo);
+            UpdateResult updateResult;
+            if (session == null) {
+                updateResult = collection.replaceOne(entityVersionInfo.updateQuery, entityVersionInfo.entity);
+            } else {
+                updateResult = collection.replaceOne(session, entityVersionInfo.updateQuery, entityVersionInfo.entity);
+            }
+
+            VersionHandler.validateChanges(entityVersionInfo, updateResult.getModifiedCount());
+        } catch (Throwable ex) {
+            VersionHandler.rollbackVersion(entityVersionInfo);
+            throw ex;
         }
     }
 
@@ -248,31 +305,41 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         }
     }
 
-    private void persistOrUpdate(MongoCollection collection, Object entity) {
-        //we transform the entity as a document first
-        BsonDocument document = getBsonDocument(collection, entity);
-
-        ClientSession session = getSession(entity);
-        //then we get its id field and create a new Document with only this one that will be our replace query
-        BsonValue id = document.get(ID);
-        if (id == null) {
-            //insert with autogenerated ID
-            if (session == null) {
-                collection.insertOne(entity);
+    private void persistOrUpdate(MongoCollection collection, ClientSession session, EntityVersionInfo entityVersionInfo) {
+        try {
+            if (entityVersionInfo.entityId == null) {
+                //insert with autogenerated ID
+                persist(collection, session, entityVersionInfo);
             } else {
-                collection.insertOne(session, entity);
+                if (entityVersionInfo.hasVersionAnnotationAndValue()) {
+                    //when we have version value defined it cannot be considered as an upsert
+                    update(collection, session, entityVersionInfo);
+                } else {
+                    VersionHandler.incrementVersionValue(entityVersionInfo);
+                    replaceOne(session, collection, entityVersionInfo.updateQuery, entityVersionInfo.entity);
+                }
             }
-        } else {
-            //insert with user provided ID or update
-            BsonDocument query = new BsonDocument().append(ID, id);
-            if (session == null) {
-                collection.replaceOne(query, entity, new ReplaceOptions().upsert(true));
-            } else {
-                collection.replaceOne(session, query, entity, new ReplaceOptions().upsert(true));
-            }
+        } catch (Throwable ex) {
+            VersionHandler.rollbackVersion(entityVersionInfo);
+            throw ex;
         }
     }
 
+    private UpdateResult replaceOne(ClientSession session, MongoCollection collection, BsonDocument query, Object entity) {
+        if (session == null) {
+            UpdateResult updateResult = collection.replaceOne(query, entity, new ReplaceOptions().upsert(true));
+            return updateResult;
+        }
+
+        UpdateResult updateResult = collection.replaceOne(session, query, entity, new ReplaceOptions().upsert(true));
+        return updateResult;
+    }
+
+    /**
+     * When contains {@link io.quarkus.mongodb.panache.common.Version @Version},
+     * we first perform `bulkWrite` for the others, and then call `persistOrUpdate` one by one to guarantee the state of the
+     * Entity.
+     */
     private void persistOrUpdate(List<Object> entities) {
         if (entities.isEmpty()) {
             return;
@@ -285,31 +352,41 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
         //this will be an ordered bulk: it's less performant than an unordered one but will fail at the first failed write
         List<WriteModel> bulk = new ArrayList<>();
+        List<EntityVersionInfo> entityVersionInfos = new ArrayList<>();
         for (Object entity : entities) {
             //we transform the entity as a document first
             BsonDocument document = getBsonDocument(collection, entity);
+            EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(entity, document);
 
-            //then we get its id field and create a new Document with only this one that will be our replace query
-            BsonValue id = document.get(ID);
-            if (id == null) {
-                //insert with autogenerated ID
-                bulk.add(new InsertOneModel(entity));
+            if (entityVersionInfo.entityId == null) {
+                VersionHandler.incrementVersionValue(entityVersionInfo);
+                bulk.add(new InsertOneModel(entityVersionInfo.entity));
             } else {
-                //insert with user provided ID or update
-                BsonDocument query = new BsonDocument().append(ID, id);
-                bulk.add(new ReplaceOneModel(query, entity,
-                        new ReplaceOptions().upsert(true)));
+                if (entityVersionInfo.hasVersionAnnotation) {
+                    entityVersionInfos.add(entityVersionInfo);
+                } else {
+                    VersionHandler.incrementVersionValue(entityVersionInfo);
+                    bulk.add(new ReplaceOneModel(entityVersionInfo.updateQuery, entityVersionInfo.entity,
+                            new ReplaceOptions().upsert(true)));
+                }
             }
         }
 
-        if (session == null) {
-            collection.bulkWrite(bulk);
-        } else {
-            collection.bulkWrite(session, bulk);
+        //perform only insert/upsert
+        if (!bulk.isEmpty()) {
+            if (session == null) {
+                collection.bulkWrite(bulk);
+            } else {
+                collection.bulkWrite(session, bulk);
+            }
         }
+
+        //perform updates with version usage
+        entityVersionInfos
+                .forEach(entityVersionInfo -> persistOrUpdate(collection, session, entityVersionInfo));
     }
 
-    private BsonDocument getBsonDocument(MongoCollection collection, Object entity) {
+    public BsonDocument getBsonDocument(MongoCollection collection, Object entity) {
         BsonDocument document = new BsonDocument();
         Codec codec = collection.getCodecRegistry().get(entity.getClass());
         codec.encode(new BsonDocumentWriter(document), entity, EncoderContext.builder().build());

@@ -26,10 +26,14 @@ import com.mongodb.client.model.InsertOneModel;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.client.result.UpdateResult;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.common.runtime.util.EntityVersionInfo;
+import io.quarkus.mongodb.panache.common.runtime.util.VersionHandler;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
@@ -63,7 +67,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public Uni<Void> persist(Object entity) {
         ReactiveMongoCollection collection = mongoCollection(entity);
-        return persist(collection, entity);
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(entity,
+                getBsonDocument(collection, entity));
+        return persist(collection, entityVersionInfo);
     }
 
     public Uni<Void> persist(Iterable<?> entities) {
@@ -87,7 +93,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public Uni<Void> persist(Object firstEntity, Object... entities) {
         ReactiveMongoCollection collection = mongoCollection(firstEntity);
         if (entities == null || entities.length == 0) {
-            return persist(collection, firstEntity);
+            EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(firstEntity,
+                    getBsonDocument(collection, firstEntity));
+            return persist(collection, entityVersionInfo);
         } else {
             List<Object> entityList = new ArrayList<>();
             entityList.add(firstEntity);
@@ -159,7 +167,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public Uni<Void> persistOrUpdate(Object entity) {
         ReactiveMongoCollection collection = mongoCollection(entity);
-        return persistOrUpdate(collection, entity);
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(entity,
+                getBsonDocument(collection, entity));
+        return persistOrUpdate(collection, entityVersionInfo);
     }
 
     public Uni<Void> persistOrUpdate(Iterable<?> entities) {
@@ -183,7 +193,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public Uni<Void> persistOrUpdate(Object firstEntity, Object... entities) {
         ReactiveMongoCollection collection = mongoCollection(firstEntity);
         if (entities == null || entities.length == 0) {
-            return persistOrUpdate(collection, firstEntity);
+            EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(firstEntity,
+                    getBsonDocument(collection, firstEntity));
+            return persistOrUpdate(collection, entityVersionInfo);
         } else {
             List<Object> entityList = new ArrayList<>();
             entityList.add(firstEntity);
@@ -234,67 +246,145 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return Uni.createFrom().item((Void) null);
     }
 
-    private Uni<Void> persist(ReactiveMongoCollection collection, Object entity) {
-        return collection.insertOne(entity).onItem().ignore().andContinueWithNull();
+    private Uni<Void> persist(ReactiveMongoCollection collection, EntityVersionInfo entityVersionInfo) {
+        VersionHandler.incrementVersionValue(entityVersionInfo);
+        return collection.insertOne(entityVersionInfo.entity)
+                .onItem()
+                .invoke(insertOneResult -> {
+                    if (((InsertOneResult) insertOneResult).getInsertedId() == null) {
+                        VersionHandler.rollbackVersion(entityVersionInfo);
+                    }
+                })
+                .onFailure()
+                .invoke(() -> {
+                    VersionHandler.rollbackVersion(entityVersionInfo);
+                })
+                .onItem()
+                .ignore()
+                .andContinueWithNull();
     }
 
     private Uni<Void> persist(ReactiveMongoCollection collection, List<Object> entities) {
-        return collection.insertMany(entities).onItem().ignore().andContinueWithNull();
+        List<Object> entitiesWithoutVersion = new ArrayList<>();
+        List<EntityVersionInfo> entityVersionInfosWithVersion = new ArrayList<>();
+
+        //handle version and create two distinct lists.
+        entities.stream()
+                .map(entity -> VersionHandler.buildEntityVersionInfo(entity, getBsonDocument(collection, entity)))
+                .forEach(entityVersionInfo -> {
+                    if (entityVersionInfo.hasVersionAnnotation) {
+                        entityVersionInfosWithVersion.add(entityVersionInfo);
+                    } else {
+                        entitiesWithoutVersion.add(entityVersionInfo.entity);
+                    }
+                });
+
+        List<Uni<Void>> unis = new ArrayList<>();
+        //first persist without version
+        if (!entitiesWithoutVersion.isEmpty()) {
+            unis.add(collection.insertMany(entitiesWithoutVersion)
+                    .onItem().ignore().andContinueWithNull());
+        }
+
+        if (!entityVersionInfosWithVersion.isEmpty()) {
+            entityVersionInfosWithVersion.stream()
+                    .map(entityVersionInfo -> persist(collection, entityVersionInfo))
+                    .collect(Collectors.toCollection(() -> unis));
+        }
+
+        return Uni.combine().all().unis(unis).collectFailures().combinedWith(u -> null);
     }
 
     private Uni<Void> update(ReactiveMongoCollection collection, Object entity) {
-        //we transform the entity as a document first
-        BsonDocument document = getBsonDocument(collection, entity);
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(entity,
+                getBsonDocument(collection, entity));
+        return update(collection, entityVersionInfo);
+    }
 
-        //then we get its id field and create a new Document with only this one that will be our replace query
-        BsonValue id = document.get(ID);
-        BsonDocument query = new BsonDocument().append(ID, id);
-        return collection.replaceOne(query, entity).onItem().ignore().andContinueWithNull();
+    private Uni<Void> update(ReactiveMongoCollection collection, EntityVersionInfo entityVersionInfo) {
+        VersionHandler.incrementVersionValue(entityVersionInfo);
+
+        return collection.replaceOne(entityVersionInfo.updateQuery, entityVersionInfo.entity)
+                .onItem()
+                .invoke(updateResult -> VersionHandler.validateChanges(entityVersionInfo,
+                        ((UpdateResult) updateResult).getModifiedCount()))
+                .onFailure()
+                .invoke(() -> {
+                    VersionHandler.rollbackVersion(entityVersionInfo);
+                })
+                .onItem().ignore().andContinueWithNull();
     }
 
     private Uni<Void> update(ReactiveMongoCollection collection, List<Object> entities) {
-        List<Uni<Void>> unis = entities.stream().map(entity -> update(collection, entity)).collect(Collectors.toList());
-        return Uni.combine().all().unis(unis).combinedWith(u -> null);
+        List<Uni<Void>> unis = entities.stream()
+                .map(entity -> update(collection, entity))
+                .collect(Collectors.toList());
+        return Uni.combine().all().unis(unis).collectFailures().combinedWith(u -> null);
     }
 
-    private Uni<Void> persistOrUpdate(ReactiveMongoCollection collection, Object entity) {
-        //we transform the entity as a document first
-        BsonDocument document = getBsonDocument(collection, entity);
-
-        //then we get its id field and create a new Document with only this one that will be our replace query
-        BsonValue id = document.get(ID);
-        if (id == null) {
+    private Uni<Void> persistOrUpdate(ReactiveMongoCollection collection, EntityVersionInfo entityVersionInfo) {
+        if (entityVersionInfo.entityId == null) {
+            VersionHandler.incrementVersionValue(entityVersionInfo);
             //insert with autogenerated ID
-            return collection.insertOne(entity).onItem().ignore().andContinueWithNull();
+            return collection.insertOne(entityVersionInfo.entity).onItem().ignore().andContinueWithNull();
         } else {
-            //insert with user provided ID or update
-            BsonDocument query = new BsonDocument().append(ID, id);
-            return collection.replaceOne(query, entity, new ReplaceOptions().upsert(true))
-                    .onItem().ignore().andContinueWithNull();
+            if (entityVersionInfo.hasVersionAnnotationAndValue()) {
+                //when we have version value defined it cannot be considered as an upsert
+                return update(collection, entityVersionInfo);
+            } else {
+                VersionHandler.incrementVersionValue(entityVersionInfo);
+                return collection
+                        .replaceOne(entityVersionInfo.updateQuery, entityVersionInfo.entity, new ReplaceOptions().upsert(true))
+                        .onFailure()
+                        .invoke(() -> {
+                            VersionHandler.rollbackVersion(entityVersionInfo);
+                        })
+                        .onItem().ignore().andContinueWithNull();
+            }
         }
     }
 
+    /**
+     * When contains {@link io.quarkus.mongodb.panache.common.Version @Version}, we first perform `bulkWrite` for the others,
+     * and then call `persistOrUpdate` one by one to guarantee the state of the Entity.
+     */
     private Uni<Void> persistOrUpdate(ReactiveMongoCollection collection, List<Object> entities) {
         //this will be an ordered bulk: it's less performant than an unordered one but will fail at the first failed write
         List<WriteModel> bulk = new ArrayList<>();
+        List<EntityVersionInfo> entityVersionInfos = new ArrayList<>();
         for (Object entity : entities) {
             //we transform the entity as a document first
             BsonDocument document = getBsonDocument(collection, entity);
+            EntityVersionInfo entityVersionInfo = VersionHandler.buildEntityVersionInfo(entity, document);
 
-            //then we get its id field and create a new Document with only this one that will be our replace query
-            BsonValue id = document.get(ID);
-            if (id == null) {
-                //insert with autogenerated ID
-                bulk.add(new InsertOneModel(entity));
+            if (entityVersionInfo.entityId == null) {
+                VersionHandler.incrementVersionValue(entityVersionInfo);
+                bulk.add(new InsertOneModel(entityVersionInfo.entity));
             } else {
-                //insert with user provided ID or update
-                BsonDocument query = new BsonDocument().append(ID, id);
-                bulk.add(new ReplaceOneModel(query, entity,
-                        new ReplaceOptions().upsert(true)));
+                if (entityVersionInfo.hasVersionAnnotation) {
+                    entityVersionInfos.add(entityVersionInfo);
+                } else {
+                    VersionHandler.incrementVersionValue(entityVersionInfo);
+                    bulk.add(new ReplaceOneModel(entityVersionInfo.updateQuery, entityVersionInfo.entity,
+                            new ReplaceOptions().upsert(true)));
+                }
             }
         }
 
-        return collection.bulkWrite(bulk).onItem().ignore().andContinueWithNull();
+        List<Uni<Void>> unis = new ArrayList<>();
+        //perform only insert/upsert
+        if (!bulk.isEmpty()) {
+            unis.add(collection.bulkWrite(bulk).onItem().ignore().andContinueWithNull());
+        }
+
+        //perform updates with version usage
+        if (!entityVersionInfos.isEmpty()) {
+            entityVersionInfos.stream()
+                    .map(entityVersionInfo -> persistOrUpdate(collection, entityVersionInfo))
+                    .collect(Collectors.toCollection(() -> unis));
+        }
+
+        return Uni.combine().all().unis(unis).collectFailures().combinedWith(u -> null);
     }
 
     private BsonDocument getBsonDocument(ReactiveMongoCollection collection, Object entity) {

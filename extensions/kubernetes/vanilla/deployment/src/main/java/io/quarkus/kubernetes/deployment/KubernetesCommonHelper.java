@@ -55,7 +55,6 @@ import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
-import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
@@ -208,13 +207,11 @@ public class KubernetesCommonHelper {
         });
 
         if (!config.isAddVersionToLabelSelectors()) {
-            result.add(new DecoratorBuildItem(target, new RemoveLabelDecorator(name, Labels.VERSION)));
             result.add(new DecoratorBuildItem(target, new RemoveFromSelectorDecorator(name, Labels.VERSION)));
             result.add(new DecoratorBuildItem(target, new RemoveFromMatchingLabelsDecorator(name, Labels.VERSION)));
         }
 
         if (!config.isAddNameToLabelSelectors()) {
-            result.add(new DecoratorBuildItem(target, new RemoveLabelDecorator(name, Labels.NAME)));
             result.add(new DecoratorBuildItem(target, new RemoveFromSelectorDecorator(name, Labels.NAME)));
             result.add(new DecoratorBuildItem(target, new RemoveFromMatchingLabelsDecorator(name, Labels.NAME)));
         }

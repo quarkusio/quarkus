@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.mutiny.Uni;
 
 public class GrpcServerProcessorTest {
 
@@ -30,6 +31,7 @@ public class GrpcServerProcessorTest {
                 arguments(NonBlockingExtendsBlockingRoot.class, NonBlockingExtendsBlockingRoot.EXPECTED),
                 arguments(ExtendsBlockingRoot.class, ExtendsBlockingRoot.EXPECTED),
                 arguments(NonBlockingRoot.class, NonBlockingRoot.EXPECTED),
+                arguments(NoClassAnnotationMutinyRoot.class, NoClassAnnotationMutinyRoot.EXPECTED),
                 arguments(BlockingExtendsNonBlockingRoot.class, BlockingExtendsNonBlockingRoot.EXPECTED),
                 arguments(NonBlockingExtendsNonBlockingRoot.class, NonBlockingExtendsNonBlockingRoot.EXPECTED),
                 arguments(ExtendsNonBlockingRoot.class, ExtendsNonBlockingRoot.EXPECTED),
@@ -146,6 +148,29 @@ public class GrpcServerProcessorTest {
         }
 
         void noAnnotation() {
+        }
+    }
+
+    static class NoClassAnnotationMutinyRoot {
+        static final Set<String> EXPECTED = ImmutableSet.of("blocking", "transactional");
+
+        @NonBlocking
+        Uni<Void> nonBlocking() {
+            return Uni.createFrom().nullItem();
+        }
+
+        @Blocking
+        Uni<Void> blocking() {
+            return Uni.createFrom().nullItem();
+        }
+
+        @Transactional
+        Uni<Void> transactional() {
+            return Uni.createFrom().nullItem();
+        }
+
+        Uni<Void> noAnnotation() {
+            return Uni.createFrom().nullItem();
         }
     }
 

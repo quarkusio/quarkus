@@ -2,6 +2,7 @@ package io.quarkus.grpc.deployment;
 
 import static io.quarkus.deployment.Feature.GRPC_SERVER;
 import static io.quarkus.grpc.deployment.GrpcDotNames.BLOCKING;
+import static io.quarkus.grpc.deployment.GrpcDotNames.MUTINY_SERVICE;
 import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
 import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
@@ -369,12 +370,31 @@ public class GrpcServerProcessor {
      * </ol>
      */
     static Set<String> gatherBlockingMethodNames(ClassInfo service, IndexView index) {
-        List<ClassInfo> classes = classHierarchy(service, index);
 
         Set<String> result = new HashSet<>();
 
-        // Collect all gRPC methods from the *ImplBase class, if present
-        List<MethodInfo> implBaseMethods = classes.get(classes.size() - 1).methods();
+        // We need to check if the service implementation extends the generated Mutiny interface
+        // or the regular "ImplBase" class.
+
+        boolean isExtendingMutinyService = false;
+        for (DotName interfaceName : service.interfaceNames()) {
+            ClassInfo info = index.getClassByName(interfaceName);
+            if (info != null && info.interfaceNames().contains(MUTINY_SERVICE)) {
+                isExtendingMutinyService = true;
+                break;
+            }
+        }
+
+        ClassInfo classInfo;
+        var classes = classHierarchy(service, index);
+        if (isExtendingMutinyService) {
+            classInfo = service;
+        } else {
+            // Collect all gRPC methods from the *ImplBase class, if present
+            classInfo = classes.get(classes.size() - 1);
+        }
+
+        List<MethodInfo> implBaseMethods = classInfo.methods();
 
         for (MethodInfo implBaseMethod : implBaseMethods) {
             String methodName = implBaseMethod.name();

@@ -85,6 +85,11 @@ class ReactivePanacheQueryImpl<Entity> : ReactivePanacheQuery<Entity> {
         return this
     }
 
+    override fun withBatchSize(batchSize: Int): ReactivePanacheQuery<Entity> {
+        delegate.withBatchSize<Entity>(batchSize)
+        return this
+    }
+
     override fun count(): Uni<Long> {
         return delegate.count()
     }

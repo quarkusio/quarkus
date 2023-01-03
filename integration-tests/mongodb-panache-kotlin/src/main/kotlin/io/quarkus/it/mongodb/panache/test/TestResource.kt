@@ -1,5 +1,6 @@
 package io.quarkus.it.mongodb.panache.test
 
+import com.mongodb.ReadPreference
 import com.mongodb.client.model.Collation
 import com.mongodb.client.model.CollationStrength
 import io.quarkus.mongodb.panache.kotlin.PanacheQuery
@@ -88,6 +89,16 @@ class TestResource {
                 "category = :category",
                 Parameters.with("category", null)
             ).size
+        )
+
+        // find with options
+        Assertions.assertEquals(
+            5,
+            TestImperativeEntity.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .size
         )
 
         // regex
@@ -258,6 +269,16 @@ class TestResource {
                 "category = :category",
                 Parameters.with("category", null)
             ).size
+        )
+
+        // find with options
+        Assertions.assertEquals(
+            5,
+            testImperativeRepository.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .size
         )
 
         // regex
@@ -504,6 +525,17 @@ class TestResource {
             ).await().indefinitely().size
         )
 
+        // find with options
+        Assertions.assertEquals(
+            5,
+            TestReactiveEntity.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .await().indefinitely()
+                .size
+        )
+
         // regex
         val entityWithUpperCase = TestReactiveEntity("title11", "upperCaseCategory", "desc")
         entityWithUpperCase.persist<TestReactiveEntity>().await().indefinitely()
@@ -696,6 +728,17 @@ class TestResource {
                 "category = :category",
                 Parameters.with("category", null)
             ).await().indefinitely().size
+        )
+
+        // find with options
+        Assertions.assertEquals(
+            5,
+            testReactiveRepository.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .await().indefinitely()
+                .size
         )
 
         // regex

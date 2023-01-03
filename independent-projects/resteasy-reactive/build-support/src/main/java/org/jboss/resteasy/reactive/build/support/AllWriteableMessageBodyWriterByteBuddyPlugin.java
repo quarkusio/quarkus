@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
@@ -84,15 +85,15 @@ public class AllWriteableMessageBodyWriterByteBuddyPlugin implements Plugin {
             MethodVisitor superMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("isWriteable")) {
                 // RR isWriteable
-                if ("(Ljava/lang/Class;Ljava/lang/reflect/Type;Lorg/jboss/resteasy/reactive/server/spi/ResteasyReactiveResourceInfo;Ljavax/ws/rs/core/MediaType;)Z"
-                        .equals(descriptor)) {
+                if (("(Ljava/lang/Class;Ljava/lang/reflect/Type;Lorg/jboss/resteasy/reactive/server/spi/ResteasyReactiveResourceInfo;L"
+                        + MediaType.class.getName().replace('.', '/') + ";)Z").equals(descriptor)) {
                     AtomicBoolean rrResult = new AtomicBoolean(false);
                     rrIsWritableResult = Optional.of(rrResult);
                     return new MessageBodyWriterIsWriteableMethodVisitor(new CodeSizeEvaluator(superMethodVisitor), rrResult);
                 }
                 // JAX-RS isWriteable
-                else if ("(Ljava/lang/Class;Ljava/lang/reflect/Type;[Ljava/lang/annotation/Annotation;Ljavax/ws/rs/core/MediaType;)Z"
-                        .equals(descriptor)) {
+                else if (("(Ljava/lang/Class;Ljava/lang/reflect/Type;[Ljava/lang/annotation/Annotation;L"
+                        + MediaType.class.getName().replace('.', '/') + ";)Z").equals(descriptor)) {
                     AtomicBoolean standardResult = new AtomicBoolean(false);
                     jaxRSIsWritableResult = Optional.of(standardResult);
                     return new MessageBodyWriterIsWriteableMethodVisitor(new CodeSizeEvaluator(superMethodVisitor),

@@ -74,9 +74,10 @@ transform_module () {
 
 transform_kotlin_module () {
   # this is very ad hoc but hopefully it will be good enough
-  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.xml.bind. javax.transaction.Transactional; do
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.xml.bind. javax.transaction.Transactional javax.validation.; do
     local newPackage=${package/javax/jakarta}
     find $1 -name '*.kt' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
+    find $1 -name '*.kts' | xargs --no-run-if-empty sed -i "s@annotation(\"${package}@annotation(\"${newPackage}@g"
   done
 }
 

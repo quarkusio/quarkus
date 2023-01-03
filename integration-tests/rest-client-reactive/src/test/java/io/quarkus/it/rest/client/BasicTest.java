@@ -43,6 +43,12 @@ public class BasicTest {
     }
 
     @Test
+    public void shouldMakeJsonRequestAndGetTextResponse() {
+        Response response = RestAssured.with().body(helloUrl).post("/call-helloFromMessage-client");
+        assertThat(response.asString()).isEqualTo("Hello world");
+    }
+
+    @Test
     public void restResponseShouldWorkWithNonSuccessfulResponse() {
         Response response = RestAssured.with().body(helloUrl).post("/rest-response");
         assertThat(response.asString()).isEqualTo("405");

@@ -118,11 +118,22 @@ public class ClientCallingResource {
         router.post("/hello").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
                 .end("Hello, " + (rc.getBodyAsString()).repeat(getCount(rc))));
 
+        router.post("/hello/fromMessage").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
+                .end(rc.body().asJsonObject().getString("message")));
+
         router.route("/call-hello-client").blockingHandler(rc -> {
             String url = rc.getBody().toString();
             HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(HelloClient.class);
             String greeting = client.greeting("John", 2);
+            rc.response().end(greeting);
+        });
+
+        router.route("/call-helloFromMessage-client").blockingHandler(rc -> {
+            String url = rc.getBody().toString();
+            HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(HelloClient.class);
+            String greeting = client.fromMessage(new HelloClient.Message("Hello world"));
             rc.response().end(greeting);
         });
 

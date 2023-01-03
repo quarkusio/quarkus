@@ -9,22 +9,17 @@ public abstract class AbstractStaticResourcesTest {
 
     @Test
     public void shouldEncodeHtmlPage() {
-        RestAssured.when().get("/static-file.html")
-                .then()
-                .header("Content-Encoding", "gzip")
-                .header("Transfer-Encoding", "chunked")
-                .body(Matchers.containsString("This is the title of the webpage!"))
-                .statusCode(200);
+        assertEncodedResponse("/static-file.html");
     }
 
     @Test
     public void shouldEncodeRootPage() {
-        RestAssured.when().get("/")
-                .then()
-                .header("Content-Encoding", "gzip")
-                .header("Transfer-Encoding", "chunked")
-                .body(Matchers.containsString("This is the title of the webpage!"))
-                .statusCode(200);
+        assertEncodedResponse("/");
+    }
+
+    @Test
+    public void shouldEncodeHiddenHtmlPage() {
+        assertEncodedResponse("/.hidden-file.html");
     }
 
     @Test
@@ -32,6 +27,24 @@ public abstract class AbstractStaticResourcesTest {
         RestAssured.when().get("/image.svg")
                 .then()
                 .header("Content-Encoding", Matchers.nullValue())
+                .body(Matchers.containsString("This is the title of the webpage!"))
+                .statusCode(200);
+    }
+
+    @Test
+    public void shouldReturnRangeSupport() {
+        RestAssured.when().head("/")
+                .then()
+                .header("Accept-Ranges", "bytes")
+                .header("Content-Length", Integer::parseInt, Matchers.greaterThan(0))
+                .statusCode(200);
+    }
+
+    protected void assertEncodedResponse(String path) {
+        RestAssured.when().get(path)
+                .then()
+                .header("Content-Encoding", "gzip")
+                .header("Transfer-Encoding", "chunked")
                 .body(Matchers.containsString("This is the title of the webpage!"))
                 .statusCode(200);
     }

@@ -159,6 +159,7 @@ import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuil
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
+import io.quarkus.resteasy.reactive.server.EndpointDisabled;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
@@ -215,6 +216,7 @@ public class ResteasyReactiveProcessor {
             DotName.createSimple(HttpServerResponse.class.getName()),
             DotName.createSimple(RoutingContext.class.getName()));
     private static final DotName FILE = DotName.createSimple(File.class.getName());
+    private static final DotName ENDPOINT_DISABLED = DotName.createSimple(EndpointDisabled.class.getName());
 
     private static final int SECURITY_EXCEPTION_MAPPERS_PRIORITY = Priorities.USER + 1;
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
@@ -588,6 +590,20 @@ public class ResteasyReactiveProcessor {
                         @Override
                         public Status isJava19OrHigher() {
                             return result;
+                        }
+                    })
+                    .setIsDisabledCreator(new Function<>() {
+                        @Override
+                        public Supplier<Boolean> apply(ClassInfo classInfo) {
+                            AnnotationInstance instance = classInfo.declaredAnnotation(ENDPOINT_DISABLED);
+                            if (instance == null) {
+                                return null;
+                            }
+                            String propertyName = instance.value("name").asString();
+                            String propertyValue = instance.value("stringValue").asString();
+                            AnnotationValue disableIfMissingValue = instance.value("disableIfMissing");
+                            boolean disableIfMissing = disableIfMissingValue != null && disableIfMissingValue.asBoolean();
+                            return recorder.disableIfPropertyMatches(propertyName, propertyValue, disableIfMissing);
                         }
                     });
 

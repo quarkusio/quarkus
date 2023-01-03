@@ -111,6 +111,9 @@ public class RuntimeDeploymentManager {
         possibleSubResource.addAll(resourceClasses); //the TCK uses normal resources also as sub resources
         for (int i = 0; i < possibleSubResource.size(); i++) {
             ResourceClass clazz = possibleSubResource.get(i);
+            if ((clazz.getIsDisabled() != null) && clazz.getIsDisabled().get()) {
+                continue;
+            }
             Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> templates = new HashMap<>();
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (int j = 0; j < clazz.getMethods().size(); j++) {
@@ -132,6 +135,9 @@ public class RuntimeDeploymentManager {
 
         for (int i = 0; i < resourceClasses.size(); i++) {
             ResourceClass clazz = resourceClasses.get(i);
+            if ((clazz.getIsDisabled() != null) && clazz.getIsDisabled().get()) {
+                continue;
+            }
             URITemplate classTemplate = new URITemplate(clazz.getPath(), true);
             var perClassMappers = mappers.get(classTemplate);
             if (perClassMappers == null) {

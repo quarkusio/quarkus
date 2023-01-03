@@ -45,6 +45,8 @@ public class ResourceClass {
      */
     private Map<String, String> classLevelExceptionMappers = new HashMap<>();
 
+    private Supplier<Boolean> isDisabled;
+
     public String getClassName() {
         return className;
     }
@@ -112,6 +114,14 @@ public class ResourceClass {
 
     public void setClassLevelExceptionMappers(Map<String, String> classLevelExceptionMappers) {
         this.classLevelExceptionMappers = classLevelExceptionMappers;
+    }
+
+    public Supplier<Boolean> getIsDisabled() {
+        return isDisabled;
+    }
+
+    public void setIsDisabled(Supplier<Boolean> isDisabled) {
+        this.isDisabled = isDisabled;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

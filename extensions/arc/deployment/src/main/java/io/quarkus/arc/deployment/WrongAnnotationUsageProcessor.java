@@ -17,6 +17,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -26,7 +27,8 @@ public class WrongAnnotationUsageProcessor {
 
     @BuildStep
     void detect(ArcConfig config, ApplicationIndexBuildItem applicationIndex, CustomScopeAnnotationsBuildItem scopeAnnotations,
-            TransformedAnnotationsBuildItem transformedAnnotations, BuildProducer<ValidationErrorBuildItem> validationErrors) {
+            TransformedAnnotationsBuildItem transformedAnnotations, BuildProducer<ValidationErrorBuildItem> validationErrors,
+            InterceptorResolverBuildItem interceptorResolverBuildItem) {
 
         if (!config.detectWrongAnnotations) {
             return;
@@ -89,6 +91,14 @@ public class WrongAnnotationUsageProcessor {
                     validationErrors.produce(new ValidationErrorBuildItem(
                             new IllegalStateException(String.format(
                                     "The %s class %s declares a producer but it must be ignored per the CDI rules",
+                                    clazz.nestingType().toString(), clazz.name().toString()))));
+                } else if (Annotations.containsAny(classAnnotations, interceptorResolverBuildItem.getInterceptorBindings())
+                        || Annotations.containsAny(clazz.annotations(),
+                                interceptorResolverBuildItem.getInterceptorBindings())) {
+                    // detect interceptor bindings on nested classes
+                    validationErrors.produce(new ValidationErrorBuildItem(
+                            new IllegalStateException(String.format(
+                                    "The %s class %s declares an interceptor binding but it must be ignored per CDI rules",
                                     clazz.nestingType().toString(), clazz.name().toString()))));
                 }
             }

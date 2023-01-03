@@ -297,14 +297,9 @@ quarkus.http.port=9090
 
 Setting `quarkus.profile`  to `staging` will activate the `staging` profile.
 
-IMPORTANT: Only a single profile may be active at a time.
-
 [NOTE]
 ====
-The `io.quarkus.runtime.configuration.ProfileManager#getActiveProfile` API provides a way to retrieve the active profile
-programmatically.
-
-Using `@ConfigProperty("quarkus.profile")` will *not* work properly.
+The `io.smallrye.config.SmallRyeConfig#getProfiles` API provides a way to retrieve the active profiles programmatically.
 ====
 
 === Profile aware files

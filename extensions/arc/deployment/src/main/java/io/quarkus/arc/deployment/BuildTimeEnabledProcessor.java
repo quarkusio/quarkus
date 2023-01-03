@@ -1,11 +1,14 @@
 package io.quarkus.arc.deployment;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.groupingBy;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,10 +60,9 @@ public class BuildTimeEnabledProcessor {
 
     @BuildStep
     void ifBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
-        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(IF_BUILD_PROFILE);
+        List<AnnotationInstance> annotationInstances = getAnnotations(index.getIndex(), IF_BUILD_PROFILE);
         for (AnnotationInstance instance : annotationInstances) {
-            String profileOnInstance = instance.value().asString();
-            boolean enabled = ConfigUtils.isProfileActive(profileOnInstance);
+            boolean enabled = BuildProfile.from(instance).enabled();
             if (enabled) {
                 LOGGER.debug("Enabling " + instance.target() + " since the profile value matches the active profile.");
             } else {
@@ -72,14 +74,13 @@ public class BuildTimeEnabledProcessor {
 
     @BuildStep
     void unlessBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
-        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(UNLESS_BUILD_PROFILE);
+        List<AnnotationInstance> annotationInstances = getAnnotations(index.getIndex(), UNLESS_BUILD_PROFILE);
         for (AnnotationInstance instance : annotationInstances) {
-            String profileOnInstance = instance.value().asString();
-            boolean enabled = !ConfigUtils.isProfileActive(profileOnInstance);
+            boolean enabled = BuildProfile.from(instance).disabled();
             if (enabled) {
-                LOGGER.debug("Enabling " + instance.target() + " since the profile value does not match the active profile.");
+                LOGGER.debug("Enabling " + instance.target() + " since the profile value matches the active profile.");
             } else {
-                LOGGER.debug("Disabling " + instance.target() + " since the profile value matches the active profile.");
+                LOGGER.debug("Disabling " + instance.target() + " since the profile value does not match the active profile.");
             }
             producer.produce(new BuildTimeConditionBuildItem(instance.target(), enabled));
         }
@@ -118,17 +119,7 @@ public class BuildTimeEnabledProcessor {
     void buildProperty(DotName annotationName, DotName containingAnnotationName, BiFunction<String, String, Boolean> testFun,
             IndexView index, BiConsumer<AnnotationTarget, Boolean> producer) {
         Config config = ConfigProviderResolver.instance().getConfig();
-        List<AnnotationInstance> annotationInstances = new ArrayList<>();
-        annotationInstances.addAll(index.getAnnotations(annotationName));
-        // Collect containing annotation instances
-        // Note that we can't just use the IndexView.getAnnotationsWithRepeatable() method because the containing annotation is not part of the index
-        for (AnnotationInstance containingInstance : index.getAnnotations(containingAnnotationName)) {
-            for (AnnotationInstance nestedInstance : containingInstance.value().asNestedArray()) {
-                // We need to set the target of the containing instance
-                annotationInstances.add(
-                        AnnotationInstance.create(nestedInstance.name(), containingInstance.target(), nestedInstance.values()));
-            }
-        }
+        List<AnnotationInstance> annotationInstances = getAnnotations(index, annotationName, containingAnnotationName);
         for (AnnotationInstance instance : annotationInstances) {
             String propertyName = instance.value("name").asString();
             String expectedStringValue = instance.value("stringValue").asString();
@@ -230,7 +221,7 @@ public class BuildTimeEnabledProcessor {
         final Map<Kind, Set<String>> map = buildTimeConditions.stream()
                 .filter(not(BuildTimeConditionBuildItem::isEnabled))
                 .map(BuildTimeConditionBuildItem::getTarget)
-                .collect(Collectors.groupingBy(
+                .collect(groupingBy(
                         AnnotationTarget::kind,
                         Collectors.mapping(BuildExclusionsBuildItem::targetMapper, Collectors.toSet())));
         return new BuildExclusionsBuildItem(
@@ -254,6 +245,92 @@ public class BuildTimeEnabledProcessor {
                 transform.add(DotNames.VETOED_PRODUCER);
             }
             transform.done();
+        }
+    }
+
+    private static List<AnnotationInstance> getAnnotations(IndexView index, DotName annotationName) {
+        return new ArrayList<>(index.getAnnotations(annotationName));
+    }
+
+    private static List<AnnotationInstance> getAnnotations(
+            IndexView index,
+            DotName annotationName,
+            DotName containingAnnotationName) {
+
+        // Single annotation
+        List<AnnotationInstance> annotationInstances = getAnnotations(index, annotationName);
+        // Collect containing annotation instances
+        // Note that we can't just use the IndexView.getAnnotationsWithRepeatable() method because the containing annotation is not part of the index
+        for (AnnotationInstance containingInstance : index.getAnnotations(containingAnnotationName)) {
+            for (AnnotationInstance nestedInstance : containingInstance.value().asNestedArray()) {
+                // We need to set the target of the containing instance
+                annotationInstances.add(
+                        AnnotationInstance.create(nestedInstance.name(), containingInstance.target(), nestedInstance.values()));
+            }
+        }
+
+        return annotationInstances;
+    }
+
+    private static class BuildProfile {
+        private final Set<String> allOf;
+        private final Set<String> anyOf;
+
+        BuildProfile(final Set<String> allOf, final Set<String> anyOf) {
+            this.allOf = allOf;
+            this.anyOf = anyOf;
+        }
+
+        boolean allMatch() {
+            if (allOf.isEmpty()) {
+                return true;
+            }
+
+            for (String profile : allOf) {
+                if (!ConfigUtils.isProfileActive(profile)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        boolean anyMatch() {
+            if (anyOf.isEmpty()) {
+                return true;
+            }
+
+            for (String profile : anyOf) {
+                if (ConfigUtils.isProfileActive(profile)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        boolean enabled() {
+            return allMatch() && anyMatch();
+        }
+
+        boolean disabled() {
+            return !enabled();
+        }
+
+        private static BuildProfile from(AnnotationInstance instance) {
+            AnnotationValue value = instance.value();
+
+            AnnotationValue allOfValue = instance.value("allOf");
+            Set<String> allOf = allOfValue != null ? new HashSet<>(asList(allOfValue.asStringArray())) : emptySet();
+
+            AnnotationValue anyOfValue = instance.value("anyOf");
+            Set<String> anyOf = new HashSet<>();
+            if (value != null) {
+                anyOf.add(value.asString());
+            }
+            if (anyOfValue != null) {
+                Collections.addAll(anyOf, anyOfValue.asStringArray());
+            }
+
+            return new BuildProfile(allOf, anyOf);
         }
     }
 }

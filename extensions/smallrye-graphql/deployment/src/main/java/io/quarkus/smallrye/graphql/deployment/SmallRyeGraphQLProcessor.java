@@ -71,6 +71,11 @@ import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.api.ErrorExtensionProvider;
+import io.smallrye.graphql.api.federation.Extends;
+import io.smallrye.graphql.api.federation.External;
+import io.smallrye.graphql.api.federation.Key;
+import io.smallrye.graphql.api.federation.Provides;
+import io.smallrye.graphql.api.federation.Requires;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
@@ -244,6 +249,11 @@ public class SmallRyeGraphQLProcessor {
         try {
             indexer.indexClass(Map.class);
             indexer.indexClass(Entry.class);
+            indexer.indexClass(Extends.class);
+            indexer.indexClass(External.class);
+            indexer.indexClass(Key.class);
+            indexer.indexClass(Provides.class);
+            indexer.indexClass(Requires.class);
         } catch (IOException ex) {
             LOG.warn("Failure while creating index", ex);
         }

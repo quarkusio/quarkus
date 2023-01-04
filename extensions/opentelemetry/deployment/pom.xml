@@ -45,6 +45,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-common-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-common-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-spi-deployment</artifactId>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>

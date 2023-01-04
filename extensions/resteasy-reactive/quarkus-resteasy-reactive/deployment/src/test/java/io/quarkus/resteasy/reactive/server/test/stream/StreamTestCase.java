@@ -3,7 +3,6 @@ package io.quarkus.resteasy.reactive.server.test.stream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -211,7 +210,7 @@ public class StreamTestCase {
             });
             sse.open();
             Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
-            Assertions.assertEquals(Arrays.asList("a", "b", "c"), results);
+            org.assertj.core.api.Assertions.assertThat(results).containsExactly("a", "b", "c");
             Assertions.assertEquals(0, errors.size());
         }
     }
@@ -248,7 +247,9 @@ public class StreamTestCase {
             List<String> results = new CopyOnWriteArrayList<>();
             List<String> ids = new CopyOnWriteArrayList<>();
             List<String> names = new CopyOnWriteArrayList<>();
+            List<String> comments = new CopyOnWriteArrayList<>();
             sse.register(event -> {
+                comments.add(event.getComment());
                 results.add(event.readData());
                 ids.add(event.getId());
                 names.add(event.getName());
@@ -259,9 +260,10 @@ public class StreamTestCase {
             });
             sse.open();
             Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
-            Assertions.assertEquals(Arrays.asList("uno", "dos", "tres"), results);
-            Assertions.assertEquals(Arrays.asList("one", "two", "three"), ids);
-            Assertions.assertEquals(Arrays.asList("eins", "zwei", "drei"), names);
+            org.assertj.core.api.Assertions.assertThat(results).containsExactly(null, "uno", "dos", "tres");
+            org.assertj.core.api.Assertions.assertThat(ids).containsExactly(null, "one", "two", "three");
+            org.assertj.core.api.Assertions.assertThat(names).containsExactly(null, "eins", "zwei", "drei");
+            org.assertj.core.api.Assertions.assertThat(comments).containsExactly("dummy", null, null, null);
             Assertions.assertEquals(0, errors.size());
         }
     }

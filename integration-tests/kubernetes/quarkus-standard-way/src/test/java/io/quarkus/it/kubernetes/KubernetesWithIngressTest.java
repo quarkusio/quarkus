@@ -21,12 +21,14 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 public class KubernetesWithIngressTest {
 
+    private static final String APP_NAME = "kubernetes-with-ingress";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-with-ingress")
+            .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-with-ingress.properties")
+            .withConfigurationResource(APP_NAME + ".properties")
             .setLogFileName("k8s.log")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion())));
 
@@ -44,15 +46,7 @@ public class KubernetesWithIngressTest {
 
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("kubernetes-with-ingress");
-            });
-
-            assertThat(d.getSpec()).satisfies(deploymentSpec -> {
-                assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
-                    assertThat(t.getSpec()).satisfies(podSpec -> {
-
-                    });
-                });
+                assertThat(m.getName()).isEqualTo(APP_NAME);
             });
         });
 
@@ -60,7 +54,11 @@ public class KubernetesWithIngressTest {
             assertThat(item).isInstanceOfSatisfying(Ingress.class, ingress -> {
                 //Check that labels and annotations are also applied to Routes (#10260)
                 assertThat(ingress.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-ingress");
+                    assertThat(m.getName()).isEqualTo(APP_NAME);
+                });
+
+                assertThat(ingress.getSpec()).satisfies(spec -> {
+                    assertThat(spec.getIngressClassName()).isEqualTo("Nginx");
                 });
 
                 assertThat(ingress.getSpec().getRules()).allSatisfy(rule -> {

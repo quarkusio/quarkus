@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.deployment;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
+import static io.quarkus.opentelemetry.deployment.common.TestUtil.assertStringAttribute;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,7 +23,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -31,6 +34,7 @@ public class OpenTelemetryHttpCDITest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
+                            .addClass(TestUtil.class)
                             .addClass(HelloResource.class)
                             .addClass(HelloBean.class)
                             .addClass(TestSpanExporter.class));
@@ -54,6 +58,10 @@ public class OpenTelemetryHttpCDITest {
 
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals("/hello", server.getName());
+        // verify that OpenTelemetryServerFilter took place
+        assertStringAttribute(server, SemanticAttributes.CODE_NAMESPACE,
+                "io.quarkus.opentelemetry.deployment.OpenTelemetryHttpCDITest$HelloResource");
+        assertStringAttribute(server, SemanticAttributes.CODE_FUNCTION, "hello");
 
         final SpanData internalFromBean = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("HelloBean.hello", internalFromBean.getName());

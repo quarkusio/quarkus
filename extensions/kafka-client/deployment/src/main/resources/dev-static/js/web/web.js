@@ -2,7 +2,7 @@ import {api} from "../config.js"
 
 export function doPost(data, successCallback, errorCallback) {
     $.ajax({
-        url: api,
+        url: api(),
         type: 'POST',
         data: JSON.stringify(data),
         contentType: "application/json; charset=utf-8",

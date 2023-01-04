@@ -2,6 +2,8 @@ package io.quarkus.kafka.client.runtime.ui;
 
 import static io.quarkus.kafka.client.runtime.ui.util.ConsumerFactory.createConsumer;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,12 +23,14 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
+import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.ui.model.Order;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessageCreateRequest;
@@ -34,6 +38,8 @@ import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessagesRequest;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaOffsetRequest;
 import io.quarkus.kafka.client.runtime.ui.model.response.*;
 import io.smallrye.common.annotation.Identifier;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonObject;
 
 @Singleton
 public class KafkaUiUtils {
@@ -229,9 +235,22 @@ public class KafkaUiUtils {
         try {
             res = objectMapper.writeValueAsString(o);
         } catch (JsonProcessingException ex) {
-            //FIXME:
             res = "";
         }
         return res;
     }
+
+    public JsonObject fromJson(Buffer buffer) {
+        return new JsonObject(fromJson(buffer, Map.class));
+    }
+
+    public <T> T fromJson(Buffer buffer, Class<T> type) {
+        try {
+            JsonParser parser = objectMapper.createParser((InputStream) new ByteBufInputStream(buffer.getByteBuf()));
+            return objectMapper.readValue(parser, type);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
 }

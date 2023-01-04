@@ -22,6 +22,12 @@ public class IngressConfig {
     Optional<String> host;
 
     /**
+     * The class of the Ingress. If the ingressClassName is omitted, a default Ingress class is used.
+     */
+    @ConfigItem
+    Optional<String> ingressClassName;
+
+    /**
      * Custom annotations to add to exposition (route or ingress) resources
      */
     @ConfigItem

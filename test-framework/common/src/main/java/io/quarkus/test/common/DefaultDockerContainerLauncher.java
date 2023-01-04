@@ -5,19 +5,27 @@ import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
+import static java.lang.ProcessBuilder.Redirect.PIPE;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.TeeInputStream;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import io.quarkus.runtime.util.ContainerRuntimeUtil;
@@ -42,6 +50,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private String containerName;
 
     private String containerRuntimeBinaryName;
+
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Override
     public void init(DockerContainerArtifactLauncher.DockerInitContext initContext) {
@@ -131,6 +141,10 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         Files.deleteIfExists(logFile);
         Files.createDirectories(logFile.getParent());
 
+        Path containerLogFile = Paths.get("target", "container.log");
+        Files.createDirectories(containerLogFile.getParent());
+        FileOutputStream containerLogOutputStream = new FileOutputStream(containerLogFile.toFile(), true);
+
         System.out.println("Executing \"" + String.join(" ", args) + "\"");
 
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
@@ -138,8 +152,9 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         // the idea here is to obtain the logs of the application simply by redirecting all its output the a file
         // this is done in contrast with the JarLauncher and NativeImageLauncher because in the case of the container
         // the log itself is written inside the container
-        Process quarkusProcess = new ProcessBuilder(args).redirectError(logFile.toFile()).redirectOutput(logFile.toFile())
-                .start();
+        Process quarkusProcess = new ProcessBuilder(args).redirectError(PIPE).redirectOutput(PIPE).start();
+        InputStream tee = new TeeInputStream(quarkusProcess.getInputStream(), new FileOutputStream(logFile.toFile()));
+        executorService.submit(() -> IOUtils.copy(tee, containerLogOutputStream));
 
         if (startedFunction != null) {
             IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
@@ -194,6 +209,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         } catch (IOException | InterruptedException e) {
             System.out.println("Unable to stop container '" + containerName + "'");
         }
+        executorService.shutdown();
     }
 
 }

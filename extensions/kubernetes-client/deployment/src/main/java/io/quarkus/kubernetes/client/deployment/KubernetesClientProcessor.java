@@ -207,6 +207,13 @@ public class KubernetesClientProcessor {
         reflectiveClasses
                 .produce(new ReflectiveClassBuildItem(true, true, VersionInfo.class.getName()));
 
+        // exec credentials support - we need to use Strings as the classes are private
+        reflectiveClasses
+                .produce(new ReflectiveClassBuildItem(true, true,
+                        "io.fabric8.kubernetes.client.Config$ExecCredential",
+                        "io.fabric8.kubernetes.client.Config$ExecCredentialSpec",
+                        "io.fabric8.kubernetes.client.Config$ExecCredentialStatus"));
+
         if (log.isDebugEnabled()) {
             final String watchedClassNames = watchedClasses
                     .stream().map(Object::toString)

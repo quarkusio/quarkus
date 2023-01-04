@@ -141,6 +141,14 @@ interface PanacheQuery<Entity : Any> {
      */
     fun withReadPreference(readPreference: ReadPreference?): PanacheQuery<Entity>
 
+    /**
+     * Define the batch size for this query.
+     *
+     * @param batchSize the batch size to be used for this query.
+     * @return this query, modified
+     */
+    fun withBatchSize(batchSize: Int): PanacheQuery<Entity>
+
     // Results
     /**
      * Reads and caches the total number of entities this query operates on. This causes a database

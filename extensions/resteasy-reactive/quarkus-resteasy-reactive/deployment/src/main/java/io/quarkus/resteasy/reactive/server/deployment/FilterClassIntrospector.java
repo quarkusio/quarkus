@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 
+import javax.ws.rs.container.ResourceInfo;
+
 import org.jboss.jandex.MethodInfo;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -67,7 +69,7 @@ public class FilterClassIntrospector {
 
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-            if ((opcode == Opcodes.INVOKEINTERFACE) && "javax/ws/rs/container/ResourceInfo".equals(owner)
+            if ((opcode == Opcodes.INVOKEINTERFACE) && ResourceInfo.class.getName().replace('.', '/').equals(owner)
                     && "getResourceMethod".equals(name)) {
                 usesGetResourceMethod = true;
             }

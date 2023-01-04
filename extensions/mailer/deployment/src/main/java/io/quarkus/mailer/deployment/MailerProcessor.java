@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.runtime.BlockingMailerImpl;
 import io.quarkus.mailer.runtime.MailBuildTimeConfig;
@@ -68,16 +69,15 @@ public class MailerProcessor {
     }
 
     @BuildStep
-    NativeImageConfigBuildItem registerAuthClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    NativeImageConfigBuildItem registerAuthClass(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+
         // We must register the auth provider used by the Vert.x mail clients
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true,
-                "io.vertx.ext.mail.impl.sasl.AuthDigestMD5",
-                "io.vertx.ext.mail.impl.sasl.AuthCramSHA256",
-                "io.vertx.ext.mail.impl.sasl.AuthCramSHA1",
-                "io.vertx.ext.mail.impl.sasl.AuthCramMD5",
-                "io.vertx.ext.mail.impl.sasl.AuthDigestMD5",
-                "io.vertx.ext.mail.impl.sasl.AuthPlain",
-                "io.vertx.ext.mail.impl.sasl.AuthLogin"));
+                "io.vertx.ext.mail.impl.sasl.AuthCram",
+                "io.vertx.ext.mail.impl.sasl.AuthDigest",
+                "io.vertx.ext.mail.impl.sasl.AuthLogin",
+                "io.vertx.ext.mail.impl.sasl.AuthPlain"));
 
         // Register io.vertx.ext.mail.impl.sasl.NTLMEngineImpl to be initialized at runtime, it uses a static random.
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();

@@ -142,7 +142,10 @@ quarkus.funqy.export=helloPubSubWorld
 To build your application, you can package your application via `mvn clean package`.
 You will have a single JAR inside the `target/deployment` repository that contains your classes and all your dependencies in it.
 
-Then you will be able to use `gcloud` to deploy your function to Google Cloud. The `gcloud` command will be different depending on which event you want to trigger.
+Then you will be able to use `gcloud` to deploy your function to Google Cloud.
+The `gcloud` command will be different depending on which event triggers your function.
+
+NOTE: We will use the Java 17 runtime but you can switch to the Java 11 runtime by using `--runtime=java11` instead of `--runtime=java17` on the deploy commands.
 
 [WARNING]
 ====
@@ -163,7 +166,7 @@ Use this command to deploy to Google Cloud Functions:
 ----
 gcloud functions deploy quarkus-example-funky-pubsub \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
-  --runtime=java11 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish \
+  --runtime=java17 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish \
   --source=target/deployment
 ----
 
@@ -171,11 +174,6 @@ gcloud functions deploy quarkus-example-funky-pubsub \
 ====
 The entry point always needs to be `io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction` as it will be this class
 that will bootstrap Quarkus.
-====
-
-[NOTE]
-====
-You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 The `--trigger-resource` option defines the name of the PubSub topic, and the `--trigger-event google.pubsub.topic.publish` option
@@ -205,7 +203,7 @@ Then, use this command to deploy to Google Cloud Functions:
 ----
 gcloud functions deploy quarkus-example-funky-storage \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
-  --runtime=java11 --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
+  --runtime=java17 --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
   --source=target/deployment
 ----
 
@@ -213,11 +211,6 @@ gcloud functions deploy quarkus-example-funky-storage \
 ====
 The entry point always needs to be `io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction` as it will be this class
 that will bootstrap Quarkus.
-====
-
-[NOTE]
-====
-You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 The `--trigger-resource` option defines the name of the Cloud Storage bucket, and the `--trigger-event google.storage.object.finalize` option
@@ -251,18 +244,13 @@ Then, use this command to deploy to Google Cloud Functions:
 ----
 gcloud functions deploy quarkus-example-cloud-event --gen2 \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction \
-  --runtime=java11 --trigger-bucket=example-cloud-event --source=target/deployment
+  --runtime=java17 --trigger-bucket=example-cloud-event --source=target/deployment
 ----
 
 [IMPORTANT]
 ====
 The entry point always needs to be `io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction` as it will be this class
 that will bootstrap Quarkus.
-====
-
-[NOTE]
-====
-You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 The `--trigger-bucket=` option defines the name of the Cloud Storage bucket.

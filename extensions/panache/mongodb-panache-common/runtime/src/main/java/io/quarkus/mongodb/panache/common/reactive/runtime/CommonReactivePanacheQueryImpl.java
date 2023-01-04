@@ -2,6 +2,7 @@ package io.quarkus.mongodb.panache.common.reactive.runtime;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 
 import org.bson.Document;
@@ -32,6 +33,8 @@ public class CommonReactivePanacheQueryImpl<Entity> {
     private Range range;
 
     private Collation collation;
+
+    private OptionalInt batchSize = OptionalInt.empty();
 
     public CommonReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Bson mongoQuery, Bson sort) {
         this.collection = collection;
@@ -150,6 +153,11 @@ public class CommonReactivePanacheQueryImpl<Entity> {
         return (CommonReactivePanacheQueryImpl<T>) this;
     }
 
+    public <T extends Entity> CommonReactivePanacheQueryImpl<T> withBatchSize(int batchSize) {
+        this.batchSize = OptionalInt.of(batchSize);
+        return (CommonReactivePanacheQueryImpl<T>) this;
+    }
+
     // Results
 
     @SuppressWarnings("unchecked")
@@ -229,6 +237,7 @@ public class CommonReactivePanacheQueryImpl<Entity> {
         if (this.collation != null) {
             options.collation(collation);
         }
+        batchSize.ifPresent(batchSize -> options.batchSize(batchSize));
         return options;
     }
 

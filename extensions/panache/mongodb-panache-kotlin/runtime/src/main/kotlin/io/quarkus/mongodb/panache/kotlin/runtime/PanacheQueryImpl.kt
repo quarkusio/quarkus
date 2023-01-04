@@ -85,6 +85,11 @@ class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
         return this
     }
 
+    override fun withBatchSize(batchSize: Int): PanacheQuery<Entity> {
+        delegate.withBatchSize<Entity>(batchSize)
+        return this
+    }
+
     // Results
     override fun count(): Long {
         return delegate.count()

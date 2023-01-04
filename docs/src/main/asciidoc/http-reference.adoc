@@ -78,6 +78,13 @@ TIP: By default, the following list of media types is compressed: `text/html`, `
 
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
 
+[[static-resources-config]]
+=== Other Configurations
+
+Additionally, the index page for static resources can be changed from default `index.html`, the hidden files (e.g. dot files) can be indicated as not served, the range requests can be disabled, and the caching support (e.g. caching headers and file properties cache) can be configured.
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-static-resources-config.adoc[leveloffset=+1, opts=optional]
+
 [[context-path]]
 == Configuring the Context path
 

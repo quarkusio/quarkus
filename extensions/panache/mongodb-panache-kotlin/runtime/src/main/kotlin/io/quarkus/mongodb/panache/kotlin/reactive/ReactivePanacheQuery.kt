@@ -145,6 +145,14 @@ interface ReactivePanacheQuery<Entity> {
     fun withReadPreference(readPreference: ReadPreference): ReactivePanacheQuery<Entity>
 
     /**
+     * Define the batch size for this query.
+     *
+     * @param batchSize the batch size to be used for this query.
+     * @return this query, modified
+     */
+    fun withBatchSize(batchSize: Int): ReactivePanacheQuery<Entity>
+
+    /**
      * Reads and caches the total number of entities this query operates on. This causes a database
      * query with `SELECT COUNT(*)` and a query equivalent to the current query, minus
      * ordering.

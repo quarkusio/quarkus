@@ -554,21 +554,18 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     private Properties getSchedulerConfigurationProperties(QuartzSupport quartzSupport) {
         Properties props = new Properties();
         QuartzBuildTimeConfig buildTimeConfig = quartzSupport.getBuildTimeConfig();
-        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, "AUTO");
+        QuartzRuntimeConfig runtimeConfig = quartzSupport.getRuntimeConfig();
+
         props.put("org.quartz.scheduler.skipUpdateCheck", "true");
-        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, quartzSupport.getRuntimeConfig().instanceName);
-        props.put(StdSchedulerFactory.PROP_SCHED_BATCH_TIME_WINDOW,
-                quartzSupport.getRuntimeConfig().batchTriggerAcquisitionFireAheadTimeWindow);
-        props.put(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE,
-                quartzSupport.getRuntimeConfig().batchTriggerAcquisitionMaxCount);
+        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, runtimeConfig.instanceName);
+        props.put(StdSchedulerFactory.PROP_SCHED_BATCH_TIME_WINDOW, runtimeConfig.batchTriggerAcquisitionFireAheadTimeWindow);
+        props.put(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, runtimeConfig.batchTriggerAcquisitionMaxCount);
         props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, "false");
         props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD, "true");
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
         props.put(StdSchedulerFactory.PROP_SCHED_CLASS_LOAD_HELPER_CLASS, InitThreadContextClassLoadHelper.class.getName());
-        props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadCount",
-                "" + quartzSupport.getRuntimeConfig().threadCount);
-        props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadPriority",
-                "" + quartzSupport.getRuntimeConfig().threadPriority);
+        props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadCount", "" + runtimeConfig.threadCount);
+        props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadPriority", "" + runtimeConfig.threadPriority);
         props.put(StdSchedulerFactory.PROP_SCHED_RMI_EXPORT, "false");
         props.put(StdSchedulerFactory.PROP_SCHED_RMI_PROXY, "false");
         props.put(StdSchedulerFactory.PROP_JOB_STORE_CLASS, buildTimeConfig.storeType.clazz);
@@ -578,7 +575,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             QuarkusQuartzConnectionPoolProvider.setDataSourceName(dataSource);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".useProperties", "true");
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".misfireThreshold",
-                    "" + quartzSupport.getRuntimeConfig().misfireThreshold.toMillis());
+                    "" + runtimeConfig.misfireThreshold.toMillis());
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".tablePrefix", buildTimeConfig.tablePrefix);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".dataSource", dataSource);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".driverDelegateClass",
@@ -589,7 +586,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             if (buildTimeConfig.clustered) {
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".isClustered", "true");
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".clusterCheckinInterval",
-                        "" + quartzSupport.getBuildTimeConfig().clusterCheckinInterval);
+                        "" + buildTimeConfig.clusterCheckinInterval);
                 if (buildTimeConfig.selectWithLockSql.isPresent()) {
                     props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".selectWithLockSQL",
                             buildTimeConfig.selectWithLockSql.get());
@@ -600,24 +597,40 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".nonManagedTXDataSource", dataSource);
             }
         }
-        props.putAll(getAdditionalConfigurationProperties(StdSchedulerFactory.PROP_PLUGIN_PREFIX, buildTimeConfig.plugins));
-        props.putAll(getAdditionalConfigurationProperties(StdSchedulerFactory.PROP_JOB_LISTENER_PREFIX,
-                buildTimeConfig.jobListeners));
-        props.putAll(getAdditionalConfigurationProperties(StdSchedulerFactory.PROP_TRIGGER_LISTENER_PREFIX,
-                buildTimeConfig.triggerListeners));
+        QuartzExtensionPointConfig instanceIdGenerator = buildTimeConfig.instanceIdGenerators.get(runtimeConfig.instanceId);
+        if (runtimeConfig.instanceId.equals(StdSchedulerFactory.AUTO_GENERATE_INSTANCE_ID) || instanceIdGenerator != null) {
+            props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, StdSchedulerFactory.AUTO_GENERATE_INSTANCE_ID);
+        } else {
+            if (runtimeConfig.instanceId.equals(StdSchedulerFactory.SYSTEM_PROPERTY_AS_INSTANCE_ID)) {
+                LOGGER.warn("Prefer to configure the 'SystemPropertyInstanceIdGenerator' within the instance ID generators, "
+                        + "so the system property name can be changed and the application can be native.");
+            }
+            props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, runtimeConfig.instanceId);
+        }
+        if (instanceIdGenerator != null) {
+            putExtensionConfigurationProperties(props, StdSchedulerFactory.PROP_SCHED_INSTANCE_ID_GENERATOR_PREFIX,
+                    instanceIdGenerator);
+        }
+        putExtensionConfigurationProperties(props, StdSchedulerFactory.PROP_PLUGIN_PREFIX, buildTimeConfig.plugins);
+        putExtensionConfigurationProperties(props, StdSchedulerFactory.PROP_JOB_LISTENER_PREFIX, buildTimeConfig.jobListeners);
+        putExtensionConfigurationProperties(props, StdSchedulerFactory.PROP_TRIGGER_LISTENER_PREFIX,
+                buildTimeConfig.triggerListeners);
 
         return props;
     }
 
-    private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzExtensionPointConfig> config) {
-        Properties props = new Properties();
-        for (Map.Entry<String, QuartzExtensionPointConfig> configEntry : config.entrySet()) {
-            props.put(String.format("%s.%s.class", prefix, configEntry.getKey()), configEntry.getValue().clazz);
-            for (Map.Entry<String, String> propsEntry : configEntry.getValue().properties.entrySet()) {
-                props.put(String.format("%s.%s.%s", prefix, configEntry.getKey(), propsEntry.getKey()), propsEntry.getValue());
-            }
-        }
-        return props;
+    private void putExtensionConfigurationProperties(Properties props, String prefix,
+            Map<String, QuartzExtensionPointConfig> configs) {
+        configs.forEach((configKey, config) -> {
+            putExtensionConfigurationProperties(props, String.format("%s.%s", prefix, configKey), config);
+        });
+    }
+
+    private void putExtensionConfigurationProperties(Properties props, String prefix, QuartzExtensionPointConfig config) {
+        props.put(String.format("%s.class", prefix), config.clazz);
+        config.properties.forEach((propName, propValue) -> {
+            props.put(String.format("%s.%s", prefix, propName), propValue);
+        });
     }
 
     /**

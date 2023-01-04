@@ -24,7 +24,8 @@ public class KafkaUiHandler extends AbstractHttpRequestHandler {
             endResponse(event, BAD_REQUEST, "Request body is null");
             return;
         }
-        var body = event.body().asJsonObject();
+        var webUtils = kafkaWebUiUtils();
+        var body = webUtils.fromJson(event.body().buffer());
         if (body == null) {
             endResponse(event, BAD_REQUEST, "Request JSON body is null");
             return;
@@ -34,7 +35,6 @@ public class KafkaUiHandler extends AbstractHttpRequestHandler {
         var message = "OK";
         var error = "";
 
-        var webUtils = kafkaWebUiUtils();
         var adminClient = kafkaAdminClient();
 
         boolean res = false;
@@ -50,7 +50,7 @@ public class KafkaUiHandler extends AbstractHttpRequestHandler {
                         res = true;
                         break;
                     case "createTopic":
-                        var topicCreateRq = event.body().asPojo(KafkaCreateTopicRequest.class);
+                        var topicCreateRq = webUtils.fromJson(event.body().buffer(), KafkaCreateTopicRequest.class);
                         res = adminClient.createTopic(topicCreateRq);
                         message = webUtils.toJson(webUtils.getTopics());
                         break;
@@ -64,17 +64,17 @@ public class KafkaUiHandler extends AbstractHttpRequestHandler {
                         res = true;
                         break;
                     case "topicMessages":
-                        var msgRequest = event.body().asPojo(KafkaMessagesRequest.class);
+                        var msgRequest = webUtils.fromJson(event.body().buffer(), KafkaMessagesRequest.class);
                         message = webUtils.toJson(webUtils.getMessages(msgRequest));
                         res = true;
                         break;
                     case "getOffset":
-                        var request = event.body().asPojo(KafkaOffsetRequest.class);
+                        var request = webUtils.fromJson(event.body().buffer(), KafkaOffsetRequest.class);
                         message = webUtils.toJson(webUtils.getOffset(request));
                         res = true;
                         break;
                     case "createMessage":
-                        var rq = event.body().asPojo(KafkaMessageCreateRequest.class);
+                        var rq = webUtils.fromJson(event.body().buffer(), KafkaMessageCreateRequest.class);
                         webUtils.createMessage(rq);
                         message = "{}";
                         res = true;

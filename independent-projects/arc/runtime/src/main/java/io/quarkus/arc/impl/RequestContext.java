@@ -133,7 +133,9 @@ class RequestContext implements ManagedContext {
                     initialState != null ? Integer.toHexString(initialState.hashCode()) : "new", stack);
         }
         if (initialState == null) {
-            currentContext.set(new RequestContextState(new ConcurrentHashMap<>()));
+            // this CHM constructor won't eagerly allocate the underlying array, but will give a hint
+            // on the first CHM::put to lazily do it: despite 2 the actual array capacity will be 4
+            currentContext.set(new RequestContextState(new ConcurrentHashMap<>(2, 0.75f, 1)));
             // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
             fireIfNotEmpty(initializedNotifier);
         } else {

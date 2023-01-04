@@ -388,9 +388,9 @@ NOTE: `codestart.yml` is the only required file.
 
 [source,bash]
 ----
-gen-info.time = time of generation (in millis)
+gen-info.time = generation time (in milliseconds)
 input.selected-extensions[].name|description|guide = list of selected extensions with info
-input.selected-extensions-ga = Set of String with the list of extensions groupId:artifactId, usefull for dynamic codestarts depending on selected extensions
+input.selected-extensions-ga = Set of Strings containing the list of extensions groupId:artifactId, useful for dynamic codestarts depending on selected extensions
 input.provided-code[].name|tags|title|description|related-guide: list of selected codestarts with info
 ----
 
@@ -399,24 +399,26 @@ input.provided-code[].name|tags|title|description|related-guide: list of selecte
 [source,properties]
 ----
 quarkus.platform.group-id = BOM groupId
-quarkus.platform.artifact-id = BOM ArtifactId
-quarkus.platform.version = BOM Version
+quarkus.platform.artifact-id = BOM artifactId
+quarkus.platform.version = BOM version
 project.group-id = Project groupId
-project.artifact-id = project ArtifactId
-project.version = Project Version
-project.package-name = Project Package name
+project.artifact-id = Project artifactId
+project.version = Project version
+project.name = Project name (if specified)
+project.description = Project description (if specified)
+project.package-name = Project package name
 quarkus.maven-plugin.group-id = Quarkus Maven plugin groupId
-quarkus.maven-plugin.artifact-id = Quarkus Maven plugin ArtifactId
-quarkus.maven-plugin.version = Quarkus Maven plugin version.
-quarkus.gradle-plugin.id = Quarkus gradle pluginId
-quarkus.gradle-plugin.version = Quarkus gradle plugin version
+quarkus.maven-plugin.artifact-id = Quarkus Maven plugin artifactId
+quarkus.maven-plugin.version = Quarkus Maven plugin version
+quarkus.gradle-plugin.id = Quarkus Gradle pluginId
+quarkus.gradle-plugin.version = Quarkus Gradle plugin version
 quarkus.version = Quarkus version
 java.version = Java version
 kotlin.version = Kotlin version
-scala.version = scala version
-scala-maven-plugin.version = scala maven plugin version
+scala.version = Scala version
+scala-maven-plugin.version = Scala Maven plugin version
 maven-compiler-plugin.version = Maven compiler plugin version
-maven-surefire-plugin.version = Maven surefire plugin version
+maven-surefire-plugin.version = Maven Surefire plugin version
 ----
 
 === Naming Convention for files

@@ -209,6 +209,10 @@ The `client-name` is the name set in the `@GrpcClient` or derived from the injec
 The following examples uses _hello_ as the client name.
 Don't forget to replace it with the name you used in the `@GrpcClient` annotation.
 
+IMPORTANT: When you enable `quarkus.grpc.clients."client-name".use-quarkus-grpc-client`, you are then using the new Vert.x gRPC channel implementation, so not all configuration properties can still be applied. And currently there is no Stork support yet.
+
+IMPORTANT: When you enable `quarkus.grpc.clients."client-name".xds.enabled`, it's the xDS that should handle most of the configuration above.
+
 === Enabling TLS
 
 To enable TLS, use the following configuration.
@@ -399,6 +403,47 @@ To disable the gRPC client metrics when `quarkus-micrometer` is used, add the fo
 [source, properties]
 ----
 quarkus.micrometer.binder.grpc-client.enabled=false
+----
+
+== Custom exception handling
+
+If any of the gRPC services or server interceptors throw an (custom) exception, you can add your own https://github.com/quarkusio/quarkus/extensions/grpc/api/src/main/java/io/quarkus/grpc/ExceptionHandlerProvider.java[ExceptionHandlerProvider]
+as a CDI bean in your application, to provide a custom handling of those exceptions.
+
+e.g.
+
+[source, java]
+----
+@ApplicationScoped
+public class HelloExceptionHandlerProvider implements ExceptionHandlerProvider {
+    @Override
+    public <ReqT, RespT> ExceptionHandler<ReqT, RespT> createHandler(ServerCall.Listener<ReqT> listener,
+            ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
+        return new HelloExceptionHandler<>(listener, serverCall, metadata);
+    }
+
+    @Override
+    public Throwable transform(Throwable t) {
+        if (t instanceof HelloException he) {
+            return new StatusRuntimeException(Status.ABORTED.withDescription(he.getName()));
+        } else {
+            return ExceptionHandlerProvider.toStatusException(t, true);
+        }
+    }
+
+    private static class HelloExceptionHandler<A, B> extends ExceptionHandler<A, B> {
+        public HelloExceptionHandler(ServerCall.Listener<A> listener, ServerCall<A, B> call, Metadata metadata) {
+            super(listener, call, metadata);
+        }
+
+        @Override
+        protected void handleException(Throwable t, ServerCall<A, B> call, Metadata metadata) {
+            StatusRuntimeException sre = (StatusRuntimeException) ExceptionHandlerProvider.toStatusException(t, true);
+            Metadata trailers = sre.getTrailers() != null ? sre.getTrailers() : metadata;
+            call.close(sre.getStatus(), trailers);
+        }
+    }
+}
 ----
 
 == Dev Mode

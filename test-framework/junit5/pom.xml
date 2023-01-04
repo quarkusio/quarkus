@@ -52,7 +52,7 @@
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
             <!-- Avoid adding this to the BOM -->
-            <version>1.4.19</version>
+            <version>1.4.20</version>
         </dependency>
 
         <dependency>

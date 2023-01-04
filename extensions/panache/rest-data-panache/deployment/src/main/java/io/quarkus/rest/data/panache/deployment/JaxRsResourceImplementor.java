@@ -4,6 +4,8 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.annotation.Priority;
+import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.ws.rs.Path;
 
@@ -78,6 +80,12 @@ class JaxRsResourceImplementor {
         }
 
         ClassCreator classCreator = classCreatorBuilder.build();
+        // The same resource is generated as part of the ResourceImplementor, so we need to avoid ambiguous resolution
+        // when injecting the resource in user beans:
+        if (resourceMetadata.getResourceInterface() != null) {
+            classCreator.addAnnotation(Alternative.class);
+            classCreator.addAnnotation(Priority.class).add("value", Integer.MIN_VALUE);
+        }
 
         implementClassAnnotations(classCreator, resourceMetadata, resourceProperties, capabilities);
         FieldDescriptor resourceField = implementResourceField(classCreator, resourceMetadata);

@@ -5,7 +5,9 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Alternative;
 import javax.transaction.Transactional;
 
 import org.jboss.jandex.ClassInfo;
@@ -55,11 +57,16 @@ class ResourceImplementor {
                 .build();
 
         classCreator.addAnnotation(ApplicationScoped.class);
+        // The same resource is generated as part of the JaxRsResourceImplementor, so we need to avoid ambiguous resolution
+        // when injecting the resource in user beans:
+        classCreator.addAnnotation(Alternative.class);
+        classCreator.addAnnotation(Priority.class).add("value", Integer.MAX_VALUE);
 
         ResourceMethodListenerImplementor listenerImplementor = new ResourceMethodListenerImplementor(classCreator,
                 resourceMethodListeners, false);
 
         implementList(classCreator, dataAccessImplementor);
+        implementListWithQuery(classCreator, dataAccessImplementor);
         implementListPageCount(classCreator, dataAccessImplementor);
         implementCount(classCreator, dataAccessImplementor);
         implementGet(classCreator, dataAccessImplementor);
@@ -73,6 +80,20 @@ class ResourceImplementor {
     }
 
     private void implementList(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
+        MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class, Sort.class);
+        ResultHandle page = methodCreator.getMethodParam(0);
+        ResultHandle sort = methodCreator.getMethodParam(1);
+        ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
+        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
+
+        BranchResult isEmptySortBranch = methodCreator.ifTrue(isEmptySort);
+        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page));
+        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
+
+        methodCreator.close();
+    }
+
+    private void implementListWithQuery(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class, Sort.class,
                 String.class, Map.class);
         ResultHandle page = methodCreator.getMethodParam(0);

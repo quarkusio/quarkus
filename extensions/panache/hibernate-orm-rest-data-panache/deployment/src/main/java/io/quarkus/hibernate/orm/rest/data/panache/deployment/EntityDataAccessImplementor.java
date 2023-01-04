@@ -35,6 +35,29 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
+     * Implements <code>Entity.findAll().page(page).list()</code>
+     */
+    @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
+        ResultHandle query = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+                page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
+    }
+
+    /**
+     * Implements <code>Entity.findAll(sort).page(page).list()</code>
+     */
+    @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
+        ResultHandle query = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "findAll", PanacheQuery.class, Sort.class), sort);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+                page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
+    }
+
+    /**
      * Implements <code>Entity.find(query, params).page(page).list()</code>
      */
     @Override

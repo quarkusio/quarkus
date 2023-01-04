@@ -78,7 +78,9 @@ public class ResteasyStandaloneRecorder {
         return null;
     }
 
-    public Handler<RoutingContext> vertxFailureHandler(Supplier<Vertx> vertx, Executor executor, ResteasyVertxConfig config) {
+    public Handler<RoutingContext> vertxFailureHandler(Supplier<Vertx> vertx, Executor executor, ResteasyVertxConfig config,
+            boolean noCustomAuthCompletionExMapper, boolean noCustomAuthFailureExMapper, boolean noCustomAuthRedirectExMapper,
+            boolean proactive) {
         if (deployment == null) {
             return null;
         } else {
@@ -90,6 +92,40 @@ public class ResteasyStandaloneRecorder {
 
                 @Override
                 public void handle(RoutingContext request) {
+
+                    // special handling when proactive auth is enabled as then we know default auth failure handler already run
+                    if (proactive && request.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+                        // we want to prevent repeated handling of exceptions if user don't want to handle exception himself
+                        // we do not pass exception to abort handlers if proactive auth is enabled and user did not
+                        // provide custom ex. mapper; we replace default auth failure handler as soon as we can, so that
+                        // we can handle Quarkus Security Exceptions ourselves
+                        if (request.failure() instanceof AuthenticationFailedException) {
+                            if (noCustomAuthFailureExMapper) {
+                                request.next();
+                            } else {
+                                // allow response customization
+                                super.handle(request);
+                            }
+                            return;
+                        } else if (request.failure() instanceof AuthenticationCompletionException) {
+                            if (noCustomAuthCompletionExMapper) {
+                                request.next();
+                            } else {
+                                // allow response customization
+                                super.handle(request);
+                            }
+                            return;
+                        } else if (request.failure() instanceof AuthenticationRedirectException) {
+                            if (noCustomAuthRedirectExMapper) {
+                                request.next();
+                            } else {
+                                // allow response customization
+                                super.handle(request);
+                            }
+                            return;
+                        }
+                    }
+
                     if (request.failure() instanceof AuthenticationFailedException
                             || request.failure() instanceof AuthenticationCompletionException
                             || request.failure() instanceof AuthenticationRedirectException

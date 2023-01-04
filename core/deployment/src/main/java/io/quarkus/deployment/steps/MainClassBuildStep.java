@@ -21,6 +21,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -102,6 +103,8 @@ public class MainClassBuildStep {
             void.class);
     public static final MethodDescriptor CONFIGURE_STEP_TIME_START = ofMethod(StepTiming.class.getName(), "configureStart",
             void.class);
+    private static final DotName QUARKUS_APPLICATION = DotName.createSimple(QuarkusApplication.class.getName());
+    private static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     @BuildStep
     void build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
@@ -335,7 +338,8 @@ public class MainClassBuildStep {
             PackageConfig packageConfig) {
         String mainClassName = MAIN_CLASS;
         Map<String, String> quarkusMainAnnotations = new HashMap<>();
-        Collection<AnnotationInstance> quarkusMains = combinedIndexBuildItem.getIndex()
+        IndexView index = combinedIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> quarkusMains = index
                 .getAnnotations(DotName.createSimple(QuarkusMain.class.getName()));
         for (AnnotationInstance i : quarkusMains) {
             AnnotationValue nameValue = i.value("name");
@@ -349,7 +353,7 @@ public class MainClassBuildStep {
                         "More than one @QuarkusMain method found with name '" + name + "': "
                                 + classInfo.name() + " and " + quarkusMainAnnotations.get(name));
             }
-            quarkusMainAnnotations.put(name, sanitizeMainClassName(classInfo));
+            quarkusMainAnnotations.put(name, sanitizeMainClassName(classInfo, index));
         }
 
         if (packageConfig.mainClass.isPresent()) {
@@ -380,9 +384,9 @@ public class MainClassBuildStep {
                 file.close();
             }
         } else {
-            Collection<ClassInfo> impls = combinedIndexBuildItem.getIndex()
-                    .getAllKnownImplementors(DotName.createSimple(QuarkusApplication.class.getName()));
-            ClassInfo classByName = combinedIndexBuildItem.getIndex().getClassByName(DotName.createSimple(mainClassName));
+            Collection<ClassInfo> impls = index
+                    .getAllKnownImplementors(QUARKUS_APPLICATION);
+            ClassInfo classByName = index.getClassByName(DotName.createSimple(mainClassName));
             MethodInfo mainClassMethod = null;
             if (classByName != null) {
                 mainClassMethod = classByName
@@ -401,7 +405,7 @@ public class MainClassBuildStep {
                     generateMainForQuarkusApplication(mainClassName, generatedClass);
                     mainClassName = MAIN_CLASS;
                 } else {
-                    ClassInfo classInfo = combinedIndexBuildItem.getIndex().getClassByName(DotName.createSimple(mainClassName));
+                    ClassInfo classInfo = index.getClassByName(DotName.createSimple(mainClassName));
                     if (classInfo == null) {
                         throw new IllegalArgumentException("The supplied 'main-class' value of '" + mainClassName
                                 + "' does not correspond to either a fully qualified class name or a matching 'name' field of one of the '@QuarkusMain' annotations");
@@ -413,13 +417,28 @@ public class MainClassBuildStep {
         return new MainClassBuildItem(mainClassName);
     }
 
-    private static String sanitizeMainClassName(ClassInfo mainClass) {
+    private static String sanitizeMainClassName(ClassInfo mainClass, IndexView index) {
         String className = mainClass.name().toString();
         if (isKotlinClass(mainClass)) {
             MethodInfo mainMethod = mainClass.method("main",
                     ArrayType.create(Type.create(DotName.createSimple(String.class.getName()), Type.Kind.CLASS), 1));
             if (mainMethod == null) {
-                className += "Kt";
+                ClassInfo classToCheck = mainClass;
+                boolean hasQuarkusApplicationSuperClass = false;
+                while (classToCheck != null) {
+                    DotName superName = classToCheck.superName();
+                    if (superName.equals(QUARKUS_APPLICATION)) {
+                        hasQuarkusApplicationSuperClass = true;
+                        break;
+                    }
+                    if (superName.equals(OBJECT)) {
+                        break;
+                    }
+                    classToCheck = index.getClassByName(superName);
+                }
+                if (!hasQuarkusApplicationSuperClass) {
+                    className += "Kt";
+                }
             }
 
         }

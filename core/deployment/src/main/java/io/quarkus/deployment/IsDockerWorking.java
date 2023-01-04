@@ -88,7 +88,7 @@ public class IsDockerWorking implements BooleanSupplier {
                         .loadClass("org.testcontainers.utility.TestcontainersConfiguration");
                 Object configurationInstance = configurationClass.getMethod("getInstance").invoke(null);
                 String oldReusePropertyValue = (String) configurationClass
-                        .getMethod("getUserProperty", String.class, String.class)
+                        .getMethod("getEnvVarOrUserProperty", String.class, String.class)
                         .invoke(configurationInstance, "testcontainers.reuse.enable", "false"); // use the default provided in TestcontainersConfiguration#environmentSupportsReuse
                 Method updateUserConfigMethod = configurationClass.getMethod("updateUserConfig", String.class, String.class);
                 // this will ensure that testcontainers does not start ryuk - see https://github.com/quarkusio/quarkus/issues/25852 for why this is important

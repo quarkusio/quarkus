@@ -17,6 +17,7 @@ public class ApplyKubernetesIngressConfigurator extends Configurator<KubernetesC
             KubernetesConfigFluent.IngressNested ingressConfigBuilder = config.withNewIngress();
             ingressConfigBuilder.withExpose(true);
             ingressConfig.host.ifPresent(ingressConfigBuilder::withHost);
+            ingressConfig.ingressClassName.ifPresent(ingressConfigBuilder::withIngressClassName);
 
             ingressConfigBuilder.endIngress();
         }

@@ -6,11 +6,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
+import io.dekorate.servicebinding.model.ServiceBinding;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.builder.Version;
@@ -21,12 +20,14 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 public class KubernetesWithSemiAutoPostgresBindingTest {
 
+    private static final String APP_NAME = "kubernetes-with-semi-auto-postgres-binding";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-with-semi-auto-postgres-binding")
+            .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-with-semi-auto-postgres-binding.properties")
+            .withConfigurationResource(APP_NAME + ".properties")
             .setLogFileName("k8s.log")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
@@ -49,7 +50,7 @@ public class KubernetesWithSemiAutoPostgresBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-semi-auto-postgres-binding");
+                    assertThat(m.getName()).isEqualTo(APP_NAME);
                 });
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
@@ -60,18 +61,26 @@ public class KubernetesWithSemiAutoPostgresBindingTest {
             });
         });
 
-        assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement()
-                .isInstanceOfSatisfying(GenericKubernetesResource.class, sb -> assertThat(sb)
-                        .hasFieldOrPropertyWithValue("metadata.name", "kubernetes-with-semi-auto-postgres-binding-postgresql")
-                        .returns("apps", s -> s.get("spec", "application", "group"))
-                        .returns("v1", s -> s.get("spec", "application", "version"))
-                        .returns("Deployment", s -> s.get("spec", "application", "kind"))
-                        .extracting(s -> s.get("spec", "services"))
-                        .asList()
-                        .singleElement().asInstanceOf(InstanceOfAssertFactories.MAP)
-                        .containsEntry("group", "my.custom-operator.com")
-                        .containsEntry("version", "v1alpha1")
-                        .containsEntry("kind", "Postgres")
-                        .containsEntry("name", "postgresql"));
+        assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
+            assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
+                assertThat(s.getMetadata()).satisfies(m -> {
+                    assertThat(m.getName()).isEqualTo(APP_NAME + "-postgresql");
+                });
+                assertThat(s.getSpec()).satisfies(spec -> {
+                    assertThat(spec.getApplication()).satisfies(a -> {
+                        assertThat(a.getGroup()).isEqualTo("apps");
+                        assertThat(a.getVersion()).isEqualTo("v1");
+                        assertThat(a.getKind()).isEqualTo("Deployment");
+                    });
+
+                    assertThat(spec.getServices()).hasOnlyOneElementSatisfying(service -> {
+                        assertThat(service.getGroup()).isEqualTo("my.custom-operator.com");
+                        assertThat(service.getVersion()).isEqualTo("v1alpha1");
+                        assertThat(service.getKind()).isEqualTo("Postgres");
+                        assertThat(service.getName()).isEqualTo("postgresql");
+                    });
+                });
+            });
+        });
     }
 }

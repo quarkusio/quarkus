@@ -208,8 +208,6 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.get("/simple/async/cs/fail")
                 .then().body(Matchers.equalTo("OK"))
                 .statusCode(666);
-        RestAssured.get("/simple/async/cf/blocking")
-                .then().body(Matchers.equalTo(Boolean.FALSE.toString()));
         RestAssured.get("/simple/async/cf/ok")
                 .then().body(Matchers.equalTo("CF-OK"));
         RestAssured.get("/simple/async/cf/fail")
@@ -220,6 +218,12 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.get("/simple/async/uni/fail")
                 .then().body(Matchers.equalTo("OK"))
                 .statusCode(666);
+    }
+
+    @Test
+    public void testCompletableFutureBlocking() {
+        RestAssured.get("/simple/async/cf/blocking")
+                .then().body(Matchers.equalTo(Boolean.FALSE.toString()));
     }
 
     @Test

@@ -24,6 +24,7 @@ import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("/web-app")
@@ -32,6 +33,9 @@ public class ProtectedResource {
 
     @Inject
     SecurityIdentity identity;
+
+    @Inject
+    SecurityIdentityAssociation securityIdentityAssociation;
 
     @Inject
     Principal principal;
@@ -68,13 +72,15 @@ public class ProtectedResource {
     @Path("test-security")
     public String testSecurity() {
         return securityContext.getUserPrincipal().getName() + ":" + identity.getPrincipal().getName() + ":"
-                + principal.getName();
+                + principal.getName() + ":"
+                + securityIdentityAssociation.getDeferredIdentity().await().indefinitely().getPrincipal().getName();
     }
 
     @GET
     @Path("test-security-oidc")
     public String testSecurityJwt() {
         return idToken.getName() + ":" + identity.getPrincipal().getName() + ":" + principal.getName()
+                + ":" + securityIdentityAssociation.getDeferredIdentity().await().indefinitely().getPrincipal().getName()
                 + ":" + idToken.getGroups().iterator().next()
                 + ":" + idToken.getClaim("email")
                 + ":" + userInfo.getString("sub")

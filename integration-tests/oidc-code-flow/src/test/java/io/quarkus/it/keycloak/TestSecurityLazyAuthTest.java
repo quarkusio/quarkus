@@ -26,14 +26,14 @@ public class TestSecurityLazyAuthTest {
     @TestSecurity(user = "user1", roles = "viewer")
     public void testWithDummyUser() {
         RestAssured.when().get("test-security").then()
-                .body(is("user1:user1:user1"));
+                .body(is("user1:user1:user1:user1"));
     }
 
     @Test
     @TestSecurityMetaAnnotation
     public void testJwtWithDummyUser() {
         RestAssured.when().get("test-security-oidc").then()
-                .body(is("userOidc:userOidc:userOidc:viewer:user@gmail.com:subject:aud"));
+                .body(is("userOidc:userOidc:userOidc:userOidc:viewer:user@gmail.com:subject:aud"));
     }
 
     @Retention(RetentionPolicy.RUNTIME)

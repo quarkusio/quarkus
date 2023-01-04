@@ -56,10 +56,11 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
 
     @Override
     public Uni<SecurityIdentity> getDeferredIdentity() {
-        if (testIdentity != null) {
-            return Uni.createFrom().item(testIdentity);
+        if (testIdentity == null) {
+            return delegate.getDeferredIdentity();
         }
-        return delegate.getDeferredIdentity();
+        return delegate.getDeferredIdentity().onItem()
+                .transform(underlying -> underlying.isAnonymous() ? testIdentity : underlying);
     }
 
     @Override

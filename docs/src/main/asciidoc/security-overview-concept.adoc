@@ -174,11 +174,12 @@ The following table provides a summary of the options for each authentication me
 |Yes
 |Yes
 |No
-|Represent token as `Principal``
+|Represent token as `Principal`
 |Yes
 |Yes
 |Yes
 |Inject JWT as MP JSON Web Token (JWT)
+|Yes
 |Yes
 |No
 |Authorization Code Flow
@@ -286,7 +287,7 @@ For more information, see xref:security-built-in-authentication-support-concept.
 
 == Secure connections with SSL/TLS
 
- For more information about how Quarkus supports secure connections with SSL/TLS, see the xref:http-reference.adoc#ssl[HTTP reference] information.
+For more information about how Quarkus supports secure connections with SSL/TLS, see the xref:http-reference.adoc#ssl[HTTP reference] information.
 
 == Cross-origin resource sharing
 

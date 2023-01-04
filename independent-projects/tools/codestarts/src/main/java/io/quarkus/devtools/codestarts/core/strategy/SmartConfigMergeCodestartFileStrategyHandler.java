@@ -79,12 +79,20 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
     static void flatten(String prefix, Map<String, String> target, Map<String, ?> map) {
         for (Map.Entry entry : map.entrySet()) {
             if (entry.getValue() instanceof Map) {
-                flatten(prefix + entry.getKey() + ".", target, (Map) entry.getValue());
+                flatten(prefix + quote(entry.getKey().toString()) + ".", target, (Map) entry.getValue());
             } else {
                 // TODO: handle different types of values
-                target.put(prefix + entry.getKey(), entry.getValue().toString());
+                target.put(prefix + quote(entry.getKey().toString()), entry.getValue().toString());
             }
         }
+    }
+
+    private static String quote(String key) {
+        if (!key.contains(".")) {
+            return key;
+        }
+
+        return "\"" + key.replaceAll("\"", "\\\"") + "\"";
     }
 
     private static String getConfigType(Map<String, Object> data) {

@@ -4,11 +4,10 @@ import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -67,13 +66,13 @@ class RequestContext implements ManagedContext {
             // Context is not active!
             return null;
         }
-        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctxState.get(contextual);
+        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctxState.map.get(contextual);
         if (instance == null) {
             CreationalContext<T> creationalContext = creationalContextFun.apply(contextual);
             // Bean instance does not exist - create one if we have CreationalContext
             instance = new ContextInstanceHandleImpl<T>((InjectableBean<T>) contextual,
                     contextual.create(creationalContext), creationalContext);
-            ctxState.put(contextual, instance);
+            ctxState.map.put(contextual, instance);
         }
         return instance.get();
     }
@@ -100,7 +99,7 @@ class RequestContext implements ManagedContext {
         if (state == null) {
             throw notActive();
         }
-        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) state.get(contextual);
+        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) state.map.get(contextual);
         return instance == null ? null : instance.get();
     }
 
@@ -116,7 +115,7 @@ class RequestContext implements ManagedContext {
             // Context is not active
             throw notActive();
         }
-        ContextInstanceHandle<?> instance = state.remove(contextual);
+        ContextInstanceHandle<?> instance = state.map.remove(contextual);
         if (instance != null) {
             instance.destroy();
         }
@@ -134,7 +133,7 @@ class RequestContext implements ManagedContext {
                     initialState != null ? Integer.toHexString(initialState.hashCode()) : "new", stack);
         }
         if (initialState == null) {
-            currentContext.set(new RequestContextState());
+            currentContext.set(new RequestContextState(new ConcurrentHashMap<>()));
             // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
             fireIfNotEmpty(initializedNotifier);
         } else {
@@ -197,7 +196,12 @@ class RequestContext implements ManagedContext {
             if (reqState.invalidate()) {
                 // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
                 fireIfNotEmpty(beforeDestroyedNotifier);
-                ((RequestContextState) state).clearAfter(this::destroyContextElement);
+                Map<Contextual<?>, ContextInstanceHandle<?>> map = ((RequestContextState) state).map;
+                if (!map.isEmpty()) {
+                    //Performance: avoid an iterator on the map elements
+                    map.forEach(this::destroyContextElement);
+                    map.clear();
+                }
                 // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
                 fireIfNotEmpty(destroyedNotifier);
             }
@@ -233,8 +237,6 @@ class RequestContext implements ManagedContext {
     static class RequestContextState implements ContextState {
 
         private static final VarHandle IS_VALID;
-        private static final VarHandle MAP;
-        private static final VarHandle SINGLE_V_MAP;
 
         static {
             try {
@@ -242,207 +244,19 @@ class RequestContext implements ManagedContext {
             } catch (ReflectiveOperationException e) {
                 throw new Error(e);
             }
-            try {
-                MAP = MethodHandles.lookup().findVarHandle(RequestContextState.class, "map", ConcurrentHashMap.class);
-            } catch (ReflectiveOperationException e) {
-                throw new Error(e);
-            }
-            try {
-                SINGLE_V_MAP = MethodHandles.lookup().findVarHandle(RequestContextState.class, "singleValueMap",
-                        CtxHandle.class);
-            } catch (ReflectiveOperationException e) {
-                throw new Error(e);
-            }
         }
 
-        private static final class CtxHandle {
-            private static final CtxHandle EMPTY_CTX_HANDLE = new CtxHandle(null, null);
-            private final Contextual<?> ctx;
-            private final ContextInstanceHandle<?> handle;
-
-            private CtxHandle(final Contextual<?> ctx, final ContextInstanceHandle<?> handle) {
-                this.ctx = ctx;
-                this.handle = handle;
-            }
-
-            public Contextual<?> getCtx() {
-                if (isEmpty()) {
-                    throw new IllegalStateException("this value is not available for the empty instance");
-                }
-                return ctx;
-            }
-
-            public ContextInstanceHandle<?> getHandle() {
-                if (isEmpty()) {
-                    throw new IllegalStateException("this value is not available for the empty instance");
-                }
-                return handle;
-            }
-
-            public boolean containsKey(Contextual<?> key) {
-                if (isEmpty()) {
-                    return false;
-                }
-                final Contextual<?> ctx = this.ctx;
-                return key == ctx || key.equals(ctx);
-            }
-
-            public ContextInstanceHandle<?> get(Contextual<?> key) {
-                if (isEmpty()) {
-                    return null;
-                }
-                final Contextual<?> ctx = this.ctx;
-                return (key == ctx || key.equals(ctx)) ? handle : null;
-            }
-
-            public void forEach(BiConsumer<Contextual<?>, ContextInstanceHandle<?>> consumer) {
-                if (isEmpty()) {
-                    return;
-                }
-                consumer.accept(ctx, handle);
-            }
-
-            public boolean isEmpty() {
-                return this == CtxHandle.EMPTY_CTX_HANDLE;
-            }
-
-            public static CtxHandle empty() {
-                return CtxHandle.EMPTY_CTX_HANDLE;
-            }
-
-            public static CtxHandle of(final Contextual<?> ctx, final ContextInstanceHandle<?> handle) {
-                Objects.requireNonNull(ctx);
-                Objects.requireNonNull(handle);
-                return new CtxHandle(ctx, handle);
-            }
-
-            public Map<InjectableBean<?>, Object> getContextualInstanceAsMap() {
-                if (isEmpty()) {
-                    return Collections.emptyMap();
-                }
-                final ContextInstanceHandle<?> handle = this.handle;
-                return Collections.singletonMap(handle.getBean(), handle.get());
-            }
-        }
-
-        private volatile ConcurrentHashMap<Contextual<?>, ContextInstanceHandle<?>> map;
-        private volatile CtxHandle singleValueMap;
+        private final Map<Contextual<?>, ContextInstanceHandle<?>> map;
         private volatile int isValid;
 
-        RequestContextState() {
-            // no need to use any volatile set-like here for safe publication: too costy!!
-            // this map's lazy set shouldn't be needed with null values, but better be safe then sorry!
-            MAP.set(this, null);
-            SINGLE_V_MAP.set(this, CtxHandle.empty());
-            IS_VALID.set(this, 1);
-            VarHandle.storeStoreFence();
-        }
-
-        public ContextInstanceHandle<?> get(Contextual<?> key) {
-            final var singleValueMap = this.singleValueMap;
-            if (singleValueMap != null) {
-                return singleValueMap.get(key);
-            }
-            return spinWaitMap().get(key);
-        }
-
-        /**
-         * Current algorithm allows a "bubble" where singleValueMap is NULL, but map isn't yet
-         * migrated: it assumes the value will be moved soon.
-         * IS NOT RECOMMENDED to make this algorithm more cooperative to save weird ordering issue
-         * due to a cooperative map allocation that doesn't have the information of the existing
-         * singleValueMap's value.
-         */
-        private Map<Contextual<?>, ContextInstanceHandle<?>> spinWaitMap() {
-            Map<Contextual<?>, ContextInstanceHandle<?>> map;
-            while ((map = this.map) == null) {
-                Thread.onSpinWait();
-            }
-            return map;
-        }
-
-        public void clearAfter(BiConsumer<Contextual<?>, ContextInstanceHandle<?>> consumer) {
-            for (;;) {
-                final var singleValueMap = this.singleValueMap;
-                if (singleValueMap != null) {
-                    if (singleValueMap.isEmpty()) {
-                        return;
-                    }
-                    // this is necessary to save a migration to map to "resurrect"
-                    // the existing entries
-                    if (SINGLE_V_MAP.compareAndSet(this, singleValueMap, CtxHandle.empty())) {
-                        singleValueMap.forEach(consumer);
-                        return;
-                    }
-                } else {
-                    final var map = spinWaitMap();
-                    map.forEach(consumer);
-                    map.clear();
-                    return;
-                }
-            }
-        }
-
-        public void put(Contextual<?> key, ContextInstanceHandle<?> value) {
-            for (;;) {
-                final var singleValueMap = this.singleValueMap;
-                if (singleValueMap != null) {
-                    if (!singleValueMap.isEmpty() && !singleValueMap.containsKey(key)) {
-                        if (!tryMigrateSingleMap(singleValueMap, key, value)) {
-                            continue;
-                        }
-                        return;
-                    }
-                    // single v map is empty or contains the value: in both cases requires being replaced
-                    if (SINGLE_V_MAP.compareAndSet(this, singleValueMap, CtxHandle.of(key, value))) {
-                        return;
-                    }
-                } else {
-                    spinWaitMap().put(key, value);
-                }
-            }
-        }
-
-        private boolean tryMigrateSingleMap(CtxHandle singleValueMap, Contextual<?> key,
-                ContextInstanceHandle<?> value) {
-            assert !singleValueMap.isEmpty() && !singleValueMap.containsKey(key);
-            if (!SINGLE_V_MAP.compareAndSet(this, singleValueMap, null)) {
-                return false;
-            }
-            // we're in charge to migrate the single value and allocate the map
-            final var map = new ConcurrentHashMap<Contextual<?>, ContextInstanceHandle<?>>(2, 0.75f, 1);
-            map.put(singleValueMap.getCtx(), singleValueMap.getHandle());
-            map.put(key, value);
-            MAP.setRelease(this, map);
-            return true;
-        }
-
-        public ContextInstanceHandle<?> remove(Contextual<?> key) {
-            // MUST HOLD: removal cannot switch back from map to single value map
-            for (;;) {
-                final var singleValueMap = this.singleValueMap;
-                if (singleValueMap != null) {
-                    final var value = singleValueMap.get(key);
-                    if (value == null) {
-                        return null;
-                    }
-                    if (!SINGLE_V_MAP.compareAndSet(this, singleValueMap, CtxHandle.empty())) {
-                        continue;
-                    }
-                    return value;
-                } else {
-                    return spinWaitMap().remove(key);
-                }
-            }
+        RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
+            this.map = Objects.requireNonNull(value);
+            this.isValid = 1;
         }
 
         @Override
         public Map<InjectableBean<?>, Object> getContextualInstances() {
-            final var singleValueMap = this.singleValueMap;
-            if (singleValueMap != null) {
-                return singleValueMap.getContextualInstanceAsMap();
-            }
-            return spinWaitMap().values().stream()
+            return map.values().stream()
                     .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
         }
 

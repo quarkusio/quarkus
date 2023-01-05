@@ -36,6 +36,7 @@ public class LoggingWithPanacheProcessor {
                     .setClassToTransform(className)
                     .setVisitorFunction((ignored, visitor) -> new AddLoggerFieldAndRewriteInvocations(visitor, className))
                     .setClassReaderOptions(ClassReader.EXPAND_FRAMES)
+                    .setPriority(1000)
                     .build());
         }
     }

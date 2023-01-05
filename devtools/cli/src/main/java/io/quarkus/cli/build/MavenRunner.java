@@ -184,7 +184,7 @@ public class MavenRunner implements BuildSystemRunner {
         args.add(action);
 
         if (buildOptions.buildNative) {
-            args.add("-Dnative");
+            args.add("-Pnative");
         }
         if (buildOptions.skipTests()) {
             setSkipTests(args);

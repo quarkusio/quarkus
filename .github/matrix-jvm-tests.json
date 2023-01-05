@@ -25,12 +25,4 @@
   "maven_args": "-DskipDocs -Dformat.skip",
   "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g -Xlog:gc*=debug:file=windows-java-11.txt",
  "os-name": "windows-latest"
-}
-, {
-  "name": "17 MacOS M1",
-  "java-version": 17,
-  "maven_args": "-DskipDocs -Dformat.skip",
-  "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
-  "architecture": "aarch64",
-  "os-name": "macos-arm64-latest"
 }]

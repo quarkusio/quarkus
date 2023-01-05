@@ -419,25 +419,15 @@ public class MainClassBuildStep {
     }
 
     private static String sanitizeMainClassName(ClassInfo mainClass, IndexView index) {
-        String className = mainClass.name().toString();
+        DotName mainClassDotName = mainClass.name();
+        String className = mainClassDotName.toString();
         if (isKotlinClass(mainClass)) {
             MethodInfo mainMethod = mainClass.method("main",
                     ArrayType.create(Type.create(DotName.createSimple(String.class.getName()), Type.Kind.CLASS), 1));
             if (mainMethod == null) {
-                ClassInfo classToCheck = mainClass;
-                boolean hasQuarkusApplicationSuperClass = false;
-                while (classToCheck != null) {
-                    DotName superName = classToCheck.superName();
-                    if (superName.equals(QUARKUS_APPLICATION)) {
-                        hasQuarkusApplicationSuperClass = true;
-                        break;
-                    }
-                    if (superName.equals(OBJECT)) {
-                        break;
-                    }
-                    classToCheck = index.getClassByName(superName);
-                }
-                if (!hasQuarkusApplicationSuperClass) {
+                boolean hasQuarkusApplicationInterface = index.getAllKnownImplementors(QUARKUS_APPLICATION).stream().map(
+                        ClassInfo::name).anyMatch(d -> d.equals(mainClassDotName));
+                if (!hasQuarkusApplicationInterface) {
                     className += "Kt";
                 }
             }

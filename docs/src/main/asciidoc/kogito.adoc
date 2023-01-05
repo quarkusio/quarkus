@@ -407,7 +407,7 @@ Add following into the src/main/resources/application.properties file (create th
 
 [source,plain]
 ----
-quarkus.infinispan-client.server-list=localhost:11222
+quarkus.infinispan-client.hosts=localhost:11222
 ----
 
 NOTE: Adjust the host and port number according to your Infinispan server installation.

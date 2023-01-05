@@ -61,14 +61,14 @@ If you modify `application.properties` or `hotrod-client.properties`, you must r
 
 == Connecting to Infinispan clusters
 
-Add the following properties to connect to Infinispan Server:
+If you are running an Infinispan Server add the following properties to connect:
 
 [source,properties]
 ----
-quarkus.infinispan-client.server-list=localhost:11222 <1>
+quarkus.infinispan-client.hosts=localhost:11222 <1>
 
-quarkus.infinispan-client.auth-username=admin <2>
-quarkus.infinispan-client.auth-password=password <3>
+quarkus.infinispan-client.username=admin <2>
+quarkus.infinispan-client.password=password <3>
 
 quarkus.infinispan-client.client-intelligence=BASIC <4>
 ----
@@ -76,6 +76,20 @@ quarkus.infinispan-client.client-intelligence=BASIC <4>
 <2> Sets the authentication username
 <3> Sets the authentication password
 <4> Sets the client intelligence. Use BASIC as a workaround if using Docker for Mac.
+
+Alternatively, you can use uri connection by providing a single connection property
+[source,properties]
+----
+quarkus.infinispan-client.uri=hotrod://admin:password@localhost:11222 <1>
+quarkus.infinispan-client.client-intelligence=BASIC <2>
+----
+<1> Sets Infinispan URI connection. The following properties will be ignored: hosts, username and password.
+<2> Sets the client intelligence. Use BASIC as a workaround if using Docker for Mac
+
+[TIP]
+====
+Use Infinispan Dev Services to run a server and connect without configuration.
+====
 
 .Running Infinispan Server
 
@@ -92,6 +106,14 @@ Infinispan Server also enables authentication and security authorization by defa
 ----
 $ ./bin/cli.sh user create admin -p password
 ----
+
+=== Infinispan Health Check
+If you are using the quarkus-smallrye-health extension, the Infinispan client extensions will automatically add a readiness health check to validate the connection.
+
+When you access the `/q/health/ready` endpoint of your application you will have information about the server connection and available caches.
+
+This behavior can be disabled via the property `quarkus.infinispan-client.health.enabled`.
+
 
 === Creating caches from the client
 
@@ -483,8 +505,10 @@ You need to register the generated Protobuf schemas with Infinispan Server to pe
 `Protobuf` to other media types such as `JSON`.
 
 [TIP]
+====
 You can check the schemas that exist under the `Schemas` tab by logging into
 Infinispan Console at `http://localhost:11222`
+====
 
 By default, Protobuf schemas generated this way will be registered by this extension when the client first connects.
 However, it might be required to handle the registration manually as a schema may evolve over time when used in
@@ -691,11 +715,12 @@ When you use the infinispan-client extension in dev mode or in test, Quarkus aut
 Dev Services for Infinispan is automatically enabled unless:
 
 - `quarkus.infinispan-client.devservices.enabled` is set to `false`
-- the `quarkus.infinispan-client.server-list` is configured
+- the `quarkus.infinispan-client.hosts` is configured
+- the `quarkus.infinispan-client.uri` is configured
 
 Dev Services for Infinispan relies on Docker to start the broker.
 If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
-You can configure the broker address using `quarkus.infinispan-client.server-list`.
+You can configure the broker address using `quarkus.infinispan-client.hosts`.
 
 == Shared server
 

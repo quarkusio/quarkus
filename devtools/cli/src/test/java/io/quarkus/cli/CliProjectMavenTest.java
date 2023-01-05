@@ -162,8 +162,8 @@ public class CliProjectMavenTest {
         Assertions.assertFalse(result.stdout.contains("-Dmaven.test.skip=true"),
                 "mvn command should not specify -Dmaven.test.skip=true\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("-Dnative"),
-                "mvn command should specify -Dnative\n" + result);
+        Assertions.assertTrue(result.stdout.contains("-Pnative"),
+                "mvn command should specify -Pnative\n" + result);
 
         Assertions.assertTrue(result.stdout.contains("--offline"),
                 "mvn command should specify --offline\n" + result);
@@ -180,8 +180,8 @@ public class CliProjectMavenTest {
         Assertions.assertTrue(result.stdout.contains("-Dmaven.test.skip=true"),
                 "mvn command should specify -Dmaven.test.skip=true\n" + result);
 
-        Assertions.assertFalse(result.stdout.contains("-Dnative"),
-                "mvn command should not specify -Dnative\n" + result);
+        Assertions.assertFalse(result.stdout.contains("-Pnative"),
+                "mvn command should not specify -Pnative\n" + result);
 
         Assertions.assertFalse(result.stdout.contains("--offline"),
                 "mvn command should not specify --offline\n" + result);

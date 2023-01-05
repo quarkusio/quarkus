@@ -45,6 +45,8 @@ tags:
 recipeList:
   - org.openrewrite.java.migrate.JavaxActivationMigrationToJakartaActivation
   - org.openrewrite.java.migrate.JavaxAnnotationMigrationToJakartaAnnotation
+  - org.openrewrite.java.migrate.jakarta.JavaxAuthenticationMigrationToJakartaAuthentication
+  - org.openrewrite.java.migrate.jakarta.JavaxAuthorizationMigrationToJakartaAuthorization
   - org.openrewrite.java.migrate.JavaxBatchMigrationToJakartaBatch
   - org.openrewrite.java.migrate.JavaxValidationMigrationToJakartaValidation
   - org.openrewrite.java.migrate.JavaxDecoratorToJakartaDecorator
@@ -68,7 +70,7 @@ recipeList:
   - org.openrewrite.java.migrate.JavaxXmlBindMigrationToJakartaXmlBind
   - org.openrewrite.java.migrate.JavaxXmlSoapToJakartaXmlSoap
   - org.openrewrite.java.migrate.JavaxXmlWsMigrationToJakartaXmlWs
-  - org.openrewrite.java.migrate.JavaxPeristenceXmlToJakartaPersistenceXml
+  - org.openrewrite.java.migrate.JavaxPersistenceXmlToJakartaPersistenceXml
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.migrate.JavaxActivationMigrationToJakartaActivation
@@ -226,6 +228,64 @@ recipeList:
   - org.openrewrite.java.ChangeType:
       oldFullyQualifiedTypeName: javax.annotation.sql.DataSourceDefinitions
       newFullyQualifiedTypeName: jakarta.annotation.sql.DataSourceDefinitions
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.java.migrate.jakarta.JavaxAuthenticationMigrationToJakartaAuthentication
+displayName: Migrate deprecated `javax.security.auth.message` packages to `jakarta.security.auth.message`
+description: Java EE has been rebranded to Jakarta EE, necessitating a package relocation.
+tags:
+  - authentication
+  - security
+  - javax
+  - jakarta
+
+recipeList:
+  - org.openrewrite.maven.AddDependency:
+      groupId: jakarta.authentication
+      artifactId: jakarta.authentication-api
+      version: 2.x
+      onlyIfUsing: javax.security.auth.message..*
+  - org.openrewrite.maven.UpgradeDependencyVersion:
+      groupId: jakarta.authentication
+      artifactId: jakarta.authentication-api
+      newVersion: 2.x
+  - org.openrewrite.java.ChangePackage:
+      oldPackageName: javax.security.auth.message
+      newPackageName: jakarta.security.auth.message
+      recursive: true
+  - org.openrewrite.maven.RemoveDependency:
+      groupId: javax.security.auth.message
+      artifactId: javax.security.auth.message-api
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.java.migrate.jakarta.JavaxAuthorizationMigrationToJakartaAuthorization
+displayName: Migrate deprecated `javax.security.jacc` packages to `jakarta.security.jacc`
+description: Java EE has been rebranded to Jakarta EE, necessitating a package relocation.
+tags:
+  - authorization
+  - security
+  - javax
+  - jakarta
+
+recipeList:
+  - org.openrewrite.maven.AddDependency:
+      groupId: jakarta.authorization
+      artifactId: jakarta.authorization-api
+      version: 2.x
+      onlyIfUsing: javax.security.jacc..*
+  - org.openrewrite.maven.UpgradeDependencyVersion:
+      groupId: jakarta.authorization
+      artifactId: jakarta.authorization-api
+      newVersion: 2.x
+  - org.openrewrite.java.ChangePackage:
+      oldPackageName: javax.security.jacc
+      newPackageName: jakarta.security.jacc
+      recursive: true
+  - org.openrewrite.maven.RemoveDependency:
+      groupId: javax.security.jacc
+      artifactId: javax.security.jacc-api
 
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -680,14 +740,14 @@ recipeList:
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.migrate.JavaxSecurityToJakartaSecurity
-displayName: Migrate deprecated `javax.security` packages to `jakarta.security`
+displayName: Migrate deprecated `javax.security.enterprise` packages to `jakarta.security.enterprise`
 description: Java EE has been rebranded to Jakarta EE, necessitating a package relocation.
 recipeList:
-#  - org.openrewrite.maven.AddDependency:
-#      groupId: jakarta.security.enterprise
-#      artifactId: jakarta.security.enterprise-api
-#      version: 2.x
-#      onlyIfUsing: javax.security.*
+  - org.openrewrite.maven.AddDependency:
+      groupId: jakarta.security.enterprise
+      artifactId: jakarta.security.enterprise-api
+      version: 2.x
+      onlyIfUsing: javax.security.enterprise..*
 
   # Upgrade the dependency to use the jakarta namespace if an older version already exists.
   - org.openrewrite.maven.UpgradeDependencyVersion:
@@ -696,8 +756,8 @@ recipeList:
       newVersion: 2.x
 
   - org.openrewrite.java.ChangePackage:
-      oldPackageName: javax.security
-      newPackageName: jakarta.security
+      oldPackageName: javax.security.enterprise
+      newPackageName: jakarta.security.enterprise
       recursive: true
 
   # Remove Javax Inject API(x)
@@ -955,7 +1015,7 @@ recipeList:
 
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.java.migrate.JavaxPeristenceXmlToJakartaPersistenceXml
+name: org.openrewrite.java.migrate.JavaxPersistenceXmlToJakartaPersistenceXml
 displayName: migrate persistence.xml files
 recipeList:
   - org.openrewrite.xml.ChangeTagAttribute:

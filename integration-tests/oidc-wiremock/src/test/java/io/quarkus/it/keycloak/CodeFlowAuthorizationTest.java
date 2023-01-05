@@ -207,14 +207,14 @@ public class CodeFlowAuthorizationTest {
     public void testCodeFlowUserInfo() throws IOException {
         defineCodeFlowAuthorizationOauth2TokenStub();
 
-        doTestCodeFlowUserInfo("code-flow-user-info-only");
-        doTestCodeFlowUserInfo("code-flow-user-info-github");
-        doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github");
+        doTestCodeFlowUserInfo("code-flow-user-info-only", 300);
+        doTestCodeFlowUserInfo("code-flow-user-info-github", 360);
+        doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github", 301);
 
         doTestCodeFlowUserInfoCashedInIdToken();
     }
 
-    private void doTestCodeFlowUserInfo(String tenantId) throws IOException {
+    private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime) throws IOException {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/" + tenantId);
@@ -231,6 +231,9 @@ public class CodeFlowAuthorizationTest {
             assertNotNull(sessionCookie);
             JsonObject idTokenClaims = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
             assertNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
+            long issuedAt = idTokenClaims.getLong("iat");
+            long expiresAt = idTokenClaims.getLong("exp");
+            assertEquals(internalIdTokenLifetime, expiresAt - issuedAt);
             webClient.getCookieManager().clearCookies();
         }
     }

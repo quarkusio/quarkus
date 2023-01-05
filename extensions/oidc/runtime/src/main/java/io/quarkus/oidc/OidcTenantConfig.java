@@ -795,6 +795,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<Boolean> idTokenRequired = Optional.empty();
 
         /**
+         * Internal ID token lifespan.
+         * This property is only checked when an internal IdToken is generated when Oauth2 providers do not return IdToken.
+         */
+        @ConfigItem(defaultValueDocumentation = "5M")
+        public Optional<Duration> internalIdTokenLifespan = Optional.empty();
+
+        /**
          * Requires that a Proof Key for Code Exchange (PKCE) is used.
          */
         @ConfigItem(defaultValueDocumentation = "false")
@@ -807,6 +814,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem
         public Optional<String> pkceSecret = Optional.empty();
+
+        public Optional<Duration> getInternalIdTokenLifespan() {
+            return internalIdTokenLifespan;
+        }
+
+        public void setInternalIdTokenLifespan(Duration internalIdTokenLifespan) {
+            this.internalIdTokenLifespan = Optional.of(internalIdTokenLifespan);
+        }
 
         public Optional<Boolean> isPkceRequired() {
             return pkceRequired;

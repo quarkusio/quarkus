@@ -743,6 +743,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (userInfo != null) {
             builder.claim(OidcUtils.USER_INFO_ATTRIBUTE, userInfo.getJsonObject());
         }
+        if (oidcConfig.authentication.internalIdTokenLifespan.isPresent()) {
+            builder.expiresIn(oidcConfig.authentication.internalIdTokenLifespan.get().getSeconds());
+        }
         return builder.jws().header(INTERNAL_IDTOKEN_HEADER, true)
                 .sign(KeyUtils.createSecretKeyFromSecret(OidcCommonUtils.clientSecret(oidcConfig.credentials)));
     }

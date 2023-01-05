@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import java.time.Duration;
 import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -40,6 +41,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     .setSecret("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
             config.getCodeGrant().setHeaders(Map.of("X-Custom", "XCustomHeaderValue"));
             config.getCodeGrant().setExtraParams(Map.of("extra-param", "extra-param-value"));
+            config.getAuthentication().setInternalIdTokenLifespan(Duration.ofSeconds(301));
             return Uni.createFrom().item(config);
         }
 

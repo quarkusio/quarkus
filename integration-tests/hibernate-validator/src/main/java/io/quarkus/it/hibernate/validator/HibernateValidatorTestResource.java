@@ -49,6 +49,7 @@ import io.quarkus.runtime.StartupEvent;
 
 @Path("/hibernate-validator/test")
 public class HibernateValidatorTestResource
+        extends HibernateValidatorTestResourceSuperclass
         implements HibernateValidatorTestResourceGenericInterface<Integer>, HibernateValidatorTestResourceInterface {
 
     @Inject
@@ -162,6 +163,13 @@ public class HibernateValidatorTestResource
     @Override
     @SomeInterceptorBindingAnnotation
     public String testRestEndPointInterfaceValidationWithAnnotationOnImplMethod(String id) {
+        return id;
+    }
+
+    // all JAX-RS annotations are defined in the superclass
+    @Override
+    @SomeInterceptorBindingAnnotation
+    public String testRestEndPointInterfaceValidationWithAnnotationOnOverriddenMethod(String id) {
         return id;
     }
 

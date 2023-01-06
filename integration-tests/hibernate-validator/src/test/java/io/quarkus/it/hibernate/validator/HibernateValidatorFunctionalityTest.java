@@ -278,11 +278,29 @@ public class HibernateValidatorFunctionalityTest {
                 .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/plop/")
                 .then()
                 .statusCode(400)
+                .contentType(ContentType.TEXT)
                 .body(containsString("numeric value out of bounds"));
 
         RestAssured.when()
                 .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/42/")
                 .then()
+                .contentType(ContentType.TEXT)
+                .body(is("42"));
+    }
+
+    @Test
+    public void testRestEndPointInterfaceValidationWithAnnotationOnOverriddenMethod() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-overridden-method/plop/")
+                .then()
+                .statusCode(400)
+                .contentType(ContentType.TEXT)
+                .body(containsString("numeric value out of bounds"));
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-overridden-method/42/")
+                .then()
+                .contentType(ContentType.TEXT)
                 .body(is("42"));
     }
 

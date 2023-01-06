@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import javax.json.bind.JsonbBuilder;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -24,6 +25,7 @@ import javax.ws.rs.sse.SseEventSource;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
+import org.jboss.resteasy.reactive.server.jsonb.JsonbMessageBodyReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -135,7 +137,9 @@ public class SseTestCase {
     }
 
     private void testJsonMulti(String path) {
-        Client client = ClientBuilder.newBuilder().build();
+        Client client = ClientBuilder.newBuilder()
+                .register(new JsonbMessageBodyReader(JsonbBuilder.create())) // we need this because registering Jsonb for the server part does not affect the client
+                .build();
         WebTarget target = client.target(uri.toString() + path);
         Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);
         List<Message> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));

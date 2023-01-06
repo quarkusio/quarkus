@@ -571,7 +571,7 @@ public class QuarkusDev extends QuarkusTask {
             }
         }
         Path classesDir = classesDirs.isEmpty() ? null
-                : QuarkusGradleUtils.mergeClassesDirs(classesDirs, project.getWorkspaceModule().getBuildDir(), root, root);
+                : QuarkusGradleUtils.mergeClassesDirs(classesDirs, project.getWorkspaceModule().getBuildDir(), root, false);
 
         final Set<Path> resourcesSrcDirs = new LinkedHashSet<>();
         // resourcesSrcDir may exist but if it's empty the resources output dir won't be created

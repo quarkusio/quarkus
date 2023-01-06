@@ -811,9 +811,25 @@ If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to po
 
 [source, properties]
 ----
-# keycloak.url is set by OidcWiremockTestResource
+# keycloak.url is set by DevServices for Keycloak
 mp.jwt.verify.publickey.location=${keycloak.url}/realms/quarkus/protocol/openid-connect/certs
 mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
+----
+
+Note that the tokens issued by Keycloak have an `iss` (issuer) claim set to the realm endpoint address.
+
+If your Quarkus application is running in a docker container then it may share a network interface with a Keycloak docker container launched by DevServices for Keycloak, with the Quarkus application and Keycloak communicating with each other via an internal shared docker network.
+
+In such cases, use the following configuration instead:
+
+[source, properties]
+----
+# keycloak.url is set by DevServices for Keycloak,
+# Quarkus will access it via an internal shared docker network interface.
+mp.jwt.verify.publickey.location=${keycloak.url}/realms/quarkus/protocol/openid-connect/certs
+
+# Issuer is set to the docker bridge localhost endpoint address represented by the `client.quarkus.oidc.auth-server-url` property
+mp.jwt.verify.issuer=${client.quarkus.oidc.auth-server-url}
 ----
 
 [[integration-testing-public-key]]

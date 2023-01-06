@@ -13,9 +13,12 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
+import org.jboss.logging.Logger;
+
 import graphql.ErrorType;
 import graphql.ExecutionResult;
 import graphql.GraphQLError;
+import graphql.execution.AbortExecutionException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.smallrye.graphql.execution.ExecutionResponse;
@@ -45,6 +48,8 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private static final String DEFAULT_REQUEST_CONTENT_TYPE = "application/json; charset="
             + StandardCharsets.UTF_8.name();
     private static final String MISSING_OPERATION = "Missing operation body";
+
+    private static final Logger log = Logger.getLogger(SmallRyeGraphQLExecutionHandler.class);
 
     public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters, boolean runBlocking,
             CurrentIdentityAssociation currentIdentityAssociation,
@@ -320,8 +325,13 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
 
         @Override
         public void write(ExecutionResponse er) {
-
             if (shouldFail(er)) {
+                er.getExecutionResult()
+                        .getErrors().stream()
+                        .filter(e -> e.getErrorType().equals(ErrorType.ExecutionAborted))
+                        .forEach(e -> {
+                            log.error("Execution aborted", (AbortExecutionException) e);
+                        });
                 response.setStatusCode(500)
                         .end();
             } else {

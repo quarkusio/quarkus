@@ -13,8 +13,12 @@ import javax.json.JsonReader;
 
 import org.hamcrest.CoreMatchers;
 
+import com.google.common.base.Charsets;
+
 import io.restassured.RestAssured;
+import io.restassured.builder.MultiPartSpecBuilder;
 import io.restassured.parsing.Parser;
+import io.restassured.response.Response;
 
 /**
  * Some shared methods
@@ -50,6 +54,31 @@ public abstract class AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body(CoreMatchers.containsString("{\"data\":{\"" + operationName + "\":{\"message\":\"" + message + "\"}}}"));
+    }
+
+    protected Response post(String url, String contentType, String payload) {
+        return post(url, contentType, payload, MEDIATYPE_JSON);
+    }
+
+    protected Response post(String url, String contentType, String payload, String accept) {
+        if (contentType.equals(MEDIATYPE_MULTIPART)) {
+            return RestAssured.given()
+                    .contentType(MEDIATYPE_MULTIPART)
+                    .when()
+                    .accept(accept)
+                    .contentType(MEDIATYPE_MULTIPART)
+                    .multiPart(new MultiPartSpecBuilder(payload)
+                            .charset(Charsets.UTF_8)
+                            .controlName("operations")
+                            .build())
+                    .post(url);
+        } else {
+            return RestAssured.given().when()
+                    .accept(accept)
+                    .contentType(MEDIATYPE_JSON)
+                    .body(payload)
+                    .post(url);
+        }
     }
 
     protected String getPayload(String query) {
@@ -98,6 +127,8 @@ public abstract class AbstractGraphQLTest {
     }
 
     protected static final String MEDIATYPE_JSON = "application/json";
+
+    protected static final String MEDIATYPE_MULTIPART = "multipart/form-data";
     protected static final String MEDIATYPE_TEXT = "text/plain";
     protected static final String QUERY = "query";
     protected static final String VARIABLES = "variables";
@@ -105,6 +136,7 @@ public abstract class AbstractGraphQLTest {
     protected static final Properties PROPERTIES = new Properties();
     static {
         PROPERTIES.put("smallrye.graphql.allowGet", "true");
+        PROPERTIES.put("smallrye.graphql.allowMultiPartPost", "true");
         PROPERTIES.put("smallrye.graphql.printDataFetcherException", "true");
         PROPERTIES.put("smallrye.graphql.events.enabled", "true");
     }

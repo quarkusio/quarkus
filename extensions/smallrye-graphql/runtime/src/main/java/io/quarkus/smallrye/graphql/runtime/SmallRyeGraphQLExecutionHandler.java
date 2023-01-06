@@ -5,13 +5,21 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.json.JsonString;
+import javax.json.JsonValue;
 
 import org.jboss.logging.Logger;
 
@@ -23,6 +31,8 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.smallrye.graphql.execution.ExecutionResponse;
 import io.smallrye.graphql.execution.ExecutionResponseWriter;
+import io.smallrye.graphql.execution.context.SmallRyeContextManager;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -37,11 +47,15 @@ import io.vertx.ext.web.RoutingContext;
 public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHandler {
     private final boolean allowGet;
     private final boolean allowPostWithQueryParameters;
+    private final boolean allowMultiPartPost;
     private static final String QUERY = "query";
     private static final String OPERATION_NAME = "operationName";
     private static final String VARIABLES = "variables";
     private static final String EXTENSIONS = "extensions";
     private static final String APPLICATION_GRAPHQL = "application/graphql";
+
+    private static final String MULTIPART_FORM = "multipart/form-data";
+
     private static final String OK = "OK";
     private static final String DEFAULT_RESPONSE_CONTENT_TYPE = "application/graphql+json; charset="
             + StandardCharsets.UTF_8.name();
@@ -50,13 +64,17 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private static final String MISSING_OPERATION = "Missing operation body";
 
     private static final Logger log = Logger.getLogger(SmallRyeGraphQLExecutionHandler.class);
+    private static final Pattern MULTIPART_FILE_VARIABLE_PATTERN = Pattern.compile("variables\\.([^\\\\.\\d]*)(\\.(\\d+$))?");
 
-    public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters, boolean runBlocking,
-            CurrentIdentityAssociation currentIdentityAssociation,
-            CurrentVertxRequest currentVertxRequest) {
+
+    public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters, boolean allowMultiPartPost,
+                                           boolean runBlocking,
+                                           CurrentIdentityAssociation currentIdentityAssociation,
+                                           CurrentVertxRequest currentVertxRequest) {
         super(currentIdentityAssociation, currentVertxRequest, runBlocking);
         this.allowGet = allowGet;
         this.allowPostWithQueryParameters = allowPostWithQueryParameters;
+        this.allowMultiPartPost = allowMultiPartPost;
     }
 
     @Override
@@ -177,18 +195,96 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         return input.build();
     }
 
+    private Map<String, Object> getFileUploadMultipartVariables(RoutingContext ctx, MultiMap form) throws IOException {
+
+        // GraphQL multi part request
+        // https://github.com/jaydenseric/graphql-multipart-request-spec
+        String mapping = form.get("mapping");
+        if (mapping != null && !mapping.isEmpty()) {
+            try (StringReader mappingReader = new StringReader(mapping);
+                    JsonReader jsonReader = jsonReaderFactory.createReader(mappingReader)) {
+                JsonObject mappings = jsonReader.readObject();
+                if (mappings != null && !ctx.fileUploads().isEmpty()) {
+                    return handleFileUploads(ctx.fileUploads(), mappings);
+                }
+            }
+        }
+        return Collections.emptyMap();
+
+    }
+
+    private Map<String, Object> handleFileUploads(List<io.vertx.ext.web.FileUpload> uploads, JsonObject mappings) {
+
+        Map<String, Object> variables = new HashMap<>();
+        for (io.vertx.ext.web.FileUpload upload : uploads) {
+            JsonArray fileMappings = mappings.getJsonArray(upload.name());
+            if (fileMappings != null) {
+                for (JsonValue fileMapping : fileMappings) {
+                    if (fileMapping instanceof JsonString) {
+                        String variableName = ((JsonString) fileMapping).getString();
+                        Matcher matcher = MULTIPART_FILE_VARIABLE_PATTERN.matcher(variableName);
+                        if (matcher.matches()) {
+                            if (matcher.group(3) == null) {
+                                // Single upload file
+                                variables.put(matcher.group(1), upload);
+                            } else {
+                                // Part of upload list
+                                variables.compute(matcher.group(1), (key, current) -> {
+                                    List<io.vertx.ext.web.FileUpload> v = (List) current;
+                                    if (v == null) {
+                                        v = new ArrayList<>();
+                                    }
+                                    v.add(upload);
+                                    return v;
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return variables;
+
+    }
+
     private JsonObject getJsonObjectFromBody(RoutingContext ctx) throws IOException {
 
         String contentType = getRequestContentType(ctx);
-        String body = stripNewlinesAndTabs(readBody(ctx));
 
         // If the content type is application/graphql, the query is in the body
         if (contentType != null && contentType.startsWith(APPLICATION_GRAPHQL)) {
+            String body = stripNewlinesAndTabs(readBody(ctx));
             JsonObjectBuilder input = Json.createObjectBuilder();
             input.add(QUERY, body);
             return input.build();
-            // Else we expect a Json in the content
+        } else if (contentType != null && allowMultiPartPost && contentType.startsWith(MULTIPART_FORM)) {
+
+            // GraphQL multi part request
+            // https://github.com/jaydenseric/graphql-multipart-request-spec
+
+            // TODO: CSRF protection
+            MultiMap form = ctx.request().formAttributes();
+
+            String mapping = form.get("mapping");
+            if (mapping != null && !mapping.isEmpty()) {
+                Map<String, Object> multiPartVariables = getFileUploadMultipartVariables(ctx, form);
+                SmallRyeContextManager.restore(new SmallRyeGraphQLMultiPartContext(multiPartVariables));
+            }
+
+            String query = stripNewlinesAndTabs(form.get("operations"));
+            if (query == null || query.isEmpty()) {
+                return null;
+            }
+
+            try (StringReader queryReader = new StringReader(query);
+                    JsonReader jsonReader = jsonReaderFactory.createReader(queryReader)) {
+                return jsonReader.readObject();
+            }
+
         } else {
+            String body = stripNewlinesAndTabs(readBody(ctx));
+            // Else we expect a Json in the content
             if (body == null || body.isEmpty()) {
                 return null;
             }

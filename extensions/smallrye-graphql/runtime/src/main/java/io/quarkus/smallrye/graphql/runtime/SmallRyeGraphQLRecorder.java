@@ -32,9 +32,9 @@ public class SmallRyeGraphQLRecorder {
     }
 
     public Handler<RoutingContext> executionHandler(RuntimeValue<Boolean> initialized, boolean allowGet,
-            boolean allowPostWithQueryParameters, boolean runBlocking) {
+            boolean allowPostWithQueryParameters, boolean allowMultiPartPost, boolean runBlocking) {
         if (initialized.getValue()) {
-            return new SmallRyeGraphQLExecutionHandler(allowGet, allowPostWithQueryParameters, runBlocking,
+            return new SmallRyeGraphQLExecutionHandler(allowGet, allowPostWithQueryParameters, allowMultiPartPost, runBlocking,
                     getCurrentIdentityAssociation(),
                     Arc.container().instance(CurrentVertxRequest.class).get());
         } else {

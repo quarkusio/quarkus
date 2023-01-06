@@ -373,6 +373,15 @@ public class DevMojo extends AbstractMojo {
     private Pty pty;
     private boolean windowsColorSupport;
 
+    /**
+     * Indicates for which launch mode the dependencies should be resolved.
+     *
+     * @return launch mode for which the dependencies should be resolved
+     */
+    protected LaunchMode getLaunchModeClasspath() {
+        return LaunchMode.DEVELOPMENT;
+    }
+
     @Override
     public void setLog(Log log) {
         super.setLog(log);
@@ -1065,7 +1074,7 @@ public class DevMojo extends AbstractMojo {
         final Path appModelLocation = resolveSerializedModelLocation();
 
         ApplicationModel appModel = bootstrapProvider
-                .getResolvedApplicationModel(QuarkusBootstrapProvider.getProjectId(project), LaunchMode.DEVELOPMENT);
+                .getResolvedApplicationModel(QuarkusBootstrapProvider.getProjectId(project), getLaunchModeClasspath());
         if (appModel != null) {
             bootstrapProvider.close();
         } else {
@@ -1094,6 +1103,7 @@ public class DevMojo extends AbstractMojo {
             final BootstrapMavenContext mvnCtx = new BootstrapMavenContext(mvnConfig);
             appModel = new BootstrapAppModelResolver(new MavenArtifactResolver(mvnCtx))
                     .setDevMode(true)
+                    .setTest(LaunchMode.TEST.equals(getLaunchModeClasspath()))
                     .setCollectReloadableDependencies(!noDeps)
                     .resolveModel(mvnCtx.getCurrentProject().getAppArtifact());
         }

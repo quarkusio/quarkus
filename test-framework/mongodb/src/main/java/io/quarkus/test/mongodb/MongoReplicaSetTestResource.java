@@ -8,6 +8,7 @@ import com.mongodb.client.MongoDatabase;
 import de.flapdoodle.embed.mongo.commands.MongodArguments;
 import de.flapdoodle.embed.mongo.commands.ServerAddress;
 import de.flapdoodle.embed.mongo.config.Net;
+import de.flapdoodle.embed.mongo.distribution.IFeatureAwareVersion;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.mongo.transitions.Mongod;
 import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
@@ -25,9 +26,26 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycleManager {
-
     private static final Logger LOGGER = Logger.getLogger(MongoReplicaSetTestResource.class);
+    private Integer port;
+    private IFeatureAwareVersion version;
+
     private List<TransitionWalker.ReachedState<RunningMongodProcess>> startedServers=Arrays.asList();
+
+    @Override
+    public void init(Map<String, String> initArgs) {
+        port = InitArgs.port(initArgs);
+        version = InitArgs.version(initArgs);
+    }
+
+    @Override
+    public Map<String, String> start() {
+        Issue14424.fix();
+
+        this.startedServers = startReplicaSet(version, port);
+
+        return Collections.emptyMap();
+    }
 
     private static Net net(String hostName, int port) {
         return Net.builder()
@@ -36,22 +54,12 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
           .port(port)
           .build();
     }
-    @Override
-    public Map<String, String> start() {
-        Issue14424.fix();
 
-        Version.Main version = Version.Main.V4_0;
-
-        this.startedServers = startReplicaSet(version);
-
-        return Collections.emptyMap();
-    }
-
-    private static List<TransitionWalker.ReachedState<RunningMongodProcess>> startReplicaSet(Version.Main version) {
-        TransitionWalker.ReachedState<RunningMongodProcess> firstStarted = mongodWithPort(27017)
+    private static List<TransitionWalker.ReachedState<RunningMongodProcess>> startReplicaSet(IFeatureAwareVersion version, int basePort) {
+        TransitionWalker.ReachedState<RunningMongodProcess> firstStarted = mongodWithPort(basePort)
           .start(version);
         try {
-            TransitionWalker.ReachedState<RunningMongodProcess> secondStarted = mongodWithPort(27017 + 1)
+            TransitionWalker.ReachedState<RunningMongodProcess> secondStarted = mongodWithPort(basePort + 1)
               .start(version);
 
             try {

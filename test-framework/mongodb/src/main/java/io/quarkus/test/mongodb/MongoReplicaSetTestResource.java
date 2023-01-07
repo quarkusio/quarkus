@@ -1,110 +1,99 @@
 package io.quarkus.test.mongodb;
 
-import static de.flapdoodle.embed.process.config.process.ProcessOutput.builder;
-
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import org.awaitility.Awaitility;
-import org.bson.Document;
-import org.jboss.logging.Logger;
-
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-
-import de.flapdoodle.embed.mongo.Command;
-import de.flapdoodle.embed.mongo.MongodExecutable;
-import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.*;
+import de.flapdoodle.embed.mongo.commands.MongodArguments;
+import de.flapdoodle.embed.mongo.commands.ServerAddress;
+import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.process.config.RuntimeConfig;
-import de.flapdoodle.embed.process.io.Processors;
-import de.flapdoodle.embed.process.runtime.Network;
+import de.flapdoodle.embed.mongo.transitions.Mongod;
+import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
+import de.flapdoodle.embed.process.io.ProcessOutput;
+import de.flapdoodle.reverse.TransitionWalker;
+import de.flapdoodle.reverse.transitions.Start;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import org.awaitility.Awaitility;
+import org.bson.Document;
+import org.jboss.logging.Logger;
+
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycleManager {
 
     private static final Logger LOGGER = Logger.getLogger(MongoReplicaSetTestResource.class);
-    private static List<MongodExecutable> MONGOS = new ArrayList<>();
+    private List<TransitionWalker.ReachedState<RunningMongodProcess>> startedServers=Arrays.asList();
 
+    private static Net net(String hostName, int port) {
+        return Net.builder()
+          .from(Net.defaults())
+          .bindIp(hostName)
+          .port(port)
+          .build();
+    }
     @Override
     public Map<String, String> start() {
-        try {
-            //JDK bug workaround
-            //https://github.com/quarkusio/quarkus/issues/14424
-            //force class init to prevent possible deadlock when done by mongo threads
-            Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            List<MongodConfig> configs = new ArrayList<>();
-            for (int i = 0; i < 2; i++) {
-                int port = 27017 + i;
-                configs.add(buildMongodConfiguration("localhost", port, true));
-            }
-            configs.forEach(config -> {
-                MongodExecutable exec = getMongodExecutable(config);
-                MONGOS.add(exec);
-                try {
-                    exec.start();
-                } catch (IOException e) {
-                    LOGGER.error("Unable to start the mongo instance", e);
-                }
-            });
-            initializeReplicaSet(configs);
-            return Collections.emptyMap();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        Issue14424.fix();
+
+        Version.Main version = Version.Main.V4_0;
+
+        this.startedServers = startReplicaSet(version);
+
+        return Collections.emptyMap();
     }
 
-    private MongodExecutable getMongodExecutable(MongodConfig config) {
+    private static List<TransitionWalker.ReachedState<RunningMongodProcess>> startReplicaSet(Version.Main version) {
+        TransitionWalker.ReachedState<RunningMongodProcess> firstStarted = mongodWithPort(27017)
+          .start(version);
         try {
-            return doGetExecutable(config);
-        } catch (Exception e) {
-            // sometimes the download process can timeout so just sleep and try again
+            TransitionWalker.ReachedState<RunningMongodProcess> secondStarted = mongodWithPort(27017 + 1)
+              .start(version);
+
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignored) {
-
+                ServerAddress firstAddress = firstStarted.current().getServerAddress();
+                ServerAddress secondAddress = secondStarted.current().getServerAddress();
+                initializeReplicaSet(Arrays.asList(firstAddress, secondAddress));
+                return Arrays.asList(secondStarted, firstStarted);
             }
-            return doGetExecutable(config);
+            catch (IOException iox) {
+                throw new RuntimeException("could not get server address", iox);
+            }
+        } catch (RuntimeException rx) {
+            firstStarted.close();
+            throw rx;
         }
     }
 
-    private MongodExecutable doGetExecutable(MongodConfig config) {
-        RuntimeConfig runtimeConfig = Defaults.runtimeConfigFor(Command.MongoD)
-                .processOutput(builder()
-                        .output(Processors.silent())
-                        .error(Processors.silent())
-                        .commands(Processors.silent())
-                        .build())
-                .build();
-        return MongodStarter.getInstance(runtimeConfig).prepare(config);
+    private static Mongod mongodWithPort(int port) {
+        return Mongod.instance()
+          .withNet(Start.to(Net.class)
+            .initializedWith(net("localhost", port)))
+          .withProcessOutput(Start.to(ProcessOutput.class)
+            .initializedWith(ProcessOutput.silent()))
+          .withMongodArguments(Start.to(MongodArguments.class)
+            .initializedWith(MongodArguments.defaults()
+              .withArgs(Map.of("--replSet", "test001"))
+              .withSyncDelay(10)
+              .withUseSmallFiles(true)
+              .withUseNoJournal(false)
+            ));
     }
 
     @Override
     public void stop() {
-        MONGOS.forEach(mongod -> {
-            try {
-                mongod.stop();
-            } catch (Exception e) {
-                LOGGER.error("Unable to stop MongoDB", e);
-            }
-        });
+        for (TransitionWalker.ReachedState<RunningMongodProcess> startedServer : startedServers) {
+            startedServer.close();
+        }
     }
 
-    private static void initializeReplicaSet(final List<MongodConfig> mongodConfigList) throws UnknownHostException {
-        final String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).net().getServerAddress().getHostName() + ":"
-                + mongodConfigList.get(0).net().getPort();
+    private static void initializeReplicaSet(final List<ServerAddress> mongodConfigList) throws UnknownHostException {
+        final String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).getHost() + ":"
+                + mongodConfigList.get(0).getPort();
         final MongoClientSettings mo = MongoClientSettings.builder()
                 .applyConnectionString(new ConnectionString(arbitrerAddress)).build();
 
@@ -134,15 +123,15 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         }
     }
 
-    private static Document buildReplicaSetConfiguration(final List<MongodConfig> configList) throws UnknownHostException {
+    private static Document buildReplicaSetConfiguration(final List<ServerAddress> configList) throws UnknownHostException {
         final Document replicaSetSetting = new Document();
         replicaSetSetting.append("_id", "test001");
 
         final List<Document> members = new ArrayList<>();
         int i = 0;
-        for (final MongodConfig mongoConfig : configList) {
+        for (final ServerAddress mongoConfig : configList) {
             members.add(new Document().append("_id", i++).append("host",
-                    mongoConfig.net().getServerAddress().getHostName() + ":" + mongoConfig.net().getPort()));
+                    mongoConfig.getHost() + ":" + mongoConfig.getPort()));
         }
 
         replicaSetSetting.append("members", members);
@@ -168,26 +157,5 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         return true;
     }
 
-    private static MongodConfig buildMongodConfiguration(String url, int port, final boolean configureReplicaSet)
-            throws IOException {
-        try {
-            //JDK bug workaround
-            //https://github.com/quarkusio/quarkus/issues/14424
-            //force class init to prevent possible deadlock when done by mongo threads
-            Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
-        } catch (ClassNotFoundException e) {
-        }
-        final ImmutableMongodConfig.Builder builder = MongodConfig.builder()
-                .version(Version.Main.V4_0)
-                .net(new Net(url, port, Network.localhostIsIPv6()));
-        if (configureReplicaSet) {
-            builder.putArgs("--replSet", "test001");
-            builder.cmdOptions(MongoCmdOptions.builder()
-                    .syncDelay(10)
-                    .useSmallFiles(true)
-                    .useNoJournal(false)
-                    .build());
-        }
-        return builder.build();
-    }
+
 }

@@ -189,14 +189,20 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         if ((property != null) && (!property.isEmpty())) {
             List<String> result = new ArrayList<>(2);
             result.add("--env");
-            result.add(String.format("%s=%s", convertPropertyToEnVar(property), value));
+            result.add(String.format("%s=%s", convertPropertyToEnvVar(property), value));
             return result;
         }
         return Collections.emptyList();
     }
 
-    private String convertPropertyToEnVar(String property) {
-        return property.toUpperCase().replace('-', '_').replace('.', '_').replace('/', '_');
+    private String convertPropertyToEnvVar(String property) {
+        return property.toUpperCase()
+                .replace('-', '_')
+                .replace('.', '_')
+                .replace('/', '_')
+                .replace('"', '_')
+                .replace('[', '_')
+                .replace(']', '_');
     }
 
     @Override

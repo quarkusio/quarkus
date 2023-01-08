@@ -173,6 +173,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     ProbeConfig readinessProbe;
 
     /**
+     * The startup probe
+     */
+    @ConfigItem
+    ProbeConfig startupProbe;
+
+    /**
      * Prometheus configuration
      */
     @ConfigItem
@@ -469,6 +475,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public ProbeConfig getReadinessProbe() {
         return readinessProbe;
+    }
+
+    public ProbeConfig getStartupProbe() {
+        return startupProbe;
     }
 
     public PrometheusConfig getPrometheusConfig() {

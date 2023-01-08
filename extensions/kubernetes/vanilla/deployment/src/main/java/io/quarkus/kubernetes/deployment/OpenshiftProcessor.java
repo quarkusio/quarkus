@@ -56,6 +56,7 @@ import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -176,6 +177,7 @@ public class OpenshiftProcessor {
             List<KubernetesPortBuildItem> ports,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
@@ -194,7 +196,7 @@ public class OpenshiftProcessor {
         result.addAll(KubernetesCommonHelper.createDecorators(project, OPENSHIFT, name, config,
                 metricsConfiguration,
                 annotations, labels, command,
-                ports, livenessPath, readinessPath, roles, roleBindings));
+                ports, livenessPath, readinessPath, startupPath, roles, roleBindings));
 
         if (config.flavor == v3) {
             //Openshift 3.x doesn't recognize 'app.kubernetes.io/name', it uses 'app' instead.

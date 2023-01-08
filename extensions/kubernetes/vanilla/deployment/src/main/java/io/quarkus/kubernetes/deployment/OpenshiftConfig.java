@@ -204,6 +204,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     ProbeConfig readinessProbe;
 
     /**
+     * The startup probe
+     */
+    @ConfigItem
+    ProbeConfig startupProbe;
+
+    /**
      * Prometheus configuration
      */
     @ConfigItem
@@ -428,6 +434,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public ProbeConfig getReadinessProbe() {
         return readinessProbe;
+    }
+
+    public ProbeConfig getStartupProbe() {
+        return startupProbe;
     }
 
     public PrometheusConfig getPrometheusConfig() {

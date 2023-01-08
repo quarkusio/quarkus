@@ -38,6 +38,7 @@ import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
@@ -62,6 +63,7 @@ public class DevClusterHelper {
             List<KubernetesPortBuildItem> ports,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
@@ -74,7 +76,7 @@ public class DevClusterHelper {
         result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, config,
                 metricsConfiguration,
                 annotations, labels, command,
-                ports, livenessPath, readinessPath, roles, roleBindings));
+                ports, livenessPath, readinessPath, startupPath, roles, roleBindings));
 
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage())));

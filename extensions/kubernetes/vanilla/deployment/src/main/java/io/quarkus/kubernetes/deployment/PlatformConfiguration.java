@@ -52,6 +52,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     ProbeConfig getReadinessProbe();
 
+    ProbeConfig getStartupProbe();
+
     PrometheusConfig getPrometheusConfig();
 
     Map<String, MountConfig> getMounts();

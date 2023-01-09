@@ -701,7 +701,7 @@ public class CacheConfigManager {
     public void setMaximumSize(String cacheName, long maximumSize) {
         Optional<Cache> cache = cacheManager.getCache(cacheName);
         if (cache.isPresent()) {
-            cache.as(CaffeineCache.class).setMaximumSize(duration); <3>
+            cache.as(CaffeineCache.class).setMaximumSize(maximumSize); <3>
         }
     }
 }

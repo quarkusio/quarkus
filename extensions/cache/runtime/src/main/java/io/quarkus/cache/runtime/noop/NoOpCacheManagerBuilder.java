@@ -10,12 +10,10 @@ import java.util.function.Supplier;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.runtime.CacheManagerImpl;
-import io.quarkus.runtime.annotations.Recorder;
 
-@Recorder
-public class NoOpCacheBuildRecorder {
+public class NoOpCacheManagerBuilder {
 
-    public Supplier<CacheManager> getCacheManagerSupplier(Set<String> cacheNames) {
+    public static Supplier<CacheManager> build(Set<String> cacheNames) {
         Objects.requireNonNull(cacheNames);
         return new Supplier<CacheManager>() {
             @Override

@@ -1,4 +1,6 @@
-package io.quarkus.cache.deployment;
+package io.quarkus.cache.runtime;
+
+import static io.quarkus.runtime.annotations.ConfigPhase.RUN_TIME;
 
 import java.time.Duration;
 import java.util.Map;
@@ -11,8 +13,10 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot
+@ConfigRoot(phase = RUN_TIME)
 public class CacheConfig {
+
+    public static final String CAFFEINE_CACHE_TYPE = "caffeine";
 
     /**
      * Whether or not the cache extension is enabled.
@@ -23,13 +27,14 @@ public class CacheConfig {
     /**
      * Cache type.
      */
-    @ConfigItem(defaultValue = CacheDeploymentConstants.CAFFEINE_CACHE_TYPE)
-    String type;
+    @ConfigItem(defaultValue = CAFFEINE_CACHE_TYPE)
+    public String type;
 
     /**
      * Caffeine configuration.
      */
-    CaffeineConfig caffeine;
+    @ConfigItem
+    public CaffeineConfig caffeine;
 
     @ConfigGroup
     public static class CaffeineConfig {
@@ -39,7 +44,7 @@ public class CacheConfig {
          */
         @ConfigItem(name = ConfigItem.PARENT)
         @ConfigDocMapKey("cache-name")
-        Map<String, CaffeineNamespaceConfig> namespace;
+        public Map<String, CaffeineNamespaceConfig> namespace;
 
         @ConfigGroup
         public static class CaffeineNamespaceConfig {
@@ -49,7 +54,7 @@ public class CacheConfig {
              * avoids the need for expensive resizing operations later, but setting this value unnecessarily high wastes memory.
              */
             @ConfigItem
-            OptionalInt initialCapacity;
+            public OptionalInt initialCapacity;
 
             /**
              * Maximum number of entries the cache may contain. Note that the cache <b>may evict an entry before this limit is
@@ -58,27 +63,28 @@ public class CacheConfig {
              * it hasn't been used recently or very often.
              */
             @ConfigItem
-            OptionalLong maximumSize;
+            public OptionalLong maximumSize;
 
             /**
              * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
              * the entry's creation, or the most recent replacement of its value.
              */
             @ConfigItem
-            Optional<Duration> expireAfterWrite;
+            public Optional<Duration> expireAfterWrite;
 
             /**
              * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
              * the entry's creation, the most recent replacement of its value, or its last read.
              */
             @ConfigItem
-            Optional<Duration> expireAfterAccess;
+            public Optional<Duration> expireAfterAccess;
 
             /**
              * Whether or not metrics are recorded if the application depends on the Micrometer extension. Setting this
              * value to {@code true} will enable the accumulation of cache stats inside Caffeine.
              */
-            boolean metricsEnabled;
+            @ConfigItem
+            public boolean metricsEnabled;
         }
     }
 }

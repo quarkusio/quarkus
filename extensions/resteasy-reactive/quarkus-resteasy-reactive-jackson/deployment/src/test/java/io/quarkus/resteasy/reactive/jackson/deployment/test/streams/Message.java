@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.jackson.deployment.test.sse;
+package io.quarkus.resteasy.reactive.jackson.deployment.test.streams;
 
 public class Message {
     public String name;

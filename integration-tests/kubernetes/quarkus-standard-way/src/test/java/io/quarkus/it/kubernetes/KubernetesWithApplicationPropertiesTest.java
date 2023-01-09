@@ -48,7 +48,8 @@ public class KubernetesWithApplicationPropertiesTest {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
                     assertThat(m.getName()).isEqualTo("test-it");
-                    assertThat(m.getLabels()).contains(entry("foo", "bar"));
+                    assertThat(m.getLabels()).contains(entry("foo", "bar"))
+                            .containsKey("app.kubernetes.io/version"); // make sure the version was not removed from the labels
                     assertThat(m.getNamespace()).isEqualTo("applications");
                 });
 

@@ -1,6 +1,7 @@
 package io.quarkus.cli.image;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -94,6 +95,10 @@ public class CliImageGradleTest {
         // 1 image --dry-run
         result = CliDriver.execute(project, "image", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertFalse(result.getStdout().contains("-Dquarkus.package.type=native"));
+        result = CliDriver.execute(project, "image", "--native", "--dry-run");
+        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertTrue(result.getStdout().contains("-Dquarkus.package.type=native"));
 
         // 2 image build --dry-run
         result = CliDriver.execute(project, "image", "build", "--dry-run");
@@ -121,11 +126,13 @@ public class CliImageGradleTest {
         assertTrue(result.getStdout().contains("--builder=openshift"));
         assertTrue(result.getStdout().contains("--init-script="));
 
-        result = CliDriver.execute(project, "image", "build", "--group=mygroup", "--name=myname", "--tag=1.0", "--dry-run");
+        result = CliDriver.execute(project, "image", "build", "--group=mygroup", "--name=myname", "--tag=1.0", "--native",
+                "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.group=mygroup"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.name=myname"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.tag=1.0"));
+        assertTrue(result.getStdout().contains("-Dquarkus.package.type=native"));
 
         // 3 image push --dry-run
         result = CliDriver.execute(project, "image", "push", "--dry-run");

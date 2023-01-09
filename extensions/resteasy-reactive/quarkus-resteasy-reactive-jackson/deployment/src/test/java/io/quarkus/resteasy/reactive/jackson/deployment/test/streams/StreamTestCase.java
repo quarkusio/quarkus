@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.jackson.deployment.test.sse;
+package io.quarkus.resteasy.reactive.jackson.deployment.test.streams;
 
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,7 +33,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Multi;
 
-public class SseTestCase {
+public class StreamTestCase {
 
     @TestHTTPResource
     URI uri;
@@ -41,16 +41,16 @@ public class SseTestCase {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(SseResource.class, Message.class));
+                    .addClasses(StreamResource.class, Message.class));
 
     @Test
     public void testSseFromSse() throws Exception {
-        testSse("sse");
+        testSse("streams");
     }
 
     @Test
     public void testSseFromMulti() throws Exception {
-        testSse("sse/multi");
+        testSse("streams/multi");
     }
 
     private void testSse(String path) throws Exception {
@@ -81,12 +81,12 @@ public class SseTestCase {
 
     @Test
     public void testMultiFromSse() {
-        testMulti("sse");
+        testMulti("streams");
     }
 
     @Test
     public void testMultiFromMulti() {
-        testMulti("sse/multi");
+        testMulti("streams/multi");
     }
 
     private void testMulti(String path) {
@@ -99,24 +99,24 @@ public class SseTestCase {
 
     @Test
     public void testJsonMultiFromSse() {
-        testJsonMulti("sse/json");
-        testJsonMulti("sse/json2");
-        testJsonMulti("sse/blocking/json");
+        testJsonMulti("streams/json");
+        testJsonMulti("streams/json2");
+        testJsonMulti("streams/blocking/json");
     }
 
     @Test
     public void testJsonMultiFromMulti() {
-        testJsonMulti("sse/json/multi");
+        testJsonMulti("streams/json/multi");
     }
 
     @Test
     public void testJsonMultiFromMultiWithDefaultElementType() {
-        testJsonMulti("sse/json/multi2");
+        testJsonMulti("streams/json/multi2");
     }
 
     @Test
     public void testNdJsonMultiFromMulti() {
-        when().get(uri.toString() + "sse/ndjson/multi")
+        when().get(uri.toString() + "streams/ndjson/multi")
                 .then().statusCode(HttpStatus.SC_OK)
                 // @formatter:off
                 .body(is("{\"name\":\"hello\"}\n"
@@ -127,7 +127,7 @@ public class SseTestCase {
 
     @Test
     public void testStreamJsonMultiFromMulti() {
-        when().get(uri.toString() + "sse/stream-json/multi")
+        when().get(uri.toString() + "streams/stream-json/multi")
                 .then().statusCode(HttpStatus.SC_OK)
                 // @formatter:off
                 .body(is("{\"name\":\"hello\"}\n"
@@ -142,5 +142,20 @@ public class SseTestCase {
         Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);
         List<Message> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));
         assertThat(list).extracting("name").containsExactly("hello", "stef");
+    }
+
+    /**
+     * Reproduce <a href="https://github.com/quarkusio/quarkus/issues/30044">#30044</a>.
+     */
+    @Test
+    public void testStreamJsonMultiFromMultiFast() {
+        String payload = when().get(uri.toString() + "streams/stream-json/multi/fast")
+                .then().statusCode(HttpStatus.SC_OK)
+                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_STREAM_JSON))
+                .extract().response().asString();
+
+        // the payload include 5000 json objects
+        assertThat(payload.lines()).hasSize(5000)
+                .allSatisfy(s -> assertThat(s).matches("\\{\"name\":\".*\"}"));
     }
 }

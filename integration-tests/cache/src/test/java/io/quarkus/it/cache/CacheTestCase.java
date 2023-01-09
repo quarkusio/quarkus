@@ -21,9 +21,9 @@ public class CacheTestCase {
         when().get("/expensive-resource/invocations").then().statusCode(200).body(is("1"));
 
         String metricsResponse = when().get("/q/metrics").then().extract().asString();
-        assertTrue(metricsResponse.contains("cache_puts_total{cache=\"expensiveResourceCache\",} 1.0"));
-        assertTrue(metricsResponse.contains("cache_gets_total{cache=\"expensiveResourceCache\",result=\"miss\",} 1.0"));
-        assertTrue(metricsResponse.contains("cache_gets_total{cache=\"expensiveResourceCache\",result=\"hit\",} 2.0"));
+        assertTrue(metricsResponse.contains("cache_puts_total{cache=\"expensiveResourceCache\"} 1.0"));
+        assertTrue(metricsResponse.contains("cache_gets_total{cache=\"expensiveResourceCache\",result=\"miss\"} 1.0"));
+        assertTrue(metricsResponse.contains("cache_gets_total{cache=\"expensiveResourceCache\",result=\"hit\"} 2.0"));
     }
 
     private void runExpensiveRequest() {

@@ -56,11 +56,13 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.grpc.deployment.DelegatingGrpcBeanBuildItem;
 import io.quarkus.grpc.deployment.GrpcDotNames;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
+import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.devmode.CollectStreams;
 import io.quarkus.grpc.runtime.devmode.DelegatingGrpcBeansStorage;
 import io.quarkus.grpc.runtime.devmode.GrpcDevConsoleRecorder;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
 import io.quarkus.grpc.runtime.devmode.StreamCollectorInterceptor;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 public class GrpcDevConsoleProcessor {
 
@@ -145,8 +147,9 @@ public class GrpcDevConsoleProcessor {
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleRouteBuildItem createWebSocketEndpoint(GrpcDevConsoleRecorder recorder) {
-        recorder.setServerConfiguration();
+    public DevConsoleRouteBuildItem createWebSocketEndpoint(GrpcDevConsoleRecorder recorder,
+            HttpConfiguration httpConfiguration, GrpcConfiguration grpcConfiguration) {
+        recorder.setServerConfiguration(httpConfiguration, grpcConfiguration);
         return DevConsoleRouteBuildItem.builder().path("grpc-test").method("GET").handler(recorder.handler()).build();
     }
 

@@ -37,6 +37,7 @@ import io.grpc.ServerInterceptors;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Subclass;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
@@ -174,6 +175,8 @@ public class GrpcServerRecorder {
             }
         });
         shutdown.addShutdownTask(route::remove); // remove this route at shutdown, this should reset it
+
+        initHealthStorage();
     }
 
     // TODO -- handle Avro, plain text ... when supported / needed
@@ -220,12 +223,15 @@ public class GrpcServerRecorder {
     }
 
     private void initHealthStorage() {
-        GrpcHealthStorage storage = Arc.container().instance(GrpcHealthStorage.class).get();
-        storage.setStatus(GrpcHealthStorage.DEFAULT_SERVICE_NAME,
-                HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
-        for (GrpcServiceDefinition service : services) {
-            storage.setStatus(service.definition.getServiceDescriptor().getName(),
+        InstanceHandle<GrpcHealthStorage> storageHandle = Arc.container().instance(GrpcHealthStorage.class);
+        if (storageHandle.isAvailable()) {
+            GrpcHealthStorage storage = storageHandle.get();
+            storage.setStatus(GrpcHealthStorage.DEFAULT_SERVICE_NAME,
                     HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
+            for (GrpcServiceDefinition service : services) {
+                storage.setStatus(service.definition.getServiceDescriptor().getName(),
+                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
+            }
         }
     }
 

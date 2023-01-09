@@ -14,6 +14,7 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
+import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -26,15 +27,17 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.gradle.AppModelGradleResolver;
+import io.quarkus.gradle.dsl.DevMode;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
 
-public class QuarkusPluginExtension {
+public abstract class QuarkusPluginExtension {
     private final Project project;
 
     private final Property<String> finalName;
     private final SourceSetExtension sourceSetExtension;
+    private final DevMode devMode;
 
     public QuarkusPluginExtension(Project project) {
         this.project = project;
@@ -43,6 +46,7 @@ public class QuarkusPluginExtension {
         finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
 
         this.sourceSetExtension = new SourceSetExtension();
+        this.devMode = ((ExtensionAware) this).getExtensions().create("devMode", DevMode.class, project);
     }
 
     public void beforeTest(Test task) {
@@ -106,6 +110,14 @@ public class QuarkusPluginExtension {
 
     public SourceSetExtension sourceSetExtension() {
         return sourceSetExtension;
+    }
+
+    public DevMode getDevMode() {
+        return devMode;
+    }
+
+    public void devMode(Action<DevMode> action) {
+        action.execute(devMode);
     }
 
     public Set<File> resourcesDir() {

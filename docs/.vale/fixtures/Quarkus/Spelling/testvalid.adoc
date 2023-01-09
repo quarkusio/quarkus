@@ -70,6 +70,7 @@ CRDs
 CRs
 CSVs
 Ctrl
+customizer
 Cygmon
 DaemonSet
 Datadog
@@ -77,6 +78,7 @@ declaratively
 decompiler
 deserialization
 Dev
+dev
 devfile
 Devfile
 devfiles
@@ -118,7 +120,9 @@ Findability
 Fortran
 Funqy
 Gbps
+gRPC
 GCC
+getters
 Git
 GitHub
 GitLab
@@ -192,6 +196,7 @@ Matrixes
 Mattermost
 Maven
 Mebibytes
+metamodel
 MicroProfile
 Microsoft
 Middleware
@@ -297,6 +302,7 @@ serializable
 Serializer
 Serverless
 servlet
+setters
 Shadowman
 Sharding
 SLA

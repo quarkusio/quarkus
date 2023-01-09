@@ -11,3 +11,4 @@
 == Kogito updates
 == IBM Cloud is a valid product name
 == Spotify, GraphQL, and Quiltflower are proper nouns so uppercase in headings is OK.
+= Using xDS gRPC

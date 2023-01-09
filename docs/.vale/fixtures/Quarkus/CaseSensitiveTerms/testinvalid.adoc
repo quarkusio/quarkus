@@ -26,6 +26,8 @@ CygMon
 CYGMON
 Denial of Service
 Denial-of-Service
+Dev Mode
+Dev mode
 Dev Ops
 Dev-Ops
 devops
@@ -64,6 +66,7 @@ gpl
 Gpl
 Graalvm
 graalVM
+GRPC
 Grub
 gtk
 Gtk
@@ -258,6 +261,7 @@ web-UI
 webUI
 Window-Maker
 WindowMaker
+XDS
 Xemacs
 Xterm
 yaml

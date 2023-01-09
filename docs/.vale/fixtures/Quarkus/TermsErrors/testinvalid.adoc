@@ -114,6 +114,7 @@ desire
 desk top
 desk-top
 destroy
+dev
 different than
 different to
 disk-label
@@ -284,6 +285,7 @@ recognise
 remote-access
 remote-access server
 reoccur
+repo
 right double-click
 right now
 right-hand

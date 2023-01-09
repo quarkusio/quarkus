@@ -6,8 +6,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.ext.RuntimeDelegate;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.resteasy.reactive.common.util.DateUtil;
 import org.jboss.resteasy.reactive.common.util.OrderedParameterParser;

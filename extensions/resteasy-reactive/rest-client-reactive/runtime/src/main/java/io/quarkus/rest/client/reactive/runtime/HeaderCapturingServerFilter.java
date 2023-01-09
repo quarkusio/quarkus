@@ -1,7 +1,7 @@
 package io.quarkus.rest.client.reactive.runtime;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
 
 import io.quarkus.arc.Arc;
 

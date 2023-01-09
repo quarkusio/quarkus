@@ -13,7 +13,7 @@
     <name>Quarkus - Dev tools - Parent</name>
     <url>https://github.com/quarkusio/quarkus</url>
     <packaging>pom</packaging>
-    <version>999-SNAPSHOT</version>
+    <version>999-jakarta-SNAPSHOT</version>
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -30,6 +30,10 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
+        <angus-activation.version>1.0.0</angus-activation.version>
+        <expressly.version>5.0.0</expressly.version>
+        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.source>11</maven.compiler.source>
@@ -50,7 +54,7 @@
         <!-- Versions -->
         <assertj.version>3.23.1</assertj.version>
         <jackson-bom.version>2.14.1</jackson-bom.version>
-        <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
+        <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
         <junit.version>5.9.1</junit.version>
         <commons-compress.version>1.22</commons-compress.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
@@ -58,7 +62,7 @@
         <mockito.version>4.11.0</mockito.version>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <quarkus.version>999-SNAPSHOT</quarkus.version>
+        <quarkus.version>999-jakarta-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>21</maven-model-helper.version>
         <commons-io.version>2.11.0</commons-io.version>
         <smallrye-common.version>1.13.2</smallrye-common.version>
@@ -175,6 +179,16 @@
                 <groupId>jakarta.enterprise</groupId>
                 <artifactId>jakarta.enterprise.cdi-api</artifactId>
                 <version>${jakarta.enterprise.cdi-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>${javax.annotation-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${javax.inject.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>

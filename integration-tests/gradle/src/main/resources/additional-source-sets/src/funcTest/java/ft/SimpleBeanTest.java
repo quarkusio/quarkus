@@ -1,6 +1,6 @@
 package ft;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusTest;
 

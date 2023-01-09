@@ -2,8 +2,8 @@ package io.quarkus.security.runtime.interceptor;
 
 import java.lang.reflect.Method;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;

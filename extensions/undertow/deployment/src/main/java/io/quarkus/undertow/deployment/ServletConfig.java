@@ -4,7 +4,7 @@ import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_
 
 import java.util.Optional;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
 

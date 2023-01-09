@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.enterprise.context.NormalScope;
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.NormalScope;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -158,7 +158,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     }
 
     /**
-     * Unlike for the {@link #name(String)} method a new {@link javax.inject.Named} qualifier with the specified value is added
+     * Unlike for the {@link #name(String)} method a new {@link jakarta.inject.Named} qualifier with the specified value is
+     * added
      * to the configured bean.
      *
      * @param name

@@ -2,7 +2,7 @@ package io.quarkus.smallrye.faulttolerance.test.asynchronous.types.mutiny.resubs
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

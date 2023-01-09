@@ -2,7 +2,7 @@ package io.quarkus.grpc.server.blocking;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

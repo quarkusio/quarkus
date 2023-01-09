@@ -38,8 +38,8 @@ The most common ones are class-based beans:
 .Simple Bean Example
 [source,java]
 ----
-import javax.inject.Inject;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 
 @ApplicationScoped <1>
@@ -78,7 +78,7 @@ This is very useful because your application fails fast whenever the container i
 
 [TIP]
 ====
-Your can use programmatic lookup via  `javax.enterprise.inject.Instance` to resolve ambiguities at runtime and even iterate over all beans implementing a given type:
+Your can use programmatic lookup via  `jakarta.enterprise.inject.Instance` to resolve ambiguities at runtime and even iterate over all beans implementing a given type:
 
 [source,java]
 ----
@@ -95,7 +95,7 @@ public class Translator {
 }
 ----
 <1> This injection point will not result in an ambiguous dependency even if there are multiple beans that implement the `Dictionary` type.
-<2> `javax.enterprise.inject.Instance` extends `Iterable`.
+<2> `jakarta.enterprise.inject.Instance` extends `Iterable`.
 ====
 
 == Can I use setter and constructor injection?
@@ -135,7 +135,7 @@ https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#qualifiers[Qualifier
 As we already said a bean is assignable to an injection point if it has all the required qualifiers.
 If you declare no qualifier at an injection point the `@Default` qualifier is assumed.
 
-A qualifier type is a Java annotation defined as `@Retention(RUNTIME)` and annotated with the `@javax.inject.Qualifier` meta-annotation:
+A qualifier type is a Java annotation defined as `@Retention(RUNTIME)` and annotated with the `@jakarta.inject.Qualifier` meta-annotation:
 
 .Qualifier Example
 [source,java]
@@ -176,20 +176,20 @@ NOTE: Every bean has exactly one scope.
 [[bean-scope-available]]
 == [[what-scopes-can-i-actually-use-in-my-quarkus-application]] What scopes can I actually use in my Quarkus application?
 
-You can use all the built-in scopes mentioned by the specification except for `javax.enterprise.context.ConversationScoped`.
+You can use all the built-in scopes mentioned by the specification except for `jakarta.enterprise.context.ConversationScoped`.
 
 [options="header",cols="1,1"]
 |===
 |Annotation   |Description   
 //----------------------
-|`@javax.enterprise.context.ApplicationScoped`   | A single bean instance is used for the application and shared among all injection points. The instance is created lazily, i.e. once a method is invoked upon the <<client_proxies, client proxy>>. 
-|`@javax.inject.Singleton`   | Just like `@ApplicationScoped` except that no client proxy is used. The instance is created when an injection point that resolves to a @Singleton bean is being injected.
-|`@javax.enterprise.context.RequestScoped`   | The bean instance is associated with the current _request_ (usually an HTTP request). 
-|`@javax.enterprise.context.Dependent`   | This is a pseudo-scope. The instances are not shared and every injection point spawns a new instance of the dependent bean. The lifecycle of dependent bean is bound to the bean injecting it - it will be created and destroyed along with the bean injecting it.
-|`@javax.enterprise.context.SessionScoped`   | This scope is backed by a `javax.servlet.http.HttpSession` object. It's only available if the `quarkus-undertow` extension is used.
+|`@jakarta.enterprise.context.ApplicationScoped`   | A single bean instance is used for the application and shared among all injection points. The instance is created lazily, i.e. once a method is invoked upon the <<client_proxies, client proxy>>. 
+|`@jakarta.inject.Singleton`   | Just like `@ApplicationScoped` except that no client proxy is used. The instance is created when an injection point that resolves to a @Singleton bean is being injected.
+|`@jakarta.enterprise.context.RequestScoped`   | The bean instance is associated with the current _request_ (usually an HTTP request). 
+|`@jakarta.enterprise.context.Dependent`   | This is a pseudo-scope. The instances are not shared and every injection point spawns a new instance of the dependent bean. The lifecycle of dependent bean is bound to the bean injecting it - it will be created and destroyed along with the bean injecting it.
+|`@jakarta.enterprise.context.SessionScoped`   | This scope is backed by a `jakarta.servlet.http.HttpSession` object. It's only available if the `quarkus-undertow` extension is used.
 |===
 
-NOTE: There can be other custom scopes provided by Quarkus extensions. For example, xref:transaction.adoc[`quarkus-narayana-jta`] provides xref:transaction.adoc#transaction-scope[`javax.transaction.TransactionScoped`].
+NOTE: There can be other custom scopes provided by Quarkus extensions. For example, xref:transaction.adoc[`quarkus-narayana-jta`] provides xref:transaction.adoc#transaction-scope[`jakarta.transaction.TransactionScoped`].
 
 == `@ApplicationScoped` and `@Singleton` look very similar. Which one should I choose for my Quarkus application?
 
@@ -320,8 +320,8 @@ A bean class may declare lifecycle `@PostConstruct` and `@PreDestroy` callbacks:
 .Lifecycle Callbacks Example
 [source,java]
 ----
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 @ApplicationScoped
 public class Translator {
@@ -356,7 +356,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.interceptor.InterceptorBinding;
+import jakarta.interceptor.InterceptorBinding;
 
 @InterceptorBinding // <1>
 @Retention(RetentionPolicy.RUNTIME)
@@ -372,10 +372,10 @@ public @interface Logged {
 .Simple Interceptor Example
 [source,java]
 ----
-import javax.annotation.Priority;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 @Logged // <1>
 @Priority(2020) // <2>
@@ -407,7 +407,7 @@ NOTE: Instances of interceptors are dependent objects of the bean instance they 
 .Simple Example of Interceptor Usage
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @Logged // <1> <2>
 @ApplicationScoped
@@ -430,11 +430,11 @@ Decorators are similar to interceptors, but because they implement interfaces wi
 .Simple Decorator Example
 [source,java]
 ----
-import javax.decorator.Decorator;
-import javax.decorator.Delegate;
-import javax.annotation.Priority;
-import javax.inject.Inject;
-import javax.enterprise.inject.Any;
+import jakarta.decorator.Decorator;
+import jakarta.decorator.Delegate;
+import jakarta.annotation.Priority;
+import jakarta.inject.Inject;
+import jakarta.enterprise.inject.Any;
 
 public interface Account {
    void withdraw(BigDecimal amount);
@@ -506,7 +506,7 @@ class Logger {
 
 }
 ----
-<1> `javax.enterprise.event.Event` is used to fire events.
+<1> `jakarta.enterprise.event.Event` is used to fire events.
 <2> Fire the event synchronously.
 <3> This method is notified when a `TaskCompleted` event is fired.
 

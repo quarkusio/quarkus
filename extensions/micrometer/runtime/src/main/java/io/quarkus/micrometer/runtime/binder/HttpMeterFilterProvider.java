@@ -1,7 +1,7 @@
 package io.quarkus.micrometer.runtime.binder;
 
-import javax.inject.Singleton;
-import javax.ws.rs.Produces;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Produces;
 
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.internal.OnlyOnceLoggingDenyMeterFilter;

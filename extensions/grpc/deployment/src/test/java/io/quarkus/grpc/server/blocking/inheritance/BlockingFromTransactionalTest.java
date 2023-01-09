@@ -2,7 +2,7 @@ package io.quarkus.grpc.server.blocking.inheritance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

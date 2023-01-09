@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -14,12 +14,24 @@
     <packaging>pom</packaging>
 
     <properties>
+        <angus-activation.version>1.0.0</angus-activation.version>
         <bouncycastle.version>1.70</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.3</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.14</bouncycastle.tls.fips.version>
+        <expressly.version>5.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
+        <jakarta.authentication-api>3.0.0</jakarta.authentication-api>
+        <jakarta.authorization-api.version>2.1.0</jakarta.authorization-api.version>
+        <jakarta.el-api.version>5.0.1</jakarta.el-api.version>
+        <jakarta.json-api.version>2.1.1</jakarta.json-api.version>
+        <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jandex.version>3.0.5</jandex.version>
-        <resteasy.version>4.7.7.Final</resteasy.version>
+        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <javax.inject.version>1</javax.inject.version>
+        <parsson.version>1.1.1</parsson.version>
+        <resteasy-microprofile.version>2.0.0.Final</resteasy-microprofile.version>
+        <resteasy-spring-web.version>3.0.0.Beta3</resteasy-spring-web.version>
+        <resteasy.version>6.2.1.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
@@ -29,54 +41,48 @@
         <opentelemetry-aws.contrib.version>1.20.1-alpha</opentelemetry-aws.contrib.version>
         <opentelemetry-aws-xray.contrib.version>1.20.1</opentelemetry-aws-xray.contrib.version>
         <jaeger.version>1.8.1</jaeger.version>
-        <quarkus-http.version>4.2.1</quarkus-http.version>
+        <quarkus-http.version>5.0.0.Alpha3</quarkus-http.version>
         <micrometer.version>1.10.2</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
-        <microprofile-config-api.version>2.0.1</microprofile-config-api.version>
-        <microprofile-metrics-api.version>3.0.1</microprofile-metrics-api.version>
-        <microprofile-context-propagation.version>1.2</microprofile-context-propagation.version>
-        <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
+        <microprofile-config-api.version>3.0</microprofile-config-api.version>
+        <microprofile-metrics-api.version>4.0.1</microprofile-metrics-api.version>
+        <microprofile-context-propagation.version>1.3</microprofile-context-propagation.version>
+        <microprofile-opentracing-api.version>3.0</microprofile-opentracing-api.version>
         <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
-        <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
-        <microprofile-jwt.version>1.2</microprofile-jwt.version>
-        <microprofile-lra.version>1.0</microprofile-lra.version>
-        <microprofile-openapi.version>2.0.1</microprofile-openapi.version>
-        <smallrye-common.version>1.13.2</smallrye-common.version>
-        <smallrye-config.version>2.13.1</smallrye-config.version>
-        <smallrye-health.version>3.3.1</smallrye-health.version>
-        <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
+        <microprofile-rest-client.version>3.0</microprofile-rest-client.version>
+        <microprofile-jwt.version>2.0</microprofile-jwt.version>
+        <microprofile-lra.version>2.0-RC1</microprofile-lra.version>
+        <microprofile-openapi.version>3.0</microprofile-openapi.version>
+        <smallrye-common.version>2.0.0</smallrye-common.version>
+        <smallrye-config.version>3.1.1</smallrye-config.version>
+        <smallrye-health.version>4.0.1</smallrye-health.version>
+        <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.1.1</smallrye-open-api.version>
-        <smallrye-graphql.version>1.9.1</smallrye-graphql.version>
-        <smallrye-opentracing.version>2.1.1</smallrye-opentracing.version>
-        <smallrye-fault-tolerance.version>5.6.0</smallrye-fault-tolerance.version>
-        <smallrye-jwt.version>3.6.0</smallrye-jwt.version>
-        <smallrye-context-propagation.version>1.2.2</smallrye-context-propagation.version>
+        <smallrye-graphql.version>2.0.1</smallrye-graphql.version>
+        <smallrye-opentracing.version>3.0.0</smallrye-opentracing.version>
+        <smallrye-fault-tolerance.version>6.1.0</smallrye-fault-tolerance.version>
+        <smallrye-jwt.version>4.0.0</smallrye-jwt.version>
+        <smallrye-context-propagation.version>2.0.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>2.7.0</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>2.30.1</smallrye-mutiny-vertx-binding.version>
-        <smallrye-reactive-messaging.version>3.22.1</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>4.1.1</smallrye-reactive-messaging.version>
         <smallrye-stork.version>1.3.3</smallrye-stork.version>
-        <jakarta.activation.version>1.2.1</jakarta.activation.version>
-        <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
-        <jakarta.el-impl.version>3.0.4</jakarta.el-impl.version>
-        <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
-        <jakarta.inject-api.version>1.0</jakarta.inject-api.version>
-        <jakarta.interceptor-api.version>1.2.5</jakarta.interceptor-api.version>
-        <jakarta.json.version>1.1.6</jakarta.json.version>
-        <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
-        <jakarta.mail.version>1.6.7</jakarta.mail.version>
-        <jakarta.persistence-api.version>2.2.3</jakarta.persistence-api.version>
-        <jakarta.security.jacc-api.version>1.6.1</jakarta.security.jacc-api.version>
-        <jakarta.security.auth.message-api.version>1.1.3</jakarta.security.auth.message-api.version>
-        <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
-        <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
-        <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
-        <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
-        <jakarta.xml.bind-api.version>2.3.3</jakarta.xml.bind-api.version>
-        <jaxb-runtime.version>2.3.3-b02</jaxb-runtime.version>
-        <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
-        <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
+        <jakarta.activation.version>2.1.0</jakarta.activation.version>
+        <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
+        <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
+        <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
+        <jakarta.interceptor-api.version>2.1.0</jakarta.interceptor-api.version>
+        <jakarta.json.bind-api.version>3.0.0</jakarta.json.bind-api.version>
+        <jakarta.mail.version>2.0.1</jakarta.mail.version>
+        <jakarta.persistence-api.version>3.0.0</jakarta.persistence-api.version>
+        <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
+        <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
+        <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
+        <jakarta.websocket-api.version>2.1.0</jakarta.websocket-api.version>
+        <jakarta.xml.bind-api.version>4.0.0</jakarta.xml.bind-api.version>
+        <jaxb-runtime.version>4.0.1</jaxb-runtime.version>
         <asm.version>9.4</asm.version>
         <commons-io.version>2.11.0</commons-io.version>
         <jboss-metadata-web.version>15.2.0.Final</jboss-metadata-web.version>
@@ -94,11 +100,11 @@
         <hibernate-orm.version>5.6.14.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.18</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>1.1.9.Final</hibernate-reactive.version>
-        <hibernate-validator.version>6.2.5.Final</hibernate-validator.version>
+        <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
         <narayana.version>5.13.1.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
-        <agroal.version>1.16</agroal.version>
+        <agroal.version>2.0</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.5.3</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
@@ -111,7 +117,7 @@
         <slf4j-jboss-logmanager.version>1.2.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>1.20.1.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.0.0.Final</wildfly-elytron.version>
         <jboss-threads.version>3.4.3.Final</jboss-threads.version>
         <vertx.version>4.3.6</vertx.version>
 
@@ -133,7 +139,7 @@
         <rest-assured.version>4.5.1</rest-assured.version>
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <testng.version>6.14.2</testng.version>
+        <testng.version>7.4.0</testng.version>
         <infinispan.version>14.0.4.Final</infinispan.version>
         <infinispan.protostream.version>4.5.1.Final</infinispan.protostream.version>
         <caffeine.version>3.1.1</caffeine.version>
@@ -159,9 +165,9 @@
         <dekorate.version>3.2.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <jboss-logmanager.version>1.0.11</jboss-logmanager.version>
+        <jboss-logmanager.version>1.1.1</jboss-logmanager.version>
         <flyway.version>9.11.0</flyway.version>
-        <yasson.version>1.0.11</yasson.version>
+        <yasson.version>3.0.2</yasson.version>
         <liquibase.version>4.18.0</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
@@ -180,7 +186,7 @@
         <mockito.version>4.11.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.10.1</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
-        <quarkus-security.version>1.1.4.Final</quarkus-security.version>
+        <quarkus-security.version>2.0.0.Alpha2</quarkus-security.version>
         <keycloak.version>20.0.2</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
         <checker-qual.version>3.29.0</checker-qual.version>
@@ -930,12 +936,12 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-liquibase</artifactId>
                 <version>${project.version}</version>
-             </dependency>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-liquibase-deployment</artifactId>
                 <version>${project.version}</version>
-             </dependency>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-liquibase-mongodb</artifactId>
@@ -3220,9 +3226,9 @@
                 <version>${classmate.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sun.activation</groupId>
-                <artifactId>jakarta.activation</artifactId>
-                <version>${jakarta.activation.version}</version>
+                <groupId>org.eclipse.angus</groupId>
+                <artifactId>angus-activation</artifactId>
+                <version>${angus-activation.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.jaegertracing</groupId>
@@ -3704,12 +3710,6 @@
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-health</artifactId>
                 <version>${smallrye-health.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>jakarta.json</groupId>
-                        <artifactId>jakarta.json-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
@@ -3993,6 +3993,21 @@
                 <version>${jakarta.annotation-api.version}</version>
             </dependency>
             <dependency>
+                <groupId>jakarta.authentication</groupId>
+                <artifactId>jakarta.authentication-api</artifactId>
+                <version>${jakarta.authentication-api}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.authorization</groupId>
+                <artifactId>jakarta.authorization-api</artifactId>
+                <version>${jakarta.authorization-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.el</groupId>
+                <artifactId>jakarta.el-api</artifactId>
+                <version>${jakarta.el-api.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.sun.mail</groupId>
                 <artifactId>jakarta.mail</artifactId>
                 <version>${jakarta.mail.version}</version>
@@ -4031,14 +4046,9 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.jboss.spec.javax.xml.bind</groupId>
-                <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
-                <version>${jboss-jaxb-api_2.3_spec.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.spec.javax.ws.rs</groupId>
-                <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
-                <version>${jboss-jaxrs-api_2.1_spec.version}</version>
+                <groupId>jakarta.json</groupId>
+                <artifactId>jakarta.json-api</artifactId>
+                <version>${jakarta.json-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
@@ -4266,16 +4276,14 @@
                 <version>${microprofile-rest-client.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.eclipse.parsson</groupId>
+                <artifactId>parsson</artifactId>
+                <version>${parsson.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.eclipse</groupId>
                 <artifactId>yasson</artifactId>
                 <version>${yasson.version}</version>
-                <exclusions>
-                    <!-- The API is coming with the impl -->
-                    <exclusion>
-                        <groupId>jakarta.json</groupId>
-                        <artifactId>jakarta.json-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.microprofile.jwt</groupId>
@@ -4294,14 +4302,9 @@
                 <version>${microprofile-openapi.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.glassfish</groupId>
-                <artifactId>jakarta.el</artifactId>
-                <version>${jakarta.el-impl.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish</groupId>
-                <artifactId>jakarta.json</artifactId>
-                <version>${jakarta.json.version}</version>
+                <groupId>org.glassfish.expressly</groupId>
+                <artifactId>expressly</artifactId>
+                <version>${expressly.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.json.bind</groupId>
@@ -4319,19 +4322,24 @@
                 <version>${jakarta.xml.bind-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>jakarta.security.jacc</groupId>
-                <artifactId>jakarta.security.jacc-api</artifactId>
-                <version>${jakarta.security.jacc-api.version}</version>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>${javax.annotation-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>jakarta.security.auth.message</groupId>
-                <artifactId>jakarta.security.auth.message-api</artifactId>
-                <version>${jakarta.security.auth.message-api.version}</version>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${javax.inject.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.websocket</groupId>
                 <artifactId>jakarta.websocket-api</artifactId>
                 <version>${jakarta.websocket-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.ws.rs</groupId>
+                <artifactId>jakarta.ws.rs-api</artifactId>
+                <version>${jakarta.ws.rs-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
@@ -4393,12 +4401,12 @@
 
             <dependency>
                 <groupId>org.jboss.narayana.jta</groupId>
-                <artifactId>narayana-jta</artifactId>
+                <artifactId>narayana-jta-jakarta</artifactId>
                 <version>${narayana.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.narayana.jts</groupId>
-                <artifactId>narayana-jts-integration</artifactId>
+                <artifactId>narayana-jts-integration-jakarta</artifactId>
                 <version>${narayana.version}</version>
             </dependency>
             <dependency>
@@ -4424,7 +4432,7 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.narayana.rts</groupId>
-                <artifactId>narayana-lra</artifactId>
+                <artifactId>narayana-lra-jakarta</artifactId>
                 <version>${narayana.version}</version>
                 <exclusions>
                     <exclusion>
@@ -4447,7 +4455,7 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.narayana.rts</groupId>
-                <artifactId>lra-service-base</artifactId>
+                <artifactId>lra-service-base-jakarta</artifactId>
                 <version>${narayana.version}</version>
                 <exclusions>
                     <exclusion>
@@ -4467,7 +4475,7 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.narayana.rts</groupId>
-                <artifactId>lra-proxy-api</artifactId>
+                <artifactId>lra-proxy-api-jakarta</artifactId>
                 <version>${narayana.version}</version>
                 <exclusions>
                     <exclusion>
@@ -4478,7 +4486,7 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.narayana.rts</groupId>
-                <artifactId>lra-client</artifactId>
+                <artifactId>lra-client-jakarta</artifactId>
                 <version>${narayana.version}</version>
                 <exclusions>
                     <exclusion>
@@ -4526,9 +4534,9 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.jboss.resteasy</groupId>
-                <artifactId>resteasy-client-microprofile</artifactId>
-                <version>${resteasy.version}</version>
+                <groupId>org.jboss.resteasy.microprofile</groupId>
+                <artifactId>microprofile-rest-client</artifactId>
+                <version>${resteasy-microprofile.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.eclipse.microprofile.config</groupId>
@@ -4540,25 +4548,11 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-json-binding-provider</artifactId>
                 <version>${resteasy.version}</version>
-                <!-- In jakarta.json 1.1.6, the API is included in the impl jar -->
-                <exclusions>
-                    <exclusion>
-                        <groupId>jakarta.json</groupId>
-                        <artifactId>jakarta.json-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-json-p-provider</artifactId>
                 <version>${resteasy.version}</version>
-                <!-- In jakarta.json 1.1.6, the API is included in the impl jar -->
-                <exclusions>
-                    <exclusion>
-                        <groupId>jakarta.json</groupId>
-                        <artifactId>jakarta.json-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
@@ -4587,9 +4581,9 @@
                 <version>${resteasy.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss.resteasy</groupId>
+                <groupId>org.jboss.resteasy.spring</groupId>
                 <artifactId>resteasy-spring-web</artifactId>
-                <version>${resteasy.version}</version>
+                <version>${resteasy-spring-web.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.jboss.spec.javax.annotation</groupId>
@@ -4600,6 +4594,11 @@
                         <artifactId>activation</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.resteasy.microprofile</groupId>
+                <artifactId>microprofile-config</artifactId>
+                <version>${resteasy-microprofile.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
@@ -4975,7 +4974,7 @@
             </dependency>
             <dependency>
                 <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-core</artifactId>
+                <artifactId>hibernate-core-jakarta</artifactId>
                 <version>${hibernate-orm.version}</version>
                 <exclusions>
                     <exclusion>
@@ -4991,22 +4990,22 @@
             </dependency>
             <dependency>
                 <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-envers</artifactId>
+                <artifactId>hibernate-envers-jakarta</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-jpamodelgen</artifactId>
+                <artifactId>hibernate-jpamodelgen-jakarta</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.reactive</groupId>
-                <artifactId>hibernate-reactive-core</artifactId>
+                <artifactId>hibernate-reactive-core-jakarta</artifactId>
                 <version>${hibernate-reactive.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate</groupId>
-                <artifactId>quarkus-local-cache</artifactId>
+                <artifactId>quarkus-local-cache-jakarta</artifactId>
                 <version>${hibernate-quarkus-local-cache.version}</version>
             </dependency>
             <dependency>
@@ -5021,12 +5020,12 @@
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-mapper-orm-coordination-outbox-polling</artifactId>
+                <artifactId>hibernate-search-mapper-orm-coordination-outbox-polling-jakarta</artifactId>
                 <version>${hibernate-search.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-mapper-orm</artifactId>
+                <artifactId>hibernate-search-mapper-orm-jakarta</artifactId>
                 <version>${hibernate-search.version}</version>
                 <exclusions>
                     <exclusion>
@@ -5337,10 +5336,11 @@
                 <groupId>org.infinispan</groupId>
                 <artifactId>infinispan-core</artifactId>
                 <version>${infinispan.version}</version>
+                <classifier>jakarta</classifier>
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-client-hotrod</artifactId>
+                <artifactId>infinispan-client-hotrod-jakarta</artifactId>
                 <version>${infinispan.version}</version>
             </dependency>
             <dependency>
@@ -5373,6 +5373,7 @@
                 <artifactId>infinispan-core</artifactId>
                 <version>${infinispan.version}</version>
                 <type>test-jar</type>
+                <classifier>jakarta</classifier>
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
@@ -5382,7 +5383,7 @@
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-commons</artifactId>
+                <artifactId>infinispan-commons-jakarta</artifactId>
                 <version>${infinispan.version}</version>
             </dependency>
             <dependency>
@@ -5688,7 +5689,7 @@
             </dependency>
             <dependency>
                 <groupId>org.keycloak</groupId>
-                <artifactId>keycloak-admin-client</artifactId>
+                <artifactId>keycloak-admin-client-jakarta</artifactId>
                 <version>${keycloak.version}</version>
                 <exclusions>
                     <exclusion>

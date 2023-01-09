@@ -3,8 +3,8 @@ package io.quarkus.hibernate.validator.runtime.jaxrs;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.ws.rs.core.MediaType;
+import jakarta.validation.ConstraintViolation;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.api.validation.ResteasyViolationException;
 import org.jboss.resteasy.core.ResteasyContext;
@@ -12,7 +12,7 @@ import org.jboss.resteasy.spi.ResteasyConfiguration;
 import org.jboss.resteasy.spi.validation.ConstraintTypeUtil;
 
 /**
- * Wrapper around a {@link javax.validation.ConstraintViolationException},
+ * Wrapper around a {@link jakarta.validation.ConstraintViolationException},
  * used to mark a constraint violation as relative to a REST endpoint call.
  * <p>
  * Those violations are handled differently than violations from other, internal components:

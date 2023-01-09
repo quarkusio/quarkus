@@ -4,7 +4,7 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 

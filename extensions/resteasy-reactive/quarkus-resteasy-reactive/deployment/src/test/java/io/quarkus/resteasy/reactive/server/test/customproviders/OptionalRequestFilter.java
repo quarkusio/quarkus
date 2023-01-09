@@ -2,8 +2,8 @@ package io.quarkus.resteasy.reactive.server.test.customproviders;
 
 import java.util.Optional;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 

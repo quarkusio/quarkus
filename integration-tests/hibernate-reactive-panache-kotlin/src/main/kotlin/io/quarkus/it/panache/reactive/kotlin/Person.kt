@@ -6,22 +6,22 @@ import io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntity
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheQuery
 import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import io.smallrye.mutiny.Uni
+import jakarta.persistence.CascadeType
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.FetchType
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.NamedQueries
+import jakarta.persistence.NamedQuery
+import jakarta.persistence.OneToMany
+import jakarta.persistence.Transient
+import jakarta.xml.bind.annotation.XmlRootElement
+import jakarta.xml.bind.annotation.XmlTransient
 import org.hibernate.annotations.Filter
 import org.hibernate.annotations.FilterDef
 import org.hibernate.annotations.ParamDef
-import javax.persistence.CascadeType
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.EnumType
-import javax.persistence.Enumerated
-import javax.persistence.FetchType
-import javax.persistence.ManyToOne
-import javax.persistence.NamedQueries
-import javax.persistence.NamedQuery
-import javax.persistence.OneToMany
-import javax.persistence.Transient
-import javax.xml.bind.annotation.XmlRootElement
-import javax.xml.bind.annotation.XmlTransient
 
 @XmlRootElement
 @NamedQueries(

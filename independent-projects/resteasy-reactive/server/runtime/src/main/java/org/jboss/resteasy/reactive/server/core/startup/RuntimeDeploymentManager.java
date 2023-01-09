@@ -13,10 +13,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Feature;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Feature;
 
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;

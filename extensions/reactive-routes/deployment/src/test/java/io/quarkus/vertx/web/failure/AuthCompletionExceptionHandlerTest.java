@@ -1,6 +1,6 @@
 package io.quarkus.vertx.web.failure;
 
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static jakarta.ws.rs.core.Response.Status.UNAUTHORIZED;
 
 import java.util.function.Supplier;
 

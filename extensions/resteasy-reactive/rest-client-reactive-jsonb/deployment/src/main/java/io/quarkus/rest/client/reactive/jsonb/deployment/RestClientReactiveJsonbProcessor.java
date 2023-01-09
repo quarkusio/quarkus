@@ -2,7 +2,7 @@ package io.quarkus.rest.client.reactive.jsonb.deployment;
 
 import static io.quarkus.deployment.Feature.REST_CLIENT_REACTIVE_JSONB;
 
-import javax.ws.rs.RuntimeType;
+import jakarta.ws.rs.RuntimeType;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

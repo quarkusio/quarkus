@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.enterprise.event.Reception;
-import javax.enterprise.event.TransactionPhase;
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.TransactionPhase;
 
 import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.processor.ObserverInfo;

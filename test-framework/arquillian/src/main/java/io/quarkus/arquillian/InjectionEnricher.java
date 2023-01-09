@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.BeanManager;
 
 import org.jboss.arquillian.container.spi.context.annotation.DeploymentScoped;
 import org.jboss.arquillian.core.api.InstanceProducer;

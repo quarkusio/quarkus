@@ -2,10 +2,10 @@ package io.quarkus.security.test.cdi.app;
 
 import java.util.concurrent.CompletionStage;
 
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Named;
+import jakarta.annotation.security.DenyAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 import io.smallrye.mutiny.Uni;
 

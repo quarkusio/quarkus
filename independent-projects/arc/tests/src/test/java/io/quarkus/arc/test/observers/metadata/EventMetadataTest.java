@@ -6,10 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.EventMetadata;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

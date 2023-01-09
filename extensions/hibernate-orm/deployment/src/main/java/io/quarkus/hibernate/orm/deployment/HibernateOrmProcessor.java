@@ -32,15 +32,16 @@ import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Default;
-import javax.persistence.AttributeConverter;
-import javax.persistence.SharedCacheMode;
-import javax.persistence.ValidationMode;
-import javax.persistence.spi.PersistenceUnitTransactionType;
-import javax.transaction.TransactionManager;
-import javax.xml.bind.JAXBElement;
 import javax.xml.namespace.QName;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.SharedCacheMode;
+import jakarta.persistence.ValidationMode;
+import jakarta.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.transaction.TransactionManager;
+import jakarta.xml.bind.JAXBElement;
 
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;

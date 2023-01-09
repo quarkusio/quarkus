@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-narayana-lra-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -21,31 +21,31 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.narayana.rts</groupId>
-            <artifactId>narayana-lra</artifactId>
+            <artifactId>narayana-lra-jakarta</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.narayana.rts</groupId>
-            <artifactId>lra-service-base</artifactId>
+            <artifactId>lra-service-base-jakarta</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.narayana.rts</groupId>
-            <artifactId>lra-proxy-api</artifactId>
+            <artifactId>lra-proxy-api-jakarta</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.narayana.rts</groupId>
-            <artifactId>lra-client</artifactId>
+            <artifactId>lra-client-jakarta</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.lra</groupId>
             <artifactId>microprofile-lra-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.sun.activation</groupId>
-            <artifactId>jakarta.activation</artifactId>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-activation</artifactId>
         </dependency>
     </dependencies>
 
@@ -57,12 +57,12 @@
                 <configuration>
                     <removedResources>
                         <artifact>
-                            <key>org.jboss.narayana.rts:narayana-lra</key>
-                            <resources>META-INF/services/javax.ws.rs.client.ClientBuilder</resources>
+                            <key>org.jboss.narayana.rts:narayana-lra-jakarta</key>
+                            <resources>META-INF/services/jakarta.ws.rs.client.ClientBuilder</resources>
                         </artifact>
                         <artifact>
-                            <key>org.jboss.narayana.rts:lra-client</key>
-                            <resources>META-INF/services/javax.ws.rs.client.ClientBuilder</resources>
+                            <key>org.jboss.narayana.rts:lra-client-jakarta</key>
+                            <resources>META-INF/services/jakarta.ws.rs.client.ClientBuilder</resources>
                         </artifact>
                     </removedResources>
                 </configuration>

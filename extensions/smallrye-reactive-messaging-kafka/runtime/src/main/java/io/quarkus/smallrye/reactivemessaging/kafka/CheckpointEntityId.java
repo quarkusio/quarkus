@@ -3,8 +3,8 @@ package io.quarkus.smallrye.reactivemessaging.kafka;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
 import org.apache.kafka.common.TopicPartition;
 

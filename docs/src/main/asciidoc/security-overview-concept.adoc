@@ -317,7 +317,7 @@ For more information, see xref:resteasy-reactive.adoc#secure-serialization[Writi
 
 == Secure auto-generated resources by REST Data with Panache
 
-If you're using the REST Data with Panache extension to auto-generate your resources, you can still use the Security annotations within the package `javax.annotation.security`.
+If you're using the REST Data with Panache extension to auto-generate your resources, you can still use the Security annotations within the package `jakarta.annotation.security`.
 For more information, see xref:rest-data-panache.adoc#securing-endpoints[Securing auto-generated resources].
 
 == National Vulnerability Database

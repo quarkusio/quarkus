@@ -12,12 +12,12 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.EventContext;
-import javax.enterprise.inject.spi.EventMetadata;
-import javax.interceptor.InvocationContext;
+import jakarta.enterprise.context.spi.Context;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;

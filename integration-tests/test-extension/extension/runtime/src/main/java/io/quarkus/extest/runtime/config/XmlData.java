@@ -2,7 +2,7 @@ package io.quarkus.extest.runtime.config;
 
 import java.util.Date;
 
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "data")
 public class XmlData {

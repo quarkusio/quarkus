@@ -1,7 +1,7 @@
 package io.quarkus.rest.client.reactive.beanTypes;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Alternative;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 

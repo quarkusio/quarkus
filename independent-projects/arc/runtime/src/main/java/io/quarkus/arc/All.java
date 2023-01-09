@@ -10,10 +10,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.List;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Qualifier;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Qualifier;
 
 /**
  * The container provides a synthetic bean for an injection point with the required type {@link List} and the required qualifier

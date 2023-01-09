@@ -2,8 +2,8 @@ package io.quarkus.cache.test.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

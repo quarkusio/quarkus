@@ -13,10 +13,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

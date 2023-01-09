@@ -1,8 +1,9 @@
 package io.quarkus.keycloak.admin.client.reactive.runtime;
 
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.WebTarget;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.WebTarget;
 
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;

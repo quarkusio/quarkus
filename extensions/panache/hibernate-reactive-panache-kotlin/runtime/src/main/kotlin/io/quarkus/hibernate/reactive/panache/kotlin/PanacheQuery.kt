@@ -5,11 +5,11 @@ import io.quarkus.panache.common.Parameters
 import io.smallrye.common.annotation.CheckReturnValue
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
+import jakarta.persistence.LockModeType
+import jakarta.persistence.NonUniqueResultException
 import org.hibernate.Session
 import org.hibernate.annotations.Filter
 import org.hibernate.annotations.FilterDef
-import javax.persistence.LockModeType
-import javax.persistence.NonUniqueResultException
 
 interface PanacheQuery<Entity : Any> {
 

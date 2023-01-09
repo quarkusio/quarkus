@@ -8,9 +8,9 @@ import io.quarkus.panache.common.impl.GenerateBridge
 import io.smallrye.common.annotation.CheckReturnValue
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
+import jakarta.persistence.LockModeType
 import org.hibernate.reactive.mutiny.Mutiny
 import java.util.stream.Stream
-import javax.persistence.LockModeType
 
 /**
  * Defines methods to be used via the companion objects of entities.

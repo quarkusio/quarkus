@@ -1,6 +1,6 @@
 package io.quarkus.jaxrs.client.reactive.runtime;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.client.impl.ClientResponseBuilderImpl;

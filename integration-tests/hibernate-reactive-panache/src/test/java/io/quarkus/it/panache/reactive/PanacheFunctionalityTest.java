@@ -3,9 +3,9 @@ package io.quarkus.it.panache.reactive;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
-import javax.persistence.PersistenceException;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.persistence.PersistenceException;
 
 import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 import org.junit.jupiter.api.Assertions;

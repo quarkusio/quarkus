@@ -9,8 +9,8 @@ import java.lang.reflect.TypeVariable;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.enterprise.context.Dependent;
-import javax.inject.Named;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Named;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

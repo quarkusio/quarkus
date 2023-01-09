@@ -17,7 +17,8 @@ import java.lang.annotation.Target;
  * <li>does not have a name,</li>
  * <li>does not declare an observer,</li>
  * <li>does not declare any producer which is eligible for injection to any injection point,</li>
- * <li>is not directly eligible for injection into any `javax.enterprise.inject.Instance` or `javax.inject.Provider` injection
+ * <li>is not directly eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider`
+ * injection
  * point</li>
  * </ul>
  */

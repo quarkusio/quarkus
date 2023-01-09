@@ -3,8 +3,8 @@ package io.quarkus.resteasy.reactive.jsonb.common.deployment;
 import java.util.Collections;
 import java.util.List;
 
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.jboss.resteasy.reactive.server.jsonb.JsonbMessageBodyReader;

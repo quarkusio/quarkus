@@ -6,8 +6,8 @@ import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.function.Function;
 
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.InvocationContext;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.InvocationContext;
 
 import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 

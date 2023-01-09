@@ -2,10 +2,10 @@ package io.quarkus.resteasy.reactive.jaxb.deployment.test;
 
 import static org.hamcrest.Matchers.equalTo;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

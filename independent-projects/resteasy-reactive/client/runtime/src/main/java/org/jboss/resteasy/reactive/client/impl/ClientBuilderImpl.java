@@ -18,9 +18,10 @@ import java.util.regex.Pattern;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.Configuration;
+
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.core.Configuration;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;

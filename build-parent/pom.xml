@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -41,7 +41,7 @@
         <htmlunit.version>2.40.0</htmlunit.version>
         <javaparser-core.version>3.24.2</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
-        <subethasmtp.version>5.2.8</subethasmtp.version>
+        <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
@@ -357,7 +357,6 @@
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>artemis-server</artifactId>
                 <version>${artemis.version}</version>
-                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
                 <scope>test</scope>
                 <exclusions>
                     <exclusion>
@@ -380,28 +379,17 @@
                         <groupId>commons-logging</groupId>
                         <artifactId>commons-logging</artifactId>
                     </exclusion>
-                    <!-- Excluding the API jar as the impl jar also contains the API -->
-                    <exclusion>
-                        <groupId>jakarta.json</groupId>
-                        <artifactId>jakarta.json-api</artifactId>
-                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>artemis-amqp-protocol</artifactId>
                 <version>${artemis.version}</version>
-                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
                 <scope>test</scope>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.activemq</groupId>
                         <artifactId>artemis-server</artifactId>
-                    </exclusion>
-                    <!-- Excluding the API jar as the impl jar also contains the API -->
-                    <exclusion>
-                        <groupId>jakarta.json</groupId>
-                        <artifactId>jakarta.json-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

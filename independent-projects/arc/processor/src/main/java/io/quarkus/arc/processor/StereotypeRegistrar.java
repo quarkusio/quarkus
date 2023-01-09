@@ -2,7 +2,7 @@ package io.quarkus.arc.processor;
 
 import java.util.Set;
 
-import javax.enterprise.inject.Stereotype;
+import jakarta.enterprise.inject.Stereotype;
 
 import org.jboss.jandex.DotName;
 

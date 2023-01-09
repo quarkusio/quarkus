@@ -1,7 +1,7 @@
 package org.acme
 
-import javax.ws.rs.\{GET, Path, Produces}
-import javax.ws.rs.core.MediaType
+import jakarta.ws.rs.\{GET, Path, Produces}
+import jakarta.ws.rs.core.MediaType
 
 @Path("{resource.path}")
 class {resource.class-name} {

@@ -7,12 +7,12 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: Discover how to develop highly scalable reactive REST services with JAX-RS and RESTEasy Reactive.
-:jaxrsapi: https://javadoc.io/doc/javax.ws.rs/javax.ws.rs-api/2.1.1
-:jaxrsspec: /specs/jaxrs/2.1/index.html
+:jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0
+:jaxrsspec: https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html
 :jdkapi: https://docs.oracle.com/en/java/javase/11/docs/api/java.base
 :mutinyapi: https://javadoc.io/doc/io.smallrye.reactive/mutiny/1.6.0
 :httpspec: https://tools.ietf.org/html/rfc7231
-:jsonpapi: https://javadoc.io/doc/javax.json/javax.json-api/1.1.4
+:jsonpapi: https://javadoc.io/doc/jakarta.json/jakarta.json-api/1.1.4
 :vertxapi: https://javadoc.io/doc/io.vertx/vertx-core/latest/index.html
 :resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
 :resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/{quarkus-version}
@@ -63,8 +63,8 @@ You can now write your first endpoint in the `org.acme.rest.Endpoint` class:
 ----
 package org.acme.rest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("")
 public class Endpoint {
@@ -90,21 +90,21 @@ HTTP response:: the response part of the HTTP call, consisting of an HTTP respon
 
 === Declaring endpoints: URI mapping
 
-Any class annotated with a link:{jaxrsapi}/javax/ws/rs/Path.html[`@Path`] annotation can have its methods exposed as REST endpoints,
+Any class annotated with a link:{jaxrsapi}/jakarta/ws/rs/Path.html[`@Path`] annotation can have its methods exposed as REST endpoints,
 provided they have an HTTP method annotation (see below).
 
-That link:{jaxrsapi}/javax/ws/rs/Path.html[`@Path`] annotation defines the URI prefix under which those methods will be exposed. It can
+That link:{jaxrsapi}/jakarta/ws/rs/Path.html[`@Path`] annotation defines the URI prefix under which those methods will be exposed. It can
 be empty, or contain a prefix such as `rest` or `rest/V1`.
 
-Each exposed endpoint method can in turn have another link:{jaxrsapi}/javax/ws/rs/Path.html[`@Path`] annotation which adds to its containing
+Each exposed endpoint method can in turn have another link:{jaxrsapi}/jakarta/ws/rs/Path.html[`@Path`] annotation which adds to its containing
 class annotation. For example, this defines a `rest/hello` endpoint:
 
 [source,java]
 ----
 package org.acme.rest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("rest")
 public class Endpoint {
@@ -125,8 +125,8 @@ You can set the root path for all rest endpoints using the `@ApplicationPath` an
 ----
 package org.acme.rest;
 
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.core.Application;
 
 @ApplicationPath("/api")
 public static class MyApplication extends Application {
@@ -147,31 +147,31 @@ method will be mapped to the method:
 |===
 |Annotation|Usage
 
-|link:{jaxrsapi}/javax/ws/rs/GET.html[`@GET`]
+|link:{jaxrsapi}/jakarta/ws/rs/GET.html[`@GET`]
 |Obtain a resource representation, should not modify state, link:{httpspec}#section-4.2.2[idempotent] (link:{httpspec}#section-4.3.1[HTTP docs])
 
-|link:{jaxrsapi}/javax/ws/rs/HEAD.html[`@HEAD`]
+|link:{jaxrsapi}/jakarta/ws/rs/HEAD.html[`@HEAD`]
 |Obtain metadata about a resource, similar to `GET` with no body (link:{httpspec}#section-4.3.2[HTTP docs])
 
-|link:{jaxrsapi}/javax/ws/rs/POST.html[`@POST`]
+|link:{jaxrsapi}/jakarta/ws/rs/POST.html[`@POST`]
 |Create a resource and obtain a link to it (link:{httpspec}#section-4.3.3[HTTP docs])
 
-|link:{jaxrsapi}/javax/ws/rs/PUT.html[`@PUT`]
+|link:{jaxrsapi}/jakarta/ws/rs/PUT.html[`@PUT`]
 |Replace a resource or create one, should be link:{httpspec}#section-4.2.2[idempotent] (link:{httpspec}#section-4.3.4[HTTP docs])
 
-|link:{jaxrsapi}/javax/ws/rs/DELETE.html[`@DELETE`]
+|link:{jaxrsapi}/jakarta/ws/rs/DELETE.html[`@DELETE`]
 |Delete an existing resource, link:{httpspec}#section-4.2.2[idempotent]  (link:{httpspec}#section-4.3.5[HTTP docs])
 
-|link:{jaxrsapi}/javax/ws/rs/OPTIONS.html[`@OPTIONS`]
+|link:{jaxrsapi}/jakarta/ws/rs/OPTIONS.html[`@OPTIONS`]
 |Obtain information about a resource, link:{httpspec}#section-4.2.2[idempotent] (link:{httpspec}#section-4.3.7[HTTP docs])
 
-|link:{jaxrsapi}/javax/ws/rs/PATCH.html[`@PATCH`]
+|link:{jaxrsapi}/jakarta/ws/rs/PATCH.html[`@PATCH`]
 |Update a resource, or create one, not link:{httpspec}#section-4.2.2[idempotent] (https://tools.ietf.org/html/rfc5789#section-2[HTTP docs])
 
 |===
 
 You can also declare other HTTP methods by declaring them as an annotation with the
-link:{jaxrsapi}/javax/ws/rs/HttpMethod.html[`@HttpMethod`] annotation:
+link:{jaxrsapi}/jakarta/ws/rs/HttpMethod.html[`@HttpMethod`] annotation:
 
 [source,java]
 ----
@@ -180,8 +180,8 @@ package org.acme.rest;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.Path;
 
 @Retention(RetentionPolicy.RUNTIME)
 @HttpMethod("CHEESE")
@@ -210,16 +210,16 @@ link:{httpspec}#section-3.1.1.1[MIME (Media Type)] values, such as the following
 - `text/*` which is a sub-type wildcard for any text media type
 - `\*/*` which is a wildcard for any media type
 
-You may annotate your endpoint class with the link:{jaxrsapi}/javax/ws/rs/Produces.html[`@Produces`]
-or link:{jaxrsapi}/javax/ws/rs/Consumes.html[`@Consumes`] annotations, which
+You may annotate your endpoint class with the link:{jaxrsapi}/jakarta/ws/rs/Produces.html[`@Produces`]
+or link:{jaxrsapi}/jakarta/ws/rs/Consumes.html[`@Consumes`] annotations, which
 allow you to specify one or more media types that your endpoint may accept as HTTP request body
 or produce as HTTP response body. Those class annotations apply to each method.
 
-Any method may also be annotated with the link:{jaxrsapi}/javax/ws/rs/Produces.html[`@Produces`]
-or link:{jaxrsapi}/javax/ws/rs/Consumes.html[`@Consumes`] annotations, in which
+Any method may also be annotated with the link:{jaxrsapi}/jakarta/ws/rs/Produces.html[`@Produces`]
+or link:{jaxrsapi}/jakarta/ws/rs/Consumes.html[`@Consumes`] annotations, in which
 case they override any eventual class annotation.
 
-The link:{jaxrsapi}/javax/ws/rs/core/MediaType.html[`MediaType`] class has many constants you
+The link:{jaxrsapi}/jakarta/ws/rs/core/MediaType.html[`MediaType`] class has many constants you
 can use to point to specific pre-defined media types.
 
 See <<negotiation>> for more information.
@@ -285,8 +285,8 @@ Then you could obtain all the various parameters with this endpoint method:
 ----
 package org.acme.rest;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.RestCookie;
 import org.jboss.resteasy.reactive.RestForm;
@@ -316,12 +316,12 @@ NOTE: The link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPa
 annotation is optional: any parameter whose name matches an existing URI
 template variable will be automatically assumed to have link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`].
 
-You can also use any of the JAX-RS annotations link:{jaxrsapi}/javax/ws/rs/PathParam.html[`@PathParam`],
-link:{jaxrsapi}/javax/ws/rs/QueryParam.html[`@QueryParam`],
-link:{jaxrsapi}/javax/ws/rs/HeaderParam.html[`@HeaderParam`],
-link:{jaxrsapi}/javax/ws/rs/CookieParam.html[`@CookieParam`],
-link:{jaxrsapi}/javax/ws/rs/FormParam.html[`@FormParam`] or
-link:{jaxrsapi}/javax/ws/rs/MatrixParam.html[`@MatrixParam`] for this,
+You can also use any of the JAX-RS annotations link:{jaxrsapi}/jakarta/ws/rs/PathParam.html[`@PathParam`],
+link:{jaxrsapi}/jakarta/ws/rs/QueryParam.html[`@QueryParam`],
+link:{jaxrsapi}/jakarta/ws/rs/HeaderParam.html[`@HeaderParam`],
+link:{jaxrsapi}/jakarta/ws/rs/CookieParam.html[`@CookieParam`],
+link:{jaxrsapi}/jakarta/ws/rs/FormParam.html[`@FormParam`] or
+link:{jaxrsapi}/jakarta/ws/rs/MatrixParam.html[`@MatrixParam`] for this,
 but they require you to specify the parameter name.
 
 See <<parameter-mapping>> for more advanced use-cases.
@@ -348,8 +348,8 @@ so we can rewrite the previous example like this:
 ----
 package org.acme.rest;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.RestCookie;
 import org.jboss.resteasy.reactive.RestForm;
@@ -402,8 +402,8 @@ the following endpoint will serve requests for `/hello/stef/23` and `/hello` but
 ----
 package org.acme.rest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("hello")
 public class Endpoint {
@@ -487,9 +487,9 @@ the following endpoint:
 
 [source,java]
 ----
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
@@ -541,7 +541,7 @@ that will hold the information we want to expose as:
 
 [source,java]
 ----
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
@@ -561,10 +561,10 @@ And then expose this POJO via a Resource like so:
 
 [source,java]
 ----
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("multipart")
 public class Endpoint {
@@ -582,10 +582,10 @@ Additionally, you can also manually append the parts of the form using the class
 
 [source,java]
 ----
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.server.core.multipart.MultipartFormDataOutput;
 
@@ -611,7 +611,7 @@ WARNING: For the time being, returning Multipart data is limited to be blocking 
 
 ==== Handling malformed input
 
-As part of reading the multipart body, RESTEasy Reactive invokes the proper MessageBodyReaderlink:{jaxrsapi}/javax/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
+As part of reading the multipart body, RESTEasy Reactive invokes the proper MessageBodyReaderlink:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
 If an `IOException` occurs for one of these parts (for example if Jackson was unable to deserialize a JSON part), then a `org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException` is thrown.
 If this exception is not handled by the application as mentioned in <<exception-mapping>>, an HTTP 400 response is returned by default.
 
@@ -665,10 +665,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.NewCookie;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
 
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
@@ -692,7 +692,7 @@ public class Endpoint {
 }
 ----
 
-NOTE: You can also use the JAX-RS type link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] but it is
+NOTE: You can also use the JAX-RS type link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] but it is
 not strongly typed to your entity.
 
 ==== Using annotations
@@ -708,8 +708,8 @@ import org.jboss.resteasy.reactive.Header;
 import org.jboss.resteasy.reactive.ResponseHeaders;
 import org.jboss.resteasy.reactive.ResponseStatus;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("")
 public class Endpoint {
@@ -738,8 +738,8 @@ which will be mapped to a response exactly according to the previously described
 ----
 package org.acme.rest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.smallrye.mutiny.Uni;
 
@@ -774,9 +774,9 @@ text data:
 ----
 package org.acme.rest;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 
@@ -805,7 +805,7 @@ response. Exception mappers are also not invoked because part of the response ma
 If you want to stream JSON objects in your response, you can use
 https://html.spec.whatwg.org/multipage/server-sent-events.html[Server-Sent Events]
 by just annotating your endpoint method with
-link:{jaxrsapi}/javax/ws/rs/Produces.html[`@Produces(MediaType.SERVER_SENT_EVENTS)`]
+link:{jaxrsapi}/jakarta/ws/rs/Produces.html[`@Produces(MediaType.SERVER_SENT_EVENTS)`]
 and specifying that each element should be <<json,serialised to JSON>> with
 `@RestStreamElementType(MediaType.APPLICATION_JSON)`.
 
@@ -813,11 +813,11 @@ and specifying that each element should be <<json,serialised to JSON>> with
 ----
 package org.acme.rest;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
@@ -870,40 +870,40 @@ method takes parameters of the following type:
 |===
 |Type|Usage
 
-|link:{jaxrsapi}/javax/ws/rs/core/HttpHeaders.html[`HttpHeaders`]
+|link:{jaxrsapi}/jakarta/ws/rs/core/HttpHeaders.html[`HttpHeaders`]
 |All the request headers
 
-|link:{jaxrsapi}/javax/ws/rs/container/ResourceInfo.html[`ResourceInfo`]
+|link:{jaxrsapi}/jakarta/ws/rs/container/ResourceInfo.html[`ResourceInfo`]
 |Information about the current endpoint method and class (requires reflection)
 
-|link:{jaxrsapi}/javax/ws/rs/core/SecurityContext.html[`SecurityContext`]
+|link:{jaxrsapi}/jakarta/ws/rs/core/SecurityContext.html[`SecurityContext`]
 |Access to the current user and roles
 
 |link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/SimpleResourceInfo.html[`SimpleResourceInfo`]
 |Information about the current endpoint method and class (no reflection required)
 
-|link:{jaxrsapi}/javax/ws/rs/core/UriInfo.html[`UriInfo`]
+|link:{jaxrsapi}/jakarta/ws/rs/core/UriInfo.html[`UriInfo`]
 |Provides information about the current endpoint and application URI
 
-|link:{jaxrsapi}/javax/ws/rs/core/Application.html[`Application`]
+|link:{jaxrsapi}/jakarta/ws/rs/core/Application.html[`Application`]
 |Advanced: Current JAX-RS application class
 
-|link:{jaxrsapi}/javax/ws/rs/core/Configuration.html[`Configuration`]
+|link:{jaxrsapi}/jakarta/ws/rs/core/Configuration.html[`Configuration`]
 |Advanced: Configuration about the deployed JAX-RS application
 
-|link:{jaxrsapi}/javax/ws/rs/ext/Providers.html[`Providers`]
+|link:{jaxrsapi}/jakarta/ws/rs/ext/Providers.html[`Providers`]
 |Advanced: Runtime access to JAX-RS providers
 
-|link:{jaxrsapi}/javax/ws/rs/core/Request.html[`Request`]
+|link:{jaxrsapi}/jakarta/ws/rs/core/Request.html[`Request`]
 |Advanced: Access to the current HTTP method and <<preconditions>>
 
-|link:{jaxrsapi}/javax/ws/rs/core/ResourceContext.html[`ResourceContext`]
+|link:{jaxrsapi}/jakarta/ws/rs/core/ResourceContext.html[`ResourceContext`]
 |Advanced: access to instances of endpoints
 
 |link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/spi/ServerRequestContext.html[`ServerRequestContext`]
 |Advanced: RESTEasy Reactive access to the current request/response
 
-|link:{jaxrsapi}/javax/ws/rs/sse/Sse.html[`Sse`]
+|link:{jaxrsapi}/jakarta/ws/rs/sse/Sse.html[`Sse`]
 |Advanced: Complex SSE use-cases
 
 |link:{vertxapi}/io/vertx/core/http/HttpServerRequest.html[`HttpServerRequest`]
@@ -922,9 +922,9 @@ package org.acme.rest;
 
 import java.security.Principal;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.SecurityContext;
 
 @Path("user")
 public class Endpoint {
@@ -938,7 +938,7 @@ public class Endpoint {
 ----
 
 You can also inject those context objects using
-https://javadoc.io/static/javax.inject/javax.inject/1/javax/inject/Inject.html[`@Inject`] on fields of the same
+https://javadoc.io/static/jakarta.inject/jakarta.inject/1/javax/inject/Inject.html[`@Inject`] on fields of the same
 type:
 
 [source,java]
@@ -947,11 +947,11 @@ package org.acme.rest;
 
 import java.security.Principal;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.SecurityContext;
 
 @Path("user")
 public class Endpoint {
@@ -975,9 +975,9 @@ package org.acme.rest;
 
 import java.security.Principal;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.SecurityContext;
 
 @Path("user")
 public class Endpoint {
@@ -1072,8 +1072,8 @@ A very simple JAX-RS Resource that uses `Person` could be:
 ----
 package org.acme.rest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("person")
 public class Person {
@@ -1614,7 +1614,7 @@ You can override this behaviour using the
 https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/1.5.0/io/smallrye/common/annotation/Blocking.html[`@Blocking`]
 and
 https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/1.5.0/io/smallrye/common/annotation/NonBlocking.html[`@NonBlocking`]
-annotations. This can be applied at the method, class or `javax.ws.rs.core.Application` level.
+annotations. This can be applied at the method, class or `jakarta.ws.rs.core.Application` level.
 
 The example below will override the default behaviour and always run on a worker thread, even though it returns a `Uni`.
 
@@ -1622,8 +1622,8 @@ The example below will override the default behaviour and always run on a worker
 ----
 package org.acme.rest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.smallrye.common.annotation.Blocking;
 
@@ -1650,8 +1650,8 @@ package org.acme.rest;
 
 import java.time.Duration;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.smallrye.mutiny.Uni;
 
@@ -1667,13 +1667,13 @@ public class Endpoint {
 }
 ----
 
-If a method or class is annotated with `javax.transaction.Transactional` then it will also be treated as a blocking
+If a method or class is annotated with `jakarta.transaction.Transactional` then it will also be treated as a blocking
 method. This is because JTA is a blocking technology, and is generally used with other blocking technology such as
 Hibernate and JDBC. An explicit `@Blocking` or `@NonBlocking` on the class will override this behaviour.
 
 ==== Overriding the default behaviour
 
-If you want to override the default behaviour you can annotate a `javax.ws.rs.core.Application` subclass in your application
+If you want to override the default behaviour you can annotate a `jakarta.ws.rs.core.Application` subclass in your application
 with `@Blocking` or `@NonBlocking`, and this will set the default for every method that does not have an explicit annotation.
 
 Behaviour can still be overridden on a class or method level by annotating them directly, however all endpoints without
@@ -1684,16 +1684,16 @@ an annotation will now follow the default, no matter their method signature.
 
 If your application needs to return non-nominal HTTP codes in error cases, the best is
 to throw exceptions that will result in the proper HTTP response being sent by the
-framework using link:{jaxrsapi}/javax/ws/rs/WebApplicationException.html[`WebApplicationException`] or any of its subtypes:
+framework using link:{jaxrsapi}/jakarta/ws/rs/WebApplicationException.html[`WebApplicationException`] or any of its subtypes:
 
 [source,java]
 ----
 package org.acme.rest;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.GET;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
 
 @Path("cheeses/{cheese}")
 public class Endpoint {
@@ -1725,12 +1725,12 @@ package org.acme.rest;
 
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -1811,7 +1811,7 @@ Your exception mapper may declare any of the following parameter types:
 |Any of the <<context-objects,Context objects>>
 |
 
-|link:{jaxrsapi}/javax/ws/rs/container/ContainerRequestContext.html[`ContainerRequestContext`]
+|link:{jaxrsapi}/jakarta/ws/rs/container/ContainerRequestContext.html[`ContainerRequestContext`]
 |A context object to access the current request
 
 |===
@@ -1822,7 +1822,7 @@ It may declare any of the following return types:
 |===
 |Type|Usage
 
-|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`] or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`] or link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`]
 |The response to send to the client when the exception occurs
 
 |link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse>`] or link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
@@ -1925,10 +1925,10 @@ Your filters may declare any of the following parameter types:
 |Any of the <<context-objects,Context objects>>
 |
 
-|link:{jaxrsapi}/javax/ws/rs/container/ContainerRequestContext.html[`ContainerRequestContext`]
+|link:{jaxrsapi}/jakarta/ws/rs/container/ContainerRequestContext.html[`ContainerRequestContext`]
 |A context object to access the current request
 
-|link:{jaxrsapi}/javax/ws/rs/container/ContainerResponseContext.html[`ContainerResponseContext`]
+|link:{jaxrsapi}/jakarta/ws/rs/container/ContainerResponseContext.html[`ContainerResponseContext`]
 |A context object to access the current response
 
 |link:{jdkapi}/java/lang/Throwable.html[`Throwable`]
@@ -1942,7 +1942,7 @@ It may declare any of the following return types:
 |===
 |Type|Usage
 
-|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`] or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`]
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`] or link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`]
 |The response to send to the client instead of continuing the filter chain, or `null` if the filter chain should proceed
 
 |link:{jdkapi}/java/util/Optional.html[`Optional<RestResponse<?>>`] or link:{jdkapi}/java/util/Optional.html[`Optional<Response>`]
@@ -1953,7 +1953,7 @@ It may declare any of the following return types:
 
 |===
 
-NOTE: You can restrict the Resource methods for which a filter runs, by using link:{jaxrsapi}/javax/ws/rs/NameBinding.html[`@NameBinding`] meta-annotations.
+NOTE: You can restrict the Resource methods for which a filter runs, by using link:{jaxrsapi}/jakarta/ws/rs/NameBinding.html[`@NameBinding`] meta-annotations.
 
 ==== The JAX-RS way
 
@@ -1974,11 +1974,11 @@ package org.acme.rest.json;
 import io.vertx.core.http.HttpServerRequest;
 import org.jboss.logging.Logger;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Provider;
 
 @Provider
 public class LoggingFilter implements ContainerRequestFilter {
@@ -2019,14 +2019,14 @@ Now, whenever a REST method is invoked, the request will be logged into the cons
 
 Whenever your endpoint methods return an object (of when they return a
 link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`]
-or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] with
+or link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] with
 an entity), RESTEasy Reactive will look for a way to map that into an HTTP response body.
 
 Similarly, whenever your endpoint method takes an object as parameter, we will look for
 a way to map the HTTP request body into that object.
 
-This is done via a pluggable system of link:{jaxrsapi}/javax/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`]
-and link:{jaxrsapi}/javax/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`] interfaces,
+This is done via a pluggable system of link:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`]
+and link:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`] interfaces,
 which are responsible for defining which Java type they map from/to, for which media types,
 and how they turn HTTP bodies to/from Java instances of that type.
 
@@ -2036,9 +2036,9 @@ For example, if we have our own `Cheese` type on our endpoint:
 ----
 package org.acme.rest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
 
 class Cheese {
     public String name;
@@ -2064,7 +2064,7 @@ public class Endpoint {
 ----
 
 Then we can define how to read and write it with our body reader/writers, annotated
-with link:{jaxrsapi}/javax/ws/rs/ext/Provider.html[`@Provider`]:
+with link:{jaxrsapi}/jakarta/ws/rs/ext/Provider.html[`@Provider`]:
 
 [source,java]
 ----
@@ -2077,12 +2077,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.Provider;
 
 @Provider
 public class CheeseBodyHandler implements MessageBodyReader<Cheese>,
@@ -2127,7 +2127,7 @@ public class CheeseBodyHandler implements MessageBodyReader<Cheese>,
 
 If you want to get the most performance our of your writer, you can extend the
 link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/spi/ServerMessageBodyWriter.html[`ServerMessageBodyWriter`]
-instead of link:{jaxrsapi}/javax/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`]
+instead of link:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`]
 where you will be able to use less reflection and bypass the blocking IO layer:
 
 [source,java]
@@ -2141,11 +2141,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
@@ -2172,15 +2172,15 @@ public class CheeseBodyHandler implements MessageBodyReader<Cheese>,
 ----
 
 NOTE: You can restrict which content-types your reader/writer apply to by adding
-link:{jaxrsapi}/javax/ws/rs/Consumes.html[`Consumes`]/link:{jaxrsapi}/javax/ws/rs/Produces.html[`Produces`] annotations
+link:{jaxrsapi}/jakarta/ws/rs/Consumes.html[`Consumes`]/link:{jaxrsapi}/jakarta/ws/rs/Produces.html[`Produces`] annotations
 on your provider class.
 
 === Reader and Writer interceptors
 
 Just as you can intercept requests and responses, you can also intercept readers and writers, by
-extending the link:{jaxrsapi}/javax/ws/rs/ext/ReaderInterceptor.html[`ReaderInterceptor`] or
-link:{jaxrsapi}/javax/ws/rs/ext/WriterInterceptor.html[`WriterInterceptor`] on a class annotated with
-link:{jaxrsapi}/javax/ws/rs/ext/Provider.html[`@Provider`].
+extending the link:{jaxrsapi}/jakarta/ws/rs/ext/ReaderInterceptor.html[`ReaderInterceptor`] or
+link:{jaxrsapi}/jakarta/ws/rs/ext/WriterInterceptor.html[`WriterInterceptor`] on a class annotated with
+link:{jaxrsapi}/jakarta/ws/rs/ext/Provider.html[`@Provider`].
 
 If we look at this endpoint:
 
@@ -2188,9 +2188,9 @@ If we look at this endpoint:
 ----
 package org.acme.rest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
 
 @Path("cheese")
 public class Endpoint {
@@ -2215,12 +2215,12 @@ package org.acme.rest;
 
 import java.io.IOException;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.ReaderInterceptorContext;
-import javax.ws.rs.ext.WriterInterceptor;
-import javax.ws.rs.ext.WriterInterceptorContext;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.ReaderInterceptorContext;
+import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptorContext;
 
 @Provider
 public class CheeseIOInterceptor implements ReaderInterceptor, WriterInterceptor {
@@ -2262,8 +2262,8 @@ However, you can change this default behavior and constrain a provider to:
 All <<request-parameters,Request Parameters>> can be declared as link:{jdkapi}/java/lang/String.html[`String`], but also
 any of the following types:
 
-- Types for which a link:{jaxrsapi}/javax/ws/rs/ext/ParamConverter.html[`ParamConverter`] is available via a registered
-link:{jaxrsapi}/javax/ws/rs/ext/ParamConverterProvider.html[`ParamConverterProvider`].
+- Types for which a link:{jaxrsapi}/jakarta/ws/rs/ext/ParamConverter.html[`ParamConverter`] is available via a registered
+link:{jaxrsapi}/jakarta/ws/rs/ext/ParamConverterProvider.html[`ParamConverterProvider`].
 - Primitive types.
 - Types that have a constructor that accepts a single link:{jdkapi}/java/lang/String.html[`String`] argument.
 - Types that have a static method named `valueOf` or `fromString` with a single link:{jdkapi}/java/lang/String.html[`String`] argument
@@ -2282,11 +2282,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.ext.ParamConverter;
-import javax.ws.rs.ext.ParamConverterProvider;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.reactive.RestQuery;
 
@@ -2375,7 +2375,7 @@ conditions, such as:
 - A resource tag, similar to a hash code of the resource to designate its state or version
 
 Let's see how you can do conditional request validation using the
-link:{jaxrsapi}/javax/ws/rs/core/Request.html[`Request`] context object:
+link:{jaxrsapi}/jakarta/ws/rs/core/Request.html[`Request`] context object:
 
 [source,java]
 ----
@@ -2386,13 +2386,13 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.Date;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
 
 @Path("conditional")
 public class Endpoint {
@@ -2506,12 +2506,12 @@ The following endpoint supports serving cheese in plain text or JSON:
 ----
 package org.acme.rest;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 

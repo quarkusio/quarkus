@@ -108,7 +108,7 @@ Continuing from the previous minimal configuration, your Quarkus application can
 ----
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class PriceConsumer {
@@ -179,11 +179,11 @@ Alternatively, your application can inject a `Multi` in your bean and subscribe 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.messaging.annotations.Channel;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @Path("/prices")
@@ -250,8 +250,8 @@ For example, The following code illustrates how you can store incoming payloads 
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class PriceStorage {
@@ -555,7 +555,7 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.clients.consumer.TopicPartition;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -603,7 +603,7 @@ import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecord;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -724,7 +724,7 @@ package org.acme;
 
 import java.util.concurrent.CompletionStage;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -822,7 +822,7 @@ With `AveragePriceEntity` being a JPA entity extending `CheckpointEntity`:
 ----
 package org.acme;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntity;
 
@@ -892,7 +892,7 @@ It can use `double` payloads as in the following snippet:
 import io.smallrye.mutiny.Multi;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.Random;
 
@@ -983,11 +983,11 @@ For this, you can use an `Emitter`.
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/prices")
 public class PriceResource {
@@ -1028,11 +1028,11 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/prices")
 public class PriceResource {
@@ -1062,11 +1062,11 @@ You can therefore use Mutiny APIs for handling downstream messages and errors.
 ----
 import org.eclipse.microprofile.reactive.messaging.Channel;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.core.MediaType;
 
 import io.smallrye.reactive.messaging.MutinyEmitter;
 
@@ -1201,7 +1201,7 @@ In case of in-memory channels, `@Broadcast` annotation can be used on the `@Outg
 ----
 import java.util.Random;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -1246,7 +1246,7 @@ It can be injected as a regular emitter `@Channel`:
 
 [source, java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 
@@ -1317,7 +1317,7 @@ A processor method can be simply implemented using both the `@Incoming` and `@Ou
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class PriceProcessor {
@@ -1340,7 +1340,7 @@ You can apply asynchronous stream processing by consuming and returning reactive
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -1382,7 +1382,7 @@ The following example includes a batch of Kafka records inside a transaction.
 
 [source, java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -1450,9 +1450,9 @@ In rare cases, you may need to access the underlying Kafka clients.
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 
@@ -1489,9 +1489,9 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.KafkaAdminClient;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -1552,7 +1552,7 @@ import io.smallrye.reactive.messaging.annotations.Broadcast;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
 * A bean consuming data from the "fruit-in" channel and applying some price conversion.
@@ -2325,10 +2325,10 @@ package org.acme;
 
 import java.util.concurrent.CompletionStage;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
@@ -2373,10 +2373,10 @@ package org.acme;
 
 import java.util.concurrent.CompletionStage;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
@@ -2412,7 +2412,7 @@ For simplicity purposes, our `Fruit` class is pretty simple:
 ----
 package org.acme;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
@@ -2430,8 +2430,8 @@ To consume `Fruit` instances stored on a Kafka topic, and persist them into a da
 ----
 package org.acme;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
@@ -2492,7 +2492,7 @@ For simplicity purposes, our `Fruit` class is pretty simple:
 ----
 package org.acme;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;  // <1>
 
@@ -2511,8 +2511,8 @@ To consume `Fruit` instances stored on a Kafka topic, and persist them into a da
 ----
 package org.acme;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.control.ActivateRequestContext;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
@@ -2601,9 +2601,9 @@ package org.acme;
 
 import java.util.concurrent.CompletionStage;
 
-import javax.transaction.Transactional;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
@@ -2640,8 +2640,8 @@ The following example demonstrates how to receive a payload, store it in the dat
 ----
 package org.acme;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 
@@ -2747,10 +2747,10 @@ The following example demonstrates:
 ----
 package org.acme;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -2796,11 +2796,11 @@ The next example demonstrates that using the Hibernate Reactive API (without Pan
 
 [source, java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
 import org.eclipse.microprofile.reactive.messaging.Channel;

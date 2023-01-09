@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.ExecutionException;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

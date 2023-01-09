@@ -12,13 +12,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.Providers;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -30,9 +30,9 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.MediaTypeMap;
-import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
+import org.jboss.resteasy.microprofile.config.FilterConfigSource;
+import org.jboss.resteasy.microprofile.config.ServletConfigSource;
+import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
@@ -92,7 +92,7 @@ public class ResteasyCommonProcessor {
 
     private static final DotName QUARKUS_JSONB_CONTEXT_RESOLVER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jsonb.QuarkusJsonbContextResolver");
-    private static final DotName JSONB = DotName.createSimple("javax.json.bind.Jsonb");
+    private static final DotName JSONB = DotName.createSimple("jakarta.json.bind.Jsonb");
     private static final DotName QUARKUS_JSONB_SERIALIZER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jsonb.QuarkusJsonbSerializer");
 
@@ -141,9 +141,9 @@ public class ResteasyCommonProcessor {
                 new StaticInitConfigSourceProviderBuildItem(ResteasyConfigSourceProvider.class.getName()));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                ServletConfigSourceImpl.class,
-                ServletContextConfigSourceImpl.class,
-                FilterConfigSourceImpl.class));
+                ServletConfigSource.class,
+                ServletContextConfigSource.class,
+                FilterConfigSource.class));
     }
 
     @BuildStep

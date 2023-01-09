@@ -2,9 +2,9 @@ package io.quarkus.smallrye.faulttolerance.runtime;
 
 import java.util.Set;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.Alternative;
-import javax.inject.Singleton;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Singleton;
 
 import io.smallrye.faulttolerance.ExistingCircuitBreakerNames;
 

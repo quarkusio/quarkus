@@ -3,7 +3,7 @@ package io.quarkus.it.keycloak;
 import java.time.Duration;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 

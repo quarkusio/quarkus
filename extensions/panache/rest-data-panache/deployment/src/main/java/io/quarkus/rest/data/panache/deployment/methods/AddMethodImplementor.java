@@ -3,9 +3,9 @@ package io.quarkus.rest.data.panache.deployment.methods;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.ofType;
 
-import javax.validation.Valid;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.ClassCreator;

@@ -2,8 +2,8 @@ package io.quarkus.it.hibernate.validator;
 
 import java.util.Objects;
 
-import javax.enterprise.event.Observes;
-import javax.validation.Validation;
+import jakarta.enterprise.event.Observes;
+import jakarta.validation.Validation;
 
 import io.quarkus.runtime.StartupEvent;
 

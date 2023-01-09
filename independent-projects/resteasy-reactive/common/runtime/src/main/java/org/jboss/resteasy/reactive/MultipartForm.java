@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import javax.ws.rs.BeanParam;
+import jakarta.ws.rs.BeanParam;
 
 /**
  * Annotation to be used on POJOs meant to map to the various parts

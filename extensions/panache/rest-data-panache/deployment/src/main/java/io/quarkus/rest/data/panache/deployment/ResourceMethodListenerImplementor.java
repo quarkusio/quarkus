@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;

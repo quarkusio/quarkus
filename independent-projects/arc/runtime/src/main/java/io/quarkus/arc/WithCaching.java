@@ -7,8 +7,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Instance;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Instance;
 
 /**
  * An injected {@link Instance} annotated with this annotation will cache the result of the {@link Instance#get()} operation.

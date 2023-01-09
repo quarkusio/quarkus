@@ -1,6 +1,6 @@
 package io.quarkus.grpc.auth;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.grpc.Metadata;
 import io.grpc.ServerCall;

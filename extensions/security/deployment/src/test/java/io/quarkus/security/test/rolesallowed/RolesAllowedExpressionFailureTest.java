@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.NoSuchElementException;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Singleton;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

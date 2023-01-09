@@ -3,8 +3,8 @@ package io.quarkus.hibernate.orm.panache.deployment.test.multiple_pu;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

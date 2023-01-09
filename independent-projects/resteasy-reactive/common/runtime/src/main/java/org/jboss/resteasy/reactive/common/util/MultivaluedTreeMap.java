@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>

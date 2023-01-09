@@ -68,10 +68,10 @@ Create the `org.acme.config.GreetingResource` REST resource with the following c
 ----
 package org.acme.config;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/greeting")
 public class GreetingResource {
@@ -112,7 +112,7 @@ String suffix;
 @ConfigProperty(name = "greeting.name")
 Optional<String> name; <3>
 ----
-<1> If you do not provide a value for this property, the application startup fails with `javax.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
+<1> If you do not provide a value for this property, the application startup fails with `jakarta.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
 <2> The default value is injected if the configuration does not provide a value for `greeting.suffix`.
 <3> This property is optional - an empty `Optional` is injected if the configuration does not provide a value for `greeting.name`.
 

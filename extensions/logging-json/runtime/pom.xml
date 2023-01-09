@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-logging-json-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
 
     <artifactId>quarkus-logging-json</artifactId>
@@ -40,7 +40,8 @@
                 <configuration>
                     <runnerParentFirstArtifacts>
                         <!-- Needed because org.jboss.logmanager.formatters.JsonFormatter loads javax.json.Json in its constructor -->
-                        <runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.eclipse.parsson:parsson</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>jakarta.json:jakarta.json-api</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>
                 </configuration>
             </plugin>

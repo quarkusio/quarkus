@@ -9,12 +9,12 @@ import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import javax.ws.rs.client.AsyncInvoker;
-import javax.ws.rs.client.CompletionStageRxInvoker;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.InvocationCallback;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.AsyncInvoker;
+import jakarta.ws.rs.client.CompletionStageRxInvoker;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.InvocationCallback;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;

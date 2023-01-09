@@ -3,10 +3,10 @@ package io.quarkus.arc.test.name;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

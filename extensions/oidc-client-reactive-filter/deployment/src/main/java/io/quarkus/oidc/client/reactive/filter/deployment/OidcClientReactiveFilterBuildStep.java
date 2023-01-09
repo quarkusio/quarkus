@@ -3,7 +3,7 @@ package io.quarkus.oidc.client.reactive.filter.deployment;
 import java.util.Collection;
 import java.util.List;
 
-import javax.ws.rs.Priorities;
+import jakarta.ws.rs.Priorities;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;

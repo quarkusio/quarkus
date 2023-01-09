@@ -2,7 +2,7 @@ package io.quarkus.context.test;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;

@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.unproxyable;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;

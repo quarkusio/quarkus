@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.core.Application;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -88,10 +88,10 @@ public class ResteasyServerCommonProcessor {
 
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
 
-    private static final String JAX_RS_APPLICATION_PARAMETER_NAME = "javax.ws.rs.Application";
+    private static final String JAX_RS_APPLICATION_PARAMETER_NAME = "jakarta.ws.rs.Application";
     private static final String MESSAGES_RESOURCE_BUNDLE = "messages";
 
-    private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
+    private static final DotName JSONB_ANNOTATION = DotName.createSimple("jakarta.json.bind.annotation.JsonbAnnotation");
 
     private static final List<DotName> METHOD_ANNOTATIONS = List.of(
             ResteasyDotNames.GET,
@@ -129,7 +129,7 @@ public class ResteasyServerCommonProcessor {
          * this annotation will always be used to control the lifecycle of the resource
          * class.
          * <p>
-         * IMPLEMENTATION NOTE: {@code javax.ws.rs.Path} turns into a CDI stereotype
+         * IMPLEMENTATION NOTE: {@code jakarta.ws.rs.Path} turns into a CDI stereotype
          * with singleton scope. As a result, if a user annotates a JAX-RS resource with
          * a stereotype which has a different default scope the deployment fails with
          * IllegalStateException.
@@ -478,10 +478,10 @@ public class ResteasyServerCommonProcessor {
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("kotlin")); // make sure the annotation that the Kotlin compiler adds don't interfere with creating a default constructor
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("lombok")); // same for lombok
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("io.quarkus.security")); // same for the security annotations
-        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("javax.annotation.security"));
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("java.lang"));
-        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("javax.inject"));
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.inject"));
         return prefixes;
     }
 
@@ -1000,7 +1000,7 @@ public class ResteasyServerCommonProcessor {
             selectedAppClass = applicationClassInfo;
             if (selectedAppClass.annotationsMap().containsKey(ResteasyDotNames.CDI_INJECT)) {
                 throw new RuntimeException(
-                        "Usage of '@Inject' is not allowed in 'javax.ws.rs.core.Application' classes. Offending class is '"
+                        "Usage of '@Inject' is not allowed in 'jakarta.ws.rs.core.Application' classes. Offending class is '"
                                 + selectedAppClass.name() + "'");
             }
 

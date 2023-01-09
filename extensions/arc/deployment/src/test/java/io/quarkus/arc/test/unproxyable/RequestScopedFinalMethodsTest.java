@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.unproxyable;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.RequestScoped;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

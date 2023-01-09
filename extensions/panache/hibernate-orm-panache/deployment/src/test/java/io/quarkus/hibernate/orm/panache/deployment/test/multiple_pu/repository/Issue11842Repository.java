@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.panache.deployment.test.multiple_pu.repository;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 

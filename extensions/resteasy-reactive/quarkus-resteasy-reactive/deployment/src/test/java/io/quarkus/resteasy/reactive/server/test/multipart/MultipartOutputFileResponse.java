@@ -2,7 +2,7 @@ package io.quarkus.resteasy.reactive.server.test.multipart;
 
 import java.io.File;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;

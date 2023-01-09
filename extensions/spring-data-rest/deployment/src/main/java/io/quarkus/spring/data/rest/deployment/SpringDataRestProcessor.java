@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.ws.rs.Priorities;
+import jakarta.ws.rs.Priorities;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

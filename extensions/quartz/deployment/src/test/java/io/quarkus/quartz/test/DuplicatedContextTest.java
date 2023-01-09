@@ -5,7 +5,7 @@ import static org.awaitility.Awaitility.await;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

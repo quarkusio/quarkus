@@ -20,9 +20,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.interceptor.InvocationContext;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.inject.spi.InterceptionType;
+import jakarta.interceptor.InvocationContext;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;

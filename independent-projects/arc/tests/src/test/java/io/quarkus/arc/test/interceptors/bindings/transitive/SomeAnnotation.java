@@ -8,7 +8,7 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.interceptor.InterceptorBinding;
+import jakarta.interceptor.InterceptorBinding;
 
 /**
  * This annotation is a not a binding itself but a meta-annotation containing one.

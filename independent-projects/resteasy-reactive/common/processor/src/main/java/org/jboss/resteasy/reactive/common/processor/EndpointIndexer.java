@@ -96,10 +96,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.sse.SseEventSink;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.SseEventSink;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;

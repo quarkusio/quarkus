@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.clientproxy.packageprivate.foo;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 @ApplicationScoped
 public class Producer {

@@ -1,8 +1,8 @@
 package io.quarkus.oidc.client.runtime;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.quarkus.oidc.client.Tokens;
 

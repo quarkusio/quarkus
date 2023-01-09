@@ -1,10 +1,10 @@
 package io.quarkus.it.keycloak;
 
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerEndpoint;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.server.ServerEndpoint;
 
 import io.quarkus.security.identity.SecurityIdentity;
 

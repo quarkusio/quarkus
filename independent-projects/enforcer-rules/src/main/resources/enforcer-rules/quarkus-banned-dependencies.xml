@@ -17,18 +17,20 @@
                 <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>
                 <exclude>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</exclude>
                 -->
-                <exclude>jakarta.xml.bind:jakarta.xml.bind-api</exclude>
-                <exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>
+                <exclude>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</exclude>
+                <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</exclude>
+                <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>
                 <!-- Exclude javax dependencies in favor of Jakarta -->
                 <exclude>javax.activation:activation</exclude>
                 <exclude>javax.activation:javax.activation-api</exclude>
-                <exclude>javax.annotation:javax.annotation-api</exclude>
+                <!-- we allow javax.annotation-api for Maven -->
                 <exclude>javax.enterprise:cdi-api</exclude>
-                <exclude>javax.inject:javax.inject</exclude>
+                <!-- we allow javax.inject for Maven -->
                 <exclude>javax.json:javax.json-api</exclude>
                 <exclude>javax.json.bind:javax.json.bind-api</exclude>
                 <exclude>org.glassfish:javax.json</exclude>
                 <exclude>org.glassfish:javax.el</exclude>
+                <exclude>org.glassfish:jakarta.el</exclude>
                 <exclude>javax.persistence:javax.persistence-api</exclude>
                 <exclude>javax.persistence:persistence-api</exclude>
                 <exclude>javax.security.enterprise:javax.security.enterprise-api</exclude>
@@ -40,8 +42,8 @@
                 <exclude>javax.xml.bind:jaxb-api</exclude>
                 <exclude>javax.websocket:javax.websocket-api</exclude>
                 <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
-                <!-- Exclude jakarta.activation-api as the implementation contains it -->
-                <exclude>jakarta.activation:jakarta.activation-api</exclude>
+                <!-- Exclude com.sun.activation:jakarta.activation as we switched to Angus Activation -->
+                <exclude>com.sun.activation:jakarta.activation</exclude>
                 <!-- use our jboss-logmanager -->
                 <exclude>org.jboss.logging:jboss-logmanager</exclude>
                 <exclude>org.jboss.logging:jboss-logging-jdk</exclude>
@@ -51,8 +53,8 @@
                 <exclude>org.wildfly.client:wildfly-client-config</exclude>
                 <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
                 <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
-                <!-- The API is packaged by the implementation-->
-                <exclude>jakarta.json:jakarta.json-api</exclude>
+                <exclude>org.glassfish:jakarta.json</exclude>
+                <exclude>org.eclipse.parsson:jakarta.json</exclude>
                 <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
                 <exclude>io.netty:netty-all</exclude>
                 <!-- Ban jboss-logmanager, we use jboss-logmanager-embedded -->

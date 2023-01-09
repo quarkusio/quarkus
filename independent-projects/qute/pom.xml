@@ -13,7 +13,7 @@
     <groupId>io.quarkus.qute</groupId>
     <artifactId>qute-parent</artifactId>
     <packaging>pom</packaging>
-    <version>999-SNAPSHOT</version>
+    <version>999-jakarta-SNAPSHOT</version>
 
     <name>Qute - Parent</name>
     <url>https://github.com/quarkusio/quarkus</url>

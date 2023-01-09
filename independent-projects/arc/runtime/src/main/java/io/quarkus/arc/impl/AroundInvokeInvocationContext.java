@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.interceptor.InvocationContext;
+import jakarta.interceptor.InvocationContext;
 
 /**
  * Special type of InvocationContext for AroundInvoke interceptors.

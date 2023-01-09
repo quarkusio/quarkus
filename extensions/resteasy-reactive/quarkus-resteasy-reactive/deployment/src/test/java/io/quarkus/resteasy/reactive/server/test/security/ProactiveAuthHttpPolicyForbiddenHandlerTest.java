@@ -1,12 +1,12 @@
 package io.quarkus.resteasy.reactive.server.test.security;
 
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

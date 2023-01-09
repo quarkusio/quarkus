@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.panache.kotlin.deployment.test
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
-import javax.persistence.Entity
+import jakarta.persistence.Entity
 
 @Entity
 class MyEntity : PanacheEntity() {

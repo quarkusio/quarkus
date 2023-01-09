@@ -3,9 +3,9 @@ package io.quarkus.rest.client.reactive.runtime;
 import java.io.IOException;
 import java.util.List;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientResponseContext;
-import javax.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.client.ClientResponseFilter;
 
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.handlers.ClientResponseCompleteRestHandler;

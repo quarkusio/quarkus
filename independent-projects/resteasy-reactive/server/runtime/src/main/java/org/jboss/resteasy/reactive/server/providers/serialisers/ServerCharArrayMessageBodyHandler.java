@@ -3,8 +3,8 @@ package org.jboss.resteasy.reactive.server.providers.serialisers;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.CharArrayMessageBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;

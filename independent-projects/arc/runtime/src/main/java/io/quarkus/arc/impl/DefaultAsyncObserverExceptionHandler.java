@@ -1,8 +1,8 @@
 package io.quarkus.arc.impl;
 
-import javax.enterprise.inject.spi.EventContext;
-import javax.enterprise.inject.spi.ObserverMethod;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 

@@ -1,6 +1,6 @@
 package io.quarkus.it.quartz;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.scheduler.Scheduled;
 

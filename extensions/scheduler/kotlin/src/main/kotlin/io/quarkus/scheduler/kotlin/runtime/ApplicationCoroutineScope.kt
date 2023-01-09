@@ -1,10 +1,10 @@
 package io.quarkus.scheduler.kotlin.runtime
 
+import jakarta.annotation.PreDestroy
+import jakarta.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import javax.annotation.PreDestroy
-import javax.inject.Singleton
 import kotlin.coroutines.CoroutineContext
 
 @Singleton

@@ -5,7 +5,7 @@
    <parent>
       <artifactId>quarkus-apicurio-registry-parent</artifactId>
       <groupId>io.quarkus</groupId>
-      <version>999-SNAPSHOT</version>
+      <version>999-jakarta-SNAPSHOT</version>
       <relativePath>../pom.xml</relativePath>
    </parent>
 

@@ -146,10 +146,10 @@ There is more than one way to fix the example:
 
 [source,java]
 ----
-import javax.annotation.security.PermitAll;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.PermitAll;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.smallrye.mutiny.Uni;
 
@@ -170,8 +170,8 @@ public class HelloResource {
 
 [source,java]
 ----
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class HelloService {
@@ -193,11 +193,11 @@ You can use JAX-RS `ExceptionMapper` to capture Quarkus Security authentication 
 ----
 package io.quarkus.it.keycloak;
 
-import javax.annotation.Priority;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 
 import io.quarkus.security.AuthenticationFailedException;
 
@@ -225,8 +225,8 @@ To that end, the only thing that needs to be done is to customize the response l
 ----
 package io.quarkus.it.keycloak;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import io.quarkus.security.AuthenticationFailedException;
 import io.vertx.core.Handler;

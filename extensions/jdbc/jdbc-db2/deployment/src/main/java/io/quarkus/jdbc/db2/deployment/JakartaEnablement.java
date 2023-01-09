@@ -23,7 +23,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 
 /**
- * The DB2 driver is compiled using references to classes in the javax.transaction
+ * The DB2 driver is compiled using references to classes in the jakarta.transaction
  * package; we need to transform these to fix compatibility with jakarta.transaction.
  * We do this by leveraging the Eclipse Transformer project during Augmentation, so
  * that end users don't need to bother.

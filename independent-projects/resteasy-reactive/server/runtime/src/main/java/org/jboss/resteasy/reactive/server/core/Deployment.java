@@ -9,9 +9,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
-import javax.ws.rs.core.Application;
-import javax.ws.rs.ext.ParamConverter;
-import javax.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.ParamConverterProvider;
 
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;

@@ -2,7 +2,7 @@ package io.quarkus.it.panache.reactive.kotlin
 
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheRepository
 import io.smallrye.mutiny.Uni
-import javax.enterprise.context.ApplicationScoped
+import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class PersonRepository : PanacheRepository<Person> {

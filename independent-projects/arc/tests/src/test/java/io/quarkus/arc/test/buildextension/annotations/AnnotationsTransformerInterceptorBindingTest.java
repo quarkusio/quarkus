@@ -2,7 +2,7 @@ package io.quarkus.arc.test.buildextension.annotations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.junit.jupiter.api.Test;

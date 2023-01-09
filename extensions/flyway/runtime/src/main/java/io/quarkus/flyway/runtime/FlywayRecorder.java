@@ -6,8 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.sql.DataSource;
+
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;

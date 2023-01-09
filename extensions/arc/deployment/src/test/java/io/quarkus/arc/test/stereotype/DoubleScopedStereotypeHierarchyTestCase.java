@@ -2,11 +2,11 @@ package io.quarkus.arc.test.stereotype;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.context.SessionScoped;
-import javax.enterprise.inject.Stereotype;
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.inject.Stereotype;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

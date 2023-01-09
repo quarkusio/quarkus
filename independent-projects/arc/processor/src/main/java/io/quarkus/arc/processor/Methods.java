@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;

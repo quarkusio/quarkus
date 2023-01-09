@@ -7,8 +7,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Qualifier;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Qualifier;
 
 /**
  * Marker annotation to select the Redis client.

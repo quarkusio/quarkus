@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.metrics.ConcurrentGauge;
 import org.eclipse.microprofile.metrics.Counter;

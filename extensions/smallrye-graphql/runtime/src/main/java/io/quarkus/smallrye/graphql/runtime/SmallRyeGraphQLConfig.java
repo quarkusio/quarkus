@@ -21,6 +21,13 @@ public class SmallRyeGraphQLConfig {
     public String rootPath;
 
     /**
+     * Enable Apollo Federation. If this value is unspecified, then federation will be enabled
+     * automatically if any GraphQL Federation annotations are detected in the application.
+     */
+    @ConfigItem(name = "federation.enabled")
+    public Optional<Boolean> federationEnabled;
+
+    /**
      * Enable metrics. By default, this is false. If set to true, a metrics extension is required.
      */
     @ConfigItem(name = "metrics.enabled")

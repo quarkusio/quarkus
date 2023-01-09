@@ -1,6 +1,9 @@
-package io.quarkus.resteasy.reactive.jackson.deployment.test.sse;
+package io.quarkus.resteasy.reactive.jackson.deployment.test.streams;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -16,8 +19,8 @@ import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 
-@Path("sse")
-public class SseResource {
+@Path("streams")
+public class StreamResource {
 
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
@@ -118,6 +121,23 @@ public class SseResource {
     @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiStreamJson() {
         return Multi.createFrom().items(new Message("hello"), new Message("stef"));
+    }
+
+    /**
+     * Reproduce <a href="https://github.com/quarkusio/quarkus/issues/30044">#30044</a>.
+     */
+    @Path("stream-json/multi/fast")
+    @GET
+    @Produces(RestMediaType.APPLICATION_STREAM_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
+    public Multi<Message> multiStreamJsonFast() {
+        List<UUID> ids = new ArrayList<>(5000);
+        for (int i = 0; i < 5000; i++) {
+            ids.add(UUID.randomUUID());
+        }
+        return Multi.createFrom().items(ids::stream)
+                .onItem().transform(id -> new Message(id.toString()))
+                .onOverflow().buffer(81920);
     }
 
 }

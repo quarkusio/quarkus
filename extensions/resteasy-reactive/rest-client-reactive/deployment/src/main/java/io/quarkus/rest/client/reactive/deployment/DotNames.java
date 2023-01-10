@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.deployment;
 
+import java.lang.reflect.Method;
+
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 
@@ -27,6 +29,8 @@ public class DotNames {
     public static final DotName CLIENT_REQUEST_FILTER = DotName.createSimple(ClientRequestFilter.class.getName());
     public static final DotName CLIENT_RESPONSE_FILTER = DotName.createSimple(ClientResponseFilter.class.getName());
     public static final DotName CLIENT_EXCEPTION_MAPPER = DotName.createSimple(ClientExceptionMapper.class.getName());
+
+    static final DotName METHOD = DotName.createSimple(Method.class.getName());
 
     private DotNames() {
     }

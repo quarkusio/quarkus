@@ -156,6 +156,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         restart(abortHandlerChain);
     }
 
+    public Method getInvokedMethod() {
+        Object o = properties.get(MP_INVOKED_METHOD_PROP);
+        if (o instanceof Method) {
+            return (Method) o;
+        }
+        return null;
+    }
+
     @Override
     protected Throwable unwrapException(Throwable t) {
         var res = super.unwrapException(t);

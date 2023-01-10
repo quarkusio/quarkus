@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -47,6 +46,8 @@ import io.quarkus.test.devmode.util.DevModeTestUtils;
 import io.restassured.RestAssured;
 
 /**
+ * Tests the quarkus:test mojo.
+ *
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  *         <p>
  *         NOTE to anyone diagnosing failures in this test, to run a single method use:
@@ -54,7 +55,12 @@ import io.restassured.RestAssured;
  *         mvn install -Dit.test=DevMojoIT#methodName
  */
 @DisableForNative
-public class DevMojoIT extends RunAndCheckMojoTestBase {
+public class DevMojoIT extends LaunchMojoTestBase {
+
+    @Override
+    protected ContinuousTestingMavenTestUtils getTestingTestUtils() {
+        return new ContinuousTestingMavenTestUtils();
+    }
 
     @Test
     public void testConfigFactoryInAppModuleBannedInCodeGen() throws MavenInvocationException, IOException {
@@ -98,7 +104,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
     @Test
     void testClassLoaderLinkageError()
-            throws MavenInvocationException, IOException, InterruptedException {
+            throws MavenInvocationException, IOException {
         testDir = initProject("projects/classloader-linkage-error", "projects/classloader-linkage-error-dev");
         run(true);
         assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello");
@@ -179,7 +185,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         final File done = new File(testDir, "done.txt");
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(20, TimeUnit.MINUTES).until(() -> done.exists());
+                .atMost(20, TimeUnit.MINUTES).until(done::exists);
 
         // read the log and check the passed in args
         final File log = new File(testDir, "build-command-mode-app-args.log");
@@ -197,7 +203,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         final File done = new File(testDir, "done.txt");
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(20, TimeUnit.MINUTES).until(() -> done.exists());
+                .atMost(20, TimeUnit.MINUTES).until(done::exists);
 
         // read the log and check the passed in args
         final File log = new File(testDir, "build-command-mode-app-pom-args.log");
@@ -206,7 +212,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         assertThat(loggedArgs).isEqualTo("ARGS: [plugin, pom, config]");
     }
 
-    private String extractLoggedArgs(final File log) throws IOException, FileNotFoundException {
+    private String extractLoggedArgs(final File log) throws IOException {
         String loggedArgs = null;
         try (BufferedReader reader = new BufferedReader(new FileReader(log))) {
             String s;

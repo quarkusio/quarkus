@@ -68,6 +68,11 @@ public class QuarkusMultipartForm implements Iterable<QuarkusMultipartFormDataPa
     }
 
     @SuppressWarnings("unused")
+    public QuarkusMultipartForm stringFileUpload(String name, String filename, String content, String mediaType) {
+        return textFileUpload(name, filename, Buffer.buffer(content), mediaType);
+    }
+
+    @SuppressWarnings("unused")
     public QuarkusMultipartForm binaryFileUpload(String name, String filename, String pathname, String mediaType) {
         parts.add(new QuarkusMultipartFormDataPart(name, filename, pathname, mediaType, false));
         return this;

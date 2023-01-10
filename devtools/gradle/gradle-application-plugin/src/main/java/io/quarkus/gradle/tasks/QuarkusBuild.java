@@ -129,12 +129,12 @@ public abstract class QuarkusBuild extends QuarkusTask {
 
     @OutputFile
     public File getRunnerJar() {
-        return new File(getProject().getBuildDir(), extension().finalName() + "-runner.jar");
+        return new File(getProject().getBuildDir(), String.format("%s.jar", extension().buildNativeRunnerName(Map.of())));
     }
 
     @OutputFile
     public File getNativeRunner() {
-        return new File(getProject().getBuildDir(), extension().finalName() + "-runner");
+        return new File(getProject().getBuildDir(), extension().buildNativeRunnerName(Map.of()));
     }
 
     @OutputDirectory

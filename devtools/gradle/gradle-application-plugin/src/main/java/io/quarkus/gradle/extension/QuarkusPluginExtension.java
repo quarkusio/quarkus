@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -85,13 +86,38 @@ public class QuarkusPluginExtension {
             task.environment(BootstrapConstants.TEST_TO_MAIN_MAPPINGS, fileList);
             project.getLogger().debug("test dir mapping - {}", fileList);
 
-            final String nativeRunner = task.getProject().getBuildDir().toPath().resolve(finalName() + "-runner")
+            final String nativeRunner = task.getProject().getBuildDir().toPath()
+                    .resolve(buildNativeRunnerName(props))
                     .toAbsolutePath()
                     .toString();
             props.put("native.image.path", nativeRunner);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to resolve deployment classpath", e);
         }
+    }
+
+    public String buildNativeRunnerName(final Map<String, Object> taskSystemProps) {
+        Properties properties = new Properties(taskSystemProps.size());
+        properties.putAll(taskSystemProps);
+        quarkusBuildProperties.entrySet()
+                .forEach(buildEntry -> properties.putIfAbsent(buildEntry.getKey(), buildEntry.getValue()));
+        System.getProperties().entrySet()
+                .forEach(propEntry -> properties.putIfAbsent(propEntry.getKey(), propEntry.getValue()));
+        System.getenv().entrySet().forEach(
+                envEntry -> properties.putIfAbsent(envEntry.getKey(), envEntry.getValue()));
+        StringBuilder nativeRunnerName = new StringBuilder();
+
+        if (properties.containsKey("quarkus.package.output-name")) {
+            nativeRunnerName.append(properties.get("quarkus.package.output-name"));
+        } else {
+            nativeRunnerName.append(finalName());
+        }
+        if (!properties.containsKey("quarkus.package.add-runner-suffix")
+                || (properties.containsKey("quarkus.package.add-runner-suffix")
+                        && Boolean.parseBoolean((String) properties.get("quarkus.package.add-runner-suffix")))) {
+            nativeRunnerName.append("-runner");
+        }
+        return nativeRunnerName.toString();
     }
 
     public Property<String> getFinalName() {

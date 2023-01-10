@@ -17,6 +17,7 @@ Cygmon
 denial of service
 denial-of-service
 DevOps
+dev mode
 Disk Druid
 DNS
 DVD writer
@@ -37,6 +38,7 @@ GNU
 GPL
 GraalVM
 Gradle
+gRPC
 GRUB
 GTK+
 Hibernate ORM
@@ -149,6 +151,7 @@ web UI
 WebAuthn
 WebSocket
 Window Maker
+xDS
 XEmacs
 xterm
 YAML

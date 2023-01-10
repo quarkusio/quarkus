@@ -3,6 +3,7 @@ package io.quarkus.grpc.runtime.supports;
 import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_HEADER_LIST_SIZE;
 import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.grpc.netty.NettyChannelBuilder.DEFAULT_FLOW_CONTROL_WINDOW;
+import static io.quarkus.grpc.runtime.config.GrpcClientConfiguration.DNS;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +34,7 @@ import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
 import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.MethodDescriptor;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
@@ -50,6 +52,7 @@ import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslClientConfig;
 import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
+import io.quarkus.grpc.spi.GrpcBuilderProvider;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -71,6 +74,7 @@ public class Channels {
         // Avoid direct instantiation
     }
 
+    @SuppressWarnings("rawtypes")
     public static Channel createChannel(String name, Set<String> perClientInterceptors) throws Exception {
         InstanceHandle<GrpcClientConfigProvider> instance = Arc.container().instance(GrpcClientConfigProvider.class);
 
@@ -92,6 +96,8 @@ public class Channels {
             throw new IllegalStateException("gRPC client " + name + " is missing configuration.");
         }
 
+        GrpcBuilderProvider provider = GrpcBuilderProvider.findChannelBuilderProvider(config);
+
         boolean vertxGrpc = config.useQuarkusGrpcClient;
 
         String host = config.host;
@@ -101,10 +107,13 @@ public class Channels {
         boolean stork = Stork.STORK.equalsIgnoreCase(nameResolver);
 
         String[] resolverSplit = nameResolver.split(":");
+        String resolver = provider != null ? provider.resolver() : resolverSplit[0];
 
         // TODO -- does this work for Vert.x gRPC client?
-        if (!vertxGrpc && GrpcClientConfiguration.DNS.equalsIgnoreCase(resolverSplit[0])) {
-            host = "/" + host; // dns name resolver needs triple slash at the beginning
+        if (provider != null) {
+            host = provider.adjustHost(host);
+        } else if (!vertxGrpc && DNS.equalsIgnoreCase(resolver)) {
+            host = "/" + host; // dns or xds name resolver needs triple slash at the beginning
         }
 
         // Client-side interceptors
@@ -122,10 +131,11 @@ public class Channels {
         }
 
         if (!vertxGrpc) {
-            String target = String.format("%s://%s:%d", resolverSplit[0], host, port);
+            String target = String.format("%s://%s:%d", resolver, host, port);
+            LOGGER.debugf("Target for client '%s': %s", name, target);
 
             SslContext context = null;
-            if (!plainText) {
+            if (!plainText && provider == null) {
                 Path trustStorePath = config.ssl.trustStore.orElse(null);
                 Path certificatePath = config.ssl.certificate.orElse(null);
                 Path keyPath = config.ssl.key.orElse(null);
@@ -152,20 +162,25 @@ public class Channels {
 
             String loadBalancingPolicy = stork ? Stork.STORK : config.loadBalancingPolicy;
 
-            NettyChannelBuilder builder = NettyChannelBuilder
-                    .forTarget(target)
-                    // clients are intercepted using the IOThreadClientInterceptor interceptor which will decide on which
-                    // thread the messages should be processed.
-                    .directExecutor() // will use I/O thread - must not be blocked.
-                    .offloadExecutor(Infrastructure.getDefaultExecutor())
-                    .defaultLoadBalancingPolicy(loadBalancingPolicy)
-                    .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
-                    .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
-                    .maxHedgedAttempts(config.maxHedgedAttempts)
-                    .maxRetryAttempts(config.maxRetryAttempts)
-                    .maxInboundMetadataSize(config.maxInboundMetadataSize.orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
-                    .maxInboundMessageSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE))
-                    .negotiationType(NegotiationType.valueOf(config.negotiationType.toUpperCase()));
+            ManagedChannelBuilder<?> builder;
+            if (provider != null) {
+                builder = provider.createChannelBuilder(config, target);
+            } else {
+                builder = NettyChannelBuilder
+                        .forTarget(target)
+                        // clients are intercepted using the IOThreadClientInterceptor interceptor which will decide on which
+                        // thread the messages should be processed.
+                        .directExecutor() // will use I/O thread - must not be blocked.
+                        .offloadExecutor(Infrastructure.getDefaultExecutor())
+                        .defaultLoadBalancingPolicy(loadBalancingPolicy)
+                        .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
+                        .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
+                        .maxHedgedAttempts(config.maxHedgedAttempts)
+                        .maxRetryAttempts(config.maxRetryAttempts)
+                        .maxInboundMetadataSize(config.maxInboundMetadataSize.orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
+                        .maxInboundMessageSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE))
+                        .negotiationType(NegotiationType.valueOf(config.negotiationType.toUpperCase()));
+            }
 
             if (config.retry) {
                 builder.enableRetry();
@@ -203,17 +218,19 @@ public class Channels {
                 builder.keepAliveTimeout(idleTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
             }
 
-            if (plainText) {
+            if (plainText && provider == null) {
                 builder.usePlaintext();
             }
-            if (context != null) {
-                builder.sslContext(context);
+            if (context != null && (builder instanceof NettyChannelBuilder)) {
+                NettyChannelBuilder ncBuilder = (NettyChannelBuilder) builder;
+                ncBuilder.sslContext(context);
             }
 
             interceptorContainer.getSortedPerServiceInterceptors(perClientInterceptors).forEach(builder::intercept);
             interceptorContainer.getSortedGlobalInterceptors().forEach(builder::intercept);
 
-            LOGGER.info("Creating Netty gRPC channel ...");
+            LOGGER.info(String.format("Creating %s gRPC channel ...",
+                    provider != null ? provider.channelInfo() : "Netty"));
 
             return builder.build();
         } else {
@@ -263,6 +280,7 @@ public class Channels {
             Vertx vertx = Arc.container().instance(Vertx.class).get();
             io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(vertx, options);
             Channel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, host));
+            LOGGER.debugf("Target for client '%s': %s", name, host + ":" + port);
 
             List<ClientInterceptor> interceptors = new ArrayList<>();
             interceptors.addAll(interceptorContainer.getSortedPerServiceInterceptors(perClientInterceptors));
@@ -290,7 +308,7 @@ public class Channels {
         config.maxInboundMetadataSize = OptionalInt.empty();
         config.maxRetryAttempts = 0;
         config.maxTraceEvents = OptionalInt.empty();
-        config.nameResolver = GrpcClientConfiguration.DNS;
+        config.nameResolver = DNS;
         config.negotiationType = "PLAINTEXT";
         config.overrideAuthority = Optional.empty();
         config.perRpcBufferLimit = OptionalLong.empty();

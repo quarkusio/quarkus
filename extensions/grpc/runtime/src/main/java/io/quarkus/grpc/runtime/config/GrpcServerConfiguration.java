@@ -20,6 +20,12 @@ public class GrpcServerConfiguration {
     public boolean useSeparateServer;
 
     /**
+     * Configure XDS usage, if enabled.
+     */
+    @ConfigItem
+    public Xds xds;
+
+    /**
      * The gRPC Server port.
      */
     @ConfigItem(defaultValue = "9000")

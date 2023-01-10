@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,6 +22,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.builder.Json.JsonArrayBuilder;
 import io.quarkus.builder.Json.JsonObjectBuilder;
+import io.quarkus.builder.item.BuildItem;
 
 public class BuildMetrics {
 
@@ -30,6 +32,7 @@ public class BuildMetrics {
     private volatile long duration;
     private final String buildTargetName;
     private final ConcurrentMap<String, BuildStepRecord> records = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Integer> buildItems = new ConcurrentHashMap<>();
     private final AtomicInteger idGenerator;
 
     public BuildMetrics(String buildTargetName) {
@@ -54,11 +57,22 @@ public class BuildMetrics {
                 new BuildStepRecord(idGenerator.incrementAndGet(), stepInfo, thread, started, duration));
     }
 
+    public void buildItemProduced(BuildItem buildItem) {
+        buildItems.compute(buildItem.getClass().getName(), this::itemProduced);
+    }
+
+    private Integer itemProduced(String key, Integer val) {
+        if (val == null) {
+            return 1;
+        }
+        return val + 1;
+    }
+
     public void dumpTo(Path file) throws IOException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
-        List<BuildStepRecord> sorted = new ArrayList<>(records.values());
-        sorted.sort(new Comparator<BuildStepRecord>() {
+        List<BuildStepRecord> sortedSteps = new ArrayList<>(records.values());
+        sortedSteps.sort(new Comparator<BuildStepRecord>() {
             @Override
             public int compare(BuildStepRecord o1, BuildStepRecord o2) {
                 return Long.compare(o2.duration, o1.duration);
@@ -72,7 +86,7 @@ public class BuildMetrics {
 
         JsonArrayBuilder steps = Json.array();
         json.put("records", steps);
-        for (BuildStepRecord rec : sorted) {
+        for (BuildStepRecord rec : sortedSteps) {
             JsonObjectBuilder recObject = Json.object();
             recObject.put("id", rec.id);
             recObject.put("stepId", rec.stepInfo.getBuildStep().getId());
@@ -91,6 +105,27 @@ public class BuildMetrics {
             recObject.put("dependents", dependentsArray);
             steps.add(recObject);
         }
+
+        List<Entry<String, Integer>> sortedItems = new ArrayList<>(buildItems.size());
+        buildItems.entrySet().forEach(sortedItems::add);
+        sortedItems.sort(new Comparator<Entry<String, Integer>>() {
+            @Override
+            public int compare(Entry<String, Integer> o1, Entry<String, Integer> o2) {
+                return Integer.compare(o2.getValue(), o1.getValue());
+            }
+        });
+        JsonArrayBuilder items = Json.array();
+        json.put("items", items);
+        Integer itemsCount = 0;
+        for (Entry<String, Integer> e : sortedItems) {
+            JsonObjectBuilder itemObject = Json.object();
+            itemObject.put("class", e.getKey());
+            itemObject.put("count", e.getValue());
+            items.add(itemObject);
+            itemsCount += e.getValue();
+        }
+        json.put("itemsCount", itemsCount);
+
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file.toFile(), StandardCharsets.UTF_8))) {
             json.appendTo(writer);
         }

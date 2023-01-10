@@ -1,11 +1,12 @@
 package io.quarkus.cache.runtime.caffeine;
 
+import static io.quarkus.cache.runtime.CacheConfig.CaffeineConfig.CaffeineCacheConfig;
+
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import io.quarkus.cache.runtime.CacheConfig;
-import io.quarkus.cache.runtime.CacheConfig.CaffeineConfig.CaffeineNamespaceConfig;
+import io.quarkus.runtime.configuration.HashSetFactory;
 
 public class CaffeineCacheInfoBuilder {
 
@@ -13,19 +14,49 @@ public class CaffeineCacheInfoBuilder {
         if (cacheNames.isEmpty()) {
             return Collections.emptySet();
         } else {
-            return cacheNames.stream().map(cacheName -> {
+            CaffeineCacheConfig defaultConfig = cacheConfig.caffeine.defaultConfig;
+
+            Set<CaffeineCacheInfo> cacheInfos = HashSetFactory.<CaffeineCacheInfo> getInstance().apply(cacheNames.size());
+            for (String cacheName : cacheNames) {
+
                 CaffeineCacheInfo cacheInfo = new CaffeineCacheInfo();
                 cacheInfo.name = cacheName;
-                CaffeineNamespaceConfig namespaceConfig = cacheConfig.caffeine.namespace.get(cacheInfo.name);
-                if (namespaceConfig != null) {
-                    namespaceConfig.initialCapacity.ifPresent(capacity -> cacheInfo.initialCapacity = capacity);
-                    namespaceConfig.maximumSize.ifPresent(size -> cacheInfo.maximumSize = size);
-                    namespaceConfig.expireAfterWrite.ifPresent(delay -> cacheInfo.expireAfterWrite = delay);
-                    namespaceConfig.expireAfterAccess.ifPresent(delay -> cacheInfo.expireAfterAccess = delay);
-                    cacheInfo.metricsEnabled = namespaceConfig.metricsEnabled;
+
+                CaffeineCacheConfig namedCacheConfig = cacheConfig.caffeine.cachesConfig.get(cacheInfo.name);
+
+                if (namedCacheConfig != null && namedCacheConfig.initialCapacity.isPresent()) {
+                    cacheInfo.initialCapacity = namedCacheConfig.initialCapacity.getAsInt();
+                } else if (defaultConfig.initialCapacity.isPresent()) {
+                    cacheInfo.initialCapacity = defaultConfig.initialCapacity.getAsInt();
                 }
-                return cacheInfo;
-            }).collect(Collectors.toSet());
+
+                if (namedCacheConfig != null && namedCacheConfig.maximumSize.isPresent()) {
+                    cacheInfo.maximumSize = namedCacheConfig.maximumSize.getAsLong();
+                } else if (defaultConfig.maximumSize.isPresent()) {
+                    cacheInfo.maximumSize = defaultConfig.maximumSize.getAsLong();
+                }
+
+                if (namedCacheConfig != null && namedCacheConfig.expireAfterWrite.isPresent()) {
+                    cacheInfo.expireAfterWrite = namedCacheConfig.expireAfterWrite.get();
+                } else if (defaultConfig.expireAfterWrite.isPresent()) {
+                    cacheInfo.expireAfterWrite = defaultConfig.expireAfterWrite.get();
+                }
+
+                if (namedCacheConfig != null && namedCacheConfig.expireAfterAccess.isPresent()) {
+                    cacheInfo.expireAfterAccess = namedCacheConfig.expireAfterAccess.get();
+                } else if (defaultConfig.expireAfterAccess.isPresent()) {
+                    cacheInfo.expireAfterAccess = defaultConfig.expireAfterAccess.get();
+                }
+
+                if (namedCacheConfig != null && namedCacheConfig.metricsEnabled.isPresent()) {
+                    cacheInfo.metricsEnabled = namedCacheConfig.metricsEnabled.get();
+                } else if (defaultConfig.metricsEnabled.isPresent()) {
+                    cacheInfo.metricsEnabled = defaultConfig.metricsEnabled.get();
+                }
+
+                cacheInfos.add(cacheInfo);
+            }
+            return cacheInfos;
         }
     }
 }

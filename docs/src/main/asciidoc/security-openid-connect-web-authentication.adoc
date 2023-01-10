@@ -447,15 +447,16 @@ quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
 
 quarkus.oidc.logout.path=/logout
+# Logged-out users should be returned to the /welcome.html site which will offer an option to re-login:
 quarkus.oidc.logout.post-logout-path=/welcome.html
 
 # Only the authenticated users can initiate a logout:
 quarkus.http.auth.permission.authenticated.paths=/logout
 quarkus.http.auth.permission.authenticated.policy=authenticated
 
-# Logged-out users should be returned to the /welcome.html site which will offer an option to re-login:
-quarkus.http.auth.permission.authenticated.paths=/welcome.html
-quarkus.http.auth.permission.authenticated.policy=permit
+# All users can see the welcome page:
+quarkus.http.auth.permission.public.paths=/welcome.html
+quarkus.http.auth.permission.public.policy=permit
 ----
 
 You may also need to set `quarkus.oidc.authentication.cookie-path` to a path value common to all the application resources which is `/` in this example.

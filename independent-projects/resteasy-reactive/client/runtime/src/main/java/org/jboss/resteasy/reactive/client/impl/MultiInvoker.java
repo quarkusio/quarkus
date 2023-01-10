@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -18,6 +19,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.net.impl.ConnectionBase;
+import io.vertx.core.parsetools.RecordParser;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
@@ -121,10 +123,13 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 } else {
                     HttpClientResponse vertxResponse = restClientRequestContext.getVertxClientResponse();
                     if (!emitter.isCancelled()) {
-                        // FIXME: this is probably not good enough
                         if (response.getStatus() == 200
                                 && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
                             registerForSse(multiRequest, responseType, response, vertxResponse);
+                        } else if (response.getStatus() == 200
+                                && RestMediaType.APPLICATION_STREAM_JSON_TYPE.isCompatible(response.getMediaType())) {
+                            registerForJsonStream(multiRequest, restClientRequestContext, responseType, response,
+                                    vertxResponse);
                         } else {
                             // read stuff in chunks
                             registerForChunks(multiRequest, restClientRequestContext, responseType, response, vertxResponse);
@@ -261,6 +266,48 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         vertxClientResponse.endHandler(v -> {
             multiRequest.emitter.complete();
         });
+        // watch for user cancelling
+        multiRequest.onCancel(() -> {
+            vertxClientResponse.request().connection().close();
+        });
+    }
+
+    private <R> void registerForJsonStream(MultiRequest<? super R> multiRequest,
+            RestClientRequestContext restClientRequestContext,
+            GenericType<R> responseType,
+            ResponseImpl response,
+            HttpClientResponse vertxClientResponse) {
+        RecordParser parser = RecordParser.newDelimited("\n");
+        parser.handler(new Handler<Buffer>() {
+            @Override
+            public void handle(Buffer chunk) {
+
+                ByteArrayInputStream in = new ByteArrayInputStream(chunk.getBytes());
+                try {
+                    R item = restClientRequestContext.readEntity(in, responseType, response.getMediaType(),
+                            response.getMetadata());
+                    multiRequest.emitter.emit(item);
+                } catch (IOException e) {
+                    multiRequest.emitter.fail(e);
+                }
+            }
+        });
+        vertxClientResponse.exceptionHandler(t -> {
+            if (t == ConnectionBase.CLOSED_EXCEPTION) {
+                // we can ignore this one since we registered a closeHandler
+            } else {
+                multiRequest.emitter.fail(t);
+            }
+        });
+        vertxClientResponse.endHandler(new Handler<Void>() {
+            @Override
+            public void handle(Void c) {
+                multiRequest.complete();
+            }
+        });
+
+        vertxClientResponse.handler(parser);
+
         // watch for user cancelling
         multiRequest.onCancel(() -> {
             vertxClientResponse.request().connection().close();

@@ -314,6 +314,28 @@ public class JaxrsClientReactiveProcessor {
                                         QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                 .source(source)
                                 .build());
+
+                        // if there is a body parameter type, register it for reflection
+                        ResourceMethod resourceMethod = entry.getResourceMethod();
+                        MethodParameter[] methodParameters = resourceMethod.getParameters();
+                        if (methodParameters != null) {
+                            for (int i = 0; i < methodParameters.length; i++) {
+                                MethodParameter methodParameter = methodParameters[i];
+                                if (methodParameter.getParameterType() == ParameterType.BODY) {
+                                    reflectiveHierarchyBuildItemBuildProducer.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                            .type(method.parameterType(i))
+                                            .index(index)
+                                            .ignoreTypePredicate(
+                                                    QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                            .ignoreFieldPredicate(
+                                                    QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                            .ignoreMethodPredicate(
+                                                    QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                            .source(source)
+                                            .build());
+                                }
+                            }
+                        }
                     }
                 })
                 .build();

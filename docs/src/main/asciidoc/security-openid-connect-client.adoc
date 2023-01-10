@@ -139,7 +139,7 @@ public class ProtectedResource {
 
 As you can see `ProtectedResource` returns a name from both `userName()` and `adminName()` methods. The name is extracted from the current `JsonWebToken`.
 
-Next let's add a REST Client with `OpenID Connect Client Reactive Filter` and another REST Client with `OpenID Connect Token Propagation Filter`. `FrontendResource` will use these two clients to call `ProtectedResource`:
+Next let's add a REST Client with `OidcClientRequestReactiveFilter` and another REST Client with `AccessTokenRequestReactiveFilter`. `FrontendResource` will use these two clients to call `ProtectedResource`:
 
 [source,java]
 ----

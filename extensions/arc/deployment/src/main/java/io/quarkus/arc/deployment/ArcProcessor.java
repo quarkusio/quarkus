@@ -361,6 +361,7 @@ public class ArcProcessor {
             });
         }
         builder.setTransformUnproxyableClasses(arcConfig.transformUnproxyableClasses);
+        builder.setTransformPrivateInjectedFields(arcConfig.transformPrivateInjectedFields);
         builder.setFailOnInterceptedPrivateMethod(arcConfig.failOnInterceptedPrivateMethod);
         builder.setJtaCapabilities(capabilities.isPresent(Capability.TRANSACTIONS));
         builder.setGenerateSources(BootstrapDebug.DEBUG_SOURCES_DIR != null);

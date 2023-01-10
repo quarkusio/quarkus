@@ -221,33 +221,40 @@ public class GrpcDevConsoleWebSocketListener implements GrpcWebSocketProxy.WebSo
         if (serviceDescriptors != null) {
             return;
         }
+        if (serverConfig == null) {
+            log.warnf("Unable to initialize client stubs for gRPC Dev UI - server config not found");
+            return;
+        }
+        if (Boolean.TRUE.equals(serverConfig.get("ssl"))) {
+            log.warnf("Unable to initialize client stubs for gRPC Dev UI - SSL is not supported");
+            return;
+        }
+
         serviceDescriptors = new HashMap<>();
         grpcClientStubs = new HashMap<>();
         try {
-            if (serverConfig == null || Boolean.FALSE.equals(serverConfig.get("ssl"))) {
-                for (Class<?> grpcServiceClass : grpcServices) {
+            for (Class<?> grpcServiceClass : grpcServices) {
 
-                    Method method = grpcServiceClass.getDeclaredMethod("getServiceDescriptor");
-                    ServiceDescriptor serviceDescriptor = (ServiceDescriptor) method.invoke(null);
-                    serviceDescriptors.put(serviceDescriptor.getName(), serviceDescriptor);
+                Method method = grpcServiceClass.getDeclaredMethod("getServiceDescriptor");
+                ServiceDescriptor serviceDescriptor = (ServiceDescriptor) method.invoke(null);
+                serviceDescriptors.put(serviceDescriptor.getName(), serviceDescriptor);
 
-                    // TODO more config options
-                    Channel channel = NettyChannelBuilder
-                            .forAddress(serverConfig.get("host").toString(), (Integer) serverConfig.get("port"))
-                            .usePlaintext()
-                            .build();
-                    Method stubFactoryMethod;
+                // TODO more config options
+                Channel channel = NettyChannelBuilder
+                        .forAddress(serverConfig.get("host").toString(), (Integer) serverConfig.get("port"))
+                        .usePlaintext()
+                        .build();
+                Method stubFactoryMethod;
 
-                    try {
-                        stubFactoryMethod = grpcServiceClass.getDeclaredMethod("newStub", Channel.class);
-                    } catch (NoSuchMethodException e) {
-                        log.warnf("Ignoring gRPC service - newStub() method not declared on %s", grpcServiceClass);
-                        continue;
-                    }
-
-                    Object stub = stubFactoryMethod.invoke(null, channel);
-                    grpcClientStubs.put(serviceDescriptor.getName(), stub);
+                try {
+                    stubFactoryMethod = grpcServiceClass.getDeclaredMethod("newStub", Channel.class);
+                } catch (NoSuchMethodException e) {
+                    log.warnf("Ignoring gRPC service - newStub() method not declared on %s", grpcServiceClass);
+                    continue;
                 }
+
+                Object stub = stubFactoryMethod.invoke(null, channel);
+                grpcClientStubs.put(serviceDescriptor.getName(), stub);
             }
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             throw new IllegalStateException("Unable to initialize client stubs for gRPC Dev UI");

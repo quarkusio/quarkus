@@ -40,7 +40,6 @@ class LiquibaseCreator {
         config.migrateAtStart = liquibaseRuntimeConfig.migrateAtStart;
         config.cleanAtStart = liquibaseRuntimeConfig.cleanAtStart;
         config.validateOnMigrate = liquibaseRuntimeConfig.validateOnMigrate;
-        config.runAndExit = liquibaseRuntimeConfig.runAndExit;
         return new LiquibaseFactory(config, dataSource, dataSourceName);
     }
 }

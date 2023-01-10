@@ -107,6 +107,7 @@ public class ApplicationLifecycleManager {
             stateLock.unlock();
         }
         try {
+
             application.start(args);
             //now we are started, we either run the main application or just wait to exit
             if (quarkusApplication != null) {

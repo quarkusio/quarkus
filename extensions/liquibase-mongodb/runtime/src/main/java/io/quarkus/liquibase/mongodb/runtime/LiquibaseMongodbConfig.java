@@ -41,14 +41,6 @@ public class LiquibaseMongodbConfig {
     public boolean cleanAtStart;
 
     /**
-     * true to quit exit right after the operation.
-     * The option is not meant be used directly by users.
-     *
-     */
-    @ConfigItem
-    public boolean runAndExit;
-
-    /**
      * The parameters to be passed to the changelog.
      * Defined as key value pairs.
      */

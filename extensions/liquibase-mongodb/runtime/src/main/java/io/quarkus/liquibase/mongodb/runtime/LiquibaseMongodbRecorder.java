@@ -10,7 +10,6 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
 import io.quarkus.mongodb.runtime.MongodbConfig;
-import io.quarkus.runtime.PreventFurtherStepsException;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
@@ -67,15 +66,6 @@ public class LiquibaseMongodbRecorder {
                     //ignore, the DS is not configured
                 }
             }
-
-            for (InstanceHandle<LiquibaseMongodbFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
-                LiquibaseMongodbFactory liquibaseFactory = liquibaseFactoryHandle.get();
-                var config = liquibaseFactory.getConfiguration();
-                if (config.runAndExit) {
-                    throw new PreventFurtherStepsException("Gracefully exiting after Liquibase Mongodb initalization.", 0);
-                }
-            }
-
         } catch (Exception e) {
             throw new IllegalStateException("Error starting Liquibase", e);
         }

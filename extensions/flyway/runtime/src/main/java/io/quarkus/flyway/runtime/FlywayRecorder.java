@@ -17,7 +17,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
-import io.quarkus.runtime.PreventFurtherStepsException;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -91,12 +90,6 @@ public class FlywayRecorder {
             }
             if (flywayContainer.isMigrateAtStart()) {
                 flywayContainer.getFlyway().migrate();
-            }
-        }
-
-        for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {
-            if (flywayContainer.isRunAndExit()) {
-                throw new PreventFurtherStepsException("Gracefully exiting after Flyway initalization.", 0);
             }
         }
     }

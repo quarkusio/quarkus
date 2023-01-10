@@ -30,6 +30,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.smallrye.config.common.utils.StringUtil;
 
 public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
 
@@ -189,14 +190,14 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         if ((property != null) && (!property.isEmpty())) {
             List<String> result = new ArrayList<>(2);
             result.add("--env");
-            result.add(String.format("%s=%s", convertPropertyToEnVar(property), value));
+            result.add(String.format("%s=%s", convertPropertyToEnvVar(property), value));
             return result;
         }
         return Collections.emptyList();
     }
 
-    private String convertPropertyToEnVar(String property) {
-        return property.toUpperCase().replace('-', '_').replace('.', '_').replace('/', '_');
+    private String convertPropertyToEnvVar(String property) {
+        return StringUtil.replaceNonAlphanumericByUnderscores(property).toUpperCase();
     }
 
     @Override

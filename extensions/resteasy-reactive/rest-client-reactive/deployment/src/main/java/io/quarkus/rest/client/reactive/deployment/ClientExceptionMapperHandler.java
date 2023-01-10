@@ -1,6 +1,8 @@
 package io.quarkus.rest.client.reactive.deployment;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.LinkedHashMap;
 
 import javax.ws.rs.Priorities;
 import javax.ws.rs.core.Response;
@@ -12,12 +14,15 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.rest.client.reactive.runtime.ResteasyReactiveResponseExceptionMapper;
 import io.quarkus.runtime.util.HashUtil;
 
 /**
@@ -26,6 +31,10 @@ import io.quarkus.runtime.util.HashUtil;
  */
 class ClientExceptionMapperHandler {
 
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+    private static final ResultHandle[] EMPTY_RESULT_HANDLES_ARRAY = new ResultHandle[0];
+    private static final MethodDescriptor GET_INVOKED_METHOD =
+            MethodDescriptor.ofMethod(RestClientRequestContext.class, "getInvokedMethod", Method.class);
     private final ClassOutput classOutput;
 
     ClientExceptionMapperHandler(ClassOutput classOutput) {
@@ -37,8 +46,8 @@ class ClientExceptionMapperHandler {
      *
      * <pre>
      * {@code
-     *  public class SomeService_map_ResponseExceptionMapper_a8fb70beeef2a54b80151484d109618eed381626 implements ResponseExceptionMapper {
-     *      public Throwable toThrowable(Response var1) {
+     *  public class SomeService_map_ResponseExceptionMapper_a8fb70beeef2a54b80151484d109618eed381626 implements ResteasyReactiveResponseExceptionMapper {
+     *      public Throwable toThrowable(Response var1, RestClientRequestContext var2) {
      *          // simply call the static method of interface
      *          return SomeService.map(var1);
      *      }
@@ -97,15 +106,32 @@ class ClientExceptionMapperHandler {
         String generatedClassName = restClientInterfaceClassInfo.name().toString() + "_" + targetMethod.name() + "_"
                 + "ResponseExceptionMapper" + "_" + HashUtil.sha1(sigBuilder.toString());
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
-                .interfaces(ResponseExceptionMapper.class).build()) {
-            MethodCreator toThrowable = cc.getMethodCreator("toThrowable", Throwable.class, Response.class);
+                .interfaces(ResteasyReactiveResponseExceptionMapper.class).build()) {
+            MethodCreator toThrowable = cc.getMethodCreator("toThrowable", Throwable.class, Response.class,
+                    RestClientRequestContext.class);
+            LinkedHashMap<String, ResultHandle> targetMethodParams = new LinkedHashMap<>();
+            for (Type paramType : targetMethod.parameterTypes()) {
+                ResultHandle targetMethodParamHandle;
+                if (paramType.name().equals(ResteasyReactiveDotNames.RESPONSE)) {
+                    targetMethodParamHandle = toThrowable.getMethodParam(0);
+                } else if (paramType.name().equals(DotNames.METHOD)) {
+                    targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_INVOKED_METHOD, toThrowable.getMethodParam(1));
+                } else {
+                    String message = DotNames.CLIENT_EXCEPTION_MAPPER + " can only take parameters of type '" + ResteasyReactiveDotNames.RESPONSE + "' or '" + DotNames.METHOD + "'"
+                    + " Offending instance is '" + targetMethod.declaringClass().name().toString() + "#"
+                            + targetMethod.name() + "'";
+                    throw new IllegalStateException(message);
+                }
+                targetMethodParams.put(paramType.name().toString(), targetMethodParamHandle);
+            }
+
             ResultHandle resultHandle = toThrowable.invokeStaticInterfaceMethod(
                     MethodDescriptor.ofMethod(
                             restClientInterfaceClassInfo.name().toString(),
                             targetMethod.name(),
                             targetMethod.returnType().name().toString(),
-                            targetMethod.parameterType(0).name().toString()),
-                    toThrowable.getMethodParam(0));
+                            targetMethodParams.keySet().toArray(EMPTY_STRING_ARRAY)),
+                    targetMethodParams.values().toArray(EMPTY_RESULT_HANDLES_ARRAY));
             toThrowable.returnValue(resultHandle);
 
             if (priority != Priorities.USER) {

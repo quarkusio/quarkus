@@ -872,6 +872,8 @@ public interface ExtensionsService {
 
 Naturally this handling is per REST Client. `@ClientExceptionMapper` uses the default priority if the `priority` attribute is not set and the normal rules of invoking all handlers in turn apply.
 
+NOTE: Methods annotated with `@ClientExceptionMapper` can also take a `java.lang.reflect.Method` parameter which is useful if the exception mapping code needs to know the REST Client method that was invoked and caused the exception mapping code to engage.
+
 [[multipart]]
 == Multipart Form support
 

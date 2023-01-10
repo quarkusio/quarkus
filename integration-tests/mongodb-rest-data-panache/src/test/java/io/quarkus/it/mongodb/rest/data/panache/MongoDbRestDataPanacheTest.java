@@ -9,7 +9,6 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.ws.rs.core.MediaType;
 
-import io.quarkus.test.mongodb.InitArgs;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +23,7 @@ import io.restassured.response.Response;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
-@QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = InitArgs.PORT, value = "37017"))
+@QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.PORT, value = "37017"))
 class MongoDbRestDataPanacheTest {
 
     private Author dostoevsky;

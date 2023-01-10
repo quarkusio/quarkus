@@ -9,7 +9,6 @@ import de.flapdoodle.embed.mongo.commands.MongodArguments;
 import de.flapdoodle.embed.mongo.commands.ServerAddress;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.IFeatureAwareVersion;
-import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.mongo.transitions.Mongod;
 import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
 import de.flapdoodle.embed.process.io.ProcessOutput;
@@ -30,17 +29,17 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
     private Integer port;
     private IFeatureAwareVersion version;
 
-    private List<TransitionWalker.ReachedState<RunningMongodProcess>> startedServers=Arrays.asList();
+    private List<TransitionWalker.ReachedState<RunningMongodProcess>> startedServers=Collections.emptyList();
 
     @Override
     public void init(Map<String, String> initArgs) {
-        port = InitArgs.port(initArgs);
-        version = InitArgs.version(initArgs);
+        port = MongoTestResource.port(initArgs);
+        version = MongoTestResource.version(initArgs);
     }
 
     @Override
     public Map<String, String> start() {
-        Issue14424.fix();
+        MongoTestResource.fixIssue14424();
 
         this.startedServers = startReplicaSet(version, port);
 
@@ -97,6 +96,7 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         for (TransitionWalker.ReachedState<RunningMongodProcess> startedServer : startedServers) {
             startedServer.close();
         }
+        startedServers=Collections.emptyList();
     }
 
     private static void initializeReplicaSet(final List<ServerAddress> mongodConfigList) throws UnknownHostException {

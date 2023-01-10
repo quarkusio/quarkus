@@ -1,114 +1,104 @@
 package io.quarkus.mongodb.reactive;
 
-import static de.flapdoodle.embed.process.config.process.ProcessOutput.builder;
-import static io.quarkus.mongodb.reactive.MongoTestBase.getConfiguredConnectionString;
-import static org.awaitility.Awaitility.await;
-
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import org.bson.Document;
-import org.jboss.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-
-import de.flapdoodle.embed.mongo.Command;
-import de.flapdoodle.embed.mongo.MongodExecutable;
-import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.Defaults;
-import de.flapdoodle.embed.mongo.config.ImmutableMongodConfig;
-import de.flapdoodle.embed.mongo.config.MongoCmdOptions;
-import de.flapdoodle.embed.mongo.config.MongodConfig;
+import de.flapdoodle.embed.mongo.commands.MongodArguments;
+import de.flapdoodle.embed.mongo.commands.ServerAddress;
 import de.flapdoodle.embed.mongo.config.Net;
+import de.flapdoodle.embed.mongo.distribution.IFeatureAwareVersion;
 import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.process.config.RuntimeConfig;
-import de.flapdoodle.embed.process.io.Processors;
-import de.flapdoodle.embed.process.runtime.Network;
+import de.flapdoodle.embed.mongo.transitions.Mongod;
+import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
+import de.flapdoodle.embed.process.io.ProcessOutput;
+import de.flapdoodle.reverse.TransitionWalker;
+import de.flapdoodle.reverse.transitions.Start;
+import org.awaitility.Awaitility;
+import org.bson.Document;
+import org.jboss.logging.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static io.quarkus.mongodb.reactive.MongoTestBase.getConfiguredConnectionString;
 
 public class MongoWithReplicasTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(MongoWithReplicasTestBase.class);
-    private static List<MongodExecutable> MONGOS = new ArrayList<>();
+
+    private static List<TransitionWalker.ReachedState<RunningMongodProcess>> startedServers= Arrays.asList();
 
     @BeforeAll
-    public static void startMongoDatabase() throws IOException {
+    public static void startMongoDatabase() {
         String uri = getConfiguredConnectionString();
+
         // This switch allow testing against a running mongo database.
         if (uri == null) {
-            List<MongodConfig> configs = new ArrayList<>();
-            for (int i = 0; i < 2; i++) {
-                int port = 27018 + i;
-                configs.add(buildMongodConfiguration("localhost", port, true));
-            }
-            configs.forEach(config -> {
-                MongodExecutable exec = getMongodExecutable(config);
-                MONGOS.add(exec);
-                try {
-                    try {
-                        exec.start();
-                    } catch (Exception e) {
-                        //every so often mongo fails to start on CI runs
-                        //see if this helps
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException ignore) {
-
-                        }
-                        exec.start();
-                    }
-                } catch (IOException e) {
-                    LOGGER.error("Unable to start the mongo instance", e);
-                }
-            });
-            initializeReplicaSet(configs);
+            startedServers = startReplicaSet(Version.Main.V4_0, 27018);
         } else {
             LOGGER.infof("Using existing Mongo %s", uri);
         }
     }
 
-    private static MongodExecutable getMongodExecutable(MongodConfig config) {
-        try {
-            return doGetExecutable(config);
-        } catch (Exception e) {
-            // sometimes the download process can time out so just sleep and try again
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignored) {
+    private static Net net(String hostName, int port) {
+        return Net.builder()
+          .from(Net.defaults())
+          .bindIp(hostName)
+          .port(port)
+          .build();
+    }
 
+    private static List<TransitionWalker.ReachedState<RunningMongodProcess>> startReplicaSet(IFeatureAwareVersion version, int basePort) {
+        TransitionWalker.ReachedState<RunningMongodProcess> firstStarted = mongodWithPort(basePort)
+          .start(version);
+        try {
+            TransitionWalker.ReachedState<RunningMongodProcess> secondStarted = mongodWithPort(basePort + 1)
+              .start(version);
+
+            try {
+                ServerAddress firstAddress = firstStarted.current().getServerAddress();
+                ServerAddress secondAddress = secondStarted.current().getServerAddress();
+                initializeReplicaSet(Arrays.asList(firstAddress, secondAddress));
+                return Arrays.asList(secondStarted, firstStarted);
             }
-            return doGetExecutable(config);
+            catch (IOException iox) {
+                throw new RuntimeException("could not get server address", iox);
+            }
+        } catch (RuntimeException rx) {
+            firstStarted.close();
+            throw rx;
         }
     }
 
-    private static MongodExecutable doGetExecutable(MongodConfig config) {
-        RuntimeConfig runtimeConfig = Defaults.runtimeConfigFor(Command.MongoD)
-                .processOutput(builder()
-                        .output(Processors.silent())
-                        .error(Processors.silent())
-                        .commands(Processors.silent())
-                        .build())
-                .build();
-        return MongodStarter.getInstance(runtimeConfig).prepare(config);
+    private static Mongod mongodWithPort(int port) {
+        return Mongod.instance()
+          .withNet(Start.to(Net.class)
+            .initializedWith(net("localhost", port)))
+          .withProcessOutput(Start.to(ProcessOutput.class)
+            .initializedWith(ProcessOutput.silent()))
+          .withMongodArguments(Start.to(MongodArguments.class)
+            .initializedWith(MongodArguments.defaults()
+              .withArgs(Map.of("--replSet", "test001"))
+              .withSyncDelay(10)
+              .withUseSmallFiles(true)
+              .withUseNoJournal(false)
+            ));
     }
 
     @AfterAll
     public static void stopMongoDatabase() {
-        MONGOS.forEach(mongod -> {
-            try {
-                mongod.stop();
-            } catch (Exception e) {
-                LOGGER.error("Unable to stop MongoDB", e);
-            }
-        });
+        for (TransitionWalker.ReachedState<RunningMongodProcess> startedServer : startedServers) {
+            startedServer.close();
+        }
     }
 
     protected String getConnectionString() {
@@ -119,47 +109,47 @@ public class MongoWithReplicasTestBase {
         }
     }
 
-    private static void initializeReplicaSet(final List<MongodConfig> mongodConfigList) throws UnknownHostException {
-        final String arbiterAddress = "mongodb://" + mongodConfigList.get(0).net().getServerAddress().getHostName() + ":"
-                + mongodConfigList.get(0).net().getPort();
+    private static void initializeReplicaSet(final List<ServerAddress> mongodConfigList) throws UnknownHostException {
+        final String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).getHost() + ":"
+          + mongodConfigList.get(0).getPort();
         final MongoClientSettings mo = MongoClientSettings.builder()
-                .applyConnectionString(new ConnectionString(arbiterAddress)).build();
+          .applyConnectionString(new ConnectionString(arbitrerAddress)).build();
 
         try (MongoClient mongo = MongoClients.create(mo)) {
             final MongoDatabase mongoAdminDB = mongo.getDatabase("admin");
 
             Document cr = mongoAdminDB.runCommand(new Document("isMaster", 1));
-            LOGGER.debugf("isMaster: %s", cr);
+            LOGGER.infof("isMaster: %s", cr);
 
             // Build replica set configuration settings
             final Document rsConfiguration = buildReplicaSetConfiguration(mongodConfigList);
-            LOGGER.debugf("replSetSettings: %s", rsConfiguration);
+            LOGGER.infof("replSetSettings: %s", rsConfiguration);
 
             // Initialize replica set
             cr = mongoAdminDB.runCommand(new Document("replSetInitiate", rsConfiguration));
-            LOGGER.debugf("replSetInitiate: %s", cr);
+            LOGGER.infof("replSetInitiate: %s", cr);
 
             // Check replica set status before to proceed
-            await()
-                    .pollInterval(100, TimeUnit.MILLISECONDS)
-                    .atMost(1, TimeUnit.MINUTES)
-                    .until(() -> {
-                        Document result = mongoAdminDB.runCommand(new Document("replSetGetStatus", 1));
-                        LOGGER.infof("replSetGetStatus: %s", result);
-                        return !isReplicaSetStarted(result);
-                    });
+            Awaitility.await()
+              .pollInterval(100, TimeUnit.MILLISECONDS)
+              .atMost(1, TimeUnit.MINUTES)
+              .until(() -> {
+                  Document result = mongoAdminDB.runCommand(new Document("replSetGetStatus", 1));
+                  LOGGER.infof("replSetGetStatus: %s", result);
+                  return !isReplicaSetStarted(result);
+              });
         }
     }
 
-    private static Document buildReplicaSetConfiguration(final List<MongodConfig> configList) throws UnknownHostException {
+    private static Document buildReplicaSetConfiguration(final List<ServerAddress> configList) throws UnknownHostException {
         final Document replicaSetSetting = new Document();
         replicaSetSetting.append("_id", "test001");
 
         final List<Document> members = new ArrayList<>();
         int i = 0;
-        for (final MongodConfig mongoConfig : configList) {
+        for (final ServerAddress mongoConfig : configList) {
             members.add(new Document().append("_id", i++).append("host",
-                    mongoConfig.net().getServerAddress().getHostName() + ":" + mongoConfig.net().getPort()));
+              mongoConfig.getHost() + ":" + mongoConfig.getPort()));
         }
 
         replicaSetSetting.append("members", members);
@@ -184,28 +174,4 @@ public class MongoWithReplicasTestBase {
         }
         return true;
     }
-
-    private static MongodConfig buildMongodConfiguration(String url, int port, final boolean configureReplicaSet)
-            throws IOException {
-        try {
-            //JDK bug workaround
-            //https://github.com/quarkusio/quarkus/issues/14424
-            //force class init to prevent possible deadlock when done by mongo threads
-            Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
-        } catch (ClassNotFoundException e) {
-        }
-        final ImmutableMongodConfig.Builder builder = MongodConfig.builder()
-                .version(Version.Main.V4_0)
-                .net(new Net(url, port, Network.localhostIsIPv6()));
-        if (configureReplicaSet) {
-            builder.putArgs("--replSet", "test001");
-            builder.cmdOptions(MongoCmdOptions.builder()
-                    .syncDelay(10)
-                    .useSmallFiles(true)
-                    .useNoJournal(false)
-                    .build());
-        }
-        return builder.build();
-    }
-
 }

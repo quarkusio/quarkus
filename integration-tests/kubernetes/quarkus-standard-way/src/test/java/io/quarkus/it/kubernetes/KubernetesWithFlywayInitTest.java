@@ -88,7 +88,7 @@ public class KubernetesWithFlywayInitTest {
                                         assertThat(env.getValue()).isEqualTo("true");
                                     });
                             assertThat(container.getEnv())
-                                    .filteredOn(env -> "QUARKUS_FLYWAY_RUN_AND_EXIT".equals(env.getName())).singleElement()
+                                    .filteredOn(env -> "QUARKUS_INIT_AND_EXIT".equals(env.getName())).singleElement()
                                     .satisfies(env -> {
                                         assertThat(env.getValue()).isEqualTo("true");
                                     });

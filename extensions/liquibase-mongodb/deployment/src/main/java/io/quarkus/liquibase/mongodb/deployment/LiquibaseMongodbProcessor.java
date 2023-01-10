@@ -33,6 +33,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
+import io.quarkus.deployment.builditem.InitalizationTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -232,10 +233,11 @@ class LiquibaseMongodbProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    ServiceStartBuildItem startLiquibase(LiquibaseMongodbRecorder recorder) {
+    ServiceStartBuildItem startLiquibase(LiquibaseMongodbRecorder recorder,
+            BuildProducer<InitalizationTaskCompletedBuildItem> initializationCompleteBuildItem) {
         // will actually run the actions at runtime
         recorder.doStartActions();
-
+        initializationCompleteBuildItem.produce(new InitalizationTaskCompletedBuildItem("liquibase-mongodb"));
         return new ServiceStartBuildItem("liquibase-mongodb");
     }
 
@@ -244,7 +246,7 @@ class LiquibaseMongodbProcessor {
         return InitTaskBuildItem.create()
                 .withName("liquibase-mongodb-init")
                 .withTaskEnvVars(
-                        Map.of("QUARKUS_LIQUIBASE_MONGODB_RUN_AND_EXIT", "true", "QUARKUS_LIQUIBASE_MONGODB_ENABLED", "true"))
+                        Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_LIQUIBASE_MONGODB_ENABLED", "true"))
                 .withAppEnvVars(Map.of("QUARKUS_LIQUIBASE_MONGODB_ENABLED", "false"))
                 .withSharedEnvironment(true)
                 .withSharedFilesystem(true);

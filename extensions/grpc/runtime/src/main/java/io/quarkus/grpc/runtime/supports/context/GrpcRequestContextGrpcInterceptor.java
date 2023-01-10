@@ -14,6 +14,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.grpc.runtime.Interceptors;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -141,6 +142,6 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Pri
 
     @Override
     public int getPriority() {
-        return Integer.MAX_VALUE - 50;
+        return Interceptors.REQUEST_CONTEXT;
     }
 }

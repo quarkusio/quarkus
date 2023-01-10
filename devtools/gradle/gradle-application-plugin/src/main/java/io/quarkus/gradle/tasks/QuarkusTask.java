@@ -36,6 +36,12 @@ public abstract class QuarkusTask extends DefaultTask {
                 realProperties.setProperty(key, (String) value);
             }
         }
+        if (!extension().getQuarkusBuildProperties().isEmpty()) {
+            extension().getQuarkusBuildProperties().entrySet().stream().filter(entry -> entry.getKey().startsWith("quarkus."))
+                    .forEach(entry -> {
+                        realProperties.put(entry.getKey(), entry.getValue());
+                    });
+        }
         realProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         realProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
         return realProperties;

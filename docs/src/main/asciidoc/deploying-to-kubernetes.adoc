@@ -1359,6 +1359,7 @@ To enable Service Binding for supported extensions, add the `quarkus-kubernetes-
 * `quarkus-reactive-mysql-client`
 * `quarkus-reactive-oracle-client`
 * `quarkus-reactive-pg-client`
+* `quarkus-infinispan-client`
 ====
 
 

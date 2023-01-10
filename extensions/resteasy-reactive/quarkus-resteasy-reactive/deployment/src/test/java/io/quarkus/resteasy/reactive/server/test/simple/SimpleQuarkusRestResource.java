@@ -253,6 +253,12 @@ public class SimpleQuarkusRestResource {
     }
 
     @GET
+    @Path("async/cf/blocking")
+    public CompletableFuture<String> asyncCompletableFutureIsBlocking() {
+        return CompletableFuture.completedFuture(Boolean.toString(BlockingOperationControl.isBlockingAllowed()));
+    }
+
+    @GET
     @Path("async/cf/ok")
     public CompletableFuture<String> asyncCompletableFutureOK() {
         return CompletableFuture.completedFuture("CF-OK");

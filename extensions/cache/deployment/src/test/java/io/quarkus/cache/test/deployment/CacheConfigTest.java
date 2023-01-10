@@ -1,6 +1,7 @@
 package io.quarkus.cache.test.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
@@ -12,8 +13,11 @@ import javax.ws.rs.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
+import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheImpl;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -28,6 +32,9 @@ public class CacheConfigTest {
     @Inject
     CacheManager cacheManager;
 
+    @CacheName("no-config-cache")
+    Cache noConfigCache;
+
     @Test
     public void testConfig() {
         CaffeineCacheImpl cache = (CaffeineCacheImpl) cacheManager.getCache(CACHE_NAME).get();
@@ -36,6 +43,39 @@ public class CacheConfigTest {
         assertEquals(Duration.ofSeconds(30L), cache.getCacheInfo().expireAfterWrite);
         assertEquals(Duration.ofDays(2L), cache.getCacheInfo().expireAfterAccess);
         assertTrue(cache.getCacheInfo().metricsEnabled);
+
+        long newMaxSize = 123L;
+        cache.setMaximumSize(newMaxSize);
+        assertEquals(newMaxSize, cache.getCacheInfo().maximumSize);
+
+        Duration newExpireAfterWrite = Duration.ofDays(456L);
+        cache.setExpireAfterWrite(newExpireAfterWrite);
+        assertEquals(newExpireAfterWrite, cache.getCacheInfo().expireAfterWrite);
+
+        Duration newExpireAfterAccess = Duration.ofDays(789L);
+        cache.setExpireAfterAccess(newExpireAfterAccess);
+        assertEquals(newExpireAfterAccess, cache.getCacheInfo().expireAfterAccess);
+    }
+
+    @Test
+    void setMaximumSizeShouldThrowWhenNoInitialConfigValue() {
+        assertThrows(IllegalStateException.class, () -> {
+            noConfigCache.as(CaffeineCache.class).setMaximumSize(123L);
+        });
+    }
+
+    @Test
+    void setExpireAfterWriteShouldThrowWhenNoInitialConfigValue() {
+        assertThrows(IllegalStateException.class, () -> {
+            noConfigCache.as(CaffeineCache.class).setExpireAfterWrite(Duration.ofSeconds(456L));
+        });
+    }
+
+    @Test
+    void setExpireAfterAccessShouldThrowWhenNoInitialConfigValue() {
+        assertThrows(IllegalStateException.class, () -> {
+            noConfigCache.as(CaffeineCache.class).setExpireAfterAccess(Duration.ofSeconds(789L));
+        });
     }
 
     @Path("/test")

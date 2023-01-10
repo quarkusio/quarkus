@@ -1,6 +1,5 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
@@ -16,7 +15,7 @@ import io.vertx.core.spi.metrics.PoolMetrics;
 /**
  * Adaptation of the Vert.x Pool Metrics implementation for Quarkus Micrometer.
  */
-public class VertxPoolMetrics implements PoolMetrics<VertxPoolMetrics.EventTiming> {
+public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
 
     private final String poolType;
     private final int maxPoolSize;
@@ -136,17 +135,4 @@ public class VertxPoolMetrics implements PoolMetrics<VertxPoolMetrics.EventTimin
         }
     }
 
-    public static class EventTiming {
-        private final long nanoStart;
-        private final Timer timer;
-
-        private EventTiming(Timer timer) {
-            this.timer = timer;
-            this.nanoStart = System.nanoTime();
-        }
-
-        public void end() {
-            timer.record(System.nanoTime() - nanoStart, TimeUnit.NANOSECONDS);
-        }
-    }
 }

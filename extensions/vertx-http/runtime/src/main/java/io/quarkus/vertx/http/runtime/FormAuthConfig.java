@@ -12,6 +12,15 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class FormAuthConfig {
     /**
+     * SameSite attribute values for the session and location cookies.
+     */
+    public enum CookieSameSite {
+        STRICT,
+        LAX,
+        NONE
+    }
+
+    /**
      * If form authentication is enabled.
      */
     @ConfigItem
@@ -110,4 +119,10 @@ public class FormAuthConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean httpOnlyCookie;
+
+    /**
+     * SameSite attribute for the session and location cookies.
+     */
+    @ConfigItem(defaultValue = "strict")
+    public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
 }

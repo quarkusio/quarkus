@@ -178,6 +178,16 @@ quarkus.generate-code.grpc.scan-for-proto=<groupId>:<artifactId>
 ----
 The value of the property may be `none`, which is the default value, or a comma separated list of `groupId:artifactId` coordinates.
 
+== Different gRPC implementations / types
+
+Another thing to take note as well is that Quarkus' gRPC support currently includes 3 different types of gRPC usage:
+
+a. old Vert.x gRPC implementation with a separate gRPC server (default)
+b. new Vert.x gRPC implementation on top of the existing HTTP server
+c. https://grpc.github.io/grpc/core/md_doc_grpc_xds_features.html[xDS gRPC] wrapper over https://github.com/grpc/grpc-java[grpc-java] with a separate Netty based gRPC server
+
+Further docs explain how to enable and use each of them.
+
 == Implementing a gRPC service
 
 Now that we have the generated classes let's implement our _hello_ service.

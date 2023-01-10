@@ -48,8 +48,8 @@ public class PrometheusHandler implements Handler<RoutingContext> {
     }
 
     private void doHandle(HttpServerResponse response) {
-        response.putHeader("Content-Type", TextFormat.CONTENT_TYPE_004)
-                .end(Buffer.buffer(registry.scrape()));
+        response.putHeader("Content-Type", TextFormat.CONTENT_TYPE_OPENMETRICS_100)
+                .end(Buffer.buffer(registry.scrape(TextFormat.CONTENT_TYPE_OPENMETRICS_100)));
     }
 
     private void setup() {

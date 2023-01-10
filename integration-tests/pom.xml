@@ -342,6 +342,7 @@
                 <module>grpc-stork-response-time</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
+                <module>istio</module>
             </modules>
         </profile>
 

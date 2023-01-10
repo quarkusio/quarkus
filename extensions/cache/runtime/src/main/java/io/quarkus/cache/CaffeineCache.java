@@ -1,5 +1,6 @@
 package io.quarkus.cache;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -41,4 +42,37 @@ public interface CaffeineCache extends Cache {
      * @throws NullPointerException if the specified key or value is null
      */
     <V> void put(Object key, CompletableFuture<V> valueFuture);
+
+    /**
+     * Changes the duration, initially set from the configuration, after which each entry should be automatically removed from
+     * the cache once that duration has elapsed after the entry's creation, or the most recent replacement of its value.
+     * <p>
+     * <b>Warning:</b> this method must not be invoked from within an atomic scope of a cache operation.
+     *
+     * @param duration the length of time after which an entry should be automatically removed
+     * @throws IllegalStateException if the cache was not constructed with an {@code expire-after-write} configuration value
+     */
+    void setExpireAfterWrite(Duration duration);
+
+    /**
+     * Changes the duration, initially set from the configuration, after which each entry should be automatically removed from
+     * the cache once that duration has elapsed after the entry's creation, the most recent replacement of its value, or its
+     * last read.
+     * <p>
+     * <b>Warning:</b> this method must not be invoked from within an atomic scope of a cache operation.
+     *
+     * @param duration the length of time after which an entry should be automatically removed
+     * @throws IllegalStateException if the cache was not constructed with an {@code expire-after-access} configuration value
+     */
+    void setExpireAfterAccess(Duration duration);
+
+    /**
+     * Changes the maximum number of entries the cache may contain.
+     * <p>
+     * <b>Warning:</b> this method must not be invoked from within an atomic scope of a cache operation.
+     *
+     * @param maximumSize the maximum size of the cache
+     * @throws IllegalStateException if the cache was not constructed with a {@code maximum-size} configuration value
+     */
+    void setMaximumSize(long maximumSize);
 }

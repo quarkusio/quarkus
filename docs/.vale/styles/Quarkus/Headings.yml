@@ -87,6 +87,7 @@ exceptions:
   - Gradle
   - GraphQL
   - Grayscale
+  - gRPC
   - GTKplus
   - GUI
   - Hashicorp
@@ -218,6 +219,7 @@ exceptions:
   - Window Maker
   - Woopra
   - Wordpress
+  - xDS
   - XEmacs
   - xterm
   - Yana

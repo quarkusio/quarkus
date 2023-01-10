@@ -1,0 +1,83 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using xDS gRPC
+include::_attributes.adoc[]
+:categories: serialization
+:summary: This page explains how to enable xDS gRPC usage in your Quarkus application.
+
+This page explains how to enable xDS gRPC usage in your Quarkus application.
+
+IMPORTANT: This Quarkus xDS gRPC integration currently doesn't support building native executables due to the issues
+with shaded grpc-netty library while running native IT tests.
+
+== Configuring your project
+
+Edit the `pom.xml` file to add the Quarkus gRPC xDS dependency (just under `<dependencies>`):
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-grpc-xds</artifactId>
+</dependency>
+----
+
+NOTE: This transitively adds `io.quarkus:quarkus-grpc` extension dependency.
+
+== Server configuration
+
+include::{generated-dir}/config/quarkus-grpc-config-group-config-xds.adoc[opts=optional, leveloffset=+1]
+
+== Server configuration example
+
+To enable server xDS, use the following configuration.
+
+xDS must be explicitly enabled on the server, then verify you use it on the right xDS server port (default is 9000).
+If you want to use `XdsServerCredentials` set `xds.secure` to `true`.
+
+[source,properties]
+----
+quarkus.grpc.server.xds.enabled=true
+#quarkus.grpc.server.xds.secure=true
+quarkus.grpc.server.port=30051
+----
+
+NOTE: When xDS is configured, `plain-text` is automatically disabled.
+
+== Client configuration
+
+include::{generated-dir}/config/quarkus-grpc-config-group-config-client-xds.adoc[opts=optional, leveloffset=+1]
+
+NOTE: When xDS target property is used, name resolver, host, and port are not used
+
+== Client configuration example
+
+To enable client xDS, use the following configuration.
+
+You can either explicitly enable xDS or you use `xds` name resolver,
+and make sure you point it to the right xDS server port (default is 9000).
+If you want to use `XdsChannelCredentials` set `xds.secure` to `true`.
+
+[source,properties]
+----
+#quarkus.grpc.clients.<client-name>.xds.enabled=true
+#quarkus.grpc.clients.<client-name>.xds.secure=true
+quarkus.grpc.clients.<client-name>.name-resolver=xds
+quarkus.grpc.clients.<client-name>.port=30051
+----
+
+NOTE: When xDS is configured, `plain-text` is automatically disabled.
+
+== Kubernetes configuration example
+
+Below is an example of (required) additional configuration when using xDS gRPC with the Istio Service Mesh in Kubernetes.
+
+[source,properties]
+----
+quarkus.kubernetes.ports.grpc.container-port=30051
+quarkus.kubernetes.annotations."inject.istio.io/templates"=grpc-agent
+quarkus.kubernetes.annotations."proxy.istio.io/config"={"holdApplicationUntilProxyStarts": true}
+----

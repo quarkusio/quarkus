@@ -43,8 +43,8 @@ public class SseParserTest {
 
         // all fields
         testParser("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n", "DATA", "COMMENT", "ID", "NAME", 23);
-        // all fields and no data: no event
-        testParser("id:ID\n:COMMENT\nretry:23\nevent:NAME\n\n", null, null, null, null, SseEvent.RECONNECT_NOT_SET);
+        // all fields and no data
+        testParser("id:ID\n:COMMENT\nretry:23\nevent:NAME\n\n", null, "COMMENT", "ID", "NAME", 23);
 
         // optional space after colon
         testParser("data:foo\n\n", "foo", null, null, null, SseEvent.RECONNECT_NOT_SET);
@@ -143,6 +143,13 @@ public class SseParserTest {
         if (data != null) {
             testParser(Collections.singletonList(event), Collections.singletonList(new InboundSseEventImpl(null, null)
                     .setData(data)
+                    .setComment(comment)
+                    .setId(lastId)
+                    .setName(name)
+                    .setReconnectDelay(reconnectDelay)));
+        } else if (comment != null) {
+            testParser(Collections.singletonList(event), Collections.singletonList(new InboundSseEventImpl(null, null)
+                    .setData(null)
                     .setComment(comment)
                     .setId(lastId)
                     .setName(name)

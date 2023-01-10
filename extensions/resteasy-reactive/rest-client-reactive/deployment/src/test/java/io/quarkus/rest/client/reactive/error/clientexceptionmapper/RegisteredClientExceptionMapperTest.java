@@ -4,6 +4,8 @@ import static io.quarkus.rest.client.reactive.RestClientTestUtil.setUrlForClass;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.lang.reflect.Method;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Priorities;
@@ -97,8 +99,8 @@ public class RegisteredClientExceptionMapperTest {
         Dto get400();
 
         @ClientExceptionMapper
-        static DummyException map(Response response) {
-            if (response.getStatus() == 404) {
+        static DummyException map(Response response, Method method) {
+            if ((response.getStatus() == 404) && method.getName().equals("get404")) {
                 return new DummyException();
             }
             return null;
@@ -118,8 +120,8 @@ public class RegisteredClientExceptionMapperTest {
         Dto get400();
 
         @ClientExceptionMapper
-        static DummyException map(Response response) {
-            if (response.getStatus() == 404) {
+        static DummyException map(Method method, Response response) {
+            if ((response.getStatus() == 404) && method.getName().equals("get404")) {
                 return new DummyException();
             }
             return null;

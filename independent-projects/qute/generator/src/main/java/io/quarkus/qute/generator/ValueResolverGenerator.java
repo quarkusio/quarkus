@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -48,6 +49,7 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.Switch;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
@@ -377,27 +379,45 @@ public class ValueResolverGenerator {
             }
         }
 
-        for (MethodKey methodKey : noParamMethods) {
-            // No params - just invoke the method if the name matches
-            MethodInfo method = methodKey.method;
-            LOGGER.debugf("No-args method added %s", method);
-            try (BytecodeCreator matchScope = createMatchScope(zeroParamsBranch, method.name(), -1, method.returnType(), name,
-                    params, paramsCount)) {
-                ResultHandle ret;
-                boolean hasCompletionStage = !skipMemberType(method.returnType())
-                        && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
-                ResultHandle invokeRet;
-                if (Modifier.isInterface(clazz.flags())) {
-                    invokeRet = matchScope.invokeInterfaceMethod(MethodDescriptor.of(method), base);
-                } else {
-                    invokeRet = matchScope.invokeVirtualMethod(MethodDescriptor.of(method), base);
+        if (!noParamMethods.isEmpty()) {
+            Switch.StringSwitch nameSwitch = zeroParamsBranch.stringSwitch(name);
+            Set<String> matchedNames = new HashSet<>();
+            for (MethodKey methodKey : noParamMethods) {
+                // No params - just invoke the method if the name matches
+                MethodInfo method = methodKey.method;
+                List<String> matchingNames = new ArrayList<>();
+                if (matchedNames.add(method.name())) {
+                    matchingNames.add(method.name());
                 }
-                if (hasCompletionStage) {
-                    ret = invokeRet;
-                } else {
-                    ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE, invokeRet);
+                String propertyName = isGetterName(method.name(), method.returnType()) ? getPropertyName(method.name()) : null;
+                if (propertyName != null && matchedNames.add(propertyName)) {
+                    matchingNames.add(propertyName);
                 }
-                matchScope.returnValue(ret);
+                if (matchingNames.isEmpty()) {
+                    continue;
+                }
+                LOGGER.debugf("No-args method added %s", method);
+                Consumer<BytecodeCreator> invokeMethod = new Consumer<BytecodeCreator>() {
+                    @Override
+                    public void accept(BytecodeCreator bc) {
+                        ResultHandle ret;
+                        boolean hasCompletionStage = !skipMemberType(method.returnType())
+                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
+                        ResultHandle invokeRet;
+                        if (Modifier.isInterface(clazz.flags())) {
+                            invokeRet = bc.invokeInterfaceMethod(MethodDescriptor.of(method), base);
+                        } else {
+                            invokeRet = bc.invokeVirtualMethod(MethodDescriptor.of(method), base);
+                        }
+                        if (hasCompletionStage) {
+                            ret = invokeRet;
+                        } else {
+                            ret = bc.invokeStaticMethod(Descriptors.COMPLETED_STAGE, invokeRet);
+                        }
+                        bc.returnValue(ret);
+                    }
+                };
+                nameSwitch.caseOf(matchingNames, invokeMethod);
             }
         }
 

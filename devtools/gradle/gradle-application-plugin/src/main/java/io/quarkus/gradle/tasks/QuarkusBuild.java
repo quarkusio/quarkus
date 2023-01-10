@@ -1,6 +1,8 @@
 package io.quarkus.gradle.tasks;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,6 +18,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
@@ -35,14 +38,19 @@ import io.quarkus.gradle.dsl.Manifest;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.runtime.util.StringUtil;
 
+@CacheableTask
 public abstract class QuarkusBuild extends QuarkusTask {
 
     private static final String NATIVE_PROPERTY_NAMESPACE = "quarkus.native";
     private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
     private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
 
+    private static final String OUTPUT_DIRECTORY = "quarkus.package.output-directory";
+
     private List<String> ignoredEntries = new ArrayList<>();
     private Manifest manifest = new Manifest();
+
+    private Properties applicationProperties = new Properties();
 
     @Inject
     public QuarkusBuild() {
@@ -131,7 +139,8 @@ public abstract class QuarkusBuild extends QuarkusTask {
 
     @OutputDirectory
     public File getFastJar() {
-        return new File(getProject().getBuildDir(), "quarkus-app");
+        return new File(getProject().getBuildDir(),
+                this.getPropValueWithPrecedence(OUTPUT_DIRECTORY, java.util.Optional.of("quarkus-app")));
     }
 
     @TaskAction
@@ -222,5 +231,38 @@ public abstract class QuarkusBuild extends QuarkusTask {
             return hyphenatedKey;
         }
         return String.format("%s.%s", NATIVE_PROPERTY_NAMESPACE, hyphenatedKey);
+    }
+
+    private String getPropValueWithPrecedence(final String propName, final java.util.Optional<String> defaultValue) {
+        if (applicationProperties.isEmpty()) {
+            FileCollection classpathFiles = getClasspath()
+                    .filter(file -> "application.properties".equalsIgnoreCase(file.getName()));
+            classpathFiles.forEach(file -> {
+                FileInputStream appPropsIS = null;
+                try {
+                    appPropsIS = new FileInputStream(file.getAbsoluteFile());
+                    applicationProperties.load(appPropsIS);
+                    appPropsIS.close();
+                } catch (IOException e) {
+                    if (appPropsIS != null) {
+                        try {
+                            appPropsIS.close();
+                        } catch (IOException ex) {
+                            // Ignore exception closing.
+                        }
+                    }
+                }
+            });
+        }
+        if (extension().getQuarkusBuildProperties().containsKey(propName)) {
+            return extension().getQuarkusBuildProperties().get(propName);
+        } else if (applicationProperties.contains(propName)) {
+            return applicationProperties.getProperty(propName);
+        } else if (getQuarkusBuildEnvProperties().containsKey(propName)) {
+            return getQuarkusBuildEnvProperties().get(propName);
+        } else if (defaultValue.isPresent()) {
+            return defaultValue.get();
+        }
+        return null;
     }
 }

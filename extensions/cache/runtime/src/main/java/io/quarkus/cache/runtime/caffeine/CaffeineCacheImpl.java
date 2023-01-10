@@ -1,8 +1,10 @@
 package io.quarkus.cache.runtime.caffeine;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -14,6 +16,8 @@ import org.jboss.logging.Logger;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Policy;
+import com.github.benmanes.caffeine.cache.Policy.FixedExpiration;
 import com.github.benmanes.caffeine.cache.stats.ConcurrentStatsCounter;
 import com.github.benmanes.caffeine.cache.stats.StatsCounter;
 
@@ -221,6 +225,42 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @Override
     public <V> void put(Object key, CompletableFuture<V> valueFuture) {
         cache.put(key, (CompletableFuture<Object>) valueFuture);
+    }
+
+    @Override
+    public void setExpireAfterWrite(Duration duration) {
+        Optional<FixedExpiration<Object, Object>> fixedExpiration = cache.synchronous().policy().expireAfterWrite();
+        if (fixedExpiration.isPresent()) {
+            fixedExpiration.get().setExpiresAfter(duration);
+            cacheInfo.expireAfterWrite = duration;
+        } else {
+            throw new IllegalStateException("The write-based expiration policy can only be changed if the cache was " +
+                    "constructed with an expire-after-write configuration value");
+        }
+    }
+
+    @Override
+    public void setExpireAfterAccess(Duration duration) {
+        Optional<FixedExpiration<Object, Object>> fixedExpiration = cache.synchronous().policy().expireAfterAccess();
+        if (fixedExpiration.isPresent()) {
+            fixedExpiration.get().setExpiresAfter(duration);
+            cacheInfo.expireAfterAccess = duration;
+        } else {
+            throw new IllegalStateException("The access-based expiration policy can only be changed if the cache was " +
+                    "constructed with an expire-after-access configuration value");
+        }
+    }
+
+    @Override
+    public void setMaximumSize(long maximumSize) {
+        Optional<Policy.Eviction<Object, Object>> eviction = cache.synchronous().policy().eviction();
+        if (eviction.isPresent()) {
+            eviction.get().setMaximum(maximumSize);
+            cacheInfo.maximumSize = maximumSize;
+        } else {
+            throw new IllegalStateException("The maximum size can only be changed if the cache was constructed with a " +
+                    "maximum-size configuration value");
+        }
     }
 
     // For testing purposes only.

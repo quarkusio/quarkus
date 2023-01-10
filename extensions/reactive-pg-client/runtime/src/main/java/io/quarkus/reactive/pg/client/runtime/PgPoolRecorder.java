@@ -46,6 +46,7 @@ public class PgPoolRecorder {
 
         PgPool pgPool = initialize(vertx.getValue(),
                 eventLoopCount.get(),
+                dataSourceName,
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
                 dataSourcesReactivePostgreSQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
@@ -60,6 +61,7 @@ public class PgPoolRecorder {
 
     private PgPool initialize(Vertx vertx,
             Integer eventLoopCount,
+            String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
@@ -67,6 +69,11 @@ public class PgPoolRecorder {
                 dataSourceReactivePostgreSQLConfig);
         PgConnectOptions pgConnectOptions = toPgConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactivePostgreSQLConfig);
+        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with postgresql.
+        // and the client_name as tag.
+        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+        pgConnectOptions.setMetricsName("postgresql|" + dataSourceName);
         if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");

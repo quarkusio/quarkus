@@ -39,6 +39,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -54,10 +56,12 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 import io.quarkus.infinispan.client.runtime.InfinispanRecorder;
+import io.quarkus.infinispan.client.runtime.InfinispanServiceBindingConverter;
 import io.quarkus.infinispan.client.runtime.cache.CacheInvalidateAllInterceptor;
 import io.quarkus.infinispan.client.runtime.cache.CacheInvalidateInterceptor;
 import io.quarkus.infinispan.client.runtime.cache.CacheResultInterceptor;
@@ -68,6 +72,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 class InfinispanClientProcessor {
     private static final Log log = LogFactory.getLog(InfinispanClientProcessor.class);
 
+    private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
     private static final String META_INF = "META-INF";
     private static final String HOTROD_CLIENT_PROPERTIES = "hotrod-client.properties";
     private static final String PROTO_EXTENSION = ".proto";
@@ -258,6 +263,15 @@ class InfinispanClientProcessor {
     HealthBuildItem addHealthCheck(InfinispanClientBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.infinispan.client.runtime.health.InfinispanHealthCheck",
                 buildTimeConfig.healthEnabled);
+    }
+
+    @BuildStep
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> buildProducer) {
+        if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
+            buildProducer.produce(
+                    new ServiceProviderBuildItem(SERVICE_BINDING_INTERFACE_NAME,
+                            InfinispanServiceBindingConverter.class.getName()));
+        }
     }
 
 }

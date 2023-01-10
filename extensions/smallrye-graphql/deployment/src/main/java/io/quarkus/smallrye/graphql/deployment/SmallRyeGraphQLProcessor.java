@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
@@ -272,8 +273,10 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLRecorder recorder,
             SmallRyeGraphQLFinalIndexBuildItem graphQLFinalIndexBuildItem,
             BeanContainerBuildItem beanContainer,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             SmallRyeGraphQLConfig graphQLConfig) {
 
+        activateFederation(graphQLConfig, systemPropertyProducer, graphQLFinalIndexBuildItem);
         Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(), graphQLConfig.autoNameStrategy);
 
         RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema);
@@ -624,6 +627,43 @@ public class SmallRyeGraphQLProcessor {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_EVENTS, TRUE));
         } else {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_EVENTS, FALSE));
+        }
+    }
+
+    /*
+     * Decides whether we want to activate GraphQL federation and updates system properties accordingly.
+     * If quarkus.smallrye-graphql.federation.enabled is unspecified, enable federation automatically if we see
+     * any Federation annotations in the app.
+     * If it is specified, always respect that setting.
+     *
+     * This would normally be a separate step like other similar activations, but it updates
+     * system properties and needs to run before generating the schema, so it is called
+     * by the build step that generates the schema.
+     *
+     * Apart from generating a SystemPropertyBuildItem, it's necessary to also call
+     * System.setProperty to make sure that the SchemaBuilder, called at build time, sees the correct value.
+     */
+    void activateFederation(SmallRyeGraphQLConfig config,
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            SmallRyeGraphQLFinalIndexBuildItem index) {
+        if (config.federationEnabled.isPresent()) {
+            String value = config.federationEnabled.get().toString();
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_FEDERATION, value));
+            System.setProperty(ConfigKey.ENABLE_FEDERATION, value);
+        } else {
+            //
+            boolean foundAnyFederationAnnotation = false;
+            for (ClassInfo federationAnnotationType : index.getFinalIndex()
+                    .getClassesInPackage("io.smallrye.graphql.api.federation")) {
+                if (federationAnnotationType.isAnnotation()) {
+                    if (!index.getFinalIndex().getAnnotations(federationAnnotationType.name()).isEmpty()) {
+                        foundAnyFederationAnnotation = true;
+                    }
+                }
+            }
+            String value = Boolean.toString(foundAnyFederationAnnotation);
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_FEDERATION, value));
+            System.setProperty(ConfigKey.ENABLE_FEDERATION, value);
         }
     }
 

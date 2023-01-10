@@ -42,8 +42,21 @@ public class KubernetesConfigUtil {
 
     private static final Logger log = Logger.getLogger(KubernetesConfigUtil.class);
 
-    public static List<String> getUserSpecifiedDeploymentTargets() {
-        String deploymentTargets = getConfiguredDeploymentTarget().orElse("");
+    /**
+     * Get the explicit configured deployment target, if any.
+     * The explicit deployment target is determined using: `quarkus.kubernetes.deployment-target=<deployment-target>`
+     */
+    public static Optional<String> getExplicitlyConfiguredDeploymentTarget() {
+        Config config = ConfigProvider.getConfig();
+        return config.getOptionalValue(DEPLOYMENT_TARGET, String.class);
+    }
+
+    /**
+     * The the explicitly configured deployment target list.
+     * The configured deployment targets are determined using: `quarkus.kubernetes.deployment-target=<deployment-target>`
+     */
+    public static List<String> getExplictilyDeploymentTargets() {
+        String deploymentTargets = getExplicitlyConfiguredDeploymentTarget().orElse("");
         if (deploymentTargets.isEmpty()) {
             return Collections.emptyList();
         }
@@ -71,7 +84,25 @@ public class KubernetesConfigUtil {
                 .filter(s -> s != null)
                 .findFirst();
 
-        return config.getOptionalValue(DEPLOYMENT_TARGET, String.class).or(() -> indirectTarget);
+        return getExplicitlyConfiguredDeploymentTarget().or(() -> indirectTarget);
+    }
+
+    /**
+     * The the configured deployment target list.
+     * The configured deployment targets are determined using:
+     * 1. the value of `quarkus.kubernetes.deployment-target=<deployment-target>`
+     * 2. the presenve of `quarkus.<deployment-target>.deploy=true`
+     */
+    public static List<String> getConfiguratedDeploymentTargets() {
+        String deploymentTargets = getConfiguredDeploymentTarget().orElse("");
+        if (deploymentTargets.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(deploymentTargets
+                .split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(Collectors.toList());
     }
 
     /**

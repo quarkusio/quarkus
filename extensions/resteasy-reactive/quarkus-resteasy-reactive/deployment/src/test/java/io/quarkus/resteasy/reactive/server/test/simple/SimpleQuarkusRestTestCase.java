@@ -221,6 +221,12 @@ public class SimpleQuarkusRestTestCase {
     }
 
     @Test
+    public void testCompletableFutureBlocking() {
+        RestAssured.get("/simple/async/cf/blocking")
+                .then().body(Matchers.equalTo(Boolean.FALSE.toString()));
+    }
+
+    @Test
     public void testMultiResourceSamePath() {
         RestAssured.get("/a")
                 .then()

@@ -44,6 +44,7 @@ public class DB2PoolRecorder {
 
         DB2Pool db2Pool = initialize(vertx.getValue(),
                 eventLoopCount.get(),
+                dataSourceName,
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
                 dataSourcesReactiveDB2Config.getDataSourceReactiveRuntimeConfig(dataSourceName));
@@ -58,6 +59,7 @@ public class DB2PoolRecorder {
 
     private DB2Pool initialize(Vertx vertx,
             Integer eventLoopCount,
+            String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
@@ -65,6 +67,13 @@ public class DB2PoolRecorder {
                 dataSourceReactiveDB2Config);
         DB2ConnectOptions connectOptions = toConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveDB2Config);
+
+        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with db2. and
+        // the client_name as tag.
+        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+        connectOptions.setMetricsName("db2|" + dataSourceName);
+
         if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");

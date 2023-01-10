@@ -46,6 +46,7 @@ public class MySQLPoolRecorder {
 
         MySQLPool mysqlPool = initialize(vertx.getValue(),
                 eventLoopCount.get(),
+                dataSourceName,
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
                 dataSourcesReactiveMySQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
@@ -60,13 +61,20 @@ public class MySQLPoolRecorder {
 
     private MySQLPool initialize(Vertx vertx,
             Integer eventLoopCount,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMySQLConfig);
         MySQLConnectOptions mysqlConnectOptions = toMySQLConnectOptions(dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig);
+
+        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with mysql.
+        // and the client_name as tag.
+        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+        mysqlConnectOptions.setMetricsName("mysql|" + dataSourceName);
+
         if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");

@@ -3,13 +3,11 @@ package io.quarkus.deployment.steps;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.processExtensionConfigMapping;
 import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
-import static io.quarkus.runtime.configuration.ConfigUtils.QUARKUS_BUILD_TIME_RUNTIME_PROPERTIES;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -23,7 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,6 +30,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
+import org.objectweb.asm.Opcodes;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsNormal;
@@ -47,7 +45,6 @@ import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -57,7 +54,6 @@ import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceFactoryBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
@@ -65,19 +61,32 @@ import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.StaticInitSafe;
+import io.quarkus.runtime.configuration.ConfigBuilder;
 import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
-import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.DefaultsConfigSource;
+import io.quarkus.runtime.configuration.DisableableConfigSource;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class ConfigGenerationBuildStep {
+    private static final MethodDescriptor CONFIG_BUILDER = MethodDescriptor.ofMethod(
+            ConfigBuilder.class, "configBuilder",
+            SmallRyeConfigBuilder.class, SmallRyeConfigBuilder.class);
+    private static final MethodDescriptor WITH_SOURCES = MethodDescriptor.ofMethod(
+            SmallRyeConfigBuilder.class, "withSources",
+            SmallRyeConfigBuilder.class, ConfigSource[].class);
 
     @BuildStep
     void staticInitSources(
@@ -91,43 +100,101 @@ public class ConfigGenerationBuildStep {
     @BuildStep
     void buildTimeRunTimeConfig(
             ConfigurationBuildItem configItem,
-            BuildProducer<GeneratedResourceBuildItem> generatedResource,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResource) throws Exception {
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
-        Map<String, String> buildTimeRunTimeValues = configItem.getReadResult().getBuildTimeRunTimeValues();
-        Properties properties = new Properties();
-        for (Map.Entry<String, String> entry : buildTimeRunTimeValues.entrySet()) {
-            properties.setProperty(entry.getKey(), entry.getValue());
+        String className = "io.quarkus.runtime.generated.BuildTimeRunTimeFixedConfigSource";
+        generateDefaultsConfigSource(generatedClass, reflectiveClass, configItem.getReadResult().getBuildTimeRunTimeValues(),
+                className, "BuildTime RunTime Fixed", Integer.MAX_VALUE);
+
+        String builderClassName = className + "Builder";
+        try (ClassCreator classCreator = ClassCreator.builder()
+                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
+                .className(builderClassName)
+                .interfaces(ConfigBuilder.class)
+                .setFinal(true)
+                .build()) {
+
+            FieldDescriptor source = FieldDescriptor.of(classCreator.getClassName(), "source", ConfigSource.class);
+            classCreator.getFieldCreator(source).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+
+            MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class);
+            clinit.setModifiers(Opcodes.ACC_STATIC);
+            ResultHandle buildTimeRunTimeConfigSource = clinit.newInstance(MethodDescriptor.ofConstructor(className));
+            ResultHandle disableableConfigSource = clinit.newInstance(
+                    MethodDescriptor.ofConstructor(DisableableConfigSource.class, ConfigSource.class),
+                    buildTimeRunTimeConfigSource);
+            clinit.writeStaticField(source, disableableConfigSource);
+            clinit.returnVoid();
+
+            MethodCreator method = classCreator.getMethodCreator(CONFIG_BUILDER);
+            ResultHandle configBuilder = method.getMethodParam(0);
+
+            ResultHandle configSources = method.newArray(ConfigSource.class, 1);
+            method.writeArrayValue(configSources, 0, method.readStaticField(source));
+
+            method.invokeVirtualMethod(WITH_SOURCES, configBuilder, configSources);
+
+            method.returnValue(configBuilder);
         }
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        properties.store(out, null);
-        generatedResource.produce(new GeneratedResourceBuildItem(QUARKUS_BUILD_TIME_RUNTIME_PROPERTIES, out.toByteArray()));
-        nativeImageResource.produce(new NativeImageResourceBuildItem(QUARKUS_BUILD_TIME_RUNTIME_PROPERTIES));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builderClassName));
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
     }
 
     @BuildStep
     void runtimeDefaultsConfig(
             ConfigurationBuildItem configItem,
             List<RunTimeConfigurationDefaultBuildItem> runTimeDefaults,
-            BuildProducer<GeneratedResourceBuildItem> generatedResource,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResource) throws IOException {
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
-        Properties properties = new Properties();
+        Map<String, String> defaults = new HashMap<>();
         for (RunTimeConfigurationDefaultBuildItem e : runTimeDefaults) {
-            properties.setProperty(e.getKey(), e.getValue());
+            defaults.put(e.getKey(), e.getValue());
+        }
+        defaults.putAll(configItem.getReadResult().getRunTimeDefaultValues());
+
+        String className = "io.quarkus.runtime.generated.RunTimeDefaultsConfigSource";
+        generateDefaultsConfigSource(generatedClass, reflectiveClass, defaults,
+                className, "RunTime Defaults", Integer.MIN_VALUE + 100);
+
+        String builderClassName = className + "Builder";
+        try (ClassCreator classCreator = ClassCreator.builder()
+                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
+                .className(builderClassName)
+                .interfaces(ConfigBuilder.class)
+                .setFinal(true)
+                .build()) {
+
+            FieldDescriptor source = FieldDescriptor.of(classCreator.getClassName(), "source", ConfigSource.class);
+            classCreator.getFieldCreator(source).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+
+            MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class);
+            clinit.setModifiers(Opcodes.ACC_STATIC);
+            ResultHandle runtimeDefaultsConfigSource = clinit.newInstance(MethodDescriptor.ofConstructor(className));
+            clinit.writeStaticField(source, runtimeDefaultsConfigSource);
+            clinit.returnVoid();
+
+            MethodCreator method = classCreator.getMethodCreator(CONFIG_BUILDER);
+            ResultHandle configBuilder = method.getMethodParam(0);
+
+            ResultHandle configSources = method.newArray(ConfigSource.class, 1);
+            method.writeArrayValue(configSources, 0, method.readStaticField(source));
+
+            method.invokeVirtualMethod(WITH_SOURCES, configBuilder, configSources);
+
+            method.returnValue(configBuilder);
         }
 
-        Map<String, String> runTimeDefaultValues = configItem.getReadResult().getRunTimeDefaultValues();
-        for (Map.Entry<String, String> entry : runTimeDefaultValues.entrySet()) {
-            properties.setProperty(entry.getKey(), entry.getValue());
-        }
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        properties.store(out, null);
-        generatedResource.produce(
-                new GeneratedResourceBuildItem(ConfigUtils.QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES, out.toByteArray()));
-        nativeImageResource.produce(new NativeImageResourceBuildItem(ConfigUtils.QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builderClassName));
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
     }
 
     @BuildStep
@@ -198,6 +265,11 @@ public class ConfigGenerationBuildStep {
         runtimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         runtimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());
 
+        Set<String> runtimeConfigBuilderClassNames = runTimeConfigBuilders.stream()
+                .map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet());
+        reflectiveClass
+                .produce(new ReflectiveClassBuildItem(false, false, runtimeConfigBuilderClassNames.toArray(new String[0])));
+
         RunTimeConfigurationGenerator.GenerateOperation
                 .builder()
                 .setBuildTimeReadResult(configItem.getReadResult())
@@ -218,8 +290,7 @@ public class ConfigGenerationBuildStep {
                 .setRuntimeConfigSourceProviders(discoveredConfigSourceProviders)
                 .setRuntimeConfigSourceFactories(discoveredConfigSourceFactories)
                 .setRuntimeConfigMappings(runtimeMappings)
-                .setRuntimeConfigBuilders(
-                        runTimeConfigBuilders.stream().map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
+                .setRuntimeConfigBuilders(runtimeConfigBuilderClassNames)
                 .build()
                 .run();
     }
@@ -357,6 +428,46 @@ public class ConfigGenerationBuildStep {
     private String appendProfileToFilename(String path, String activeProfile) {
         String pathWithoutExtension = FilenameUtils.removeExtension(path);
         return String.format("%s-%s.%s", pathWithoutExtension, activeProfile, FilenameUtils.getExtension(path));
+    }
+
+    private static void generateDefaultsConfigSource(
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            Map<String, String> defaults,
+            String className,
+            String sourceName,
+            int sourceOrdinal) {
+
+        try (ClassCreator classCreator = ClassCreator.builder()
+                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
+                .className(className)
+                .superClass(DefaultsConfigSource.class)
+                .setFinal(true)
+                .build()) {
+
+            FieldDescriptor properties = FieldDescriptor.of(classCreator.getClassName(), "properties", Map.class);
+            classCreator.getFieldCreator(properties).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+
+            MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class);
+            clinit.setModifiers(Opcodes.ACC_STATIC);
+            clinit.writeStaticField(properties, clinit.newInstance(MethodDescriptor.ofConstructor(HashMap.class)));
+
+            ResultHandle map = clinit.readStaticField(properties);
+            MethodDescriptor put = MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class);
+            for (Map.Entry<String, String> entry : defaults.entrySet()) {
+                clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()), clinit.load(entry.getValue()));
+            }
+            clinit.returnVoid();
+
+            MethodCreator ctor = classCreator.getMethodCreator("<init>", void.class);
+            MethodDescriptor superCtor = MethodDescriptor.ofConstructor(DefaultsConfigSource.class, Map.class, String.class,
+                    int.class);
+            ctor.invokeSpecialMethod(superCtor, ctor.getThis(), ctor.readStaticField(properties),
+                    ctor.load(sourceName), ctor.load(sourceOrdinal));
+            ctor.returnVoid();
+        }
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, className));
     }
 
     private static Set<String> discoverService(

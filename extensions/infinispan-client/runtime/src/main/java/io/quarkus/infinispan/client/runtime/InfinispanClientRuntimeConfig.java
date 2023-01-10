@@ -1,6 +1,7 @@
 package io.quarkus.infinispan.client.runtime;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -21,10 +22,31 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "infinispan-client", phase = ConfigPhase.RUN_TIME)
 public class InfinispanClientRuntimeConfig {
 
+    // @formatter:off
+    /**
+     * Sets the URI of the running Infinispan server to connect to. hotrod://localhost:11222@admin:password
+     * If provided {@link #hosts}, {@link #username} and {@link #password} will be ignored.
+     */
+    // @formatter:on
+    @ConfigItem
+    public Optional<String> uri;
+
+    // @formatter:off
     /**
      * Sets the host name/port to connect to. Each one is separated by a semicolon (eg. host1:11222;host2:11222).
      */
+    // @formatter:on
     @ConfigItem
+    public Optional<String> hosts;
+
+    // @formatter:off
+    /**
+     * Sets the host name/port to connect to. Each one is separated by a semicolon (eg. host1:11222;host2:11222).
+     * @deprecated {@link #hosts} should be used to configure the list or uri for an uri connection string.
+     */
+    // @formatter:on
+    @ConfigItem
+    @Deprecated
     public Optional<String> serverList;
 
     // @formatter:off
@@ -66,12 +88,30 @@ public class InfinispanClientRuntimeConfig {
      * Sets username used by authentication.
      */
     @ConfigItem
+    Optional<String> username;
+
+    /**
+     * Sets username used by authentication.
+     *
+     * @deprecated {@link #username} should be used to configure the credentials username.
+     */
+    @ConfigItem
+    @Deprecated
     Optional<String> authUsername;
 
     /**
-     * Sets password used by authentication
+     * Sets password used by authentication.
      */
     @ConfigItem
+    Optional<String> password;
+
+    /**
+     * Sets password used by authentication
+     *
+     * @deprecated {@link #password} should be used to configure the credentials password.
+     */
+    @ConfigItem
+    @Deprecated
     Optional<String> authPassword;
 
     /**
@@ -132,6 +172,27 @@ public class InfinispanClientRuntimeConfig {
      */
     @ConfigItem
     Optional<String> trustStoreType;
+
+    /**
+     * Configures the secure socket protocol.
+     * Setting this property implicitly enables SSL/TLS.
+     */
+    @ConfigItem
+    Optional<String> sslProtocol;
+
+    /**
+     * Sets the ssl provider. For example BCFIPS
+     * Setting this implicitly enables SSL/TLS.
+     */
+    @ConfigItem
+    Optional<String> sslProvider;
+
+    /**
+     * Configures the ciphers.
+     * Setting this property implicitly enables SSL/TLS.
+     */
+    @ConfigItem
+    Optional<List<String>> sslCiphers;
 
     /**
      * Configures caches from the client with the provided configuration.

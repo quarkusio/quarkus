@@ -23,7 +23,7 @@ import javax.ws.rs.Priorities;
  * <pre>
  * {@code
  * &#64;ClientExceptionMapper
- * static DummyException map(Response response) {
+ * static DummyException map(Response response, Method method) {
  *     if (response.getStatus() == 404) {
  *         return new DummyException();
  *     }

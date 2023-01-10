@@ -160,7 +160,8 @@ public class StreamResource {
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public Multi<OutboundSseEvent> sseRaw(@Context Sse sse) {
-        return Multi.createFrom().items(sse.newEventBuilder().id("one").data("uno").name("eins").build(),
+        return Multi.createFrom().items(sse.newEventBuilder().comment("dummy").build(),
+                sse.newEventBuilder().id("one").data("uno").name("eins").build(),
                 sse.newEventBuilder().id("two").data("dos").name("zwei").build(),
                 sse.newEventBuilder().id("three").data("tres").name("drei").build());
     }

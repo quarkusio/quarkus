@@ -27,6 +27,7 @@ swap:
   CygMon|cygmon|CYGMON: Cygmon
   Denial of Service: denial of service
   Denial-of-Service: denial-of-service
+  Dev mode|Dev Mode: dev mode
   devops|Devops|Dev-Ops|Dev Ops: DevOps
   Dev services|DevServices: Dev Services
   Disk druid|disk druid|diskdruid: Disk Druid
@@ -50,6 +51,7 @@ swap:
   Gpl|gpl: GPL
   gradle: Gradle
   Graalvm|graalVM: GraalVM
+  GRPC|grpc: gRPC
   Grub: GRUB
   GTK|Gtk|gtk: GTK+
   HP Proliant: HP ProLiant
@@ -160,6 +162,7 @@ swap:
   Webauthn|webAuthn|WebAuthN: WebAuthn
   websocket|Websocket: WebSocket
   Window-Maker|WindowMaker: Window Maker
+  XDS|xds: xDS
   Xemacs: XEmacs
   Xterm: xterm
   '(?<!\.)yaml|Yaml': YAML

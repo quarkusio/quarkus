@@ -69,8 +69,10 @@ public class SseUtil extends CommonSseUtil {
             if (event.getReconnectDelay() >= 0)
                 serialiseField(context, sb, "retry", Long.toString(event.getReconnectDelay()), false);
         }
-        String data = serialiseDataToString(context, event, eventMediaType);
-        serialiseField(context, sb, "data", data, true);
+        if (event.getData() != null) {
+            String data = serialiseDataToString(context, event, eventMediaType);
+            serialiseField(context, sb, "data", data, true);
+        }
         sb.append(NL);
         // return a UTF8 buffer
         return sb.toString();

@@ -48,6 +48,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry-deployment</artifactId>
+            <optional>true</optional>
+        </dependency>
         <!-- Needed for the JSON meter registry -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -113,6 +118,12 @@
         <dependency>
             <groupId>org.eclipse.microprofile.metrics</groupId>
             <artifactId>microprofile-metrics-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

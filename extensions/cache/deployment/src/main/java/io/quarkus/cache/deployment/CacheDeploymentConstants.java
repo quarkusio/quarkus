@@ -44,9 +44,6 @@ public class CacheDeploymentConstants {
     // Annotations parameters.
     public static final String CACHE_NAME_PARAM = "cacheName";
 
-    // Caffeine.
-    public static final String CAFFEINE_CACHE_TYPE = "caffeine";
-
     private static DotName dotName(Class<?> annotationClass) {
         return DotName.createSimple(annotationClass.getName());
     }

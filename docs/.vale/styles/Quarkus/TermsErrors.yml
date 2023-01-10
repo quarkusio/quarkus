@@ -101,6 +101,7 @@ swap:
   desire|wish: need
   desk top|desk-top: desktop
   destroy: delete from the database
+  dev(?!.mode): "developer' or 'development"
   different than|different to: different from
   disklabel|disk-label: disk label
   dismount: demount|unmount|remove
@@ -229,6 +230,7 @@ swap:
   recognise: recognize
   remote-access server: remote access server
   remote-access: remote access
+  repo: repository
   right double-click: double right-click
   right now: now
   right-hand: right

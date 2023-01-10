@@ -659,6 +659,62 @@ public class CacheKeysService {
 }
 ----
 
+=== Changing the expiration policy or the maximum size of a `CaffeineCache` in real time
+
+The expiration policy of a `CaffeineCache` can be changed while a Quarkus app is running if that policy was initially specified in the Quarkus configuration.
+Similarly, the maximum size of a `CaffeineCache` can be changed in real time if the cache was built with an initial maximum size defined in the configuration.
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.CaffeineCache;
+
+import java.time.Duration;
+import java.util.Optional;
+
+@ApplicationScoped
+public class CacheConfigManager {
+
+    @Inject
+    CacheManager cacheManager;
+
+    public void setExpireAfterAccess(String cacheName, Duration duration) {
+        Optional<Cache> cache = cacheManager.getCache(cacheName);
+        if (cache.isPresent()) {
+            cache.as(CaffeineCache.class).setExpireAfterAccess(duration); <1>
+        }
+    }
+
+    public void setExpireAfterWrite(String cacheName, Duration duration) {
+        Optional<Cache> cache = cacheManager.getCache(cacheName);
+        if (cache.isPresent()) {
+            cache.as(CaffeineCache.class).setExpireAfterWrite(duration); <2>
+        }
+    }
+
+    public void setMaximumSize(String cacheName, long maximumSize) {
+        Optional<Cache> cache = cacheManager.getCache(cacheName);
+        if (cache.isPresent()) {
+            cache.as(CaffeineCache.class).setMaximumSize(maximumSize); <3>
+        }
+    }
+}
+----
+<1> This line will only work if the cache was constructed with an `expire-after-access` configuration value. Otherwise, an `IllegalStateException` will be thrown.
+<2> This line will only work if the cache was constructed with an `expire-after-write` configuration value. Otherwise, an `IllegalStateException` will be thrown.
+<3> This line will only work if the cache was constructed with a `maximum-size` configuration value. Otherwise, an `IllegalStateException` will be thrown.
+
+[WARNING]
+====
+The `setExpireAfterAccess`, `setExpireAfterWrite` and `setMaximumSize` methods from `CaffeineCache` must never be invoked from within an atomic scope of a cache operation.
+====
+
 == Configuring the underlying caching provider
 
 This extension uses https://github.com/ben-manes/caffeine[Caffeine] as its underlying caching provider.

@@ -603,6 +603,15 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public static class Authentication {
 
         /**
+         * SameSite attribute values for the session, state and post logout cookies.
+         */
+        public enum CookieSameSite {
+            STRICT,
+            LAX,
+            NONE
+        }
+
+        /**
          * Authorization code flow response mode
          */
         public enum ResponseMode {
@@ -758,6 +767,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<String> cookieDomain = Optional.empty();
 
         /**
+         * SameSite attribute for the session, state and post logout cookies.
+         */
+        @ConfigItem(defaultValue = "strict")
+        public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
+
+        /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.
          */
         @ConfigItem(defaultValueDocumentation = "false")
@@ -795,6 +810,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<Boolean> idTokenRequired = Optional.empty();
 
         /**
+         * Internal ID token lifespan.
+         * This property is only checked when an internal IdToken is generated when Oauth2 providers do not return IdToken.
+         */
+        @ConfigItem(defaultValueDocumentation = "5M")
+        public Optional<Duration> internalIdTokenLifespan = Optional.empty();
+
+        /**
          * Requires that a Proof Key for Code Exchange (PKCE) is used.
          */
         @ConfigItem(defaultValueDocumentation = "false")
@@ -807,6 +829,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem
         public Optional<String> pkceSecret = Optional.empty();
+
+        public Optional<Duration> getInternalIdTokenLifespan() {
+            return internalIdTokenLifespan;
+        }
+
+        public void setInternalIdTokenLifespan(Duration internalIdTokenLifespan) {
+            this.internalIdTokenLifespan = Optional.of(internalIdTokenLifespan);
+        }
 
         public Optional<Boolean> isPkceRequired() {
             return pkceRequired;
@@ -982,6 +1012,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setForwardParams(List<String> forwardParams) {
             this.forwardParams = Optional.of(forwardParams);
+        }
+
+        public CookieSameSite getCookieSameSite() {
+            return cookieSameSite;
+        }
+
+        public void setCookieSameSite(CookieSameSite cookieSameSite) {
+            this.cookieSameSite = cookieSameSite;
         }
     }
 

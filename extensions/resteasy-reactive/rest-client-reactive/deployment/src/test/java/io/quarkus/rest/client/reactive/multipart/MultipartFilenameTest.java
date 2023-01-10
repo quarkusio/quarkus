@@ -58,9 +58,18 @@ public class MultipartFilenameTest {
         File file = File.createTempFile("MultipartTest", ".txt");
         file.deleteOnExit();
 
-        ClientForm2 form = new ClientForm2();
+        ClientFormUsingFile form = new ClientFormUsingFile();
         form.file = file;
-        assertThat(client.postMultipartWithPartFilename(form)).isEqualTo(ClientForm2.FILE_NAME);
+        assertThat(client.postMultipartWithPartFilename(form)).isEqualTo(ClientFormUsingFile.FILE_NAME);
+    }
+
+    @Test
+    void shouldUseFileNameFromAnnotationUsingString() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+
+        ClientFormUsingString form = new ClientFormUsingString();
+        form.file = "file content";
+        assertThat(client.postMultipartWithPartFilenameUsingString(form)).isEqualTo("clientFile:file content");
     }
 
     @Test
@@ -109,6 +118,13 @@ public class MultipartFilenameTest {
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         public String upload(@MultipartForm FormData form) {
             return form.myFile.fileName();
+        }
+
+        @POST
+        @Path("/using-string")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        public String uploadWithFileContentUsingString(@MultipartForm FormData form) throws IOException {
+            return form.myFile.fileName() + ":" + Files.readString(form.myFile.uploadedFile());
         }
 
         @POST
@@ -166,7 +182,12 @@ public class MultipartFilenameTest {
 
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        String postMultipartWithPartFilename(@MultipartForm ClientForm2 clientForm);
+        String postMultipartWithPartFilename(@MultipartForm ClientFormUsingFile clientForm);
+
+        @POST
+        @Path("/using-string")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String postMultipartWithPartFilenameUsingString(@MultipartForm ClientFormUsingString clientForm);
 
         @POST
         @Path("/file-content")
@@ -190,12 +211,21 @@ public class MultipartFilenameTest {
         public File file;
     }
 
-    public static class ClientForm2 {
+    public static class ClientFormUsingFile {
         public static final String FILE_NAME = "clientFile";
 
         @FormParam("myFile")
         @PartType(MediaType.APPLICATION_OCTET_STREAM)
         @PartFilename(FILE_NAME)
         public File file;
+    }
+
+    public static class ClientFormUsingString {
+        public static final String FILE_NAME = "clientFile";
+
+        @FormParam("myFile")
+        @PartType(MediaType.APPLICATION_OCTET_STREAM)
+        @PartFilename(FILE_NAME)
+        public String file;
     }
 }

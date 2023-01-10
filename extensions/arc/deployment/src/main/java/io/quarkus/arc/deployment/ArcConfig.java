@@ -69,6 +69,14 @@ public class ArcConfig {
     public boolean transformUnproxyableClasses;
 
     /**
+     * If set to true, the bytecode of private fields that are injection points will be transformed to package private.
+     * This ensures that field injection can be performed completely reflection-free.
+     * If the value is set to false, then a reflection fallback is used to perform the injection.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean transformPrivateInjectedFields;
+
+    /**
      * If set to true, the build fails if a private method that is neither an observer nor a producer, is annotated with an
      * interceptor binding.
      * An example of this is the use of {@code Transactional} on a private method of a bean.

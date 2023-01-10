@@ -31,6 +31,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -674,6 +675,16 @@ public final class Beans {
                 }
             }
 
+            // transform any private injected fields into package private
+            if (bean.getDeployment().transformPrivateInjectedFields) {
+                for (Injection injection : bean.getInjections()) {
+                    if (injection.isField() && Modifier.isPrivate(injection.getTarget().asField().flags())) {
+                        bytecodeTransformerConsumer.accept(new BytecodeTransformer(beanClass.name().toString(),
+                                new PrivateInjectedFieldTransformFunction(injection.getTarget().asField().name())));
+                    }
+                }
+            }
+
         } else if (bean.isProducerField() || bean.isProducerMethod()) {
             ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(),
                     bean.isProducerMethod() ? bean.getTarget().get().asMethod().returnType()
@@ -946,6 +957,39 @@ public final class Beans {
                                 className);
                     }
                     return super.visitMethod(access, name, descriptor, signature, exceptions);
+                }
+            };
+        }
+
+    }
+
+    // alters an injected field modifier from private to package private
+    static class PrivateInjectedFieldTransformFunction implements BiFunction<String, ClassVisitor, ClassVisitor> {
+
+        public PrivateInjectedFieldTransformFunction(String fieldName) {
+            this.fieldName = fieldName;
+        }
+
+        private String fieldName;
+
+        @Override
+        public ClassVisitor apply(String className, ClassVisitor classVisitor) {
+            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+
+                @Override
+                public FieldVisitor visitField(
+                        int access,
+                        String name,
+                        String descriptor,
+                        String signature,
+                        Object value) {
+                    if (name.equals(fieldName)) {
+                        access = access & (~Opcodes.ACC_PRIVATE);
+                        LOGGER.debugf(
+                                "Changed visibility of an injected private field to package-private. Field name: %s in class: %s",
+                                name, className);
+                    }
+                    return super.visitField(access, name, descriptor, signature, value);
                 }
             };
         }

@@ -1,6 +1,8 @@
 package io.quarkus.cache.test.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,8 +37,14 @@ public class CacheConfigTest {
     @CacheName("no-config-cache")
     Cache noConfigCache;
 
+    @CacheName("test-cache-2")
+    Cache testCache2;
+
+    @CacheName("test-cache-3")
+    Cache testCache3;
+
     @Test
-    public void testConfig() {
+    void testConfig() {
         CaffeineCacheImpl cache = (CaffeineCacheImpl) cacheManager.getCache(CACHE_NAME).get();
         assertEquals(10, cache.getCacheInfo().initialCapacity);
         assertEquals(100L, cache.getCacheInfo().maximumSize);
@@ -55,6 +63,26 @@ public class CacheConfigTest {
         Duration newExpireAfterAccess = Duration.ofDays(789L);
         cache.setExpireAfterAccess(newExpireAfterAccess);
         assertEquals(newExpireAfterAccess, cache.getCacheInfo().expireAfterAccess);
+    }
+
+    @Test
+    void testCache2Config() {
+        CaffeineCacheImpl cache = (CaffeineCacheImpl) testCache2;
+        assertEquals(80, cache.getCacheInfo().initialCapacity);
+        assertNull(cache.getCacheInfo().maximumSize);
+        assertEquals(Duration.ofDays(4L), cache.getCacheInfo().expireAfterWrite);
+        assertEquals(Duration.ofSeconds(90L), cache.getCacheInfo().expireAfterAccess);
+        assertFalse(cache.getCacheInfo().metricsEnabled);
+    }
+
+    @Test
+    void testCache3Config() {
+        CaffeineCacheImpl cache = (CaffeineCacheImpl) testCache3;
+        assertEquals(123, cache.getCacheInfo().initialCapacity);
+        assertNull(cache.getCacheInfo().maximumSize);
+        assertNull(cache.getCacheInfo().expireAfterWrite);
+        assertNull(cache.getCacheInfo().expireAfterAccess);
+        assertTrue(cache.getCacheInfo().metricsEnabled);
     }
 
     @Test

@@ -212,6 +212,12 @@ If you wish to scale your server, you can set the number of server instances by 
 
 include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-server-configuration.adoc[opts=optional, leveloffset=+1]
 
+IMPORTANT: When you disable `quarkus.grpc.server.use-separate-server`, you are then using the new Vert.x gRPC server implementation
+which uses the existing HTTP server. Which means that the server port is now `8080` (or the port configured with `quarkus.http.port`).
+Also, most of the other configuration properties are no longer applied, since it's the HTTP server that should already be properly configured.
+
+IMPORTANT: When you enable `quarkus.grpc.server.xds.enabled`, it's the xDS that should handle most of the configuration above.
+
 == Example of Configuration
 
 === Enabling TLS

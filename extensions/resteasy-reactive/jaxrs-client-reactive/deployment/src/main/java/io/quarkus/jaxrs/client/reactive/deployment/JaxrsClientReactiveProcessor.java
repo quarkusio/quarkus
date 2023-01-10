@@ -1627,7 +1627,7 @@ public class JaxrsClientReactiveProcessor {
 
         // we support string, and send it as an attribute unconverted
         if (type.equals(String.class.getName())) {
-            addString(ifValueNotNull, multipartForm, formParamName, partFilename, fieldValue);
+            addString(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
         } else if (type.equals(File.class.getName())) {
             // file is sent as file :)
             ResultHandle filePath = ifValueNotNull.invokeVirtualMethod(
@@ -1660,7 +1660,7 @@ public class JaxrsClientReactiveProcessor {
                     parameterAnnotations, methodIndex);
             BytecodeCreator parameterIsStringBranch = checkStringParam(ifValueNotNull, convertedFormParam,
                     restClientInterfaceClassName, errorLocation);
-            addString(parameterIsStringBranch, multipartForm, formParamName, partFilename, convertedFormParam);
+            addString(parameterIsStringBranch, multipartForm, formParamName, null, partFilename, convertedFormParam);
         }
     }
 
@@ -1743,13 +1743,27 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void addString(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
-            String partFilename, ResultHandle fieldValue) {
-        methodCreator.assign(multipartForm,
-                methodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "attribute", QuarkusMultipartForm.class,
-                                String.class, String.class, String.class),
-                        multipartForm, methodCreator.load(formParamName), fieldValue,
-                        partFilenameHandle(methodCreator, partFilename)));
+            String partType, String partFilename, ResultHandle fieldValue) {
+        if (MediaType.APPLICATION_OCTET_STREAM.equalsIgnoreCase(partType)) {
+            methodCreator.assign(multipartForm,
+                    // MultipartForm#stringFileUpload(String name, String filename, String content, String mediaType);
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "stringFileUpload",
+                                    QuarkusMultipartForm.class, String.class, String.class, String.class,
+                                    String.class),
+                            multipartForm,
+                            methodCreator.load(formParamName),
+                            partFilename != null ? methodCreator.load(partFilename) : methodCreator.loadNull(),
+                            fieldValue,
+                            methodCreator.load(partType)));
+        } else {
+            methodCreator.assign(multipartForm,
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "attribute", QuarkusMultipartForm.class,
+                                    String.class, String.class, String.class),
+                            multipartForm, methodCreator.load(formParamName), fieldValue,
+                            partFilenameHandle(methodCreator, partFilename)));
+        }
     }
 
     private void addMultiAsFile(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,

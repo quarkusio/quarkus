@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -131,7 +132,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
-        super(builder.parent);
+        super(builder.shortName, builder.parent);
         this.name = builder.name;
         this.elements = builder.elements;
         this.bannedElements = builder.bannedElements;
@@ -672,6 +673,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         final List<ClassPathElement> parentFirstElements = new ArrayList<>();
         final List<ClassPathElement> lesserPriorityElements = new ArrayList<>();
         final boolean parentFirst;
+        String shortName;
         MemoryClassPathElement resettableElement;
         private Map<String, byte[]> transformedClasses = Collections.emptyMap();
         boolean aggregateParentResources;
@@ -679,9 +681,20 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         private final ArrayList<ClassLoaderEventListener> classLoaderEventListeners = new ArrayList<>(5);
 
         public Builder(String name, ClassLoader parent, boolean parentFirst) {
-            this.name = name;
+            this.name = this.shortName = name;
             this.parent = parent;
             this.parentFirst = parentFirst;
+        }
+
+        /**
+         * Set the short name of the class loader. This is the name which would appear in stack traces.
+         *
+         * @param shortName the short name (must not be {@code null})
+         * @return this builder
+         */
+        public Builder setShortName(final String shortName) {
+            this.shortName = Objects.requireNonNull(shortName, "shortName");
+            return this;
         }
 
         /**
@@ -831,10 +844,4 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             this.parentFirstResources = parentFirstResources;
         }
     }
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
 }

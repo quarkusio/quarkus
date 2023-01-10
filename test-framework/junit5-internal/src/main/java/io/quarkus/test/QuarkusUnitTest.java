@@ -625,6 +625,7 @@ public class QuarkusUnitTest
                             .setBaseClassLoader(
                                     QuarkusClassLoader
                                             .builder("QuarkusUnitTest ClassLoader", getClass().getClassLoader(), false)
+                                            .setShortName("unit-test")
                                             .addClassLoaderEventListeners(this.classLoadListeners)
                                             .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build());
                 }

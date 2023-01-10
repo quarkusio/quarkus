@@ -207,6 +207,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     "Augmentation Class Loader: " + quarkusBootstrap.getMode(),
                     quarkusBootstrap.getBaseClassLoader(), !quarkusBootstrap.isIsolateDeployment())
                     .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
+            builder.setShortName("augment");
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
             //we want a class loader that can load the deployment artifacts and all their dependencies, but not
             //any of the runtime artifacts, or user classes
@@ -252,6 +253,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     "Quarkus Base Runtime ClassLoader: " + quarkusBootstrap.getMode(),
                     quarkusBootstrap.getBaseClassLoader(), false)
                     .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
+            builder.setShortName("base-runtime");
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
 
             if (configuredClassLoading.isFlatTestClassPath()) {
@@ -329,6 +331,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         QuarkusClassLoader.Builder builder = QuarkusClassLoader
                 .builder("Deployment Class Loader: " + quarkusBootstrap.getMode(),
                         getAugmentClassLoader(), false)
+                .setShortName("deployment")
                 .addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners())
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
                 .setAggregateParentResources(true);
@@ -372,6 +375,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                         "Quarkus Runtime ClassLoader: " + quarkusBootstrap.getMode() + " restart no:"
                                 + runtimeClassLoaderCount.getAndIncrement(),
                         getBaseRuntimeClassLoader(), false)
+                .setShortName("runtime")
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
                 .setAggregateParentResources(true);
         builder.setTransformedClasses(transformedClasses);

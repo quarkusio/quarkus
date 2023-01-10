@@ -215,6 +215,7 @@ public class CodeGenerator {
             // we don't want to load config source factories/providers from the current module because they haven't been compiled yet
             QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
                     deploymentClassLoader, false);
+            configClBuilder.setShortName("codegen-config");
             if (!allowedConfigFactories.isEmpty()) {
                 configClBuilder.addElement(new MemoryClassPathElement(allowedConfigFactories, true));
             }

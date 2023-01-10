@@ -49,7 +49,7 @@ public final class RunnerClassLoader extends ClassLoader {
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages, Set<String> nonExistentResources,
             List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
-        super(parent);
+        super("runner", parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
         this.nonExistentResources = nonExistentResources;

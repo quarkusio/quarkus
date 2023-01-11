@@ -2,7 +2,6 @@ package org.jboss.resteasy.reactive.server.core.multipart;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -175,25 +174,6 @@ public final class FormData implements Iterable<String> {
          */
         String getCharset();
 
-        /**
-         * Returns true if this is a file and not a simple string
-         *
-         * @return
-         */
-        @Deprecated
-        boolean isFile();
-
-        /**
-         * @return The temp file that the file data was saved to
-         *
-         * @throws IllegalStateException if this is not a file
-         */
-        @Deprecated
-        Path getPath();
-
-        @Deprecated
-        File getFile();
-
         FileItem getFileItem();
 
         boolean isFileItem();
@@ -323,27 +303,6 @@ public final class FormData implements Iterable<String> {
         @Override
         public String getCharset() {
             return charset;
-        }
-
-        @Override
-        public boolean isFile() {
-            return fileItem != null && !fileItem.isInMemory();
-        }
-
-        @Override
-        public Path getPath() {
-            if (fileItem == null) {
-                throw new RuntimeException("Form value is a string");
-            }
-            if (fileItem.isInMemory()) {
-                throw new RuntimeException("Form value is a memory file");
-            }
-            return fileItem.getFile();
-        }
-
-        @Override
-        public File getFile() {
-            return getPath().toFile();
         }
 
         @Override

@@ -40,6 +40,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     private final CaffeineCacheInfo cacheInfo;
     private final StatsCounter statsCounter;
+    private final boolean recordStats;
 
     public CaffeineCacheImpl(CaffeineCacheInfo cacheInfo, boolean recordStats) {
         this.cacheInfo = cacheInfo;
@@ -56,6 +57,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         if (cacheInfo.expireAfterAccess != null) {
             builder.expireAfterAccess(cacheInfo.expireAfterAccess);
         }
+        this.recordStats = recordStats;
         if (recordStats) {
             LOGGER.tracef("Recording Caffeine stats for cache [%s]", cacheInfo.name);
             statsCounter = new ConcurrentStatsCounter();
@@ -92,6 +94,20 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                         return cast(caffeineValue);
                     }
                 });
+    }
+
+    @Override
+    public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+        Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        return Uni.createFrom()
+                .completionStage(new Supplier<CompletionStage<V>>() {
+                    @Override
+                    public CompletionStage<V> get() {
+                        // When stats are enabled we need to use Map.compute() in order to call statsCounter.recordHits(1)
+                        // Map.compute() is more costly compared to Map.computeIfAbsent() because the remapping function is always called and the returned value is replaced
+                        return recordStats ? computeWithStats(key, valueLoader) : computeWithoutStats(key, valueLoader);
+                    }
+                }).map(fromCacheValue());
     }
 
     @Override
@@ -207,29 +223,6 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     }
 
     @Override
-    public Uni<Void> replaceUniValue(Object key, Object emittedValue) {
-        return Uni.createFrom().item(new Supplier<Void>() {
-            @Override
-            public Void get() {
-                // If the cache no longer contains the key because it was removed, we don't want to put it back.
-                cache.asMap().computeIfPresent(key,
-                        new BiFunction<Object, CompletableFuture<Object>, CompletableFuture<Object>>() {
-                            @Override
-                            public CompletableFuture<Object> apply(Object k, CompletableFuture<Object> currentValue) {
-                                LOGGER.debugf("Replacing Uni value entry with key [%s] into cache [%s]", key, cacheInfo.name);
-                                /*
-                                 * The following computed value will always replace the current cache value (whether it is an
-                                 * UnresolvedUniValue or not) if this method is called multiple times with the same key.
-                                 */
-                                return CompletableFuture.completedFuture(NullValueConverter.toCacheValue(emittedValue));
-                            }
-                        });
-                return null;
-            }
-        });
-    }
-
-    @Override
     public Set<Object> keySet() {
         return Collections.unmodifiableSet(new HashSet<>(cache.asMap().keySet()));
     }
@@ -293,4 +286,59 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                     "An existing cached value type does not match the type returned by the value loading function", e);
         }
     }
+
+    @SuppressWarnings("unchecked")
+    private <K, V> CompletionStage<V> computeWithStats(K key, Function<K, Uni<V>> valueLoader) {
+        return (CompletionStage<V>) cache.asMap().compute(key,
+                new BiFunction<Object, CompletableFuture<Object>, CompletableFuture<Object>>() {
+                    @Override
+                    public CompletableFuture<Object> apply(Object key, CompletableFuture<Object> value) {
+                        if (value == null) {
+                            statsCounter.recordMisses(1);
+                            return valueLoader.apply((K) key)
+                                    .map(TO_CACHE_VALUE)
+                                    .subscribeAsCompletionStage();
+                        } else {
+                            LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
+                            statsCounter.recordHits(1);
+                            return value;
+                        }
+                    }
+                });
+    }
+
+    @SuppressWarnings("unchecked")
+    private <K, V> CompletionStage<V> computeWithoutStats(K key, Function<K, Uni<V>> valueLoader) {
+        return (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
+                new Function<Object, CompletableFuture<Object>>() {
+                    @Override
+                    public CompletableFuture<Object> apply(Object key) {
+                        return valueLoader.apply((K) key)
+                                .map(TO_CACHE_VALUE)
+                                .subscribeAsCompletionStage();
+                    }
+                });
+    }
+
+    @SuppressWarnings("unchecked")
+    private <V> Function<V, V> fromCacheValue() {
+        return (Function<V, V>) FROM_CACHE_VALUE;
+    }
+
+    private static final Function<Object, Object> FROM_CACHE_VALUE = new Function<Object, Object>() {
+
+        @Override
+        public Object apply(Object value) {
+            return NullValueConverter.fromCacheValue(value);
+        }
+    };
+
+    private static final Function<Object, Object> TO_CACHE_VALUE = new Function<Object, Object>() {
+
+        @Override
+        public Object apply(Object value) {
+            return NullValueConverter.toCacheValue(value);
+        }
+    };
+
 }

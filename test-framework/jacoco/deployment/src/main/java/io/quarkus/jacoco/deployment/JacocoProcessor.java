@@ -4,11 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 import org.codehaus.plexus.util.FileUtils;
 import org.jacoco.core.instr.Instrumenter;
@@ -41,6 +41,8 @@ public class JacocoProcessor {
         return new FeatureBuildItem("jacoco");
     }
 
+    private static final Map<String, BytecodeTransformerBuildItem> transformedClasses = new HashMap<>();
+
     @BuildStep(onlyIf = IsTest.class)
     void transformerBuildItem(BuildProducer<BytecodeTransformerBuildItem> transformers,
             OutputTargetBuildItem outputTargetBuildItem,
@@ -54,51 +56,63 @@ public class JacocoProcessor {
             return;
         }
 
-        String dataFile = outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString() + File.separator
-                + config.dataFile;
-        System.setProperty("jacoco-agent.destfile",
-                dataFile);
-        if (!config.reuseDataFile) {
-            Files.deleteIfExists(Paths.get(dataFile));
-        }
+        Path outputDir = outputTargetBuildItem.getOutputDirectory().toAbsolutePath();
+        Files.createDirectories(outputDir);
+
+        Path dataFilePath = outputDir.resolve(config.dataFile);
+        String dataFile = dataFilePath.toString();
+
+        System.setProperty("jacoco-agent.destfile", dataFile);
+        System.setProperty("jacoco-agent.jmx", "true");
 
         Instrumenter instrumenter = new Instrumenter(new OfflineInstrumentationAccessGenerator());
-        Set<String> seen = new HashSet<>();
         for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
             for (ClassInfo i : archive.getIndex().getKnownClasses()) {
                 String className = i.name().toString();
-                if (seen.contains(className)) {
-                    continue;
-                }
-                seen.add(className);
-                transformers.produce(
-                        new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
-                                .setCacheable(true)
-                                .setEager(true)
-                                .setInputTransformer(new BiFunction<String, byte[], byte[]>() {
-                                    @Override
-                                    public byte[] apply(String className, byte[] bytes) {
-                                        try {
-                                            byte[] enhanced = instrumenter.instrument(bytes, className);
-                                            if (enhanced == null) {
-                                                return bytes;
-                                            }
-                                            return enhanced;
-                                        } catch (IOException e) {
-                                            throw new RuntimeException(e);
-                                        }
+                BytecodeTransformerBuildItem bytecodeTransformerBuildItem = transformedClasses.get(className);
+                if (bytecodeTransformerBuildItem == null) {
+                    bytecodeTransformerBuildItem = new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
+                            .setCacheable(true)
+                            .setEager(true)
+                            .setInputTransformer((className1, bytes) -> {
+                                try {
+                                    byte[] enhanced = instrumenter.instrument(bytes, className1);
+                                    if (enhanced == null) {
+                                        return bytes;
                                     }
-                                }).build());
+                                    return enhanced;
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }).build();
+                    transformedClasses.put(className, bytecodeTransformerBuildItem);
+                }
+                transformers.produce(bytecodeTransformerBuildItem);
             }
         }
+
+        String sysPropName = "io.quarkus.internal.jacoco.report-data-file";
+        String currentDataFile = System.setProperty(sysPropName, dataFile);
+        if (currentDataFile != null) {
+            if (!currentDataFile.equals(dataFile)) {
+                System.err.println("Quarkus will use the Jacoco data file " + currentDataFile
+                        + ", not the configured data file " + dataFile + ", because another build item triggered a report.");
+            }
+            return;
+        }
+
+        if (!config.reuseDataFile) {
+            Files.deleteIfExists(dataFilePath);
+        }
+
         if (config.report) {
             ReportInfo info = new ReportInfo();
-            info.dataFile = dataFile;
+            info.dataFile = dataFilePath;
 
-            File targetdir = new File(
-                    outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString() + File.separator
-                            + config.reportLocation);
-            info.reportDir = targetdir.getAbsolutePath();
+            Path targetPath = outputDir.resolve(config.reportLocation);
+            info.reportDir = targetPath.toString();
+            info.errorFile = targetPath.resolve("error.txt");
+            Files.deleteIfExists(info.errorFile);
             String includes = String.join(",", config.includes);
             String excludes = String.join(",", config.excludes.orElse(Collections.emptyList()));
             Set<String> classes = new HashSet<>();
@@ -106,12 +120,12 @@ public class JacocoProcessor {
 
             Set<String> sources = new HashSet<>();
             ApplicationModel model;
-            if (BuildToolHelper.isMavenProject(targetdir.toPath())) {
+            if (BuildToolHelper.isMavenProject(targetPath)) {
                 model = curateOutcomeBuildItem.getApplicationModel();
-            } else if (BuildToolHelper.isGradleProject(targetdir.toPath())) {
+            } else if (BuildToolHelper.isGradleProject(targetPath)) {
                 //this seems counter productive, but we want the dev mode model and not the test model
                 //as the test model will include the test classes that we don't want in the report
-                model = BuildToolHelper.enableGradleAppModelForDevMode(targetdir.toPath());
+                model = BuildToolHelper.enableGradleAppModelForDevMode(targetPath);
             } else {
                 throw new RuntimeException("Cannot determine project type generating Jacoco report");
             }

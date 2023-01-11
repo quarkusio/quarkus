@@ -199,3 +199,31 @@ implementation("io.quarkus:quarkus-mongodb-panache-kotlin") <1>
 ----
 <1>  Note the addition of `-kotlin` on the end.  Generally you'll only need this version but if your project will be using
 both Java and Kotlin code, you can safely include both artifacts.
+
+== Optimistic Lock Control
+
+Aiming to guarantee concurrency control, panache now supports Optimistic lock control, for this you just need to use the `@Version`, and panache does the rest.
+
+[source,kotlin]
+----
+class Person {
+    var id: ObjectId? = null; // used by MongoDB for the _id field
+    lateinit var name: String
+    lateinit var birth: LocalDate
+    lateinit var status: Status
+    @Version lateinit var version: Long?
+}
+----
+
+It is important to notice that you can use any variable name, what matters is the `@Version` annotation,
+you can have some like:
+[source,kotlin]
+----
+class Person {
+    var id: ObjectId? = null; // used by MongoDB for the _id field
+    lateinit var name: String
+    lateinit var birth: LocalDate
+    lateinit var status: Status
+    @Version lateinit var customVersion: Long?
+}
+----

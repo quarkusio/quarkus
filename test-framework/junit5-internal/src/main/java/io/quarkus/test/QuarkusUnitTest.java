@@ -12,10 +12,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -494,6 +497,8 @@ public class QuarkusUnitTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        ensureDeploymentModule(extensionContext);
+
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.TEST);
         if (beforeAllCustomizer != null) {
@@ -686,6 +691,59 @@ public class QuarkusUnitTest
                 }
             }
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void ensureDeploymentModule(ExtensionContext context) {
+        Class<?> testClass = context.getRequiredTestClass();
+        final CodeSource codeSource = testClass.getProtectionDomain().getCodeSource();
+        if (codeSource == null) {
+            // nothing we can do
+            return;
+        }
+        URL url = codeSource.getLocation();
+        if (url == null) {
+            return;
+        }
+        Path buildOutputDir = null;
+        // the following only works for Maven, but that should not be a problem for extension tests
+        if (url.getProtocol().equals("file")) {
+            if (url.getPath().endsWith("test-classes/")) {
+                // we have the maven test classes dir
+                buildOutputDir = toPath(url).getParent();
+            } else if (url.getPath().contains("/target/surefire/")) {
+                // this will make mvn failsafe:integration-test work
+                String path = url.getPath();
+                int index = path.lastIndexOf("/target/");
+                try {
+                    buildOutputDir = Paths.get(new URI("file:" + (path.substring(0, index) + "/target/")));
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (url.getPath().endsWith("-tests.jar")) {
+                // integration platform test
+                final Path baseDir = Path.of("").normalize().toAbsolutePath();
+                Path outputDir = baseDir.resolve("target");
+                if (Files.exists(outputDir)) {
+                    buildOutputDir = outputDir;
+                }
+            }
+        }
+
+        if (buildOutputDir == null) {
+            return;
+        }
+
+        if (!Files.exists(buildOutputDir.resolve("classes").resolve("META-INF").resolve("quarkus-build-steps.list"))) {
+            throw new IllegalStateException("QuarkusUnitTest can only be used in the deployment module of Quarkus extensions");
+        }
+    }
+
+    private Path toPath(URL url) {
+        try {
+            return Paths.get(url.toURI());
+        } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }

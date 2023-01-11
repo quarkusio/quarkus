@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +50,17 @@ public class ReportCreator implements Runnable {
                     break;
                 }
                 Thread.sleep(100);
+            }
+            // also make sure there are no more file modifications
+            FileTime previousLastModifiedTime = Files.getLastModifiedTime(datafile);
+            for (;;) {
+                Thread.sleep(100);
+                FileTime lastModifiedTime = Files.getLastModifiedTime(datafile);
+                if (previousLastModifiedTime.equals(lastModifiedTime)) {
+                    break;
+                } else {
+                    previousLastModifiedTime = lastModifiedTime;
+                }
             }
             //now it is created we wait for Jacoco to stop
             //this is awesomely hacky

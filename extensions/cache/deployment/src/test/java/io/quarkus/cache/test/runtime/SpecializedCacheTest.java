@@ -3,6 +3,7 @@ package io.quarkus.cache.test.runtime;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -72,6 +73,11 @@ public class SpecializedCacheTest {
 
         @Override
         public Uni<Void> invalidateAll() {
+            throw new UnsupportedOperationException("This method is not tested here");
+        }
+
+        @Override
+        public Uni<Void> invalidateIf(Predicate<Object> predicate) {
             throw new UnsupportedOperationException("This method is not tested here");
         }
 

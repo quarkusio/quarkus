@@ -53,35 +53,20 @@ public class CacheResultInterceptor extends CacheInterceptor {
         try {
             ReturnType returnType = determineReturnType(invocationContext.getMethod().getReturnType());
             if (returnType != ReturnType.NonAsync) {
-                Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
+                Uni<Object> cacheValue = cache.getAsync(key, new Function<Object, Uni<Object>>() {
+                    @SuppressWarnings("unchecked")
                     @Override
-                    public Object apply(Object k) {
-                        LOGGER.debugf("Adding %s entry with key [%s] into cache [%s]",
-                                UnresolvedUniValue.class.getSimpleName(), key, binding.cacheName());
-                        return UnresolvedUniValue.INSTANCE;
-                    }
-                }).onItem().transformToUni(new Function<Object, Uni<?>>() {
-                    @Override
-                    public Uni<?> apply(Object value) {
-                        if (value == UnresolvedUniValue.INSTANCE) {
-                            try {
-                                return asyncInvocationResultToUni(invocationContext.proceed(), returnType)
-                                        .call(new Function<Object, Uni<?>>() {
-                                            @Override
-                                            public Uni<?> apply(Object emittedValue) {
-                                                return cache.replaceUniValue(key, emittedValue);
-                                            }
-                                        });
-                            } catch (CacheException e) {
-                                throw e;
-                            } catch (Exception e) {
-                                throw new CacheException(e);
-                            }
-                        } else {
-                            return Uni.createFrom().item(value);
+                    public Uni<Object> apply(Object key) {
+                        try {
+                            return (Uni<Object>) asyncInvocationResultToUni(invocationContext.proceed(), returnType);
+                        } catch (CacheException e) {
+                            throw e;
+                        } catch (Exception e) {
+                            throw new CacheException(e);
                         }
                     }
                 });
+
                 if (binding.lockTimeout() <= 0) {
                     return createAsyncResult(cacheValue, returnType);
                 }

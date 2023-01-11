@@ -42,6 +42,19 @@ public interface Cache {
     <K, V> Uni<V> get(K key, Function<K, V> valueLoader);
 
     /**
+     * Returns a lazy asynchronous action that will emit the cache value identified by {@code key}, obtaining that value from
+     * {@code valueLoader} if necessary.
+     *
+     * @param <K>
+     * @param <V>
+     * @param key
+     * @param valueLoader
+     * @return a lazy asynchronous action that will emit a cache value
+     * @throws NullPointerException if the key is {@code null}
+     */
+    <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader);
+
+    /**
      * Removes the cache entry identified by {@code key} from the cache. If the key does not identify any cache entry, nothing
      * will happen.
      *
@@ -69,4 +82,5 @@ public interface Cache {
      * @throws IllegalStateException if this cache is not an instance of {@code type}
      */
     <T extends Cache> T as(Class<T> type);
+
 }

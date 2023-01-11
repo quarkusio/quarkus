@@ -6,7 +6,10 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-public class MultipartFormDataOutput {
+/**
+ * Used when a Resource method needs to return a multipart output
+ */
+public final class MultipartFormDataOutput {
     private final Map<String, PartItem> parts = new HashMap<>();
 
     public Map<String, PartItem> getFormData() {

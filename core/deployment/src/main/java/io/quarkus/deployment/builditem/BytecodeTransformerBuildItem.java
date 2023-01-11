@@ -44,6 +44,8 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
     final boolean continueOnFailure;
 
+    final int priority;
+
     public BytecodeTransformerBuildItem(String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {
         this(classToTransform, visitorFunction, null);
@@ -81,6 +83,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         this.inputTransformer = null;
         this.classReaderOptions = 0;
         this.continueOnFailure = false;
+        this.priority = 0;
     }
 
     public BytecodeTransformerBuildItem(Builder builder) {
@@ -92,6 +95,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         this.inputTransformer = builder.inputTransformer;
         this.classReaderOptions = builder.classReaderOptions;
         this.continueOnFailure = builder.continueOnFailure;
+        this.priority = builder.priority;
         if (visitorFunction == null && inputTransformer == null) {
             throw new IllegalArgumentException("One of either visitorFunction or inputTransformer must be set");
         }
@@ -129,6 +133,28 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         return continueOnFailure;
     }
 
+    /**
+     * Bytecode transformers are applied in ascending priority order. That is, lower priority
+     * value means the transformer is applied sooner, and higher priority value means
+     * the transformer is applied later.
+     * <p>
+     * This applies directly to {@link #inputTransformer} functions: an input transformer
+     * function with lower priority is applied first and its result is passed to the transformer
+     * function with higher priority.
+     * <p>
+     * It is a bit counter-intuitive when it comes to the {@link #visitorFunction}. The visitor
+     * function doesn't directly transform bytecode; instead, it constructs an ASM
+     * {@link ClassVisitor} from an earlier class visitor. This means that the priority order
+     * is effectively turned around: the later a bytecode transformer is called,
+     * the <em>higher</em> in the class visitor chain it ends up, and the <em>sooner</em>
+     * is the visitor eventually called.
+     * <p>
+     * The priority value defaults to {@code 0}.
+     */
+    public int getPriority() {
+        return priority;
+    }
+
     public static class Builder {
         public BiFunction<String, byte[], byte[]> inputTransformer;
         public boolean continueOnFailure;
@@ -138,6 +164,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         private boolean eager = false;
         private boolean cacheable = false;
         private int classReaderOptions = 0;
+        private int priority = 0;
 
         public Builder setContinueOnFailure(boolean continueOnFailure) {
             this.continueOnFailure = continueOnFailure;
@@ -176,6 +203,11 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
         public Builder setClassReaderOptions(int classReaderOptions) {
             this.classReaderOptions = classReaderOptions;
+            return this;
+        }
+
+        public Builder setPriority(int priority) {
+            this.priority = priority;
             return this;
         }
 

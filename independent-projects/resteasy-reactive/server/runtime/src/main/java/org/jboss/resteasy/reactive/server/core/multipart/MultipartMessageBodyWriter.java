@@ -29,6 +29,8 @@ import org.jboss.resteasy.reactive.server.NoopCloseAndFlushOutputStream;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
+import org.jboss.resteasy.reactive.server.multipart.PartItem;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import org.jboss.resteasy.reactive.spi.BeanFactory;

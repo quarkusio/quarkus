@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.core.multipart;
+package org.jboss.resteasy.reactive.server.multipart;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;

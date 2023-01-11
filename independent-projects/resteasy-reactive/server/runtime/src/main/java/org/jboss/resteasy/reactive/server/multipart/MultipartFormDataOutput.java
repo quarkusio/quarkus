@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.core.multipart;
+package org.jboss.resteasy.reactive.server.multipart;
 
 import java.util.Collections;
 import java.util.HashMap;

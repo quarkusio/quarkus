@@ -4,9 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -44,6 +45,8 @@ public class JacocoProcessor {
         return new FeatureBuildItem("jacoco");
     }
 
+    private static final Map<String, BytecodeTransformerBuildItem> transformedClasses = new HashMap<>();
+
     @BuildStep(onlyIf = IsTest.class)
     void transformerBuildItem(BuildProducer<BytecodeTransformerBuildItem> transformers,
             OutputTargetBuildItem outputTargetBuildItem,
@@ -61,58 +64,74 @@ public class JacocoProcessor {
             return;
         }
 
-        String dataFile = getFilePath(config.dataFile(), outputTargetBuildItem.getOutputDirectory(),
-                JacocoConfig.JACOCO_QUARKUS_EXEC);
+        Path outputDir = outputTargetBuildItem.getOutputDirectory().toAbsolutePath();
+        Files.createDirectories(outputDir);
+
+        Path dataFilePath = outputDir.resolve(config.dataFile().orElse(JacocoConfig.JACOCO_QUARKUS_EXEC));
+        String dataFile = dataFilePath.toString();
+
         System.setProperty("jacoco-agent.destfile", dataFile);
-        if (!config.reuseDataFile()) {
-            Files.deleteIfExists(Paths.get(dataFile));
-        }
+        System.setProperty("jacoco-agent.jmx", "true");
 
         Instrumenter instrumenter = new Instrumenter(new OfflineInstrumentationAccessGenerator());
-        Set<String> seen = new HashSet<>();
         for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
             for (ClassInfo i : archive.getIndex().getKnownClasses()) {
                 String className = i.name().toString();
-                if (seen.contains(className)) {
-                    continue;
-                }
-                seen.add(className);
-                transformers.produce(
-                        new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
-                                .setCacheable(true)
-                                .setInputTransformer(new BiFunction<String, byte[], byte[]>() {
-                                    @Override
-                                    public byte[] apply(String className, byte[] bytes) {
-                                        try {
-                                            byte[] enhanced = instrumenter.instrument(bytes, className);
-                                            if (enhanced == null) {
-                                                return bytes;
-                                            }
-                                            return enhanced;
-                                        } catch (IOException e) {
-                                            if (!log.isDebugEnabled()) {
-                                                log.warnf(
-                                                        "Unable to instrument class %s with JaCoCo: %s, keeping the original class",
-                                                        className, e.getMessage());
-                                            } else {
-                                                log.warnf(e,
-                                                        "Unable to instrument class %s with JaCoCo, keeping the original class",
-                                                        className);
-                                            }
+                BytecodeTransformerBuildItem bytecodeTransformerBuildItem = transformedClasses.get(className);
+                if (bytecodeTransformerBuildItem == null) {
+                    bytecodeTransformerBuildItem = new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
+                            .setCacheable(true)
+                            .setInputTransformer(new BiFunction<>() {
+                                @Override
+                                public byte[] apply(String className, byte[] bytes) {
+                                    try {
+                                        byte[] enhanced = instrumenter.instrument(bytes, className);
+                                        if (enhanced == null) {
                                             return bytes;
                                         }
+                                        return enhanced;
+                                    } catch (IOException e) {
+                                        if (!log.isDebugEnabled()) {
+                                            log.warnf(
+                                                    "Unable to instrument class %s with JaCoCo: %s, keeping the original class",
+                                                    className, e.getMessage());
+                                        } else {
+                                            log.warnf(e,
+                                                    "Unable to instrument class %s with JaCoCo, keeping the original class",
+                                                    className);
+                                        }
+                                        return bytes;
                                     }
-                                }).build());
+                                }
+                            }).build();
+                    transformedClasses.put(className, bytecodeTransformerBuildItem);
+                }
+                transformers.produce(bytecodeTransformerBuildItem);
             }
         }
+
+        String sysPropName = "io.quarkus.internal.jacoco.report-data-file";
+        String currentDataFile = System.setProperty(sysPropName, dataFile);
+        if (currentDataFile != null) {
+            if (!currentDataFile.equals(dataFile)) {
+                System.err.println("Quarkus will use the Jacoco data file " + currentDataFile
+                        + ", not the configured data file " + dataFile + ", because another build item triggered a report.");
+            }
+            return;
+        }
+
+        if (!config.reuseDataFile()) {
+            Files.deleteIfExists(dataFilePath);
+        }
+
         if (config.report()) {
             ReportInfo info = new ReportInfo();
-            info.dataFile = dataFile;
+            info.dataFile = dataFilePath;
 
-            File targetdir = new File(
-                    getFilePath(config.reportLocation(), outputTargetBuildItem.getOutputDirectory(),
-                            JacocoConfig.JACOCO_REPORT));
-            info.reportDir = targetdir.getAbsolutePath();
+            Path targetPath = outputDir.resolve(config.reportLocation().orElse(JacocoConfig.JACOCO_REPORT));
+            info.reportDir = targetPath.toString();
+            info.errorFile = targetPath.resolve("error.txt");
+            Files.deleteIfExists(info.errorFile);
             String includes = String.join(",", config.includes());
             String excludes = String.join(",", config.excludes().orElse(Collections.emptyList()));
             Set<String> classes = new HashSet<>();
@@ -159,7 +178,7 @@ public class JacocoProcessor {
         }
     }
 
-    private String getFilePath(Optional<String> path, Path outputDirectory, String defaultRelativePath) {
+    private static String getFilePath(Optional<String> path, Path outputDirectory, String defaultRelativePath) {
         return path.orElse(outputDirectory.toAbsolutePath() + File.separator + defaultRelativePath);
     }
 }

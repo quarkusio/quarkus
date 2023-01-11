@@ -162,7 +162,9 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
 
     @Override
     public void stop() {
+        LOGGER.info("Shutting down embedded mongo severs...");
         for (TransitionWalker.ReachedState<RunningMongodProcess> startedServer : startedServers) {
+            LOGGER.infof("Shutting down embedded mongo server : %s", startedServer);
             startedServer.close();
         }
         startedServers = Collections.emptyList();

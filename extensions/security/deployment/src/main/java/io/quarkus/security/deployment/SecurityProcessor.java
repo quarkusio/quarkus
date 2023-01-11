@@ -58,6 +58,7 @@ import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -145,7 +146,8 @@ public class SecurityProcessor {
     }
 
     @BuildStep
-    void prepareBouncyCastleProviders(BuildProducer<ReflectiveClassBuildItem> reflection,
+    void prepareBouncyCastleProviders(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflection,
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) throws Exception {
@@ -158,35 +160,41 @@ public class SecurityProcessor {
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem(
                             "org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers"));
-            prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleJsseProvider.get().isInFipsMode());
+            prepareBouncyCastleProvider(curateOutcomeBuildItem, reflection, runtimeReInitialized,
+                    bouncyCastleJsseProvider.get().isInFipsMode());
         } else {
             Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
             if (bouncyCastleProvider.isPresent()) {
-                prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleProvider.get().isInFipsMode());
+                prepareBouncyCastleProvider(curateOutcomeBuildItem, reflection, runtimeReInitialized,
+                        bouncyCastleProvider.get().isInFipsMode());
             }
         }
     }
 
-    private static void prepareBouncyCastleProvider(BuildProducer<ReflectiveClassBuildItem> reflection,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
-            boolean isFipsMode) {
+    private static void prepareBouncyCastleProvider(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflection,
+            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized, boolean isFipsMode) {
         reflection.produce(new ReflectiveClassBuildItem(true, true,
                 isFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
                         : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME));
-        reflection.produce(new ReflectiveClassBuildItem(true, true,
-                "org.bouncycastle.jcajce.provider.symmetric.AES",
-                "org.bouncycastle.jcajce.provider.symmetric.AES$CBC",
-                "org.bouncycastle.crypto.paddings.PKCS7Padding",
-                "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi",
-                "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi$EC",
-                "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi$ECDSA",
-                "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi",
-                "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi$EC",
-                "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi$ECDSA",
-                "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyFactorySpi",
-                "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyPairGeneratorSpi",
-                "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi",
-                "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA"));
+
+        if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
+                x -> x.getGroupId().equals("org.bouncycastle") && x.getArtifactId().startsWith("bcprov-"))) {
+            reflection.produce(new ReflectiveClassBuildItem(true, true,
+                    "org.bouncycastle.jcajce.provider.symmetric.AES",
+                    "org.bouncycastle.jcajce.provider.symmetric.AES$CBC",
+                    "org.bouncycastle.crypto.paddings.PKCS7Padding",
+                    "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi$EC",
+                    "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi$ECDSA",
+                    "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi$EC",
+                    "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi$ECDSA",
+                    "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyFactorySpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyPairGeneratorSpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA"));
+        }
         runtimeReInitialized
                 .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.CryptoServicesRegistrar"));
         if (!isFipsMode) {

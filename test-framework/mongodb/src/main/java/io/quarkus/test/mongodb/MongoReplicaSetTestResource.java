@@ -18,90 +18,70 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import org.awaitility.Awaitility;
 import org.bson.Document;
 import org.jboss.logging.Logger;
-
-import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Durations.*;
 
 public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycleManager {
+
+    public static final String REPLICA_SET = "replicaSet";
+    static final String DEFAULT_REPLICA_SET = "test001";
     private static final Logger LOGGER = Logger.getLogger(MongoReplicaSetTestResource.class);
     private Integer port;
     private IFeatureAwareVersion version;
 
-    private List<TransitionWalker.ReachedState<RunningMongodProcess>> startedServers=Collections.emptyList();
+    private String replicaSet;
 
-    @Override
-    public void init(Map<String, String> initArgs) {
-        port = MongoTestResource.port(initArgs);
-        version = MongoTestResource.version(initArgs);
-    }
-
-    @Override
-    public Map<String, String> start() {
-        MongoTestResource.fixIssue14424();
-
-        this.startedServers = startReplicaSet(version, port);
-
-        return Collections.emptyMap();
-    }
+    private List<TransitionWalker.ReachedState<RunningMongodProcess>> startedServers = Collections.emptyList();
 
     private static Net net(String hostName, int port) {
-        return Net.builder()
-          .from(Net.defaults())
-          .bindIp(hostName)
-          .port(port)
-          .build();
+        return Net.builder().from(Net.defaults()).bindIp(hostName).port(port).build();
     }
 
-    private static List<TransitionWalker.ReachedState<RunningMongodProcess>> startReplicaSet(IFeatureAwareVersion version, int basePort) {
-        TransitionWalker.ReachedState<RunningMongodProcess> firstStarted = mongodWithPort(basePort)
-          .start(version);
+    public static String setReplicaSet(Map<String, String> initArgs) {
+        return Optional.ofNullable(initArgs.get(REPLICA_SET)).orElse(DEFAULT_REPLICA_SET);
+    }
+
+    private static List<TransitionWalker.ReachedState<RunningMongodProcess>> startReplicaSet(
+            IFeatureAwareVersion version, int basePort, String replicaSet) {
+        TransitionWalker.ReachedState<RunningMongodProcess> firstStarted =
+                mongodWithPort(basePort, replicaSet).start(version);
         try {
-            TransitionWalker.ReachedState<RunningMongodProcess> secondStarted = mongodWithPort(basePort + 1)
-              .start(version);
+            TransitionWalker.ReachedState<RunningMongodProcess> secondStarted =
+                    mongodWithPort(basePort + 1, replicaSet).start(version);
 
             try {
                 ServerAddress firstAddress = firstStarted.current().getServerAddress();
                 ServerAddress secondAddress = secondStarted.current().getServerAddress();
-                initializeReplicaSet(Arrays.asList(firstAddress, secondAddress));
+                initializeReplicaSet(Arrays.asList(firstAddress, secondAddress), replicaSet);
+                LOGGER.infof("ReplicaSet initialized with servers - firstServer: %s , secondServer: %s",
+                        firstAddress, secondAddress);
                 return Arrays.asList(secondStarted, firstStarted);
-            }
-            catch (IOException iox) {
-                throw new RuntimeException("could not get server address", iox);
+            } catch (Exception ex) {
+                LOGGER.error("Shutting down second Mongo Server.");
+                secondStarted.close();
+                LOGGER.errorv(ex, "Error while initializing replicaSet. Error Message %s", ex.getMessage());
+                throw new RuntimeException("Error starting second server and initializing replicaset.", ex);
             }
         } catch (RuntimeException rx) {
+            LOGGER.error("Shutting down first Mongo Server.");
             firstStarted.close();
             throw rx;
         }
     }
 
-    private static Mongod mongodWithPort(int port) {
-        return Mongod.instance()
-          .withNet(Start.to(Net.class)
-            .initializedWith(net("localhost", port)))
-          .withProcessOutput(Start.to(ProcessOutput.class)
-            .initializedWith(ProcessOutput.silent()))
-          .withMongodArguments(Start.to(MongodArguments.class)
-            .initializedWith(MongodArguments.defaults()
-              .withArgs(Map.of("--replSet", "test001"))
-              .withSyncDelay(10)
-              .withUseSmallFiles(true)
-              .withUseNoJournal(false)
-            ));
+    private static Mongod mongodWithPort(int port, String replicaSet) {
+        return Mongod.instance().withNet(Start.to(Net.class).initializedWith(net("localhost", port)))
+                .withProcessOutput(Start.to(ProcessOutput.class).initializedWith(ProcessOutput.silent()))
+                .withMongodArguments(Start.to(MongodArguments.class).initializedWith(
+                        MongodArguments.defaults().withArgs(Map.of("--replSet", replicaSet)).withSyncDelay(10)
+                                .withUseSmallFiles(true).withUseNoJournal(false)));
     }
 
-    @Override
-    public void stop() {
-        for (TransitionWalker.ReachedState<RunningMongodProcess> startedServer : startedServers) {
-            startedServer.close();
-        }
-        startedServers=Collections.emptyList();
-    }
-
-    private static void initializeReplicaSet(final List<ServerAddress> mongodConfigList) throws UnknownHostException {
-        final String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).getHost() + ":"
-                + mongodConfigList.get(0).getPort();
+    private static void initializeReplicaSet(final List<ServerAddress> mongodConfigList, String replicaSet) throws UnknownHostException {
+        final String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).getHost()
+                + ":" + mongodConfigList.get(0).getPort();
         final MongoClientSettings mo = MongoClientSettings.builder()
                 .applyConnectionString(new ConnectionString(arbitrerAddress)).build();
 
@@ -112,7 +92,7 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
             LOGGER.infof("isMaster: %s", cr);
 
             // Build replica set configuration settings
-            final Document rsConfiguration = buildReplicaSetConfiguration(mongodConfigList);
+            Document rsConfiguration = buildReplicaSetConfiguration(mongodConfigList, replicaSet);
             LOGGER.infof("replSetSettings: %s", rsConfiguration);
 
             // Initialize replica set
@@ -120,29 +100,29 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
             LOGGER.infof("replSetInitiate: %s", cr);
 
             // Check replica set status before to proceed
-            Awaitility.await()
-                    .pollInterval(100, TimeUnit.MILLISECONDS)
-                    .atMost(1, TimeUnit.MINUTES)
-                    .until(() -> {
-                        Document result = mongoAdminDB.runCommand(new Document("replSetGetStatus", 1));
-                        LOGGER.infof("replSetGetStatus: %s", result);
-                        return !isReplicaSetStarted(result);
-                    });
+            Awaitility.await().atMost(ONE_MINUTE).with().pollInterval(ONE_SECOND).until(() -> {
+                Document result = mongoAdminDB.runCommand(new Document("replSetGetStatus", 1));
+                LOGGER.infof("replSetGetStatus: %s", result);
+                boolean replicaSetStatus = isReplicaSetStarted(result);
+                LOGGER.infof("replicaSet Readiness Status: %s", replicaSetStatus);
+                return replicaSetStatus;
+            });
+            LOGGER.info("ReplicaSet is now ready with 2 cluster node.");
         }
     }
 
-    private static Document buildReplicaSetConfiguration(final List<ServerAddress> configList) throws UnknownHostException {
+    private static Document buildReplicaSetConfiguration(final List<ServerAddress> configList, String replicaSet) throws UnknownHostException {
         final Document replicaSetSetting = new Document();
-        replicaSetSetting.append("_id", "test001");
+        replicaSetSetting.append("_id", replicaSet);
 
         final List<Document> members = new ArrayList<>();
         int i = 0;
         for (final ServerAddress mongoConfig : configList) {
-            members.add(new Document().append("_id", i++).append("host",
-                    mongoConfig.getHost() + ":" + mongoConfig.getPort()));
+            members.add(new Document().append("_id", i++).append("host", mongoConfig.getHost() + ":" + mongoConfig.getPort()));
         }
 
         replicaSetSetting.append("members", members);
+        LOGGER.infof("ReplicaSet Configuration settings: %s", replicaSetSetting);
         return replicaSetSetting;
     }
 
@@ -151,8 +131,7 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
             return false;
         }
 
-        @SuppressWarnings("unchecked")
-        final List<Document> members = setting.get("members", List.class);
+        @SuppressWarnings("unchecked") final List<Document> members = setting.get("members", List.class);
         for (final Document member : members) {
             LOGGER.infof("replica set member %s", member);
             final int state = member.getInteger("state");
@@ -165,5 +144,28 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         return true;
     }
 
+    @Override
+    public void init(Map<String, String> initArgs) {
+        port = MongoTestResource.port(initArgs);
+        version = MongoTestResource.version(initArgs);
+        replicaSet = setReplicaSet(initArgs);
+    }
+
+    @Override
+    public Map<String, String> start() {
+        MongoTestResource.fixIssue14424();
+
+        startedServers = startReplicaSet(version, port, replicaSet);
+
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public void stop() {
+        for (TransitionWalker.ReachedState<RunningMongodProcess> startedServer : startedServers) {
+            startedServer.close();
+        }
+        startedServers = Collections.emptyList();
+    }
 
 }

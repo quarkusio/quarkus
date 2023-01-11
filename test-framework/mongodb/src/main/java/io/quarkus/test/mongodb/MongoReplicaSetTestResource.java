@@ -79,14 +79,14 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
                                 .withUseSmallFiles(true).withUseNoJournal(false)));
     }
 
-    private static void initializeReplicaSet(final List<ServerAddress> mongodConfigList, String replicaSet) throws UnknownHostException {
-        final String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).getHost()
+    private static void initializeReplicaSet(List<ServerAddress> mongodConfigList, String replicaSet) throws UnknownHostException {
+        String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).getHost()
                 + ":" + mongodConfigList.get(0).getPort();
-        final MongoClientSettings mo = MongoClientSettings.builder()
+        MongoClientSettings mo = MongoClientSettings.builder()
                 .applyConnectionString(new ConnectionString(arbitrerAddress)).build();
 
         try (MongoClient mongo = MongoClients.create(mo)) {
-            final MongoDatabase mongoAdminDB = mongo.getDatabase("admin");
+            MongoDatabase mongoAdminDB = mongo.getDatabase("admin");
 
             Document cr = mongoAdminDB.runCommand(new Document("isMaster", 1));
             LOGGER.infof("isMaster: %s", cr);
@@ -111,13 +111,13 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         }
     }
 
-    private static Document buildReplicaSetConfiguration(final List<ServerAddress> configList, String replicaSet) throws UnknownHostException {
-        final Document replicaSetSetting = new Document();
+    private static Document buildReplicaSetConfiguration(List<ServerAddress> configList, String replicaSet) throws UnknownHostException {
+        Document replicaSetSetting = new Document();
         replicaSetSetting.append("_id", replicaSet);
 
-        final List<Document> members = new ArrayList<>();
+        List<Document> members = new ArrayList<>();
         int i = 0;
-        for (final ServerAddress mongoConfig : configList) {
+        for (ServerAddress mongoConfig : configList) {
             members.add(new Document().append("_id", i++).append("host", mongoConfig.getHost() + ":" + mongoConfig.getPort()));
         }
 
@@ -126,15 +126,15 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         return replicaSetSetting;
     }
 
-    private static boolean isReplicaSetStarted(final Document setting) {
+    private static boolean isReplicaSetStarted(Document setting) {
         if (!setting.containsKey("members")) {
             return false;
         }
 
-        @SuppressWarnings("unchecked") final List<Document> members = setting.get("members", List.class);
-        for (final Document member : members) {
+        @SuppressWarnings("unchecked") List<Document> members = setting.get("members", List.class);
+        for (Document member : members) {
             LOGGER.infof("replica set member %s", member);
-            final int state = member.getInteger("state");
+            int state = member.getInteger("state");
             LOGGER.infof("state: %s", state);
             // 1 - PRIMARY, 2 - SECONDARY, 7 - ARBITER
             if (state != 1 && state != 2 && state != 7) {

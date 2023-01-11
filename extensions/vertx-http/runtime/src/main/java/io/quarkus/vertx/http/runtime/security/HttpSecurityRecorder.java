@@ -241,7 +241,8 @@ public class HttpSecurityRecorder {
                 }
                 FormAuthConfig form = buildTimeConfig.auth.form;
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
-                        form.newCookieInterval.toMillis(), form.httpOnlyCookie, form.cookieSameSite.name());
+                        form.newCookieInterval.toMillis(), form.httpOnlyCookie, form.cookieSameSite.name(),
+                        form.cookiePath.orElse(null));
                 String loginPage = startWithSlash(form.loginPage.orElse(null));
                 String errorPage = startWithSlash(form.errorPage.orElse(null));
                 String landingPage = startWithSlash(form.landingPage.orElse(null));
@@ -249,9 +250,11 @@ public class HttpSecurityRecorder {
                 String usernameParameter = form.usernameParameter;
                 String passwordParameter = form.passwordParameter;
                 String locationCookie = form.locationCookie;
+                String cookiePath = form.cookiePath.orElse(null);
                 boolean redirectAfterLogin = form.redirectAfterLogin;
                 return new FormAuthenticationMechanism(loginPage, postLocation, usernameParameter, passwordParameter,
-                        errorPage, landingPage, redirectAfterLogin, locationCookie, form.cookieSameSite.name(), loginManager);
+                        errorPage, landingPage, redirectAfterLogin, locationCookie, form.cookieSameSite.name(), cookiePath,
+                        loginManager);
             }
         };
     }

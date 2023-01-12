@@ -33,11 +33,12 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
     }
 
     public static IFeatureAwareVersion version(Map<String, String> initArgs) {
-        IFeatureAwareVersion version = Optional.ofNullable(initArgs.get(VERSION))
-                .map(versionStr -> Versions.withFeatures(de.flapdoodle.embed.process.distribution.Version.of(versionStr)))
-                .orElse(Version.Main.V4_0);
+        Optional<String> versionArg = Optional.ofNullable(initArgs.get(VERSION));
 
-        return version;
+        return versionArg.<IFeatureAwareVersion> map(Version.Main::valueOf)
+                .orElseGet(() -> versionArg.map(
+                        versionStr -> Versions.withFeatures(de.flapdoodle.embed.process.distribution.Version.of(versionStr)))
+                        .orElse(Version.Main.V4_0));
     }
 
     public static void fixIssue14424() {

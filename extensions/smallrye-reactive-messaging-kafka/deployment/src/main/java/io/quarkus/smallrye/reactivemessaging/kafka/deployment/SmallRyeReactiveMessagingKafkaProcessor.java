@@ -47,6 +47,7 @@ import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
 import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
 import io.smallrye.reactive.messaging.kafka.KafkaConnector;
+import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
 import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
 public class SmallRyeReactiveMessagingKafkaProcessor {
@@ -71,6 +72,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         .constructors(true)
                         .finalFieldsWritable(true)
                         .build());
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ProcessingState.class));
     }
 
     @BuildStep
@@ -108,8 +110,12 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     @BuildStep
-    public void checkpointRedis(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
+    public void checkpointRedis(BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            Capabilities capabilities) {
         if (hasStateStoreConfig(REDIS_STATE_STORE, ConfigProvider.getConfig())) {
+            Optional<String> checkpointStateType = getConnectorProperty("checkpoint.state-type", ConfigProvider.getConfig());
+            checkpointStateType.ifPresent(s -> reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, s)));
             if (capabilities.isPresent(Capability.REDIS_CLIENT)) {
                 additionalBean.produce(new AdditionalBeanBuildItem(RedisStateStore.Factory.class));
                 additionalBean.produce(new AdditionalBeanBuildItem(DatabindProcessingStateCodec.Factory.class));

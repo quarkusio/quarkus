@@ -183,7 +183,7 @@ class BeanTypeAssignabilityRules {
      * Standard Java covariant assignability rules are applied to all other types of bounds.
      * This is not explicitly mentioned in the specification but is implied.
      */
-    Type[] getUppermostTypeVariableBounds(TypeVariable<?> bound) {
+    static Type[] getUppermostTypeVariableBounds(TypeVariable<?> bound) {
         if (bound.getBounds()[0] instanceof TypeVariable<?>) {
             return getUppermostTypeVariableBounds((TypeVariable<?>) bound.getBounds()[0]);
         }

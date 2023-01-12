@@ -45,7 +45,7 @@ public class MongoTestBase {
             int port = 27018;
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
 
-            TransitionWalker.ReachedState<RunningMongodProcess> started = Mongod.instance()
+            MONGO = Mongod.instance()
               .withNet(Start.to(Net.class).initializedWith(Net.builder()
                 .from(Net.defaults())
                 .port(port)

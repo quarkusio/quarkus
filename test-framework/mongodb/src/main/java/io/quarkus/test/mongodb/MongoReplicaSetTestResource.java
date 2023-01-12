@@ -36,7 +36,11 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
     private List<TransitionWalker.ReachedState<RunningMongodProcess>> startedServers = Collections.emptyList();
 
     private static Net net(String hostName, int port) {
-        return Net.builder().from(Net.defaults()).bindIp(hostName).port(port).build();
+        return Net.builder()
+                .from(Net.defaults())
+                .bindIp(hostName)
+                .port(port)
+                .build();
     }
 
     public static String setReplicaSet(Map<String, String> initArgs) {
@@ -79,7 +83,7 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
                                 .withUseSmallFiles(true).withUseNoJournal(false)));
     }
 
-    private static void initializeReplicaSet(List<ServerAddress> mongodConfigList, String replicaSet) throws UnknownHostException {
+    private static void initializeReplicaSet(final List<ServerAddress> mongodConfigList, String replicaSet) throws UnknownHostException {
         String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).getHost()
                 + ":" + mongodConfigList.get(0).getPort();
         MongoClientSettings mo = MongoClientSettings.builder()

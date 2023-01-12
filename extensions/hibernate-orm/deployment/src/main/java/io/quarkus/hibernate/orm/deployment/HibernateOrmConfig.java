@@ -41,6 +41,12 @@ public class HibernateOrmConfig {
     public Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits;
 
     /**
+     * Configuration for the {@code persistence.xml} handling.
+     */
+    @ConfigItem
+    public HibernateOrmConfigPersistenceXml persistenceXml;
+
+    /**
      * Logging configuration.
      */
     @ConfigItem
@@ -84,6 +90,18 @@ public class HibernateOrmConfig {
         }
         map.putAll(persistenceUnits);
         return map;
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceXml {
+
+        /**
+         * If {@code true}, Quarkus will ignore any {@code persistence.xml} file in the classpath
+         * and rely exclusively on the Quarkus configuration.
+         */
+        @ConfigItem
+        public boolean ignore;
+
     }
 
     @ConfigGroup

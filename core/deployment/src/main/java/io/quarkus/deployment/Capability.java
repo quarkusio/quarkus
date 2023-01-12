@@ -137,4 +137,6 @@ public interface Capability {
 
     String SMALLRYE_REACTIVE_MESSAGING = QUARKUS_PREFIX + "smallrye.reactive.messaging";
     String REDIS_CLIENT = QUARKUS_PREFIX + "redis";
+
+    String CACHE = QUARKUS_PREFIX + "cache";
 }

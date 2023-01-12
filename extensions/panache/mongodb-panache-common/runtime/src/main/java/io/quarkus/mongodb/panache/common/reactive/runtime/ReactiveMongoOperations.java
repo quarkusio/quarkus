@@ -3,6 +3,7 @@ package io.quarkus.mongodb.panache.common.reactive.runtime;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.beanName;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.clientFromArc;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseName;
+import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseNameFromResolver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -315,7 +316,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
             return mongoClient.getDatabase(mongoEntity.database());
         }
-        String databaseName = getDefaultDatabaseName(mongoEntity);
+        String databaseName = getDatabaseNameFromResolver().orElseGet(() -> getDefaultDatabaseName(mongoEntity));
         return mongoClient.getDatabase(databaseName);
     }
 

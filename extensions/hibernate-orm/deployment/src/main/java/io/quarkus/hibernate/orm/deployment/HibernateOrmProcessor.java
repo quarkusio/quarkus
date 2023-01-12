@@ -321,9 +321,10 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    List<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles(LaunchModeBuildItem launchMode) {
+    List<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles(HibernateOrmConfig config,
+            LaunchModeBuildItem launchMode) {
         List<HotDeploymentWatchedFileBuildItem> watchedFiles = new ArrayList<>();
-        if (shouldIgnorePersistenceXmlResources()) {
+        if (shouldIgnorePersistenceXmlResources(config)) {
             watchedFiles.add(new HotDeploymentWatchedFileBuildItem("META-INF/persistence.xml"));
         }
         watchedFiles.add(new HotDeploymentWatchedFileBuildItem(INTEGRATOR_SERVICE_FILE));
@@ -335,9 +336,9 @@ public final class HibernateOrmProcessor {
 
     //Integration point: allow other extensions to define additional PersistenceXmlDescriptorBuildItem
     @BuildStep
-    public void parsePersistenceXmlDescriptors(
+    public void parsePersistenceXmlDescriptors(HibernateOrmConfig config,
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
-        if (!shouldIgnorePersistenceXmlResources()) {
+        if (!shouldIgnorePersistenceXmlResources(config)) {
             List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
             for (ParsedPersistenceXmlDescriptor desc : explicitDescriptors) {
                 persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
@@ -1429,14 +1430,18 @@ public final class HibernateOrmProcessor {
     }
 
     /**
-     * Undocumented feature: we allow setting the System property
-     * "SKIP_PARSE_PERSISTENCE_XML" to fully ignore any persistence.xml
-     * resource.
+     * Checks whether we should ignore {@code persistence.xml} files.
+     * <p>
+     * The main way to ignore {@code persistence.xml} files is to set the configuration property
+     * {@code quarkus.hibernate-orm.persistence-xml.ignore}.
+     * <p>
+     * But there is also an undocumented feature: we allow setting the System property
+     * "SKIP_PARSE_PERSISTENCE_XML" to ignore any {@code persistence.xml} resource.
      *
      * @return true if we're expected to ignore them
      */
-    private boolean shouldIgnorePersistenceXmlResources() {
-        return Boolean.getBoolean("SKIP_PARSE_PERSISTENCE_XML");
+    private boolean shouldIgnorePersistenceXmlResources(HibernateOrmConfig config) {
+        return config.persistenceXml.ignore || Boolean.getBoolean("SKIP_PARSE_PERSISTENCE_XML");
     }
 
     /**

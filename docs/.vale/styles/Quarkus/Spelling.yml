@@ -227,6 +227,7 @@ filters:
   - Fabrice
   - Failsafe
   - Fernflower
+  - Flyway
   - Fortran
   - Funqy
   - GCC
@@ -272,9 +273,11 @@ filters:
   - Kogito
   - Kompose
   - Kubespray
+  - Kubernetes
   - Kylin
   - Laravel
   - Lombok
+  - Liquibase
   - Makefile
   - Mattermost
   - Maven

@@ -45,6 +45,7 @@ import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.UriInfoImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
+import org.jboss.resteasy.reactive.server.multipart.FormValue;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
@@ -869,7 +870,7 @@ public abstract class ResteasyReactiveRequestContext
             return null;
         }
         if (single) {
-            FormData.FormValue val = formData.getFirst(name);
+            FormValue val = formData.getFirst(name);
             if (val == null || val.isFileItem()) {
                 return null;
             }
@@ -878,10 +879,10 @@ public abstract class ResteasyReactiveRequestContext
             }
             return val.getValue();
         }
-        Deque<FormData.FormValue> val = formData.get(name);
+        Deque<FormValue> val = formData.get(name);
         List<String> strings = new ArrayList<>();
         if (val != null) {
-            for (FormData.FormValue i : val) {
+            for (FormValue i : val) {
                 if (encoded) {
                     strings.add(Encode.encodeQueryParam(i.getValue()));
                 } else {

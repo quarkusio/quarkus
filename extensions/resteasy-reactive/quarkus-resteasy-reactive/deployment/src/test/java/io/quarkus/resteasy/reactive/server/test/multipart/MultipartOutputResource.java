@@ -11,7 +11,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.RestResponse;
-import org.jboss.resteasy.reactive.server.core.multipart.MultipartFormDataOutput;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
 
 @Path("/multipart/output")
 public class MultipartOutputResource {

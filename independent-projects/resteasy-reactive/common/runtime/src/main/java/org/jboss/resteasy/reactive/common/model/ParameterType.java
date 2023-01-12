@@ -7,6 +7,7 @@ public enum ParameterType {
     HEADER,
     FORM,
     MULTI_PART_FORM,
+    MULTI_PART_DATA_INPUT,
     BODY,
     MATRIX,
     CONTEXT,

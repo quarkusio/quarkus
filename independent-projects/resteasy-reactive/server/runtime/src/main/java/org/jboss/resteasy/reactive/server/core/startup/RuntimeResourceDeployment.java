@@ -54,6 +54,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.HeaderParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.InjectParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.LocatableResourcePathParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.MatrixParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.MultipartDataInputExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.MultipartFormParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
@@ -676,18 +677,20 @@ public class RuntimeResourceDeployment {
             case CONTEXT:
                 return new ContextParamExtractor(param.type);
             case ASYNC_RESPONSE:
-                return new AsyncResponseExtractor();
+                return AsyncResponseExtractor.INSTANCE;
             case QUERY:
                 extractor = new QueryParamExtractor(param.name, param.isSingle(), param.encoded, param.separator);
                 return extractor;
             case BODY:
-                return new BodyParamExtractor();
+                return BodyParamExtractor.INSTANCE;
             case MATRIX:
                 extractor = new MatrixParamExtractor(param.name, param.isSingle(), param.encoded);
                 return extractor;
             case BEAN:
             case MULTI_PART_FORM:
                 return new InjectParamExtractor((BeanFactory<Object>) info.getFactoryCreator().apply(loadClass(param.type)));
+            case MULTI_PART_DATA_INPUT:
+                return MultipartDataInputExtractor.INSTANCE;
             case CUSTOM:
                 return param.customParameterExtractor;
             default:

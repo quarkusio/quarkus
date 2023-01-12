@@ -80,9 +80,9 @@ public class ParameterizedTypeImpl implements ParameterizedType, Serializable {
                 } else {
                     sb.append(actualType);
                 }
-                sb.append(",");
+                sb.append(", ");
             }
-            sb.delete(sb.length() - 1, sb.length());
+            sb.delete(sb.length() - 2, sb.length());
             sb.append(">");
         }
         return sb.toString();

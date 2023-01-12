@@ -9,6 +9,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
+import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
@@ -21,7 +23,10 @@ public class LiquibaseMongodbRecorder {
         return new Supplier<LiquibaseMongodbFactory>() {
             @Override
             public LiquibaseMongodbFactory get() {
-                return new LiquibaseMongodbFactory(config, buildTimeConfig, mongodbConfig.defaultMongoClientConfig);
+                MongoClientConfig mongoClientConfig = MongoClientBeanUtil.isDefault(config.mongoClientName)
+                        ? mongodbConfig.defaultMongoClientConfig
+                        : mongodbConfig.mongoClientConfigs.get(config.mongoClientName);
+                return new LiquibaseMongodbFactory(config, buildTimeConfig, config.mongoClientName, mongoClientConfig);
             }
         };
     }
@@ -37,18 +42,21 @@ public class LiquibaseMongodbRecorder {
             for (InstanceHandle<LiquibaseMongodbFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
                 try {
                     LiquibaseMongodbFactory liquibaseFactory = liquibaseFactoryHandle.get();
-                    if (liquibaseFactory.getConfiguration().cleanAtStart) {
-                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+
+                    if (!liquibaseFactory.getConfiguration().cleanAtStart
+                            && !liquibaseFactory.getConfiguration().migrateAtStart) {
+                        // Don't initialize if no clean or migration required at start
+                        return;
+                    }
+
+                    try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                        if (liquibaseFactory.getConfiguration().cleanAtStart) {
                             liquibase.dropAll();
                         }
-                    }
-                    if (liquibaseFactory.getConfiguration().migrateAtStart) {
-                        if (liquibaseFactory.getConfiguration().validateOnMigrate) {
-                            try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                        if (liquibaseFactory.getConfiguration().migrateAtStart) {
+                            if (liquibaseFactory.getConfiguration().validateOnMigrate) {
                                 liquibase.validate();
                             }
-                        }
-                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
                             liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
                         }
                     }

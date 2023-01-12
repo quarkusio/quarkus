@@ -180,11 +180,19 @@ The configuration properties listed here allow you to override such defaults, an
 include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
 
 [NOTE]
---
-Do not mix `persistence.xml` and `quarkus.hibernate-orm.*` properties in `{config-file}`.
+====
+Do not mix <<persistence-xml,`persistence.xml`>> and `quarkus.hibernate-orm.*` properties in `{config-file}`.
 Quarkus will raise an exception.
 Make up your mind on which approach you want to use.
---
+
+If your classpath contains a `persistence.xml` that you want to ignore,
+set the following configuration property:
+
+[source,properties]
+----
+quarkus.hibernate-orm.persistence-xml.ignore=true
+----
+====
 
 [TIP]
 ====
@@ -379,8 +387,16 @@ This is useful for:
 
 [NOTE]
 ====
-If you have a `persistence.xml`, then you cannot use the `quarkus.hibernate-orm.*` properties
+If you use a `persistence.xml`, then you cannot use the `quarkus.hibernate-orm.*` properties
 and only persistence units defined in `persistence.xml` will be taken into account.
+
+If your classpath contains a `persistence.xml` that you want to ignore,
+set the following configuration property:
+
+[source,properties]
+----
+quarkus.hibernate-orm.persistence-xml.ignore=true
+----
 ====
 
 Your `pom.xml` dependencies as well as your Java code would be identical to the precedent example. The only

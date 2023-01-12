@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class RunAndCheckMojoTestBase extends MojoTestBase {
@@ -25,7 +25,7 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
     protected File testDir;
 
     @AfterEach
-    public void cleanup() throws IOException {
+    public void cleanup() {
         shutdownTheApp();
     }
 
@@ -36,14 +36,29 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
         DevModeTestUtils.awaitUntilServerDown();
     }
 
+    /**
+     * Quarkus can be launched as `quarkus:dev` or `quarkus:test`.
+     * In most cases it doesn't matter and dev mode is fine, but sometimes it's useful to cover test mode,
+     * since it sometimes behaves differently.
+     */
+    protected LaunchMode getDefaultLaunchMode() {
+        return LaunchMode.DEVELOPMENT;
+    }
+
     protected void run(boolean performCompile, String... options) throws FileNotFoundException, MavenInvocationException {
+        run(performCompile, getDefaultLaunchMode(), options);
+    }
+
+    protected void run(boolean performCompile, LaunchMode mode, String... options)
+            throws FileNotFoundException, MavenInvocationException {
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
+
         final List<String> args = new ArrayList<>(2 + options.length);
         if (performCompile) {
             args.add("compile");
         }
-        args.add("quarkus:dev");
+        args.add("quarkus:" + mode.getDefaultProfile());
         boolean hasDebugOptions = false;
         for (String option : options) {
             args.add(option);
@@ -68,9 +83,18 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
         runAndCheck(true, options);
     }
 
+    protected void runAndCheck(LaunchMode mode, String... options) throws FileNotFoundException, MavenInvocationException {
+        runAndCheck(true, mode, options);
+    }
+
     protected void runAndCheck(boolean performCompile, String... options)
+            throws MavenInvocationException, FileNotFoundException {
+        runAndCheck(performCompile, getDefaultLaunchMode(), options);
+    }
+
+    protected void runAndCheck(boolean performCompile, LaunchMode mode, String... options)
             throws FileNotFoundException, MavenInvocationException {
-        run(performCompile, options);
+        run(performCompile, mode, options);
 
         String resp = DevModeTestUtils.getHttpResponse();
 
@@ -81,7 +105,7 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
-    protected void runAndExpectError() throws FileNotFoundException, MavenInvocationException {
+    protected void runAndExpectError() throws MavenInvocationException {
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
         final Properties mvnRunProps = new Properties();

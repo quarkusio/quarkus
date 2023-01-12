@@ -1,6 +1,7 @@
 package io.quarkus.cache;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import io.smallrye.mutiny.Uni;
 
@@ -53,6 +54,13 @@ public interface Cache {
      * Removes all entries from the cache.
      */
     Uni<Void> invalidateAll();
+
+    /**
+     * Removes all cache entries whose keys match the given predicate.
+     *
+     * @param predicate
+     */
+    Uni<Void> invalidateIf(Predicate<Object> predicate);
 
     /**
      * Returns this cache as an instance of the provided type if possible.

@@ -141,8 +141,8 @@ The `quarkus.mongodb.database` property will be used by MongoDB with Panache to 
 
 The `@MongoEntity` annotation allows configuring:
 
-* the name of the client for multi-tenant application, see xref:mongodb.adoc#multiple-mongodb-clients[Multiple MongoDB Clients]. Otherwise, the default client will be used.
-* the name of the database, otherwise, the `quarkus.mongodb.database` property will be used.
+* the name of the client for multitenant application, see xref:mongodb.adoc#multiple-mongodb-clients[Multiple MongoDB Clients]. Otherwise, the default client will be used.
+* the name of the database, otherwise the `quarkus.mongodb.database` property or a link:{mongodb-doc-root-url}#multitenancy[`MongoDatabaseResolver`] implementation will be used.
 * the name of the collection, otherwise the simple name of the class will be used.
 
 For advanced configuration of the MongoDB client, you can follow the xref:mongodb.adoc#configuring-the-mongodb-database[Configuring the MongoDB database guide].
@@ -1238,3 +1238,220 @@ by the presence of the marker file `META-INF/panache-archive.marker`. Panache in
 annotation processor that will automatically create this file in archives that depend on
 Panache (even indirectly). If you have disabled annotation processors you may need to create
 this file manually in some cases.
+
+== Multitenancy
+
+"Multitenancy is a software architecture where a single software instance can serve multiple, distinct user groups. Software-as-a-service (SaaS) 
+offerings are an example of multitenant architecture." (link:https://www.redhat.com/en/topics/cloud-computing/what-is-multitenancy#:~:text=Multitenancy%20is%20a%20software%20architecture,an%20example%20of%20multitenant%20architecture.[Red Hat]).
+
+MongoDB with Panache currently supports the database per tenant approach, it's similar to schema per tenant approach when compared to SQL databases.
+
+=== Writing the application
+
+In order to resolve the tenant from incoming requests and map it to a specific database, you must create an implementation 
+of the `io.quarkus.mongodb.panache.common.MongoDatabaseResolver` interface.
+
+[source,java]
+----
+import io.quarkus.mongodb.panache.common.MongoDatabaseResolver;
+import io.vertx.ext.web.RoutingContext;
+
+@RequestScoped // <1>
+public class CustomMongoDatabaseResolver implements MongoDatabaseResolver {
+
+    @Inject
+    RoutingContext context;
+   
+    @Override
+    public String resolve() {
+        return context.request().getHeader("X-Tenant");
+    }
+    
+}
+----
+<1> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
+
+[IMPORTANT]
+====
+The database selection priority order is as follow: `@MongoEntity(database="mizain")`, `MongoDatabaseResolver`, 
+and then `quarkus.mongodb.database` property.
+====
+
+[NOTE]
+====
+If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy], then if the OIDC tenantID and MongoDB 
+database are the same and must be extracted from the Vert.x `RoutingContext` you can pass the tenant id from the OIDC `TenantResolver` 
+to the MongoDB with Panache `MongoDatabaseResolver` as a `RoutingContext` attribute, for example:
+
+[source,java]
+----
+import io.quarkus.mongodb.panache.common.MongoDatabaseResolver;
+import io.vertx.ext.web.RoutingContext;
+
+@RequestScoped
+public class CustomMongoDatabaseResolver implements MongoDatabaseResolver {
+
+    @Inject
+    RoutingContext context;
+    ...
+    @Override
+    public String resolve() {
+        // OIDC TenantResolver has already calculated the tenant id and saved it as a RoutingContext `tenantId` attribute:
+        return context.get("tenantId");
+    }
+}
+----
+====
+
+Given this entity:
+
+[source,java]
+----
+import org.bson.codecs.pojo.annotations.BsonId;
+import io.quarkus.mongodb.panache.common.MongoEntity;
+
+@MongoEntity(collection = "persons")
+public class Person extends PanacheMongoEntityBase {
+    @BsonId
+    public Long id;
+    public String firstName;
+    public String lastName;
+}
+----
+
+And this resource:
+
+[source,java]
+----
+import java.net.URI;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
+
+@Path("/persons")
+public class PersonResource {
+
+    @GET
+    @Path("/{id}")
+    public Person getById(Long id) {
+        return Person.findById(id);
+    }
+
+    @POST
+    public Response create(Person person) {
+        Person.persist(person);
+        return Response.created(URI.create(String.format("/persons/%d", person.id))).build();
+    }
+}
+----
+
+From the classes above, we have enough to persist and fetch persons from different databases, so it's possible to see how it works. 
+
+=== Configuring the application
+
+The same mongo connection will be used for all tenants, so a database has to be created for every tenant.
+
+[source,properties]
+----
+quarkus.mongodb.connection-string=mongodb://login:pass@mongo:27017
+# The default database
+quarkus.mongodb.database=sanjoka
+----
+
+=== Testing
+
+You can write your test like this:
+
+[source,java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Objects;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
+import io.restassured.http.Method;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
+
+@QuarkusTest
+public class PanacheMongoMultiTenancyTest {
+
+    public static final String TENANT_HEADER_NAME = "X-Tenant";
+    private static final String TENANT_1 = "Tenant1";
+    private static final String TENANT_2 = "Tenant2";
+
+    @Test
+    public void testMongoDatabaseResolverUsingPersonResource() {
+        Person person1 = new Person();
+        person1.id = 1L;
+        person1.firstname = "Pedro";
+        person1.lastname = "Pereira";
+        person1.status = Status.ALIVE;
+
+        Person person2 = new Person();
+        person2.id = 2L;
+        person2.firstname = "Tibé";
+        person2.lastname = "Venâncio";
+        person2.status = Status.ALIVE;
+
+        String endpoint = "/persons";
+
+        // creating person 1
+        Response createPerson1Response = callCreatePersonEndpoint(endpoint, TENANT_1, person1);
+        assertResponse(createPerson1Response, 201);
+        
+        // checking person 1 creation
+        Response getPerson1ByIdResponse = callGetPersonByIdEndpoint(endpoint, person1.id, TENANT_1);
+        assertResponse(getPerson1ByIdResponse, 200, person1);
+
+        // creating person 2
+        Response createPerson2Response = callCreatePersonEndpoint(endpoint, TENANT_2, person2);
+        assertResponse(createPerson2Response, 201);
+
+        // checking person 2 creation
+        Response getPerson2ByIdResponse = callGetPersonByIdEndpoint(endpoint, person2.id, TENANT_2);
+        assertResponse(getPerson2ByIdResponse, 200, person2);
+    }
+
+    protected Response callCreatePersonEndpoint(String endpoint, String tenant, Object person) {
+        return RestAssured.given()
+                .header("Content-Type", "application/json")
+                .header(TENANT_HEADER_NAME, tenant)
+                .body(person)
+                .post(endpoint)
+                .andReturn();
+    }
+
+    private Response callGetPersonByIdEndpoint(String endpoint, Long resourceId, String tenant) {
+        RequestSpecification request = RestAssured.given()
+                .header("Content-Type", "application/json");
+
+        if (Objects.nonNull(tenant) && !tenant.isBlank()) {
+            request.header(TENANT_HEADER_NAME, tenant);
+        }
+
+        return request.when()
+                .request(Method.GET, endpoint.concat("/{id}"), resourceId)
+                .andReturn();
+    }
+
+    private void assertResponse(Response response, Integer expectedStatusCode) {
+        assertResponse(response, expectedStatusCode, null);
+    }
+
+    private void assertResponse(Response response, Integer expectedStatusCode, Object expectedResponseBody) {
+        assertEquals(expectedStatusCode, response.statusCode());
+        if (Objects.nonNull(expectedResponseBody)) {
+            assertTrue(EqualsBuilder.reflectionEquals(response.as(expectedResponseBody.getClass()), expectedResponseBody));
+        }
+    }
+}
+----

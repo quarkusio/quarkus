@@ -28,8 +28,9 @@ import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
-import org.jboss.resteasy.reactive.server.core.multipart.FormData.FormValue;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
+import org.jboss.resteasy.reactive.server.multipart.FormValue;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 
@@ -46,6 +47,14 @@ public final class MultipartSupport {
     private MultipartSupport() {
     }
 
+    public static MultipartFormDataInput toMultipartFormDataInput(ResteasyReactiveRequestContext context) {
+        FormData formData = context.getFormData();
+        if (formData == null) {
+            return MultipartFormDataInput.Empty.INSTANCE;
+        }
+        return formData.toMultipartFormDataInput();
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static Object convertFormAttribute(String value, Class type, Type genericType, MediaType mediaType,
             ResteasyReactiveRequestContext context, String attributeName) {
@@ -54,7 +63,7 @@ public final class MultipartSupport {
             if (formData != null) {
                 Collection<FormValue> fileUploadsForName = formData.get(attributeName);
                 if (fileUploadsForName != null) {
-                    for (FormData.FormValue fileUpload : fileUploadsForName) {
+                    for (FormValue fileUpload : fileUploadsForName) {
                         if (fileUpload.isFileItem()) {
                             log.warn("Attribute '" + attributeName
                                     + "' of the multipart request is a file and therefore its value is not set. To obtain the contents of the file, use type '"
@@ -110,7 +119,7 @@ public final class MultipartSupport {
         throw new NotSupportedException("Media type '" + mediaType + "' in multipart request is not supported");
     }
 
-    private static FormData.FormValue getFirstValue(String formName, ResteasyReactiveRequestContext context) {
+    private static FormValue getFirstValue(String formName, ResteasyReactiveRequestContext context) {
         Deque<FormValue> values = getValues(formName, context);
         if (values != null && !values.isEmpty()) {
             return values.getFirst();
@@ -118,7 +127,7 @@ public final class MultipartSupport {
         return null;
     }
 
-    private static Deque<FormData.FormValue> getValues(String formName, ResteasyReactiveRequestContext context) {
+    private static Deque<FormValue> getValues(String formName, ResteasyReactiveRequestContext context) {
         FormData form = context.getFormData();
         if (form != null) {
             return form.get(formName);
@@ -131,7 +140,7 @@ public final class MultipartSupport {
     }
 
     public static String getString(String formName, ResteasyReactiveRequestContext context, boolean encoded) {
-        FormData.FormValue value = getFirstValue(formName, context);
+        FormValue value = getFirstValue(formName, context);
         if (value == null) {
             return null;
         }
@@ -155,7 +164,7 @@ public final class MultipartSupport {
     }
 
     public static List<String> getStrings(String formName, ResteasyReactiveRequestContext context, boolean encoded) {
-        Deque<FormData.FormValue> values = getValues(formName, context);
+        Deque<FormValue> values = getValues(formName, context);
         if (values == null) {
             return Collections.emptyList();
         }
@@ -181,7 +190,7 @@ public final class MultipartSupport {
     }
 
     public static byte[] getByteArray(String formName, ResteasyReactiveRequestContext context) {
-        FormData.FormValue value = getFirstValue(formName, context);
+        FormValue value = getFirstValue(formName, context);
         if (value == null) {
             return null;
         }
@@ -197,7 +206,7 @@ public final class MultipartSupport {
     }
 
     public static List<byte[]> getByteArrays(String formName, ResteasyReactiveRequestContext context) {
-        Deque<FormData.FormValue> values = getValues(formName, context);
+        Deque<FormValue> values = getValues(formName, context);
         if (values == null) {
             return Collections.emptyList();
         }
@@ -217,7 +226,7 @@ public final class MultipartSupport {
     }
 
     public static InputStream getInputStream(String formName, ResteasyReactiveRequestContext context) {
-        FormData.FormValue value = getFirstValue(formName, context);
+        FormValue value = getFirstValue(formName, context);
         if (value == null) {
             return null;
         }
@@ -233,7 +242,7 @@ public final class MultipartSupport {
     }
 
     public static List<InputStream> getInputStreams(String formName, ResteasyReactiveRequestContext context) {
-        Deque<FormData.FormValue> values = getValues(formName, context);
+        Deque<FormValue> values = getValues(formName, context);
         if (values == null) {
             return Collections.emptyList();
         }
@@ -287,7 +296,7 @@ public final class MultipartSupport {
         if (formData != null) {
             Collection<FormValue> fileUploadsForName = formData.get(formName);
             if (fileUploadsForName != null) {
-                for (FormData.FormValue fileUpload : fileUploadsForName) {
+                for (FormValue fileUpload : fileUploadsForName) {
                     if (fileUpload.isFileItem()) {
                         result.add(new DefaultFileUpload(formName, fileUpload));
                     }
@@ -322,7 +331,7 @@ public final class MultipartSupport {
         }
         List<DefaultFileUpload> result = new ArrayList<>();
         for (String name : formData) {
-            for (FormData.FormValue fileUpload : formData.get(name)) {
+            for (FormValue fileUpload : formData.get(name)) {
                 if (fileUpload.isFileItem()) {
                     result.add(new DefaultFileUpload(name, fileUpload));
                 }

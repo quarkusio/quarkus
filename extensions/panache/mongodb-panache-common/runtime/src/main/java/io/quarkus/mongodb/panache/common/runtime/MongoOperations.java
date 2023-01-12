@@ -112,7 +112,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             objects.add(entity);
         }
 
-        if (objects.size() > 0) {
+        if (!objects.isEmpty()) {
             // get the first entity to be able to retrieve the collection with it
             Object firstEntity = objects.get(0);
             MongoCollection collection = mongoCollection(firstEntity);
@@ -134,7 +134,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public void update(Stream<?> entities) {
         List<Object> objects = entities.collect(Collectors.toList());
-        if (objects.size() > 0) {
+        if (!objects.isEmpty()) {
             // get the first entity to be able to retrieve the collection with it
             Object firstEntity = objects.get(0);
             MongoCollection collection = mongoCollection(firstEntity);
@@ -214,7 +214,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private void persist(List<Object> entities) {
-        if (entities.size() > 0) {
+        if (!entities.isEmpty()) {
             // get the first entity to be able to retrieve the collection with it
             Object firstEntity = entities.get(0);
             MongoCollection collection = mongoCollection(firstEntity);
@@ -383,7 +383,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
             return mongoClient.getDatabase(mongoEntity.database());
         }
-        String databaseName = getDefaultDatabaseName(mongoEntity);
+        String databaseName = BeanUtils.getDatabaseNameFromResolver().orElseGet(() -> getDefaultDatabaseName(mongoEntity));
         return mongoClient.getDatabase(databaseName);
     }
 
@@ -414,7 +414,6 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
@@ -511,7 +510,6 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
@@ -529,7 +527,6 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, sort, params.map());
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, Document query, Sort sort) {
         MongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
@@ -615,14 +612,12 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return stream(find(entityClass, query, sort));
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType findAll(Class<?> entityClass) {
         MongoCollection collection = mongoCollection(entityClass);
         ClientSession session = getSession(entityClass);
         return createQuery(collection, session, null, null);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType findAll(Class<?> entityClass, Sort sort) {
         MongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);

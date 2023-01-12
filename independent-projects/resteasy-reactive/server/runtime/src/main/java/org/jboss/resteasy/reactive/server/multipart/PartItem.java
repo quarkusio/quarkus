@@ -1,16 +1,21 @@
-package org.jboss.resteasy.reactive.server.core.multipart;
+package org.jboss.resteasy.reactive.server.multipart;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
+/**
+ * Represents part of a multipart output
+ *
+ * @see MultipartFormDataOutput
+ */
 public final class PartItem {
-    private MultivaluedMap<String, Object> headers;
-    private Object entity;
-    private String genericType;
-    private MediaType mediaType;
-    private String filename;
+    private final MultivaluedMap<String, Object> headers;
+    private final Object entity;
+    private final String genericType;
+    private final MediaType mediaType;
+    private final String filename;
 
     public PartItem(Object entity, String genericType, MediaType mediaType) {
         this(entity, genericType, mediaType, null);

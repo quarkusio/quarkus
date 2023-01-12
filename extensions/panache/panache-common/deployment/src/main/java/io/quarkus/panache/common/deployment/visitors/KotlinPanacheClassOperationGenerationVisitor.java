@@ -65,6 +65,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     public static final ByteCodeType OBJECT = new ByteCodeType(Object.class);
     protected static final ByteCodeType CLASS = new ByteCodeType(Class.class);
     private static final String CTOR_METHOD_NAME = "<init>";
+    private static final String CLINIT_METHOD_NAME = "<clinit>";
     protected final Function<String, String> argMapper;
     protected final ClassInfo classInfo;
     protected final ByteCodeType entityUpperBound;
@@ -541,8 +542,9 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         } else if (name.contains("$")) {
             //some agents such as jacoco add new methods, they generally have $ in the name
             return super.visitMethod(access, name, descriptor, signature, exceptions);
-        } else if (name.equals(CTOR_METHOD_NAME)) {
+        } else if (name.equals(CTOR_METHOD_NAME) || name.equals(CLINIT_METHOD_NAME)) {
             //Arc can add no-args constructors to support intercepted beans
+            // Logging with Panache can add a class initializer
             return super.visitMethod(access, name, descriptor, signature, exceptions);
         }
         return null;

@@ -41,7 +41,6 @@ import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -152,7 +151,6 @@ public class KubernetesDeployer {
             ContainerImageConfig containerImageConfig) {
         final DeploymentTargetEntry selectedTarget;
 
-        boolean checkForMissingRegistry = true;
         boolean checkForNamespaceGroupAlignment = false;
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getExplictilyDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty()) {
@@ -178,25 +176,10 @@ public class KubernetesDeployer {
         }
 
         if (OPENSHIFT.equals(selectedTarget.getName())) {
-            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability)
-                    || Capability.CONTAINER_IMAGE_OPENSHIFT.equals(activeContainerImageCapability);
-
             // We should ensure that we have image group and namespace alignment we are not using deployment triggers via DeploymentConfig.
             if (!targets.getEntriesSortedByPriority().get(0).getKind().equals("DeploymentConfig")) {
                 checkForNamespaceGroupAlignment = true;
             }
-
-        } else if (MINIKUBE.equals(selectedTarget.getName()) || KIND.equals(selectedTarget.getName())) {
-            checkForMissingRegistry = false;
-        } else if (containerImageConfig.isPushExplicitlyDisabled()) {
-            checkForMissingRegistry = false;
-        }
-
-        if (checkForMissingRegistry && !containerImageInfo.getRegistry().isPresent()) {
-            log.warn(
-                    "A Kubernetes deployment was requested, but the container image to be built will not be pushed to any registry"
-                            + " because \"quarkus.container-image.registry\" has not been set. The Kubernetes deployment will only work properly"
-                            + " if the cluster is using the local Docker daemon. For that reason 'ImagePullPolicy' is being force-set to 'IfNotPresent'.");
         }
 
         //This might also be applicable in other scenarios too (e.g. Knative on Openshift), so we might need to make it slightly more generic.

@@ -32,6 +32,7 @@ public class UnknownConfigTest {
                         .map(Object::toString).collect(Collectors.toSet());
                 assertTrue(properties.contains("quarkus.unknown.prop"));
                 assertFalse(properties.contains("quarkus.build.unknown.prop"));
+                assertFalse(properties.contains("proprietary.should.not.report.unknown"));
             });
 
     @Inject

@@ -63,7 +63,8 @@ public class CombinedFormBasicAuthTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/login"))
-                .cookie("quarkus-redirect-location", detailedCookie().sameSite("Strict").value(containsString("/admin")));
+                .cookie("quarkus-redirect-location",
+                        detailedCookie().sameSite("Strict").path(equalTo("/")).value(containsString("/admin")));
 
         RestAssured
                 .given()
@@ -77,7 +78,7 @@ public class CombinedFormBasicAuthTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/admin"))
-                .cookie("quarkus-credential", detailedCookie().sameSite("Strict"));
+                .cookie("quarkus-credential", detailedCookie().sameSite("Strict").path(equalTo("/")));
 
         RestAssured
                 .given()

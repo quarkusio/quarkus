@@ -3,6 +3,7 @@ package io.quarkus.mongodb.panache.common.reactive.runtime;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.beanName;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.clientFromArc;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseName;
+import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseNameFromResolver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +27,7 @@ import com.mongodb.client.model.InsertOneModel;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.result.DeleteResult;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
@@ -74,7 +76,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
                 objects.add(entity);
             }
 
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -99,7 +101,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public Uni<Void> persist(Stream<?> entities) {
         return Uni.createFrom().deferred(() -> {
             List<Object> objects = entities.collect(Collectors.toList());
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -122,7 +124,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
                 objects.add(entity);
             }
 
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -147,7 +149,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public Uni<Void> update(Stream<?> entities) {
         return Uni.createFrom().deferred(() -> {
             List<Object> objects = entities.collect(Collectors.toList());
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -170,7 +172,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
                 objects.add(entity);
             }
 
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -195,7 +197,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public Uni<Void> persistOrUpdate(Stream<?> entities) {
         return Uni.createFrom().deferred(() -> {
             List<Object> objects = entities.collect(Collectors.toList());
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -314,7 +316,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
             return mongoClient.getDatabase(mongoEntity.database());
         }
-        String databaseName = getDefaultDatabaseName(mongoEntity);
+        String databaseName = getDatabaseNameFromResolver().orElseGet(() -> getDefaultDatabaseName(mongoEntity));
         return mongoClient.getDatabase(databaseName);
     }
 
@@ -345,7 +347,6 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
@@ -445,7 +446,6 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
@@ -462,7 +462,6 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, sort, params.map());
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, Document query, Sort sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
@@ -546,13 +545,11 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return stream(find(entityClass, query, sort));
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType findAll(Class<?> entityClass) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return createQuery(collection, null, null);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType findAll(Class<?> entityClass, Sort sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
@@ -621,7 +618,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public Uni<Long> deleteAll(Class<?> entityClass) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(new Document()).map(deleteResult -> deleteResult.getDeletedCount());
+        return collection.deleteMany(new Document()).map(DeleteResult::getDeletedCount);
     }
 
     public Uni<Boolean> deleteById(Class<?> entityClass, Object id) {
@@ -634,14 +631,14 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         String bindQuery = bindFilter(entityClass, query, params);
         BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
+        return collection.deleteMany(docQuery).map(DeleteResult::getDeletedCount);
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
         BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
+        return collection.deleteMany(docQuery).map(DeleteResult::getDeletedCount);
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Parameters params) {
@@ -651,7 +648,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     //specific Mongo query
     public Uni<Long> delete(Class<?> entityClass, Document query) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(query).map(deleteResult -> deleteResult.getDeletedCount());
+        return collection.deleteMany(query).map(DeleteResult::getDeletedCount);
     }
 
     public UpdateType update(Class<?> entityClass, String update, Map<String, Object> params) {

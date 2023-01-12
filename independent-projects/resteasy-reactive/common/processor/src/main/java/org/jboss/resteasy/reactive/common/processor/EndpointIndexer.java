@@ -30,6 +30,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_DATA_INPUT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
@@ -620,7 +621,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         || type == ParameterType.MULTI_PART_FORM) {
                     // transform the bean param
                     formParamRequired |= handleBeanParam(actualEndpointInfo, paramType, methodParameters, i, fileFormNames);
-                } else if (type == ParameterType.FORM) {
+                } else if (type == ParameterType.FORM || type == ParameterType.MULTI_PART_DATA_INPUT) {
                     formParamRequired = true;
                 }
             }
@@ -1293,6 +1294,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 builder.setErrorLocation(builder.getErrorLocation()
                         + " (this parameter name matches the @Path parameter name, so it has been implicitly assumed to be an @PathParam and not the request body)");
                 convertible = true;
+            } else if (!field && paramType.name().equals(MULTI_PART_DATA_INPUT)) {
+                builder.setType(ParameterType.MULTI_PART_DATA_INPUT);
+                builder.setSingle(true);
+                return builder;
             } else {
                 //un-annotated field
                 //just ignore it

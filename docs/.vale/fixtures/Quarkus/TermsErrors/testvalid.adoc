@@ -81,6 +81,7 @@ demount
 deselect
 desktop
 despite
+dev mode
 develop components
 different from
 difficulty
@@ -236,6 +237,7 @@ remember
 remote access
 remote access server
 remove
+repository
 required
 retry
 right

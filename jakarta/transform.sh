@@ -368,6 +368,15 @@ git cherry-pick -x ${JAKARTA_10_CDI_HASH}
 git fetch origin jakarta-10-jaxrs
 git rev-list 3e7b6d56854a7402f7e2cfc6edbaa49b2da0f959..origin/jakarta-10-jaxrs | tac | xargs git cherry-pick -x
 
+## Kotlin not parent first
+git fetch origin jakarta-10-misc
+git rev-list 241a38a3001d470cc8c938a0a7e68c6f3318cc4c..origin/jakarta-10-misc | tac | xargs git cherry-pick -x
+
+## Mutiny 2, Flow API
+git fetch origin jakarta-10-mutiny-2-flow
+JAKARTA_10_MUTINY_HASH=$(git rev-parse origin/jakarta-10-mutiny-2-flow)
+git cherry-pick -x ${JAKARTA_10_MUTINY_HASH}
+
 # Build phase
 
 if [ "${REWRITE_TESTS_CONTAINERS-false}" == "true" ]; then

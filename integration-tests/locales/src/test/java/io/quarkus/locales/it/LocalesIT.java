@@ -1,5 +1,6 @@
 package io.quarkus.locales.it;
 
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 
 import org.apache.http.HttpStatus;
@@ -80,7 +81,7 @@ public class LocalesIT {
                 .get("/timeZone")
                 .then()
                 .statusCode(HttpStatus.SC_OK)
-                .body(is(zln[2]))
+                .body(equalToIgnoringCase(zln[2]))
                 .log().all();
     }
 

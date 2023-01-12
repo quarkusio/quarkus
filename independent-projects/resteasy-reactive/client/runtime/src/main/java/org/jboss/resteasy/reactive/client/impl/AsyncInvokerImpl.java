@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -14,6 +15,7 @@ import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestResponse;
@@ -45,10 +47,28 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
         this.httpClient = httpClient;
         this.uri = uri;
         this.requestSpec = new RequestSpec(requestSpec);
+        addUserInfoIfNecessary(this.uri, this.requestSpec);
         this.configuration = configuration;
         this.properties = new HashMap<>(properties);
         this.handlerChain = handlerChain;
         this.requestContext = requestContext;
+    }
+
+    private void addUserInfoIfNecessary(URI uri, RequestSpec requestSpec) {
+        String userInfo = uri.getUserInfo();
+        if (userInfo == null) {
+            return;
+        }
+        String[] parts = userInfo.split(":");
+        if (parts.length != 2) {
+            return;
+        }
+        ClientRequestHeaders specHeaders = requestSpec.headers;
+        String authorizationHeader = specHeaders.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorizationHeader == null) {
+            specHeaders.header(HttpHeaders.AUTHORIZATION,
+                    "Basic " + Base64.getEncoder().encodeToString((parts[0] + ":" + parts[1]).getBytes()));
+        }
     }
 
     public Map<String, Object> getProperties() {

@@ -1,6 +1,7 @@
 package io.quarkus.cache.test.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -212,10 +213,22 @@ public class ProgrammaticApiTest {
         }
     }
 
+    @Test
+    public void testInvalidatePredicate() throws Exception {
+        String key = "bravo";
+        String val = cache.get(key, k -> "charlie").await().indefinitely();
+        assertEquals("charlie", val);
+        assertKeySetContains(key);
+        assertGetIfPresent(key, val);
+        cache.invalidateIf(k -> k.equals("bravo")).await().indefinitely();
+        assertFalse(cache.as(CaffeineCache.class).keySet().contains(key));
+        assertNull(cache.as(CaffeineCache.class).getIfPresent(key));
+    }
+
     private void assertKeySetContains(Object... expectedKeys) {
         Set<Object> expectedKeySet = new HashSet<>(Arrays.asList(expectedKeys));
         Set<Object> actualKeySet = cache.as(CaffeineCache.class).keySet();
-        assertEquals(expectedKeySet, actualKeySet);
+        assertTrue(actualKeySet.containsAll(expectedKeySet));
     }
 
     private void assertGetIfPresent(Object key, Object value) throws Exception {

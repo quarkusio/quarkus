@@ -536,6 +536,69 @@ Moreover, if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Qu
 the file will reside on the file system of the server (in the directory defined by the `quarkus.http.body.uploads-directory` configuration option), but as the uploaded files are saved
 with a UUID file name and no additional metadata is saved, these files are essentially a random dump of files.
 
+
+[TIP]
+====
+When a Resource method needs to handle various types of multipart requests, then the `org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput` method type can be used as provides access to all the parts of the request.
+
+The following code shows a simple example where we iterate over the parts and return a list of aggregated data:
+
+[source,java]
+----
+@Path("/test")
+public static class Resource {
+
+    @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Item> hello(MultipartFormDataInput input) throws IOException {
+        Map<String, Collection<FormValue>> map = input.getValues();
+        List<Item> items = new ArrayList<>();
+        for (var entry : map.entrySet()) {
+            for (FormValue value : entry.getValue()) {
+                items.add(new Item(
+                        entry.getKey(),
+                        value.isFileItem() ? value.getFileItem().getFileSize() : value.getValue().length(),
+                        value.getCharset(),
+                        value.getFileName(),
+                        value.isFileItem(),
+                        value.getHeaders()));
+            }
+
+        }
+        return items;
+    }
+
+    public static class Item {
+        public final String name;
+        public final long size;
+        public final String charset;
+        public final String fileName;
+        public final boolean isFileItem;
+        public final Map<String, List<String>> headers;
+
+        public Item(String name, long size, String charset, String fileName, boolean isFileItem,
+                Map<String, List<String>> headers) {
+            this.name = name;
+            this.size = size;
+            this.charset = charset;
+            this.fileName = fileName;
+            this.isFileItem = isFileItem;
+            this.headers = headers;
+        }
+    }
+}
+----
+====
+
+==== Handling malformed input
+
+As part of reading the multipart body, RESTEasy Reactive invokes the proper MessageBodyReaderlink:{jaxrsapi}/javax/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
+If an `IOException` occurs for one of these parts (for example if Jackson was unable to deserialize a JSON part), then a `org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException` is thrown.
+If this exception is not handled by the application as mentioned in <<exception-mapping>>, an HTTP 400 response is returned by default.
+
+==== Multipart output
+
 Similarly, RESTEasy Reactive can produce Multipart Form data to allow users download files from the server. For example, we could write a POJO
 that will hold the information we want to expose as:
 
@@ -587,7 +650,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.reactive.server.core.multipart.MultipartFormDataOutput;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
 
 @Path("multipart")
 public class Endpoint {
@@ -608,12 +671,6 @@ public class Endpoint {
 This last approach allows you adding extra headers to the output part. 
 
 WARNING: For the time being, returning Multipart data is limited to be blocking endpoints.
-
-==== Handling malformed input
-
-As part of reading the multipart body, RESTEasy Reactive invokes the proper MessageBodyReaderlink:{jaxrsapi}/javax/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
-If an `IOException` occurs for one of these parts (for example if Jackson was unable to deserialize a JSON part), then a `org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException` is thrown.
-If this exception is not handled by the application as mentioned in <<exception-mapping>>, an HTTP 400 response is returned by default.
 
 === Returning a response body
 

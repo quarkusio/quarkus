@@ -19,4 +19,22 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
         assertThat(testResult.getTasks().get(":testNative")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
     }
 
+    @Test
+    public void runNativeTestsWithOutputName() throws Exception {
+        final File projectDir = getProjectDir("it-test-basic-project");
+
+        final BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative",
+                "-Dquarkus.package.output-name=test");
+        assertThat(testResult.getTasks().get(":testNative")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+    }
+
+    @Test
+    public void runNativeTestsWithoutRunnerSuffix() throws Exception {
+        final File projectDir = getProjectDir("it-test-basic-project");
+
+        final BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative",
+                "-Dquarkus.package.add-runner-suffix=false");
+        assertThat(testResult.getTasks().get(":testNative")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+    }
+
 }

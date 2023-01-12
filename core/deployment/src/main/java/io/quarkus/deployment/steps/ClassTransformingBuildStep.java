@@ -9,6 +9,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -128,10 +129,14 @@ public class ClassTransformingBuildStep {
                         .filter(a -> !a.isContinueOnFailure())
                         .findAny().isEmpty();
                 List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = classTransformers.stream()
-                        .map(BytecodeTransformerBuildItem::getVisitorFunction).filter(Objects::nonNull)
+                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
+                        .map(BytecodeTransformerBuildItem::getVisitorFunction)
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toList());
                 List<BiFunction<String, byte[], byte[]>> preVisitFunctions = classTransformers.stream()
-                        .map(BytecodeTransformerBuildItem::getInputTransformer).filter(Objects::nonNull)
+                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
+                        .map(BytecodeTransformerBuildItem::getInputTransformer)
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toList());
                 ClassLoader old = Thread.currentThread().getContextClassLoader();
                 try {
@@ -201,10 +206,14 @@ public class ClassTransformingBuildStep {
                         .filter(a -> !a.isContinueOnFailure())
                         .findAny().isEmpty();
                 List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = entry.getValue().stream()
-                        .map(BytecodeTransformerBuildItem::getVisitorFunction).filter(Objects::nonNull)
+                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
+                        .map(BytecodeTransformerBuildItem::getVisitorFunction)
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toList());
                 List<BiFunction<String, byte[], byte[]>> preVisitFunctions = entry.getValue().stream()
-                        .map(BytecodeTransformerBuildItem::getInputTransformer).filter(Objects::nonNull)
+                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
+                        .map(BytecodeTransformerBuildItem::getInputTransformer)
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toList());
                 transformedToArchive.put(classFileName, jar);
                 transformed.add(buildExecutor.submit(new Callable<TransformedClassesBuildItem.TransformedClass>() {

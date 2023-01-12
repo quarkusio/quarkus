@@ -48,6 +48,76 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
 
     }
 
+    @Test
+    public void shouldBuildNativeImageWithCustomName() throws Exception {
+        final File projectDir = getProjectDir("basic-java-native-module");
+
+        final BuildResult build = runGradleWrapper(projectDir, "clean", "quarkusBuild", "-Dquarkus.package.type=native",
+                "-Dquarkus.package.output-name=test");
+
+        assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        final String buildOutput = build.getOutput();
+        // make sure the output log during the build contains some expected logs from the native-image process
+        CharSequence[] expectedOutput;
+        if (buildOutput.contains("Version info:")) { // Starting with 22.0 the native-image output changed
+            expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
+                    "Finished generating 'test-runner' in" };
+        } else {
+            expectedOutput = new CharSequence[] { "(clinit):", "(typeflow):", "[total]:" };
+        }
+        assertThat(buildOutput)
+                .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s", buildOutput)
+                .contains(expectedOutput)
+                .doesNotContain("Finished generating '" + NATIVE_IMAGE_NAME + "' in");
+        Path nativeImagePath = projectDir.toPath().resolve("build").resolve("test-runner");
+        assertThat(nativeImagePath).exists();
+        Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
+        try {
+            final String response = DevModeTestUtils.getHttpResponse("/hello");
+            assertThat(response)
+                    .withFailMessage("Response %s for /hello was expected to contain the hello, but didn't", response)
+                    .contains("hello");
+        } finally {
+            nativeImageProcess.destroy();
+        }
+
+    }
+
+    @Test
+    public void shouldBuildNativeImageWithCustomNameWithoutSuffix() throws Exception {
+        final File projectDir = getProjectDir("basic-java-native-module");
+
+        final BuildResult build = runGradleWrapper(projectDir, "clean", "quarkusBuild", "-Dquarkus.package.type=native",
+                "-Dquarkus.package.output-name=test", "-Dquarkus.package.add-runner-suffix=false");
+
+        assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        final String buildOutput = build.getOutput();
+        // make sure the output log during the build contains some expected logs from the native-image process
+        CharSequence[] expectedOutput;
+        if (buildOutput.contains("Version info:")) { // Starting with 22.0 the native-image output changed
+            expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
+                    "Finished generating 'test' in" };
+        } else {
+            expectedOutput = new CharSequence[] { "(clinit):", "(typeflow):", "[total]:" };
+        }
+        assertThat(buildOutput)
+                .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s", buildOutput)
+                .contains(expectedOutput)
+                .doesNotContain("Finished generating '" + NATIVE_IMAGE_NAME + "' in");
+        Path nativeImagePath = projectDir.toPath().resolve("build").resolve("test");
+        assertThat(nativeImagePath).exists();
+        Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
+        try {
+            final String response = DevModeTestUtils.getHttpResponse("/hello");
+            assertThat(response)
+                    .withFailMessage("Response %s for /hello was expected to contain the hello, but didn't", response)
+                    .contains("hello");
+        } finally {
+            nativeImageProcess.destroy();
+        }
+
+    }
+
     private Process runNativeImage(String nativeImage) throws IOException {
         final ProcessBuilder processBuilder = new ProcessBuilder(nativeImage);
         processBuilder.inheritIO();

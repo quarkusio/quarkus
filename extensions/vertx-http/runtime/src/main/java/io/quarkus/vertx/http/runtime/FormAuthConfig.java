@@ -115,6 +115,12 @@ public class FormAuthConfig {
     public String cookieName;
 
     /**
+     * The cookie path for the session and location cookies.
+     */
+    @ConfigItem(defaultValue = "/")
+    public Optional<String> cookiePath = Optional.of("/");
+
+    /**
      * Set the HttpOnly attribute to prevent access to the cookie via JavaScript.
      */
     @ConfigItem(defaultValue = "false")

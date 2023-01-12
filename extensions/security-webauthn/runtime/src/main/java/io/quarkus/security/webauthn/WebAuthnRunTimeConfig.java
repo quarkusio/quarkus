@@ -9,7 +9,6 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.vertx.http.runtime.FormAuthConfig.CookieSameSite;
 import io.vertx.ext.auth.webauthn.Attestation;
 import io.vertx.ext.auth.webauthn.AuthenticatorAttachment;
 import io.vertx.ext.auth.webauthn.AuthenticatorTransport;
@@ -238,4 +237,10 @@ public class WebAuthnRunTimeConfig {
      */
     @ConfigItem(defaultValue = "strict")
     public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
+
+    /**
+     * The cookie path for the session cookies.
+     */
+    @ConfigItem(defaultValue = "/")
+    public Optional<String> cookiePath = Optional.of("/");
 }

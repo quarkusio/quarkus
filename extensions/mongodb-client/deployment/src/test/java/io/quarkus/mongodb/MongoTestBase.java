@@ -36,7 +36,7 @@ public class MongoTestBase {
 
     @BeforeAll
     public static void startMongoDatabase() throws IOException {
-        fixIssue14424();
+        forceExtendedSocketOptionsClassInit();
 
         String uri = getConfiguredConnectionString();
         // This switch allow testing against a running mongo database.
@@ -69,7 +69,7 @@ public class MongoTestBase {
             }
         }
     }
-    public static void fixIssue14424() {
+    public static void forceExtendedSocketOptionsClassInit() {
         try {
             //JDK bug workaround
             //https://github.com/quarkusio/quarkus/issues/14424

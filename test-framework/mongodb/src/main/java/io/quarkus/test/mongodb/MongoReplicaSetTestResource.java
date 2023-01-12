@@ -153,7 +153,7 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
 
     @Override
     public Map<String, String> start() {
-        MongoTestResource.fixIssue14424();
+        MongoTestResource.forceExtendedSocketOptionsClassInit();
 
         startedServers = startReplicaSet(version, port, replicaSet);
 

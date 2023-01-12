@@ -41,7 +41,7 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
                         .orElse(Version.Main.V4_0));
     }
 
-    public static void fixIssue14424() {
+    public static void forceExtendedSocketOptionsClassInit() {
         try {
             //JDK bug workaround
             //https://github.com/quarkusio/quarkus/issues/14424
@@ -59,7 +59,7 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
 
     @Override
     public Map<String, String> start() {
-        fixIssue14424();
+        forceExtendedSocketOptionsClassInit();
 
         LOGGER.infof("Starting Mongo %s on port %s", version, port);
 

@@ -383,7 +383,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
             return mongoClient.getDatabase(mongoEntity.database());
         }
-        String databaseName = BeanUtils.getDefaultDatabaseName(mongoEntity);
+        String databaseName = BeanUtils.getDatabaseNameFromResolver().orElseGet(() -> getDefaultDatabaseName(mongoEntity));
         return mongoClient.getDatabase(databaseName);
     }
 

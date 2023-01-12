@@ -487,6 +487,15 @@ To configure the `ValidatorFactory`, use the exposed configuration properties an
 
 Consequently, the only way to define constraints in Quarkus is by annotating your classes.
 
+=== Native compilation
+
+Building a `Validator` using the `ValidatorFactory` is not possible in native mode. You will end in an 
+error similar to `javax.validation.NoProviderFoundException: Unable to create a Configuration, because no 
+Jakarta Bean Validation provider could be found. Add a provider like Hibernate Validator (RI) to your 
+classpath.`
+
+Always use an injected `Validator`. If you have to configure the `ValidatorFactory` follow the guide at  
+
 [[configuration-reference]]
 == Hibernate Validator Configuration Reference
 

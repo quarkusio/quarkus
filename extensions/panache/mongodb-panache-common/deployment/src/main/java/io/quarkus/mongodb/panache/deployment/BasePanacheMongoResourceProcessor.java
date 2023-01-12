@@ -28,6 +28,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -68,6 +69,8 @@ public abstract class BasePanacheMongoResourceProcessor {
     public static final DotName BSON_ID = createSimple(BsonId.class.getName());
     public static final DotName BSON_IGNORE = createSimple(BsonIgnore.class.getName());
     public static final DotName BSON_PROPERTY = createSimple(BsonProperty.class.getName());
+    public static final DotName MONGO_DATABASE_RESOLVER = createSimple(
+            io.quarkus.mongodb.panache.common.MongoDatabaseResolver.class.getName());
     public static final DotName MONGO_ENTITY = createSimple(io.quarkus.mongodb.panache.common.MongoEntity.class.getName());
     public static final DotName PROJECTION_FOR = createSimple(io.quarkus.mongodb.panache.common.ProjectionFor.class.getName());
     public static final String BSON_PACKAGE = "org.bson.";
@@ -81,7 +84,7 @@ public abstract class BasePanacheMongoResourceProcessor {
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
-                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
+                .map(PanacheMethodCustomizerBuildItem::getMethodCustomizer).collect(Collectors.toList());
 
         MetamodelInfo modelInfo = new MetamodelInfo();
         processTypes(index, transformers, reflectiveClass, reflectiveHierarchy, propertyMappingClass, getImperativeTypeBundle(),
@@ -98,7 +101,7 @@ public abstract class BasePanacheMongoResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
-                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
+                .map(PanacheMethodCustomizerBuildItem::getMethodCustomizer).collect(Collectors.toList());
 
         MetamodelInfo modelInfo = new MetamodelInfo();
         processTypes(index, transformers, reflectiveClass, reflectiveHierarchy, propertyMappingClass, getReactiveTypeBundle(),
@@ -410,6 +413,11 @@ public abstract class BasePanacheMongoResourceProcessor {
     @BuildStep
     public void unremovableClients(BuildProducer<MongoUnremovableClientsBuildItem> unremovable) {
         unremovable.produce(new MongoUnremovableClientsBuildItem());
+    }
+
+    @BuildStep
+    protected void unremovableMongoDatabaseResolvers(BuildProducer<UnremovableBeanBuildItem> unremovable) {
+        unremovable.produce(UnremovableBeanBuildItem.beanTypes(MONGO_DATABASE_RESOLVER));
     }
 
     @BuildStep

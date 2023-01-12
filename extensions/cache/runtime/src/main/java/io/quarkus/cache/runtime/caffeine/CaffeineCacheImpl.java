@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -189,6 +190,17 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             @Override
             public Void get() {
                 cache.synchronous().invalidateAll();
+                return null;
+            }
+        });
+    }
+
+    @Override
+    public Uni<Void> invalidateIf(Predicate<Object> predicate) {
+        return Uni.createFrom().item(new Supplier<Void>() {
+            @Override
+            public Void get() {
+                cache.asMap().keySet().removeIf(predicate);
                 return null;
             }
         });

@@ -119,17 +119,15 @@ public abstract class ResourcePropertiesProvider {
         }
         for (MethodInfo method : classInfo.methods()) {
             if (methodPredicate.test(method)) {
+                MethodWithAnnotation found = new MethodWithAnnotation();
+                found.method = method;
                 if (method.hasAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION)) {
-                    MethodWithAnnotation found = new MethodWithAnnotation();
-                    found.method = method;
                     found.annotation = method.annotation(REPOSITORY_REST_RESOURCE_ANNOTATION);
-                    return found;
                 } else if (method.hasAnnotation(REST_RESOURCE_ANNOTATION)) {
-                    MethodWithAnnotation found = new MethodWithAnnotation();
-                    found.method = method;
                     found.annotation = method.annotation(REST_RESOURCE_ANNOTATION);
-                    return found;
                 }
+
+                return found;
             }
         }
         if (classInfo.superName() != null) {

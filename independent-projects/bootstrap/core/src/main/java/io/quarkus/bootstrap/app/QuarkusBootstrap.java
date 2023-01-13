@@ -128,41 +128,10 @@ public class QuarkusBootstrap implements Serializable {
     public CuratedApplication bootstrap() throws BootstrapException {
         //all we want to do is resolve all our dependencies
         //once we have this it is up to augment to set up the class loader to actually use them
+        final CurationResult curationResult = existingModel != null
+                ? new CurationResult(existingModel)
+                : newAppModelFactory().resolveAppModel();
 
-        if (existingModel != null) {
-            final ConfiguredClassLoading classLoadingConfig = ConfiguredClassLoading.builder()
-                    .setApplicationRoot(applicationRoot)
-                    .setDefaultFlatTestClassPath(defaultFlatTestClassPath)
-                    .setMode(mode)
-                    .addParentFirstArtifacts(parentFirstArtifacts)
-                    .setApplicationModel(existingModel)
-                    .build();
-            return new CuratedApplication(this, new CurationResult(existingModel), classLoadingConfig);
-        }
-
-        BootstrapAppModelFactory appModelFactory = BootstrapAppModelFactory.newInstance()
-                .setOffline(offline)
-                .setMavenArtifactResolver(mavenArtifactResolver)
-                .setBootstrapAppModelResolver(appModelResolver)
-                .setLocalProjectsDiscovery(localProjectDiscovery)
-                .setAppArtifact(appArtifact)
-                .setManagingProject(managingProject)
-                .setForcedDependencies(forcedDependencies)
-                .setLocalArtifacts(localArtifacts)
-                .setProjectRoot(getProjectRoot());
-        if (mode == Mode.TEST || test) {
-            appModelFactory.setTest(true);
-            if (!disableClasspathCache) {
-                appModelFactory.setEnableClasspathCache(true);
-            }
-        }
-        if (mode == Mode.DEV) {
-            appModelFactory.setDevMode(true);
-            if (!disableClasspathCache) {
-                appModelFactory.setEnableClasspathCache(true);
-            }
-        }
-        CurationResult curationResult = appModelFactory.resolveAppModel();
         if (curationResult.getApplicationModel().getAppArtifact() != null) {
             if (curationResult.getApplicationModel().getAppArtifact().getArtifactId() != null) {
                 buildSystemProperties.putIfAbsent("quarkus.application.name",
@@ -184,8 +153,30 @@ public class QuarkusBootstrap implements Serializable {
         return new CuratedApplication(this, curationResult, classLoadingConfig);
     }
 
-    public AppModelResolver getAppModelResolver() {
-        return appModelResolver;
+    public BootstrapAppModelFactory newAppModelFactory() {
+        final BootstrapAppModelFactory appModelFactory = BootstrapAppModelFactory.newInstance()
+                .setOffline(offline)
+                .setMavenArtifactResolver(mavenArtifactResolver)
+                .setBootstrapAppModelResolver(appModelResolver)
+                .setLocalProjectsDiscovery(localProjectDiscovery)
+                .setAppArtifact(appArtifact)
+                .setManagingProject(managingProject)
+                .setForcedDependencies(forcedDependencies)
+                .setLocalArtifacts(localArtifacts)
+                .setProjectRoot(projectRoot);
+        if (mode == Mode.TEST || test) {
+            appModelFactory.setTest(true);
+            if (!disableClasspathCache) {
+                appModelFactory.setEnableClasspathCache(true);
+            }
+        }
+        if (mode == Mode.DEV) {
+            appModelFactory.setDevMode(true);
+            if (!disableClasspathCache) {
+                appModelFactory.setEnableClasspathCache(true);
+            }
+        }
+        return appModelFactory;
     }
 
     public PathCollection getApplicationRoot() {

@@ -15,7 +15,6 @@ import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -612,16 +611,15 @@ public class QuarkusUnitTest
                         + " other beans may also be removed and injection may not work as expected");
             }
 
-            final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
-
             try {
+                final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
+                final Path projectDir = Path.of("").normalize().toAbsolutePath();
                 QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                         .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
-                        .setProjectRoot(testLocation)
-                        .setTargetDirectory(
-                                PathTestHelper.getProjectBuildDir(Paths.get("").normalize().toAbsolutePath(), testLocation))
+                        .setProjectRoot(projectDir)
+                        .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectDir, testLocation))
                         .setFlatClassPath(flatClassPath)
                         .setForcedDependencies(forcedDependencies);
                 for (JavaArchive dependency : additionalDependencies) {

@@ -334,6 +334,7 @@ You can add additional methods to the generated resources by the REST Data with 
 public interface PeopleResource extends PanacheEntityResource<Person, Long> {
     @GET
     @Path("/name/{name}")
+    @Produces("application/json")
     default List<Person> findByName(@PathParam("name") String name) {
         return Person.find("name = :name", Collections.singletonMap("name", name)).list();
     }

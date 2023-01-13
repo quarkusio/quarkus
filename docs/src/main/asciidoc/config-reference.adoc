@@ -58,10 +58,42 @@ the value `youshallnotpass` to the attribute `quarkus.datasource.password`.
 * For a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/quarkus-app/quarkus-run.jar`
 * For a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
 
-NOTE: Environment variables names follow the conversion rules specified by
+[NOTE]
+====
+Environment variables names follow the conversion rules specified by
 link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[MicroProfile Config].
 
-NOTE: SmallRye Config specifies link:https://smallrye.io/smallrye-config/latest/config/environment-variables/[additional conversion rules].
+Config searches three environment variables for a given property name (e.g. `foo.BAR.baz`):
+
+- `foo.BAR.baz` - Exact match
+- `foo_BAR_baz` - Replace each character that is neither alphanumeric nor `\_` with `_`
+- `FOO_BAR_BAZ` - Replace each character that is neither alphanumeric nor `\_` with `_`;
+then convert the name to upper case
+====
+
+[NOTE]
+====
+SmallRye Config specifies link:https://smallrye.io/smallrye-config/Main/config/environment-variables/[additional conversion rules].
+
+- A property with double quotes `foo."bar".baz`, replace each character that is neither alphanumeric
+nor `\_` with `_`: `FOO\__BAR__BAZ`
+- A property with dashes `foo.bar-baz`, replace each character that is neither alphanumeric
+nor `\_` with `_`: `FOO_BAR_BAZ`
+- An indexed property `foo.bar[0]` or `foo.bar[0].baz`, replace each character that is neither alphanumeric
+nor `\_` with `_`: `FOO_BAR_0_` or `FOO_BAR_0__BAZ`
+
+In some situations, looking up the exact property name is impossible. For instance, when looking
+up a configuration that is part of a `Map`, and the property name contains a dynamic segment (the `Map` key). In this
+case, Quarkus relies upon each source’s list of property names. These must be converted back to their most likely
+dotted format for Environment Variables.
+
+By default, the underscore `_` of an Environment Variable name always maps to a dot `.`. If the property name contains
+a dash or some other special character, that property name can be specified in another Config Source, with the expected
+dotted format. It will provide additional information to perform a two-way conversion and match the property names.
+
+To correctly lookup `Map` properties where `FOO_BAR_BAZ` is the property name and `BAR_BAZ` is the key, add
+`foo.bar-baz` in a source with an ordinal lower than the EnvConfigSource (`300`).
+====
 
 [[env-file]]
 === `.env` file in the current working directory
@@ -555,7 +587,7 @@ Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Con
 * Hide secrets
 
 For more information, please check the
-link:https://smallrye.io/smallrye-config/latest[SmallRye Config documentation].
+link:https://smallrye.io/smallrye-config/Main[SmallRye Config documentation].
 
 == Configuration Reference
 

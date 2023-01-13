@@ -20,12 +20,6 @@ public class HttpHostConfigSource implements ConfigSource, Serializable {
     public static final String QUARKUS_HTTP_HOST = "quarkus.http.host";
     private static final String ALL_INTERFACES = "0.0.0.0";
 
-    private final int priority;
-
-    public HttpHostConfigSource(int priority) {
-        this.priority = priority;
-    }
-
     @Override
     public Map<String, String> getProperties() {
         return Collections.singletonMap(QUARKUS_HTTP_HOST, getValue(QUARKUS_HTTP_HOST));
@@ -38,7 +32,7 @@ public class HttpHostConfigSource implements ConfigSource, Serializable {
 
     @Override
     public int getOrdinal() {
-        return priority;
+        return Integer.MIN_VALUE;
     }
 
     @Override

@@ -6,14 +6,14 @@ import java.util.List;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.config.yaml.runtime.ApplicationYamlConfigSourceLoader;
+import io.quarkus.config.yaml.runtime.YamlConfigBuilder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
-import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class ConfigYamlProcessor {
@@ -24,17 +24,12 @@ public final class ConfigYamlProcessor {
     }
 
     @BuildStep
-    public void bootstrap(
-            BuildProducer<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProvider,
-            BuildProducer<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProvider) {
-        additionalBootstrapConfigSourceProvider.produce(new AdditionalBootstrapConfigSourceProviderBuildItem(
-                ApplicationYamlConfigSourceLoader.InFileSystem.class.getName()));
-        additionalBootstrapConfigSourceProvider.produce(new AdditionalBootstrapConfigSourceProviderBuildItem(
-                ApplicationYamlConfigSourceLoader.InClassPath.class.getName()));
-        staticInitConfigSourceProvider.produce(new StaticInitConfigSourceProviderBuildItem(
-                ApplicationYamlConfigSourceLoader.InFileSystem.class.getName()));
-        staticInitConfigSourceProvider.produce(new StaticInitConfigSourceProviderBuildItem(
-                ApplicationYamlConfigSourceLoader.InClassPath.class.getName()));
+    public void yamlConfig(
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(YamlConfigBuilder.class));
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(YamlConfigBuilder.class));
     }
 
     @BuildStep

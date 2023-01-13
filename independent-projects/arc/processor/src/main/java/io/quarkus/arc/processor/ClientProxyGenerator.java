@@ -119,7 +119,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         // as long as those type parameters are bound in providerClass,
         // they won't affect the need for a signature in the generated subtype.
         if (!providerClass.typeParameters().isEmpty()) {
-            clientProxy.setSignature(AsmUtilCopy.getGeneratedSubClassSignature(providerClass, bean.getProviderType()));
+            clientProxy.setSignature(AsmUtil.getGeneratedSubClassSignature(providerClass, bean.getProviderType()));
         }
         Map<ClassInfo, Map<String, Type>> resolvedTypeVariables = Types.resolvedTypeVariables(providerClass,
                 bean.getDeployment());
@@ -148,14 +148,11 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
             MethodDescriptor originalMethodDescriptor = MethodDescriptor.of(method);
             MethodCreator forward = clientProxy.getMethodCreator(originalMethodDescriptor);
-            if (AsmUtilCopy.needsSignature(method)) {
+            if (method.requiresGenericSignature()) {
                 Map<String, Type> methodClassVariables = resolvedTypeVariables.get(method.declaringClass());
-                String signature = AsmUtilCopy.getSignature(method, typeVariable -> {
+                String signature = method.genericSignature(typeVariable -> {
                     if (methodClassVariables != null) {
-                        Type ret = methodClassVariables.get(typeVariable.identifier());
-                        // let's not map a TV to itself
-                        if (ret != typeVariable)
-                            return ret;
+                        return methodClassVariables.get(typeVariable);
                     }
                     return null;
                 });

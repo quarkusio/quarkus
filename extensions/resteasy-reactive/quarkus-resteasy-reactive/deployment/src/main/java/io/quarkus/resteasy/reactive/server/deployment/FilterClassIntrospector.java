@@ -12,7 +12,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.Gizmo;
 
 public class FilterClassIntrospector {
@@ -27,7 +26,7 @@ public class FilterClassIntrospector {
         String className = methodInfo.declaringClass().name().toString();
         try (InputStream is = classLoader.getResourceAsStream(className.replace('.', '/') + ".class")) {
             ClassReader configClassReader = new ClassReader(is);
-            FilterClassVisitor classVisitor = new FilterClassVisitor(AsmUtil.getDescriptor(methodInfo, null));
+            FilterClassVisitor classVisitor = new FilterClassVisitor(methodInfo.descriptor());
             configClassReader.accept(classVisitor, 0);
             return classVisitor.usesGetResourceMethod();
         } catch (IOException e) {

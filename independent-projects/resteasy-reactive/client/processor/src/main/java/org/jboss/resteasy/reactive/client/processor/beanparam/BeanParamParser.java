@@ -153,13 +153,13 @@ public class BeanParamParser {
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, FORM_PARAM,
                     (annotationValue, fieldInfo) -> new FormParamItem(annotationValue,
-                            fieldInfo.type().name().toString(), AsmUtil.getSignature(fieldInfo.type(), arg -> arg),
+                            fieldInfo.type().name().toString(), AsmUtil.getSignature(fieldInfo.type()),
                             fieldInfo.name(),
                             partType(fieldInfo), fileName(fieldInfo),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
                     (annotationValue, getterMethod) -> new FormParamItem(annotationValue,
                             getterMethod.returnType().name().toString(),
-                            AsmUtil.getSignature(getterMethod.returnType(), arg -> arg),
+                            AsmUtil.getSignature(getterMethod.returnType()),
                             getterMethod.name(),
                             partType(getterMethod), fileName(getterMethod),
                             new GetterExtractor(getterMethod))));
@@ -167,14 +167,14 @@ public class BeanParamParser {
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_FORM_PARAM,
                     (annotationValue, fieldInfo) -> new FormParamItem(
                             annotationValue != null ? annotationValue : fieldInfo.name(),
-                            fieldInfo.type().name().toString(), AsmUtil.getSignature(fieldInfo.type(), arg -> arg),
+                            fieldInfo.type().name().toString(), AsmUtil.getSignature(fieldInfo.type()),
                             fieldInfo.name(),
                             partType(fieldInfo), fileName(fieldInfo),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
                     (annotationValue, getterMethod) -> new FormParamItem(
                             annotationValue != null ? annotationValue : getterName(getterMethod),
                             getterMethod.returnType().name().toString(),
-                            AsmUtil.getSignature(getterMethod.returnType(), arg -> arg),
+                            AsmUtil.getSignature(getterMethod.returnType()),
                             getterMethod.name(),
                             partType(getterMethod), fileName(getterMethod),
                             new GetterExtractor(getterMethod))));

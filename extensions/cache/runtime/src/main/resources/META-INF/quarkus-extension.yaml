@@ -11,6 +11,3 @@ metadata:
   status: "stable"
   config:
   - "quarkus.cache."
-  capabilities:
-    provides:
-    - "io.quarkus.cache"

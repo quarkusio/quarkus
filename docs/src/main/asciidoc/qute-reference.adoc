@@ -1140,7 +1140,7 @@ NOTE: Note that a fragment identifier must be unique in a template.
 ----
 <1> Defines a fragment with identifier `item_aliases`. Note that only alphanumeric characters and underscores can be used in the identifier.
 
-You can obtain a fragment programatically via the `io.quarkus.qute.Template.getFragment(String)` method.
+You can obtain a fragment programmatically via the `io.quarkus.qute.Template.getFragment(String)` method.
 
 .Obtaining a Fragment
 [source,java]
@@ -1241,6 +1241,49 @@ The behavior is very similar to the <<include_helper>> but:
 <3> The content of the section is always ignored. 
 
 NOTE: The evaluated template is parsed and evaluated every time the section is executed. In other words, it's not possible to cache the parsed value to conserve resources and optimize the performance.
+
+==== Cached Section
+
+Sometimes it's practical to cache parts of the template that rarely change.
+In order to use the caching capability you'll need to register and configure the built-in `io.quarkus.qute.CacheSectionHelper.Factory`:
+
+[source,java]
+----
+// A simple map-based cache
+ConcurrentMap<String, CompletionStage<ResultNode>> map = new ConcurrentHashMap<>();
+engineBuilder
+    .addSectionHelper(new CacheSectionHelper.Factory(new Cache() {
+        @Override
+        public CompletionStage<ResultNode> getValue(String key,
+           Function<String, CompletionStage<ResultNode>> loader) {
+              return map.computeIfAbsent(key, k -> loader.apply(k));
+           }
+     })).build();
+----
+
+TIP: If the `quarkus-cache` extension is present in a Quarkus application then the `CacheSectionHelper` is registered and configured _automatically_. The name of the cache is `qute-cache`. It can be configured <<cache#configuring-the-underlying-caching-provider,in a standard way>> and even managed programmatically via `@Inject @CacheName("qute-cache") Cache`.
+
+Then the `{#cached}` section can be used in a template:
+
+[source,html]
+----
+{#cached} <1>
+ Result: {service.findResult} <2>
+{/cached}
+----
+<1> If the `key` param is not used then all clients of the template share the same cached value.
+<2> This part of the template will be cached and the `{service.findResult}` expression is only evaluated when a cache entry is missing/invalidated.
+
+[source,html]
+----
+{#cached key=currentUser.username} <1>
+ User-specific result: {service.findResult(currentUser)}
+{/cached}
+----
+<1> The `key` param is set and so a different cached value is used for each result of the `{currentUser.username}` expression.
+
+TIP: When using cache it's very often important to have the option to invalidate a cache entry by the specific key. In Qute the key of a cache entry is a `String` that consist of the template name, line and column of the starting `{#cached}` tag and the optional `key` parameter: `{TEMPLATE}:{LINE}:{COLUMN}_{KEY}`. For example, `foo.html:10:1_alpha` is a key for the cached section in a template `foo.html`, the `{#cached}` tag is placed on the line 10, column 1. And the optional `key` parameter resolves to `alpha`.
+
 
 === Rendering Output
 

@@ -29,7 +29,7 @@
 
         <!-- version.* properties are defined in jboss-parent and are overridden/updated here: -->
         <version.enforcer.plugin>3.0.0-M3</version.enforcer.plugin>
-        <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
+        <version.surefire.plugin>3.0.0-M8</version.surefire.plugin>
         <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
@@ -114,8 +114,6 @@
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
-        <!-- Note: this version is also set in quarkus-bom but BOMs don't contribute to pluginManagement or properties -->
-        <jacoco.version>0.8.8</jacoco.version>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.40.3</docker-maven-plugin.version>

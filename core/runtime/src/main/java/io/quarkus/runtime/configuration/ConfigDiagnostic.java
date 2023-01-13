@@ -1,6 +1,5 @@
 package io.quarkus.runtime.configuration;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -74,10 +73,10 @@ public final class ConfigDiagnostic {
      * names, we try the best effort to report unknowns by matching used properties in their Environment variable name
      * format.
      *
-     * @param properties the list of possible unused properties
+     * @param properties the set of possible unused properties
      */
-    public static void unknownProperties(List<String> properties) {
-        List<String> usedProperties = new ArrayList<>();
+    public static void unknownProperties(Set<String> properties) {
+        Set<String> usedProperties = new HashSet<>();
         for (String property : ConfigProvider.getConfig().getPropertyNames()) {
             if (properties.contains(property)) {
                 continue;
@@ -117,7 +116,7 @@ public final class ConfigDiagnostic {
         unknownRunTime(name.getName());
     }
 
-    public static void unknownPropertiesRuntime(List<String> properties) {
+    public static void unknownPropertiesRuntime(Set<String> properties) {
         if (ImageMode.current() == ImageMode.NATIVE_RUN) {
             unknownProperties(properties);
         }

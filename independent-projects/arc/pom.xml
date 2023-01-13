@@ -52,7 +52,7 @@
         <version.jpa>2.2.3</version.jpa>
         <version.mutiny>1.8.0</version.mutiny>
 
-        <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
+        <version.surefire.plugin>3.0.0-M8</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>
 

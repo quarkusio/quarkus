@@ -59,7 +59,7 @@ public class RestClientBuildTimeConfigSource extends MapBackedConfigSource {
         // We can only call this when the SmallRyeConfig is already initialized, or else we may get into a loop
         Config config = ConfigProvider.getConfig();
         for (ConfigSource configSource : config.getConfigSources()) {
-            if (configSource.getClass().getSimpleName().equals("BuildTimeEnvConfigSource")) {
+            if (configSource.getName().equals("PropertiesConfigSource[source=Build system]")) {
                 return true;
             }
         }

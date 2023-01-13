@@ -17,6 +17,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -40,9 +41,7 @@ public class DotEnvTestCase {
                 }
             }
         }
-        builder.withSources(
-                new ConfigUtils.BuildTimeDotEnvConfigSourceProvider(dotEnv.toUri().toString())
-                        .getConfigSources(Thread.currentThread().getContextClassLoader()));
+        builder.withSources(new DotEnvConfigSourceProvider(dotEnv.toUri().toString()));
         final SmallRyeConfig config = builder.build();
         Files.delete(dotEnv);
         return config;
@@ -65,5 +64,4 @@ public class DotEnvTestCase {
         assertEquals("foo.bar", config.getValue("foo.bar", String.class));
         assertTrue(config.getOptionalValue("foo.baz", String.class).isPresent());
     }
-
 }

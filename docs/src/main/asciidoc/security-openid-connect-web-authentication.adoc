@@ -186,12 +186,13 @@ quarkus.http.auth.permission.authenticated.policy=authenticated
 
 This is the simplest configuration you can have when enabling authentication to your application.
 
-The `quarkus.oidc.client-id` property references the `client_id` issued by the OpenID Connect Provider and the `quarkus.oidc.credentials.secret` property sets the client secret.
+The `quarkus.oidc.client-id` property references the `client_id` issued by the OIDC provider and the `quarkus.oidc.credentials.secret` property sets the client secret.
 
-The `quarkus.oidc.application-type` property is set to `web-app` in order to tell Quarkus that you want to enable the OpenID Connect Authorization Code Flow, so that your users are redirected to the OpenID Connect Provider to authenticate.
+When the `quarkus.oidc.application-type` property is set to `web-app`, this intructs Quarkus to enable the OIDC Authorization Code Flow, so that your users get redirected to the OIDC provider to authenticate.
 
-For last, the `quarkus.http.auth.permission.authenticated` permission is set to tell Quarkus about the paths you want to protect. In this case,
-all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access. For more details check xref:security-authorize-web-endpoints-reference.adoc[Security Authorization Guide].
+The `quarkus.http.auth.permission.authenticated` property tells Quarkus about the paths that you want to protect. 
+In the example provided, all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access.
+For more information, see xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints].
 
 === Starting and Configuring the Keycloak Server
 
@@ -361,7 +362,7 @@ If only the access token contains the roles and this access token is not meant t
 
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
-Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security-overview-concept.adoc#security-identity-customization[here].
+Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles. For more information, see xref:security-customization.adoc#security-identity-customization[SecurityIdentity customization].
 
 [[token-verification-introspection]]
 === Token Verification And Introspection
@@ -1444,7 +1445,8 @@ In such cases HTTP `401` will be returned by default. However, you can instead r
 quarkus.oidc.authentication.error-path=/error
 ----
 
-It has to start from a forward slash and be relative to the current endpoint's base URI. For example, if it is set as '/error' and the current request URI is `https://localhost:8080/callback?error=invalid_scope` then a final redirect will be made to `https://localhost:8080/error?error=invalid_scope`.
+It has to start from a forward slash and be relative to the base URI of the current endpoint.
+For example, if it is set as '/error' and the current request URI is `https://localhost:8080/callback?error=invalid_scope` then a final redirect will be made to `https://localhost:8080/error?error=invalid_scope`.
 
 It is important that this error endpoint is a public resource to avoid the user redirected to this page be authenticated again.
 
@@ -1457,5 +1459,6 @@ It is important that this error endpoint is a public resource to avoid the user 
 * xref:security-openid-connect-providers.adoc[Well Known OpenID Connect providers].
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
-* xref:security-overview-concept.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
+* xref:security-authentication-mechanisms.adoc#oidc-jwt-oauth2-comparison[Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms]
+* xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

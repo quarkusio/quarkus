@@ -32,7 +32,7 @@ implementation("io.quarkus:quarkus-security")
 == HttpAuthenticationMechanism Customization
 
 One can customize `HttpAuthenticationMechanism` by registering a CDI implementation bean.
-In the example below the custom authenticator delegates to `JWTAuthMechanism` provided by `quarkus-smallrye-jwt`: 
+In the example below the custom authenticator delegates to `JWTAuthMechanism` provided by `quarkus-smallrye-jwt`:
 
 [source,java]
 ----
@@ -48,7 +48,7 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 
 	@Override
 	public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
-	    // do some custom action and delegate	
+	    // do some custom action and delegate
             return delegate.authenticate(context, identityProviderManager);
 	}
 
@@ -175,7 +175,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 }
 ----
 
-Here is another example showing how to use the client certificate available in the current xref:security-built-in-authentication-support-concept.adoc#mutual-tls[Mutual TLS] request to add more roles:
+Here is another example showing how to use the client certificate available in the current xref:security-authentication-mechanisms-concept.adoc#mutual-TLS-authentication[mutual TLS (mTLS) authentication] request to add more roles:
 
 [source,java]
 ----

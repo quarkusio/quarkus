@@ -1,9 +1,9 @@
 [id="security-basic-authentication-tutorial"]
 = Secure a Quarkus application with Basic authentication
 include::_attributes.adoc[]
-:categories: security, getting-started
+:categories: security,getting-started
 
-Secure your Quarkus application endpoints by combining xref:security-built-in-authentication-support-concept.adoc#basic-auth[Quarkus built-in basic HTTP authentication] with the JPA identity provider to enable role-based access control (RBAC).
+Secure your Quarkus application endpoints by combining the built-in Quarkus xref:security-basic-authentication-concept.adoc[Basic authentication] with the JPA identity provider to enable role-based access control (RBAC).
 The JPA `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.
 
 This tutorial prepares you for implementing more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
@@ -211,14 +211,14 @@ The `security-jpa` extension initializes only if there is a single entity annota
 
 === Configure the application
 
-. Enable xref:security-built-in-authentication-support-concept.adoc#basic-auth[Quarkus built-in basic HTTP authentication] by setting the `quarkus.http.auth.basic` property to `true`:
+. Enable the built-in Quarkus xref:security-basic-authentication-concept.adoc[Basic authentication] by setting the `quarkus.http.auth.basic` property to `true`:
 +
 `quarkus.http.auth.basic`=true`
 +
 [NOTE]
 ====
-When secure access is required and no other authentication mechanisms are enabled, xref:security-built-in-authentication-support-concept.adoc#basic-auth[Quarkus built-in basic HTTP authentication] is the fallback authentication mechanism.
-Therefore, in this tutorial, you do not need to set the property `quarkus.http.auth.basic=true`.
+When secure access is required and no other authentication mechanisms are enabled, the built-in xref:security-basic-authentication-concept.adoc[Basic authentication] of Quarkus is the fallback authentication mechanism.
+Therefore, in this tutorial, you do not need to set the property `quarkus.http.auth.basic` to `true`.
 ====
 +
 . Configure at least one data source so that the `security-jpa` extension can access your database.
@@ -583,7 +583,7 @@ For applications running in production, do not store passwords in plain text.
 == What's next
 
 Congratulations!
-You have learned how to create and test a secure Quarkus application by combining the xref:security-built-in-authentication-support-concept.adoc#basic-auth[Quarkus built-in basic HTTP authentication] with the JPA identity provider.
+You have learned how to create and test a secure Quarkus application by combining the built-in xref:security-basic-authentication-concept.adoc[Basic authentication] in Quarkus with the JPA identity provider.
 
 After you have completed this tutorial, explore some of the more advanced security mechanisms in Quarkus.
 Use the following information to learn how you can securely use `OpenID Connect` to provide secure single sign-on access to your Quarkus endpoints:

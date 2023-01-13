@@ -5,11 +5,13 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 
+import io.quarkus.runtime.ShutdownEvent;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
@@ -24,19 +26,33 @@ import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 @ApplicationScoped
 public class OpenApiDocumentService implements OpenApiDocumentHolder {
 
+    private static final String OPENAPI_SERVERS = "mp.openapi.servers";
     private final OpenApiDocumentHolder documentHolder;
+    private final String previousOpenApiServersSystemPropertyValue;
 
     public OpenApiDocumentService(OASFilter autoSecurityFilter, Config config) {
 
         String servers = config.getOptionalValue("quarkus.smallrye-openapi.servers", String.class).orElse(null);
+        this.previousOpenApiServersSystemPropertyValue = System.getProperty(OPENAPI_SERVERS);
         if (servers != null && !servers.isEmpty()) {
-            System.setProperty("mp.openapi.servers", servers);
+            System.setProperty(OPENAPI_SERVERS, servers);
         }
 
         if (config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class).orElse(Boolean.FALSE)) {
             this.documentHolder = new DynamicDocument(config, autoSecurityFilter);
         } else {
             this.documentHolder = new StaticDocument(config, autoSecurityFilter);
+        }
+    }
+
+    void reset(@Observes ShutdownEvent event) {
+        // Reset the value of the System property "mp.openapi.servers" to prevent side effects on tests since
+        // the value of System property "mp.openapi.servers" takes precedence over the value of
+        // "quarkus.smallrye-openapi.servers" due to the configuration mapping
+        if (previousOpenApiServersSystemPropertyValue == null) {
+            System.clearProperty(OPENAPI_SERVERS);
+        } else {
+            System.setProperty(OPENAPI_SERVERS, previousOpenApiServersSystemPropertyValue);
         }
     }
 

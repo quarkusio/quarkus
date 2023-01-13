@@ -93,7 +93,6 @@ import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
@@ -1184,7 +1183,6 @@ public class DevMojo extends AbstractMojo {
         if (argsString != null) {
             builder.applicationArgs(argsString);
         }
-        propagateUserProperties(builder);
 
         return builder.build();
     }
@@ -1205,26 +1203,6 @@ public class DevMojo extends AbstractMojo {
             builder.jvmArgs(Arrays.asList(CommandLineUtils.translateCommandline(jvmArgs)));
         }
 
-    }
-
-    private void propagateUserProperties(MavenDevModeLauncher.Builder builder) {
-        Properties userProps = BootstrapMavenOptions.newInstance().getSystemProperties();
-        if (userProps == null) {
-            return;
-        }
-        final StringBuilder buf = new StringBuilder();
-        buf.append("-D");
-        for (Object o : userProps.keySet()) {
-            String name = o.toString();
-            final String value = userProps.getProperty(name);
-            buf.setLength(2);
-            buf.append(name);
-            if (value != null && !value.isEmpty()) {
-                buf.append('=');
-                buf.append(value);
-            }
-            builder.jvmArgs(buf.toString());
-        }
     }
 
     private void applyCompilerFlag(Optional<Xpp3Dom> compilerPluginConfiguration, String flagName,

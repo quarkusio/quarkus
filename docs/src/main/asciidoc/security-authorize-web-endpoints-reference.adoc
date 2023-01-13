@@ -301,7 +301,7 @@ public class SubjectExposingResource {
 <4> The call to obtain the user principal returns null if the caller is unauthenticated and non-null if the caller is authenticated.
 <5> The `/subject/denied` endpoint declares the `@DenyAll` annotation, thus disallowing all direct access to it as a REST method, regardless of the user calling it. The method is still invokable internally by other methods in this class.
 
-CAUTION: Please refer to the xref:security-built-in-authentication-support-concept.adoc#proactive-authentication[Proactive Authentication] section of the Built-In Authentication Support guide if you plan to use standard security annotations on the IO thread.
+CAUTION: If you plan to use standard security annotations on the IO thread, review the information in xref:security-proactive-authentication-concept.adoc[Proactive Authentication].
 
 The `@RolesAllowed` annotation value supports <<config-reference#property-expressions,Property Expressions>> including default values and nested Property Expressions.
 Configuration properties used with the annotation are resolved at runtime.

@@ -1,5 +1,5 @@
 [id="security-basic-authentication-concept"]
-= Basic Authentication
+= Basic authentication
 include::_attributes.adoc[]
 :categories: security,web
 

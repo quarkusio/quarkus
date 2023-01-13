@@ -321,6 +321,6 @@ Please also see the xref:security-oidc-bearer-authentication-concept.adoc#integr
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* xref:security-overview-concept.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
+* xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
 * xref:security-overview-concept.adoc[Quarkus Security]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

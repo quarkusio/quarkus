@@ -955,7 +955,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     while (theclass.isArray()) {
                         theclass = theclass.getComponentType();
                     }
-                    String className = theclass.getName();
                     if (theclass.isPrimitive()) {
                         cloneRequired = false;
                     } else if (TestInfo.class.isAssignableFrom(theclass)) {
@@ -963,9 +962,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         Method newTestMethod = info.getTestMethod().isPresent()
                                 ? determineTCCLExtensionMethod(info.getTestMethod().get(), testClassFromTCCL)
                                 : null;
-                        replacement = new TestInfoImpl(info.getDisplayName(), info.getTags(), Optional.of(testClassFromTCCL),
+                        replacement = new TestInfoImpl(info.getDisplayName(), info.getTags(),
+                                Optional.of(testClassFromTCCL),
                                 Optional.ofNullable(newTestMethod));
-                    } else if (clonePattern.matcher(className).matches()) {
+                    } else if (clonePattern.matcher(theclass.getName()).matches()) {
                         cloneRequired = true;
                     } else {
                         try {

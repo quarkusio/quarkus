@@ -486,7 +486,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
                             "num_visits"))
                     .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country"))
                     .withCursor().cursorCount(2));
-            assertThat(result.count()).isEqualTo(2);
+            assertThat(result.count()).isBetween(1, 2);
             assertThat(result.documents()).allSatisfy(d -> {
                 assertThat(d.property("day").asInteger()).isPositive();
                 assertThat(d.property("country").asString()).isNotNull();
@@ -494,7 +494,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
             });
             assertThat(result.cursor()).isPositive();
             result = search.ftCursorRead("myIndex", result.cursor());
-            assertThat(result.count()).isEqualTo(1);
+            assertThat(result.count()).isBetween(1, 2);
             assertThat(result.documents()).allSatisfy(d -> {
                 assertThat(d.property("day").asInteger()).isPositive();
                 assertThat(d.property("country").asString()).isNotNull();

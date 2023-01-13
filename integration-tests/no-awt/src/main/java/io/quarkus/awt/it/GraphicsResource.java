@@ -59,9 +59,6 @@ public class GraphicsResource {
         } else if ("ConvolveOp".equals(entrypoint)) {
             final ConvolveOp cop = new ConvolveOp(new Kernel(1, 1, new float[] { 0f }), ConvolveOp.EDGE_NO_OP, null);
             LOG.infof("ConvolveOp: %s", cop.toString());
-        } else if ("Font".equals(entrypoint)) {
-            final Font f = new Font("Arial", Font.PLAIN, 16);
-            LOG.infof("Font: %s", f.getFamily());
         } else if ("Path2D".equals(entrypoint)) {
             final Path2D p = new Path2D.Double();
             LOG.infof("Path2D: %s", p.toString());

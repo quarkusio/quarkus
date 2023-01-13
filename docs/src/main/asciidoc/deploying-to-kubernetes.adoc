@@ -1486,7 +1486,7 @@ The previous configuration, combined with the presence of `quarkus-datasource`, 
 
 By using the `apiVersion` and `kind` properties of the Operator resource, which matches the used `postgresql` Operator, the generated `ServiceBinding` resource binds the service or resource to the application.
 
-When you do not specify a name for your database service, the the value of the `db-kind` property is used as the default name.
+When you do not specify a name for your database service, the value of the `db-kind` property is used as the default name.
 
 [source,yaml]
 ----

@@ -293,10 +293,10 @@ In the same fashion as `hasRole`, users can use `hasAnyRole`  to check if the lo
 +
 Some examples are: `@PreAuthorize("hasAnyRole('admin')")`, `@PreAuthorize("hasAnyRole(@roles.USER, 'view')")`
 
-permitAll:: Adding `@PreAuthorize("permitAll()")` to a method will ensure that that method is accessible by any user (including anonymous users). Adding it to a class will ensure that all public methods
+permitAll:: Adding `@PreAuthorize("permitAll()")` to a method will ensure that method is accessible by any user (including anonymous users). Adding it to a class will ensure that all public methods
 of the class that are not annotated with any other Spring Security annotation will be accessible.
 
-denyAll:: Adding `@PreAuthorize("denyAll()")` to a method will ensure that that method is not accessible by any user. Adding it to a class will ensure that all public methods
+denyAll:: Adding `@PreAuthorize("denyAll()")` to a method will ensure that method is not accessible by any user. Adding it to a class will ensure that all public methods
 of the class that are not annotated with any other Spring Security annotation will not be accessible to any user.
 
 isAnonymous:: When annotating a bean method with `@PreAuthorize("isAnonymous()")` the method will only be accessible if the current user is anonymous - i.e. a non logged-in user.

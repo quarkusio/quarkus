@@ -37,7 +37,6 @@ public class GraphicsIT {
             "BufferedImage",
             "Transformations",
             "ConvolveOp",
-            "Font",
             "Path2D",
             "ImageReader",
             "ImageWriter"

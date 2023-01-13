@@ -1,9 +1,10 @@
 package io.quarkus.runtime.init;
 
-import org.jboss.logging.Logger;
+import java.util.stream.StreamSupport;
+
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.PreventFurtherStepsException;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -12,17 +13,17 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class InitializationTaskRecorder {
 
-    private static final Logger log = Logger.getLogger(InitializationTaskRecorder.class);
-
-    private final RuntimeValue<InitRuntimeConfig> config;
-
-    public InitializationTaskRecorder(RuntimeValue<InitRuntimeConfig> config) {
-        this.config = config;
-    }
+    private static final String QUARKUS_INIT_AND_EXIT = "quarkus.init-and-exit";
 
     public void exitIfNeeded() {
-        if (config.getValue().initAndExit) {
-            throw new PreventFurtherStepsException("Gracefully exiting after initalization.", 0);
+        //The tcks CustomConverTest is broken: It always returns true for boolean values.
+        //To workaround this issue, we need to check if `init-and-exit` is explicitly defined.
+        boolean initAndExitConfigured = StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false)
+                .anyMatch(n -> QUARKUS_INIT_AND_EXIT.equals(n));
+        if (initAndExitConfigured) {
+            if (ConfigProvider.getConfig().getValue(QUARKUS_INIT_AND_EXIT, boolean.class)) {
+                throw new PreventFurtherStepsException("Gracefully exiting after initalization.", 0);
+            }
         }
     }
 }

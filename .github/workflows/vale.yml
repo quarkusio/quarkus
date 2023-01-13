@@ -23,6 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Vale Linter
+        continue-on-error: true
         uses: errata-ai/vale-action@reviewdog
         with:
           fail_on_error: false

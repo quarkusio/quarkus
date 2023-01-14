@@ -22,6 +22,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - id: files
+        uses: jitterbit/get-changed-files@v1
+        with:
+          format: 'json'
       - name: Vale Linter
         continue-on-error: true
         uses: errata-ai/vale-action@reviewdog
@@ -29,6 +33,6 @@ jobs:
           fail_on_error: false
           vale_flags: "--no-exit --config=docs/.vale.ini"
           filter_mode: diff_context
-          files: docs/src/main/asciidoc/
+          files: ${{ steps.files.outputs.added_modified }}
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

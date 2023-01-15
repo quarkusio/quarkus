@@ -14,7 +14,7 @@ include::{includes}/prerequisites.adoc[]
 
 == What you will build
 
-To demonstrate different authorization policies, the steps in this tutorial guide you through building an application that provides the following endpoints :
+To demonstrate different authorization policies, the steps in this tutorial guide you through building an application that provides the following endpoints:
 
 [cols="20%,40% ",options="header"]
 |===

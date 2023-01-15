@@ -16,7 +16,7 @@
     <properties>
         <bouncycastle.version>1.70</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.3</bouncycastle.fips.version>
-        <bouncycastle.tls.fips.version>1.0.14</bouncycastle.tls.fips.version>
+        <bouncycastle.tls.fips.version>1.0.14.1</bouncycastle.tls.fips.version>
         <findbugs.version>3.0.2</findbugs.version>
         <jandex.version>3.0.5</jandex.version>
         <resteasy.version>4.7.7.Final</resteasy.version>

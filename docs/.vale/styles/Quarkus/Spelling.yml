@@ -46,6 +46,7 @@ filters:
   - "[gG]bps"
   - "[gG]etter"
   - "[gG]it"
+  - "[gG]radle"
   - "[gG]rafana"
   - "[hH]ardcoding"
   - "[hH]eatmap"
@@ -159,6 +160,7 @@ filters:
   - "[uU]psell"
   - "[uU]pselling"
   - "[vV]alidator"
+  - "[yY]aml"
   - "Let\'s Encrypt"
   - adoc
   - Agroal

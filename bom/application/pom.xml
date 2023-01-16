@@ -168,8 +168,8 @@
         <mongo-crypt.version>1.6.1</mongo-crypt.version>
         <proton-j.version>0.34.0</proton-j.version>
         <javaparser.version>3.24.2</javaparser.version>
-        <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
-        <okio.version>1.17.2</okio.version><!-- keep in sync with okhttp -->
+	<okhttp.version>4.9.3</okhttp.version><!-- keep in sync with okio -->
+	<okio.version>2.8.0</okio.version><!-- keep in sync with okhttp -->
         <hibernate-quarkus-local-cache.version>0.1.1</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>3.5.3</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>

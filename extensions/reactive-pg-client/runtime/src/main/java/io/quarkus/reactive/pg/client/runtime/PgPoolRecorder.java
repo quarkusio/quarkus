@@ -13,14 +13,20 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.Instance;
+
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
+import io.quarkus.reactive.pg.client.PgPoolCreator;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -78,7 +84,7 @@ public class PgPoolRecorder {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return PgPool.pool(vertx, pgConnectOptions, poolOptions);
+        return createPool(vertx, poolOptions, pgConnectOptions, dataSourceName);
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -200,5 +206,48 @@ public class PgPoolRecorder {
         dataSourceReactiveRuntimeConfig.additionalProperties.forEach(pgConnectOptions::addProperty);
 
         return pgConnectOptions;
+    }
+
+    private PgPool createPool(Vertx vertx, PoolOptions poolOptions, PgConnectOptions pgConnectOptions,
+            String dataSourceName) {
+        Instance<PgPoolCreator> instance;
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            instance = Arc.container().select(PgPoolCreator.class);
+        } else {
+            instance = Arc.container().select(PgPoolCreator.class,
+                    new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
+        }
+        if (instance.isResolvable()) {
+            PgPoolCreator.Input input = new DefaultInput(vertx, poolOptions, pgConnectOptions);
+            return instance.get().create(input);
+        }
+        return PgPool.pool(vertx, pgConnectOptions, poolOptions);
+    }
+
+    private static class DefaultInput implements PgPoolCreator.Input {
+        private final Vertx vertx;
+        private final PoolOptions poolOptions;
+        private final PgConnectOptions pgConnectOptions;
+
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, PgConnectOptions pgConnectOptions) {
+            this.vertx = vertx;
+            this.poolOptions = poolOptions;
+            this.pgConnectOptions = pgConnectOptions;
+        }
+
+        @Override
+        public Vertx vertx() {
+            return vertx;
+        }
+
+        @Override
+        public PoolOptions poolOptions() {
+            return poolOptions;
+        }
+
+        @Override
+        public PgConnectOptions pgConnectOptions() {
+            return pgConnectOptions;
+        }
     }
 }

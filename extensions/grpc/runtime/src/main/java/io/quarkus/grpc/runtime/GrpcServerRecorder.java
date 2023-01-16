@@ -94,11 +94,12 @@ public class GrpcServerRecorder {
         if (grpcContainer == null) {
             throw new IllegalStateException("gRPC not initialized, GrpcContainer not found");
         }
-        Vertx vertx = vertxSupplier.getValue();
         if (hasNoServices(grpcContainer.getServices()) && LaunchMode.current() != LaunchMode.DEVELOPMENT) {
             LOGGER.error("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
+            return; // OK?
         }
 
+        Vertx vertx = vertxSupplier.getValue();
         GrpcServerConfiguration configuration = cfg.server;
         GrpcBuilderProvider<?> provider = GrpcBuilderProvider.findServerBuilderProvider(configuration);
 

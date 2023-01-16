@@ -35,6 +35,12 @@ public class GrpcClientConfiguration {
     public InProcess inProcess;
 
     /**
+     * Configure Stork usage with new Vert.x gRPC, if enabled.
+     */
+    @ConfigItem
+    public StorkConfig stork;
+
+    /**
      * The gRPC service port.
      */
     @ConfigItem(defaultValue = "9000")
@@ -168,7 +174,7 @@ public class GrpcClientConfiguration {
 
     /**
      * Use a custom load balancing policy.
-     * Accepted values are: {@code pick_value}, {@code round_robin}, {@code grpclb}.
+     * Accepted values are: {@code pick_first}, {@code round_robin}, {@code grpclb}.
      * This value is ignored if name-resolver is set to 'stork'.
      */
     @ConfigItem(defaultValue = "pick_first")

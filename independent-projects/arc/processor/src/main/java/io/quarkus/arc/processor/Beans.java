@@ -31,6 +31,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -609,6 +610,20 @@ public final class Beans {
         }
     }
 
+    static void validateInterceptorDecorator(BeanInfo bean, List<Throwable> errors,
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
+        // transform any private injected fields into package private
+        if (bean.isClassBean() && bean.getDeployment().transformPrivateInjectedFields) {
+            for (Injection injection : bean.getInjections()) {
+                if (injection.isField() && Modifier.isPrivate(injection.getTarget().asField().flags())) {
+                    bytecodeTransformerConsumer
+                            .accept(new BytecodeTransformer(bean.getTarget().get().asClass().name().toString(),
+                                    new PrivateInjectedFieldTransformFunction(injection.getTarget().asField().name())));
+                }
+            }
+        }
+    }
+
     static void validateBean(BeanInfo bean, List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             Set<DotName> classesReceivingNoArgsCtor) {
         if (bean.isClassBean()) {
@@ -671,6 +686,16 @@ public final class Beans {
                                     String.format(
                                             "%s bean is not proxyable because it has a private no-args constructor: %s. To fix this problem, change the constructor to be package-private",
                                             classifier, bean)));
+                }
+            }
+
+            // transform any private injected fields into package private
+            if (bean.getDeployment().transformPrivateInjectedFields) {
+                for (Injection injection : bean.getInjections()) {
+                    if (injection.isField() && Modifier.isPrivate(injection.getTarget().asField().flags())) {
+                        bytecodeTransformerConsumer.accept(new BytecodeTransformer(beanClass.name().toString(),
+                                new PrivateInjectedFieldTransformFunction(injection.getTarget().asField().name())));
+                    }
                 }
             }
 
@@ -946,6 +971,39 @@ public final class Beans {
                                 className);
                     }
                     return super.visitMethod(access, name, descriptor, signature, exceptions);
+                }
+            };
+        }
+
+    }
+
+    // alters an injected field modifier from private to package private
+    static class PrivateInjectedFieldTransformFunction implements BiFunction<String, ClassVisitor, ClassVisitor> {
+
+        public PrivateInjectedFieldTransformFunction(String fieldName) {
+            this.fieldName = fieldName;
+        }
+
+        private String fieldName;
+
+        @Override
+        public ClassVisitor apply(String className, ClassVisitor classVisitor) {
+            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+
+                @Override
+                public FieldVisitor visitField(
+                        int access,
+                        String name,
+                        String descriptor,
+                        String signature,
+                        Object value) {
+                    if (name.equals(fieldName)) {
+                        access = access & (~Opcodes.ACC_PRIVATE);
+                        LOGGER.debugf(
+                                "Changed visibility of an injected private field to package-private. Field name: %s in class: %s",
+                                name, className);
+                    }
+                    return super.visitField(access, name, descriptor, signature, value);
                 }
             };
         }

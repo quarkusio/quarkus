@@ -525,6 +525,11 @@ public class BeanInfo implements InjectionTargetInfo {
         Beans.validateBean(this, errors, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
     }
 
+    void validateInterceptorDecorator(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
+        // no actual validations done at the moment, but we still want the transformation
+        Beans.validateInterceptorDecorator(this, errors, bytecodeTransformerConsumer);
+    }
+
     void init(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses) {
         for (Injection injection : injections) {

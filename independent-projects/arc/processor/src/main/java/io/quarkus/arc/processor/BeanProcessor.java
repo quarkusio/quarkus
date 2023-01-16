@@ -471,6 +471,7 @@ public class BeanProcessor {
         boolean generateSources;
         boolean jtaCapabilities;
         boolean transformUnproxyableClasses;
+        boolean transformPrivateInjectedFields;
         boolean failOnInterceptedPrivateMethod;
         boolean allowMocking;
 
@@ -502,6 +503,7 @@ public class BeanProcessor {
             generateSources = false;
             jtaCapabilities = false;
             transformUnproxyableClasses = false;
+            transformPrivateInjectedFields = false;
             failOnInterceptedPrivateMethod = false;
             allowMocking = false;
 
@@ -716,6 +718,17 @@ public class BeanProcessor {
          */
         public Builder setTransformUnproxyableClasses(boolean value) {
             this.transformUnproxyableClasses = value;
+            return this;
+        }
+
+        /**
+         * If set to true the container will transform injected private field of class based beans during validation.
+         *
+         * @param value
+         * @return self
+         */
+        public Builder setTransformPrivateInjectedFields(boolean value) {
+            this.transformPrivateInjectedFields = value;
             return this;
         }
 

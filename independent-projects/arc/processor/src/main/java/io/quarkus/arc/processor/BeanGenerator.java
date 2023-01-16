@@ -1505,7 +1505,8 @@ public class BeanGenerator extends AbstractGenerator {
                     providerHandle, childCtxHandle);
 
             FieldInfo injectedField = fieldInjection.target.asField();
-            if (isReflectionFallbackNeeded(injectedField, targetPackage)) {
+            // only use reflection fallback if we are not performing transformation
+            if (isReflectionFallbackNeeded(injectedField, targetPackage, bean)) {
                 if (Modifier.isPrivate(injectedField.flags())) {
                     privateMembers.add(isApplicationClass,
                             String.format("@Inject field %s#%s", fieldInjection.target.asField().declaringClass().name(),

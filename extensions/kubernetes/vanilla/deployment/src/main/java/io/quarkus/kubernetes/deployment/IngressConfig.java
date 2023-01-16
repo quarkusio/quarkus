@@ -22,6 +22,13 @@ public class IngressConfig {
     Optional<String> host;
 
     /**
+     * The default target named port. If not provided, it will be deducted from the Service resource ports.
+     * Options are: "http" and "https".
+     */
+    @ConfigItem(defaultValue = "http")
+    String targetPort;
+
+    /**
      * The class of the Ingress. If the ingressClassName is omitted, a default Ingress class is used.
      */
     @ConfigItem

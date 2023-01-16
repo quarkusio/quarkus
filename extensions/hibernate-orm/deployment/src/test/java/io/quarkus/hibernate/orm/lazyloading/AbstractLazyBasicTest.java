@@ -1,11 +1,16 @@
 package io.quarkus.hibernate.orm.lazyloading;
 
 import static io.quarkus.hibernate.orm.TransactionTestUtils.inTransaction;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.UserTransaction;
 
+import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.junit.jupiter.api.Test;
 
 public abstract class AbstractLazyBasicTest {
@@ -21,6 +26,50 @@ public abstract class AbstractLazyBasicTest {
 
     public AbstractLazyBasicTest(AccessDelegate delegate) {
         this.delegate = delegate;
+    }
+
+    @Test
+    public void update_all_nullToNull() {
+        initNull();
+        StatementSpy.checkNoUpdate(() -> inTransaction(transaction, () -> {
+            delegate.updateAllProperties(em, entityId, null, null, null);
+        }));
+        inTransaction(transaction, () -> {
+            delegate.testLazyLoadingAndPersistedValues(em, entityId, null, null, null);
+        });
+    }
+
+    @Test
+    public void update_allLazy_nullToNull() {
+        initNull();
+        StatementSpy.checkNoUpdate(() -> inTransaction(transaction, () -> {
+            delegate.updateAllLazyProperties(em, entityId, null, null);
+        }));
+        inTransaction(transaction, () -> {
+            delegate.testLazyLoadingAndPersistedValues(em, entityId, null, null, null);
+        });
+    }
+
+    @Test
+    public void update_oneEager_nullToNull() {
+        initNull();
+        StatementSpy.checkNoUpdate(() -> inTransaction(transaction, () -> {
+            delegate.updateOneEagerProperty(em, entityId, null);
+        }));
+        inTransaction(transaction, () -> {
+            delegate.testLazyLoadingAndPersistedValues(em, entityId, null, null, null);
+        });
+    }
+
+    @Test
+    public void update_oneLazy_nullToNull() {
+        initNull();
+        StatementSpy.checkNoUpdate(() -> inTransaction(transaction, () -> {
+            delegate.updateOneLazyProperty(em, entityId, null);
+        }));
+        inTransaction(transaction, () -> {
+            delegate.testLazyLoadingAndPersistedValues(em, entityId, null, null, null);
+        });
     }
 
     @Test
@@ -68,7 +117,7 @@ public abstract class AbstractLazyBasicTest {
     }
 
     @Test
-    public void update_all_nonNullToNonNull() {
+    public void update_all_nonNullToNonNull_differentValue() {
         initNonNull();
         inTransaction(transaction, () -> {
             delegate.updateAllProperties(em, entityId, "updated1", "updated2", "updated3");
@@ -79,7 +128,18 @@ public abstract class AbstractLazyBasicTest {
     }
 
     @Test
-    public void update_allLazy_nonNullToNonNull() {
+    public void update_all_nonNullToNonNull_sameValue() {
+        initNonNull();
+        StatementSpy.checkNoUpdate(() -> inTransaction(transaction, () -> {
+            delegate.updateAllProperties(em, entityId, "initial1", "initial2", "initial3");
+        }));
+        inTransaction(transaction, () -> {
+            delegate.testLazyLoadingAndPersistedValues(em, entityId, "initial1", "initial2", "initial3");
+        });
+    }
+
+    @Test
+    public void update_allLazy_nonNullToNonNull_differentValue() {
         initNonNull();
         inTransaction(transaction, () -> {
             delegate.updateAllLazyProperties(em, entityId, "updated1", "updated2");
@@ -90,7 +150,18 @@ public abstract class AbstractLazyBasicTest {
     }
 
     @Test
-    public void update_oneEager_nonNullToNonNull() {
+    public void update_allLazy_nonNullToNonNull_sameValue() {
+        initNonNull();
+        StatementSpy.checkNoUpdate(() -> inTransaction(transaction, () -> {
+            delegate.updateAllLazyProperties(em, entityId, "initial2", "initial3");
+        }));
+        inTransaction(transaction, () -> {
+            delegate.testLazyLoadingAndPersistedValues(em, entityId, "initial1", "initial2", "initial3");
+        });
+    }
+
+    @Test
+    public void update_oneEager_nonNullToNonNull_differentValue() {
         initNonNull();
         inTransaction(transaction, () -> {
             delegate.updateOneEagerProperty(em, entityId, "updated1");
@@ -101,13 +172,35 @@ public abstract class AbstractLazyBasicTest {
     }
 
     @Test
-    public void update_oneLazy_nonNullToNonNull() {
+    public void update_oneEager_nonNullToNonNull_sameValue() {
+        initNonNull();
+        StatementSpy.checkNoUpdate(() -> inTransaction(transaction, () -> {
+            delegate.updateOneEagerProperty(em, entityId, "initial1");
+        }));
+        inTransaction(transaction, () -> {
+            delegate.testLazyLoadingAndPersistedValues(em, entityId, "initial1", "initial2", "initial3");
+        });
+    }
+
+    @Test
+    public void update_oneLazy_nonNullToNonNull_differentValue() {
         initNonNull();
         inTransaction(transaction, () -> {
             delegate.updateOneLazyProperty(em, entityId, "updated2");
         });
         inTransaction(transaction, () -> {
             delegate.testLazyLoadingAndPersistedValues(em, entityId, "initial1", "updated2", "initial3");
+        });
+    }
+
+    @Test
+    public void update_oneLazy_nonNullToNonNull_sameValue() {
+        initNonNull();
+        StatementSpy.checkNoUpdate(() -> inTransaction(transaction, () -> {
+            delegate.updateOneLazyProperty(em, entityId, "initial2");
+        }));
+        inTransaction(transaction, () -> {
+            delegate.testLazyLoadingAndPersistedValues(em, entityId, "initial1", "initial2", "initial3");
         });
     }
 
@@ -196,5 +289,31 @@ public abstract class AbstractLazyBasicTest {
                 String expectedEagerProperty1,
                 String expectedLazyProperty1,
                 String expectedLazyProperty2);
+    }
+
+    public static class StatementSpy implements StatementInspector {
+        private static final ThreadLocal<List<String>> statements = new ThreadLocal<>();
+
+        public static void checkNoUpdate(Runnable runnable) {
+            List<String> list = new ArrayList<>();
+            if (statements.get() != null) {
+                throw new IllegalStateException("Cannot nest checkNoUpdate()");
+            }
+            statements.set(list);
+            runnable.run();
+            statements.remove();
+            assertThat(list)
+                    .isNotEmpty() // Something is wrong if we didn't even load an entity
+                    .allSatisfy(sql -> assertThat(sql).doesNotContainIgnoringCase("update"));
+        }
+
+        @Override
+        public String inspect(String sql) {
+            List<String> list = statements.get();
+            if (list != null) {
+                list.add(sql);
+            }
+            return sql;
+        }
     }
 }

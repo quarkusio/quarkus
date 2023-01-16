@@ -32,13 +32,13 @@ public class AmqpDevServicesBuildTimeConfig {
      *
      * Check https://quay.io/repository/artemiscloud/activemq-artemis-broker to find the available versions.
      */
-    @ConfigItem(defaultValue = "quay.io/artemiscloud/activemq-artemis-broker:0.1.2")
+    @ConfigItem(defaultValue = "quay.io/artemiscloud/activemq-artemis-broker:1.0.11")
     public String imageName;
 
     /**
      * The value of the {@code AMQ_EXTRA_ARGS} environment variable to pass to the container.
      */
-    @ConfigItem(defaultValue = "--no-autotune --mapped --no-fsync")
+    @ConfigItem(defaultValue = "--no-autotune --mapped --no-fsync --relax-jolokia --http-host 0.0.0.0")
     public String extraArgs;
 
     /**

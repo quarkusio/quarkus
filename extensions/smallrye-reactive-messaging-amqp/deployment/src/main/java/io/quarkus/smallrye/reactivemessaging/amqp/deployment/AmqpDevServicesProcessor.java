@@ -50,6 +50,7 @@ public class AmqpDevServicesProcessor {
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-amqp";
 
     private static final int AMQP_PORT = 5672;
+    private static final int AMQP_CONSOLE_PORT = 8161;
 
     private static final ContainerLocator amqpContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, AMQP_PORT);
     private static final String AMQP_HOST_PROP = "amqp-host";
@@ -277,7 +278,7 @@ public class AmqpDevServicesProcessor {
             super(dockerImageName);
             this.port = fixedExposedPort;
             withNetwork(Network.SHARED);
-            withExposedPorts(AMQP_PORT);
+            withExposedPorts(AMQP_PORT, AMQP_CONSOLE_PORT);
             withEnv("AMQ_USER", DEFAULT_USER);
             withEnv("AMQ_PASSWORD", DEFAULT_PASSWORD);
             withEnv("AMQ_EXTRA_ARGS", extra);

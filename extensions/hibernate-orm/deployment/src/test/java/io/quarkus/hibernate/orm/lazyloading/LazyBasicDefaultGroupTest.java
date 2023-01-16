@@ -25,7 +25,9 @@ public class LazyBasicDefaultGroupTest extends AbstractLazyBasicTest {
                     .addClass(MyEntity.class)
                     .addClass(AccessDelegate.class)
                     .addClass(AccessDelegateImpl.class))
-            .withConfigurationResource("application.properties");
+            .withConfigurationResource("application.properties")
+            .overrideConfigKey("quarkus.hibernate-orm.unsupported-properties.\"hibernate.session_factory.statement_inspector\"",
+                    StatementSpy.class.getName());
 
     public LazyBasicDefaultGroupTest() {
         super(new AccessDelegateImpl());

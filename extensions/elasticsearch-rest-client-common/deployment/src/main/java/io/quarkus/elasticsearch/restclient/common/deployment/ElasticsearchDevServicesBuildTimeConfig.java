@@ -1,5 +1,6 @@
 package io.quarkus.elasticsearch.restclient.common.deployment;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -65,4 +66,24 @@ public class ElasticsearchDevServicesBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "elasticsearch")
     public String serviceName;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        ElasticsearchDevServicesBuildTimeConfig that = (ElasticsearchDevServicesBuildTimeConfig) o;
+        return Objects.equals(shared, that.shared)
+                && Objects.equals(enabled, that.enabled)
+                && Objects.equals(port, that.port)
+                && Objects.equals(imageName, that.imageName)
+                && Objects.equals(javaOpts, that.javaOpts)
+                && Objects.equals(serviceName, that.serviceName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(enabled, port, imageName, javaOpts, shared, serviceName);
+    }
 }

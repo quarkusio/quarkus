@@ -14,15 +14,16 @@ include::{includes}/prerequisites.adoc[]
 
 == What you will build
 
-The steps in this tutorial guide you through building an application that provides the following endpoints:
+To demonstrate different authorization policies, the steps in this tutorial guide you through building an application that provides the following endpoints:
 
 [cols="20%,40% ",options="header"]
 |===
 |Endpoint | Description 
 |`/api/public`| The `/api/public` endpoint can be accessed anonymously.
 |`/api/admin`| The `/api/admin` endpoint is protected with role-based access control (RBAC), and only users who have been granted the `admin` role can access it.
-At this endpoint, the `@RolesAllowed` annotation is used to declaratively enforce the access constraint.
-|`/api/users/me`| The `/api/users/me` endpoint is protected with RBAC and only users that have been granted the `user` role can access it. A JSON document with details about the user is returned as a response.
+At this endpoint, the `@RolesAllowed` annotation enforces the access constraint declaratively.
+|`/api/users/me`| The `/api/users/me` endpoint is protected by RBAC. Only users that have the `user` role can access the endpoint.
+This endpoint returns the caller's username as a string.
 |===
 
 [TIP]
@@ -104,7 +105,7 @@ public class PublicResource {
    }
 }
 ----
-* The source code for the `/api/admin` endpoint is similar but instead you use a `@RolesAllowed` annotation to make sure that only users granted the `admin` role can access the endpoint.
+* The source code for the `/api/admin` endpoint is similar, but instead, you use a `@RolesAllowed` annotation to ensure that only users granted the `admin` role can access the endpoint.
 Add a JAX-RS resource with the following `@RolesAllowed` annotation:
 +
 [source,java]
@@ -129,7 +130,7 @@ public class AdminResource {
 }
 ----
 * Finally, implement the `/api/users/me` endpoint. As you can see from the source code example below, we are trusting only users with the `user` role.
-We are also using `SecurityContext` to get access to the currently authenticated `Principal`, and we return the user name, all of which is loaded from the database.
+We are also using `SecurityContext` to get access to the currently authenticated `Principal`, and we return the username, all of which is loaded from the database.
 +
 [source,java]
 ----
@@ -203,8 +204,8 @@ public class User extends PanacheEntity {
 The `security-jpa` extension initializes only if there is a single entity annotated with `@UserDefinition`.
 
 <1> The `@UserDefinition` annotation must be present on a single entity and can be either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
-<2> Indicates the field used for the user name.
-<3> Indicates the field used for the password, which defaults to using bcrypt hashed passwords but you can also configure it for plain text or custom passwords.
+<2> Indicates the field used for the username.
+<3> Indicates the field used for the password. By default, it uses bcrypt-hashed passwords. You can configure it to use plain text or custom passwords.
 <4> This indicates the comma-separated list of roles added to the target principal representation attributes.
 <5> This method allows us to add users while hashing the password with the proper bcrypt hash.
 
@@ -238,7 +239,8 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 
 [NOTE]
 ====
-In this tutorial, a PostgreSQL database is used for the identity store. Hibernate ORM automatically creates the database schema on startup (change this in production).
+In this tutorial, a PostgreSQL database is used for the identity store. link:https://hibernate.org/orm/[Hibernate ORM] automatically creates the database schema on startup.
+This approach is suitable for development but needs to be revised for production.
 ====
 
 [source,java]
@@ -424,7 +426,7 @@ HTTP/1.1 200 OK
 Content-Length: 6
 Content-Type: text/plain;charset=UTF-8
 
-public%
+public
 ----
 
 * Connect to a protected endpoint anonymously:
@@ -436,7 +438,7 @@ Content-Length: 14
 Content-Type: text/html;charset=UTF-8
 WWW-Authenticate: Basic
 
-Not authorized%
+Not authorized
 ----
 
 [NOTE]
@@ -453,7 +455,7 @@ HTTP/1.1 200 OK
 Content-Length: 5
 Content-Type: text/plain;charset=UTF-8
 
-admin%
+admin
 ----
 
 === Results
@@ -470,7 +472,7 @@ HTTP/1.1 403 Forbidden
 Content-Length: 34
 Content-Type: text/html;charset=UTF-8
 
-Forbidden%
+Forbidden
 ----
 
 Finally, the user name `user` is authorized and the security context contains the principal details, for example, the user name.
@@ -482,7 +484,7 @@ HTTP/1.1 200 OK
 Content-Length: 4
 Content-Type: text/plain;charset=UTF-8
 
-user%
+user
 ----
 
 :sectnums!:
@@ -537,8 +539,7 @@ public class Role extends PanacheEntity {
 By default, passwords are stored and hashed by using https://en.wikipedia.org/wiki/Bcrypt[bcrypt] under the 
 https://en.wikipedia.org/wiki/Crypt_(C)[Modular Crypt Format] (MCF).
 
-When you need to create a hashed password we provide the convenient `String BcryptUtil.bcryptHash(String password)`
-function, which defaults to creating a random salt and hashing in 10 iterations. 
+When creating a hashed password, you can use the convenient `String BcryptUtil.bcryptHash(String password)` function, which defaults to creating a random salt and hashing in 10 iterations.
 You can also specify the number of iterations and the salt.
 
 NOTE: When you use MCF, you don't need dedicated columns to store the hashing algorithm, the iterations count, or the salt because they are all stored in the hashed value.

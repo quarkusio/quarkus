@@ -2451,7 +2451,7 @@ public interface GermanAppMessages extends AppMessages {
 <2> The value is the localized template.
 
 Message bundle files must be encoded in _UTF-8_.
-The file name consists of the relevant bundle name (e.g. `msg`) and underscore followed by the locate tag (IETF).
+The file name consists of the relevant bundle name (e.g. `msg`) and underscore followed by a language tag (IETF; e.g. `en-US`).
 The file format is very simple: each line represents either a key/value pair with the equals sign used as a separator or a comment (line starts with `#`).
 Blank lines are ignored.
 Keys are _mapped to method names_ from the corresponding message bundle interface.

@@ -770,6 +770,7 @@ To secure the incoming connections, Kubernetes allows enabling https://kubernete
 [source]
 ----
 quarkus.kubernetes.ingress.expose=true
+quarkus.kubernetes.ingress.target-port=https
 ## Ingress TLS configuration:
 quarkus.kubernetes.ingress.tls.my-secret.enabled=true
 ----

@@ -50,9 +50,11 @@ public class KubernetesWithMultiplePortsTest {
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
                             assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
-                                assertThat(container.getPorts()).hasSize(2);
+                                assertThat(container.getPorts()).hasSize(3);
                                 assertThat(container.getPorts()).filteredOn(cp -> cp.getContainerPort() == 8080).singleElement()
                                         .satisfies(c -> assertThat(c.getName()).isEqualTo("http"));
+                                assertThat(container.getPorts()).filteredOn(cp -> cp.getContainerPort() == 8443).singleElement()
+                                        .satisfies(c -> assertThat(c.getName()).isEqualTo("https"));
                                 assertThat(container.getPorts()).filteredOn(cp -> cp.getContainerPort() == 5005).singleElement()
                                         .satisfies(c -> assertThat(c.getName()).isEqualTo("remote"));
                             });
@@ -66,7 +68,7 @@ public class KubernetesWithMultiplePortsTest {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(2);
+                    assertThat(spec.getPorts()).hasSize(3);
                     assertThat(spec.getPorts()).filteredOn(sp -> sp.getPort() == 8080).singleElement().satisfies(p -> {
                         assertThat(p.getNodePort()).isEqualTo(30000);
                     });

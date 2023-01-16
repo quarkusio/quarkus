@@ -72,7 +72,7 @@ public class KubernetesWithApplicationPropertiesTest {
 
                                 assertThat(container.getImage())
                                         .isEqualTo("quay.io/grp/kubernetes-with-application-properties:0.1-SNAPSHOT");
-                                assertThat(container.getPorts()).singleElement().satisfies(p -> {
+                                assertThat(container.getPorts()).anySatisfy(p -> {
                                     assertThat(p.getContainerPort()).isEqualTo(9090);
                                 });
                                 assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
@@ -93,7 +93,7 @@ public class KubernetesWithApplicationPropertiesTest {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
                     assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "test-it"));
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(2).anySatisfy(p -> {
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });

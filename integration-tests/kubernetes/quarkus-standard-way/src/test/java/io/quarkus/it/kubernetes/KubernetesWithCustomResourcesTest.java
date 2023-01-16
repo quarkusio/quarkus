@@ -89,7 +89,7 @@ public class KubernetesWithCustomResourcesTest {
                         assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "custom-resources"),
                                 entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
 
-                        assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                        assertThat(spec.getPorts()).hasSize(2).anySatisfy(p -> {
                             assertThat(p.getPort()).isEqualTo(80);
                             assertThat(p.getTargetPort().getIntVal()).isEqualTo(8080);
                         });

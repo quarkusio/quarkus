@@ -2,7 +2,6 @@ package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.*;
 
-import java.util.Optional;
 import java.util.function.Predicate;
 
 import org.jboss.logging.Logger;
@@ -18,13 +17,9 @@ public class AddNodePortDecorator extends NamedResourceDecorator<ServiceSpecFlue
     private static final Logger log = Logger.getLogger(AddNodePortDecorator.class);
 
     private final int nodePort;
-    private final Optional<String> matchingPortName;
+    private final String matchingPortName;
 
-    public AddNodePortDecorator(String name, int nodePort) {
-        this(name, nodePort, Optional.empty());
-    }
-
-    public AddNodePortDecorator(String name, int nodePort, Optional<String> matchingPortName) {
+    public AddNodePortDecorator(String name, int nodePort, String matchingPortName) {
         super(name);
         if (nodePort < MIN_NODE_PORT_VALUE || nodePort > MAX_NODE_PORT_VALUE) {
             log.info("Using a port outside of the " + MIN_NODE_PORT_VALUE + "-" + MAX_NODE_PORT_VALUE
@@ -37,18 +32,12 @@ public class AddNodePortDecorator extends NamedResourceDecorator<ServiceSpecFlue
     @SuppressWarnings("unchecked")
     @Override
     public void andThenVisit(ServiceSpecFluent service, ObjectMeta resourceMeta) {
-        ServiceSpecFluent.PortsNested<?> editPort;
-        if (matchingPortName.isPresent()) {
-            editPort = service.editMatchingPort(new Predicate<ServicePortBuilder>() {
-                @Override
-                public boolean test(ServicePortBuilder servicePortBuilder) {
-                    return (servicePortBuilder.hasName())
-                            && (servicePortBuilder.getName().equals(matchingPortName.get()));
-                }
-            });
-        } else {
-            editPort = service.editFirstPort();
-        }
+        ServiceSpecFluent.PortsNested<?> editPort = service.editMatchingPort(new Predicate<ServicePortBuilder>() {
+            @Override
+            public boolean test(ServicePortBuilder servicePortBuilder) {
+                return servicePortBuilder.hasName() && servicePortBuilder.getName().equals(matchingPortName);
+            }
+        });
         editPort.withNodePort(nodePort);
         editPort.endPort();
     }

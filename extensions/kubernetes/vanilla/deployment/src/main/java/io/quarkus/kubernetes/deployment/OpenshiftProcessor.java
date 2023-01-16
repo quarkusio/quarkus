@@ -3,7 +3,6 @@ package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_S2I_IMAGE_NAME;
-import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
@@ -21,6 +20,7 @@ import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.ImageConfiguration;
 import io.dekorate.kubernetes.config.ImageConfigurationBuilder;
+import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
@@ -197,10 +197,11 @@ public class OpenshiftProcessor {
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
+        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, config.route.targetPort);
         result.addAll(KubernetesCommonHelper.createDecorators(project, OPENSHIFT, name, config,
                 metricsConfiguration,
                 annotations, labels, command,
-                ports, livenessPath, readinessPath, roles, roleBindings));
+                port, livenessPath, readinessPath, roles, roleBindings));
 
         if (config.flavor == v3) {
             //Openshift 3.x doesn't recognize 'app.kubernetes.io/name', it uses 'app' instead.
@@ -295,13 +296,13 @@ public class OpenshiftProcessor {
         // Service handling
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyServiceTypeDecorator(name, config.getServiceType().name())));
         if ((config.getServiceType() == ServiceType.NodePort) && config.nodePort.isPresent()) {
-            result.add(new DecoratorBuildItem(OPENSHIFT, new AddNodePortDecorator(name, config.nodePort.getAsInt())));
+            result.add(new DecoratorBuildItem(OPENSHIFT,
+                    new AddNodePortDecorator(name, config.nodePort.getAsInt(), config.route.targetPort)));
         }
 
         // Probe port handling
-        Integer port = ports.stream().filter(p -> HTTP_PORT.equals(p.getName())).map(KubernetesPortBuildItem::getPort)
-                .findFirst().orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(name, name, port)));
+        Integer portNumber = port.map(Port::getContainerPort).orElse(DEFAULT_HTTP_PORT);
+        result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(name, name, portNumber)));
 
         // Handle non-openshift builds
         if (deploymentKind == DeploymentResourceKind.DeploymentConfig

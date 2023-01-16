@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -45,6 +46,10 @@ public class DevServicesDatasourceProcessor {
     private static final Logger log = Logger.getLogger(DevServicesDatasourceProcessor.class);
     private static final int DOCKER_PS_ID_LENGTH = 12;
 
+    // list of devservices properties we should not check for restart
+    // see issue #30390
+    private static final Set<String> EXCLUDED_PROPERTIES = Set.of("quarkus.datasource.devservices.enabled");
+
     static volatile List<RunningDevService> databases;
 
     static volatile Map<String, String> cachedProperties;
@@ -81,7 +86,7 @@ public class DevServicesDatasourceProcessor {
                 //devservices properties may have been added
                 for (var name : ConfigProvider.getConfig().getPropertyNames()) {
                     if (name.startsWith("quarkus.datasource.") && name.contains(".devservices.")
-                            && !cachedProperties.containsKey(name)) {
+                            && !cachedProperties.containsKey(name) && !EXCLUDED_PROPERTIES.contains(name)) {
                         restartRequired = true;
                         break;
                     }

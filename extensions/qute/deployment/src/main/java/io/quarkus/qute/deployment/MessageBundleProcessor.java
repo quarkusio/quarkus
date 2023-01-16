@@ -185,6 +185,8 @@ public class MessageBundleProcessor {
                         if (fileName.startsWith(name)) {
                             // msg_en.txt -> en
                             String locale = fileName.substring(fileName.indexOf('_') + 1, fileName.indexOf('.'));
+                            // Support resource bundle naming convention
+                            locale = locale.replace('_', '-');
                             ClassInfo localizedInterface = localeToInterface.get(locale);
                             if (defaultLocale.equals(locale) || localizedInterface != null) {
                                 // both file and interface exist for one locale, therefore we need to merge them
@@ -629,7 +631,7 @@ public class MessageBundleProcessor {
                     bundle.getDefaultLocale(), bundleInterface.methods(), null);
             MergeClassInfoWrapper bundleInterfaceWrapper = new MergeClassInfoWrapper(bundleInterface, null, null);
 
-            String bundleImpl = generateImplementation(null, null, bundleInterfaceWrapper,
+            String bundleImpl = generateImplementation(bundle, null, null, bundleInterfaceWrapper,
                     defaultClassOutput, messageTemplateMethods, defaultKeyToMap, null);
             generatedTypes.put(bundleInterface.name().toString(), bundleImpl);
             for (Entry<String, ClassInfo> entry : bundle.getLocalizedInterfaces().entrySet()) {
@@ -642,7 +644,7 @@ public class MessageBundleProcessor {
                         keyToMap);
 
                 generatedTypes.put(entry.getValue().name().toString(),
-                        generateImplementation(bundleInterface, bundleImpl, localizedInterfaceWrapper,
+                        generateImplementation(bundle, bundleInterface, bundleImpl, localizedInterfaceWrapper,
                                 defaultClassOutput, messageTemplateMethods, keyToMap, null));
             }
 
@@ -663,7 +665,7 @@ public class MessageBundleProcessor {
                             }
                         }));
                 generatedTypes.put(localizedFile.toString(),
-                        generateImplementation(bundleInterface, bundleImpl, new SimpleClassInfoWrapper(bundleInterface),
+                        generateImplementation(bundle, bundleInterface, bundleImpl, new SimpleClassInfoWrapper(bundleInterface),
                                 localeAwareGizmoAdaptor, messageTemplateMethods, keyToTemplate, locale));
             }
         }
@@ -674,7 +676,7 @@ public class MessageBundleProcessor {
             ClassInfo bundleInterface, String locale, List<MethodInfo> methods, ClassInfo localizedInterface)
             throws IOException {
 
-        var localizedFile = bundle.getMergeCandidates().get(locale);
+        Path localizedFile = bundle.getMergeCandidates().get(locale);
         if (localizedFile != null) {
             Map<String, String> keyToTemplate = parseKeyToTemplateFromLocalizedFile(bundleInterface, localizedFile);
             if (!keyToTemplate.isEmpty()) {
@@ -763,7 +765,8 @@ public class MessageBundleProcessor {
         return false;
     }
 
-    private String generateImplementation(ClassInfo defaultBundleInterface, String defaultBundleImpl,
+    private String generateImplementation(MessageBundleBuildItem bundle, ClassInfo defaultBundleInterface,
+            String defaultBundleImpl,
             ClassInfoWrapper bundleInterfaceWrapper, ClassOutput classOutput,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
             Map<String, String> messageTemplates, String locale) {
@@ -858,7 +861,8 @@ public class MessageBundleProcessor {
 
             if (messageTemplate == null) {
                 throw new MessageBundleException(
-                        String.format("Message template for key [%s] is missing for default locale", key));
+                        String.format("Message template for key [%s] is missing for default locale [%s]", key,
+                                bundle.getDefaultLocale()));
             }
 
             String templateId = null;

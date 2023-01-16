@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Infinispan Client
 include::_attributes.adoc[]
 :categories: data
-:summary: Infinispan is an in memory data grid that allows running in a server outside of application processes. This extension provides functionality to allow the client that can connect to said server when running in Quarkus.
+:summary: Infinispan is an in memory distributed data store and cache server that offers flexible deployment options and robust capabilities for storing, managing, and processing data.
 
 Infinispan is a distributed, in-memory key/value store that provides Quarkus applications with a highly configurable
 and independently scalable data layer.
@@ -114,6 +114,10 @@ When you access the `/q/health/ready` endpoint of your application you will have
 
 This behavior can be disabled via the property `quarkus.infinispan-client.health.enabled`.
 
+=== Tracing with OpenTelemetry
+Infinispan supports instrumentation of the server via OpenTelemetry. Having the `quarkus-opentelemetry` extension will propagate
+the traces from the Infinispan Client to the Server.
+This behavior can be disabled via the property `quarkus.infinispan-client.tracing.propagation.enabled`
 
 === Creating caches from the client
 
@@ -507,7 +511,10 @@ You need to register the generated Protobuf schemas with Infinispan Server to pe
 [TIP]
 ====
 You can check the schemas that exist under the `Schemas` tab by logging into
-Infinispan Console at `http://localhost:11222`
+Infinispan Console at `http://SERVER_HOST:SERVER_PORT` (for example `http://localhost:11222`).
+
+Check the xref:infinispan-dev-services.adoc[Infinispan Dev Services Guide] to connect to the Infinispan
+Dev Services server.
 ====
 
 By default, Protobuf schemas generated this way will be registered by this extension when the client first connects.
@@ -712,15 +719,7 @@ When you use the infinispan-client extension in dev mode or in test, Quarkus aut
 
 === Enabling / Disabling Dev Services for Infinispan
 
-Dev Services for Infinispan is automatically enabled unless:
-
-- `quarkus.infinispan-client.devservices.enabled` is set to `false`
-- the `quarkus.infinispan-client.hosts` is configured
-- the `quarkus.infinispan-client.uri` is configured
-
-Dev Services for Infinispan relies on Docker to start the broker.
-If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
-You can configure the broker address using `quarkus.infinispan-client.hosts`.
+NOTE: Learn more in the xref:infinispan-dev-services.adoc[Infinispan Dev Services guide].
 
 == Shared server
 

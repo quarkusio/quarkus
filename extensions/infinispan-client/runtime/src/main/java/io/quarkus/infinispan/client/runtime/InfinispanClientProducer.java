@@ -214,6 +214,9 @@ public class InfinispanClientProducer {
             }
         }
 
+        properties.put(ConfigurationProperties.TRACING_PROPAGATION_ENABLED,
+                infinispanClientRuntimeConfig.tracingPropagationEnabled);
+
         if (infinispanClientRuntimeConfig.clientIntelligence.isPresent()) {
             properties.put(ConfigurationProperties.CLIENT_INTELLIGENCE, infinispanClientRuntimeConfig.clientIntelligence.get());
         }

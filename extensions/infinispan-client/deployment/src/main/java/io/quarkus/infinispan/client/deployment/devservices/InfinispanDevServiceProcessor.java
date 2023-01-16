@@ -206,6 +206,21 @@ public class InfinispanDevServiceProcessor {
             }
             withUser(DEFAULT_USERNAME);
             withPassword(InfinispanDevServiceProcessor.DEFAULT_PASSWORD);
+            String command = "";
+            if (config.site.isPresent()) {
+                command = "-c infinispan-xsite.xml -Dinfinispan.site.name=" + config.site.get();
+            }
+            if (config.mcastPort.isPresent()) {
+                command = command + " -Djgroups.mcast_port=" + config.mcastPort.getAsInt();
+            }
+            if (config.tracing.isPresent()) {
+                command = command + " -Dinfinispan.tracing.enabled=" + config.tracing.get();
+                command = command + " -Dotel.exporter.otlp.endpoint=" + config.exporterOtlpEndpoint.get();
+                command = command + " -Dotel.service.name=infinispan-server-service -Dotel.metrics.exporter=none";
+            }
+            if (!command.isEmpty()) {
+                withCommand(command);
+            }
             config.artifacts.ifPresent(a -> withArtifacts(a.toArray(new String[0])));
         }
 

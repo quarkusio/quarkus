@@ -195,6 +195,13 @@ public class InfinispanClientRuntimeConfig {
     Optional<List<String>> sslCiphers;
 
     /**
+     * Whether a tracing propagation is enabled in case the Opentelemetry extension is present.
+     * By default the propagation of the context is propagated from the client to the Infinispan Server.
+     */
+    @ConfigItem(name = "tracing.propagation.enabled", defaultValue = "true")
+    public boolean tracingPropagationEnabled;
+
+    /**
      * Configures caches from the client with the provided configuration.
      */
     @ConfigItem

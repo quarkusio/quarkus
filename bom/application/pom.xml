@@ -113,7 +113,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.20.1.Final</wildfly-elytron.version>
         <jboss-threads.version>3.4.3.Final</jboss-threads.version>
-        <vertx.version>4.3.6</vertx.version>
+        <vertx.version>4.3.7</vertx.version>
 
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>

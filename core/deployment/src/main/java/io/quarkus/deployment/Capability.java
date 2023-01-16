@@ -106,6 +106,8 @@ public interface Capability {
     String OPENSHIFT = QUARKUS_PREFIX + "openshift";
     String OPENSHIFT_CLIENT = OPENSHIFT + ".client";
 
+    String OIDC = QUARKUS_PREFIX + ".oidc";
+
     /**
      * Presence of an io.opentracing tracer (for example, Jaeger).
      */

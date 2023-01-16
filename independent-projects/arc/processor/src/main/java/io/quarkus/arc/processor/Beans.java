@@ -610,6 +610,20 @@ public final class Beans {
         }
     }
 
+    static void validateInterceptorDecorator(BeanInfo bean, List<Throwable> errors,
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
+        // transform any private injected fields into package private
+        if (bean.isClassBean() && bean.getDeployment().transformPrivateInjectedFields) {
+            for (Injection injection : bean.getInjections()) {
+                if (injection.isField() && Modifier.isPrivate(injection.getTarget().asField().flags())) {
+                    bytecodeTransformerConsumer
+                            .accept(new BytecodeTransformer(bean.getTarget().get().asClass().name().toString(),
+                                    new PrivateInjectedFieldTransformFunction(injection.getTarget().asField().name())));
+                }
+            }
+        }
+    }
+
     static void validateBean(BeanInfo bean, List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             Set<DotName> classesReceivingNoArgsCtor) {
         if (bean.isClassBean()) {

@@ -28,10 +28,12 @@ abstract class HelloWorldNewServiceTestBase {
     protected void close(Vertx vertx) {
     }
 
+    protected abstract int port();
+
     @BeforeEach
     public void init() {
         _vertx = vertx();
-        channel = GRPCTestUtils.channel(_vertx, 8081); // always use http 8081
+        channel = GRPCTestUtils.channel(_vertx, port());
     }
 
     @AfterEach

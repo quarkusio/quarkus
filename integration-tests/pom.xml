@@ -342,6 +342,7 @@
                 <module>grpc-external-proto</module>
                 <module>grpc-external-proto-test</module>
                 <module>grpc-stork-response-time</module>
+                <module>grpc-exceptions</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
                 <module>istio</module>

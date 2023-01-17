@@ -235,6 +235,7 @@ public class Channels {
             return builder.build();
         } else {
             HttpClientOptions options = new HttpClientOptions(); // TODO options
+            options.setHttp2ClearTextUpgrade(false); // this fixes i30379
 
             if (!plainText) {
                 if (config.ssl.trustStore.isPresent()) {

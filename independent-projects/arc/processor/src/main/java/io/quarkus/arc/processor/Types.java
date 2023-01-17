@@ -432,31 +432,47 @@ public final class Types {
         }
     }
 
-    static void detectWildcardAndThrow(Type type, AnnotationTarget producerFieldOrMethod) {
+    /**
+     * Detects wildcard for given producer method/field.
+     * Based on the boolean parameter, it either throws a {@link DefinitionException} of performs logging.
+     * Returns true if a wildcard is detected, false otherwise.
+     */
+    static boolean isProducerWithWildcard(Type type, AnnotationTarget producerFieldOrMethod, boolean throwIfDetected) {
         if (producerFieldOrMethod == null) {
             // not a producer, no further analysis required
-            return;
+            return false;
         }
         if (type.kind().equals(Kind.WILDCARD_TYPE)) {
-            throw new DefinitionException("Producer " +
-                    (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD) ? "field " : "method ") +
-                    producerFieldOrMethod +
-                    " declared on class " +
-                    (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD)
-                            ? producerFieldOrMethod.asField().declaringClass().name()
-                            : producerFieldOrMethod.asMethod().declaringClass().name())
-                    +
-                    " contains a parameterized type with a wildcard. This type is not a legal bean type" +
-                    " according to CDI specification.");
+            if (throwIfDetected) {
+                throw new DefinitionException("Producer " +
+                        (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD) ? "field " : "method ") +
+                        producerFieldOrMethod +
+                        " declared on class " +
+                        (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD)
+                                ? producerFieldOrMethod.asField().declaringClass().name()
+                                : producerFieldOrMethod.asMethod().declaringClass().name())
+                        +
+                        " contains a parameterized type with a wildcard. This type is not a legal bean type" +
+                        " according to CDI specification.");
+            } else {
+                LOGGER.info("Producer " +
+                        (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD) ? "field " : "method ") +
+                        producerFieldOrMethod +
+                        " contains a parameterized typed with a wildcard. This type is not a legal bean type" +
+                        " according to CDI specification and will be ignored during bean resolution.");
+                return true;
+            }
         } else if (type.kind().equals(Kind.PARAMETERIZED_TYPE)) {
             for (Type t : type.asParameterizedType().arguments()) {
                 // recursive check of all parameterized types
-                detectWildcardAndThrow(t, producerFieldOrMethod);
+                return isProducerWithWildcard(t, producerFieldOrMethod, throwIfDetected);
             }
         }
+        return false;
     }
 
-    static Set<Type> getTypeClosure(ClassInfo classInfo, AnnotationTarget producerFieldOrMethod,
+    private static Set<Type> getTypeClosure(ClassInfo classInfo, AnnotationTarget producerFieldOrMethod,
+            boolean throwOnProducerWildcard,
             Map<String, Type> resolvedTypeParameters,
             BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<String, Type>> resolvedTypeVariablesConsumer) {
         Set<Type> types = new HashSet<>();
@@ -469,12 +485,13 @@ public final class Types {
         } else {
             // Canonical ParameterizedType with unresolved type variables
             Type[] typeParams = new Type[typeParameters.size()];
+            boolean skipThisType = false;
             for (int i = 0; i < typeParameters.size(); i++) {
                 typeParams[i] = resolvedTypeParameters.get(typeParameters.get(i).identifier());
                 // for producers, wildcard is not a legal bean type and results in a definition error
                 // see https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#legal_bean_types
                 // NOTE: wildcard can be nested, such as List<Set<? extends Number>>
-                detectWildcardAndThrow(typeParams[i], producerFieldOrMethod);
+                skipThisType = isProducerWithWildcard(typeParams[i], producerFieldOrMethod, throwOnProducerWildcard);
             }
             if (resolvedTypeVariablesConsumer != null) {
                 Map<String, Type> resolved = new HashMap<>();
@@ -483,7 +500,9 @@ public final class Types {
                 }
                 resolvedTypeVariablesConsumer.accept(classInfo, resolved);
             }
-            types.add(ParameterizedType.create(classInfo.name(), typeParams, null));
+            if (!skipThisType) {
+                types.add(ParameterizedType.create(classInfo.name(), typeParams, null));
+            }
         }
         // Interfaces
         for (Type interfaceType : classInfo.interfaceTypes()) {
@@ -497,7 +516,7 @@ public final class Types {
                     resolved = buildResolvedMap(interfaceType.asParameterizedType().arguments(),
                             interfaceClassInfo.typeParameters(), resolvedTypeParameters, beanDeployment.getBeanArchiveIndex());
                 }
-                types.addAll(getTypeClosure(interfaceClassInfo, producerFieldOrMethod, resolved, beanDeployment,
+                types.addAll(getTypeClosure(interfaceClassInfo, producerFieldOrMethod, false, resolved, beanDeployment,
                         resolvedTypeVariablesConsumer));
             }
         }
@@ -511,11 +530,18 @@ public final class Types {
                             superClassInfo.typeParameters(),
                             resolvedTypeParameters, beanDeployment.getBeanArchiveIndex());
                 }
-                types.addAll(getTypeClosure(superClassInfo, producerFieldOrMethod, resolved, beanDeployment,
+                types.addAll(getTypeClosure(superClassInfo, producerFieldOrMethod, false, resolved, beanDeployment,
                         resolvedTypeVariablesConsumer));
             }
         }
         return types;
+    }
+
+    static Set<Type> getTypeClosure(ClassInfo classInfo, AnnotationTarget producerFieldOrMethod,
+            Map<String, Type> resolvedTypeParameters,
+            BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<String, Type>> resolvedTypeVariablesConsumer) {
+        return getTypeClosure(classInfo, producerFieldOrMethod, true, resolvedTypeParameters, beanDeployment,
+                resolvedTypeVariablesConsumer);
     }
 
     static Set<Type> getDelegateTypeClosure(InjectionPointInfo delegateInjectionPoint, BeanDeployment beanDeployment) {

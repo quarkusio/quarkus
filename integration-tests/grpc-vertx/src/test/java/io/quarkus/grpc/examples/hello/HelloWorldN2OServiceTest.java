@@ -2,14 +2,14 @@ package io.quarkus.grpc.examples.hello;
 
 import javax.inject.Inject;
 
-import io.quarkus.grpc.test.utils.VertxGRPCTestProfile;
+import io.quarkus.grpc.test.utils.N2OGRPCTestProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.vertx.core.Vertx;
 
 @QuarkusTest
-@TestProfile(VertxGRPCTestProfile.class)
-class HelloWorldVertxServiceTest extends HelloWorldNewServiceTestBase {
+@TestProfile(N2OGRPCTestProfile.class)
+class HelloWorldN2OServiceTest extends HelloWorldNewServiceTestBase {
 
     @Inject
     Vertx vertx;
@@ -21,6 +21,6 @@ class HelloWorldVertxServiceTest extends HelloWorldNewServiceTestBase {
 
     @Override
     protected int port() {
-        return 8081;
+        return 9001;
     }
 }

@@ -62,7 +62,7 @@ jobs:
           minikube version: v1.16.0
           kubernetes version: ${{ matrix.kubernetes }}
           github token: ${{ secrets.GITHUB_TOKEN }}
-          start args: '--addons=metrics-server --force'
+          start args: '--embed-certs --addons=metrics-server --force'
       - name: Quay login
         uses: docker/login-action@v2
         with:

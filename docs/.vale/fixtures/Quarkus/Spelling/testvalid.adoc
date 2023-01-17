@@ -373,6 +373,7 @@ Webviews
 Wildfly
 Woopra
 Wordpress
+YAML
 Yana
 Yeoman
 Zowe

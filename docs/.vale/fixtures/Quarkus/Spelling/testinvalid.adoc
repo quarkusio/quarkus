@@ -14,7 +14,6 @@ dns
 dotnet
 endevor
 gluster
-gradle
 Graal VM
 graal vm
 gui
@@ -60,5 +59,4 @@ velero
 webview
 webviews
 woopra
-yaml
 zowe

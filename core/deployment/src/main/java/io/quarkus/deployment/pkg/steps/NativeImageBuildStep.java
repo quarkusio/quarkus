@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
@@ -623,6 +625,7 @@ public class NativeImageBuildStep {
                 return this;
             }
 
+            @SuppressWarnings("deprecation")
             public NativeImageInvokerInfo build() {
                 List<String> nativeImageArgs = new ArrayList<>();
                 boolean enableSslNative = false;
@@ -823,6 +826,21 @@ public class NativeImageBuildStep {
                 }
                 if (nativeConfig.enableVmInspection) {
                     nativeImageArgs.add("-H:+AllowVMInspection");
+                }
+
+                if (nativeConfig.monitoring.isPresent()) {
+                    List<NativeConfig.MonitoringOption> monitoringOptions = nativeConfig.monitoring.get();
+                    if (monitoringOptions.stream().anyMatch(o -> o == NativeConfig.MonitoringOption.TRUE
+                            || o == NativeConfig.MonitoringOption.ALL)) {
+                        nativeImageArgs.add("--enable-monitoring");
+                    }
+                    nativeImageArgs
+                            .add("--enable-monitoring=" + monitoringOptions.stream().map(o -> o.name().toLowerCase(
+                                    Locale.ROOT)).collect(Collectors.joining(",")));
+                } else if (ConfigProvider.getConfig().getConfigValue("quarkus.native.monitoring").getValue() != null) {
+                    // this only happens when a user has configured 'quarkus.native.monitoring='
+                    // we want to support this use case as GraalVM allows the use of '--enable-monitoring' without an argument
+                    nativeImageArgs.add("--enable-monitoring");
                 }
                 if (nativeConfig.autoServiceLoaderRegistration) {
                     nativeImageArgs.add("-H:+UseServiceLoaderFeature");

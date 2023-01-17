@@ -20,11 +20,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.vetoed.subpkg.PackageVetoed;
 
 public class VetoedTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(Seven.class, One.class, VetoedInterceptor.class, Logging.class);
+    public ArcTestContainer container = new ArcTestContainer(Seven.class, One.class, VetoedInterceptor.class, Logging.class,
+            PackageVetoed.class);
 
     @Test
     public void testVetoed() {
@@ -36,6 +38,9 @@ public class VetoedTest {
         assertEquals(Integer.valueOf(7), Integer.valueOf(arc.instance(Seven.class).get().size()));
         // Interceptor is vetoed
         assertFalse(VetoedInterceptor.INTERCEPTED.get());
+
+        // vetoed by package annotation
+        assertFalse(arc.instance(PackageVetoed.class).isAvailable());
     }
 
     @Logging

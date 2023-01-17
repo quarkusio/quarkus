@@ -70,7 +70,7 @@ For more information about OIDC authentication and authorization methods you can
 [options="header"]
 |====
 |OIDC topic |Quarkus information resource
-|Bearer Token authentication mechanism|xref:security-openid-connect.adoc[Using OpenID Connect (OIDC) to protect service applications using Bearer Token authorization]
+|Bearer Token authentication mechanism|xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 |Authorization Code Flow authentication mechanism|xref:security-openid-connect-web-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism]
 |Multiple tenants that can support Bearer Token or Authorization Code Flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
 |Using Keycloak to centralize authorization|xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]

@@ -14,7 +14,7 @@ This guide explains how your Quarkus application can utilize https://github.com/
 to verify https://tools.ietf.org/html/rfc7519[JSON Web Token]s, represent them as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`
 and provide secured access to the Quarkus HTTP endpoints using Bearer Token Authorization and https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
 
-NOTE: Quarkus OpenID Connect `quarkus-oidc` extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`, please read the xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide for more information.
+NOTE: Quarkus OpenID Connect `quarkus-oidc` extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`, please read the xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] guide for more information.
 OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide for more information.
 
 == Prerequisites
@@ -291,7 +291,7 @@ quarkus.native.resources.includes=publicKey.pem #<3>
 <1> We are setting public key location to point to a classpath publicKey.pem location. We will add this key in part B, <<Adding a Public Key>>.
 <2> We are setting the issuer to the URL string `https://example.com/issuer`.
 <3> We are including the public key as a resource in the native executable.
- 
+
 === Adding a Public Key
 
 The https://tools.ietf.org/html/rfc7519[JWT specification] defines various levels of security of JWTs that one can use.
@@ -795,7 +795,7 @@ Please see xref:security-openid-connect-client.adoc#token-propagation[Token Prop
 [[integration-testing-wiremock]]
 ==== Wiremock
 
-If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
+If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-authentication-concept.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -807,7 +807,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 [[integration-testing-keycloak]]
 ==== Keycloak
 
-If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing-keycloak[OpenID Connect Bearer Token Integration testing] Keycloak section but only change the `application.properties` to use MP JWT configuration properties instead:
+If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-authentication-concept.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] Keycloak section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -835,7 +835,7 @@ mp.jwt.verify.issuer=${client.quarkus.oidc.auth-server-url}
 [[integration-testing-public-key]]
 ==== Local Public Key
 
-You can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
+You can use the same approach as described in the xref:security-oidc-bearer-authentication-concept.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----

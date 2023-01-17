@@ -8,10 +8,10 @@ include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how to use the OpenID Connect Extension to protect your web application based on the Authorization Code Flow using Quarkus.
 
-The Quarkus OpenID Connect (OIDC) extension can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism supported by OIDC-compliant authorization servers, such as https://www.keycloak.org[Keycloak].
+The Quarkus OpenID Connect (OIDC) extension can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism supported by OIDC-compliant authorization servers, such as link:https://www.keycloak.org[Keycloak].
 
-The Authorization Code Flow mechanism authenticates users of your web application by redirecting them to an OIDC provider, such as Keycloak, to log in. 
-After authentication, the OIDC provider redirects the user back to the application with an authorization code that confirms that authentication was successful. Then, the application exchanges this code with the OIDC provider for an ID token (which represents the authenticated user), an access token, and a refresh token to authorize the user's access to the application. 
+The Authorization Code Flow mechanism authenticates users of your web application by redirecting them to an OIDC provider, such as Keycloak, to log in.
+After authentication, the OIDC provider redirects the user back to the application with an authorization code that confirms that authentication was successful. Then, the application exchanges this code with the OIDC provider for an ID token (which represents the authenticated user), an access token, and a refresh token to authorize the user's access to the application.
 
 The following diagram outlines the Authorization Code Flow mechanism in Quarkus.
 
@@ -22,18 +22,20 @@ image::authorization_code_flow.png[alt=Authorization Code Flow, width="60%", ali
 . The OIDC provider redirects the user to a login and authentication prompt.
 . At the prompt, the user enters their user credentials.
 . The OIDC provider authenticates the user credentials entered and, if successful, issues an authorization code then redirects the user back to the Quarkus web-app with the code included as a query parameter.
-. The Quarkus web-app exchanges this authorization code with the OIDC provider for ID, access, and refresh tokens. 
+. The Quarkus web-app exchanges this authorization code with the OIDC provider for ID, access, and refresh tokens.
 
-The authorization code flow is completed and the Quarkus web-app uses the tokens issued to access information about the user and grant the relevant role-based authorization to that user. 
-The following tokens are issued: 
+The authorization code flow is completed and the Quarkus web-app uses the tokens issued to access information about the user and grant the relevant role-based authorization to that user.
+The following tokens are issued:
 
-* ID token: The Quarkus web-app uses the user information in the ID token to enable the authenticated user to log in securely and to provide role-based access to the web-app. 
+* ID token: The Quarkus web-app uses the user information in the ID token to enable the authenticated user to log in securely and to provide role-based access to the web-app.
 * Access token: The Quarkus web-app might use the access token to access the UserInfo API to get additional information about the authenticated user or propagate it to another endpoint.
-* Refresh token: (Optional) If the ID and access tokens expire, the Quarkus web-app can use the refresh token to get new ID and access tokens.  
+* Refresh token: (Optional) If the ID and access tokens expire, the Quarkus web-app can use the refresh token to get new ID and access tokens.
 
-For information about protecting your applications using Bearer Token authorization, see xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications].
+For information about protecting your applications using Bearer Token authorization, see xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication].
 
 For information about multitenant support, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
+
+Also see the xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties] reference guide.
 
 == Quickstart
 
@@ -182,7 +184,7 @@ quarkus.http.auth.permission.authenticated.paths=/*
 quarkus.http.auth.permission.authenticated.policy=authenticated
 ----
 
-This is the simplest configuration you can have when enabling authentication to your application. 
+This is the simplest configuration you can have when enabling authentication to your application.
 
 The `quarkus.oidc.client-id` property references the `client_id` issued by the OpenID Connect Provider and the `quarkus.oidc.credentials.secret` property sets the client secret.
 
@@ -351,7 +353,7 @@ The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is 
 [[token-claims-roles]]
 === Token Claims And SecurityIdentity Roles
 
-The way the roles are mapped to the SecurityIdentity roles from the verified tokens is identical to how it is done for the xref:security-openid-connect.adoc#token-claims-and-securityidentity-roles[bearer tokens] with the only difference being is that https://openid.net/specs/openid-connect-core-1_0.html#IDToken[ID Token] is used as a source of the roles by default.
+The way the roles are mapped to the SecurityIdentity roles from the verified tokens is identical to how it is done for the xref:security-oidc-bearer-authentication-concept.adoc[Bearer tokens] with the only difference being is that https://openid.net/specs/openid-connect-core-1_0.html#IDToken[ID Token] is used as a source of the roles by default.
 
 Note if you use Keycloak then you should set a Microprofile JWT client scope for ID token to contain a `groups` claim, please see the https://www.keycloak.org/docs/latest/server_admin/#protocol[Keycloak Server Administration Guide] for more information.
 
@@ -364,7 +366,7 @@ Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the r
 [[token-verification-introspection]]
 === Token Verification And Introspection
 
-Please see xref:security-openid-connect.adoc#token-verification-introspection[Token Verification And Introspection] for details about how the tokens are verified and introspected.
+Please see xref:security-oidc-bearer-authentication-concept.adoc#token-verification-introspection[Token Verification And Introspection] for details about how the tokens are verified and introspected.
 
 Note that in case of `web-app` applications only `IdToken` is verified by default since the access token is not used by default to access the current Quarkus `web-app` endpoint and instead meant to be propagated to the services expecting this access token, for example, to the OpenID Connect Provider's UserInfo endpoint, etc. However, if you expect the access token to contain the roles required to access the current Quarkus endpoint (`quarkus.oidc.roles.source=accesstoken`) then it will also be verified.
 
@@ -373,12 +375,12 @@ Note that in case of `web-app` applications only `IdToken` is verified by defaul
 
 Code flow access tokens are not introspected unless they are expected to be the source of roles but will be used to get `UserInfo`. So there will be one or two remote calls with the code flow access token, if the token introspection and/or `UserInfo` are required.
 
-Please see xref:security-openid-connect.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] for more information about using a default token cache or registering a custom cache implementation.
+Please see xref:security-oidc-bearer-authentication-concept.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] for more information about using a default token cache or registering a custom cache implementation.
 
 [[jwt-claim-verification]]
 === JSON Web Token Claim Verification
 
-Please see xref:security-openid-connect.adoc#jwt-claim-verification[JSON Web Token Claim verification] section about the claim verification, including the `iss` (issuer) claim.
+Please see xref:security-oidc-bearer-authentication-concept.adoc#jwt-claim-verification[JSON Web Token Claim verification] section about the claim verification, including the `iss` (issuer) claim.
 It applies to ID tokens but also to access tokens in a JWT format if the `web-app` application has requested the access token verification.
 
 === Redirection
@@ -559,7 +561,7 @@ public class ServiceResource {
 [[session-management]]
 === Session Management
 
-If you have a xref:security-openid-connect.adoc#single-page-applications[Single Page Application for Service Applications] where your OpenID Connect Provider script such as `keycloak.js` is managing an authorization code flow then that script will also control the SPA authentication session lifespan.
+If you have a xref:security-oidc-bearer-authentication-concept.adoc#single-page-applications[Single Page Application for Service Applications] where your OpenID Connect Provider script such as `keycloak.js` is managing an authorization code flow then that script will also control the SPA authentication session lifespan.
 
 If you work with a Quarkus OIDC `web-app` application then it is Quarkus OIDC Code Authentication mechanism which is managing the user session lifespan.
 
@@ -709,7 +711,7 @@ public class SecurityEventListener {
 
 === Single Page Applications
 
-Please check if implementing SPAs the way it is suggested in the xref:security-openid-connect.adoc#single-page-applications[Single Page Applications for Service Applications] section can meet your requirements.
+Please check if implementing SPAs the way it is suggested in the xref:security-oidc-bearer-authentication-concept.adoc#single-page-applications[Single Page Applications for Service Applications] section can meet your requirements.
 
 If you prefer to use SPA and JavaScript API such as `Fetch` or `XMLHttpRequest`(XHR) with Quarkus web applications, please be aware that OpenID Connect Providers may not support CORS for Authorization endpoints where the users are authenticated after a redirect from Quarkus. This will lead to authentication failures if the Quarkus application and the OpenID Connect Provider are hosted on the different HTTP domains/ports.
 
@@ -757,7 +759,7 @@ If the OAuth2 provider supports the introspection endpoint then you may be able 
 
 Configuring the endpoint to request <<user-info,UserInfo>> is the only way `quarkus-oidc` can be integrated with the providers such as GitHub.
 
-Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see <<token-introspection-userinfo-cache,Token Introspection and UserInfo Cache> for more details.
+Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see xref:security-oidc-bearer-authentication-concept.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] for more details.
 
 Alternatively, you may want to request that `UserInfo` is embedded into the internal generated `IdToken` with the `quarkus.oidc.cache-user-info-in-idtoken=true` property - the advantage of this approach is that by default no cached `UserInfo` state will be kept with the endpoint - instead it will be stored in a session cookie. You may also want to consider encrypting `IdToken` in this case if `UserInfo` contains sensitive data, please see <<token-state-manager,Encrypt Tokens With TokenStateManager>> for more information.
 
@@ -774,7 +776,7 @@ quarkus.oidc.credentials.secret=github_app_clientsecret
 # user:email scope is requested by default, use 'quarkus.oidc.authentication.scopes' to request different scopes such as `read:user`.
 # See https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps for more information.
 
-# Consider enabling UserInfo Cache 
+# Consider enabling UserInfo Cache
 # quarkus.oidc.token-cache.max-size=1000
 # quarkus.oidc.token-cache.time-to-live=5M
 #
@@ -840,12 +842,12 @@ public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmento
 	        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
 	        UserInfo userInfo = identity.getAttribute("userinfo");
 	        builder.setPrincipal(new Principal() {
-	
+
 	            @Override
 	            public String getName() {
 	                return userInfo.getString("preferred_username");
 	            }
-	
+
 	        });
 	        identity = builder.build();
         }
@@ -856,7 +858,7 @@ public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmento
 ----
 
 Now, the following code will work when the user is signing in into your application with both Google or GitHub:
- 
+
 [source,java]
 ----
 import javax.inject.Inject;
@@ -1372,7 +1374,7 @@ Default realm name is `quarkus` and client id - `quarkus-web-app` - set `keycloa
 [[integration-testing-security-annotation]]
 ==== TestSecurity annotation
 
-Please see xref:security-openid-connect.adoc#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` and `@OidcSecurity` annotations for testing the `web-app` application endpoint code which depends on the injected ID and access `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
+Please see xref:security-oidc-bearer-authentication-concept.adoc#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` and `@OidcSecurity` annotations for testing the `web-app` application endpoint code which depends on the injected ID and access `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
 
 === How to check the errors in the logs
 
@@ -1446,12 +1448,9 @@ It has to start from a forward slash and be relative to the current endpoint's b
 
 It is important that this error endpoint is a public resource to avoid the user redirected to this page be authenticated again.
 
-== Configuration Reference
-
-include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
-
 == References
 
+* xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]

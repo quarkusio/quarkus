@@ -12,9 +12,12 @@ This guide demonstrates how your OpenID Connect (OIDC) application can support m
 
 When serving multiple customers from the same application (e.g.: SaaS), each customer is a tenant. By enabling multi-tenancy support to your applications you are allowed to also support distinct authentication policies for each tenant even though if that means authenticating against different OpenID Providers, such as Keycloak and Google.
 
-Please read the xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide if you need to authorize a tenant using Bearer Token Authorization.
+Please read the xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] guide if you need to authorize a tenant using Bearer Token Authorization.
 
 Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize a tenant using OpenID Connect Authorization Code Flow.
+
+Also see the xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties] reference guide.
+
 
 == Prerequisites
 
@@ -308,8 +311,8 @@ A similar technique can be used with `TenantConfigResolver` where a `tenant-id` 
 
 [NOTE]
 ====
-If you also use xref:hibernate-orm.adoc#multitenancy[Hibernate ORM multitenancy] or xref:mongodb-panache.adoc#multitenancy[MongoDB with Panache multitenancy] and both tenant IDs are the same 
-and must be extracted from the Vert.x `RoutingContext` you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver or MongoDB with Panache Mongo Database Resolver 
+If you also use xref:hibernate-orm.adoc#multitenancy[Hibernate ORM multitenancy] or xref:mongodb-panache.adoc#multitenancy[MongoDB with Panache multitenancy] and both tenant IDs are the same
+and must be extracted from the Vert.x `RoutingContext` you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver or MongoDB with Panache Mongo Database Resolver
 as a `RoutingContext` attribute, for example:
 
 [source,java]
@@ -741,12 +744,9 @@ If it is expected that the custom resolvers will always infer a tenant then the 
 
 Note that tenant specific configurations can also be disabled, for example: `quarkus.oidc.tenant-a.tenant-enabled=false`.
 
-== Configuration Reference
-
-include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
-
 == References
 
+* xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]

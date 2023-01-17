@@ -24,7 +24,7 @@ import javax.inject.Qualifier;
 public @interface Localized {
 
     /**
-     * @return the locale tag string (IETF)
+     * @return the locale language tag string (IETF)
      * @see Locale#forLanguageTag(String)
      */
     String value();

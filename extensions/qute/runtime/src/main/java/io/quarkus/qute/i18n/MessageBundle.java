@@ -5,6 +5,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.Locale;
 
 /**
  * Denotes a message bundle interface.
@@ -62,8 +63,10 @@ public @interface MessageBundle {
     String defaultKey() default Message.ELEMENT_NAME;
 
     /**
+     * The language tag (IETF) of the default locale.
      *
      * @return the locale for the default message bundle
+     * @see Locale#forLanguageTag(String)
      */
     String locale() default DEFAULT_LOCALE;
 }

@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -25,6 +26,12 @@ public class FlywayRecorder {
     private static final Logger log = Logger.getLogger(FlywayRecorder.class);
 
     static final List<FlywayContainer> FLYWAY_CONTAINERS = new ArrayList<>(2);
+
+    private final RuntimeValue<FlywayRuntimeConfig> config;
+
+    public FlywayRecorder(RuntimeValue<FlywayRuntimeConfig> config) {
+        this.config = config;
+    }
 
     public void setApplicationMigrationFiles(Collection<String> migrationFiles) {
         log.debugv("Setting the following application migration files: {0}", migrationFiles);
@@ -68,6 +75,9 @@ public class FlywayRecorder {
     }
 
     public void doStartActions() {
+        if (!config.getValue().enabled) {
+            return;
+        }
         for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {
             if (flywayContainer.isCleanAtStart()) {
                 flywayContainer.getFlyway().clean();

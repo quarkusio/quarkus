@@ -16,6 +16,13 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class LiquibaseMongodbConfig {
 
     /**
+     * Flag to enable / disable Liquibase.
+     *
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * The migrate at start flag
      */
     @ConfigItem

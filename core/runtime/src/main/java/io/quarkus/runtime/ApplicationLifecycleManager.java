@@ -27,6 +27,8 @@ import io.quarkus.bootstrap.runner.RunnerClassLoader;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.graal.DiagnosticPrinter;
+import io.quarkus.runtime.util.ExceptionUtil;
+import io.quarkus.runtime.util.StringUtil;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
@@ -105,6 +107,7 @@ public class ApplicationLifecycleManager {
             stateLock.unlock();
         }
         try {
+
             application.start(args);
             //now we are started, we either run the main application or just wait to exit
             if (quarkusApplication != null) {
@@ -153,11 +156,8 @@ public class ApplicationLifecycleManager {
                 }
             }
         } catch (Exception e) {
+            Throwable rootCause = ExceptionUtil.getRootCause(e);
             if (exitCodeHandler == null) {
-                Throwable rootCause = e;
-                while (rootCause.getCause() != null) {
-                    rootCause = rootCause.getCause();
-                }
                 Logger applicationLogger = Logger.getLogger(Application.class);
                 if (rootCause instanceof QuarkusBindException) {
                     List<Integer> ports = ((QuarkusBindException) rootCause).getPorts();
@@ -189,6 +189,9 @@ public class ApplicationLifecycleManager {
                     }
                 } else if (rootCause instanceof ConfigurationException) {
                     System.err.println(rootCause.getMessage());
+                } else if (rootCause instanceof PreventFurtherStepsException
+                        && !StringUtil.isNullOrEmpty(rootCause.getMessage())) {
+                    System.err.println(rootCause.getMessage());
                 } else {
                     // If it is not a ConfigurationException it should be safe to call ConfigProvider.getConfig here
                     applicationLogger.errorv(rootCause, "Failed to start application (with profile {0})",
@@ -204,7 +207,10 @@ public class ApplicationLifecycleManager {
                 stateLock.unlock();
             }
             application.stop();
-            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(1, e);
+            int exceptionExitCode = rootCause instanceof PreventFurtherStepsException
+                    ? ((PreventFurtherStepsException) rootCause).getExitCode()
+                    : 1;
+            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(exceptionExitCode, e);
             return;
         } finally {
             try {

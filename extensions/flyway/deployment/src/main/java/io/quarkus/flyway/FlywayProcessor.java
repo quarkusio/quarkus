@@ -50,6 +50,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
+import io.quarkus.deployment.builditem.InitalizationTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -60,6 +62,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
+import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 class FlywayProcessor {
@@ -204,16 +207,28 @@ class FlywayProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public ServiceStartBuildItem startActions(FlywayRecorder recorder,
+            FlywayRuntimeConfig config,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
+            BuildProducer<InitalizationTaskCompletedBuildItem> initializationCompleteBuildItem,
             MigrationStateBuildItem migrationsBuildItem) {
-        // will actually run the actions at runtime
+
         recorder.doStartActions();
 
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
         schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(migrationsBuildItem.hasMigrations));
-
+        initializationCompleteBuildItem.produce(new InitalizationTaskCompletedBuildItem("flyway"));
         return new ServiceStartBuildItem("flyway");
+    }
+
+    @BuildStep
+    public InitTaskBuildItem configureInitTask() {
+        return InitTaskBuildItem.create()
+                .withName("flyway-init")
+                .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
+                .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ENABLED", "false"))
+                .withSharedEnvironment(true)
+                .withSharedFilesystem(true);
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

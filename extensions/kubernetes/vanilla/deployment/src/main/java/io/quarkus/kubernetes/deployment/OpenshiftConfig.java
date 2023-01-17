@@ -564,6 +564,15 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "false")
     boolean deploy;
 
+    /**
+     * Flag to enable init task externalization.
+     * When enabled (default), all initialization tasks
+     * created by extensions, will be externalized as Jobs.
+     * In addition the deployment will wait for these jobs.
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean externalizeInit;
+
     public Optional<String> getAppSecret() {
         return this.appSecret;
     }

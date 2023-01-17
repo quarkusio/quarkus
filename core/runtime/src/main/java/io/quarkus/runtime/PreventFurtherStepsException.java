@@ -9,4 +9,23 @@ package io.quarkus.runtime;
  * a small part of the bootstrap steps.
  */
 public final class PreventFurtherStepsException extends RuntimeException {
+
+    private final int exitCode;
+
+    public PreventFurtherStepsException() {
+        this(1);
+    }
+
+    public PreventFurtherStepsException(int exitCode) {
+        this(null, exitCode);
+    }
+
+    public PreventFurtherStepsException(String message, int exitCode) {
+        super(message);
+        this.exitCode = exitCode;
+    }
+
+    public int getExitCode() {
+        return exitCode;
+    }
 }

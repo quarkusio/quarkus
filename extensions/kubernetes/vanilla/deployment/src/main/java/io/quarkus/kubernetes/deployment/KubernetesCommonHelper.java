@@ -52,6 +52,7 @@ import io.dekorate.kubernetes.decorator.ApplyLimitsMemoryDecorator;
 import io.dekorate.kubernetes.decorator.ApplyRequestsCpuDecorator;
 import io.dekorate.kubernetes.decorator.ApplyRequestsMemoryDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
+import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
@@ -62,6 +63,9 @@ import io.dekorate.project.ScmInfo;
 import io.dekorate.utils.Annotations;
 import io.dekorate.utils.Labels;
 import io.dekorate.utils.Strings;
+import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -72,6 +76,8 @@ import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
@@ -177,6 +183,12 @@ public class KubernetesCommonHelper {
         }
 
         //Handle RBAC
+        roleBindings = roleBindings.stream()
+                .filter(roleBinding -> roleBinding.getTarget() == null || roleBinding.getTarget().equals(target))
+                .collect(Collectors.toList());
+        roles = roles.stream().filter(role -> role.getTarget() == null || role.getTarget().equals(target))
+                .collect(Collectors.toList());
+
         if (!roleBindings.isEmpty()) {
             result.add(new DecoratorBuildItem(target, new ApplyServiceAccountNameDecorator(name, name)));
             result.add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator(name)));
@@ -265,6 +277,172 @@ public class KubernetesCommonHelper {
             result.add(new DecoratorBuildItem(target, new ApplyArgsDecorator(name, args.toArray(new String[args.size()]))));
         }
 
+        return result;
+    }
+
+    public static List<DecoratorBuildItem> createInitContainerDecorators(String target, String name,
+            List<KubernetesInitContainerBuildItem> items, List<DecoratorBuildItem> decorators) {
+        List<DecoratorBuildItem> result = new ArrayList<>();
+
+        List<AddEnvVarDecorator> envVarDecorators = decorators.stream()
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
+                .map(d -> d.getDecorator(AddEnvVarDecorator.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
+        List<AddMountDecorator> mountDecorators = decorators.stream()
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
+                .map(d -> d.getDecorator(AddMountDecorator.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
+        items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
+            io.dekorate.kubernetes.config.ContainerBuilder containerBuilder = new io.dekorate.kubernetes.config.ContainerBuilder()
+                    .withName(item.getName())
+                    .withImage(item.getImage())
+                    .withCommand(item.getCommand().toArray(new String[item.getCommand().size()]))
+                    .withArguments(item.getArguments().toArray(new String[item.getArguments().size()]));
+
+            if (item.isSharedEnvironment()) {
+                for (final AddEnvVarDecorator delegate : envVarDecorators) {
+                    result.add(new DecoratorBuildItem(target,
+                            new ApplicationContainerDecorator<ContainerBuilder>(name, item.getName()) {
+                                @Override
+                                public void andThenVisit(ContainerBuilder builder) {
+                                    delegate.andThenVisit(builder);
+                                    // Currently, we have no way to filter out provided env vars.
+                                    // So, we apply them on top of every change.
+                                    // This needs to be addressed in dekorate to make things more efficient
+                                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
+                                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
+                                        builder.addNewEnv()
+                                                .withName(e.getKey())
+                                                .withValue(e.getValue())
+                                                .endEnv();
+
+                                    }
+                                }
+                            }));
+                }
+            }
+
+            if (item.isSharedFilesystem()) {
+                for (final AddMountDecorator delegate : mountDecorators) {
+                    result.add(new DecoratorBuildItem(target,
+                            new ApplicationContainerDecorator<ContainerBuilder>(target, item.getName()) {
+                                @Override
+                                public void andThenVisit(ContainerBuilder builder) {
+                                    delegate.andThenVisit(builder);
+                                }
+                            }));
+                }
+            }
+
+            result.add(new DecoratorBuildItem(target,
+                    new AddInitContainerDecorator(name, containerBuilder
+                            .addAllToEnvVars(item.getEnvVars().entrySet().stream().map(e -> new EnvBuilder()
+                                    .withName(e.getKey())
+                                    .withValue(e.getValue())
+                                    .build()).collect(Collectors.toList()))
+                            .build())));
+        });
+        return result;
+    }
+
+    public static List<DecoratorBuildItem> createInitJobDecorators(String target, String name,
+            List<KubernetesJobBuildItem> items, List<DecoratorBuildItem> decorators) {
+        List<DecoratorBuildItem> result = new ArrayList<>();
+
+        List<AddEnvVarDecorator> envVarDecorators = decorators.stream()
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
+                .map(d -> d.getDecorator(AddEnvVarDecorator.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
+        List<NamedResourceDecorator<?>> volumeDecorators = decorators.stream()
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
+                .filter(d -> d.getDecorator() instanceof AddEmptyDirVolumeDecorator
+                        || d.getDecorator() instanceof AddSecretVolumeDecorator
+                        || d.getDecorator() instanceof AddEmptyDirVolumeDecorator
+                        || d.getDecorator() instanceof AddAzureDiskVolumeDecorator
+                        || d.getDecorator() instanceof AddAzureFileVolumeDecorator
+                        || d.getDecorator() instanceof AddAwsElasticBlockStoreVolumeDecorator)
+                .map(d -> (NamedResourceDecorator<?>) d.getDecorator())
+                .collect(Collectors.toList());
+
+        List<AddMountDecorator> mountDecorators = decorators.stream()
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
+                .map(d -> d.getDecorator(AddMountDecorator.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
+        items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
+
+            result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
+                @Override
+                public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
+                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
+                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
+                        builder.addNewEnv()
+                                .withName(e.getKey())
+                                .withValue(e.getValue())
+                                .endEnv();
+                    }
+                }
+            }));
+
+            if (item.isSharedEnvironment()) {
+                for (final AddEnvVarDecorator delegate : envVarDecorators) {
+                    result.add(
+                            new DecoratorBuildItem(target, new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
+                                @Override
+                                public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
+                                    delegate.andThenVisit(builder);
+                                    // Currently, we have no way to filter out provided env vars.
+                                    // So, we apply them on top of every change.
+                                    // This needs to be addressed in dekorate to make things more efficient
+                                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
+                                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
+                                        builder.addNewEnv()
+                                                .withName(e.getKey())
+                                                .withValue(e.getValue())
+                                                .endEnv();
+
+                                    }
+                                }
+                            }));
+                }
+            }
+
+            if (item.isSharedFilesystem()) {
+                for (final NamedResourceDecorator<?> delegate : volumeDecorators) {
+                    result.add(
+                            new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
+                                @Override
+                                public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
+                                    delegate.visit(builder);
+                                }
+                            }));
+                }
+
+                for (final AddMountDecorator delegate : mountDecorators) {
+                    result.add(
+                            new DecoratorBuildItem(target, new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
+                                @Override
+                                public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
+                                    delegate.andThenVisit(builder);
+                                }
+                            }));
+                }
+
+            }
+            result.add(new DecoratorBuildItem(target,
+                    new AddJobResourceDecorator2(item.getName(), item.getImage(), item.getCommand(), item.getArguments())));
+        });
         return result;
     }
 

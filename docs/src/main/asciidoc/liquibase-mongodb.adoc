@@ -151,6 +151,31 @@ public class MigrationService {
 <2> Use the Liquibase instance directly
 <3> List of applied or not applied liquibase ChangeSets
 
+== Liquibase Mongodb on Kubernetes
+
+Sometimes, it's helpful not to execute Liquibase initialization on each application startup. One such example is when deploying
+on Kubernetes, where it doesn't make sense to execute Liquibase on every single replica. Instead it's desirable to execute it
+once and then start the actual application without Liquibase. To support this use case, when generating manifests for Kubernetes
+the generated manifests contain a Kubernetes initialization `Job` for Liquibase.
+The `Job` performs initialization and the actual `Pod`, will starts once the `Job` is successfully completed.
+
+The feature is enabled by default and can be globally disabled, using:
+
+[source,properties]
+----
+quarkus.kubernetes.externalize-init=false
+----
+
+or on OpenShift:
+
+[source,properties]
+----
+quarkus.openshift.externalize-init=false
+----
+
+**Note**: In this context globally means `for all extensions that support init task externalization`.
+
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-liquibase-mongodb.adoc[opts=optional, leveloffset=+2]

@@ -238,3 +238,26 @@ public class MigrationService {
 When using Flyway together with Hibernate ORM, you can use the Dev UI to generate the initial schema creation script.
 
 You can find more information about this feature in the xref:hibernate-orm.adoc#flyway[Hibernate ORM guide].
+
+== Flyway on Kubernetes
+Sometimes, it's helpful not to execute Flyway initialization on each application startup. One such example is when deploying
+on Kubernetes, where it doesn't make sense to execute Flyway on every single replica. Instead it's desirable to execute it
+once and then start the actual application without Flyway. To support this use case, when generating manifests for Kubernetes
+the generated manifests contain a Kubernetes initialization `Job` for Flyway.
+The `Job` performs initialization and the actual `Pod`, will starts once the `Job` is successfully completed.
+
+The feature is enabled by default and can be globally disabled, using:
+
+[source,properties]
+----
+quarkus.kubernetes.externalize-init=false
+----
+
+or on OpenShift:
+
+[source,properties]
+----
+quarkus.openshift.externalize-init=false
+----
+
+**Note**: In this context globally means `for all extensions that support init task externalization`.

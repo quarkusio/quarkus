@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -41,6 +42,8 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
+import io.quarkus.deployment.builditem.InitalizationTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -282,15 +285,26 @@ class LiquibaseProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     ServiceStartBuildItem startLiquibase(LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            BuildProducer<InitalizationTaskCompletedBuildItem> initializationCompleteBuildItem,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
-        // will actually run the actions at runtime
-        recorder.doStartActions();
 
+        recorder.doStartActions();
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
         schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(getDataSourceNames(jdbcDataSourceBuildItems)));
+        initializationCompleteBuildItem.produce(new InitalizationTaskCompletedBuildItem("liquibase"));
 
         return new ServiceStartBuildItem("liquibase");
+    }
+
+    @BuildStep
+    public InitTaskBuildItem configureInitTask() {
+        return InitTaskBuildItem.create()
+                .withName("liquibase-init")
+                .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_LIQUIBASE_ENABLED", "true"))
+                .withAppEnvVars(Map.of("QUARKUS_LIQUIBASE_ENABLED", "false"))
+                .withSharedEnvironment(true)
+                .withSharedFilesystem(true);
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

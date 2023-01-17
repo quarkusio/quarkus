@@ -37,6 +37,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -49,6 +50,8 @@ import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -123,8 +126,12 @@ public class VanillaKubernetesProcessor {
 
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
-            OutputTargetBuildItem outputTarget, Capabilities capabilities, KubernetesConfig config, PackageConfig packageConfig,
-            Optional<MetricsCapabilityBuildItem> metricsConfiguration, List<KubernetesAnnotationBuildItem> annotations,
+            OutputTargetBuildItem outputTarget, Capabilities capabilities, KubernetesConfig config,
+            PackageConfig packageConfig,
+            Optional<MetricsCapabilityBuildItem> metricsConfiguration,
+            List<KubernetesJobBuildItem> jobs,
+            List<KubernetesInitContainerBuildItem> initContainers,
+            List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels, List<KubernetesEnvBuildItem> envs,
             Optional<ContainerImageInfoBuildItem> image, Optional<KubernetesCommandBuildItem> command,
             List<KubernetesPortBuildItem> ports, Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
@@ -141,8 +148,9 @@ public class VanillaKubernetesProcessor {
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration,
-                annotations, labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
+        result.addAll(
+                KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration, annotations,
+                        labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
 
         KubernetesConfig.DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         if (deploymentKind != KubernetesConfig.DeploymentResourceKind.Deployment) {
@@ -248,7 +256,29 @@ public class VanillaKubernetesProcessor {
                     config.remoteDebug.buildJavaToolOptionsEnv())));
         }
 
+        // Handle init Containers and Jobs
+        result.addAll(KubernetesCommonHelper.createInitContainerDecorators(KUBERNETES, name, initContainers, result));
+        result.addAll(KubernetesCommonHelper.createInitJobDecorators(KUBERNETES, name, jobs, result));
         return result;
+    }
+
+    @BuildStep
+    void externalizeInitTasks(
+            ApplicationInfoBuildItem applicationInfo,
+            KubernetesConfig config,
+            ContainerImageInfoBuildItem image,
+            List<InitTaskBuildItem> initTasks,
+            BuildProducer<KubernetesJobBuildItem> jobs,
+            BuildProducer<KubernetesInitContainerBuildItem> initContainers,
+            BuildProducer<KubernetesEnvBuildItem> env,
+            BuildProducer<KubernetesRoleBuildItem> roles,
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
+            BuildProducer<DecoratorBuildItem> decorators) {
+        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        if (config.externalizeInit) {
+            InitTaskProcessor.process(KUBERNETES, name, image, initTasks, jobs, initContainers, env, roles, roleBindings,
+                    decorators);
+        }
     }
 
 }

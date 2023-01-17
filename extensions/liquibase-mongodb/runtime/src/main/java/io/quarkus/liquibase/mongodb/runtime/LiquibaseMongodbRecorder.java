@@ -10,11 +10,18 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
 import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
 
 @Recorder
 public class LiquibaseMongodbRecorder {
+
+    private final RuntimeValue<LiquibaseMongodbConfig> config;
+
+    public LiquibaseMongodbRecorder(RuntimeValue<LiquibaseMongodbConfig> config) {
+        this.config = config;
+    }
 
     public Supplier<LiquibaseMongodbFactory> liquibaseSupplier(LiquibaseMongodbConfig config,
             LiquibaseMongodbBuildTimeConfig buildTimeConfig, MongodbConfig mongodbConfig) {
@@ -27,6 +34,9 @@ public class LiquibaseMongodbRecorder {
     }
 
     public void doStartActions() {
+        if (!config.getValue().enabled) {
+            return;
+        }
         try {
             InjectableInstance<LiquibaseMongodbFactory> liquibaseFactoryInstance = Arc.container()
                     .select(LiquibaseMongodbFactory.class, Any.Literal.INSTANCE);

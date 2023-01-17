@@ -928,7 +928,7 @@ public class DevConsoleProcessor {
             String ctxName = ctx.getName();
 
             List<Path> sourcesDir = DevConsoleManager.getHotReplacementContext().getSourcesDir();
-            if (ctxName.equals("sourcePackages")) {
+            if (ctxName.endsWith("sourcePackages")) {
                 if (disable) {
                     return Collections.emptyList(); // we need this here because the result needs to be iterable
                 }
@@ -938,12 +938,15 @@ public class DevConsoleProcessor {
                     String lang = sourcePaths.getFileName().toString();
                     List<String> packages = sourcePackagesForRoot(sourcePaths);
                     if (!packages.isEmpty()) {
-                        sourcePackagesByLang.put(lang, packages);
+                        // The `replace` is used to avoid invalid JavaScript identifier (using `-`)
+                        // It happens when using Gradle and extensions generating code (Avro, gRPC...)
+                        // See https://github.com/quarkusio/quarkus/issues/30288.
+                        sourcePackagesByLang.put(lang.replace("-", "_"), packages);
                     }
                 }
                 return sourcePackagesByLang;
             }
-            if (ctxName.equals("locationPackages")) {
+            if (ctxName.endsWith("locationPackages")) {
                 if (disable) {
                     return Collections.emptyList(); // we need this here because the result needs to be iterable
                 }

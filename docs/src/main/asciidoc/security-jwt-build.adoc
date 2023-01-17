@@ -346,6 +346,6 @@ SmallRye JWT supports the following properties which can be used to customize th
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
 * link:https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J]
-* xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications]
+* xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-jwt.adoc[Using Smallrye JWT to Protect Service Applications]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

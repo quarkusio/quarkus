@@ -3,7 +3,7 @@
 include::_attributes.adoc[]
 :categories: security, getting-started
 
-Secure your Quarkus application endpoints by combining xref:security-built-in-authentication-support-concept.adoc#basic-auth[Quarkus built-in basic HTTP authentication] with the JPA identity provider to enable role-based access control (RBAC). 
+Secure your Quarkus application endpoints by combining xref:security-built-in-authentication-support-concept.adoc#basic-auth[Quarkus built-in basic HTTP authentication] with the JPA identity provider to enable role-based access control (RBAC).
 The JPA `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.
 
 This tutorial prepares you for implementing more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
@@ -18,7 +18,7 @@ To demonstrate different authorization policies, the steps in this tutorial guid
 
 [cols="20%,40% ",options="header"]
 |===
-|Endpoint | Description 
+|Endpoint | Description
 |`/api/public`| The `/api/public` endpoint can be accessed anonymously.
 |`/api/admin`| The `/api/admin` endpoint is protected with role-based access control (RBAC), and only users who have been granted the `admin` role can access it.
 At this endpoint, the `@RolesAllowed` annotation enforces the access constraint declaratively.
@@ -183,7 +183,7 @@ public class User extends PanacheEntity {
     public String password;
     @Roles <4>
     public String role;
-    
+
     /**
      * Adds a new user to the database
      * @param username the username
@@ -217,7 +217,7 @@ The `security-jpa` extension initializes only if there is a single entity annota
 +
 [NOTE]
 ====
-When secure access is required and no other authentication mechanisms are enabled, xref:security-built-in-authentication-support-concept.adoc#basic-auth[Quarkus built-in basic HTTP authentication] is the fallback authentication mechanism. 
+When secure access is required and no other authentication mechanisms are enabled, xref:security-built-in-authentication-support-concept.adoc#basic-auth[Quarkus built-in basic HTTP authentication] is the fallback authentication mechanism.
 Therefore, in this tutorial, you do not need to set the property `quarkus.http.auth.basic=true`.
 ====
 +
@@ -285,7 +285,7 @@ Add the integration tests before you run your application in production mode.
 
 Use xref:https://quarkus.io/guides/dev-services#databases[Dev Services for PostgreSQL] for the integration testing of your application in JVM and native modes.
 
-The following properties configuration demonstrates how you can enable PostgreSQL testing to run in production (`prod`) mode only. 
+The following properties configuration demonstrates how you can enable PostgreSQL testing to run in production (`prod`) mode only.
 In this scenario, `Dev Services for PostgreSQL` launches and configures a `PostgreSQL` test container.
 
 [source,properties]
@@ -373,7 +373,7 @@ As you can see in this code sample, you do not need to start the test container 
 [NOTE]
 ====
 If you start your application in dev mode, `Dev Services for PostgreSQL` launches a `PostgreSQL` `devmode` container so that you can start developing your application.
-While developing your application, you can also start to add tests one by one and run them by using the xref:continuous-testing.adoc[Continuous Testing] feature. 
+While developing your application, you can also start to add tests one by one and run them by using the xref:continuous-testing.adoc[Continuous Testing] feature.
 `Dev Services for PostgreSQL` supports testing while you develop by providing a separate `PostgreSQL` test container that does not conflict with the `devmode` container.
 ====
 
@@ -415,7 +415,7 @@ Run the application:
 
 === Access and test the application security
 
-When your application is running, you can access your application by using one of the following `curl` commands. 
+When your application is running, you can access your application by using one of the following `curl` commands.
 You can also access the same endpoint URLs by using a browser.
 
 * Connect to a protected endpoint anonymously:
@@ -536,7 +536,7 @@ public class Role extends PanacheEntity {
 
 === Password storage and hashing
 
-By default, passwords are stored and hashed by using https://en.wikipedia.org/wiki/Bcrypt[bcrypt] under the 
+By default, passwords are stored and hashed by using https://en.wikipedia.org/wiki/Bcrypt[bcrypt] under the
 https://en.wikipedia.org/wiki/Crypt_(C)[Modular Crypt Format] (MCF).
 
 When creating a hashed password, you can use the convenient `String BcryptUtil.bcryptHash(String password)` function, which defaults to creating a random salt and hashing in 10 iterations.
@@ -585,17 +585,17 @@ For applications running in production, do not store passwords in plain text.
 Congratulations!
 You have learned how to create and test a secure Quarkus application by combining the xref:security-built-in-authentication-support-concept.adoc#basic-auth[Quarkus built-in basic HTTP authentication] with the JPA identity provider.
 
-After you have completed this tutorial, explore some of the more advanced security mechanisms in Quarkus. 
+After you have completed this tutorial, explore some of the more advanced security mechanisms in Quarkus.
 Use the following information to learn how you can securely use `OpenID Connect` to provide secure single sign-on access to your Quarkus endpoints:
 
-* xref:security-openid-connect.adoc[Using OpenID Connect (OIDC) to Protect Service Applications using Bearer Token Authorization]
+* xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect (OIDC) to Protect Web Applications using Authorization Code Flow
 ]
 
 == References
 
 * xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-openid-connect.adoc[Using OpenID Connect (OIDC) to Protect Service Applications using Bearer Token Authorization]
+* xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect (OIDC) to Protect Web Applications using Authorization Code Flow
 ]
 * xref:hibernate-orm-panache.adoc[Simplified Hibernate ORM with Panache]

@@ -241,10 +241,19 @@ public class NativeConfig {
     public Optional<List<String>> containerRuntimeOptions;
 
     /**
-     * If the resulting image should allow VM introspection
+     * If the resulting image should allow VM introspection.
+     *
+     * @deprecated Use {@code quarkus.native.monitoring} instead.
      */
     @ConfigItem
+    @Deprecated
     public boolean enableVmInspection;
+
+    /**
+     * Enable monitoring options that allow the VM to be inspected at run time.
+     */
+    @ConfigItem
+    public Optional<List<MonitoringOption>> monitoring;
 
     /**
      * If full stack traces are enabled in the resulting image
@@ -451,5 +460,13 @@ public class NativeConfig {
     public static enum BuilderImageProvider {
         GRAALVM,
         MANDREL;
+    }
+
+    public enum MonitoringOption {
+        HEAPDUMP,
+        JVMSTAT,
+        JFR,
+        ALL,
+        TRUE // only needed to support -Dquarkus.native.monitoring
     }
 }

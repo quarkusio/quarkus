@@ -3,13 +3,13 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= OpenID Connect (OIDC) and OAuth2 Client and Filters Reference Guide 
+= OpenID Connect (OIDC) and OAuth2 Client and Filters Reference Guide
 
 include::_attributes.adoc[]
 
 This reference guide explains how to use:
 
- - `quarkus-oidc-client`, `quarkus-oidc-client-reactive-filter` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org[Keycloak]
+ - `quarkus-oidc-client`, `quarkus-oidc-client-reactive-filter` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers such as link:https://www.keycloak.org[Keycloak]
  - `quarkus-oidc-token-propagation-reactive` and `quarkus-oidc-token-propagation` extensions to propagate the current `Bearer` or `Authorization Code Flow` access tokens
 
 The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
@@ -170,13 +170,13 @@ public class OidcClientResource {
 
     @GET
     public String getResponse() {
-        
+
         Tokens tokens = currentTokens;
         if (tokens.isAccessTokenExpired()) {
             // Add @Blocking method annotation if this code is used with Reactive RestClient
             tokens = client.refreshTokens(tokens.getRefreshToken()).await().indefinitely();
             currentTokens = tokens;
-        } 
+        }
         // Use tokens.getAccessToken() to configure MP RestClient Authorization header/etc
     }
 }
@@ -838,7 +838,7 @@ and finally write the test code. Given the Wiremock-based resource above, the fi
 
 ==== Keycloak
 
-If you work with Keycloak then you can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing-keycloak[OpenID Connect Bearer Token Integration testing] Keycloak section.
+If you work with Keycloak then you can use the same approach as described in the xref:security-oidc-bearer-authentication-concept.adoc#integration-testing-keycloak[OpenID Connect Bearer Token Integration testing] Keycloak section.
 
 === How to check the errors in the logs
 
@@ -861,7 +861,7 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 [[token-propagation-reactive]]
 == Token Propagation Reactive
 
-The `quarkus-oidc-token-propagation-reactive` extension provides RestEasy Reactive Client `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` that simplifies the propagation of authentication information by propagating the xref:security-openid-connect.adoc[Bearer] token present in the current active request or the token acquired from the xref:security-openid-connect-web-authentication.adoc[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
+The `quarkus-oidc-token-propagation-reactive` extension provides RestEasy Reactive Client `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` that simplifies the propagation of authentication information by propagating the xref:security-oidc-bearer-authentication-concept.adoc[Bearer token] present in the current active request or the token acquired from the xref:security-openid-connect-web-authentication.adoc[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
 
 You can selectively register `AccessTokenRequestReactiveFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation, for example:
 
@@ -937,7 +937,7 @@ quarkus.oidc-token-propagation-reactive.exchange-token=true
 == Token Propagation
 
 The `quarkus-oidc-token-propagation` extension provides two JAX-RS `javax.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
-`io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the xref:security-openid-connect.adoc[Bearer] token present in the current active request or the token acquired from the xref:security-openid-connect-web-authentication.adoc[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
+`io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the xref:security-oidc-bearer-authentication-concept.adoc[Bearer token] present in the current active request or the token acquired from the xref:security-openid-connect-web-authentication.adoc[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
 The `io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter` provides the same functionality, but in addition provides support for JWT tokens.
 
 When you need to propagate the current Authorization Code Flow access token then the immediate token propagation will work well - as the code flow access tokens (as opposed to ID tokens) are meant to be propagated for the current Quarkus endpoint to access the remote services on behalf of the currently authenticated user.
@@ -1085,7 +1085,7 @@ As already noted above, please use `AccessTokenRequestFilter` if you work with K
 [[integration-testing-token-propagation]]
 === Testing
 
-You can generate the tokens as described in xref:security-openid-connect.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] section.
+You can generate the tokens as described in xref:security-oidc-bearer-authentication-concept.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] section.
 Prepare the REST test endpoints, you can have the test frontend endpoint which uses the injected MP REST client with a registered token propagation filter to invoke on the downstream endpoint, for example, see the `integration-tests/oidc-token-propagation` in the `main` Quarkus repository.
 
 [[reactive-token-propagation]]
@@ -1109,6 +1109,6 @@ However, these features may be added in the future.
 == References
 
 * xref:security-openid-connect-client.adoc[OpenID Connect Client and Token Propagation Quickstart]
-* xref:security-openid-connect.adoc[Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization]
+* xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-openid-connect-web-authentication.adoc[Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

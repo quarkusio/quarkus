@@ -3,21 +3,23 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using OpenID Connect (OIDC) to Protect Service Applications using Bearer Token Authorization
+[id="security-oidc-bearer-authentication-concept"]
+= OIDC Bearer authentication
 include::_attributes.adoc[]
 :categories: security
-:summary: This guide demonstrates how your Quarkus application can use Keycloak to protect your JAX-RS applications using bearer token authorization, where these tokens are issued by a Keycloak server.
 
-You can use the Quarkus OpenID Connect (OIDC) extension to secure your JAX-RS applications using Bearer Token Authorization. 
-The Bearer Tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as https://www.keycloak.org[Keycloak]. 
+== Overview of the Bearer authentication mechanism in Quarkus
 
-Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token. 
-The Bearer Token provides information about the subject of the call which is used to determine whether or not an HTTP resource can be accessed.
+You can use the Quarkus OpenID Connect (OIDC) extension to secure your JAX-RS applications using Bearer authentication.
+The bearer tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as link:https://www.keycloak.org[Keycloak].
 
-The following diagrams outline the Bearer Token Authorization mechanism in Quarkus:
+Bearer authentication is the process of authorizing HTTP requests based on the existence and validity of a bearer token.
+The bearer token provides information about the subject of the call which is used to determine whether or not an HTTP resource can be accessed.
 
-.Bearer Token Authorization mechanism in Quarkus with Single-page application
-image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer Token Authorization, width="60%", align=center]
+The following diagrams outline the Bearer authentication mechanism in Quarkus:
+
+.Bearer authentication mechanism in Quarkus with Single-page application
+image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer authentication, width="60%", align=center]
 
 1. The Quarkus service retrieves verification keys from the OpenID Connect provider. The verification keys are used to verify the bearer access token signatures.
 2. The Quarkus user accesses the Single-page application.
@@ -26,8 +28,8 @@ image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer Token Auth
 5. The Quarkus service verifies the bearer access token signature using the verification keys, checks the token expiry date and other claims, allows the request to proceed if the token is valid, and returns the service response to the Single-page application.
 6. The Single-page application returns the same data to the Quarkus user.
 
-.Bearer Token Authorization mechanism in Quarkus with Java or command line client
-image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer Token Authorization, width="60%", align=center]
+.Bearer authentication mechanism in Quarkus with Java or command line client
+image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer authentication, width="60%", align=center]
 
 1. The Quarkus service retrieves verification keys from the OpenID Connect provider. The verification keys are used to verify the bearer access token signatures.
 2. The Client uses `client_credentials` that requires client ID and secret or password grant, which also requires client ID, secret, user name, and password to retrieve the access token from the OpenID Connect provider.
@@ -35,306 +37,10 @@ image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer Token Auth
 4. The Quarkus service verifies the bearer access token signature using the verification keys, checks the token expiry date and other claims, allows the request to proceed if the token is valid, and returns the service response to the Client.
 
 If you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications].
-Also, if you use Keycloak and Bearer Tokens, see xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization].
+Also, if you use Keycloak and bearer tokens, see xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization].
 
 For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
-
-== Quickstart
-
-=== Prerequisites
-
-:prerequisites-docker:
-include::{includes}/prerequisites.adoc[]
-* https://stedolan.github.io/jq/[jq tool]
-
-=== Architecture
-
-In this example, we build a very simple microservice which offers two endpoints:
-
-* `/api/users/me`
-* `/api/admin`
-
-These endpoints are protected and can only be accessed if a client is sending a bearer token along with the request, which must be valid (e.g.: signature, expiration and audience) and trusted by the microservice.
-
-The bearer token is issued by a Keycloak Server and represents the subject to which the token was issued for. For being an OAuth 2.0 Authorization Server, the token also references the client acting on behalf of the user.
-
-The `/api/users/me` endpoint can be accessed by any user with a valid token. As a response, it returns a JSON document with details about the user where these details are obtained from the information carried on the token.
-
-The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) where only users granted with the `admin` role can access. At this endpoint, we use the `@RolesAllowed` annotation to declaratively enforce the access constraint.
-
-=== Solution
-
-We recommend that you follow the instructions in the next sections and create the application step by step.
-However, you can go right to the completed example.
-
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
-
-The solution is located in the `security-openid-connect-quickstart` {quickstarts-tree-url}/security-openid-connect-quickstart[directory].
-
-=== Creating the Maven Project
-
-First, we need a new project. Create a new project with the following command:
-
-:create-app-artifact-id: security-openid-connect-quickstart
-:create-app-extensions: oidc,resteasy-reactive-jackson
-include::{includes}/devtools/create-app.adoc[]
-
-This command generates a Maven project, importing the `oidc` extension
-which is an implementation of OIDC for Quarkus.
-
-If you already have your Quarkus project configured, you can add the `oidc` extension
-to your project by running the following command in your project base directory:
-
-:add-extension-extensions: oidc
-include::{includes}/devtools/extension-add.adoc[]
-
-This will add the following to your build file:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-oidc</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.quarkus:quarkus-oidc")
-----
-
-=== Writing the application
-
-Let's start by implementing the `/api/users/me` endpoint. As you can see from the source code below it is just a regular JAX-RS resource:
-
-[source,java]
-----
-package org.acme.security.openid.connect;
-
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-
-import org.jboss.resteasy.reactive.NoCache;
-import io.quarkus.security.identity.SecurityIdentity;
-
-@Path("/api/users")
-public class UsersResource {
-
-    @Inject
-    SecurityIdentity securityIdentity;
-
-    @GET
-    @Path("/me")
-    @RolesAllowed("user")
-    @NoCache
-    public User me() {
-        return new User(securityIdentity);
-    }
-
-    public static class User {
-
-        private final String userName;
-
-        User(SecurityIdentity securityIdentity) {
-            this.userName = securityIdentity.getPrincipal().getName();
-        }
-
-        public String getUserName() {
-            return userName;
-        }
-    }
-}
-----
-
-The source code for the `/api/admin` endpoint is also very simple. The main difference here is that we are using a `@RolesAllowed` annotation to make sure that only users granted with the `admin` role can access the endpoint:
-
-[source,java]
-----
-package org.acme.security.openid.connect;
-
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-@Path("/api/admin")
-public class AdminResource {
-
-    @GET
-    @RolesAllowed("admin")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String admin() {
-        return "granted";
-    }
-}
-----
-
-Injection of the `SecurityIdentity` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
-
-=== Configuring the application
-
-The OpenID Connect extension allows you to define the adapter configuration using the `application.properties` file which should be located at the `src/main/resources` directory.
-
-include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional, leveloffset=+1]
-
-Example configuration:
-
-[source,properties]
-----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
-quarkus.oidc.client-id=backend-service
-quarkus.oidc.credentials.secret=secret
-
-# Tell Dev Services for Keycloak to import the realm file
-# This property is not effective when running the application in JVM or Native modes
-
-quarkus.keycloak.devservices.realm-path=quarkus-realm.json
-----
-
-NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in a dev mode. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
-
-=== Starting and Configuring the Keycloak Server
-
-NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information. Make sure to put the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode - unless you have already built a {quickstarts-tree-url}/security-openid-connect-quickstart[complete solution] in which case this realm file will be added to the classpath during the build.
-
-To start a Keycloak Server you can use Docker and just run the following command:
-
-[source,bash,subs=attributes+]
-----
-docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
-----
-
-where `keycloak.version` should be set to `17.0.0` or higher.
-
-You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
-
-Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
-
-Import the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
-
-NOTE: If you want to use the Keycloak Admin Client to configure your server from your application you need to include the
-either `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
-See the xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client] guide for more information.
-
-[[keycloak-dev-mode]]
-=== Running the Application in Dev mode
-
-To run the application in a dev mode, use:
-
-include::{includes}/devtools/dev.adoc[]
-
-xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
-
-Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
-
-You will be asked to log in into a `Single Page Application` provided by `OpenID Connect Dev UI`:
-
- * Login as `alice` (password: `alice`) who has a `user` role
- ** accessing `/api/admin` will return `403`
- ** accessing `/api/users/me` will return `200`
- * Logout and login as `admin` (password: `admin`) who has both `admin` and `user` roles
- ** accessing `/api/admin` will return `200`
- ** accessing `/api/users/me` will return `200`
-
-=== Running the Application in JVM mode
-
-When you're done playing with the `dev` mode" you can run it as a standard Java application.
-
-First compile it:
-
-include::{includes}/devtools/build.adoc[]
-
-Then run it:
-
-[source,bash]
-----
-java -jar target/quarkus-app/quarkus-run.jar
-----
-
-=== Running the Application in Native Mode
-
-This same demo can be compiled into native code: no modifications required.
-
-This implies that you no longer need to install a JVM on your
-production environment, as the runtime technology is included in
-the produced binary, and optimized to run with minimal resource overhead.
-
-Compilation will take a bit longer, so this step is disabled by default;
-let's build again by enabling the `native` profile:
-
-include::{includes}/devtools/build-native.adoc[]
-
-After getting a cup of coffee, you'll be able to run this binary directly:
-
-[source,bash]
-----
-./target/security-openid-connect-quickstart-1.0.0-SNAPSHOT-runner
-----
-
-=== Testing the Application
-
-See <<keycloak-dev-mode, Running the Application in Dev mode>> section above about testing your application in a dev mode.
-
-You can test the application launched in JVM or Native modes with `curl`.
-
-The application is using bearer token authorization and the first thing to do is obtain an access token from the Keycloak Server in
-order to access the application resources:
-
-[source,bash]
-----
-export access_token=$(\
-    curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
-    --user backend-service:secret \
-    -H 'content-type: application/x-www-form-urlencoded' \
-    -d 'username=alice&password=alice&grant_type=password' | jq --raw-output '.access_token' \
- )
-----
-
-The example above obtains an access token for user `alice`.
-
-Any user is allowed to access the
-`http://localhost:8080/api/users/me` endpoint
-which basically returns a JSON payload with details about the user.
-
-[source,bash]
-----
-curl -v -X GET \
-  http://localhost:8080/api/users/me \
-  -H "Authorization: Bearer "$access_token
-----
-
-The `http://localhost:8080/api/admin` endpoint can only be accessed by users with the `admin` role. If you try to access this endpoint with the
- previously issued access token, you should get a `403` response
- from the server.
-
-[source,bash]
-----
-curl -v -X GET \
-   http://localhost:8080/api/admin \
-   -H "Authorization: Bearer "$access_token
-----
-
-In order to access the admin endpoint you should obtain a token for the `admin` user:
-
-[source,bash]
-----
-export access_token=$(\
-    curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
-    --user backend-service:secret \
-    -H 'content-type: application/x-www-form-urlencoded' \
-    -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
- )
-----
-
-Please also see the <<integration-testing-keycloak-devservices, Dev Services for Keycloak>> section below about writing the integration tests which depend on `Dev Services for Keycloak`.
-
-== Reference Guide
 
 === Accessing JWT claims
 
@@ -397,7 +103,7 @@ If the token is opaque (binary) then a `scope` property from the remote token in
 
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
-Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security-overview-concept.adoc#security-identity-customization[here].
+Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented in xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
 
 [[token-verification-introspection]]
 === Token Verification And Introspection
@@ -709,7 +415,7 @@ public class BearerTokenAuthorizationTest {
 Note that the `quarkus-test-oidc-server` extension includes a signing RSA private key file in a `JSON Web Key` (`JWK`) format and points to it with a `smallrye.jwt.sign.key.location` configuration property. It allows to use a no argument `sign()` operation to sign the token.
 
 Testing your `quarkus-oidc` `service` application with `OidcWiremockTestResource` provides the best coverage as even the communication channel is tested against the Wiremock HTTP stubs.
-`OidcWiremockTestResource` will be enhanced going forward to support more complex Bearer token test scenarios.
+`OidcWiremockTestResource` will be enhanced going forward to support more complex bearer token test scenarios.
 
 If there is an immediate need for a test to define Wiremock stubs not currently supported by `OidcWiremockTestResource`
 one can do so via a `WireMockServer` instance injected into the test class, for example:
@@ -1170,7 +876,7 @@ quarkus.log.category."io.quarkus.oidc.runtime.OidcRecorder".min-level=TRACE
 
 === External and Internal Access to OpenID Connect Provider
 
-Note that the OpenID Connect Provider externally accessible token and other endpoints may have different HTTP(S) URLs compared to the URLs auto-discovered or configured relative to `quarkus.oidc.auth-server-url` internal URL. For example, if your SPA acquires a token from an external token endpoint address and sends it to Quarkus as a Bearer token then an issuer verification failure may be reported by the endpoint.
+Note that the OpenID Connect Provider externally accessible token and other endpoints may have different HTTP(S) URLs compared to the URLs auto-discovered or configured relative to `quarkus.oidc.auth-server-url` internal URL. For example, if your SPA acquires a token from an external token endpoint address and sends it to Quarkus as a bearer token then an issuer verification failure may be reported by the endpoint.
 
 In such cases, if you work with Keycloak then please start it with a `KEYCLOAK_FRONTEND_URL` system property set to the externally accessible base URL.
 If you work with other Openid Connect providers then please check your provider's documentation.
@@ -1200,6 +906,9 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 
 == References
 
+* xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
+* xref:security-openid-connect-tutorial.adoc[Protect a service application by using OIDC Bearer authentication]
+* xref:security-protect-service-applications-by-using-oidc-bearer-authentication-how-to.adoc[Protect service applications by using OIDC Bearer authentication]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
@@ -1207,5 +916,5 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
 * xref:security-overview-concept.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
-* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-overview-concept.adoc[Quarkus Security]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

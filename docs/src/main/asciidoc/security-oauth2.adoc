@@ -11,12 +11,12 @@ include::_attributes.adoc[]
 
 This guide explains how your Quarkus application can utilize OAuth2 tokens to provide secured access to the JAX-RS endpoints.
 
-OAuth2 is an authorization framework that enables applications to obtain access to an HTTP resource on behalf of a user. 
+OAuth2 is an authorization framework that enables applications to obtain access to an HTTP resource on behalf of a user.
 It can be used to implement an application authentication mechanism based on tokens by delegating to an external server (the authentication server) the user authentication and providing a token for the authentication context.
 
 This extension provides a light-weight support for using the opaque Bearer Tokens and validating them by calling an introspection endpoint.
 
-If the OAuth2 Authentication server provides JWT Bearer Tokens then you should consider using either xref:security-openid-connect.adoc[OpenID Connect] or xref:security-jwt.adoc[SmallRye JWT] extensions instead.
+If the OAuth2 Authentication server provides JWT Bearer Tokens then you should consider using either xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] or xref:security-jwt.adoc[SmallRye JWT] extensions instead.
 OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide for more information.
 
 include::{includes}/extension-status.adoc[]
@@ -84,7 +84,7 @@ public class TokenSecuredResource {
 
 This is a basic REST endpoint that does not have any of the {extension-name} specific features, so let's add some.
 
-We will use the JSR 250 common security annotations, they are described in the xref:security-overview-concept.adoc[Using Security] guide. 
+We will use the JSR 250 common security annotations, they are described in the xref:security-overview-concept.adoc[Using Security] guide.
 
 [source,java]
 ----

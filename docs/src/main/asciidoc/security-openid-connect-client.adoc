@@ -12,7 +12,7 @@ This quickstart demonstrates how to use `OpenID Connect Client Reactive Filter` 
 
 Please check xref:security-openid-connect-client-reference.adoc[OpenID Connect Client and Token Propagation Reference Guide] for all the information related to `Oidc Client` and `Token Propagation` support in Quarkus.
 
-Please also read xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide if you need to protect your applications using Bearer Token Authorization.
+Please also read xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] guide if you need to protect your applications using Bearer Token Authorization.
 
 == Prerequisites
 
@@ -501,5 +501,5 @@ will return `403` status code.
 == References
 
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect Client and Token Propagation Reference Guide]
-* xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications]
+* xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

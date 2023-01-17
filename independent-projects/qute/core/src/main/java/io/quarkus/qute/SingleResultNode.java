@@ -13,7 +13,7 @@ public final class SingleResultNode implements ResultNode {
 
     public SingleResultNode(Object value, ExpressionNode expressionNode) {
         this.value = value instanceof Optional ? ((Optional<?>) value).orElse(null) : value;
-        this.node = expressionNode.hasEngineResultMappers() ? expressionNode : null;
+        this.node = expressionNode != null && expressionNode.hasEngineResultMappers() ? expressionNode : null;
     }
 
     @Override

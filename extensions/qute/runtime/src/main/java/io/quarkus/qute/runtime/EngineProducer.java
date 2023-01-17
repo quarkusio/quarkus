@@ -43,6 +43,7 @@ import io.quarkus.qute.Qute;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
+import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstance.Initializer;
@@ -83,7 +84,9 @@ public class EngineProducer {
 
     public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
             Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes,
-            LaunchMode launchMode, LocalesBuildTimeConfig locales, @All List<TemplateLocator> locators) {
+            LaunchMode launchMode, LocalesBuildTimeConfig locales, @All List<TemplateLocator> locators,
+            @All List<SectionHelperFactory<?>> sectionHelperFactories, @All List<ValueResolver> valueResolvers,
+            @All List<NamespaceResolver> namespaceResolvers) {
         this.contentTypes = contentTypes;
         this.suffixes = config.suffixes;
         this.basePath = "templates/";
@@ -113,6 +116,10 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.orEmpty());
         // Note that arrays are handled specifically during validation
         builder.addValueResolver(ValueResolvers.arrayResolver());
+        // Additional value resolvers
+        for (ValueResolver valueResolver : valueResolvers) {
+            builder.addValueResolver(valueResolver);
+        }
 
         // Enable/disable strict rendering
         if (runtimeConfig.strictRendering) {
@@ -157,6 +164,10 @@ public class EngineProducer {
 
         // Default section helpers
         builder.addDefaultSectionHelpers();
+        // Additional section helpers
+        for (SectionHelperFactory<?> sectionHelperFactory : sectionHelperFactories) {
+            builder.addSectionHelper(sectionHelperFactory);
+        }
 
         // Allow anyone to customize the builder
         builderReady.fire(builder);
@@ -164,6 +175,10 @@ public class EngineProducer {
         // Resolve @Named beans
         builder.addNamespaceResolver(NamespaceResolver.builder(INJECT_NAMESPACE).resolve(this::resolveInject).build());
         builder.addNamespaceResolver(NamespaceResolver.builder(CDI_NAMESPACE).resolve(this::resolveInject).build());
+        // Additional namespace resolvers
+        for (NamespaceResolver namespaceResolver : namespaceResolvers) {
+            builder.addNamespaceResolver(namespaceResolver);
+        }
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {

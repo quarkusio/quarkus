@@ -24,6 +24,7 @@ public final class OidcConstants {
     public static final String INTROSPECTION_TOKEN = "token";
     public static final String INTROSPECTION_TOKEN_ACTIVE = "active";
     public static final String INTROSPECTION_TOKEN_EXP = "exp";
+    public static final String INTROSPECTION_TOKEN_IAT = "iat";
     public static final String INTROSPECTION_TOKEN_USERNAME = "username";
     public static final String INTROSPECTION_TOKEN_SUB = "sub";
 

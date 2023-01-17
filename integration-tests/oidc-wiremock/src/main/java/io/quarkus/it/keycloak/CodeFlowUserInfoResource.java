@@ -5,6 +5,8 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.security.Authenticated;
@@ -21,6 +23,9 @@ public class CodeFlowUserInfoResource {
     SecurityIdentity identity;
 
     @Inject
+    JsonWebToken accessToken;
+
+    @Inject
     DefaultTokenIntrospectionUserInfoCache tokenCache;
 
     @GET
@@ -28,7 +33,8 @@ public class CodeFlowUserInfoResource {
     public String access() {
         int cacheSize = tokenCache.getCacheSize();
         tokenCache.clearCache();
-        return identity.getPrincipal().getName() + ":" + userInfo.getString("preferred_username") + ", cache size: "
+        return identity.getPrincipal().getName() + ":" + userInfo.getString("preferred_username") + ":" + accessToken.getName()
+                + ", cache size: "
                 + cacheSize;
     }
 

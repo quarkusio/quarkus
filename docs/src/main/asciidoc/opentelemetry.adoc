@@ -462,7 +462,7 @@ we are able to propagate the span into the Kafka Record with:
 
 [source,java]
 ----
-TracingMetadata tm = TracingMetadata.withPrevious(Context.current();
+TracingMetadata tm = TracingMetadata.withPrevious(Context.current());
 Message out = Message.of(...).withMetadata(tm);
 ----
 

@@ -74,6 +74,10 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return descriptor.getName();
     }
 
+    public String getConfigurationName() {
+        return configurationName;
+    }
+
     public Optional<String> getDataSource() {
         return dataSource;
     }
@@ -88,6 +92,10 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     public boolean hasXmlMappings() {
         return !xmlMappings.isEmpty();
+    }
+
+    public boolean isFromPersistenceXml() {
+        return fromPersistenceXml;
     }
 
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(

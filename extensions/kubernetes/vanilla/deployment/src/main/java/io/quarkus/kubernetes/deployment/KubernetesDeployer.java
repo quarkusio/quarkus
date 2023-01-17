@@ -73,13 +73,15 @@ public class KubernetesDeployer {
         Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
                 .getActiveContainerImageCapability(capabilities);
 
-        if (activeContainerImageCapability.isEmpty()) {
+        //If container image actions are explicilty disabled block deployment even if a container image capability is not present.
+        if (!containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyDisabled()
+                && activeContainerImageCapability.isEmpty()) {
             // we can't throw an exception here, because it could prevent the Kubernetes resources from being generated
             return;
         }
 
         final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(containerImageInfo, targets,
-                activeContainerImageCapability.get(), containerImageConfig);
+                containerImageConfig);
         selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
         if (MINIKUBE.equals(selectedTarget.getName()) || KIND.equals(selectedTarget.getName())) {
             preventImplicitContainerImagePush.produce(new PreventImplicitContainerImagePushBuildItem());
@@ -108,6 +110,7 @@ public class KubernetesDeployer {
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             OutputTargetBuildItem outputTarget,
             OpenshiftConfig openshiftConfig,
+            ContainerImageConfig containerImageConfig,
             ApplicationInfoBuildItem applicationInfo,
             List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions,
             BuildProducer<DeploymentResultBuildItem> deploymentResult,
@@ -120,8 +123,9 @@ public class KubernetesDeployer {
 
         if (selectedDeploymentTarget.isEmpty()) {
 
-            if (ContainerImageCapabilitiesUtil
-                    .getActiveContainerImageCapability(capabilities).isEmpty()) {
+            if (!containerImageConfig.isBuildExplicitlyDisabled() &&
+                    !containerImageConfig.isPushExplicitlyDisabled() &&
+                    ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities).isEmpty()) {
                 throw new RuntimeException(
                         "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: "
                                 + CONTAINER_IMAGE_EXTENSIONS_STR + ".");
@@ -149,7 +153,7 @@ public class KubernetesDeployer {
      */
     private DeploymentTargetEntry determineDeploymentTarget(
             ContainerImageInfoBuildItem containerImageInfo,
-            EnabledKubernetesDeploymentTargetsBuildItem targets, String activeContainerImageCapability,
+            EnabledKubernetesDeploymentTargetsBuildItem targets,
             ContainerImageConfig containerImageConfig) {
         final DeploymentTargetEntry selectedTarget;
 

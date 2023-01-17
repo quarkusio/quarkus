@@ -120,21 +120,19 @@ public class HibernateOrmCdiProcessor {
         }
 
         // we have only one persistence unit defined in a persistence.xml: we make it the default even if it has a name
-        if (persistenceUnitDescriptors.size() == 1
-                && !impliedBlockingPersistenceUnitType.shouldGenerateImpliedBlockingPersistenceUnit()) {
-
+        if (persistenceUnitDescriptors.size() == 1 && persistenceUnitDescriptors.get(0).isFromPersistenceXml()) {
             String persistenceUnitName = persistenceUnitDescriptors.get(0).getPersistenceUnitName();
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
-                            true,
+                            true, true,
                             SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES,
                             recorder.sessionFactorySupplier(persistenceUnitName),
                             true));
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
-                            true,
+                            true, true,
                             Session.class, SESSION_EXPOSED_TYPES,
                             recorder.sessionSupplier(persistenceUnitName),
                             false));
@@ -144,17 +142,23 @@ public class HibernateOrmCdiProcessor {
 
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
+            // Hibernate Reactive does not use the same name for its default persistence unit,
+            // but we still want to use the @Default qualifier for that PU.
+            // We will need to fix this at some point, see https://github.com/quarkusio/quarkus/issues/21110
+            String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
+            boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitConfigName);
+            boolean isNamedPU = !isDefaultPU;
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
-                            PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName),
+                            isDefaultPU, isNamedPU,
                             SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES,
                             recorder.sessionFactorySupplier(persistenceUnitName),
                             true));
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
-                            PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName),
+                            isDefaultPU, isNamedPU,
                             Session.class, SESSION_EXPOSED_TYPES,
                             recorder.sessionSupplier(persistenceUnitName),
                             false));
@@ -195,7 +199,8 @@ public class HibernateOrmCdiProcessor {
         }
     }
 
-    private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName, boolean isDefaultPersistenceUnit,
+    private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName,
+            boolean isDefaultPersistenceUnit, boolean isNamedPersistenceUnit,
             Class<T> type, List<DotName> allExposedTypes, Supplier<T> supplier, boolean defaultBean) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
@@ -216,7 +221,8 @@ public class HibernateOrmCdiProcessor {
 
         if (isDefaultPersistenceUnit) {
             configurator.addQualifier(Default.class);
-        } else {
+        }
+        if (isNamedPersistenceUnit) {
             configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", persistenceUnitName).done();
             configurator.addQualifier().annotation(PersistenceUnit.class).addValue("value", persistenceUnitName).done();
         }

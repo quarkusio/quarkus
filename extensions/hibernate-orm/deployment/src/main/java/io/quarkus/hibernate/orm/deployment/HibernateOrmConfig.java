@@ -75,11 +75,13 @@ public class HibernateOrmConfig {
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
 
-    public boolean isAnyPropertySet() {
+    public boolean isAnyNonPersistenceXmlPropertySet() {
+        // Do NOT include persistenceXml in here.
         return defaultPersistenceUnit.isAnyPropertySet() ||
                 !persistenceUnits.isEmpty() ||
                 log.isAnyPropertySet() ||
                 statistics.isPresent() ||
+                logSessionMetrics.isPresent() ||
                 metricsEnabled;
     }
 

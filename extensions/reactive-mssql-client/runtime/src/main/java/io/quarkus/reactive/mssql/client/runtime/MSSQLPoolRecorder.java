@@ -45,6 +45,7 @@ public class MSSQLPoolRecorder {
 
         MSSQLPool mssqlPool = initialize(vertx.getValue(),
                 eventLoopCount.get(),
+                dataSourceName,
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
                 dataSourcesReactiveMSSQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
@@ -59,13 +60,20 @@ public class MSSQLPoolRecorder {
 
     private MSSQLPool initialize(Vertx vertx,
             Integer eventLoopCount,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMSSQLConfig);
         MSSQLConnectOptions mssqlConnectOptions = toMSSQLConnectOptions(dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMSSQLConfig);
+
+        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with mssql.
+        // with the client_name as tag.
+        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+        mssqlConnectOptions.setMetricsName("mssql|" + dataSourceName);
+
         if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");

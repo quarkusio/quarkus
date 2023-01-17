@@ -169,6 +169,10 @@ public class HttpBinderConfiguration {
         return "http.server.websocket.connections";
     }
 
+    public String getHttpClientWebSocketConnectionsName() {
+        return "http.client.websocket.connections";
+    }
+
     public String getHttpClientRequestsName() {
         return "http.client.requests";
     }

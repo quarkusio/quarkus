@@ -1386,9 +1386,10 @@ class MyBean {
 <2> The `Location` qualifier instructs the container to inject a template from a path relative from `src/main/resources/templates`. In this case, the full path is `src/main/resources/templates/detail/items2_v1.html`. 
 <3> Inject the configured `Engine` instance.
 
-It's also possible to contribute to the engine configuration via a CDI observer method.
+=== Engine Customization
 
-.`EngineBuilder` Observer Example
+Additional components can be registered manually via `EngineBuilder` methods in a CDI observer method at runtime:
+
 [source,java]
 ----
 import io.quarkus.qute.EngineBuilder;
@@ -1396,6 +1397,9 @@ import io.quarkus.qute.EngineBuilder;
 class MyBean {
 
     void configureEngine(@Observes EngineBuilder builder) {
+       // Add a custom section helper
+       builder.addSectionHelper(new CustomSectionFactory());
+       // Add a custom value resolver
        builder.addValueResolver(ValueResolver.builder()
                 .appliesTo(ctx -> ctx.getBase() instanceof Long && ctx.getName().equals("tenTimes"))
                 .resolveSync(ctx -> (Long) ec.getBase() * 10)
@@ -1404,8 +1408,52 @@ class MyBean {
 }
 ----
 
+However, in this particular case the section helper factory is ignored during validation at build time.
+If you want to register a section that participates in validation of templates at build time then use the convenient `@EngineConfiguration` annotation:
+
+[source,java]
+----
+import io.quarkus.qute.EngineConfiguration;
+import io.quarkus.qute.SectionHelper;
+import io.quarkus.qute.SectionHelperFactory;
+
+@EngineConfiguration <1>
+public class CustomSectionFactory implements SectionHelperFactory<CustomSectionHelper> {
+
+    @Inject
+    Service service; <2>
+
+    @Override
+    public List<String> getDefaultAliases() {
+        return List.of("custom");
+    }
+
+    @Override
+    public SectionHelper initialize(SectionInitContext context) {
+        if (context.getParameter("foo") == null) {
+            throw new IllegalStateException("Foo param not found"); <3>
+        }
+        return new CustomSectionHelper();
+    }
+
+    class CustomSectionHelper implements SectionHelper {
+
+        @Override
+        public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
+            return CompletableFuture.completedStage(new SingleResultNode(service.getValue(), null)); <4>
+        }
+    }
+}
+----
+<1> A `SectionHelperFactory` annotated with `@EngineConfiguration` is used during validation of templates at build time and automatically registered at runtime (a) as a section factory and (b) as a CDI bean.
+<2> A CDI bean instance is used at runtime - this means that the factory can define injection points
+<3> Validate that `foo` parameter is always present; e.g. `{#custom foo='bar' /}` is ok but `{#custom /}` results in a build failure.
+<4> Use the injected `Service` during rendering.
+
+The `@EngineConfiguration` annotation can be also used to register ``ValueResolver``s and ``NamespaceResolver``s.
+
 [[template-locator-registration]]
-=== Template Locator Registration
+==== Template Locator Registration
 
 The easiest way to register <<template-locator,template locators>> is to make them CDI beans.
 As the custom locator is not available during the build time when a template validation is done, you need to disable the validation via the `@Locate` annotation.

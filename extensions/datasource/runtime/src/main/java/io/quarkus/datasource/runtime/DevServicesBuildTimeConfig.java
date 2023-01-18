@@ -76,4 +76,12 @@ public class DevServicesBuildTimeConfig {
      */
     @ConfigItem
     public Optional<String> password;
+
+    /**
+     * Path to a SQL script that will be loaded from the classpath and applied to the Dev Service database
+     *
+     * If the provider is not container based (e.g. a H2 or Derby Database) then this has no effect.
+     */
+    @ConfigItem
+    public Optional<String> initScriptPath;
 }

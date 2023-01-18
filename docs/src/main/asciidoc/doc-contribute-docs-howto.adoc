@@ -19,7 +19,7 @@ We suggest you have the following materials nearby:
 
 - An editor or IDE that provides syntax highlighting and previews for AsciiDoc, either natively or with a plugin.
 - The https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc syntax reference]
-- The xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference] for the required syntax, preferred style, and other conventions.
+- The xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines] for the required syntax, preferred style, and other conventions.
 
 == Locate the source files for Quarkus docs
 
@@ -47,15 +47,15 @@ TIP: To help you decide, see the content type descriptions in xref:{doc-guides}/
 [id="security-basic-authentication-howto"] <1>
 = Secure a Quarkus application with basic authentication <2>
 include::_attributes.adoc[] <3>
-:categories: security <4>
+:categories: security,web <4>
 ----
 +
 <1> Set the `id` value to be the same as the file name but without the extension. You can shorten this if the file name is too long.
-<2> For information about how to create a good title for each content type, see xref:{doc-guides}/doc-reference.adoc#titles-and-headings[Titles and headings] on the "About Quarkus documentation" page.
+<2> For information about how to create a good title for each content type, see xref:{doc-guides}/doc-reference.adoc#titles-and-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
 <3> The `_attributes.adoc` include is required to ensure that attributes get resolved, the table of contents is generated, and content renders in the website portal. 
-<4> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page].
+<4> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:{doc-guides}/doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
 
-For more information about the minimum header requirements, see xref:{doc-guides}/doc-reference.adoc#document-structure[Document structure] on the "About Quarkus documentation" page.
+For more information about the minimum header requirements, see xref:{doc-guides}/doc-reference.adoc#document-structure[Document structure] on the "Quarkus style and content guidelines" page.
 
 == Retire and redirect an existing Quarkus AsciiDoc source file
 
@@ -82,22 +82,27 @@ Where:
 
 [Attributes]
 |===
-|Name of original AsciiDoc source file |Name of file to redirect to| Example pull request
+|Name of original AsciiDoc source file |Name of target file to redirect to| Redirection file| Example pull request
 
 |`security-getting-started`
 |`security-overview-concept`
+|link:https://github.com/quarkusio/quarkusio.github.io/blob/develop/_redirects/guides/security-getting-started.md[`security-getting-started.md`]
 |link:https://github.com/quarkusio/quarkusio.github.io/pull/1579[PR #1579]
 
 |===
 
 == Preview and build Quarkus documentation
 
-AsciiDoc syntax highlighting and the preview provided by an IDE may be enough for minor documentation changes.
-When you make significant changes or updates to generated configuration documentation, build the `docs` module locally and run the Vale linter as outlined below.
+Before you submit a pull request, preview the HTML output of your AsciiDoc source by using one of the following build methods:
+
+* For minor documentation changes, you can use the AsciiDoc syntax highlighting and preview provided by your IDE.
+* For significant changes or updates to generated configuration documentation, build the `docs` module locally and run the Vale linter as outlined in the following sections.
+
+=== Build the `docs` module locally
 
 include::{includes}/compile-quarkus-quickly.adoc[tag=quickly-install-docs]
 
-This will produce:
+Running `-DquicklyDocs` produces:
 
 - Generated AsciiDoc (`adoc` files) describing configuration properties in the `target/asciidoc/generated/config/` directory.
 - AsciiDoc output (`html` files) in the `docs/target/generated-docs/` directory.
@@ -124,10 +129,13 @@ When updating extension configuration:
 
 == Lint documentation changes with Vale
 
-Our builds use https://vale.sh[Vale] to check grammar, style, and word usage in the English versions of our documents.
-The configuration for vale is in the `docs/.vale` directory.
+Our builds use https://vale.sh[Vale] to check grammar, style, and word usage in the English versions of our documents. We created our own Vale style ruleset to ensure that content aligns with the preferred Quarkus style guidelines.
 
-NOTE: The Vale configuration file is `docs/.vale/vale.ini`.
+[NOTE]
+====
+* The Quarkus configuration for vale is `vale.ini`, which is in the `docs/.vale` directory.
+* The Quarkus style rules are in YAML format in the `docs/.vale/styles` directory.
+====
 
 === Containerized Vale
 
@@ -154,20 +162,20 @@ Include errors in the results.
 
 === Use the Vale CLI
 
-If you install the https://vale.sh/docs/vale-cli/installation/[install the Vale CLI], you must specify the configuration file along with the directory or list of files to scan:
+If you install the https://vale.sh/docs/vale-cli/installation/[Vale CLI], you must specify the configuration file and the directory or list of files to scan:
 
 [source,shell]
 ----
 vale --config=docs/.vale/vale.ini --minAlertLevel=warning docs/src/main/asciidoc
 ----
 
-See the https://vale.sh/manual/[Vale CLI Manual] for details.
+For more information, see the https://vale.sh/manual/[Vale CLI Manual].
 
 === Vale IDE plugins
 
 https://vale.sh/docs/integrations/guide/[Vale IDE integrations] require the Vale CLI to be installed.
 
-Each has it's own configuration requirements. The Visual Studio Code IDE extension, for example, requires two workspace settings:
+Each has its own configuration requirements. The Visual Studio Code IDE extension, for example, requires two workspace settings:
 
 [source,json]
 ----
@@ -194,12 +202,23 @@ create a separate PR for the documentation changes and include the relationship 
 
 Pull requests that contain changes to documentation will have the `area/documentation` label added automatically.
 
-== Automatic style checking on the PR diff
+=== Automatic style checking on the PR diff
 
 The Vale linter job automatically runs when a PR is created or updated.
-If your content updates do not align with the key style or terminology preferences of the Quarkus community, the updated line on the diff tab gets annotated with the Vale suggestion, warning, or error.
+If your content updates do not align with the key style or terminology preferences of the Quarkus community, the updated line on the diff tab gets annotated with the Vale recommendations.
 To ensure that your content gets approved, fix the linter errors, warnings, and suggestions.
 
 We welcome your feedback on the Quarkus documentation style guidelines.
 
 If you disagree with the Vale results, be sure to add the yellow PR label `needs-vale-rule-tweak`.
+
+== Previewing doc changes on the Quarkus website
+
+After your PR is merged to `main` and the branch is synchronized with the link:https://github.com/quarkusio/quarkusio.github.io/tree/develop/_generated-doc[Quarkus.io] website repository, you can preview the resulting build output on the link:https://quarkus.io/version/main/guides/[Main branch (SNAPSHOT)] documentation page of the Quarkus site.
+
+[IMPORTANT]
+====
+The `main` branch of the `quarkus` repository is synchronized daily at 1AM GMT so you will not be able to preview your changes on link:https://quarkus.io/version/main/guides/[Main branch (SNAPSHOT)] until after the next site refresh occurs.
+====
+
+

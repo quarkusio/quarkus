@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 ////
-TODO: See Quarkus documentation reference for details
+TODO: xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines] for details
 - Title should have an implied "Understanding..." in front. 
 - ID should end with '-concept' (using the filename works)
 - choose appropriate categories
@@ -15,8 +15,8 @@ include::_attributes.adoc[]
 :categories: ...
 ////
 :extension-status: preview
-TODO: uncomment the above for for an experimental or tech-preview content. 
-The document header ends at the first blank line.
+TODO: uncomment the above for experimental or tech-preview content. 
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
 A short introduction that summarizes or frames the concept.
@@ -29,8 +29,8 @@ include::{includes}/extension-status.adoc[]
 
 == Create additional sections
 
-- xref:{doc-guides}/doc-concept.adoc#concept[Documentation concepts: Concept guides]
-- xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
+- xref:{doc-guides}/doc-concept.adoc#concept[Quarkus documentation content types: Concept guides]
+- xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines]
 
 == Guidelines for a good Concept doc
 
@@ -43,7 +43,11 @@ Explanation/Concept documents should do things that the other parts of the docum
 == Language tips:
 
 - Explain: "The reason for x is because historically, y…"
-- Offer judgements and even opinions where appropriate.., "W is better than z, because…"
+- Offer judgments and even opinions where appropriate.., "W is better than z, because…"
 - Provide context that helps the reader: "An x in system y is analogous to a w in system z. However…"
 - Weigh up alternatives: "Some users prefer w (because z). This can be a good approach, but…"
 - Unfold the machinery’s internal secrets, to help understand why something does what it does: "An x interacts with a y as follows:…"
+
+== References
+
+To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.

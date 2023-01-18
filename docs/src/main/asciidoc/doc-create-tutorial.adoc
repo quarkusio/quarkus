@@ -15,7 +15,7 @@ Create a new tutorial that guides users through creating, running, and testing a
 - Roughly 15 minutes
 - An editor or IDE that provides syntax highlighting and previews for AsciiDoc, either natively or using a plugin.
 - You should be familiar with the overview of what a xref:doc-concept.adoc#tutorial[Tutorial] is.
-- Have the xref:doc-reference.adoc[Quarkus documentation reference] handy as a reference for required syntax and other conventions.
+- Have the xref:doc-reference.adoc[Quarkus style and content guidelines] handy as a reference for required syntax and other conventions.
 
 :sectnums:
 :sectnumlevels: 3

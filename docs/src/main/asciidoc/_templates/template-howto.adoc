@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 ////
-TODO: See Quarkus documentation reference for details
+TODO: See xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines] for details
 - Title should have an implied "How to..." in front. 
 - ID should end with '-howto' (using the filename works)
 - choose appropriate categories
@@ -15,11 +15,11 @@ include::_attributes.adoc[]
 :categories: ...
 ////
 :extension-status: preview
-TODO: uncomment the above for for an experimental or tech-preview content. 
-The document header ends at the first blank line.
+TODO: uncomment the above for experimental or tech-preview content. 
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
-How-to guides are goal-oriented, and should help the reader accomplish a task (where there may be forks in the path).
+How-to guides are goal-oriented and should help the reader accomplish a task (where there may be forks in the path).
 
 ////
 TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following (otherwise delete)
@@ -33,16 +33,20 @@ Your user will also be in the middle of something: define the starting-point tha
 == Resources
 
 - xref:{doc-guides}/doc-create-howto-tutorial.adoc[Tutorial: Create a How-To]
-- xref:{doc-guides}/doc-concept.adoc#howto-guide[Documentation concepts: How-to guides]
-- xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
+- xref:{doc-guides}/doc-concept.adoc#howto-guide[Quarkus documentation content types: How-to guides]
+- xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines]
 
 == Guidelines for good How-To guides
 
-- Don’t explain concepts; link to a related concept/explainer
-- Be flexible; a how-to guide needs to be adaptable to real-world use-cases.
+- Don’t explain concepts; link to a related concept/explainer.
+- Be flexible; a how-to guide needs to be adaptable to real-world use cases.
 - Omit the unnecessary; practical usability is more helpful than completeness.
 
 == Examples
 
 Baeldung tutorials provide solid examples of How-To guides.
 For example, "How to use Jackson annotations" is answered (with variations) here: https://www.baeldung.com/jackson-annotations
+
+== References
+
+To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.

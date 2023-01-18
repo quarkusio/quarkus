@@ -16,7 +16,6 @@ import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InterceptorBinding;
 import jakarta.interceptor.InvocationContext;
 
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,9 +26,7 @@ public class FailingPrivateInterceptedMethodTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class, SimpleInterceptor.class, Simple.class)
-                    .addAsResource(new StringAsset("quarkus.arc.fail-on-intercepted-private-method=true"),
-                            "application.properties"))
+                    .addClasses(SimpleBean.class, SimpleInterceptor.class, Simple.class))
             .setExpectedException(DeploymentException.class);
 
     @Test

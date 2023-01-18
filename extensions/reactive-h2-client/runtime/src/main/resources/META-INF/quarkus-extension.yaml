@@ -1,0 +1,19 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Reactive H2 client"
+metadata:
+  keywords:
+  - "eclipse-vert.x"
+  - "vertx"
+  - "vert.x"
+  - "reactive"
+  - "database"
+  - "data"
+  - "h2"
+  guide: "https://quarkus.io/guides/reactive-sql-clients"
+  categories:
+  - "data"
+  - "reactive"
+  status: "stable"
+  config:
+  - "quarkus.datasource."

@@ -259,7 +259,7 @@ public class InjectionPointInfo {
     }
 
     private static Type resolveType(Type type, ClassInfo beanClass, ClassInfo declaringClass, BeanDeployment beanDeployment) {
-        if (type.kind() == org.jboss.jandex.Type.Kind.CLASS) {
+        if (type.kind() == Type.Kind.PRIMITIVE || type.kind() == Type.Kind.CLASS) {
             return type;
         }
         Map<ClassInfo, Map<String, Type>> resolvedTypeVariables = Types.resolvedTypeVariables(beanClass, beanDeployment);

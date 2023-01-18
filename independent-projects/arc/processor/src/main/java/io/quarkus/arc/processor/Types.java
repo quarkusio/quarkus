@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -55,18 +56,25 @@ public final class Types {
 
     private static final Type OBJECT_TYPE = Type.create(DotNames.OBJECT, Kind.CLASS);
 
-    private static final Set<String> PRIMITIVE_CLASS_NAMES = new HashSet<>();
+    private static final Set<String> PRIMITIVE_CLASS_NAMES = Set.of(
+            "boolean",
+            "byte",
+            "short",
+            "int",
+            "long",
+            "float",
+            "double",
+            "char");
 
-    static {
-        PRIMITIVE_CLASS_NAMES.add("byte");
-        PRIMITIVE_CLASS_NAMES.add("char");
-        PRIMITIVE_CLASS_NAMES.add("double");
-        PRIMITIVE_CLASS_NAMES.add("float");
-        PRIMITIVE_CLASS_NAMES.add("int");
-        PRIMITIVE_CLASS_NAMES.add("long");
-        PRIMITIVE_CLASS_NAMES.add("short");
-        PRIMITIVE_CLASS_NAMES.add("boolean");
-    }
+    private static final Set<DotName> PRIMITIVE_WRAPPERS = Set.of(
+            DotNames.BOOLEAN,
+            DotNames.BYTE,
+            DotNames.SHORT,
+            DotNames.INTEGER,
+            DotNames.LONG,
+            DotNames.FLOAT,
+            DotNames.DOUBLE,
+            DotNames.CHARACTER);
 
     // we ban these interfaces because they are new to Java 12 and are used by java.lang.String which
     // means that they cannot be included in bytecode if we want to have application built with Java 12+ but targeting Java 8 - 11
@@ -742,6 +750,50 @@ public final class Types {
 
     static boolean isPrimitiveClassName(String className) {
         return PRIMITIVE_CLASS_NAMES.contains(className);
+    }
+
+    static boolean isPrimitiveWrapperType(Type type) {
+        if (type.kind() == Kind.CLASS) {
+            return PRIMITIVE_WRAPPERS.contains(type.name());
+        }
+        return false;
+    }
+
+    /**
+     * Emits a bytecode instruction to load the default value of given {@code primitive} type
+     * into given {@code bytecode} creator and returns the {@link ResultHandle} of the loaded
+     * default value. The default primitive value is {@code 0} for integral types, {@code 0.0}
+     * for floating point types, {@code false} for {@code boolean} and the null character for
+     * {@code char}.
+     * <p>
+     * Can also be used to load a default primitive value of the corresponding wrapper type,
+     * because Gizmo will box automatically.
+     *
+     * @param primitive primitive type, must not be {@code null}
+     * @param bytecode bytecode creator that will receive the load instruction, must not be {@code null}
+     * @return a result handle of the loaded default primitive value
+     */
+    static ResultHandle loadPrimitiveDefault(Primitive primitive, BytecodeCreator bytecode) {
+        switch (Objects.requireNonNull(primitive)) {
+            case BOOLEAN:
+                return bytecode.load(false);
+            case BYTE:
+                return bytecode.load((byte) 0);
+            case SHORT:
+                return bytecode.load((short) 0);
+            case INT:
+                return bytecode.load(0);
+            case LONG:
+                return bytecode.load(0L);
+            case FLOAT:
+                return bytecode.load(0.0F);
+            case DOUBLE:
+                return bytecode.load(0.0);
+            case CHAR:
+                return bytecode.load((char) 0);
+            default:
+                throw new IllegalArgumentException("Unknown primitive type: " + primitive);
+        }
     }
 
     static boolean containsTypeVariable(Type type) {

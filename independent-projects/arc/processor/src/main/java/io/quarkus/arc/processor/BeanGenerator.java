@@ -868,16 +868,19 @@ public class BeanGenerator extends AbstractGenerator {
                 if (i == disposedParamPosition) {
                     referenceHandles[i] = destroy.getMethodParam(0);
                 } else {
+                    InjectionPointInfo injectionPoint = injectionPointsIterator.next();
                     ResultHandle childCtxHandle = destroy.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                             declaringProviderHandle, ctxHandle);
                     ResultHandle providerSupplierHandle = destroy
                             .readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                                    injectionPointToProviderField.get(injectionPointsIterator.next()),
+                                    injectionPointToProviderField.get(injectionPoint),
                                     Supplier.class.getName()), destroy.getThis());
                     ResultHandle providerHandle = destroy.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
                             providerSupplierHandle);
-                    ResultHandle referenceHandle = destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                            providerHandle, childCtxHandle);
+                    AssignableResultHandle referenceHandle = destroy.createVariable(Object.class);
+                    destroy.assign(referenceHandle, destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                            providerHandle, childCtxHandle));
+                    checkPrimitiveInjection(destroy, injectionPoint, referenceHandle);
                     referenceHandles[i] = referenceHandle;
                 }
             }
@@ -998,8 +1001,10 @@ public class BeanGenerator extends AbstractGenerator {
                         providerSupplierHandle);
                 ResultHandle childCtx = createMethod.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                         providerHandle, createMethod.getMethodParam(0));
-                ResultHandle referenceHandle = createMethod.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                        providerHandle, childCtx);
+                AssignableResultHandle referenceHandle = createMethod.createVariable(Object.class);
+                createMethod.assign(referenceHandle, createMethod
+                        .invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, providerHandle, childCtx));
+                checkPrimitiveInjection(createMethod, injectionPoint, referenceHandle);
                 injectableParamHandles.add(referenceHandle);
                 if (injectionPoint.isDependentTransientReference()) {
                     transientReferences.add(new TransientReference(providerHandle, referenceHandle, childCtx));
@@ -1029,6 +1034,24 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle decoratorProviderHandle = createMethod.invokeInterfaceMethod(
                         MethodDescriptors.SUPPLIER_GET, decoratorProviderSupplierHandle);
                 allOtherParamHandles.add(decoratorProviderHandle);
+            }
+        }
+    }
+
+    static void checkPrimitiveInjection(BytecodeCreator bytecode, InjectionPointInfo injectionPoint,
+            AssignableResultHandle referenceHandle) {
+        if (injectionPoint.getType().kind() == Type.Kind.PRIMITIVE) {
+            Type type = null;
+            if (injectionPoint.getResolvedBean().isProducerField()) {
+                type = injectionPoint.getResolvedBean().getTarget().get().asField().type();
+            } else if (injectionPoint.getResolvedBean().isProducerMethod()) {
+                type = injectionPoint.getResolvedBean().getTarget().get().asMethod().returnType();
+            }
+
+            if (type != null && Types.isPrimitiveWrapperType(type)) {
+                BytecodeCreator isNull = bytecode.ifNull(referenceHandle).trueBranch();
+                isNull.assign(referenceHandle,
+                        Types.loadPrimitiveDefault(injectionPoint.getType().asPrimitiveType().primitive(), isNull));
             }
         }
     }
@@ -1234,8 +1257,10 @@ public class BeanGenerator extends AbstractGenerator {
                     providerSupplierHandle);
             ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                     providerHandle, create.getMethodParam(0));
-            ResultHandle referenceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                    providerHandle, childCtxHandle);
+            AssignableResultHandle referenceHandle = create.createVariable(Object.class);
+            create.assign(referenceHandle, create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                    providerHandle, childCtxHandle));
+            checkPrimitiveInjection(create, injectionPoint, referenceHandle);
             referenceHandles[paramIdx++] = referenceHandle;
             // We need to destroy dependent beans for @TransientReference injection points
             if (injectionPoint.isDependentTransientReference()) {
@@ -1501,8 +1526,10 @@ public class BeanGenerator extends AbstractGenerator {
                     MethodDescriptors.SUPPLIER_GET, providerSupplierHandle);
             ResultHandle childCtxHandle = tryBlock.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                     providerHandle, tryBlock.getMethodParam(0));
-            ResultHandle referenceHandle = tryBlock.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                    providerHandle, childCtxHandle);
+            AssignableResultHandle referenceHandle = tryBlock.createVariable(Object.class);
+            tryBlock.assign(referenceHandle, tryBlock.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                    providerHandle, childCtxHandle));
+            checkPrimitiveInjection(tryBlock, injectionPoint, referenceHandle);
 
             FieldInfo injectedField = fieldInjection.target.asField();
             // only use reflection fallback if we are not performing transformation
@@ -1541,8 +1568,10 @@ public class BeanGenerator extends AbstractGenerator {
                         providerSupplierHandle);
                 ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                         providerHandle, create.getMethodParam(0));
-                ResultHandle referenceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                        providerHandle, childCtxHandle);
+                AssignableResultHandle referenceHandle = create.createVariable(Object.class);
+                create.assign(referenceHandle, create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                        providerHandle, childCtxHandle));
+                checkPrimitiveInjection(create, injectionPoint, referenceHandle);
                 referenceHandles[paramIdx++] = referenceHandle;
                 // We need to destroy dependent beans for @TransientReference injection points
                 if (injectionPoint.isDependentTransientReference()) {

@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -82,10 +83,24 @@ public class TypesTest {
         // now assert following ones do NOT throw, the wildcard in the hierarchy is just ignored
         final String wildcardInTypeHierarchy = "eagleProducer";
         assertDoesNotThrow(
-                () -> Types.getProducerMethodTypeClosure(producerClass.method(wildcardInTypeHierarchy), dummyDeployment));
+                () -> verifyEagleTypes(
+                        Types.getProducerMethodTypeClosure(producerClass.method(wildcardInTypeHierarchy), dummyDeployment)));
         assertDoesNotThrow(
-                () -> Types.getProducerFieldTypeClosure(producerClass.field(wildcardInTypeHierarchy), dummyDeployment));
+                () -> verifyEagleTypes(
+                        Types.getProducerFieldTypeClosure(producerClass.field(wildcardInTypeHierarchy), dummyDeployment)));
+        // now do the same for a non-producer scenario with Eagle class
+        assertDoesNotThrow(
+                () -> verifyEagleTypes(Types.getClassBeanTypeClosure(index.getClassByName(DotName.createSimple(Eagle.class)),
+                        dummyDeployment)));
+    }
 
+    private void verifyEagleTypes(Set<Type> types) {
+        for (Type type : types) {
+            if (type.kind().equals(Kind.PARAMETERIZED_TYPE)) {
+                assertNotEquals(DotName.createSimple(AnimalHolder.class), type.name());
+            }
+        }
+        assertEquals(3, types.size());
     }
 
     static class Foo<T> {

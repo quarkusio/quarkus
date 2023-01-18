@@ -62,7 +62,7 @@ Click on the `Provider: Keycloak` link, and you will see a Keycloak page which w
 [[develop-service-applications]]
 === Developing Service Applications
 
-By default, the Keycloak page can be used to support the development of a xref:security-openid-connect.adoc[Quarkus OIDC service application].
+By default, the Keycloak page can be used to support the development of a xref:security-oidc-bearer-authentication-concept.adoc[Quarkus OIDC service application].
 
 [[keycloak-authorization-code-grant]]
 ==== Authorization Code Grant
@@ -212,7 +212,7 @@ It will ensure that if you access the application from the browser in dev mode, 
 You can run the tests against a Keycloak container started in a test mode in a xref:continuous-testing.adoc[Continuous Testing] mode.
 
 It is also recommended to run the integration tests against Keycloak using `Dev Services for Keycloak`.
-Please see xref:security-openid-connect.adoc#integration-testing-keycloak-devservices[Testing OpenID Connect Service Applications with Dev Services] and xref:security-openid-connect-web-authentication.adoc#integration-testing-keycloak-devservices[Testing OpenID Connect WebApp Applications with Dev Services] for more information.
+Please see xref:security-oidc-bearer-authentication-concept.adoc#integration-testing-keycloak-devservices[Testing OpenID Connect Service Applications with Dev Services] and xref:security-openid-connect-web-authentication.adoc#integration-testing-keycloak-devservices[Testing OpenID Connect WebApp Applications with Dev Services] for more information.
 
 [[keycloak-initialization]]
 === Keycloak Initialization
@@ -223,7 +223,7 @@ Note that only a Quarkus based Keycloak distribution is available starting from 
 
 `Dev Services for Keycloak` will initialize a launched Keycloak server next.
 
-By default, the `quarkus`, `quarkus-app` client with a `secret` password, `alice` and `bob` users (with the passwords matching the names), and `user` and `admin` roles are created, with `alice` given both `admin` and `user` roles and `bob` - the `user` role. 
+By default, the `quarkus`, `quarkus-app` client with a `secret` password, `alice` and `bob` users (with the passwords matching the names), and `user` and `admin` roles are created, with `alice` given both `admin` and `user` roles and `bob` - the `user` role.
 
 Usernames, secrets and their roles can be customized with `quarkus.keycloak.devservices.users` (the map which contains usernames and secrets) and `quarkus.keycloak.devservices.roles` (the map which contains usernames and comma separated role values).
 
@@ -408,6 +408,6 @@ This document refers to the `http://localhost:8080/q/dev` Dev UI URL in several 
 * xref:dev-ui.adoc[Dev UI]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
-* xref:security-openid-connect.adoc[Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization]
+* xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-openid-connect-web-authentication.adoc[Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

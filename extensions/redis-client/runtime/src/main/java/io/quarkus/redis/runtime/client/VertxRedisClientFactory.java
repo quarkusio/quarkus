@@ -76,13 +76,19 @@ public class VertxRedisClientFactory {
         options.setPassword(config.password.orElse(null));
         config.poolCleanerInterval.ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
         options.setPoolRecycleTimeout((int) config.poolRecycleTimeout.toMillis());
-        // TODO Pool name?
 
         config.role.ifPresent(options::setRole);
         options.setType(config.clientType);
         config.replicas.ifPresent(options::setUseReplicas);
 
         options.setNetClientOptions(toNetClientOptions(config));
+
+        options.setPoolName(name);
+        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with redis.
+        // and the client_name as tag.
+        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+        options.getNetClientOptions().setMetricsName("redis|" + name);
 
         customize(name, options);
 

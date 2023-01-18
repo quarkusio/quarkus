@@ -170,6 +170,12 @@ public class MailClientProducer {
         cfg.setTrustAll(trustAll);
         applyTruststore(config, cfg);
 
+        // Sets the metrics name so micrometer metrics will collect metrics for the client.
+        // Because the mail client is _unnamed_, we only pass a prefix.
+        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+        cfg.setMetricsName("mail");
+
         return cfg;
     }
 

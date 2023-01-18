@@ -1,7 +1,5 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
-import java.util.Map;
-
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.LongTaskTimer;
@@ -25,10 +23,9 @@ import io.vertx.core.spi.observability.HttpResponse;
  * <li>S for Socket metric -- Map<String, Object></li>
  * </ul>
  */
-public class VertxHttpServerMetrics extends VertxTcpMetrics
-        implements HttpServerMetrics<HttpRequestMetric, LongTaskTimer.Sample, Map<String, Object>> {
+public class VertxHttpServerMetrics extends VertxTcpServerMetrics
+        implements HttpServerMetrics<HttpRequestMetric, LongTaskTimer.Sample, LongTaskTimer.Sample> {
     static final Logger log = Logger.getLogger(VertxHttpServerMetrics.class);
-    static final String METRICS_CONTEXT = "HTTP_REQUEST_METRICS_CONTEXT";
 
     HttpBinderConfiguration config;
 
@@ -37,7 +34,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     final String nameHttpServerRequests;
 
     VertxHttpServerMetrics(MeterRegistry registry, HttpBinderConfiguration config) {
-        super(registry, "http.server");
+        super(registry, "http.server", null);
         this.config = config;
 
         // not dev-mode changeable
@@ -56,7 +53,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      * @return a RequestMetricContext
      */
     @Override
-    public HttpRequestMetric responsePushed(Map<String, Object> socketMetric, HttpMethod method, String uri,
+    public HttpRequestMetric responsePushed(LongTaskTimer.Sample socketMetric, HttpMethod method, String uri,
             HttpResponse response) {
         HttpRequestMetric requestMetric = new HttpRequestMetric(uri);
         String path = requestMetric.getNormalizedUriPath(
@@ -88,16 +85,14 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      * {@link #responseEnd} when the response has ended or {@link #requestReset} if
      * the request/response has failed before.
      *
-     * @param socketMetric a Map for socket metric context or null
+     * @param sample the sample
      * @param request the http server request
      * @return a RequestMetricContext
      */
     @Override
-    public HttpRequestMetric requestBegin(Map<String, Object> socketMetric, HttpRequest request) {
+    public HttpRequestMetric requestBegin(LongTaskTimer.Sample sample, HttpRequest request) {
         HttpRequestMetric requestMetric = new HttpRequestMetric(request);
         requestMetric.setSample(Timer.start(registry));
-
-        log.debugf("requestBegin %s, %s", socketMetric, requestMetric);
         return requestMetric;
     }
 
@@ -157,16 +152,14 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     /**
      * Called when a server web socket connects.
      *
-     * @param socketMetric a Map for socket metric context or null
+     * @param sample the sample
      * @param requestMetric a RequestMetricContext or null
      * @param serverWebSocket the server web socket
      * @return a LongTaskTimer.Sample or null
      */
     @Override
-    public LongTaskTimer.Sample connected(Map<String, Object> socketMetric, HttpRequestMetric requestMetric,
+    public LongTaskTimer.Sample connected(LongTaskTimer.Sample sample, HttpRequestMetric requestMetric,
             ServerWebSocket serverWebSocket) {
-        log.debugf("websocket connected %s, %s, %s", socketMetric, serverWebSocket, requestMetric);
-
         String path = requestMetric.getNormalizedUriPath(
                 config.getServerMatchPatterns(),
                 config.getServerIgnorePatterns());

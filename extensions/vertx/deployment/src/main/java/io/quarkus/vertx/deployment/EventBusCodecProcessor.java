@@ -168,7 +168,12 @@ public class EventBusCodecProcessor {
         if (parameters.isEmpty()) {
             return null;
         }
-        Type param = method.parameterType(0);
+        /*
+         * VertxProcessor.collectEventConsumers makes sure that only methods with either just the message object,
+         * or headers as first argument then message object are allowed.
+         */
+        int messageIndex = parameters.size() == 1 ? 0 : 1;
+        Type param = method.parameterType(messageIndex);
         if (param.kind() == Type.Kind.CLASS) {
             return param;
         } else if (param.kind() == Type.Kind.PARAMETERIZED_TYPE) {

@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.annotation.Annotation;
@@ -109,6 +110,9 @@ public class BeanManagerTest {
         @SuppressWarnings("unchecked")
         Bean<AlternativeLegacy> legacyBean = (Bean<AlternativeLegacy>) legacyBeans.iterator().next();
         CreationalContext<AlternativeLegacy> ctx = beanManager.createCreationalContext(legacyBean);
+        assertThrows(IllegalArgumentException.class, () -> {
+            beanManager.getReference(legacyBean, String.class, ctx);
+        });
         Legacy legacy = (Legacy) beanManager.getReference(legacyBean, Legacy.class, ctx);
         assertNotNull(legacy.getBeanManager());
         ctx.release();

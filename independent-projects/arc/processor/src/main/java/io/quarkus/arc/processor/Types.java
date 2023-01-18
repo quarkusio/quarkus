@@ -340,7 +340,8 @@ public final class Types {
                 throw new IllegalArgumentException("Unsupported return type");
             }
         }
-        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerMethod), beanDeployment.getBeanArchiveIndex());
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerMethod), beanDeployment.getBeanArchiveIndex(),
+                producerMethod);
     }
 
     static Set<Type> getProducerFieldTypeClosure(FieldInfo producerField, BeanDeployment beanDeployment) {
@@ -369,7 +370,8 @@ public final class Types {
                 throw new IllegalArgumentException("Unsupported return type");
             }
         }
-        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerField), beanDeployment.getBeanArchiveIndex());
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerField), beanDeployment.getBeanArchiveIndex(),
+                producerField);
     }
 
     static Set<Type> getClassBeanTypeClosure(ClassInfo classInfo, BeanDeployment beanDeployment) {
@@ -381,7 +383,8 @@ public final class Types {
             types = getTypeClosure(classInfo, null, buildResolvedMap(typeParameters, typeParameters,
                     Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()), beanDeployment, null);
         }
-        return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo), beanDeployment.getBeanArchiveIndex());
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo), beanDeployment.getBeanArchiveIndex(),
+                classInfo);
     }
 
     static Map<String, Type> resolveDecoratedTypeParams(ClassInfo decoratedTypeClass, DecoratorInfo decorator) {
@@ -577,7 +580,8 @@ public final class Types {
         return resolvedTypeVariables;
     }
 
-    static Set<Type> restrictBeanTypes(Set<Type> types, Collection<AnnotationInstance> annotations, IndexView index) {
+    static Set<Type> restrictBeanTypes(Set<Type> types, Collection<AnnotationInstance> annotations, IndexView index,
+            AnnotationTarget target) {
         AnnotationInstance typed = null;
         for (AnnotationInstance a : annotations) {
             if (a.name().equals(DotNames.TYPED)) {
@@ -603,8 +607,7 @@ public final class Types {
             if (DotNames.OBJECT.equals(next.name())) {
                 continue;
             }
-            if (typed != null && !typedClasses.contains(next.name())) {
-                // Remove types restricted by @Typed
+            if (typed != null && !typedClasses.remove(next.name())) {
                 it.remove();
                 continue;
             }
@@ -616,6 +619,12 @@ public final class Types {
                     it.remove();
                 }
             }
+        }
+        // if the set of types we gathered from @Typed annotation isn't now empty, there are some illegal types in it
+        if (!typedClasses.isEmpty()) {
+            throw new DefinitionException(
+                    "Cannot limit bean types to types outside of the transitive closure of bean types. Bean: " + target
+                            + " illegal bean types: " + typedClasses);
         }
         return types;
     }

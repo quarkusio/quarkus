@@ -15,7 +15,7 @@ Modern applications often need to run specific tasks periodically.
 There are two scheduler extensions in Quarkus.
 The `quarkus-scheduler` extension brings the API and a lightweight in-memory scheduler implementation.
 The `quarkus-quartz` extension implements the API from the `quarkus-scheduler` extension and contains a scheduler implementation based on the Quartz library.
-You will only need `quarkus-quartz` for more advanced scheduling use cases, such as persistent tasks, clustering and programmatic scheduling of jobs.
+You will only need `quarkus-quartz` for more advanced scheduling use cases, such as persistent tasks and clustering.
 
 NOTE: If you add the `quarkus-quartz` dependency to your project the lightweight scheduler implementation from the `quarkus-scheduler` extension is automatically disabled. 
 
@@ -334,34 +334,44 @@ class MyService {
 <6> Get Trigger metadata for a specific scheduled job by its identity.
 <7> You can configure the grace period for isOverdue() with quarkus.scheduler.overdue-grace-period
 
+[[programmatic_scheduling]]
 == Programmatic Scheduling
 
-If you need to schedule a job programmatically you'll need to add the xref:quartz.adoc[Quartz extension] and use the Quartz API directly.
+An injected `io.quarkus.scheduler.Scheduler` can be also used to schedule a job programmatically.
 
-.Programmatic Scheduling with Quartz API
+.Programmatic Scheduling
 [source,java]
 ----
-import org.quartz.Scheduler;
+import io.quarkus.scheduler.Scheduler;
 
+@ApplicationScoped
 class MyJobs {
 
-    void onStart(@Observes StartupEvent event, Scheduler quartz) throws SchedulerException {
-        JobDetail job = JobBuilder.newJob(SomeJob.class)
-                .withIdentity("myJob", "myGroup")
-                .build();
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .withIdentity("myTrigger", "myGroup")
-                .startNow()
-                .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                        .withIntervalInSeconds(1)
-                        .repeatForever())
-                .build();
-        quartz.scheduleJob(job, trigger);
+    @Inject
+    Scheduler scheduler;
+
+    void addMyJob() { <1>
+        scheduler.newJob("myJob")
+            .setCron("0/5 * * * * ?")
+            .setTask(executionContext -> { <2>
+                // do something important every 5 seconds
+            })
+            .schedule(); <3>
     }
+    
+    void removeMyJob() {
+        scheduler.unscheduleJob("myJob"); <4>
+    } 
 }
 ----
+<1> This is a programmatic alternative to a method annotated with `@Scheduled(identity = "myJob", cron = "0/5 * * * * ?")`.
+<2> The business logic is defined in a callback.
+<3> The job is scheduled once the `JobDefinition#schedule()` method is called.
+<4> A job that was added programmatically can be also removed.
 
-NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz.adoc#quartz-configuration-reference,Quartz Configuration Reference>>.
+NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling via `quarkus.scheduler.start-mode=forced`.
+
+NOTE: If the xref:quartz.adoc[Quartz extension] is present then the Quartz API can be also used to schedule a job programmatically.
 
 == Scheduled Methods and Testing
 

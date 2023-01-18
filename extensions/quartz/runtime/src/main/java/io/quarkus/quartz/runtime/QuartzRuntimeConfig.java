@@ -2,6 +2,7 @@ package io.quarkus.quartz.runtime;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -66,9 +67,12 @@ public class QuartzRuntimeConfig {
      * Additionally, setting it to "halted" will behave just like forced mode but the scheduler will not start
      * triggering jobs until an explicit start is called from the main scheduler.
      * This is useful to programmatically register listeners before scheduler starts performing some work.
+     *
+     * @deprecated Use {@code quarkus.scheduler.start-mode} instead.
      */
-    @ConfigItem(defaultValue = "normal")
-    public QuartzStartMode startMode;
+    @ConfigItem
+    @Deprecated
+    public Optional<QuartzStartMode> startMode;
 
     /**
      * The maximum amount of time Quarkus will wait for currently running jobs to finish.

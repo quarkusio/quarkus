@@ -5,13 +5,15 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -23,7 +25,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.Typed;
@@ -59,26 +60,26 @@ import com.cronutils.model.definition.CronDefinition;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.parser.CronParser;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.Subclass;
 import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.scheduler.Trigger;
+import io.quarkus.scheduler.common.runtime.AbstractJobDefinition;
+import io.quarkus.scheduler.common.runtime.DefaultInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
-import io.quarkus.scheduler.common.runtime.SkipConcurrentExecutionInvoker;
-import io.quarkus.scheduler.common.runtime.SkipPredicateInvoker;
-import io.quarkus.scheduler.common.runtime.StatusEmitterInvoker;
+import io.quarkus.scheduler.common.runtime.SyntheticScheduled;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig;
+import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig.StartMode;
+import io.quarkus.scheduler.runtime.SimpleScheduler;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
@@ -99,25 +100,37 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     private static final String INVOKER_KEY = "invoker";
 
     private final org.quartz.Scheduler scheduler;
-    private final boolean enabled;
     private final boolean startHalted;
     private final Duration shutdownWaitTime;
-    private final Map<String, QuartzTrigger> scheduledTasks = new HashMap<>();
+    private final boolean enabled;
+    private final CronType cronType;
+    private final CronParser cronParser;
+    private final Duration defaultOverdueGracePeriod;
+    private final Map<String, QuartzTrigger> scheduledTasks = new ConcurrentHashMap<>();
+    private final Event<SkippedExecution> skippedExecutionEvent;
+    private final Event<SuccessfulExecution> successExecutionEvent;
+    private final Event<FailedExecution> failedExecutionEvent;
+    private final QuartzRuntimeConfig runtimeConfig;
 
     public QuartzSchedulerImpl(SchedulerContext context, QuartzSupport quartzSupport,
             SchedulerRuntimeConfig schedulerRuntimeConfig,
-            Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successfulExecutionEvent,
+            Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successExecutionEvent,
             Event<FailedExecution> failedExecutionEvent, Instance<Job> jobs, Instance<UserTransaction> userTransaction,
             Vertx vertx) {
-        enabled = schedulerRuntimeConfig.enabled;
-        final Duration defaultOverdueGracePeriod = schedulerRuntimeConfig.overdueGracePeriod;
-        shutdownWaitTime = quartzSupport.getRuntimeConfig().shutdownWaitTime;
-        final QuartzRuntimeConfig runtimeConfig = quartzSupport.getRuntimeConfig();
+        this.shutdownWaitTime = quartzSupport.getRuntimeConfig().shutdownWaitTime;
+        this.skippedExecutionEvent = skippedExecutionEvent;
+        this.successExecutionEvent = successExecutionEvent;
+        this.failedExecutionEvent = failedExecutionEvent;
+        this.runtimeConfig = quartzSupport.getRuntimeConfig();
+        this.enabled = schedulerRuntimeConfig.enabled;
+        this.defaultOverdueGracePeriod = schedulerRuntimeConfig.overdueGracePeriod;
+
+        StartMode startMode = initStartMode(schedulerRuntimeConfig, runtimeConfig);
 
         boolean forceStart;
-        if (runtimeConfig.startMode != QuartzStartMode.NORMAL) {
-            startHalted = (runtimeConfig.startMode == QuartzStartMode.HALTED);
-            forceStart = startHalted || (runtimeConfig.startMode == QuartzStartMode.FORCED);
+        if (startMode != StartMode.NORMAL) {
+            startHalted = (startMode == StartMode.HALTED);
+            forceStart = startHalted || (startMode == StartMode.FORCED);
         } else {
             startHalted = false;
             forceStart = false;
@@ -140,6 +153,10 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                                     .collect(Collectors.joining(", ")));
         }
 
+        cronType = context.getCronType();
+        CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
+        cronParser = new CronParser(def);
+
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
             this.scheduler = null;
@@ -147,7 +164,6 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             LOGGER.info("No scheduled business methods found - Quartz scheduler will not be started");
             this.scheduler = null;
         } else {
-            // identity -> scheduled invoker instance
             UserTransaction transaction = null;
 
             try {
@@ -162,9 +178,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
 
                 // Set custom job factory
                 scheduler.setJobFactory(new InvokerJobFactory(scheduledTasks, jobs, vertx));
-                CronType cronType = context.getCronType();
-                CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
-                CronParser parser = new CronParser(def);
+
                 if (transaction != null) {
                     transaction.begin();
                 }
@@ -176,177 +190,58 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                         if (identity.isEmpty()) {
                             identity = ++nameSequence + "_" + method.getInvokerClassName();
                         }
-                        ScheduledInvoker invoker = new StatusEmitterInvoker(context.createInvoker(method.getInvokerClassName()),
-                                successfulExecutionEvent, failedExecutionEvent);
-                        if (scheduled.concurrentExecution() == ConcurrentExecution.SKIP) {
-                            invoker = new SkipConcurrentExecutionInvoker(invoker, skippedExecutionEvent);
-                        }
-                        if (!scheduled.skipExecutionIf().equals(Scheduled.Never.class)) {
-                            invoker = new SkipPredicateInvoker(invoker,
-                                    Arc.container().select(scheduled.skipExecutionIf(), Any.Literal.INSTANCE).get(),
-                                    skippedExecutionEvent);
-                        }
+                        ScheduledInvoker invoker = SimpleScheduler.initInvoker(
+                                context.createInvoker(method.getInvokerClassName()),
+                                skippedExecutionEvent, successExecutionEvent, failedExecutionEvent,
+                                scheduled.concurrentExecution(),
+                                SimpleScheduler.initSkipPredicate(scheduled.skipExecutionIf()));
 
-                        JobBuilder jobBuilder = JobBuilder.newJob(InvokerJob.class)
-                                // new JobKey(identity, "io.quarkus.scheduler.Scheduler")
-                                .withIdentity(identity, Scheduler.class.getName())
-                                // this info is redundant but keep it for backward compatibility
-                                .usingJobData(INVOKER_KEY, method.getInvokerClassName())
-                                .requestRecovery();
-                        ScheduleBuilder<?> scheduleBuilder;
-                        String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
-                        if (!cron.isEmpty()) {
-                            if (SchedulerUtils.isOff(cron)) {
-                                this.pause(identity);
-                                continue;
-                            }
-                            if (!CronType.QUARTZ.equals(cronType)) {
-                                // Migrate the expression
-                                Cron cronExpr = parser.parse(cron);
-                                switch (cronType) {
-                                    case UNIX:
-                                        cron = CronMapper.fromUnixToQuartz().map(cronExpr).asString();
-                                        break;
-                                    case CRON4J:
-                                        cron = CronMapper.fromCron4jToQuartz().map(cronExpr).asString();
-                                        break;
-                                    default:
-                                        break;
+                        JobDetail jobDetail = createJobDetail(identity, method.getInvokerClassName());
+                        Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, cronType, runtimeConfig,
+                                jobDetail);
+
+                        if (triggerBuilder.isPresent()) {
+                            org.quartz.Trigger trigger = triggerBuilder.get().build();
+                            org.quartz.Trigger oldTrigger = scheduler.getTrigger(trigger.getKey());
+                            if (oldTrigger != null) {
+                                trigger = triggerBuilder.get().startAt(oldTrigger.getNextFireTime()).build();
+                                scheduler.rescheduleJob(trigger.getKey(), trigger);
+                                LOGGER.debugf("Rescheduled business method %s with config %s", method.getMethodDescription(),
+                                        scheduled);
+                            } else if (!scheduler.checkExists(trigger.getKey())) {
+                                scheduler.scheduleJob(jobDetail, trigger);
+                                LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
+                                        scheduled);
+                            } else {
+                                // TODO remove this code in 3.0, it is only here to ensure migration after the removal of
+                                // "_trigger" suffix and the need to reschedule jobs due to configuration change between build
+                                // and deploy time
+                                oldTrigger = scheduler
+                                        .getTrigger(new TriggerKey(identity + "_trigger", Scheduler.class.getName()));
+                                if (oldTrigger != null) {
+                                    scheduler.deleteJob(jobDetail.getKey());
+                                    trigger = triggerBuilder.get().startAt(oldTrigger.getNextFireTime()).build();
+                                    scheduler.scheduleJob(jobDetail, trigger);
+                                    LOGGER.debugf(
+                                            "Rescheduled business method %s with config %s due to Trigger '%s' record being renamed after removal of '_trigger' suffix",
+                                            method.getMethodDescription(),
+                                            scheduled, oldTrigger.getKey().getName());
                                 }
                             }
-                            CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
-                            QuartzRuntimeConfig.QuartzMisfirePolicyConfig perJobConfig = runtimeConfig.misfirePolicyPerJobs
-                                    .getOrDefault(identity, cronTriggerConfig.misfirePolicyConfig);
-                            switch (perJobConfig.misfirePolicy) {
-                                case SMART_POLICY:
-                                    // this is the default, doing nothing
-                                    break;
-                                case IGNORE_MISFIRE_POLICY:
-                                    cronScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
-                                    break;
-                                case FIRE_NOW:
-                                    cronScheduleBuilder.withMisfireHandlingInstructionFireAndProceed();
-                                    break;
-                                case CRON_TRIGGER_DO_NOTHING:
-                                    cronScheduleBuilder.withMisfireHandlingInstructionDoNothing();
-                                    break;
-                                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_EXISTING_REPEAT_COUNT:
-                                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT:
-                                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT:
-                                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT:
-                                    throw new IllegalArgumentException("Cron job " + identity
-                                            + " configured with invalid misfire policy "
-                                            + perJobConfig.misfirePolicy.dashedName() +
-                                            "\nValid options are: "
-                                            + QuartzMisfirePolicy.validCronValues().stream()
-                                                    .map(QuartzMisfirePolicy::dashedName)
-                                                    .collect(Collectors.joining(", ")));
-                            }
-
-                            scheduleBuilder = cronScheduleBuilder;
-                        } else if (!scheduled.every().isEmpty()) {
-                            OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
-                            if (!everyMillis.isPresent()) {
-                                this.pause(identity);
-                                continue;
-                            }
-                            SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
-                                    .withIntervalInMilliseconds(everyMillis.getAsLong())
-                                    .repeatForever();
-                            QuartzRuntimeConfig.QuartzMisfirePolicyConfig perJobConfig = runtimeConfig.misfirePolicyPerJobs
-                                    .getOrDefault(identity, simpleTriggerConfig.misfirePolicyConfig);
-                            switch (perJobConfig.misfirePolicy) {
-                                case SMART_POLICY:
-                                    // this is the default, doing nothing
-                                    break;
-                                case IGNORE_MISFIRE_POLICY:
-                                    simpleScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
-                                    break;
-                                case FIRE_NOW:
-                                    simpleScheduleBuilder.withMisfireHandlingInstructionFireNow();
-                                    break;
-                                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_EXISTING_REPEAT_COUNT:
-                                    simpleScheduleBuilder.withMisfireHandlingInstructionNowWithExistingCount();
-                                    break;
-                                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT:
-                                    simpleScheduleBuilder.withMisfireHandlingInstructionNowWithRemainingCount();
-                                    break;
-                                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT:
-                                    simpleScheduleBuilder.withMisfireHandlingInstructionNextWithExistingCount();
-                                    break;
-                                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT:
-                                    simpleScheduleBuilder.withMisfireHandlingInstructionNextWithRemainingCount();
-                                    break;
-                                case CRON_TRIGGER_DO_NOTHING:
-                                    throw new IllegalArgumentException("Simple job " + identity
-                                            + " configured with invalid misfire policy "
-                                            + perJobConfig.misfirePolicy.dashedName() +
-                                            "\nValid options are: "
-                                            + QuartzMisfirePolicy.validSimpleValues().stream()
-                                                    .map(QuartzMisfirePolicy::dashedName)
-                                                    .collect(Collectors.joining(", ")));
-                            }
-                            scheduleBuilder = simpleScheduleBuilder;
-                        } else {
-                            throw new IllegalArgumentException("Invalid schedule configuration: " + scheduled);
-                        }
-
-                        JobDetail jobDetail = jobBuilder.build();
-                        TriggerBuilder<?> triggerBuilder = TriggerBuilder.newTrigger()
-                                .withIdentity(identity, Scheduler.class.getName())
-                                .forJob(jobDetail)
-                                .withSchedule(scheduleBuilder);
-
-                        Long millisToAdd = null;
-                        if (scheduled.delay() > 0) {
-                            millisToAdd = scheduled.delayUnit().toMillis(scheduled.delay());
-                        } else if (!scheduled.delayed().isEmpty()) {
-                            millisToAdd = SchedulerUtils.parseDelayedAsMillis(scheduled);
-                        }
-                        if (millisToAdd != null) {
-                            triggerBuilder.startAt(new Date(Instant.now()
-                                    .plusMillis(millisToAdd).toEpochMilli()));
-                        }
-
-                        org.quartz.Trigger trigger = triggerBuilder.build();
-                        org.quartz.Trigger oldTrigger = scheduler.getTrigger(trigger.getKey());
-                        if (oldTrigger != null) {
-                            trigger = triggerBuilder.startAt(oldTrigger.getNextFireTime()).build();
-                            scheduler.rescheduleJob(trigger.getKey(), trigger);
-                            LOGGER.debugf("Rescheduled business method %s with config %s", method.getMethodDescription(),
-                                    scheduled);
-                        } else if (!scheduler.checkExists(jobDetail.getKey())) {
-                            scheduler.scheduleJob(jobDetail, trigger);
-                            LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
-                                    scheduled);
-                        } else {
-                            // TODO remove this code in 3.0, it is only here to ensure migration after the removal of
-                            // "_trigger" suffix and the need to reschedule jobs due to configuration change between build
-                            // and deploy time
-                            oldTrigger = scheduler.getTrigger(new TriggerKey(identity + "_trigger", Scheduler.class.getName()));
-                            if (oldTrigger != null) {
-                                scheduler.deleteJob(jobDetail.getKey());
-                                trigger = triggerBuilder.startAt(oldTrigger.getNextFireTime()).build();
-                                scheduler.scheduleJob(jobDetail, trigger);
-                                LOGGER.debugf(
-                                        "Rescheduled business method %s with config %s due to Trigger '%s' record being renamed after removal of '_trigger' suffix",
-                                        method.getMethodDescription(),
-                                        scheduled, oldTrigger.getKey().getName());
-                            }
-                        }
-                        scheduledTasks.put(identity, new QuartzTrigger(trigger.getKey(),
-                                new Function<>() {
-                                    @Override
-                                    public org.quartz.Trigger apply(TriggerKey triggerKey) {
-                                        try {
-                                            return scheduler.getTrigger(triggerKey);
-                                        } catch (SchedulerException e) {
-                                            throw new IllegalStateException(e);
+                            scheduledTasks.put(identity, new QuartzTrigger(trigger.getKey(),
+                                    new Function<>() {
+                                        @Override
+                                        public org.quartz.Trigger apply(TriggerKey triggerKey) {
+                                            try {
+                                                return scheduler.getTrigger(triggerKey);
+                                            } catch (SchedulerException e) {
+                                                throw new IllegalStateException(e);
+                                            }
                                         }
-                                    }
-                                }, invoker,
-                                SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultOverdueGracePeriod),
-                                quartzSupport.getRuntimeConfig().runBlockingScheduledMethodOnQuartzThread));
+                                    }, invoker,
+                                    SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultOverdueGracePeriod),
+                                    quartzSupport.getRuntimeConfig().runBlockingScheduledMethodOnQuartzThread, false));
+                        }
                     }
                 }
                 if (transaction != null) {
@@ -494,6 +389,35 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         return scheduledTasks.get(SchedulerUtils.lookUpPropertyValue(identity));
     }
 
+    @Override
+    public JobDefinition newJob(String identity) {
+        Objects.requireNonNull(identity);
+        if (scheduledTasks.containsKey(identity)) {
+            throw new IllegalStateException("A job with this identity is already scheduled: " + identity);
+        }
+        return new QuartzJobDefinition(identity);
+    }
+
+    @Override
+    public Trigger unscheduleJob(String identity) {
+        Objects.requireNonNull(identity);
+        if (!identity.isEmpty()) {
+            String parsedIdentity = SchedulerUtils.lookUpPropertyValue(identity);
+            QuartzTrigger trigger = scheduledTasks.get(parsedIdentity);
+            if (trigger != null && trigger.isProgrammatic) {
+                if (scheduledTasks.remove(identity) != null) {
+                    try {
+                        scheduler.unscheduleJob(trigger.triggerKey);
+                    } catch (SchedulerException e) {
+                        throw new IllegalStateException("Unable to unschedule job with identity: " + identity);
+                    }
+                    return trigger;
+                }
+            }
+        }
+        return null;
+    }
+
     // Use Interceptor.Priority.PLATFORM_BEFORE to start the scheduler before regular StartupEvent observers
     void start(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE) StartupEvent startupEvent) {
         if (scheduler == null || startHalted) {
@@ -633,6 +557,254 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         });
     }
 
+    @SuppressWarnings("deprecation")
+    StartMode initStartMode(SchedulerRuntimeConfig schedulerRuntimeConfig, QuartzRuntimeConfig quartzRuntimeConfig) {
+        if (schedulerRuntimeConfig.startMode.isPresent()) {
+            StartMode startMode = schedulerRuntimeConfig.startMode.get();
+            if (quartzRuntimeConfig.startMode.isPresent()) {
+                QuartzStartMode quartzStartMode = quartzRuntimeConfig.startMode.get();
+                if ((startMode == StartMode.NORMAL
+                        && quartzStartMode != QuartzStartMode.NORMAL)
+                        || (startMode == StartMode.FORCED && quartzStartMode != QuartzStartMode.FORCED)
+                        || (startMode == StartMode.HALTED && quartzStartMode != QuartzStartMode.HALTED)) {
+                    throw new IllegalStateException(
+                            "Inconsistent scheduler startup mode configuration; quarkus.scheduler.startMode=" + startMode
+                                    + " does not match quarkus.quartz.startMode=" + quartzStartMode);
+                }
+            }
+            return startMode;
+        } else {
+            if (quartzRuntimeConfig.startMode.isPresent()) {
+                QuartzStartMode quartzStartMode = quartzRuntimeConfig.startMode.get();
+                switch (quartzStartMode) {
+                    case NORMAL:
+                        return StartMode.NORMAL;
+                    case FORCED:
+                        return StartMode.FORCED;
+                    case HALTED:
+                        return StartMode.HALTED;
+                    default:
+                        throw new IllegalStateException();
+                }
+            } else {
+                return StartMode.NORMAL;
+            }
+        }
+    }
+
+    private JobDetail createJobDetail(String identity, String invokerClassName) {
+        return JobBuilder.newJob(InvokerJob.class)
+                // new JobKey(identity, "io.quarkus.scheduler.Scheduler")
+                .withIdentity(identity, Scheduler.class.getName())
+                // this info is redundant but keep it for backward compatibility
+                .usingJobData(INVOKER_KEY, invokerClassName)
+                .requestRecovery().build();
+    }
+
+    private Optional<TriggerBuilder<?>> createTrigger(String identity, Scheduled scheduled, CronType cronType,
+            QuartzRuntimeConfig runtimeConfig, JobDetail jobDetail) {
+
+        ScheduleBuilder<?> scheduleBuilder;
+        String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
+        if (!cron.isEmpty()) {
+            if (SchedulerUtils.isOff(cron)) {
+                this.pause(identity);
+                return Optional.empty();
+            }
+            if (!CronType.QUARTZ.equals(cronType)) {
+                // Migrate the expression
+                Cron cronExpr = cronParser.parse(cron);
+                switch (cronType) {
+                    case UNIX:
+                        cron = CronMapper.fromUnixToQuartz().map(cronExpr).asString();
+                        break;
+                    case CRON4J:
+                        cron = CronMapper.fromCron4jToQuartz().map(cronExpr).asString();
+                        break;
+                    default:
+                        break;
+                }
+            }
+            CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
+            QuartzRuntimeConfig.QuartzMisfirePolicyConfig perJobConfig = runtimeConfig.misfirePolicyPerJobs
+                    .getOrDefault(identity, runtimeConfig.cronTriggerConfig.misfirePolicyConfig);
+            switch (perJobConfig.misfirePolicy) {
+                case SMART_POLICY:
+                    // this is the default, doing nothing
+                    break;
+                case IGNORE_MISFIRE_POLICY:
+                    cronScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
+                    break;
+                case FIRE_NOW:
+                    cronScheduleBuilder.withMisfireHandlingInstructionFireAndProceed();
+                    break;
+                case CRON_TRIGGER_DO_NOTHING:
+                    cronScheduleBuilder.withMisfireHandlingInstructionDoNothing();
+                    break;
+                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_EXISTING_REPEAT_COUNT:
+                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT:
+                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT:
+                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT:
+                    throw new IllegalArgumentException("Cron job " + identity
+                            + " configured with invalid misfire policy "
+                            + perJobConfig.misfirePolicy.dashedName() +
+                            "\nValid options are: "
+                            + QuartzMisfirePolicy.validCronValues().stream()
+                                    .map(QuartzMisfirePolicy::dashedName)
+                                    .collect(Collectors.joining(", ")));
+            }
+
+            scheduleBuilder = cronScheduleBuilder;
+        } else if (!scheduled.every().isEmpty()) {
+            OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
+            if (!everyMillis.isPresent()) {
+                this.pause(identity);
+                return Optional.empty();
+            }
+            SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
+                    .withIntervalInMilliseconds(everyMillis.getAsLong())
+                    .repeatForever();
+            QuartzRuntimeConfig.QuartzMisfirePolicyConfig perJobConfig = runtimeConfig.misfirePolicyPerJobs
+                    .getOrDefault(identity, runtimeConfig.simpleTriggerConfig.misfirePolicyConfig);
+            switch (perJobConfig.misfirePolicy) {
+                case SMART_POLICY:
+                    // this is the default, doing nothing
+                    break;
+                case IGNORE_MISFIRE_POLICY:
+                    simpleScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
+                    break;
+                case FIRE_NOW:
+                    simpleScheduleBuilder.withMisfireHandlingInstructionFireNow();
+                    break;
+                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_EXISTING_REPEAT_COUNT:
+                    simpleScheduleBuilder.withMisfireHandlingInstructionNowWithExistingCount();
+                    break;
+                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT:
+                    simpleScheduleBuilder.withMisfireHandlingInstructionNowWithRemainingCount();
+                    break;
+                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT:
+                    simpleScheduleBuilder.withMisfireHandlingInstructionNextWithExistingCount();
+                    break;
+                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT:
+                    simpleScheduleBuilder.withMisfireHandlingInstructionNextWithRemainingCount();
+                    break;
+                case CRON_TRIGGER_DO_NOTHING:
+                    throw new IllegalArgumentException("Simple job " + identity
+                            + " configured with invalid misfire policy "
+                            + perJobConfig.misfirePolicy.dashedName() +
+                            "\nValid options are: "
+                            + QuartzMisfirePolicy.validSimpleValues().stream()
+                                    .map(QuartzMisfirePolicy::dashedName)
+                                    .collect(Collectors.joining(", ")));
+            }
+            scheduleBuilder = simpleScheduleBuilder;
+        } else {
+            throw new IllegalArgumentException("Invalid schedule configuration: " + scheduled);
+        }
+
+        TriggerBuilder<?> triggerBuilder = TriggerBuilder.newTrigger()
+                .withIdentity(identity, Scheduler.class.getName())
+                .forJob(jobDetail)
+                .withSchedule(scheduleBuilder);
+
+        Long millisToAdd = null;
+        if (scheduled.delay() > 0) {
+            millisToAdd = scheduled.delayUnit().toMillis(scheduled.delay());
+        } else if (!scheduled.delayed().isEmpty()) {
+            millisToAdd = SchedulerUtils.parseDelayedAsMillis(scheduled);
+        }
+        if (millisToAdd != null) {
+            triggerBuilder.startAt(new Date(Instant.now()
+                    .plusMillis(millisToAdd).toEpochMilli()));
+        }
+        return Optional.of(triggerBuilder);
+    }
+
+    class QuartzJobDefinition extends AbstractJobDefinition {
+
+        QuartzJobDefinition(String id) {
+            super(id);
+        }
+
+        @Override
+        public Trigger schedule() {
+            checkScheduled();
+            if (task == null && asyncTask == null) {
+                throw new IllegalStateException("Either sync or async task must be set");
+            }
+            scheduled = true;
+            ScheduledInvoker invoker;
+            if (task != null) {
+                // Use the default invoker to make sure the CDI request context is activated
+                invoker = new DefaultInvoker() {
+                    @Override
+                    public CompletionStage<Void> invokeBean(ScheduledExecution execution) {
+                        try {
+                            task.accept(execution);
+                            return CompletableFuture.completedStage(null);
+                        } catch (Exception e) {
+                            return CompletableFuture.failedStage(e);
+                        }
+                    }
+                };
+            } else {
+                invoker = new DefaultInvoker() {
+                    @Override
+                    public CompletionStage<Void> invokeBean(ScheduledExecution execution) {
+                        try {
+                            return asyncTask.apply(execution).subscribeAsCompletionStage();
+                        } catch (Exception e) {
+                            return CompletableFuture.failedStage(e);
+                        }
+                    }
+
+                    @Override
+                    public boolean isBlocking() {
+                        return false;
+                    }
+
+                };
+            }
+            Scheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
+                    overdueGracePeriod,
+                    concurrentExecution, skipPredicate);
+
+            JobDetail jobDetail = createJobDetail(identity, QuartzSchedulerImpl.class.getName());
+            Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, cronType, runtimeConfig, jobDetail);
+
+            if (triggerBuilder.isPresent()) {
+                org.quartz.Trigger trigger = triggerBuilder.get().build();
+                QuartzTrigger existing = scheduledTasks.putIfAbsent(identity, new QuartzTrigger(trigger.getKey(),
+                        new Function<>() {
+                            @Override
+                            public org.quartz.Trigger apply(TriggerKey triggerKey) {
+                                try {
+                                    return scheduler.getTrigger(triggerKey);
+                                } catch (SchedulerException e) {
+                                    throw new IllegalStateException(e);
+                                }
+                            }
+                        }, invoker,
+                        SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultOverdueGracePeriod),
+                        runtimeConfig.runBlockingScheduledMethodOnQuartzThread, true));
+
+                if (existing != null) {
+                    throw new IllegalStateException("A job with this identity is already scheduled: " + identity);
+                }
+
+                invoker = SimpleScheduler.initInvoker(invoker, skippedExecutionEvent, successExecutionEvent,
+                        failedExecutionEvent, concurrentExecution, skipPredicate);
+                try {
+                    scheduler.scheduleJob(jobDetail, trigger);
+                } catch (SchedulerException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+            return null;
+        }
+
+    }
+
     /**
      * Although this class is not part of the public API it must not be renamed in order to preserve backward compatibility. The
      * name of this class can be stored in a Quartz table in the database. See https://github.com/quarkusio/quarkus/issues/29177
@@ -702,16 +874,19 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         final Function<TriggerKey, org.quartz.Trigger> triggerFunction;
         final ScheduledInvoker invoker;
         final Duration gracePeriod;
+        final boolean isProgrammatic;
 
         final boolean runBlockingMethodOnQuartzThread;
 
         QuartzTrigger(org.quartz.TriggerKey triggerKey, Function<TriggerKey, org.quartz.Trigger> triggerFunction,
-                ScheduledInvoker invoker, Duration gracePeriod, boolean runBlockingMethodOnQuartzThread) {
+                ScheduledInvoker invoker, Duration gracePeriod, boolean runBlockingMethodOnQuartzThread,
+                boolean isProgrammatic) {
             this.triggerKey = triggerKey;
             this.triggerFunction = triggerFunction;
             this.invoker = invoker;
             this.gracePeriod = gracePeriod;
             this.runBlockingMethodOnQuartzThread = runBlockingMethodOnQuartzThread;
+            this.isProgrammatic = isProgrammatic;
         }
 
         @Override

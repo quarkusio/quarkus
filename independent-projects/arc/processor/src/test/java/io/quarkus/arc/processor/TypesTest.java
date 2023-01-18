@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,7 +28,7 @@ public class TypesTest {
     @Test
     public void testGetTypeClosure() throws IOException {
         IndexView index = Basics.index(Foo.class, Baz.class, Producer.class, Object.class, List.class, Collection.class,
-                Iterable.class, Set.class);
+                Iterable.class, Set.class, Eagle.class, Bird.class, Animal.class, AnimalHolder.class);
         DotName bazName = DotName.createSimple(Baz.class.getName());
         DotName fooName = DotName.createSimple(Foo.class.getName());
         DotName producerName = DotName.createSimple(Producer.class.getName());
@@ -78,6 +79,13 @@ public class TypesTest {
         assertThrows(DefinitionException.class,
                 () -> Types.getProducerFieldTypeClosure(producerClass.field(nestedWildCardProducersName), dummyDeployment));
 
+        // now assert following ones do NOT throw, the wildcard in the hierarchy is just ignored
+        final String wildcardInTypeHierarchy = "eagleProducer";
+        assertDoesNotThrow(
+                () -> Types.getProducerMethodTypeClosure(producerClass.method(wildcardInTypeHierarchy), dummyDeployment));
+        assertDoesNotThrow(
+                () -> Types.getProducerFieldTypeClosure(producerClass.field(wildcardInTypeHierarchy), dummyDeployment));
+
     }
 
     static class Foo<T> {
@@ -90,7 +98,7 @@ public class TypesTest {
 
     }
 
-    static class Producer {
+    static class Producer<T> {
 
         public List<? extends Number> produce() {
             return null;
@@ -103,5 +111,26 @@ public class TypesTest {
         List<? extends Number> produce;
 
         List<Set<? extends Number>> produceNested;
+
+        // following producer should NOT throw an exception because the return types doesn't contain wildcard
+        // but the hierarchy of the return type actually contains one
+        // taken from CDI TCK setup, see https://github.com/jakartaee/cdi-tck/blob/4.0.7/impl/src/main/java/org/jboss/cdi/tck/tests/definition/bean/types/illegal/BeanTypesWithIllegalTypeTest.java
+        public Eagle<T> eagleProducer() {
+            return new Eagle<>();
+        }
+
+        public Eagle<T> eagleProducer;
+    }
+
+    static class Eagle<T> extends Bird<T> {
+    }
+
+    static class Bird<T> extends AnimalHolder<Animal<? extends T>> {
+    }
+
+    static class Animal<T> {
+    }
+
+    static class AnimalHolder<T extends Animal> {
     }
 }

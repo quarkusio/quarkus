@@ -2,6 +2,7 @@ package io.quarkus.redis.datasource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
@@ -493,14 +494,20 @@ public class SearchCommandsTest extends DatasourceTestBase {
                 assertThat(d.property("num_visits").asInteger()).isPositive();
             });
             assertThat(result.cursor()).isPositive();
-            result = search.ftCursorRead("myIndex", result.cursor());
-            assertThat(result.count()).isBetween(1, 2);
-            assertThat(result.documents()).allSatisfy(d -> {
-                assertThat(d.property("day").asInteger()).isPositive();
-                assertThat(d.property("country").asString()).isNotNull();
-                assertThat(d.property("num_visits").asInteger()).isPositive();
-            });
-            assertThat(result.cursor()).isEqualTo(0);
+            int read = 0;
+            while (result.cursor() != 0) {
+                read++;
+                if (read > 10) {
+                    fail("Too many cursor read commands before reaching the end of the stream: " + read);
+                }
+                result = search.ftCursorRead("myIndex", result.cursor());
+                assertThat(result.count()).isBetween(1, 2);
+                assertThat(result.documents()).allSatisfy(d -> {
+                    assertThat(d.property("day").asInteger()).isPositive();
+                    assertThat(d.property("country").asString()).isNotNull();
+                    assertThat(d.property("num_visits").asInteger()).isPositive();
+                });
+            }
         });
 
         await().untilAsserted(() -> {

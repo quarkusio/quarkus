@@ -69,7 +69,8 @@ public class WebAuthnRecorder {
                 WebAuthnRunTimeConfig config = WebAuthnRecorder.this.config.getValue();
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, config.cookieName,
                         config.sessionTimeout.toMillis(),
-                        config.newCookieInterval.toMillis(), false);
+                        config.newCookieInterval.toMillis(), false, config.cookieSameSite.name(),
+                        config.cookiePath.orElse(null));
                 String loginPage = config.loginPage.startsWith("/") ? config.loginPage : "/" + config.loginPage;
                 return new WebAuthnAuthenticationMechanism(loginManager, loginPage);
             }

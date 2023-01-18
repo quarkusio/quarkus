@@ -22,6 +22,15 @@ import io.vertx.ext.auth.webauthn.UserVerification;
 public class WebAuthnRunTimeConfig {
 
     /**
+     * SameSite attribute values for the session cookie.
+     */
+    public enum CookieSameSite {
+        STRICT,
+        LAX,
+        NONE
+    }
+
+    /**
      * The origin of the application. The origin is basically protocol, host and port.
      *
      * If you are calling WebAuthn API while your application is located at {@code https://example.com/login},
@@ -222,4 +231,16 @@ public class WebAuthnRunTimeConfig {
      */
     @ConfigItem(defaultValue = "quarkus-credential")
     public String cookieName;
+
+    /**
+     * SameSite attribute for the session cookie.
+     */
+    @ConfigItem(defaultValue = "strict")
+    public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
+
+    /**
+     * The cookie path for the session cookies.
+     */
+    @ConfigItem(defaultValue = "/")
+    public Optional<String> cookiePath = Optional.of("/");
 }

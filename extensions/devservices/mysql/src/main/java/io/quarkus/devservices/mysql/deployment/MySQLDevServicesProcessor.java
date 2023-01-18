@@ -60,6 +60,7 @@ public class MySQLDevServicesProcessor {
 
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
 
                 container.start();
 

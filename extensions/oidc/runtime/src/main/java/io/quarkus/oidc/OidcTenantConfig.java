@@ -433,6 +433,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
      */
     @ConfigGroup
     public static class Authentication {
+
+        /**
+         * SameSite attribute values for the session, state and post logout cookies.
+         */
+        public enum CookieSameSite {
+            STRICT,
+            LAX,
+            NONE
+        }
+
         /**
          * Relative path for calculating a "redirect_uri" query parameter.
          * It has to start from a forward slash and will be appended to the request URI's host and port.
@@ -534,6 +544,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem
         public Optional<String> cookieDomain = Optional.empty();
+
+        /**
+         * SameSite attribute for the session, state and post logout cookies.
+         */
+        @ConfigItem(defaultValue = "strict")
+        public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
 
         /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.
@@ -700,6 +716,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.cookieSuffix = Optional.of(cookieSuffix);
         }
 
+        public CookieSameSite getCookieSameSite() {
+            return cookieSameSite;
+        }
+
+        public void setCookieSameSite(CookieSameSite cookieSameSite) {
+            this.cookieSameSite = cookieSameSite;
+        }
     }
 
     @ConfigGroup

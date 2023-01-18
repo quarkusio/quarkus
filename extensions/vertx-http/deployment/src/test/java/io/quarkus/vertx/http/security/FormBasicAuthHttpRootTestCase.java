@@ -20,20 +20,21 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
 
-public class CombinedFormBasicAuthTestCase {
+public class FormBasicAuthHttpRootTestCase {
 
     private static final String APP_PROPS = "" +
-            "quarkus.http.auth.basic=true\n" +
+            "quarkus.http.root-path=/root\n" +
             "quarkus.http.auth.form.enabled=true\n" +
             "quarkus.http.auth.form.login-page=login\n" +
+            "quarkus.http.auth.form.cookie-path=/root\n" +
             "quarkus.http.auth.form.error-page=error\n" +
             "quarkus.http.auth.form.landing-page=landing\n" +
             "quarkus.http.auth.policy.r1.roles-allowed=admin\n" +
-            "quarkus.http.auth.permission.roles1.paths=/admin\n" +
+            "quarkus.http.auth.permission.roles1.paths=/root/admin\n" +
             "quarkus.http.auth.permission.roles1.policy=r1\n";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
@@ -63,7 +64,7 @@ public class CombinedFormBasicAuthTestCase {
                 .statusCode(302)
                 .header("location", containsString("/login"))
                 .cookie("quarkus-redirect-location",
-                        detailedCookie().sameSite("Strict").path(equalTo("/")).value(containsString("/admin")));
+                        detailedCookie().value(containsString("/root/admin")).path(equalTo("/root")));
 
         RestAssured
                 .given()
@@ -76,8 +77,9 @@ public class CombinedFormBasicAuthTestCase {
                 .then()
                 .assertThat()
                 .statusCode(302)
-                .header("location", containsString("/admin"))
-                .cookie("quarkus-credential", detailedCookie().sameSite("Strict").path(equalTo("/")));
+                .header("location", containsString("/root/admin"))
+                .cookie("quarkus-credential",
+                        detailedCookie().value(notNullValue()).path(equalTo("/root")));
 
         RestAssured
                 .given()
@@ -88,75 +90,7 @@ public class CombinedFormBasicAuthTestCase {
                 .then()
                 .assertThat()
                 .statusCode(200)
-                .body(equalTo("admin:/admin"));
-
-    }
-
-    @Test
-    public void testFormBasedAuthSuccessLandingPage() {
-        CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .formParam("j_username", "admin")
-                .formParam("j_password", "admin")
-                .post("/j_security_check")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/landing"))
-                .cookie("quarkus-credential", notNullValue());
-
-    }
-
-    @Test
-    public void testFormAuthFailure() {
-        CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .formParam("j_username", "admin")
-                .formParam("j_password", "wrongpassword")
-                .post("/j_security_check")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/error"));
-
-    }
-
-    @Test
-    public void testBasicBasedAuthSuccess() {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .redirects().follow(false)
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("admin:/admin"));
-
-    }
-
-    @Test
-    public void testBasicAuthFailure() {
-        CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "wrongpassword")
-                .filter(cookies)
-                .redirects().follow(false)
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(401)
-                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+                .body(equalTo("admin:/root/admin"));
 
     }
 }

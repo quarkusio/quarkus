@@ -36,6 +36,7 @@ import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.http.impl.ServerCookie;
@@ -486,6 +487,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (auth.cookieDomain.isPresent()) {
             cookie.setDomain(auth.getCookieDomain().get());
         }
+        cookie.setSameSite(CookieSameSite.valueOf(auth.cookieSameSite.name()));
         context.response().addCookie(cookie);
         return cookie;
     }

@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -11,7 +12,16 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class FormAuthConfig {
     /**
-     * If form authentication is enabled
+     * SameSite attribute values for the session and location cookies.
+     */
+    public enum CookieSameSite {
+        STRICT,
+        LAX,
+        NONE
+    }
+
+    /**
+     * If form authentication is enabled.
      */
     @ConfigItem
     public boolean enabled;
@@ -97,4 +107,16 @@ public class FormAuthConfig {
      */
     @ConfigItem(defaultValue = "quarkus-credential")
     public String cookieName;
+
+    /**
+     * The cookie path for the session and location cookies.
+     */
+    @ConfigItem(defaultValue = "/")
+    public Optional<String> cookiePath = Optional.of("/");
+
+    /**
+     * SameSite attribute for the session and location cookies.
+     */
+    @ConfigItem(defaultValue = "strict")
+    public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
 }

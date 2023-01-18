@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.security;
 
+import static io.restassured.matcher.RestAssuredMatchers.detailedCookie;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -57,6 +58,7 @@ public class FormAuthCookiesTestCase {
             "quarkus.http.auth.form.timeout=PT2S\n" +
             "quarkus.http.auth.form.new-cookie-interval=PT1S\n" +
             "quarkus.http.auth.form.cookie-name=laitnederc-sukrauq\n" +
+            "quarkus.http.auth.form.cookie-same-site=lax\n" +
             "quarkus.http.auth.session.encryption-key=CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT\n";
 
     @RegisterExtension
@@ -90,7 +92,7 @@ public class FormAuthCookiesTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/login"))
-                .cookie("quarkus-redirect-location", containsString("/admin%E2%9D%A4"));
+                .cookie("quarkus-redirect-location", detailedCookie().value(containsString("/admin%E2%9D%A4")).sameSite("Lax"));
 
         RestAssured
                 .given()
@@ -104,7 +106,8 @@ public class FormAuthCookiesTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/admin%E2%9D%A4"))
-                .cookie("laitnederc-sukrauq", notNullValue());
+                .cookie("laitnederc-sukrauq", detailedCookie().value(notNullValue())
+                        .sameSite("Lax"));
 
         RestAssured
                 .given()

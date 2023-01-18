@@ -54,12 +54,44 @@ final class Types {
         }
     }
 
+    /**
+     * Determines whether the given type is an actual type. A type is considered actual if it is a raw type,
+     * a parameterized type or an array type.
+     *
+     * @param type the given type
+     * @return true if and only if the given type is an actual type
+     */
     static boolean isActualType(Type type) {
         return (type instanceof Class<?>) || (type instanceof ParameterizedType) || (type instanceof GenericArrayType);
     }
 
+    /**
+     * Determines whether the given type is an array type.
+     *
+     * @param type the given type
+     * @return true if the given type is a subclass of java.lang.Class or implements GenericArrayType
+     */
     static boolean isArray(Type type) {
         return (type instanceof GenericArrayType) || (type instanceof Class<?> && ((Class<?>) type).isArray());
+    }
+
+    /**
+     * Determines the component type for a given array type.
+     *
+     * @param type the given array type
+     * @return the component type of a given array type
+     */
+    public static Type getArrayComponentType(Type type) {
+        if (type instanceof GenericArrayType) {
+            return GenericArrayType.class.cast(type).getGenericComponentType();
+        }
+        if (type instanceof Class<?>) {
+            Class<?> clazz = (Class<?>) type;
+            if (clazz.isArray()) {
+                return clazz.getComponentType();
+            }
+        }
+        throw new IllegalArgumentException("Not an array type " + type);
     }
 
     /**

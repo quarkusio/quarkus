@@ -113,7 +113,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.20.1.Final</wildfly-elytron.version>
         <jboss-threads.version>3.4.3.Final</jboss-threads.version>
-        <vertx.version>4.3.6</vertx.version>
+        <vertx.version>4.3.7</vertx.version>
 
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
@@ -122,7 +122,7 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.1.214</h2.version>
         <postgresql-jdbc.version>42.5.1</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.1.0</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.1.1</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>11.2.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -134,7 +134,7 @@
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
-        <infinispan.version>14.0.4.Final</infinispan.version>
+        <infinispan.version>14.0.5.Final</infinispan.version>
         <infinispan.protostream.version>4.5.1.Final</infinispan.protostream.version>
         <caffeine.version>3.1.1</caffeine.version>
         <netty.version>4.1.86.Final</netty.version>
@@ -165,7 +165,7 @@
         <liquibase.version>4.18.0</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>4.8.1</mongo-client.version>
+        <mongo-client.version>4.8.2</mongo-client.version>
         <mongo-crypt.version>1.6.1</mongo-crypt.version>
         <proton-j.version>0.34.0</proton-j.version>
         <javaparser.version>3.24.2</javaparser.version>

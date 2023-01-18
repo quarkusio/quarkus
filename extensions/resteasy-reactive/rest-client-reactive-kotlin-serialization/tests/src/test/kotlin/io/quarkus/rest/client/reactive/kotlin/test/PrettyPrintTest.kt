@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonNames
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import javax.inject.Inject
+import jakarta.inject.Inject
 
 @OptIn(ExperimentalSerializationApi::class)
 class PrettyPrintTest {

@@ -11,7 +11,7 @@ import static org.hamcrest.Matchers.is;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.ws.rs.core.Link;
+import jakarta.ws.rs.core.Link;
 
 import org.junit.jupiter.api.Test;
 

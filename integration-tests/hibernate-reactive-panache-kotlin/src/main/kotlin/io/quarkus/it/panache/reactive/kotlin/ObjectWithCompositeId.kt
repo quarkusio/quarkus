@@ -2,10 +2,10 @@ package io.quarkus.it.panache.reactive.kotlin
 
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntityBase
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.IdClass
 import java.io.Serializable
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.IdClass
 
 @Entity
 @IdClass(ObjectWithCompositeId.ObjectKey::class)

@@ -9,9 +9,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.Context;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import org.jboss.jandex.DotName;
 
@@ -181,11 +181,11 @@ class Methods {
     static final MethodDescriptor OPTIONAL_OF_NULLABLE = MethodDescriptor
             .ofMethod(Optional.class, "ofNullable", Optional.class, Object.class);
 
-    static final String VALIDATION_VALIDATOR = "javax.validation.Validator";
-    static final String VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION = "javax.validation.ConstraintViolationException";
+    static final String VALIDATION_VALIDATOR = "jakarta.validation.Validator";
+    static final String VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION = "jakarta.validation.ConstraintViolationException";
 
     static final MethodDescriptor VALIDATION_GET_VALIDATOR = MethodDescriptor.ofMethod(ValidationSupport.class, "getValidator",
-            "javax.validation.Validator", ArcContainer.class);
+            "jakarta.validation.Validator", ArcContainer.class);
     static final MethodDescriptor VALIDATION_MAP_VIOLATIONS_TO_JSON = MethodDescriptor
             .ofMethod(ValidationSupport.class, "mapViolationsToJson", String.class, Set.class,
                     HttpServerResponse.class);
@@ -195,7 +195,7 @@ class Methods {
                     RoutingContext.class.getName(), Boolean.TYPE.getName());
 
     static final MethodDescriptor VALIDATOR_VALIDATE = MethodDescriptor
-            .ofMethod("javax.validation.Validator", "validate", "java.util.Set",
+            .ofMethod("jakarta.validation.Validator", "validate", "java.util.Set",
                     Object.class, Class[].class);
     static final MethodDescriptor SET_IS_EMPTY = MethodDescriptor.ofMethod(Set.class, "isEmpty", Boolean.TYPE);
 

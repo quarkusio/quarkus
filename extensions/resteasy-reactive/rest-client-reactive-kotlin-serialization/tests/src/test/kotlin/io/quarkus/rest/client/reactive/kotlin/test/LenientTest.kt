@@ -8,7 +8,7 @@ import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import javax.inject.Inject
+import jakarta.inject.Inject
 
 class LenientTest {
     companion object {

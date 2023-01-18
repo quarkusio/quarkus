@@ -3,9 +3,9 @@ package io.quarkus.arc.impl;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import org.jboss.logging.Logger;
 

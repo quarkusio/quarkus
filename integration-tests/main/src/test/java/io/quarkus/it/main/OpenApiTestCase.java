@@ -8,9 +8,9 @@ import java.net.URLConnection;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

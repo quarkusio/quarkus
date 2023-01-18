@@ -1,6 +1,6 @@
 package io.quarkus.grpc.examples.hello;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.grpc.CallOptions;
 import io.grpc.Channel;

@@ -1,9 +1,9 @@
 package io.quarkus.it.panache
 
 import io.quarkus.it.panache.kotlin.PersonRepository
-import javax.annotation.Priority
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Alternative
+import jakarta.annotation.Priority
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Alternative
 
 /**
  * An alternate implementation of [PersonRepository] to demonstrate that Repository entity type can be retrieved

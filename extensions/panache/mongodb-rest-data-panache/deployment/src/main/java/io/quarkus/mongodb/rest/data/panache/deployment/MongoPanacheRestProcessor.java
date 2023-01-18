@@ -6,7 +6,7 @@ import static io.quarkus.rest.data.panache.deployment.utils.EntityTypeUtils.getE
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import javax.ws.rs.Priorities;
+import jakarta.ws.rs.Priorities;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

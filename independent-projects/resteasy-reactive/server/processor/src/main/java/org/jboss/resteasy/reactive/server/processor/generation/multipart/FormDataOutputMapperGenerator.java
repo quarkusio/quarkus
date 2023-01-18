@@ -6,7 +6,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;

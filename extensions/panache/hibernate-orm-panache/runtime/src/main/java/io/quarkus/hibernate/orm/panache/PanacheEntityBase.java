@@ -7,10 +7,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.json.bind.annotation.JsonbTransient;
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
-import javax.persistence.Transient;
+import jakarta.json.bind.annotation.JsonbTransient;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

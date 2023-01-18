@@ -7,7 +7,7 @@ import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_
 import java.util.Collections;
 import java.util.List;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;

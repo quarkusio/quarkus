@@ -1,6 +1,6 @@
 package io.quarkus.it.context;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 @RequestScoped
 public class RequestBean {

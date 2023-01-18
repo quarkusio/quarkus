@@ -5,10 +5,10 @@ import static io.quarkus.agroal.test.MultipleDataSourcesTestUtil.testDataSource;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
-import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;

@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.transform.injectionPoint;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 import io.quarkus.arc.Unremovable;
 

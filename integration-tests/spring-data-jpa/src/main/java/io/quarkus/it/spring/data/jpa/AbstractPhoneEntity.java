@@ -1,6 +1,6 @@
 package io.quarkus.it.spring.data.jpa;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 
 // demonstrates that @MappedSuperclass detection works for more than one level and for parameterized types
 @MappedSuperclass

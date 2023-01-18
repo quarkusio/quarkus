@@ -3,11 +3,11 @@ package io.quarkus.it.keycloak;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.json.JsonString;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.json.JsonString;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 

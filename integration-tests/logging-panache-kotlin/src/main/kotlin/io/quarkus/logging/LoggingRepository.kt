@@ -1,7 +1,7 @@
 package io.quarkus.logging
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepository
-import javax.enterprise.context.ApplicationScoped
+import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 open class LoggingRepository : PanacheRepository<LoggingEntity> {

@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.common.util;
 
 import java.util.List;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 /**
  * MultivaluedMap with extra operations

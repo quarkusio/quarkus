@@ -15,7 +15,7 @@ public class TestInstantiator {
         try {
             Class<?> actualTestClass = Class.forName(testClass.getName(), true,
                     Thread.currentThread().getContextClassLoader());
-            Class<?> cdi = Thread.currentThread().getContextClassLoader().loadClass("javax.enterprise.inject.spi.CDI");
+            Class<?> cdi = Thread.currentThread().getContextClassLoader().loadClass("jakarta.enterprise.inject.spi.CDI");
             Object instance = cdi.getMethod("current").invoke(null);
             Method selectMethod = cdi.getMethod("select", Class.class, Annotation[].class);
             Object cdiInstance = selectMethod.invoke(instance, actualTestClass, new Annotation[0]);

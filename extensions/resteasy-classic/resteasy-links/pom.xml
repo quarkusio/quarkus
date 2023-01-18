@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-resteasy-parent-aggregator</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
 
     <artifactId>quarkus-resteasy-links-parent</artifactId>

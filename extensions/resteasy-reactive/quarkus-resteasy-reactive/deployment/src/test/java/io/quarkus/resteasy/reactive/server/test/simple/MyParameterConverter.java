@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
-import javax.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.ParamConverter;
 
 public class MyParameterConverter implements ParamConverter<MyParameter> {
 

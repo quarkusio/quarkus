@@ -7,14 +7,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.CookieParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.CookieParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.ext.ParamConverterProvider;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -161,7 +161,7 @@ public class ParamConverterProviderTest {
     public static class ParamConverter implements ParamConverterProvider {
         @SuppressWarnings("unchecked")
         @Override
-        public <T> javax.ws.rs.ext.ParamConverter<T> getConverter(Class<T> rawType, Type genericType,
+        public <T> jakarta.ws.rs.ext.ParamConverter<T> getConverter(Class<T> rawType, Type genericType,
                 Annotation[] annotations) {
             if (genericType == null) {
                 fail("Generic Type cannot be null!");
@@ -172,7 +172,7 @@ public class ParamConverterProviderTest {
             }
 
             if (rawType == Param.class) {
-                return (javax.ws.rs.ext.ParamConverter<T>) new javax.ws.rs.ext.ParamConverter<Param>() {
+                return (jakarta.ws.rs.ext.ParamConverter<T>) new jakarta.ws.rs.ext.ParamConverter<Param>() {
                     @Override
                     public Param fromString(String value) {
                         return null;

@@ -3,7 +3,7 @@ package io.quarkus.flyway.test;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;

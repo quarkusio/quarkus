@@ -2,11 +2,11 @@ package io.quarkus.hibernate.validator.runtime.jaxrs;
 
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 
 /**
- * Wrapper around a {@link javax.validation.ConstraintViolationException},
+ * Wrapper around a {@link jakarta.validation.ConstraintViolationException},
  * used to mark a constraint violation as relative to a REST endpoint call.
  * <p>
  * Those violations are handled differently than violations from other, internal components:

@@ -6,8 +6,8 @@ import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
+import jakarta.persistence.LockModeType
 import org.hibernate.reactive.mutiny.Mutiny
-import javax.persistence.LockModeType
 
 class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
     private var delegate: CommonPanacheQueryImpl<Entity>

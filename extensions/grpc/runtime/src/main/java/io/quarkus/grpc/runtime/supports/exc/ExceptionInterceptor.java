@@ -1,8 +1,8 @@
 package io.quarkus.grpc.runtime.supports.exc;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.Prioritized;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.Prioritized;
+import jakarta.inject.Inject;
 
 import io.grpc.Metadata;
 import io.grpc.ServerCall;

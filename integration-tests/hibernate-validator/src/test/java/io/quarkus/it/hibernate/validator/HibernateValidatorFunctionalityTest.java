@@ -8,8 +8,8 @@ import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 
-import javax.validation.ConstraintViolationException;
-import javax.ws.rs.core.Response;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.AfterEach;

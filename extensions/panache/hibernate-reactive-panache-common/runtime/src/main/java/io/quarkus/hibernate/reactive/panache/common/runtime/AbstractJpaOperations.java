@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import javax.enterprise.inject.spi.Bean;
-import javax.persistence.LockModeType;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.persistence.LockModeType;
 
 import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.reactive.mutiny.Mutiny;

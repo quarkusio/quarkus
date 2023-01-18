@@ -1,9 +1,9 @@
 package io.quarkus.it.jpa.attributeconverter;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
 @Converter
 @ApplicationScoped

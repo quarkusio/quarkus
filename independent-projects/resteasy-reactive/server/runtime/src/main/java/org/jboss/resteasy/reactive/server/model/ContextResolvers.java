@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.ContextResolver;
 
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;

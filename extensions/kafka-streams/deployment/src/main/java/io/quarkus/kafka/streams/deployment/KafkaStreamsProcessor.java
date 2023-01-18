@@ -5,7 +5,7 @@ import static io.quarkus.kafka.streams.runtime.KafkaStreamsPropertiesUtil.buildK
 import java.io.IOException;
 import java.util.Properties;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
 import org.apache.kafka.streams.StreamsConfig;

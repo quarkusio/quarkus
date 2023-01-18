@@ -54,7 +54,7 @@ public final class Components {
      * Values in the map are never null.
      *
      * @return a map of fully-qualified class names of all custom qualifiers to the set of non-binding members
-     * @see javax.enterprise.util.Nonbinding
+     * @see jakarta.enterprise.util.Nonbinding
      */
     public Map<String, Set<String>> getQualifierNonbindingMembers() {
         return qualifierNonbindingMembers;

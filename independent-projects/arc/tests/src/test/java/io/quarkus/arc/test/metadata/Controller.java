@@ -1,8 +1,8 @@
 package io.quarkus.arc.test.metadata;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.spi.Bean;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.inject.Inject;
 
 @Dependent
 public class Controller {

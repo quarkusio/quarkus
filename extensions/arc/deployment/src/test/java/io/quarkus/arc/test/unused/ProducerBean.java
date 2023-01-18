@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.unused;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import io.quarkus.arc.Unremovable;
 

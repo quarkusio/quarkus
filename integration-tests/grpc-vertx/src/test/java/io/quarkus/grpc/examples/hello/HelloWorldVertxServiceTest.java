@@ -1,6 +1,6 @@
 package io.quarkus.grpc.examples.hello;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.core.Vertx;

@@ -1,9 +1,9 @@
 package org.acme
 
 {#if !input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-orm-panache-kotlin')}
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.Id
 
 /**
  * Example JPA entity.
@@ -34,7 +34,7 @@ class MyKotlinEntity {
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-orm-panache-kotlin')}
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
-import javax.persistence.Entity
+import jakarta.persistence.Entity
 
 /**
  * Example JPA entity defined as a Kotlin Panache Entity.

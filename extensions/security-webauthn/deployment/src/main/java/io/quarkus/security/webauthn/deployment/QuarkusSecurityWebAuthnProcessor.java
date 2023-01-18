@@ -2,7 +2,7 @@ package io.quarkus.security.webauthn.deployment;
 
 import java.util.function.BooleanSupplier;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;

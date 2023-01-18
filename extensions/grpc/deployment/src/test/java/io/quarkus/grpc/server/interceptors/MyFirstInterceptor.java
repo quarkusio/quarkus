@@ -2,8 +2,8 @@ package io.quarkus.grpc.server.interceptors;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.Prioritized;
 
 import io.grpc.Context;
 import io.grpc.Contexts;

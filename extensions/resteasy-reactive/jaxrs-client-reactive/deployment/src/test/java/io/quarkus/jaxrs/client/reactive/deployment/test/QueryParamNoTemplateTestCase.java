@@ -3,9 +3,9 @@ package io.quarkus.jaxrs.client.reactive.deployment.test;
 import java.net.URL;
 import java.util.stream.Collectors;
 
-import javax.enterprise.event.Observes;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import jakarta.enterprise.event.Observes;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
 
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.junit.jupiter.api.AfterEach;

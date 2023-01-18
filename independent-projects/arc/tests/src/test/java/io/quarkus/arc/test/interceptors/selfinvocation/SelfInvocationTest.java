@@ -2,8 +2,8 @@ package io.quarkus.arc.test.interceptors.selfinvocation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

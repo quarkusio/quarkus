@@ -1,6 +1,6 @@
 package io.quarkus.grpc.runtime.supports.exc;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.grpc.Metadata;
 import io.grpc.ServerCall;

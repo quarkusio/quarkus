@@ -5,9 +5,9 @@ import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.Compa
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.impl.GenerateBridge
+import jakarta.persistence.EntityManager
+import jakarta.persistence.LockModeType
 import java.util.stream.Stream
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
 
 /**
  * Defines methods to be used via the companion objects of entities.

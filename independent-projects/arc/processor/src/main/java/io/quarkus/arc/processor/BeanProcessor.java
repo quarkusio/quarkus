@@ -23,7 +23,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -687,7 +687,7 @@ public class BeanProcessor {
          * <li>does not have a name,</li>
          * <li>does not declare an observer,</li>
          * <li>does not declare any producer which is eligible for injection to any injection point,</li>
-         * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
+         * <li>is not directly eligible for injection into any {@link jakarta.enterprise.inject.Instance} injection point</li>
          * </ul>
          *
          * @param removeUnusedBeans

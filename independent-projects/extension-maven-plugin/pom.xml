@@ -9,7 +9,7 @@
     </parent>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-extension-maven-plugin</artifactId>
-    <version>999-SNAPSHOT</version>
+    <version>999-jakarta-SNAPSHOT</version>
     <name>Quarkus - Extension Maven plugin</name>
     <url>https://github.com/quarkusio/quarkus</url>
     <packaging>maven-plugin</packaging>
@@ -29,6 +29,10 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
+        <angus-activation.version>1.0.0</angus-activation.version>
+        <expressly.version>5.0.0</expressly.version>
+        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.source>11</maven.compiler.source>

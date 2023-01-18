@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.deployment;
 
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

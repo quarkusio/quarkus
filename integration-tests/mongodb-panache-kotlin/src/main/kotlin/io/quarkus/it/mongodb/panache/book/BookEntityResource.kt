@@ -2,21 +2,21 @@ package io.quarkus.it.mongodb.panache.book
 
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
+import jakarta.annotation.PostConstruct
+import jakarta.ws.rs.DELETE
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.NotFoundException
+import jakarta.ws.rs.PATCH
+import jakarta.ws.rs.POST
+import jakarta.ws.rs.PUT
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.PathParam
+import jakarta.ws.rs.QueryParam
+import jakarta.ws.rs.core.Response
 import org.bson.types.ObjectId
 import org.jboss.logging.Logger
 import java.net.URI
 import java.time.LocalDate
-import javax.annotation.PostConstruct
-import javax.ws.rs.DELETE
-import javax.ws.rs.GET
-import javax.ws.rs.NotFoundException
-import javax.ws.rs.PATCH
-import javax.ws.rs.POST
-import javax.ws.rs.PUT
-import javax.ws.rs.Path
-import javax.ws.rs.PathParam
-import javax.ws.rs.QueryParam
-import javax.ws.rs.core.Response
 
 @Path("/books/entity")
 class BookEntityResource {

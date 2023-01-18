@@ -1,6 +1,6 @@
 package io.quarkus.cache.runtime;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
 import io.quarkus.cache.CacheManager;
 import io.quarkus.runtime.StartupEvent;

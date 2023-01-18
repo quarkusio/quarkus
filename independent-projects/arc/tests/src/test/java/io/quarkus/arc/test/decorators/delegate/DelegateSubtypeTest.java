@@ -2,10 +2,10 @@ package io.quarkus.arc.test.decorators.delegate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.decorator.Decorator;
-import javax.decorator.Delegate;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.decorator.Decorator;
+import jakarta.decorator.Delegate;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

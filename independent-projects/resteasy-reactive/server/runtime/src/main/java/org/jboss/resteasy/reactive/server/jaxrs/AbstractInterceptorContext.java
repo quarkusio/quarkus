@@ -5,8 +5,8 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Objects;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.InterceptorContext;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.InterceptorContext;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;

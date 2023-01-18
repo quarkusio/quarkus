@@ -3,8 +3,8 @@ package io.quarkus.hibernate.orm.envers.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import javax.inject.Inject;
-import javax.persistence.metamodel.Bindable;
+import jakarta.inject.Inject;
+import jakarta.persistence.metamodel.Bindable;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;

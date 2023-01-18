@@ -16,14 +16,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.AmbiguousResolutionException;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;

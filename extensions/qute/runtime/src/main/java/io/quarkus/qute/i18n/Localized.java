@@ -10,8 +10,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Locale;
 
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Qualifier;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Qualifier;
 
 /**
  * Marks a localized message bundle interface.

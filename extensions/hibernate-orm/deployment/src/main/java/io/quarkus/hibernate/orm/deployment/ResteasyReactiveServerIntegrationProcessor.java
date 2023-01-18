@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import javax.persistence.PersistenceException;
+import jakarta.persistence.PersistenceException;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;

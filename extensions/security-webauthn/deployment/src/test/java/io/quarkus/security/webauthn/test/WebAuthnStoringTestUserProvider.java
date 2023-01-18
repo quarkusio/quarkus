@@ -1,6 +1,6 @@
 package io.quarkus.security.webauthn.test;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;
 

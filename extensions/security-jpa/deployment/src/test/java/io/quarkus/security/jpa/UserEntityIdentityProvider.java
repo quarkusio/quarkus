@@ -1,7 +1,7 @@
 package io.quarkus.security.jpa;
 
-import javax.inject.Singleton;
-import javax.persistence.EntityManager;
+import jakarta.inject.Singleton;
+import jakarta.persistence.EntityManager;
 
 import org.hibernate.Session;
 import org.hibernate.SimpleNaturalIdLoadAccess;

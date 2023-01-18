@@ -3,11 +3,11 @@ package org.jboss.resteasy.reactive.client.handlers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.StatusType;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.StatusType;
 
 import org.jboss.resteasy.reactive.client.api.WebClientApplicationException;
 import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;

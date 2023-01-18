@@ -5,10 +5,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import javax.enterprise.inject.Produces;
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Qualifier;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Qualifier;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

@@ -138,10 +138,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 @Path("/fruits")
 public class FruitResource {
@@ -213,7 +213,7 @@ An example where a custom module needs to be registered would look like so:
 ----
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.jackson.ObjectMapperCustomizer;
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class RegisterCustomModuleCustomizer implements ObjectMapperCustomizer {
@@ -233,9 +233,9 @@ Failure to do so will prevent Jackson specific customizations provided by variou
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 public class CustomObjectMapper {
 
@@ -272,9 +272,9 @@ If for example a custom serializer named `FooSerializer` for type `com.example.F
 [source,java]
 ----
 import io.quarkus.jsonb.JsonbConfigCustomizer;
-import javax.inject.Singleton;
-import javax.json.bind.JsonbConfig;
-import javax.json.bind.serializer.JsonbSerializer;
+import jakarta.inject.Singleton;
+import jakarta.json.bind.JsonbConfig;
+import jakarta.json.bind.serializer.JsonbSerializer;
 
 @Singleton
 public class FooSerializerRegistrationCustomizer implements JsonbConfigCustomizer {
@@ -285,17 +285,17 @@ public class FooSerializerRegistrationCustomizer implements JsonbConfigCustomize
 }
 ----
 
-A more advanced option would be to directly provide a bean of `javax.json.bind.JsonbConfig` (with a `Dependent` scope) or in the extreme case to provide a bean of type `javax.json.bind.Jsonb` (with a `Singleton` scope).
-If the latter approach is leveraged it is very important to manually inject and apply all `io.quarkus.jsonb.JsonbConfigCustomizer` beans in the CDI producer that produces `javax.json.bind.Jsonb`.
+A more advanced option would be to directly provide a bean of `jakarta.json.bind.JsonbConfig` (with a `Dependent` scope) or in the extreme case to provide a bean of type `jakarta.json.bind.Jsonb` (with a `Singleton` scope).
+If the latter approach is leveraged it is very important to manually inject and apply all `io.quarkus.jsonb.JsonbConfigCustomizer` beans in the CDI producer that produces `jakarta.json.bind.Jsonb`.
 Failure to do so will prevent JSON-B specific customizations provided by various extensions from being applied.
 
 [source,java]
 ----
 import io.quarkus.jsonb.JsonbConfigCustomizer;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Instance;
-import javax.json.bind.JsonbConfig;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Instance;
+import jakarta.json.bind.JsonbConfig;
 
 public class CustomJsonbConfig {
 
@@ -421,9 +421,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 
 @Path("/legumes")
 public class LegumeResource {

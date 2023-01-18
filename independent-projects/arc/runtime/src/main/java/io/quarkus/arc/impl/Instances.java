@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;

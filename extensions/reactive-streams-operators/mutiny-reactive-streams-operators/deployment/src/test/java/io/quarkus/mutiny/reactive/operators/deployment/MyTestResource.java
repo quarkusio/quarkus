@@ -3,8 +3,8 @@ package io.quarkus.mutiny.reactive.operators.deployment;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 

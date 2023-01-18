@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.client.spi;
 import java.io.File;
 import java.nio.file.Path;
 
-import javax.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.GenericType;
 
 import org.jboss.resteasy.reactive.multipart.FileDownload;
 

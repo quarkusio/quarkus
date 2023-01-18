@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.transform.injectionPoint;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class DummyBean {

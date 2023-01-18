@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 public class ClientWebApplicationException extends WebApplicationException implements ResteasyReactiveClientProblem {
 

@@ -26,11 +26,11 @@ import static io.narayana.lra.LRAConstants.RECOVERY_COORDINATOR_PATH_NAME;
 
 import java.net.URI;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.eclipse.microprofile.lra.tck.service.spi.LRARecoveryService;
 import org.jboss.logging.Logger;

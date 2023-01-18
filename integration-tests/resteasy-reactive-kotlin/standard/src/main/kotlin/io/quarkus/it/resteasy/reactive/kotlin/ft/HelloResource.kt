@@ -1,10 +1,10 @@
 package io.quarkus.it.resteasy.reactive.kotlin.ft
 
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.InternalServerErrorException
+import jakarta.ws.rs.POST
+import jakarta.ws.rs.Path
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.ws.rs.GET
-import javax.ws.rs.InternalServerErrorException
-import javax.ws.rs.POST
-import javax.ws.rs.Path
 
 @Path("/ft/hello")
 class HelloResource {

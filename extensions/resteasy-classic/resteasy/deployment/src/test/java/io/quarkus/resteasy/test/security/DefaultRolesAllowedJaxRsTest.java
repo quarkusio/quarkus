@@ -3,9 +3,9 @@ package io.quarkus.resteasy.test.security;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

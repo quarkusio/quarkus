@@ -10,8 +10,8 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Contains methods that need to have {@link javax.annotation.security.DenyAll} or
- * {@link javax.annotation.security.RolesAllowed}.
+ * Contains methods that need to have {@link jakarta.annotation.security.DenyAll} or
+ * {@link jakarta.annotation.security.RolesAllowed}.
  */
 public final class AdditionalSecuredMethodsBuildItem extends MultiBuildItem {
 

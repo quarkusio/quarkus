@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.runtime.kotlin
 
+import jakarta.ws.rs.container.ContainerResponseContext
 import kotlinx.coroutines.launch
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerResponseFilter
-import javax.ws.rs.container.ContainerResponseContext
 
 /**
  * Base class used by Quarkus to generate an implementation at build-time that calls

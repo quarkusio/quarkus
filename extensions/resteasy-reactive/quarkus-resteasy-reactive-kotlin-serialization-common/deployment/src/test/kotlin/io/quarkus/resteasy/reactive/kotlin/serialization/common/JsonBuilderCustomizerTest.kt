@@ -10,9 +10,9 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import javax.annotation.Priority
-import javax.inject.Inject
-import javax.inject.Singleton
+import jakarta.annotation.Priority
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 import kotlin.reflect.full.createType
 
 class JsonBuilderCustomizerTest {

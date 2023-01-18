@@ -5,7 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Optional;
 
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;

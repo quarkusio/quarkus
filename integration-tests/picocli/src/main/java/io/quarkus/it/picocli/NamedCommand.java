@@ -1,6 +1,6 @@
 package io.quarkus.it.picocli;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine;

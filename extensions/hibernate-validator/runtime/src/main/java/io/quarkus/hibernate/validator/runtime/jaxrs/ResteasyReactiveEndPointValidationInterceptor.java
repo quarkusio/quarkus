@@ -1,11 +1,11 @@
 package io.quarkus.hibernate.validator.runtime.jaxrs;
 
-import javax.annotation.Priority;
-import javax.interceptor.AroundConstruct;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
-import javax.validation.ConstraintViolationException;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundConstruct;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
+import jakarta.validation.ConstraintViolationException;
 
 import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidationInterceptor;
 

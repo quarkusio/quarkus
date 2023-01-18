@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-infinispan-client-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -63,7 +63,7 @@
         </dependency>
         <dependency>
             <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-client-hotrod</artifactId>
+            <artifactId>infinispan-client-hotrod-jakarta</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.infinispan</groupId>

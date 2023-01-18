@@ -3,9 +3,9 @@ package io.quarkus.resteasy.reactive.qute.runtime;
 import static io.quarkus.resteasy.reactive.qute.runtime.Util.setSelectedVariant;
 import static io.quarkus.resteasy.reactive.qute.runtime.Util.toUni;
 
-import javax.inject.Inject;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
@@ -16,7 +16,7 @@ import io.quarkus.qute.TemplateInstance;
 import io.smallrye.mutiny.Uni;
 
 /**
- * This class is needed in order to support handling {@link javax.ws.rs.core.Response} that contains a TemplateInstance...
+ * This class is needed in order to support handling {@link jakarta.ws.rs.core.Response} that contains a TemplateInstance...
  */
 public class TemplateResponseFilter {
 

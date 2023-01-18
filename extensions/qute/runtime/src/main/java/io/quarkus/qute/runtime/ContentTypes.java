@@ -2,8 +2,8 @@ package io.quarkus.qute.runtime;
 
 import java.net.URLConnection;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 

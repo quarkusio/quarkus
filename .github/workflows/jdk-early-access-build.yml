@@ -10,7 +10,7 @@ on:
         description: 'JDK version'
         required: true
         # make sure to keep the matrix entries (see below) in sync!
-        default: '20'
+        default: '21'
       jdkDistribution:
         description: 'JDK distribution'
         required: true
@@ -44,7 +44,8 @@ jobs:
             && format( '{{ "include": [{{ "version": "{0}", "dist": "{1}" }}] }}',
                 github.event.inputs.jdkVersion, github.event.inputs.jdkDistribution )
             || '{ "include": [{ "version": 19, "dist": "jdk.java.net" },
-                { "version": 20, "dist": "jdk.java.net" }] }'
+                { "version": 20, "dist": "jdk.java.net" },
+                { "version": 21, "dist": "jdk.java.net" }] }'
           )
         }}
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"

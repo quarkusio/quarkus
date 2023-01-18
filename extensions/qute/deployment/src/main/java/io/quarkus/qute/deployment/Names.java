@@ -9,13 +9,17 @@ import java.util.stream.Stream;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.Locate;
 import io.quarkus.qute.Locate.Locates;
 import io.quarkus.qute.Location;
+import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateEnum;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
+import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
@@ -44,6 +48,10 @@ final class Names {
     static final DotName LOCATES = DotName.createSimple(Locates.class.getName());
     static final DotName CHECKED_TEMPLATE = DotName.createSimple(io.quarkus.qute.CheckedTemplate.class.getName());
     static final DotName TEMPLATE_ENUM = DotName.createSimple(TemplateEnum.class.getName());
+    static final DotName ENGINE_CONFIGURATION = DotName.createSimple(EngineConfiguration.class.getName());
+    static final DotName SECTION_HELPER_FACTORY = DotName.createSimple(SectionHelperFactory.class.getName());
+    static final DotName VALUE_RESOLVER = DotName.createSimple(ValueResolver.class.getName());
+    static final DotName NAMESPACE_RESOLVER = DotName.createSimple(NamespaceResolver.class.getName());
 
     private Names() {
     }

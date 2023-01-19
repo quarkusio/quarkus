@@ -1,7 +1,7 @@
 {
   "name": "a-bootiful-client",
   "profiles": [
-    "prod"
+    "prod","test"
   ],
   "label": "master",
   "version": "bb51f4173258ae3481c61b95b503c13862ccfba7",

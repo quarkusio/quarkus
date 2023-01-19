@@ -2,6 +2,7 @@ package io.quarkus.spring.cloud.config.client.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -13,20 +14,18 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
-
-import io.quarkus.runtime.TlsConfig;
 
 class SpringCloudConfigClientGatewayTest {
 
     private static final int MOCK_SERVER_PORT = 9300;
     private static final WireMockServer wireMockServer = new WireMockServer(MOCK_SERVER_PORT);
 
-    private static final SpringCloudConfigClientConfig springCloudConfigClientConfig = configForTesting();
-    private final SpringCloudConfigClientGateway sut = new VertxSpringCloudConfigGateway(
-            springCloudConfigClientConfig, new TlsConfig());
+    private static final SpringCloudConfigClientConfig config = configForTesting();
+    private final SpringCloudConfigClientGateway sut = new VertxSpringCloudConfigGateway(config);
 
     @BeforeAll
     static void start() {
@@ -43,7 +42,7 @@ class SpringCloudConfigClientGatewayTest {
         final String applicationName = "foo";
         final String profile = "dev";
         final String springCloudConfigUrl = String.format(
-                "/%s/%s/%s", applicationName, profile, springCloudConfigClientConfig.label.get());
+                "/%s/%s/%s", applicationName, profile, config.label().get());
         wireMockServer.stubFor(WireMock.get(springCloudConfigUrl).willReturn(WireMock
                 .okJson(getJsonStringForApplicationAndProfile(applicationName, profile))));
 
@@ -76,17 +75,17 @@ class SpringCloudConfigClientGatewayTest {
     }
 
     private static SpringCloudConfigClientConfig configForTesting() {
-        SpringCloudConfigClientConfig springCloudConfigClientConfig = new SpringCloudConfigClientConfig();
-        springCloudConfigClientConfig.url = "http://localhost:" + MOCK_SERVER_PORT;
-        springCloudConfigClientConfig.label = Optional.of("master");
-        springCloudConfigClientConfig.connectionTimeout = Duration.ZERO;
-        springCloudConfigClientConfig.readTimeout = Duration.ZERO;
-        springCloudConfigClientConfig.username = Optional.empty();
-        springCloudConfigClientConfig.password = Optional.empty();
-        springCloudConfigClientConfig.trustStore = Optional.empty();
-        springCloudConfigClientConfig.keyStore = Optional.empty();
-        springCloudConfigClientConfig.trustCerts = false;
-        springCloudConfigClientConfig.headers = new HashMap<>();
-        return springCloudConfigClientConfig;
+        SpringCloudConfigClientConfig config = Mockito.mock(SpringCloudConfigClientConfig.class);
+        when(config.url()).thenReturn("http://localhost:" + MOCK_SERVER_PORT);
+        when(config.label()).thenReturn(Optional.of("master"));
+        when(config.connectionTimeout()).thenReturn(Duration.ZERO);
+        when(config.readTimeout()).thenReturn(Duration.ZERO);
+        when(config.username()).thenReturn(Optional.empty());
+        when(config.password()).thenReturn(Optional.empty());
+        when(config.trustStore()).thenReturn(Optional.empty());
+        when(config.keyStore()).thenReturn(Optional.empty());
+        when(config.trustCerts()).thenReturn(false);
+        when(config.headers()).thenReturn(new HashMap<>());
+        return config;
     }
 }

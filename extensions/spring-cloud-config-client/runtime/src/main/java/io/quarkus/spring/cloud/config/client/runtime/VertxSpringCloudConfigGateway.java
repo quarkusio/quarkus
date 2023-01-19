@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
@@ -19,7 +18,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.VertxOptions;
@@ -42,21 +40,21 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private static final String PKS_12 = "PKS12";
     private static final String JKS = "JKS";
 
-    private final SpringCloudConfigClientConfig springCloudConfigClientConfig;
+    private final SpringCloudConfigClientConfig config;
     private final Vertx vertx;
     private final WebClient webClient;
     private final URI baseURI;
 
-    public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig springCloudConfigClientConfig, TlsConfig tlsConfig) {
-        this.springCloudConfigClientConfig = springCloudConfigClientConfig;
+    public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig config) {
+        this.config = config;
         try {
-            this.baseURI = determineBaseUri(springCloudConfigClientConfig);
+            this.baseURI = determineBaseUri(config);
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Value: '" + springCloudConfigClientConfig.url
+            throw new IllegalArgumentException("Value: '" + config.url()
                     + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
         }
         this.vertx = createVertxInstance();
-        this.webClient = createHttpClient(vertx, springCloudConfigClientConfig, tlsConfig);
+        this.webClient = createHttpClient(vertx, config);
     }
 
     private Vertx createVertxInstance() {
@@ -80,32 +78,29 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         return vertx;
     }
 
-    public static WebClient createHttpClient(Vertx vertx, SpringCloudConfigClientConfig springCloudConfig,
-            TlsConfig tlsConfig) {
-
+    public static WebClient createHttpClient(Vertx vertx, SpringCloudConfigClientConfig config) {
         WebClientOptions webClientOptions = new WebClientOptions()
-                .setConnectTimeout((int) springCloudConfig.connectionTimeout.toMillis())
-                .setIdleTimeout((int) springCloudConfig.readTimeout.getSeconds());
+                .setConnectTimeout((int) config.connectionTimeout().toMillis())
+                .setIdleTimeout((int) config.readTimeout().getSeconds());
 
-        boolean trustAll = springCloudConfig.trustCerts || tlsConfig.trustAll;
         try {
-            if (springCloudConfig.trustStore.isPresent()) {
-                Path trustStorePath = springCloudConfig.trustStore.get();
+            if (config.trustStore().isPresent()) {
+                Path trustStorePath = config.trustStore().get();
                 String type = determineStoreType(trustStorePath);
-                KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, springCloudConfig.trustStorePassword,
+                KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, config.trustStorePassword(),
                         createStoreOptions(type));
                 if (isPfx(type)) {
                     webClientOptions.setPfxTrustOptions((PfxOptions) storeOptions);
                 } else {
                     webClientOptions.setTrustStoreOptions((JksOptions) storeOptions);
                 }
-            } else if (trustAll) {
+            } else if (config.trustCerts()) {
                 skipVerify(webClientOptions);
             }
-            if (springCloudConfig.keyStore.isPresent()) {
-                Path keyStorePath = springCloudConfig.keyStore.get();
+            if (config.keyStore().isPresent()) {
+                Path keyStorePath = config.keyStore().get();
                 String type = determineStoreType(keyStorePath);
-                KeyStoreOptionsBase storeOptions = storeOptions(keyStorePath, springCloudConfig.keyStorePassword,
+                KeyStoreOptionsBase storeOptions = storeOptions(keyStorePath, config.keyStorePassword(),
                         createStoreOptions(type));
                 if (isPfx(type)) {
                     webClientOptions.setPfxKeyCertOptions((PfxOptions) storeOptions);
@@ -171,7 +166,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     }
 
     private URI determineBaseUri(SpringCloudConfigClientConfig springCloudConfigClientConfig) throws URISyntaxException {
-        String url = springCloudConfigClientConfig.url;
+        String url = springCloudConfigClientConfig.url();
         if (null == url || url.isEmpty()) {
             throw new IllegalArgumentException(
                     "The 'quarkus.spring-cloud-config.url' property cannot be empty");
@@ -182,31 +177,30 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         return new URI(url);
     }
 
-    private String finalURI(String applicationName, String profile) throws URISyntaxException {
+    private String finalURI(String applicationName, String profile) {
         String path = baseURI.getPath();
         List<String> finalPathSegments = new ArrayList<String>();
         finalPathSegments.add(path);
         finalPathSegments.add(applicationName);
         finalPathSegments.add(profile);
-        if (springCloudConfigClientConfig.label.isPresent()) {
-            finalPathSegments.add(springCloudConfigClientConfig.label.get());
+        if (config.label().isPresent()) {
+            finalPathSegments.add(config.label().get());
         }
-        return finalPathSegments.stream().collect(Collectors.joining("/"));
+        return String.join("/", finalPathSegments);
     }
 
     @Override
-    public Uni<Response> exchange(String applicationName, String profile) throws Exception {
+    public Uni<Response> exchange(String applicationName, String profile) {
         final String requestURI = finalURI(applicationName, profile);
         String finalURI = getFinalURI(applicationName, profile);
         HttpRequest<Buffer> request = webClient
                 .get(getPort(baseURI), baseURI.getHost(), requestURI)
                 .ssl(isHttps(baseURI))
                 .putHeader("Accept", "application/json");
-        if (springCloudConfigClientConfig.usernameAndPasswordSet()) {
-            request.basicAuthentication(springCloudConfigClientConfig.username.get(),
-                    springCloudConfigClientConfig.password.get());
+        if (config.usernameAndPasswordSet()) {
+            request.basicAuthentication(config.username().get(), config.password().get());
         }
-        for (Map.Entry<String, String> entry : springCloudConfigClientConfig.headers.entrySet()) {
+        for (Map.Entry<String, String> entry : config.headers().entrySet()) {
             request.putHeader(entry.getKey(), entry.getValue());
         }
         log.debug("Attempting to read configuration from '" + finalURI + "'.");
@@ -238,8 +232,8 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
 
     private String getFinalURI(String applicationName, String profile) {
         String finalURI = baseURI.toString() + "/" + applicationName + "/" + profile;
-        if (springCloudConfigClientConfig.label.isPresent()) {
-            finalURI = "/" + springCloudConfigClientConfig.label.get();
+        if (config.label().isPresent()) {
+            finalURI = "/" + config.label().get();
         }
         return finalURI;
     }
@@ -249,5 +243,4 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         this.webClient.close();
         this.vertx.closeAndAwait();
     }
-
 }

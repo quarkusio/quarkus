@@ -4,8 +4,10 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A BuildItem to mark that the server side jackson provider is defined.
- * If not "emitted" by any of the processors, the reactive rest client (if used) will add its own jackson provider
+ *
+ * @Deprecated because now the rest client reactive will always add its own jackson provider.
  */
+@Deprecated(forRemoval = true)
 public final class ResteasyReactiveJacksonProviderDefinedBuildItem extends MultiBuildItem {
 
 }

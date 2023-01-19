@@ -14,7 +14,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
@@ -40,7 +39,7 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
         try {
             return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
         } catch (StreamReadException | DatabindException e) {
-            throw new ClientWebApplicationException(e, Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
         }
     }
 

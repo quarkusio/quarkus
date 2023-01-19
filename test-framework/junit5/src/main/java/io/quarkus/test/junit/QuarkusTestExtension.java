@@ -816,8 +816,13 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             runExtensionMethod(invocationContext, extensionContext, true);
             invocation.skip();
         } catch (Throwable t) {
-            for (var i : serverExceptions) {
-                t.addSuppressed(i);
+            for (var serverException : serverExceptions) {
+                if (t == serverException) {
+                    // do not add a suppressed exception to itself
+                    continue;
+                }
+
+                t.addSuppressed(serverException);
             }
             throw t;
         } finally {

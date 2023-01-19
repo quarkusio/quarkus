@@ -4,6 +4,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
@@ -23,6 +25,8 @@ import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidati
 public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidationInterceptor {
 
     private static final List<MediaType> JSON_MEDIA_TYPE_LIST = Collections.singletonList(MediaType.APPLICATION_JSON_TYPE);
+
+    private final ConcurrentHashMap<Method, List<MediaType>> producedMediaTypesCache = new ConcurrentHashMap<>();
 
     @Inject
     ResteasyConfigSupport resteasyConfigSupport;
@@ -49,13 +53,29 @@ public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidation
         super.validateConstructorInvocation(ctx);
     }
 
+    private List<MediaType> getProduces(Method originalMethod) {
+        List<MediaType> cachedMediaTypes = producedMediaTypesCache.get(originalMethod);
+
+        if (cachedMediaTypes != null) {
+            return cachedMediaTypes;
+        }
+
+        return producedMediaTypesCache.computeIfAbsent(originalMethod, new Function<Method, List<MediaType>>() {
+
+            @Override
+            public List<MediaType> apply(Method method) {
+                return doGetProduces(originalMethod);
+            }
+        });
+    }
+
     /**
      * Ideally, we would be able to get the information from RESTEasy so that we can follow strictly the inheritance rules.
      * But, given RESTEasy Reactive is our new default REST layer, I think we can live with this limitation.
      * <p>
      * Superclass method annotations have precedence, then interface methods and finally class annotations.
      */
-    private List<MediaType> getProduces(Method originalMethod) {
+    private List<MediaType> doGetProduces(Method originalMethod) {
         Class<?> currentClass = originalMethod.getDeclaringClass();
         List<Class<?>> interfaces = new ArrayList<>();
 

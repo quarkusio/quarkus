@@ -90,6 +90,8 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
+            <!-- This version is not enforced in the BOM as we need to use the version enforced by the TCKs and it might be an old version -->
+            <version>${testng.version}</version>
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>

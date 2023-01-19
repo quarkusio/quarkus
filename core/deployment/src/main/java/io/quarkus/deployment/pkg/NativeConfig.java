@@ -213,7 +213,7 @@ public class NativeConfig {
      * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
      * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17}.
      */
-    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
+    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}", defaultValueDocumentation = "mandrel")
     public String builderImage;
 
     public String getEffectiveBuilderImage() {

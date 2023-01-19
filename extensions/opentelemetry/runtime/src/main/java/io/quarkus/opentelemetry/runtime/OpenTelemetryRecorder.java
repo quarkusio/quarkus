@@ -1,6 +1,10 @@
 package io.quarkus.opentelemetry.runtime;
 
+import java.lang.reflect.InvocationTargetException;
+import java.sql.Driver;
 import java.util.function.Supplier;
+
+import org.jboss.logging.Logger;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -15,6 +19,9 @@ import io.vertx.core.Vertx;
 
 @Recorder
 public class OpenTelemetryRecorder {
+
+    public static final String OPEN_TELEMETRY_DRIVER = "io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver";
+    private static final Logger LOG = Logger.getLogger(OpenTelemetryRecorder.class);
 
     /* STATIC INIT */
     public void resetGlobalOpenTelemetryForDevMode() {
@@ -45,5 +52,32 @@ public class OpenTelemetryRecorder {
     /* RUNTIME INIT */
     public void storeVertxOnContextStorage(Supplier<Vertx> vertx) {
         QuarkusContextStorage.vertx = vertx.get();
+    }
+
+    public void registerJdbcDriver(String driverClass) {
+        try {
+            var constructors = Class
+                    .forName(driverClass, true, Thread.currentThread().getContextClassLoader())
+                    .getConstructors();
+            if (constructors.length == 1) {
+                // create driver
+                Driver driver = ((Driver) constructors[0].newInstance());
+                // register the driver with OpenTelemetryDriver
+                Class
+                        .forName(OPEN_TELEMETRY_DRIVER, true, Thread.currentThread().getContextClassLoader())
+                        .getMethod("addDriverCandidate", Driver.class)
+                        .invoke(null, driver);
+            } else {
+                // drivers should have default constructor
+                LOG.warn(String.format(
+                        "Class '%s' has more than one constructor and won't be registered as driver. JDBC instrumentation might not work properly in native mode.",
+                        driverClass));
+            }
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                | ClassNotFoundException e) {
+            LOG.warn(String.format(
+                    "Failed to register '%s' driver. JDBC instrumentation might not work properly in native mode.",
+                    driverClass));
+        }
     }
 }

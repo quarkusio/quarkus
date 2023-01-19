@@ -119,6 +119,26 @@
             <groupId>io.dekorate</groupId>
             <artifactId>servicebinding-annotations</artifactId>
             <classifier>noapt</classifier>
+             <exclusions>
+                 <exclusion>
+                     <groupId>io.fabric8</groupId>
+                     <artifactId>kubernetes-client</artifactId>
+                 </exclusion>
+             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-httpclient-okhttp</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-httpclient-vertx</artifactId>
         </dependency>
 
         <!-- needed for the customization of the build chain -->
@@ -214,7 +234,7 @@
             </exclusions>
         </dependency>
     </dependencies>
-    
+
     <profiles>
         <profile>
             <id>basic-test-suite</id>
@@ -249,5 +269,5 @@
             </build>
         </profile>
     </profiles>
-    
+
 </project>

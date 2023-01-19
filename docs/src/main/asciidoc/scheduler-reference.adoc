@@ -382,8 +382,6 @@ If the xref:smallrye-metrics.adoc[SmallRye Metrics extension] is present, then a
 
 If `quarkus.scheduler.tracing.enabled` is set to `true` and the xref:opentelemetry.adoc[OpenTelemetry extension] is present then the `@io.opentelemetry.instrumentation.annotations.WithSpan` annotation is added automatically to every `@Scheduled` method. As a result, each execution of this method has a new `io.opentelemetry.api.trace.Span` associated.
 
-IMPORTANT: <<non-blocking-methods,Non-blocking methods>> are not supported, i.e. a new span is associated with the _actual_ invocation but it's not available within the asynchronous computation.
-
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-scheduler.adoc[leveloffset=+1, opts=optional]

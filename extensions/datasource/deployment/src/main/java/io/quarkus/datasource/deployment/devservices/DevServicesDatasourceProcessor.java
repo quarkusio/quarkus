@@ -275,7 +275,8 @@ public class DevServicesDatasourceProcessor {
                     dataSourceBuildTimeConfig.devservices.command,
                     dataSourceBuildTimeConfig.devservices.dbName,
                     dataSourceBuildTimeConfig.devservices.username,
-                    dataSourceBuildTimeConfig.devservices.password);
+                    dataSourceBuildTimeConfig.devservices.password,
+                    dataSourceBuildTimeConfig.devservices.initScriptPath);
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(

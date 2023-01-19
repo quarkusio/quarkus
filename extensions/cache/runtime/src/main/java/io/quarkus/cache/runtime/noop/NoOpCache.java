@@ -31,6 +31,11 @@ public class NoOpCache extends AbstractCache {
     }
 
     @Override
+    public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+        return valueLoader.apply(key);
+    }
+
+    @Override
     public Uni<Void> invalidate(Object key) {
         return Uni.createFrom().voidItem();
     }
@@ -45,8 +50,4 @@ public class NoOpCache extends AbstractCache {
         return Uni.createFrom().voidItem();
     }
 
-    @Override
-    public Uni<Void> replaceUniValue(Object key, Object emittedValue) {
-        return Uni.createFrom().voidItem();
-    }
 }

@@ -67,6 +67,11 @@ public class SpecializedCacheTest {
         }
 
         @Override
+        public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+            throw new UnsupportedOperationException("This method is not tested here");
+        }
+
+        @Override
         public Uni<Void> invalidate(Object key) {
             throw new UnsupportedOperationException("This method is not tested here");
         }

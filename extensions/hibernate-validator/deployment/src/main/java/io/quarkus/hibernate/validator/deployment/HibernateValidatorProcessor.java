@@ -196,7 +196,7 @@ class HibernateValidatorProcessor {
                 return beanInfo.hasType(CONSTRAINT_VALIDATOR) || beanInfo.hasType(CONSTRAINT_VALIDATOR_FACTORY)
                         || beanInfo.hasType(MESSAGE_INTERPOLATOR) || beanInfo.hasType(TRAVERSABLE_RESOLVER)
                         || beanInfo.hasType(PARAMETER_NAME_PROVIDER) || beanInfo.hasType(CLOCK_PROVIDER)
-                        || beanInfo.hasType(VALUE_EXTRACTOR) || beanInfo.hasType(SCRIPT_EVALUATOR_FACTORY)
+                        || beanInfo.hasType(SCRIPT_EVALUATOR_FACTORY)
                         || beanInfo.hasType(GETTER_PROPERTY_SELECTION_STRATEGY)
                         || beanInfo.hasType(LOCALE_RESOLVER)
                         || beanInfo.hasType(PROPERTY_NODE_NAME_PROVIDER)
@@ -216,6 +216,7 @@ class HibernateValidatorProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             BuildProducer<BeanValidationAnnotationsBuildItem> beanValidationAnnotations,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             ShutdownContextBuildItem shutdownContext,
             List<ConfigClassBuildItem> configClasses,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
@@ -359,9 +360,22 @@ class HibernateValidatorProcessor {
             classesToBeValidated.add(recorderContext.classProxy(className.toString()));
         }
 
+        // Prevent the removal of ValueExtractor beans
+        // and collect all classes implementing ValueExtractor (for use in HibernateValidatorRecorder)
+        Set<DotName> valueExtractorClassNames = new HashSet<>();
+        for (ClassInfo valueExtractorType : indexView.getAllKnownImplementors(VALUE_EXTRACTOR)) {
+            valueExtractorClassNames.add(valueExtractorType.name());
+        }
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(valueExtractorClassNames));
+        Set<Class<?>> valueExtractorClassProxies = new HashSet<>();
+        for (DotName className : valueExtractorClassNames) {
+            valueExtractorClassProxies.add(recorderContext.classProxy(className.toString()));
+        }
+
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initializeValidatorFactory(classesToBeValidated, detectedBuiltinConstraints,
+                                valueExtractorClassProxies,
                                 hasXmlConfiguration(),
                                 capabilities.isPresent(Capability.HIBERNATE_ORM),
                                 shutdownContext,

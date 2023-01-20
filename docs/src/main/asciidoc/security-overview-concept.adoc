@@ -345,7 +345,7 @@ To add the OWASP Dependency check plugin to your Quarkus Maven project, add the 
 
 [IMPORTANT]
 ====
-Set the `owasp-dependency-check-plugin.version` value to `7.1.1` or later.
+Set the `owasp-dependency-check-plugin.version` value to `7.4.4` or later.
 ====
 
 Next, configure the plugin as follows:

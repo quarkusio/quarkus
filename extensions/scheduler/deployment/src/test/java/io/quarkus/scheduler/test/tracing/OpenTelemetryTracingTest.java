@@ -31,13 +31,9 @@ public class OpenTelemetryTracingTest {
         assertTrue(Jobs.latch.await(5, TimeUnit.SECONDS));
         assertTrue(Jobs.nonBlockingLatch.await(5, TimeUnit.SECONDS));
 
-        // assert that different spand ids were used
+        // assert that different span ids were used
         assertTrue(Jobs.spanIds.stream().collect(Collectors.toSet()).size() >= 2);
-
-        // assert that non-blocing scheduled methods are not supported
-        // when the WithSpanInterceptor is fixed and this test fails we should update the assertion and update the docs
-        assertTrue(Jobs.nonBlockingSpanIds.stream().collect(Collectors.toSet()).size() == 1);
-
+        assertTrue(Jobs.nonBlockingSpanIds.stream().collect(Collectors.toSet()).size() >= 2);
     }
 
     static class Jobs {

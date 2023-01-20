@@ -589,14 +589,12 @@ After you have completed this tutorial, explore some of the more advanced securi
 Use the following information to learn how you can securely use `OpenID Connect` to provide secure single sign-on access to your Quarkus endpoints:
 
 * xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
-* xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect (OIDC) to Protect Web Applications using Authorization Code Flow
-]
+* xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
 
 == References
 
 * xref:security-overview-concept.adoc[Quarkus Security overview]
 * xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
-* xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect (OIDC) to Protect Web Applications using Authorization Code Flow
-]
+* xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
 * xref:hibernate-orm-panache.adoc[Simplified Hibernate ORM with Panache]
 * xref:hibernate-orm.adoc[Using Hibernate ORM and JPA]

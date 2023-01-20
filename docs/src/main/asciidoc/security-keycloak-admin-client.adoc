@@ -201,7 +201,7 @@ include::{generated-dir}/config/quarkus-keycloak-admin-client.adoc[leveloffset=+
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * xref:security-keycloak-authorization.adoc[Keycloak Authorization extension]
-* xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Application]
+* xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
 * xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-openid-connect-client.adoc[OpenID Connect Client and Token Propagation Quickstart]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

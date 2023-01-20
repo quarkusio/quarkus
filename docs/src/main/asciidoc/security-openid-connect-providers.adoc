@@ -9,9 +9,9 @@ include::_attributes.adoc[]
 
 == Introduction
 
-If you use xref:security-openid-connect-web-authentication.adoc[OpenID Connect Authorization Code Flow] to protect Quarkus endpoints then you need to configure Quarkus to tell it how to connect to OpenID Connect providers, how to authenticate to such providers, which scopes to use, etc.
+If you use xref:security-oidc-web-authentication-concept.adoc[OpenID Connect Authorization Code Flow] to protect Quarkus endpoints, then you need to configure Quarkus to tell it how to connect to OpenID Connect providers, how to authenticate to such providers, which scopes to use, etc.
 
-Sometimes you need to use the configuration to work around the fact that some providers do not implement OpenID Connect completely or when they are in fact xref:security-openid-connect-web-authentication.adoc#oauth2[OAuth2 providers only].
+Sometimes you need to use the configuration to work around the fact that some providers do not implement OpenID Connect completely or when they are in fact xref:security-oidc-web-authentication-concept.adoc#oauth2[OAuth2 providers only].
 
 The configuration of such providers can become complex, very technical and difficult to understand.
 
@@ -364,5 +364,5 @@ quarkus.oidc.credentials.secret=<Client Secret>
 
 == References
 
-* xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications]
+* xref:security-oidc-web-authentication-concept.adoc[Web authentication using OIDC authorization code flow]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

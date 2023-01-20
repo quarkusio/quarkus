@@ -20,6 +20,13 @@ then
     exit 1
 fi
 
+PREVIEW="$4"
+if [ -z "$PREVIEW" ]
+then
+    echo "Must specify preview mode"
+    exit 1
+fi
+
 DIST_DIR="$( dirname "${BASH_SOURCE[0]}" )"
 pushd ${DIST_DIR}
 
@@ -48,14 +55,20 @@ zip -r ${JAVA_BINARY_DIR}.zip ${JAVA_BINARY_DIR}
 tar -zcf ${JAVA_BINARY_DIR}.tar.gz ${JAVA_BINARY_DIR}
 popd
 
+CONFIG_FILE="jreleaser.yml"
 export JRELEASER_PROJECT_VERSION=${VERSION}
 export JRELEASER_BRANCH=${BRANCH}
 if [ "$MAINTENANCE" == "true" ]; then
+    CONFIG_FILE="jreleaser-maintenance.yml"
     export JRELEASER_CHOCOLATEY_GITHUB_BRANCH=${BRANCH}
     export JRELEASER_HOMEBREW_GITHUB_BRANCH=${BRANCH}
 fi
+if [ "$PREVIEW" == "true" ]; then
+    CONFIG_FILE="jreleaser-preview.yml"
+fi
 
 jbang org.jreleaser:jreleaser:1.3.0 full-release \
+  -c ${CONFIG_FILE} \
   --git-root-search \
   -od target
 

@@ -10,7 +10,7 @@ import java.util.function.BiPredicate;
 
 import io.vertx.core.net.SocketAddress;
 
-interface TrustedProxyCheck {
+public interface TrustedProxyCheck {
 
     static TrustedProxyCheck allowAll() {
         return new TrustedProxyCheck() {

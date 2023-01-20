@@ -228,6 +228,15 @@ You will receive a response such as:
 
 NOTE: If you prefer an OpenMetrics export rather than the JSON format, remove the `-H"Accept: application/json"` argument from your command line.
 
+[NOTE]
+.Management interface
+====
+By default, the metrics are exposed on the main HTTP server.
+You can expose them on a separate network interface and port by enabling the management interface with the
+`quarkus.management.enabled=true` property.
+Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
+====
+
 .Configuration Reference
 
 include::{generated-dir}/config/quarkus-smallrye-metrics.adoc[opts=optional, leveloffset=+1]

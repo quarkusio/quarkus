@@ -22,7 +22,7 @@ import io.vertx.core.net.impl.SocketAddressImpl;
  * Restricts who can send `Forwarded`, `X-Forwarded` or `X-Forwarded-*` headers to trusted proxies
  * configured through {@link ProxyConfig#trustedProxies}.
  */
-class ForwardedProxyHandler implements Handler<HttpServerRequest> {
+public class ForwardedProxyHandler implements Handler<HttpServerRequest> {
 
     private static final Logger LOGGER = Logger.getLogger(ForwardedProxyHandler.class.getName());
 
@@ -34,7 +34,7 @@ class ForwardedProxyHandler implements Handler<HttpServerRequest> {
 
     private final ForwardingProxyOptions forwardingProxyOptions;
 
-    ForwardedProxyHandler(TrustedProxyCheck.TrustedProxyCheckBuilder proxyCheckBuilder,
+    public ForwardedProxyHandler(TrustedProxyCheck.TrustedProxyCheckBuilder proxyCheckBuilder,
             Supplier<Vertx> vertx, Handler<HttpServerRequest> delegate,
             ForwardingProxyOptions forwardingProxyOptions) {
         this.proxyCheckBuilder = proxyCheckBuilder;

@@ -102,6 +102,9 @@ public class SmallRyeMetricsProcessor {
 
         /**
          * The path to the metrics handler.
+         * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
+         * If the management interface is enabled, the value will be resolved as a path relative to
+         * `${quarkus.management.root-path}`.
          */
         @ConfigItem(defaultValue = "metrics")
         String path;
@@ -162,11 +165,13 @@ public class SmallRyeMetricsProcessor {
             displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(metrics.path));
         }
         routes.produce(frameworkRoot.routeBuilder()
+                .management()
                 .route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"))
                 .handler(recorder.handler(frameworkRoot.resolvePath(metrics.path)))
                 .blockingRoute()
                 .build());
         routes.produce(frameworkRoot.routeBuilder()
+                .management()
                 .route(metrics.path)
                 .routeConfigKey("quarkus.smallrye-metrics.path")
                 .handler(recorder.handler(frameworkRoot.resolvePath(metrics.path)))

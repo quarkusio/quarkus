@@ -25,6 +25,12 @@ public class PrometheusConfigGroup implements MicrometerConfig.CapabilityEnabled
      * If an absolute path is specified (`/metrics`), the prometheus endpoint will be served
      * from the configured path.
      *
+     * If the management interface is enabled, the value will be resolved as a path relative to
+     * `${quarkus.management.root-path}` (`q` by default), e.g.
+     * `http://${quarkus.management.host}:${quarkus.management.port}/${quarkus.management.root-path}/metrics`.
+     * If an absolute path is specified (`/metrics`), the prometheus endpoint will be served from the configured path, e.g.
+     * `http://${quarkus.management.host}:${quarkus.management.port}/metrics`.
+     *
      * @asciidoclet
      */
     @ConfigItem(defaultValue = "metrics")

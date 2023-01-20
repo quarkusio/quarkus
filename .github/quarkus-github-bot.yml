@@ -547,7 +547,7 @@ triage:
     - id: resteasy-reactive
       labels: [area/resteasy-reactive]
       title: resteasy.reactive
-      notify: [geoand, FroMage, stuartwdouglas]
+      notify: [geoand, FroMage, stuartwdouglas, Sgitario]
       directories:
         - extensions/resteasy-reactive/
     - id: scala

@@ -830,17 +830,12 @@ public class NativeImageBuildStep {
 
                 if (nativeConfig.monitoring.isPresent()) {
                     List<NativeConfig.MonitoringOption> monitoringOptions = nativeConfig.monitoring.get();
-                    if (monitoringOptions.stream().anyMatch(o -> o == NativeConfig.MonitoringOption.TRUE
-                            || o == NativeConfig.MonitoringOption.ALL)) {
-                        nativeImageArgs.add("--enable-monitoring");
+
+                    if (!monitoringOptions.isEmpty()) {
+                        nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
+                                .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
                     }
-                    nativeImageArgs
-                            .add("--enable-monitoring=" + monitoringOptions.stream().map(o -> o.name().toLowerCase(
-                                    Locale.ROOT)).collect(Collectors.joining(",")));
-                } else if (ConfigProvider.getConfig().getConfigValue("quarkus.native.monitoring").getValue() != null) {
-                    // this only happens when a user has configured 'quarkus.native.monitoring='
-                    // we want to support this use case as GraalVM allows the use of '--enable-monitoring' without an argument
-                    nativeImageArgs.add("--enable-monitoring");
+
                 }
                 if (nativeConfig.autoServiceLoaderRegistration) {
                     nativeImageArgs.add("-H:+UseServiceLoaderFeature");

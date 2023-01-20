@@ -1,10 +1,15 @@
 package io.quarkus.opentelemetry.deployment;
 
+import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.ConfigValue;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -14,11 +19,17 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -154,5 +165,58 @@ public class OpenTelemetryProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void storeVertxOnContextStorage(OpenTelemetryRecorder recorder, CoreVertxBuildItem vertx) {
         recorder.storeVertxOnContextStorage(vertx.getVertx());
+    }
+
+    @BuildStep
+    void collectAllJdbcDataSourcesUsingOTelDriver(BuildProducer<OpenTelemetryDriverJdbcDataSourcesBuildItem> resultProducer,
+            List<JdbcDataSourceBuildItem> jdbcDataSources) {
+        final List<JdbcDataSourceBuildItem> result = new ArrayList<>();
+        for (JdbcDataSourceBuildItem dataSource : jdbcDataSources) {
+            // if the datasource is explicitly configured to use the OTel driver...
+            if (dataSourceUsesOTelJdbcDriver(dataSource.getName())) {
+                result.add(dataSource);
+            }
+        }
+        if (!result.isEmpty()) {
+            resultProducer.produce(new OpenTelemetryDriverJdbcDataSourcesBuildItem(result));
+        }
+    }
+
+    private static boolean dataSourceUsesOTelJdbcDriver(String dataSourceName) {
+        List<String> driverPropertyKeys = DataSourceUtil.dataSourcePropertyKeys(dataSourceName, "jdbc.driver");
+        for (String driverPropertyKey : driverPropertyKeys) {
+            ConfigValue explicitlyConfiguredDriverValue = ConfigProvider.getConfig().getConfigValue(driverPropertyKey);
+            if (explicitlyConfiguredDriverValue.getValue() != null) {
+                return explicitlyConfiguredDriverValue.getValue().equals(OPEN_TELEMETRY_DRIVER);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 'OracleDriver' register itself as driver in static initialization block, however we don't want to
+     * force runtime initialization for compatibility reasons, for more information please check:
+     * io.quarkus.jdbc.oracle.deployment.OracleMetadataOverrides#runtimeInitializeDriver
+     */
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void registerOracleDriver(Optional<OpenTelemetryDriverJdbcDataSourcesBuildItem> otJdbcDataSourcesBuildItem,
+            List<JdbcDriverBuildItem> driverBuildItems, Capabilities capabilities, OpenTelemetryRecorder recorder) {
+        // check if there are data sources using OT driver and jdbc-oracle extension is present
+        if (otJdbcDataSourcesBuildItem.isPresent() && capabilities.isPresent(Capability.JDBC_ORACLE)) {
+            for (JdbcDataSourceBuildItem jdbcDataSource : otJdbcDataSourcesBuildItem.get().jdbcDataSources) {
+                if (jdbcDataSource.getDbKind().equals(DatabaseKind.ORACLE)) {
+                    // now we know there is Oracle JDBC datasource
+                    // let's find Oracle driver
+                    for (JdbcDriverBuildItem driverBuildItem : driverBuildItems) {
+                        if (DatabaseKind.ORACLE.equals(driverBuildItem.getDbKind())) {
+                            recorder.registerJdbcDriver(driverBuildItem.getDriverClass());
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
     }
 }

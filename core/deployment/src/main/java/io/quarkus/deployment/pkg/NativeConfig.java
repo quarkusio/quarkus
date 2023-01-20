@@ -468,5 +468,6 @@ public class NativeConfig {
         JFR,
         ALL,
         TRUE // only needed to support -Dquarkus.native.monitoring
+
     }
 }

@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import javax.enterprise.context.Dependent;
@@ -30,6 +31,7 @@ import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheImpl;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 
 public class ProgrammaticApiTest {
 
@@ -223,6 +225,32 @@ public class ProgrammaticApiTest {
         cache.invalidateIf(k -> k.equals("bravo")).await().indefinitely();
         assertFalse(cache.as(CaffeineCache.class).keySet().contains(key));
         assertNull(cache.as(CaffeineCache.class).getIfPresent(key));
+    }
+
+    @Test
+    public void testAsyncLoader() throws Exception {
+        // Action: value retrieval from the cache.
+        // Expected effect: asyncvalue loader function used lazily.
+        // Verified by: same object reference returned from the cache.
+        String key = "alpha";
+        String expectedValue = "foo";
+        AtomicInteger loaded = new AtomicInteger();
+        Function<String, Uni<String>> loader = new Function<String, Uni<String>>() {
+
+            @Override
+            public Uni<String> apply(String t) {
+                return Uni.createFrom().item(expectedValue + loaded.incrementAndGet());
+            }
+        };
+        Uni<String> resultUni = cache.getAsync(key, loader);
+        assertEquals(0, loaded.get());
+        String value = resultUni.await().indefinitely();
+        assertEquals(1, loaded.get());
+        assertEquals(expectedValue + "1", value);
+        assertEquals(expectedValue + "1", cache.getAsync(key, loader).await().indefinitely());
+        assertEquals(1, loaded.get());
+        assertKeySetContains(key);
+        assertGetIfPresent(key, value);
     }
 
     private void assertKeySetContains(Object... expectedKeys) {

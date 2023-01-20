@@ -340,7 +340,8 @@ public final class Types {
                 throw new IllegalArgumentException("Unsupported return type");
             }
         }
-        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerMethod), beanDeployment.getBeanArchiveIndex());
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerMethod), beanDeployment.getBeanArchiveIndex(),
+                producerMethod);
     }
 
     static Set<Type> getProducerFieldTypeClosure(FieldInfo producerField, BeanDeployment beanDeployment) {
@@ -369,7 +370,8 @@ public final class Types {
                 throw new IllegalArgumentException("Unsupported return type");
             }
         }
-        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerField), beanDeployment.getBeanArchiveIndex());
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerField), beanDeployment.getBeanArchiveIndex(),
+                producerField);
     }
 
     static Set<Type> getClassBeanTypeClosure(ClassInfo classInfo, BeanDeployment beanDeployment) {
@@ -381,7 +383,8 @@ public final class Types {
             types = getTypeClosure(classInfo, null, buildResolvedMap(typeParameters, typeParameters,
                     Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()), beanDeployment, null);
         }
-        return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo), beanDeployment.getBeanArchiveIndex());
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo), beanDeployment.getBeanArchiveIndex(),
+                classInfo);
     }
 
     static Map<String, Type> resolveDecoratedTypeParams(ClassInfo decoratedTypeClass, DecoratorInfo decorator) {
@@ -433,17 +436,15 @@ public final class Types {
     }
 
     /**
-     * Detects wildcard for given producer method/field.
-     * Based on the boolean parameter, it either throws a {@link DefinitionException} of performs logging.
+     * Detects wildcard for given type.
+     * In case this is related to a producer field or method, it either logs or throws a {@link DefinitionException}
+     * based on the boolean parameter.
      * Returns true if a wildcard is detected, false otherwise.
      */
-    static boolean isProducerWithWildcard(Type type, AnnotationTarget producerFieldOrMethod, boolean throwIfDetected) {
-        if (producerFieldOrMethod == null) {
-            // not a producer, no further analysis required
-            return false;
-        }
+    static boolean containsWildcard(Type type, AnnotationTarget producerFieldOrMethod, boolean throwIfDetected) {
         if (type.kind().equals(Kind.WILDCARD_TYPE)) {
-            if (throwIfDetected) {
+            if (throwIfDetected && producerFieldOrMethod != null) {
+                // a producer method that has wildcard directly in its return type
                 throw new DefinitionException("Producer " +
                         (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD) ? "field " : "method ") +
                         producerFieldOrMethod +
@@ -454,18 +455,24 @@ public final class Types {
                         +
                         " contains a parameterized type with a wildcard. This type is not a legal bean type" +
                         " according to CDI specification.");
-            } else {
+
+            } else if (producerFieldOrMethod != null) {
+                // a producer method with wildcard in the type hierarchy of the return type
                 LOGGER.info("Producer " +
                         (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD) ? "field " : "method ") +
                         producerFieldOrMethod +
                         " contains a parameterized typed with a wildcard. This type is not a legal bean type" +
                         " according to CDI specification and will be ignored during bean resolution.");
                 return true;
+            } else {
+                // wildcard detection for class-based beans, these still need to be skipped as they aren't valid bean types
+                return true;
             }
         } else if (type.kind().equals(Kind.PARAMETERIZED_TYPE)) {
             for (Type t : type.asParameterizedType().arguments()) {
                 // recursive check of all parameterized types
-                return isProducerWithWildcard(t, producerFieldOrMethod, throwIfDetected);
+
+                return containsWildcard(t, producerFieldOrMethod, throwIfDetected);
             }
         }
         return false;
@@ -491,7 +498,8 @@ public final class Types {
                 // for producers, wildcard is not a legal bean type and results in a definition error
                 // see https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#legal_bean_types
                 // NOTE: wildcard can be nested, such as List<Set<? extends Number>>
-                skipThisType = isProducerWithWildcard(typeParams[i], producerFieldOrMethod, throwOnProducerWildcard);
+
+                skipThisType = containsWildcard(typeParams[i], producerFieldOrMethod, throwOnProducerWildcard);
             }
             if (resolvedTypeVariablesConsumer != null) {
                 Map<String, Type> resolved = new HashMap<>();
@@ -577,7 +585,8 @@ public final class Types {
         return resolvedTypeVariables;
     }
 
-    static Set<Type> restrictBeanTypes(Set<Type> types, Collection<AnnotationInstance> annotations, IndexView index) {
+    static Set<Type> restrictBeanTypes(Set<Type> types, Collection<AnnotationInstance> annotations, IndexView index,
+            AnnotationTarget target) {
         AnnotationInstance typed = null;
         for (AnnotationInstance a : annotations) {
             if (a.name().equals(DotNames.TYPED)) {
@@ -603,8 +612,7 @@ public final class Types {
             if (DotNames.OBJECT.equals(next.name())) {
                 continue;
             }
-            if (typed != null && !typedClasses.contains(next.name())) {
-                // Remove types restricted by @Typed
+            if (typed != null && !typedClasses.remove(next.name())) {
                 it.remove();
                 continue;
             }
@@ -616,6 +624,12 @@ public final class Types {
                     it.remove();
                 }
             }
+        }
+        // if the set of types we gathered from @Typed annotation isn't now empty, there are some illegal types in it
+        if (!typedClasses.isEmpty()) {
+            throw new DefinitionException(
+                    "Cannot limit bean types to types outside of the transitive closure of bean types. Bean: " + target
+                            + " illegal bean types: " + typedClasses);
         }
         return types;
     }

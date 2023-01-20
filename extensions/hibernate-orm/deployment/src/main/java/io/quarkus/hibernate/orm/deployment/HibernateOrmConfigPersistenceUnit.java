@@ -218,6 +218,13 @@ public class HibernateOrmConfigPersistenceUnit {
      */
     @ConfigItem(defaultValue = "true")
     public boolean secondLevelCachingEnabled;
+    
+    /**
+     * This flag permit enable/disable hibernate validation
+     */
+    
+    @ConfigItem(defaultValue = "true")
+    public boolean validationMode;
 
     /**
      * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available in the

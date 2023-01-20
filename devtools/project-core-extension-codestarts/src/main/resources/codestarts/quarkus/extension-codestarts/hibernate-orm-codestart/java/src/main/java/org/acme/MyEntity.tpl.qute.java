@@ -31,8 +31,7 @@ public class MyEntity {
 
     public String field;
 }
-{/if}
-{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-orm-panache')}
+{#else}
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import javax.persistence.Entity;
 

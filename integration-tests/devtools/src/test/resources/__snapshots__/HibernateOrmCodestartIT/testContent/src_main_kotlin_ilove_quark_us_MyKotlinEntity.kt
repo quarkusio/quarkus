@@ -9,7 +9,7 @@ import javax.persistence.Id
  *
  * To use it, get access to a JPA EntityManager via injection.
  *
- * ```kotlin
+ * {@code
  *    @Inject
  *    lateinit var em:EntityManager;
  *
@@ -20,7 +20,7 @@ import javax.persistence.Id
  *
  *         val entities:List<MyKotlinEntity>  = em.createQuery("from MyEntity", MyKotlinEntity::class.java).getResultList()
  *     }
- * ```
+ * }
  */
 @Entity
 class MyKotlinEntity {

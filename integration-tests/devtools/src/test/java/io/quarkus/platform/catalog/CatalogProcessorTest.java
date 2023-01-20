@@ -46,6 +46,6 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
         assertThat(uncategorized.get().getSortedExtensions())
                 .map(Extension::getArtifact)
                 .map(ArtifactCoords::getArtifactId)
-                .contains("quarkus-uncategorized-extension");
+                .containsExactlyInAnyOrder("quarkus-unknown-category-extension", "quarkus-uncategorized-extension");
     }
 }

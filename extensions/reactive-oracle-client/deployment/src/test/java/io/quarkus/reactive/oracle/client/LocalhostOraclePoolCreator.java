@@ -2,7 +2,6 @@ package io.quarkus.reactive.oracle.client;
 
 import javax.inject.Singleton;
 
-import io.quarkus.reactive.oracle.client.runtime.OraclePoolCreator;
 import io.vertx.oracleclient.OraclePool;
 
 @Singleton

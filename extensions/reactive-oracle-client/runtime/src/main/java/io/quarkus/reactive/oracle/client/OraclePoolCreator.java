@@ -1,4 +1,4 @@
-package io.quarkus.reactive.oracle.client.runtime;
+package io.quarkus.reactive.oracle.client;
 
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.core.Vertx;

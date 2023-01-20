@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.reactive.datasource.ReactiveDataSource;
-import io.quarkus.reactive.oracle.client.runtime.OraclePoolCreator;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.oracleclient.OraclePool;
 

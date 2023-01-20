@@ -220,6 +220,12 @@ public class HibernateOrmConfigPersistenceUnit {
     public boolean secondLevelCachingEnabled;
 
     /**
+     * Bean Validation configuration.
+     */
+    @ConfigItem
+    public HibernateOrmConfigPersistenceValidation validation;
+
+    /**
      * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available in the
      * https://javadoc.io/doc/org.hibernate/hibernate-core/5.6.10.Final/org/hibernate/MultiTenancyStrategy.html[Hibernate ORM
      * JavaDoc].
@@ -496,4 +502,15 @@ public class HibernateOrmConfigPersistenceUnit {
         ALL_EXCEPT_COLUMN_DEFINITIONS,
         ONLY_KEYWORDS
     }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceValidation {
+
+        /**
+         * Enables the Bean Validation integration.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean enabled;
+    }
+
 }

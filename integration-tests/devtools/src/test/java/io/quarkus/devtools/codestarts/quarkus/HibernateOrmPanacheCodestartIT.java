@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 import io.quarkus.maven.ArtifactKey;
 
-public class HibernateOrmPanacheCodestartTest {
+public class HibernateOrmPanacheCodestartIT {
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
@@ -21,10 +21,11 @@ public class HibernateOrmPanacheCodestartTest {
     @Test
     void testContent() throws Throwable {
         codestartTest.checkGeneratedSource("org.acme.MyEntity");
+        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/import.sql");
     }
 
     @Test
-    void buildAllProjectsForLocalUse() throws Throwable {
+    void testBuild() throws Throwable {
         codestartTest.buildAllProjects();
     }
 }

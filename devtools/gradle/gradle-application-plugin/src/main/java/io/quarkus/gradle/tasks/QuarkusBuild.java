@@ -235,9 +235,11 @@ public abstract class QuarkusBuild extends QuarkusTask {
 
     private String getPropValueWithPrecedence(final String propName, final java.util.Optional<String> defaultValue) {
         if (applicationProperties.isEmpty()) {
-            FileCollection classpathFiles = getClasspath()
+            SourceSet mainSourceSet = QuarkusGradleUtils.getSourceSet(getProject(), SourceSet.MAIN_SOURCE_SET_NAME);
+
+            FileCollection configFiles = mainSourceSet.getResources()
                     .filter(file -> "application.properties".equalsIgnoreCase(file.getName()));
-            classpathFiles.forEach(file -> {
+            configFiles.forEach(file -> {
                 FileInputStream appPropsIS = null;
                 try {
                     appPropsIS = new FileInputStream(file.getAbsoluteFile());

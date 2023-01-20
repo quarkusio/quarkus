@@ -51,4 +51,6 @@
 :vault-datasource-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html
 :micrometer-registry-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/index.html
 // .
+:create-app-group-id: org.acme
+// .
 include::_attributes-local.adoc[]

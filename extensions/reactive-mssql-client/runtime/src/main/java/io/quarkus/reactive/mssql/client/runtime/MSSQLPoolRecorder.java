@@ -13,14 +13,20 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.Instance;
+
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
+import io.quarkus.reactive.mssql.client.MSSQLPoolCreator;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -78,7 +84,7 @@ public class MSSQLPoolRecorder {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return MSSQLPool.pool(vertx, mssqlConnectOptions, poolOptions);
+        return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName);
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -182,4 +188,46 @@ public class MSSQLPoolRecorder {
         return mssqlConnectOptions;
     }
 
+    private MSSQLPool createPool(Vertx vertx, PoolOptions poolOptions, MSSQLConnectOptions mSSQLConnectOptions,
+            String dataSourceName) {
+        Instance<MSSQLPoolCreator> instance;
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            instance = Arc.container().select(MSSQLPoolCreator.class);
+        } else {
+            instance = Arc.container().select(MSSQLPoolCreator.class,
+                    new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
+        }
+        if (instance.isResolvable()) {
+            MSSQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mSSQLConnectOptions);
+            return instance.get().create(input);
+        }
+        return MSSQLPool.pool(vertx, mSSQLConnectOptions, poolOptions);
+    }
+
+    private static class DefaultInput implements MSSQLPoolCreator.Input {
+        private final Vertx vertx;
+        private final PoolOptions poolOptions;
+        private final MSSQLConnectOptions mSSQLConnectOptions;
+
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, MSSQLConnectOptions mSSQLConnectOptions) {
+            this.vertx = vertx;
+            this.poolOptions = poolOptions;
+            this.mSSQLConnectOptions = mSSQLConnectOptions;
+        }
+
+        @Override
+        public Vertx vertx() {
+            return vertx;
+        }
+
+        @Override
+        public PoolOptions poolOptions() {
+            return poolOptions;
+        }
+
+        @Override
+        public MSSQLConnectOptions msSQLConnectOptions() {
+            return mSSQLConnectOptions;
+        }
+    }
 }

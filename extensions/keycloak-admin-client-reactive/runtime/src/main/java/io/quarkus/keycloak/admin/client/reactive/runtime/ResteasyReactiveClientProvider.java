@@ -1,9 +1,15 @@
 package io.quarkus.keycloak.admin.client.reactive.runtime;
 
+import java.util.List;
+
+import javax.enterprise.inject.Instance;
 import javax.net.ssl.SSLContext;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
@@ -14,9 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyWriter;
 
 public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
+
+    private static final List<String> HANDLED_MEDIA_TYPES = List.of(MediaType.APPLICATION_JSON);
+    private static final int PROVIDER_PRIORITY = Priorities.USER + 100; // ensures that it will be used first
 
     @Override
     public Client newRestEasyClient(Object messageHandler, SSLContext sslContext, boolean disableTrustManager) {
@@ -32,27 +42,63 @@ public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
             throw new IllegalStateException(this.getClass().getName() + " should only be used in a Quarkus application");
         } else {
             InstanceHandle<ObjectMapper> objectMapperInstance = arcContainer.instance(ObjectMapper.class);
-            ObjectMapper objectMapper = null;
+            boolean canReuseObjectMapper = canReuseObjectMapper(objectMapperInstance, arcContainer);
+            if (canReuseObjectMapper) {
 
-            InstanceHandle<JacksonBasicMessageBodyReader> readerInstance = arcContainer
-                    .instance(JacksonBasicMessageBodyReader.class);
-            if (readerInstance.isAvailable()) {
-                clientBuilder = clientBuilder.register(readerInstance.get());
+                ObjectMapper objectMapper = null;
+
+                InstanceHandle<JacksonBasicMessageBodyReader> readerInstance = arcContainer
+                        .instance(JacksonBasicMessageBodyReader.class);
+                if (readerInstance.isAvailable()) {
+                    clientBuilder = clientBuilder.register(readerInstance.get());
+                } else {
+                    objectMapper = getObjectMapper(objectMapper, objectMapperInstance);
+                    clientBuilder = clientBuilder.register(new JacksonBasicMessageBodyReader(objectMapper));
+                }
+
+                InstanceHandle<ClientJacksonMessageBodyWriter> writerInstance = arcContainer
+                        .instance(ClientJacksonMessageBodyWriter.class);
+                if (writerInstance.isAvailable()) {
+                    clientBuilder = clientBuilder.register(writerInstance.get());
+                } else {
+                    objectMapper = getObjectMapper(objectMapper, objectMapperInstance);
+                    clientBuilder = clientBuilder.register(new ClientJacksonMessageBodyWriter(objectMapper));
+                }
             } else {
-                objectMapper = getObjectMapper(objectMapper, objectMapperInstance);
-                clientBuilder = clientBuilder.register(new JacksonBasicMessageBodyReader(objectMapper));
+                ObjectMapper newObjectMapper = new ObjectMapper();
+                clientBuilder = clientBuilder
+                        .registerMessageBodyReader(new JacksonBasicMessageBodyReader(newObjectMapper), Object.class,
+                                HANDLED_MEDIA_TYPES, true,
+                                PROVIDER_PRIORITY)
+                        .registerMessageBodyWriter(new ClientJacksonMessageBodyWriter(newObjectMapper), Object.class,
+                                HANDLED_MEDIA_TYPES, true, PROVIDER_PRIORITY);
             }
 
-            InstanceHandle<ClientJacksonMessageBodyWriter> writerInstance = arcContainer
-                    .instance(ClientJacksonMessageBodyWriter.class);
-            if (writerInstance.isAvailable()) {
-                clientBuilder = clientBuilder.register(writerInstance.get());
-            } else {
-                objectMapper = getObjectMapper(objectMapper, objectMapperInstance);
-                clientBuilder = clientBuilder.register(new ClientJacksonMessageBodyWriter(objectMapper));
-            }
         }
         return clientBuilder;
+    }
+
+    // the idea is to only reuse the ObjectMapper if no known customizations would break Keycloak
+    // TODO: in the future we could also look into checking the ObjectMapper bean itself to see how it has been configured
+    private boolean canReuseObjectMapper(InstanceHandle<ObjectMapper> objectMapperInstance, ArcContainer arcContainer) {
+        if (objectMapperInstance.isAvailable() && !objectMapperInstance.getBean().isDefaultBean()) {
+            // in this case a user provided a completely custom ObjectMapper, so we can't use it
+            return false;
+        }
+
+        Instance<ObjectMapperCustomizer> customizers = arcContainer.beanManager().createInstance()
+                .select(ObjectMapperCustomizer.class);
+        if (!customizers.isUnsatisfied()) {
+            // ObjectMapperCustomizer can make arbitrary changes, so in order to be safe we won't allow reuse
+            return false;
+        }
+        // if any Jackson properties were configured, disallow reuse - this is done in order to provide forward compatibility with new Jackson configuration options
+        for (String propertyName : ConfigProvider.getConfig().getPropertyNames()) {
+            if (propertyName.startsWith("io.quarkus.jackson")) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // the whole idea here is to reuse the ObjectMapper instance

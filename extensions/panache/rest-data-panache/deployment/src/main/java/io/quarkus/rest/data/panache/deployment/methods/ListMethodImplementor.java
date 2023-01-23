@@ -9,10 +9,12 @@ import static io.quarkus.arc.processor.DotNames.LONG;
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.gizmo.Type.intType;
 import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_INDEX;
 import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_SIZE;
-import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.ofType;
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.param;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.responseType;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.uniType;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -173,14 +175,14 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         Collection<SignatureMethodCreator.Parameter> compatibleFieldsForQuery = getFieldsToQuery(resourceMetadata);
         List<SignatureMethodCreator.Parameter> parameters = new ArrayList<>();
         parameters.add(param("sort", List.class));
-        parameters.add(param("page", int.class));
-        parameters.add(param("size", int.class));
+        parameters.add(param("page", int.class, intType()));
+        parameters.add(param("size", int.class, intType()));
         parameters.add(param("uriInfo", UriInfo.class));
         parameters.add(param("namedQuery", String.class));
         parameters.addAll(compatibleFieldsForQuery);
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
-                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
-                parameters);
+                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                parameters.toArray(new SignatureMethodCreator.Parameter[0]));
 
         // Add method annotations
         addGetAnnotation(methodCreator);
@@ -265,8 +267,8 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         parameters.add(param("namedQuery", String.class));
         parameters.addAll(compatibleFieldsForQuery);
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
-                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
-                parameters);
+                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                parameters.toArray(new SignatureMethodCreator.Parameter[0]));
 
         // Add method annotations
         addGetAnnotation(methodCreator);

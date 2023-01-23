@@ -1,7 +1,9 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.ofType;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.param;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.responseType;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.uniType;
 
 import javax.validation.Valid;
 import javax.ws.rs.core.Response;
@@ -102,9 +104,8 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
-                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
-                resourceMetadata.getEntityType(), UriInfo.class);
-        methodCreator.setParameterNames(new String[] { "entity", "uriInfo" });
+                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                param("entity", resourceMetadata.getEntityType()), param("uriInfo", UriInfo.class));
 
         // Add method annotations
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));

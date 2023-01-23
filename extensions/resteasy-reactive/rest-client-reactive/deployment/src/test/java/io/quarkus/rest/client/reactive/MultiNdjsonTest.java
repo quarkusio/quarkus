@@ -37,15 +37,15 @@ import io.vertx.ext.web.RoutingContext;
 
 public class MultiNdjsonTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest();
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class));
 
     @TestHTTPResource
     URI uri;
 
     @Test
     void shouldReadNdjsonStringAsMulti() throws InterruptedException {
-        var client = RestClientBuilder.newBuilder().baseUri(uri)
-                .build(Client.class);
+        var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<String>();
         var completionLatch = new CountDownLatch(1);
         client.readString().onCompletion().invoke(completionLatch::countDown)
@@ -60,8 +60,7 @@ public class MultiNdjsonTest {
 
     @Test
     void shouldReadNdjsonPojoAsMulti() throws InterruptedException {
-        var client = RestClientBuilder.newBuilder().baseUri(uri)
-                .build(Client.class);
+        var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
         client.readPojo().onCompletion().invoke(completionLatch::countDown)
@@ -79,8 +78,7 @@ public class MultiNdjsonTest {
     @Test
     void shouldReadNdjsonPojoFromReactiveRoutes() throws InterruptedException {
         URI reactiveRoutesBaseUri = URI.create(uri.toString() + "/rr");
-        var client = RestClientBuilder.newBuilder().baseUri(reactiveRoutesBaseUri)
-                .build(Client.class);
+        var client = createClient(reactiveRoutesBaseUri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
         client.readPojo().onCompletion().invoke(completionLatch::countDown)
@@ -96,8 +94,7 @@ public class MultiNdjsonTest {
 
     @Test
     void shouldReadNdjsonFromSingleMessage() throws InterruptedException {
-        var client = RestClientBuilder.newBuilder().baseUri(uri)
-                .build(Client.class);
+        var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
         client.readPojoSingle().onCompletion().invoke(completionLatch::countDown)
@@ -112,8 +109,14 @@ public class MultiNdjsonTest {
         assertThat(collected).hasSize(4).containsAll(expected);
     }
 
+    private Client createClient(URI uri) {
+        return RestClientBuilder.newBuilder().baseUri(uri).register(new TestJacksonBasicMessageBodyReader())
+                .build(Client.class);
+    }
+
     @Path("/stream")
     public interface Client {
+
         @GET
         @Path("/string")
         @Produces(RestMediaType.APPLICATION_NDJSON)
@@ -131,9 +134,11 @@ public class MultiNdjsonTest {
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
         Multi<Message> readPojoSingle();
+
     }
 
     public static class ReactiveRoutesResource {
+
         @Route(path = "/rr/stream/pojo", produces = ReactiveRoutes.ND_JSON)
         Multi<Message> people(RoutingContext context) {
             return Multi.createFrom().items(

@@ -15,6 +15,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class RegisterClientHeadersTest {
@@ -24,6 +25,7 @@ public class RegisterClientHeadersTest {
             .setArchiveProducer(() -> {
                 return ShrinkWrap.create(JavaArchive.class)
                         .addPackage(EchoClient.class.getPackage())
+                        .addClass(TestJacksonBasicMessageBodyReader.class)
                         .addAsResource(
                                 new StringAsset(
                                         setUrlForClass(EchoClient.class) +

@@ -6,12 +6,16 @@ import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
 
 @RegisterRestClient
 @RegisterClientHeaders(MyHeadersFactory.class)
 @ClientHeaderParam(name = "my-header", value = "constant-header-value")
 @ClientHeaderParam(name = "computed-header", value = "{io.quarkus.rest.client.reactive.registerclientheaders.ComputedHeader.get}")
+@RegisterProvider(TestJacksonBasicMessageBodyReader.class)
 public interface MultipleHeadersBindingClient {
     @GET
     @Path("/describe-request")

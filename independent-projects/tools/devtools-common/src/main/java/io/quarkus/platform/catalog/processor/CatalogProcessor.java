@@ -3,6 +3,7 @@ package io.quarkus.platform.catalog.processor;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
@@ -32,8 +33,12 @@ public class CatalogProcessor {
 
     public static List<ProcessedCategory> getProcessedCategoriesInOrder(ExtensionCatalog catalog) {
         final Map<String, List<Extension>> extsByCategory = new HashMap<>(catalog.getCategories().size());
+        final Set<String> availableCategories = catalog.getCategories().stream().map(Category::getId)
+                .collect(Collectors.toSet());
         for (Extension e : catalog.getExtensions()) {
-            List<String> categories = new ArrayList<>(ExtensionProcessor.of(e).getCategories());
+            List<String> categories = ExtensionProcessor.of(e).getCategories().stream()
+                    .filter(availableCategories::contains)
+                    .collect(Collectors.toCollection(ArrayList::new));
             if (!isUnlisted(e)) {
                 if (categories.isEmpty()) {
                     categories.add(UNCATEGORIZED_CATEGORY.getId());

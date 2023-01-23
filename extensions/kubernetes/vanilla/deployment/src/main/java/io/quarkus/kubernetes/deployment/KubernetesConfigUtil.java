@@ -14,8 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -60,16 +58,7 @@ public class KubernetesConfigUtil {
      */
     public static Optional<String> getConfiguredDeploymentTarget() {
         Config config = ConfigProvider.getConfig();
-        Optional<String> indirectTarget = Stream
-                .concat(System.getProperties().entrySet().stream().map(e -> String.valueOf(e.getKey()))
-                        .filter(k -> k.startsWith("quarkus.")),
-                        StreamSupport.stream(config.getPropertyNames().spliterator(), false))
-                .map(p -> QUARKUS_DEPLOY_PATTERN.matcher(p))
-                .map(m -> m.matches() ? m.group(1) : null)
-                .filter(s -> s != null)
-                .findFirst();
-
-        return getExplicitlyConfiguredDeploymentTarget().or(() -> indirectTarget);
+        return getExplicitlyConfiguredDeploymentTarget().or(() -> DeploymentUtil.getEnabledDeployer());
     }
 
     /**
@@ -91,7 +80,7 @@ public class KubernetesConfigUtil {
     }
 
     public static boolean isDeploymentEnabled() {
-        return DeploymentUtil.isDeploymentEnabled("kubernetes", "openshift", "knative");
+        return DeploymentUtil.isDeploymentEnabled("kubernetes", "openshift", "knative", "kind", "minikube");
     }
 
     /*

@@ -7,7 +7,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.eclipse.microprofile.config.Config;
@@ -28,9 +27,7 @@ public class DeploymentUtil {
      */
     public static List<String> getDeployers() {
         Config config = ConfigProvider.getConfig();
-        return Stream.concat(System.getProperties().entrySet().stream().map(e -> String.valueOf(e.getKey())),
-                StreamSupport.stream(config.getPropertyNames().spliterator(),
-                        false))
+        return StreamSupport.stream(config.getPropertyNames().spliterator(), false)
                 .map(p -> QUARKUS_DEPLOY_PATTERN.matcher(p))
                 .filter(Matcher::matches)
                 .map(m -> m.group(1))

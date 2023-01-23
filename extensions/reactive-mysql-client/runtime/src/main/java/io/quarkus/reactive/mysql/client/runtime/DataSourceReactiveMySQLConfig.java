@@ -53,4 +53,18 @@ public class DataSourceReactiveMySQLConfig {
      */
     @ConfigItem(defaultValueDocumentation = "default")
     public Optional<MySQLAuthenticationPlugin> authenticationPlugin = Optional.empty();
+
+    /**
+     * The maximum number of inflight database commands that can be pipelined.
+     * By default, pipelining is disabled.
+     */
+    @ConfigItem
+    public OptionalInt pipeliningLimit = OptionalInt.empty();
+
+    /**
+     * Whether to return the number of rows matched by the <em>WHERE</em> clause in <em>UPDATE</em> statements, instead of the
+     * number of rows actually changed.
+     */
+    @ConfigItem(defaultValueDocumentation = "false")
+    public Optional<Boolean> useAffectedRows = Optional.empty();
 }

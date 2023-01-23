@@ -173,6 +173,14 @@ public class MySQLPoolRecorder {
             mysqlConnectOptions.setCollation(dataSourceReactiveMySQLConfig.collation.get());
         }
 
+        if (dataSourceReactiveMySQLConfig.pipeliningLimit.isPresent()) {
+            mysqlConnectOptions.setPipeliningLimit(dataSourceReactiveMySQLConfig.pipeliningLimit.getAsInt());
+        }
+
+        if (dataSourceReactiveMySQLConfig.useAffectedRows.isPresent()) {
+            mysqlConnectOptions.setUseAffectedRows(dataSourceReactiveMySQLConfig.useAffectedRows.get());
+        }
+
         if (dataSourceReactiveMySQLConfig.sslMode.isPresent()) {
             final SslMode sslMode = dataSourceReactiveMySQLConfig.sslMode.get();
             mysqlConnectOptions.setSslMode(sslMode);

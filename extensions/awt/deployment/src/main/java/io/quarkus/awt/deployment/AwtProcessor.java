@@ -143,6 +143,8 @@ class AwtProcessor {
                 "sun.font.FontConfigManager",
                 "sun.font.FontManagerNativeLibrary",
                 "sun.font.FontStrike",
+                // Added for JDK 19+ due to: https://github.com/openjdk/jdk20/commit/9bc023220 calling FontUtilities
+                "sun.font.FontUtilities",
                 "sun.font.FreetypeFontScaler",
                 "sun.font.GlyphLayout",
                 "sun.font.GlyphLayout$EngineRecord",

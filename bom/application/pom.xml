@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <bouncycastle.version>1.70</bouncycastle.version>
+        <bouncycastle.version>1.71</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.3</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.14.1</bouncycastle.tls.fips.version>
         <findbugs.version>3.0.2</findbugs.version>
@@ -2969,22 +2969,22 @@
             <!-- Bouncy Castle -->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
-                <artifactId>bcprov-jdk15on</artifactId>
+                <artifactId>bcprov-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
-                <artifactId>bctls-jdk15on</artifactId>
+                <artifactId>bctls-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
-                <artifactId>bcpkix-jdk15on</artifactId>
+                <artifactId>bcpkix-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
-                <artifactId>bcutil-jdk15on</artifactId>
+                <artifactId>bcutil-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>

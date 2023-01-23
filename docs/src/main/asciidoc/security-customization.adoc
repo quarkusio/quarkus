@@ -391,7 +391,7 @@ and add the BouncyCastle provider dependency:
 ----
 <dependency>
     <groupId>org.bouncycastle</groupId>
-    <artifactId>bcprov-jdk15on</artifactId>
+    <artifactId>bcprov-jdk18on</artifactId>
 </dependency>
 ----
 
@@ -426,7 +426,7 @@ and add the BouncyCastle TLS dependency:
 ----
 <dependency>
     <groupId>org.bouncycastle</groupId>
-    <artifactId>bctls-jdk15on</artifactId>
+    <artifactId>bctls-jdk18on</artifactId>
 </dependency>
 ----
 

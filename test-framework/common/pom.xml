@@ -30,6 +30,10 @@
             <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
         <!-- Needed for RestAssured -->
         <dependency>
             <groupId>org.jboss.logging</groupId>

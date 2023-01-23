@@ -70,7 +70,7 @@
         <smallrye-mutiny-vertx-core.version>2.25.0</smallrye-mutiny-vertx-core.version>
 
         <!-- Forbidden API checks -->
-        <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
+        <forbiddenapis-maven-plugin.version>3.4</forbiddenapis-maven-plugin.version>
     </properties>
 
     <modules>

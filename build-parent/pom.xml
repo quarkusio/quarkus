@@ -159,7 +159,7 @@
         <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file and also add the justification for those changes in that file.</revapi.buildFailureMessage>
 
         <!-- Forbidden API checks -->
-        <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
+        <forbiddenapis-maven-plugin.version>3.4</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
         <platform.quarkus.native.builder-image>mandrel</platform.quarkus.native.builder-image>

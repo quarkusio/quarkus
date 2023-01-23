@@ -24,7 +24,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.TeeInputStream;
 import org.apache.commons.lang3.RandomStringUtils;
 
@@ -155,7 +154,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         // the log itself is written inside the container
         Process quarkusProcess = new ProcessBuilder(args).redirectError(PIPE).redirectOutput(PIPE).start();
         InputStream tee = new TeeInputStream(quarkusProcess.getInputStream(), new FileOutputStream(logFile.toFile()));
-        executorService.submit(() -> IOUtils.copy(tee, containerLogOutputStream));
+        executorService.submit(() -> tee.transferTo(containerLogOutputStream));
 
         if (startedFunction != null) {
             IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,

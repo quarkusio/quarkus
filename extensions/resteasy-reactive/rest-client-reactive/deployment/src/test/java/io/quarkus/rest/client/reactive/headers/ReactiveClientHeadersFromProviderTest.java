@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.rest.client.reactive.ReactiveClientHeadersFactory;
+import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.common.annotation.Blocking;
@@ -46,7 +47,7 @@ public class ReactiveClientHeadersFromProviderTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(ReactiveClientHeadersFromProviderTest.Client.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, TestJacksonBasicMessageBodyReader.class)
                     .addAsResource(
                             new StringAsset("my.property-value=" + HEADER_VALUE),
                             "application.properties"));
@@ -86,6 +87,7 @@ public class ReactiveClientHeadersFromProviderTest {
         @POST
         public Map<String, List<String>> callClient(String uri) {
             ReactiveClientHeadersFromProviderTest.Client client = RestClientBuilder.newBuilder().baseUri(URI.create(uri))
+                    .register(new TestJacksonBasicMessageBodyReader())
                     .build(ReactiveClientHeadersFromProviderTest.Client.class);
             return client.getWithHeader(DIRECT_HEADER_PARAM_VAL);
         }

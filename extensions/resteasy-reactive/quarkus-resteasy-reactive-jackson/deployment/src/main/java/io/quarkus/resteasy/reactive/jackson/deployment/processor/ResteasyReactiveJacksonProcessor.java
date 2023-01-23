@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.ws.rs.Priorities;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -137,13 +138,14 @@ public class ResteasyReactiveJacksonProcessor {
                         new MessageBodyReaderBuildItem.Builder(ServerJacksonMessageBodyReader.class.getName(),
                                 Object.class.getName())
                                 .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                .setBuiltin(true).build());
+                                .setBuiltin(true).setRuntimeType(RuntimeType.SERVER).build());
         additionalReaders
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(VertxJsonArrayMessageBodyReader.class.getName(),
                                 JsonArray.class.getName())
                                 .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.SERVER)
                                 .build());
         additionalReaders
                 .produce(
@@ -151,6 +153,7 @@ public class ResteasyReactiveJacksonProcessor {
                                 JsonObject.class.getName())
                                 .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.SERVER)
                                 .build());
         additionalWriters
                 .produce(
@@ -160,6 +163,7 @@ public class ResteasyReactiveJacksonProcessor {
                                 Object.class.getName())
                                 .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.SERVER)
                                 .build());
         additionalWriters
                 .produce(
@@ -167,6 +171,7 @@ public class ResteasyReactiveJacksonProcessor {
                                 JsonArray.class.getName())
                                 .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.SERVER)
                                 .build());
         additionalWriters
                 .produce(
@@ -174,6 +179,7 @@ public class ResteasyReactiveJacksonProcessor {
                                 JsonObject.class.getName())
                                 .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.SERVER)
                                 .build());
     }
 

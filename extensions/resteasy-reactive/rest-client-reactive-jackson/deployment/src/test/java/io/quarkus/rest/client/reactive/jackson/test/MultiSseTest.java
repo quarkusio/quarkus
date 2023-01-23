@@ -16,8 +16,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -34,7 +37,7 @@ public class MultiSseTest {
     @Test
     void shouldConsume() {
         var resultList = new CopyOnWriteArrayList<>();
-        RestClientBuilder.newBuilder().baseUri(uri).build(SseClient.class)
+        createClient()
                 .get()
                 .subscribe().with(resultList::add);
         await().atMost(5, TimeUnit.SECONDS)
@@ -45,7 +48,7 @@ public class MultiSseTest {
     @Test
     void shouldConsumeJsonEntity() {
         var resultList = new CopyOnWriteArrayList<>();
-        RestClientBuilder.newBuilder().baseUri(uri).build(SseClient.class)
+        createClient()
                 .getJson()
                 .subscribe().with(resultList::add);
         await().atMost(5, TimeUnit.SECONDS)
@@ -56,7 +59,7 @@ public class MultiSseTest {
     @Test
     void shouldConsumeAsParametrizedType() {
         var resultList = new CopyOnWriteArrayList<>();
-        RestClientBuilder.newBuilder().baseUri(uri).build(SseClient.class)
+        createClient()
                 .getJsonAsMap()
                 .subscribe().with(resultList::add);
         await().atMost(5, TimeUnit.SECONDS)
@@ -68,7 +71,7 @@ public class MultiSseTest {
     @Test
     void shouldSendPayloadAndConsume() {
         var resultList = new CopyOnWriteArrayList<>();
-        RestClientBuilder.newBuilder().baseUri(uri).build(SseClient.class)
+        createClient()
                 .post("test")
                 .subscribe().with(resultList::add);
         await().atMost(5, TimeUnit.SECONDS)
@@ -79,7 +82,7 @@ public class MultiSseTest {
     @Test
     void shouldSendPayloadAndConsumeAsParametrizedType() {
         var resultList = new CopyOnWriteArrayList<>();
-        RestClientBuilder.newBuilder().baseUri(uri).build(SseClient.class)
+        createClient()
                 .postAndReadAsMap("test")
                 .subscribe().with(resultList::add);
         await().atMost(5, TimeUnit.SECONDS)
@@ -88,6 +91,11 @@ public class MultiSseTest {
                                 Map.of("name", "foo", "value", "test"),
                                 Map.of("name", "foo", "value", "test"),
                                 Map.of("name", "foo", "value", "test")));
+    }
+
+    private SseClient createClient() {
+        return RestClientBuilder.newBuilder().baseUri(uri).register(new JacksonBasicMessageBodyReader(new ObjectMapper()))
+                .build(SseClient.class);
     }
 
     @Path("/sse")

@@ -15,12 +15,15 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
+import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyWriter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Multi;
@@ -33,7 +36,9 @@ public class MultipartDetectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(Resource.class, Client.class, Person.class));
+            .withApplicationRoot(
+                    jar -> jar.addClasses(Resource.class, Client.class, Person.class, TestJacksonBasicMessageBodyReader.class,
+                            TestJacksonBasicMessageBodyWriter.class));
 
     @Test
     void shouldCallExplicitEndpoints() throws IOException {
@@ -104,6 +109,8 @@ public class MultipartDetectionTest {
     }
 
     @Path("form")
+    @RegisterProvider(TestJacksonBasicMessageBodyReader.class)
+    @RegisterProvider(TestJacksonBasicMessageBodyWriter.class)
     public interface Client {
         @Path("multipart")
         @POST

@@ -1,7 +1,8 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.ofType;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.responseType;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.uniType;
 
 import javax.ws.rs.core.Response;
 
@@ -74,7 +75,7 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         // Method parameters: sort strings, page index, page size, uri info
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(RESOURCE_METHOD_NAME, classCreator,
-                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, Long.class));
+                isNotReactivePanache() ? responseType() : uniType(Long.class));
 
         // Add method annotations
         addGetAnnotation(methodCreator);

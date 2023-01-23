@@ -44,17 +44,23 @@ class RunningAppConfigResolver extends ConfigProviderResolver {
 
             @Override
             public ConfigValue getConfigValue(final String propertyName) {
-                throw new UnsupportedOperationException();
+                throw illegalStateException();
             }
 
             @Override
             public <T> Optional<Converter<T>> getConverter(final Class<T> forType) {
-                throw new UnsupportedOperationException();
+                throw illegalStateException();
             }
 
             @Override
             public <T> T unwrap(final Class<T> type) {
-                throw new UnsupportedOperationException();
+                throw illegalStateException();
+            }
+
+            private IllegalStateException illegalStateException() {
+                return new IllegalStateException(
+                        "Unexpected call to io.quarkus.test.junit.RunningAppConfigResolver. Most likely due to io.quarkus" +
+                                ".test.junit.QuarkusTestExtension.ExtensionState.doClose not being called.");
             }
         };
     }

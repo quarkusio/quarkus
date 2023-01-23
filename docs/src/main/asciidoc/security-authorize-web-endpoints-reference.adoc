@@ -3,8 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="security-authorization-of-web-endpoints-reference"]
-= Authorization of Web Endpoints
+[id="security-authorize-web-endpoints-reference"]
+= Authorize web endpoints
 include::_attributes.adoc[]
 :categories: security,web
 
@@ -65,7 +65,7 @@ This is an exact path match as it does not end with `*`.
 `roles1` is an example name; you can call the permission sets whatever you want.
 
 
-=== Matching on paths, methods
+=== Matching on paths and methods
 
 Permission sets can also specify paths and methods as a comma-separated list.
 If a path ends with the `*` wildcard, the query it generates matches all sub-paths.
@@ -163,12 +163,12 @@ quarkus.http.auth.permission.roles2.policy=admin-policy1
 
 TIP: Given the above permission set, `GET /api/foo` would match both permission sets' paths, requiring both the `user` and `admin` roles.
 
-=== Configuration Properties to Deny access
+=== Configuration properties to deny access
 
-The following configuration settings alter the RBAC Deny behavior:
+The following configuration settings alter the role-based access control (RBAC) denying behavior:
 
 `quarkus.security.jaxrs.deny-unannotated-endpoints=true|false`::
-If set to true, the access will be denied for all JAX-RS endpoints by default, so if a JAX-RS endpoint does not have any security annotations, it will default to the `@DenyAll` behavior.
+If set to true, access is denied for all JAX-RS endpoints by default. If a JAX-RS endpoint does not have any security annotations, it defaults to the `@DenyAll` behavior.
 This is useful to ensure you cannot accidentally expose an endpoint that is supposed to be secured.
 Defaults to `false`.
 

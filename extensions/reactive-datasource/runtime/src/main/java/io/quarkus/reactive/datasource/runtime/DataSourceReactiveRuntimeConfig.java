@@ -101,15 +101,6 @@ public class DataSourceReactiveRuntimeConfig {
     public PfxConfiguration keyCertificatePfx = new PfxConfiguration();
 
     /**
-     * Deprecated: this was removed and is no longer available.
-     *
-     * @Deprecated
-     */
-    @ConfigItem
-    @Deprecated
-    public Optional<Boolean> threadLocal = Optional.empty();
-
-    /**
      * The number of reconnection attempts when a pooled connection cannot be established on first try.
      */
     @ConfigItem(defaultValue = "0")

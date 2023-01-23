@@ -80,10 +80,6 @@ public class DB2PoolRecorder {
         // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
         connectOptions.setMetricsName("db2|" + dataSourceName);
 
-        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
-            log.warn(
-                    "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
-        }
         return createPool(vertx, poolOptions, connectOptions, dataSourceName);
     }
 
@@ -161,13 +157,7 @@ public class DB2PoolRecorder {
             }
         }
 
-        if (dataSourceReactiveDB2Config.cachePreparedStatements.isPresent()) {
-            log.warn(
-                    "datasource.reactive.db2.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
-            connectOptions.setCachePreparedStatements(dataSourceReactiveDB2Config.cachePreparedStatements.get());
-        } else {
-            connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
-        }
+        connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
 
         connectOptions.setSsl(dataSourceReactiveDB2Config.ssl);
 

@@ -74,10 +74,6 @@ public class OraclePoolRecorder {
         // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
         oracleConnectOptions.setMetricsName("oracle|" + dataSourceName);
 
-        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
-            log.warn(
-                    "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
-        }
         return createPool(vertx, poolOptions, oracleConnectOptions, dataSourceName);
     }
 

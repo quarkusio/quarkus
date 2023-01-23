@@ -29,22 +29,22 @@ public class AdminClientResource {
     Keycloak keycloak;
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
     @Path("realm")
-    public RealmRepresentation getRealm() {
-        return keycloak.realm("quarkus").toRepresentation();
+    public String getRealm() {
+        return keycloak.realm("quarkus").toRepresentation().getRealm();
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
     @Path("newrealm")
-    public RealmRepresentation createRealm() {
+    public String createRealm() {
         RealmRepresentation newRealm = createRealm("quarkus2");
 
         newRealm.getClients().add(createClient("quarkus-app2"));
         newRealm.getUsers().add(createUser("alice", "user"));
         keycloak.realms().create(newRealm);
-        return keycloak.realm("quarkus2").toRepresentation();
+        return keycloak.realm("quarkus2").toRepresentation().getRealm();
     }
 
     private static RealmRepresentation createRealm(String name) {

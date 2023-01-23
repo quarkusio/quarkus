@@ -328,7 +328,7 @@ Please note that if you would like to use Elliptic Curve keys with Kubernetes Cl
 ----
 <dependency>
     <groupId>org.bouncycastle</groupId>
-    <artifactId>bcpkix-jdk15on</artifactId>
+    <artifactId>bcpkix-jdk18on</artifactId>
 </dependency>
 ----
 

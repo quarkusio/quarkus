@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,7 +43,7 @@ public class TypesTest {
         Set<Type> bazTypes = Types.getTypeClosure(index.getClassByName(bazName), null,
                 Collections.emptyMap(),
                 dummyDeployment,
-                resolvedTypeVariables::put);
+                resolvedTypeVariables::put, new HashSet<>());
         assertEquals(3, bazTypes.size());
         assertTrue(bazTypes.contains(Type.create(bazName, Kind.CLASS)));
         assertTrue(bazTypes.contains(ParameterizedType.create(fooName,

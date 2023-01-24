@@ -73,6 +73,11 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>${testng.version}</version>
+            </dependency>
             <!-- Enforce jQuery version that is compatible with TestNG 7.4.0 -->
             <dependency>
                 <groupId>org.webjars</groupId>

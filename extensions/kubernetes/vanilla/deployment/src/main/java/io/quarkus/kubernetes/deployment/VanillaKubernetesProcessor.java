@@ -243,9 +243,13 @@ public class VanillaKubernetesProcessor {
 
         // Probe port handling
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, config.livenessProbe, portName, ports));
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, "livenessProbe", config.livenessProbe,
+                        portName,
+                        ports));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, config.readinessProbe, portName, ports));
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, "readinessProbe", config.readinessProbe,
+                        portName,
+                        ports));
 
         // Handle remote debug configuration
         if (config.remoteDebug.enabled) {
@@ -277,5 +281,4 @@ public class VanillaKubernetesProcessor {
                     decorators);
         }
     }
-
 }

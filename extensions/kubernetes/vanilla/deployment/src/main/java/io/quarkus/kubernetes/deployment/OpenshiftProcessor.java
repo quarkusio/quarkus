@@ -302,9 +302,13 @@ public class OpenshiftProcessor {
         }
 
         // Probe port handling
-        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, config.livenessProbe, portName, ports));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, "livenssProbe", config.livenessProbe,
+                portName,
+                ports));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, config.readinessProbe, portName, ports));
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, "readinessProbe", config.readinessProbe,
+                        portName,
+                        ports));
 
         // Handle non-openshift builds
         if (deploymentKind == DeploymentResourceKind.DeploymentConfig

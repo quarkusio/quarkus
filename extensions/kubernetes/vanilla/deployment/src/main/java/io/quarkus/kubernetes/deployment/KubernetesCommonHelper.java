@@ -698,9 +698,15 @@ public class KubernetesCommonHelper {
      * 3. if a `KubernetesPorbePortBuild` is set, then use that to lookup the port.
      * 4. if we still haven't found a port fallback to 8080.
      *
+     * @param name The name of the deployment / container.
+     * @param target The deployment target
+     * @param the probe kind (e.g. readinessProbe, livenessProbe etc)
+     * @param portName the probe port name build item
+     * @paramt ports a list of kubernetes port build items
      * @return a decorator for configures the port of the http action of the probe.
      */
-    public static DecoratorBuildItem createProbeHttpPortDecorator(String name, String target, ProbeConfig probeConfig,
+    public static DecoratorBuildItem createProbeHttpPortDecorator(String name, String target, String probeKind,
+            ProbeConfig probeConfig,
             Optional<KubernetesProbePortNameBuildItem> portName,
             List<KubernetesPortBuildItem> ports) {
 
@@ -714,7 +720,7 @@ public class KubernetesCommonHelper {
         Integer port = probeConfig.httpActionPort
                 .orElse(ports.stream().filter(p -> httpPortName.equals(p.getName()))
                         .map(KubernetesPortBuildItem::getPort).findFirst().orElse(DEFAULT_HTTP_PORT));
-        return new DecoratorBuildItem(target, new ApplyHttpGetActionPortDecorator(name, name, port));
+        return new DecoratorBuildItem(target, new ApplyHttpGetActionPortDecorator(name, name, port, probeKind));
     }
 
     /**

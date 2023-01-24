@@ -474,6 +474,19 @@ In this case, it means `Book.id` must be `null` and `Book.title` must not be bla
 will be validated for the `book` parameter of the `put` method.
 In this case, it means `Book.id` must not be `null` and `Book.title` must not be blank.
 
+== Limitations
+
+=== META-INF/validation.xml
+
+Configuring the `ValidatorFactory` using a `META-INF/validation.xml` file is *NOT* supported in Quarkus.
+
+At the moment, Hibernate Validator does not expose an API to extract the information from this file
+so that we could register the appropriate classes for reflection.
+
+To configure the `ValidatorFactory`, use the exposed configuration properties and the CDI integration.
+
+Consequently, the only way to define constraints in Quarkus is by annotating your classes.
+
 [[configuration-reference]]
 == Hibernate Validator Configuration Reference
 

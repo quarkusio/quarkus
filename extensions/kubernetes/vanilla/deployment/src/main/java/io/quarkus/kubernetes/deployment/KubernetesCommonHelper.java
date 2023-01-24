@@ -2,6 +2,7 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.dekorate.kubernetes.decorator.AddServiceResourceDecorator.distinct;
+import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
@@ -687,6 +688,28 @@ public class KubernetesCommonHelper {
         return result;
     }
 
+    /**
+     * @return a decorator for configures the port of the http action of the probe.
+     */
+    public static DecoratorBuildItem createProbeHttpPortDecorator(String name, String target, ProbeConfig probeConfig,
+            List<KubernetesPortBuildItem> ports) {
+
+        //1. check if `httpActionPort` is defined
+        //2. lookup port by `httpPortName`
+        //3. fallback to DEFAULT_HTTP_PORT
+        Integer port = probeConfig.httpActionPort
+                .orElse(ports.stream().filter(p -> probeConfig.httpActionPortName.equals(p.getName()))
+                        .map(KubernetesPortBuildItem::getPort).findFirst().orElse(DEFAULT_HTTP_PORT));
+        return new DecoratorBuildItem(target, new ApplyHttpGetActionPortDecorator(name, name, port));
+    }
+
+    /**
+     * Create the decorators needed for setting up probes.
+     * The method will not create decorators related to ports, as they are not supported by all targets (e.g. knative)
+     * Port related decorators are created by `applyProbePort` instead.
+     *
+     * @return a list of decorators that configure the probes
+     */
     private static List<DecoratorBuildItem> createProbeDecorators(String name, String target, ProbeConfig livenessProbe,
             ProbeConfig readinessProbe,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,

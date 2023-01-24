@@ -1,7 +1,6 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.INGRESS;
@@ -241,8 +240,8 @@ public class VanillaKubernetesProcessor {
         }
 
         // Probe port handling
-        Integer portNumber = port.map(Port::getContainerPort).orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyHttpGetActionPortDecorator(name, name, portNumber)));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, config.livenessProbe, ports));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, config.readinessProbe, ports));
 
         // Handle remote debug configuration
         if (config.remoteDebug.enabled) {

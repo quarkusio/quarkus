@@ -586,8 +586,7 @@ annotation per tenant ID other than default:
 
 [NOTE]
 ====
-Proactive HTTP authentication needs to be disabled (`quarkus.http.auth.proactive=false`) for this to work. See
-xref:security-built-in-authentication-support-concept.adoc#proactive-authentication[Proactive Authentication] section for further details.
+Proactive HTTP authentication must be disabled (`quarkus.http.auth.proactive=false`) for this to work. For more information, see xref:security-proactive-authentication-concept.adoc[Proactive authentication].
 ====
 
 [source,java]

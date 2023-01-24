@@ -9,6 +9,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -21,6 +22,8 @@ import javax.net.ssl.SSLContext;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
@@ -341,6 +344,23 @@ public class ClientBuilderImpl extends ClientBuilder {
     @Override
     public ClientBuilderImpl register(Object component, Map<Class<?>, Integer> contracts) {
         configuration.register(component, contracts);
+        return this;
+    }
+
+    /*
+     * Add some custom methods that allow registering MessageBodyReader and MessageBodyWriter classes with all the necessary
+     * information
+     */
+
+    public ClientBuilderImpl registerMessageBodyReader(MessageBodyReader<?> reader, Class<?> handledType, List<String> consumes,
+            boolean builtin, Integer priority) {
+        configuration.registerMessageBodyReader(reader, handledType, consumes, RuntimeType.CLIENT, builtin, priority);
+        return this;
+    }
+
+    public ClientBuilderImpl registerMessageBodyWriter(MessageBodyWriter<?> writer, Class<?> handledType, List<String> consumes,
+            boolean builtin, Integer priority) {
+        configuration.registerMessageBodyWriter(writer, handledType, consumes, RuntimeType.CLIENT, builtin, priority);
         return this;
     }
 

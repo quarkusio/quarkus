@@ -429,6 +429,41 @@ public class ConfigurationImpl implements Configuration {
 
     }
 
+    /*
+     * Add some custom methods that allow registering MessageBodyReader and MessageBodyWriter classes with all the necessary
+     * information
+     */
+
+    public void registerMessageBodyReader(MessageBodyReader<?> reader, Class<?> handledType, List<String> consumes,
+            RuntimeType runtimeType, boolean builtin, Integer priority) {
+        if (isRegistered(reader)) {
+            return;
+        }
+        ResourceReader resourceReader = new ResourceReader();
+        resourceReader.setFactory(new UnmanagedBeanFactory<>(reader));
+        resourceReader.setMediaTypeStrings(consumes);
+        resourceReader.setBuiltin(builtin);
+        resourceReader.setPriority(priority);
+        resourceReader.setConstraint(runtimeType);
+        resourceReaders.add(handledType, resourceReader);
+        allInstances.put(reader.getClass(), reader);
+    }
+
+    public void registerMessageBodyWriter(MessageBodyWriter<?> messageBodyWriter, Class<?> handledType, List<String> consumes,
+            RuntimeType runtimeType, boolean builtin, Integer priority) {
+        if (isRegistered(messageBodyWriter)) {
+            return;
+        }
+        ResourceWriter resourceWriter = new ResourceWriter();
+        resourceWriter.setFactory(new UnmanagedBeanFactory<>(messageBodyWriter));
+        resourceWriter.setMediaTypeStrings(consumes);
+        resourceWriter.setBuiltin(builtin);
+        resourceWriter.setPriority(priority);
+        resourceWriter.setConstraint(runtimeType);
+        resourceWriters.add(handledType, resourceWriter);
+        allInstances.put(messageBodyWriter.getClass(), messageBodyWriter);
+    }
+
     public void register(Object component, int priority) {
         register(component, Integer.valueOf(priority));
     }

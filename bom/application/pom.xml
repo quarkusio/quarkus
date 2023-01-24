@@ -131,7 +131,7 @@
         <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.5.1</rest-assured.version>
-        <junit.jupiter.version>5.9.1</junit.jupiter.version>
+        <junit.jupiter.version>5.9.2</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <infinispan.version>14.0.5.Final</infinispan.version>
         <infinispan.protostream.version>4.5.1.Final</infinispan.protostream.version>

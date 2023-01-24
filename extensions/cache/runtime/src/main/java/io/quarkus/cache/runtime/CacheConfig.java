@@ -9,6 +9,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -40,14 +41,22 @@ public class CacheConfig {
     public static class CaffeineConfig {
 
         /**
-         * Namespace configuration.
+         * Default configuration applied to all Caffeine caches (lowest precedence)
+         */
+        @ConfigItem(name = ConfigItem.PARENT)
+        @ConfigDocSection
+        public CaffeineCacheConfig defaultConfig;
+
+        /**
+         * Additional configuration applied to a specific Caffeine cache (highest precedence)
          */
         @ConfigItem(name = ConfigItem.PARENT)
         @ConfigDocMapKey("cache-name")
-        public Map<String, CaffeineNamespaceConfig> namespace;
+        @ConfigDocSection
+        public Map<String, CaffeineCacheConfig> cachesConfig;
 
         @ConfigGroup
-        public static class CaffeineNamespaceConfig {
+        public static class CaffeineCacheConfig {
 
             /**
              * Minimum total size for the internal data structures. Providing a large enough estimate at construction time
@@ -84,7 +93,7 @@ public class CacheConfig {
              * value to {@code true} will enable the accumulation of cache stats inside Caffeine.
              */
             @ConfigItem
-            public boolean metricsEnabled;
+            public Optional<Boolean> metricsEnabled;
         }
     }
 }

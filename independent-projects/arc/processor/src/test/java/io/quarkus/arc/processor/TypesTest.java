@@ -30,7 +30,8 @@ public class TypesTest {
     @Test
     public void testGetTypeClosure() throws IOException {
         IndexView index = Basics.index(Foo.class, Baz.class, Producer.class, Object.class, List.class, Collection.class,
-                Iterable.class, Set.class, Eagle.class, Bird.class, Animal.class, AnimalHolder.class);
+                Iterable.class, Set.class, Eagle.class, Bird.class, Animal.class, AnimalHolder.class, MyRawBean.class,
+                MyBean.class, MyInterface.class, MySuperInterface.class);
         DotName bazName = DotName.createSimple(Baz.class.getName());
         DotName fooName = DotName.createSimple(Foo.class.getName());
         DotName producerName = DotName.createSimple(Producer.class.getName());
@@ -93,6 +94,17 @@ public class TypesTest {
         assertDoesNotThrow(
                 () -> verifyEagleTypes(Types.getClassBeanTypeClosure(index.getClassByName(DotName.createSimple(Eagle.class)),
                         dummyDeployment)));
+
+        // raw type bean
+        Set<Type> rawBeanTypes = Types.getClassBeanTypeClosure(index.getClassByName(DotName.createSimple(MyRawBean.class)),
+                dummyDeployment);
+        assertEquals(rawBeanTypes.size(), 5);
+        assertContainsType(MyRawBean.class, rawBeanTypes);
+        assertContainsType(MyBean.class, rawBeanTypes);
+        assertContainsType(MyInterface.class, rawBeanTypes);
+        // according to JLS, for raw type generics, their superclasses have erasure applied so this should be a match
+        assertContainsType(MySuperInterface.class, rawBeanTypes);
+        assertContainsType(Object.class, rawBeanTypes);
     }
 
     private void verifyEagleTypes(Set<Type> types) {
@@ -102,6 +114,10 @@ public class TypesTest {
             }
         }
         assertEquals(3, types.size());
+    }
+
+    private void assertContainsType(Class<?> clazz, Set<Type> rawBeanTypes) {
+        assertTrue(rawBeanTypes.contains(Type.create(DotName.createSimple(clazz.getName()), Kind.CLASS)));
     }
 
     static class Foo<T> {
@@ -148,5 +164,17 @@ public class TypesTest {
     }
 
     static class AnimalHolder<T extends Animal> {
+    }
+
+    static class MyRawBean extends MyBean {
+    }
+
+    static class MyBean<T> implements MyInterface {
+    }
+
+    interface MyInterface extends MySuperInterface<Number> {
+    }
+
+    interface MySuperInterface<T> {
     }
 }

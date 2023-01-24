@@ -34,12 +34,13 @@ public class PrometheusHandler implements Handler<RoutingContext> {
                     .setStatusMessage("Unable to resolve Prometheus registry instance");
         } else {
             ManagedContext requestContext = Arc.container().requestContext();
+            var acceptHeader = chooseContentType(routingContext.request().getHeader("Accept"));
             if (requestContext.isActive()) {
-                doHandle(response);
+                doHandle(response, acceptHeader);
             } else {
                 requestContext.activate();
                 try {
-                    doHandle(response);
+                    doHandle(response, acceptHeader);
                 } finally {
                     requestContext.terminate();
                 }
@@ -47,9 +48,19 @@ public class PrometheusHandler implements Handler<RoutingContext> {
         }
     }
 
-    private void doHandle(HttpServerResponse response) {
-        response.putHeader("Content-Type", TextFormat.CONTENT_TYPE_OPENMETRICS_100)
-                .end(Buffer.buffer(registry.scrape(TextFormat.CONTENT_TYPE_OPENMETRICS_100)));
+    private String chooseContentType(String acceptHeader) {
+        if (acceptHeader == null) {
+            return TextFormat.CONTENT_TYPE_OPENMETRICS_100;
+        }
+        if (acceptHeader.startsWith("text/plain")) {
+            return TextFormat.CONTENT_TYPE_004;
+        }
+        return TextFormat.CONTENT_TYPE_OPENMETRICS_100;
+    }
+
+    private void doHandle(HttpServerResponse response, String acceptHeader) {
+        response.putHeader("Content-Type", acceptHeader)
+                .end(Buffer.buffer(registry.scrape(acceptHeader)));
     }
 
     private void setup() {

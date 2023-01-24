@@ -84,7 +84,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
                     delegate = supplier.get();
                 } catch (Throwable t) {
                     // If the interceptor supplier throws an exception, catch it, and close the call.
-                    log.warn("Unable to retrieve gRPC Server call listener", t);
+                    log.warn("Unable to retrieve gRPC Server call listener, see the cause below.");
                     close(t);
                     return null;
                 }
@@ -100,6 +100,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
                 Throwable nt = ehp.transform(t);
                 StatusException sre = (StatusException) ExceptionHandlerProvider.toStatusException(nt, false);
                 Optional<Metadata> metadata = ExceptionHandlerProvider.toTrailers(nt);
+                log.warn("Closing gRPC call due to an error ...", t);
                 call.close(sre.getStatus(), metadata.orElse(new Metadata()));
             }
         }

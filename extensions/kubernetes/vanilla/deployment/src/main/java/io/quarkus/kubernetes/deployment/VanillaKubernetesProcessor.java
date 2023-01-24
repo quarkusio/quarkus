@@ -103,6 +103,7 @@ public class VanillaKubernetesProcessor {
             labels.produce(new KubernetesLabelBuildItem(k, v, KUBERNETES));
             imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
         });
+        labels.produce(new KubernetesLabelBuildItem(KubernetesLabelBuildItem.CommonLabels.MANAGED_BY, "quarkus", KUBERNETES));
     }
 
     @BuildStep

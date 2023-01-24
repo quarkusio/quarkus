@@ -77,6 +77,7 @@ public class KindProcessor {
             labels.produce(new KubernetesLabelBuildItem(k, v, KIND));
             imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
         });
+        labels.produce(new KubernetesLabelBuildItem(KubernetesLabelBuildItem.CommonLabels.MANAGED_BY, "quarkus", KIND));
     }
 
     @BuildStep

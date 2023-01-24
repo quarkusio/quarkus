@@ -65,6 +65,7 @@ public class BasicKubernetesTest {
             assertThat(d.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("basic");
                 assertThat(m.getNamespace()).isNull();
+                assertThat(m.getLabels()).contains(entry("app.kubernetes.io/managed-by", "quarkus"));
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {

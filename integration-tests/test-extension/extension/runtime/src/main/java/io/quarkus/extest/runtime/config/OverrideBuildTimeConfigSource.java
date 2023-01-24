@@ -29,7 +29,7 @@ public class OverrideBuildTimeConfigSource extends MapBackedConfigSource {
 
         boolean isBuildTime = false;
         for (ConfigSource configSource : ConfigProvider.getConfig().getConfigSources()) {
-            if (configSource.getClass().getSimpleName().equals("BuildTimeEnvConfigSource")) {
+            if (configSource.getName().equals("PropertiesConfigSource[source=Build system]")) {
                 isBuildTime = true;
                 break;
             }

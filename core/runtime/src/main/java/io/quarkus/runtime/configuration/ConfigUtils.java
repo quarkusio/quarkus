@@ -1,17 +1,12 @@
 package io.quarkus.runtime.configuration;
 
-import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
-import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -36,15 +31,12 @@ import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.DotEnvConfigSourceProvider;
-import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.NameIterator;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.config.SysPropConfigSource;
-import io.smallrye.config.common.utils.ConfigSourceUtil;
 
 /**
  *
@@ -100,24 +92,17 @@ public final class ConfigUtils {
 
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         builder.forClassLoader(classLoader);
+        builder.addDefaultSources();
         builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem());
         builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath());
+        builder.withSources(new DotEnvConfigSourceProvider());
         if (launchMode.isDevOrTest() && (runTime || bootstrap)) {
             builder.withSources(new RuntimeOverrideConfigSource(classLoader));
         }
         if (runTime || bootstrap) {
-            builder.addDefaultSources();
             // Validator only for runtime. We cannot use the current validator for build time (chicken / egg problem)
             builder.addDiscoveredValidator();
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
-            builder.withSources(new DotEnvConfigSourceProvider());
-        } else {
-            List<ConfigSource> sources = new ArrayList<>();
-            sources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
-            sources.addAll(new BuildTimeDotEnvConfigSourceProvider().getConfigSources(classLoader));
-            sources.add(new BuildTimeEnvConfigSource());
-            sources.add(new BuildTimeSysPropConfigSource());
-            builder.withSources(sources);
         }
         if (addDiscovered) {
             builder.addDiscoveredSources();
@@ -336,76 +321,8 @@ public final class ConfigUtils {
         return Optional.empty();
     }
 
-    /**
-     * We override the EnvConfigSource, because we don't want the nothing back from getPropertiesNames at build time.
-     * The mapping is one way and there is no way to map them back.
-     */
-    static class BuildTimeEnvConfigSource extends EnvConfigSource {
-        BuildTimeEnvConfigSource() {
-            super();
-        }
-
-        BuildTimeEnvConfigSource(final Map<String, String> propertyMap, final int ordinal) {
-            super(propertyMap, ordinal);
-        }
-
-        @Override
-        public Set<String> getPropertyNames() {
-            return Collections.emptySet();
-        }
-
-        @Override
-        public String getName() {
-            return "System environment";
-        }
-    }
-
-    /**
-     * Same as BuildTimeEnvConfigSource.
-     */
-    static class BuildTimeDotEnvConfigSourceProvider extends DotEnvConfigSourceProvider {
-        public BuildTimeDotEnvConfigSourceProvider() {
-            super();
-        }
-
-        public BuildTimeDotEnvConfigSourceProvider(final String location) {
-            super(location);
-        }
-
-        @Override
-        protected ConfigSource loadConfigSource(final URL url, final int ordinal) throws IOException {
-            return new BuildTimeEnvConfigSource(ConfigSourceUtil.urlToMap(url), ordinal) {
-                @Override
-                public String getName() {
-                    return super.getName() + "[source=" + url + "]";
-                }
-            };
-        }
-    }
-
-    /**
-     * We only want to include properties in the quarkus namespace.
-     *
-     * We removed the filter on the quarkus namespace due to the any prefix support for ConfigRoot. Filtering is now
-     * done in io.quarkus.deployment.configuration.BuildTimeConfigurationReader.ReadOperation#getAllProperties.
-     */
-    static class BuildTimeSysPropConfigSource extends SysPropConfigSource {
-        public String getName() {
-            return "System properties";
-        }
-
-        @Override
-        public Set<String> getPropertyNames() {
-            return Collections.emptySet();
-        }
-    }
-
     private static class ConfigBuilderComparator implements Comparator<ConfigBuilder> {
-
         private static final ConfigBuilderComparator INSTANCE = new ConfigBuilderComparator();
-
-        private ConfigBuilderComparator() {
-        }
 
         @Override
         public int compare(ConfigBuilder o1, ConfigBuilder o2) {

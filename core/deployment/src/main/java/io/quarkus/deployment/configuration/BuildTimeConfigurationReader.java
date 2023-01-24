@@ -877,32 +877,33 @@ public final class BuildTimeConfigurationReader {
 
         /**
          * We collect all properties from eligible ConfigSources, because Config#getPropertyNames exclude the active
-         * profiled properties, meaning that the property is written in the default config source without the profile
-         * prefix. This may cause issues if we run with a different profile and fallback to defaults.
+         * profiled properties (the property name omits the active profile prefix). If we record properties as is, we
+         * can have an issue when running in a different profile from the one recorded. This list includes all available
+         * properties in all profiles (active or not), so it is safe to fall back to different default on another
+         * profile.
          * <br>
-         * We also filter the properties coming from the System with the registered roots, because we don't want to
+         * We also filter the properties coming from System or Env with the registered roots, because we don't want to
          * record properties set by the compiling JVM (or other properties that are only related to the build).
-         * <br>
-         * Properties coming from the Environment are ignored.
          */
         private Set<String> getAllProperties(final Set<String> registeredRoots) {
             Set<String> properties = new HashSet<>();
+            for (String property : config.getPropertyNames()) {
+                properties.add(property);
+            }
+
             for (ConfigSource configSource : config.getConfigSources()) {
-                // This is a BuildTimeSysPropConfigSource
-                if (configSource instanceof SysPropConfigSource) {
-                    for (String propertyName : configSource.getProperties().keySet()) {
-                        NameIterator ni = new NameIterator(propertyName);
+                if (configSource instanceof SysPropConfigSource || configSource instanceof EnvConfigSource) {
+                    for (String property : configSource.getPropertyNames()) {
+                        NameIterator ni = new NameIterator(property);
                         if (ni.hasNext() && PropertiesUtil.isPropertyInRoot(registeredRoots, ni)) {
-                            properties.add(propertyName);
+                            properties.add(property);
+                        } else {
+                            properties.remove(property);
                         }
                     }
                 } else {
-                    // The BuildTimeEnvConfigSource returns an empty Set
                     properties.addAll(configSource.getPropertyNames());
                 }
-            }
-            for (String propertyName : config.getPropertyNames()) {
-                properties.add(propertyName);
             }
             return properties;
         }

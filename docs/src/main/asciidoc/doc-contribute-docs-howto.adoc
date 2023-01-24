@@ -160,7 +160,7 @@ cd docs
 vale --minAlertLevel=warning src/main/asciidoc
 ----
 
-If you want to run it from another directory use `--config=/path/to/quarks/docs/.vale.ini`.
+If you want to run it from another directory use `--config=/path/to/quarkus/docs/.vale.ini`.
 
 See the https://vale.sh/manual/[Vale CLI Manual] for details.
 

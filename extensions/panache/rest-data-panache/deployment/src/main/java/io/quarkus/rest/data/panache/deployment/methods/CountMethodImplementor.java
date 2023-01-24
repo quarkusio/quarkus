@@ -4,7 +4,6 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.ofType;
 
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.ClassCreator;
@@ -42,9 +41,9 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
      * {@code
      * &#64;GET
      * &#64;Path("/count")
-     * public Response count(UriInfo uriInfo) {
+     * public long count() {
      *     try {
-     *         return Response.ok(resource.count());
+     *         return resource.count();
      *     } catch (Throwable t) {
      *         throw new RestDataPanacheException(t);
      *     }
@@ -75,13 +74,10 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         // Method parameters: sort strings, page index, page size, uri info
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(RESOURCE_METHOD_NAME, classCreator,
-                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, Long.class),
-                UriInfo.class);
-        methodCreator.setParameterNames(new String[] { "uriInfo" });
+                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, Long.class));
 
         // Add method annotations
         addGetAnnotation(methodCreator);
-        addContextAnnotation(methodCreator.getParameterAnnotations(0));
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), RESOURCE_METHOD_NAME));
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));

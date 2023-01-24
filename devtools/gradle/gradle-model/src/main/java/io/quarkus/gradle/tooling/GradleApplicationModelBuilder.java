@@ -18,7 +18,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
-import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -570,15 +569,13 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
         File classesOutput = new File(projectFile, CLASSES_OUTPUT);
         File[] languageDirectories = classesOutput.listFiles();
-        if (languageDirectories == null) {
-            throw new GradleException(
-                    "The project does not contain a class output directory. " + classesOutput.getPath() + " must exist.");
-        }
-        for (File languageDirectory : languageDirectories) {
-            if (languageDirectory.isDirectory()) {
-                for (File sourceSet : languageDirectory.listFiles()) {
-                    if (sourceSet.isDirectory() && sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME)) {
-                        paths.add(sourceSet.toPath());
+        if (languageDirectories != null) {
+            for (File languageDirectory : languageDirectories) {
+                if (languageDirectory.isDirectory()) {
+                    for (File sourceSet : languageDirectory.listFiles()) {
+                        if (sourceSet.isDirectory() && sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME)) {
+                            paths.add(sourceSet.toPath());
+                        }
                     }
                 }
             }

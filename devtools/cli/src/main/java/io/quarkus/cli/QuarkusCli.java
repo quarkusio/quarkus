@@ -2,8 +2,11 @@ package io.quarkus.cli;
 
 import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import jakarta.inject.Inject;
@@ -11,6 +14,8 @@ import jakarta.inject.Inject;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
+import io.quarkus.cli.plugin.PluginCommandFactory;
+import io.quarkus.cli.plugin.PluginManager;
 import io.quarkus.runtime.QuarkusApplication;
 import picocli.CommandLine;
 import picocli.CommandLine.Help;
@@ -26,6 +31,8 @@ import picocli.CommandLine.UnmatchedArgumentException;
         Create.class, Build.class, Dev.class, Test.class, ProjectExtensions.class, Image.class, Deploy.class, Registry.class,
         Info.class,
         Update.class,
+        Version.class,
+        CliPlugins.class,
         Completion.class }, scope = ScopeType.INHERIT, sortOptions = false, showDefaultValues = true, versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = false, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n", headerHeading = "%n", parameterListHeading = "%n")
 public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     static {
@@ -56,6 +63,11 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         CommandLine cmd = factory == null ? new CommandLine(this) : new CommandLine(this, factory);
         cmd.getHelpSectionMap().put(SECTION_KEY_COMMAND_LIST, new SubCommandListRenderer());
         cmd.setParameterExceptionHandler(new ShortErrorMessageHandler());
+
+        PluginCommandFactory pluginCommandFactory = new PluginCommandFactory(output);
+        PluginManager pluginManager = pluginManager(output);
+        pluginManager.syncIfNeeded();
+        pluginCommandFactory.populateCommands(cmd, pluginManager.getInstalledPlugins());
         return cmd.execute(args);
     }
 
@@ -147,4 +159,16 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         }
     }
 
+    private static Optional<Path> getProjectRoot(OutputOptionMixin output) {
+        Path projectRoot = output != null ? output.getTestDirectory() : null;
+        if (projectRoot == null) {
+            projectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
+        }
+        return Optional.ofNullable(projectRoot);
+    }
+
+    private static PluginManager pluginManager(OutputOptionMixin output) {
+        return new PluginManager(output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
+                getProjectRoot(output), Optional.empty(), p -> true);
+    }
 }

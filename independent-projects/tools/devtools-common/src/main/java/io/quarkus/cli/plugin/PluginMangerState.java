@@ -1,0 +1,228 @@
+package io.quarkus.cli.plugin;
+
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
+
+class PluginMangerState {
+
+    PluginMangerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
+            Optional<Path> projectRoot,
+            Optional<QuarkusProject> quarkusProject,
+            Predicate<Plugin> pluginFilter) {
+        this.settings = settings;
+        this.userHome = userHome;
+        this.quarkusProject = quarkusProject;
+        this.pluginFilter = pluginFilter;
+
+        //Inferred
+        this.projectRoot = projectRoot.or(() -> quarkusProject.map(QuarkusProject::getProjectDirPath))
+                .filter(p -> !p.equals(userHome.orElse(null)));
+        this.jbangCatalogService = new JBangCatalogService(output, settings.getPluginPrefix(),
+                settings.getRemoteJBangCatalog());
+        this.pluginCatalogService = new PluginCatalogService(settings.getToRelativePath());
+        this.util = PluginManagerUtil.getUtil(settings);
+    }
+
+    private final PluginManagerSettings settings;
+    private final PluginManagerUtil util;
+    private final Optional<Path> userHome;
+    private final Optional<Path> projectRoot;
+    private final Optional<QuarkusProject> quarkusProject;
+
+    private final PluginCatalogService pluginCatalogService;
+    private final JBangCatalogService jbangCatalogService;
+
+    private final Predicate<Plugin> pluginFilter;
+
+    //
+    private Map<String, Plugin> _userPlugins;
+    private Map<String, Plugin> _projectPlugins;
+    private Map<String, Plugin> _installedPlugins;
+
+    private Map<String, Plugin> _installablePlugins;
+    private Map<String, Plugin> _extensionPlugins;
+
+    private Optional<PluginCatalog> _userCatalog;
+    private Optional<PluginCatalog> _projectCatalog;
+    private PluginCatalog _combinedCatalog;
+    private PluginCatalog _pluginCatalog;
+
+    public PluginCatalogService getPluginCatalogService() {
+        return pluginCatalogService;
+    }
+
+    public JBangCatalogService getJbangCatalogService() {
+        return jbangCatalogService;
+    }
+
+    public Map<String, Plugin> installedPlugins() {
+        Map<String, Plugin> allInstalledPlugins = new HashMap<>();
+        allInstalledPlugins.putAll(userPlugins());
+        allInstalledPlugins.putAll(projectPlugins());
+        return allInstalledPlugins;
+    }
+
+    public Map<String, Plugin> getInstalledPluigns() {
+        if (_installedPlugins == null) {
+            _installedPlugins = installedPlugins();
+        }
+        return Collections.unmodifiableMap(_installedPlugins);
+    }
+
+    public Map<String, Plugin> projectPlugins() {
+        return pluginCatalogService.readProjectCatalog(projectRoot).map(catalog -> catalog.getPlugins().values().stream()
+                .filter(pluginFilter).collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
+    }
+
+    public Map<String, Plugin> getProjectPluigns() {
+        if (_projectPlugins == null) {
+            _projectPlugins = projectPlugins();
+        }
+        return Collections.unmodifiableMap(_projectPlugins);
+    }
+
+    public Map<String, Plugin> userPlugins() {
+        return pluginCatalogService.readUserCatalog(userHome).map(catalog -> catalog.getPlugins().values().stream()
+                .filter(pluginFilter).collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
+    }
+
+    public Map<String, Plugin> getUserPluigns() {
+        if (_userPlugins == null) {
+            _userPlugins = userPlugins();
+        }
+        return Collections.unmodifiableMap(_userPlugins);
+    }
+
+    public Map<String, Plugin> installablePlugins() {
+        Map<String, Plugin> installablePlugins = new HashMap<>();
+        //Get installable from JBang
+        JBangCatalog jbangCatalog = jbangCatalogService.readCombinedCatalog(projectRoot, userHome);
+        jbangCatalog.getAliases().forEach((location, alias) -> {
+            String name = util.getName(location);
+            Optional<String> description = alias.getDescription();
+            Plugin plugin = new Plugin(name, PluginType.jbang, Optional.of(location), description);
+            if (pluginFilter.test(plugin)) {
+                installablePlugins.put(name, plugin);
+            }
+        });
+
+        //Get installable from Binaries
+        Binaries.findQuarkusPrefixedCommands().forEach(f -> {
+            String name = util.getName(f.getName());
+            Optional<String> description = Optional.empty();
+            Optional<String> location = Optional.of(f.getAbsolutePath());
+            Plugin plugin = new Plugin(name, PluginType.binary, location, description);
+            if (pluginFilter.test(plugin)) {
+                installablePlugins.put(name, plugin);
+            }
+        });
+
+        installablePlugins.putAll(getExtensionPlugins());
+        return installablePlugins;
+    }
+
+    public Map<String, Plugin> getInstallablePlugins() {
+        if (_installablePlugins == null) {
+            this._installablePlugins = installablePlugins();
+        }
+        return Collections.unmodifiableMap(_installablePlugins);
+    }
+
+    public Map<String, Plugin> extensionPlugins() {
+        //Get extension plugins
+        Map<String, Plugin> extensionPlugins = new HashMap<>();
+        quarkusProject.ifPresent(project -> {
+            try {
+                Set<ArtifactKey> installed = project.getExtensionManager().getInstalled().stream()
+                        .map(ArtifactCoords::getKey).collect(Collectors.toSet());
+
+                extensionPlugins.putAll(project.getExtensionsCatalog().getExtensions().stream()
+                        .filter(e -> installed.contains(e.getArtifact().getKey()))
+                        .map(ExtensionProcessor::getCliPlugins).flatMap(Collection::stream).map(util::from)
+                        .collect(Collectors.toMap(p -> p.getName(), p -> p)));
+            } catch (Exception e) {
+                throw new RuntimeException("Error reading the extension catalog", e);
+            }
+        });
+        return extensionPlugins;
+    }
+
+    public Map<String, Plugin> getExtensionPlugins() {
+        if (_extensionPlugins == null) {
+            this._extensionPlugins = extensionPlugins();
+        }
+
+        return Collections.unmodifiableMap(_extensionPlugins);
+    }
+
+    public Optional<PluginCatalog> projectCatalog() {
+        return projectRoot.flatMap(p -> pluginCatalogService.readProjectCatalog(Optional.of(p)));
+    }
+
+    public Optional<PluginCatalog> getProjectCatalog() {
+        if (_projectCatalog == null) {
+            _projectCatalog = pluginCatalogService.readProjectCatalog(projectRoot);
+        }
+        return _projectCatalog;
+    }
+
+    public Optional<PluginCatalog> userCatalog() {
+        return userHome.flatMap(h -> pluginCatalogService.readUserCatalog(Optional.of(h)));
+    }
+
+    public Optional<PluginCatalog> getUserCatalog() {
+        if (_userCatalog == null) {
+            _userCatalog = userCatalog();
+        }
+        return _userCatalog;
+    }
+
+    public PluginCatalog combinedCatalog() {
+        return PluginCatalog.combine(getUserCatalog(), getProjectCatalog());
+    }
+
+    public PluginCatalog getCombinedCatalog() {
+        if (_combinedCatalog == null) {
+            _combinedCatalog = combinedCatalog();
+        }
+        return _combinedCatalog;
+    }
+
+    public PluginCatalog pluginCatalog() {
+        return getProjectCatalog().or(() -> getUserCatalog())
+                .orElseThrow(() -> new IllegalStateException("Unable to get project and user plugin catalogs!"));
+    }
+
+    public PluginCatalog getPluginCatalog() {
+        if (_pluginCatalog == null) {
+            _pluginCatalog = pluginCatalog();
+        }
+        return _pluginCatalog;
+    }
+
+    public Optional<Path> getProjectRoot() {
+        return this.projectRoot;
+    }
+
+    public void invalidate() {
+        _userPlugins = null;
+        _projectPlugins = null;
+        _installedPlugins = null;
+        _installablePlugins = null;
+        _extensionPlugins = null;
+    }
+
+}

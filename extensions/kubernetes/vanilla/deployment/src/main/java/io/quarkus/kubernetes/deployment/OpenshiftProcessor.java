@@ -124,6 +124,7 @@ public class OpenshiftProcessor {
             labels.produce(new KubernetesLabelBuildItem(k, v, OPENSHIFT));
             imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
         });
+        labels.produce(new KubernetesLabelBuildItem(KubernetesLabelBuildItem.CommonLabels.MANAGED_BY, "quarkus", OPENSHIFT));
     }
 
     @BuildStep

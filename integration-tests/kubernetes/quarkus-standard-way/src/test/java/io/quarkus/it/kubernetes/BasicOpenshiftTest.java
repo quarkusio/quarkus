@@ -45,6 +45,7 @@ public class BasicOpenshiftTest {
             // metadata assertions
             assertThat(deployment.getMetadata().getName()).isEqualTo("basic-openshift");
             assertThat(deployment.getMetadata().getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
+            assertThat(deployment.getMetadata().getLabels().get("app.kubernetes.io/managed-by")).isEqualTo("quarkus");
             assertThat(deployment.getMetadata().getNamespace()).isNull();
 
             // spec assertions

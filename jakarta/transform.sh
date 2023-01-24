@@ -78,6 +78,7 @@ transform_kotlin_module () {
     local newPackage=${package/javax/jakarta}
     find $1 -name '*.kt' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
     find $1 -name '*.kts' | xargs --no-run-if-empty sed -i "s@annotation(\"${package}@annotation(\"${newPackage}@g"
+    find $1 -name '*.gradle' | xargs --no-run-if-empty sed -i "s@annotation(\"${package}@annotation(\"${newPackage}@g"
   done
 }
 

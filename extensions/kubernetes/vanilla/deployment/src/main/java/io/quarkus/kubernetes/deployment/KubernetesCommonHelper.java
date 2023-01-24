@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 
 import static io.dekorate.kubernetes.decorator.AddServiceResourceDecorator.distinct;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
+import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
@@ -82,6 +83,7 @@ import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
@@ -689,16 +691,28 @@ public class KubernetesCommonHelper {
     }
 
     /**
+     * Create a decorator that sets the port to the http probe.
+     * The rules for setting the probe are the following:
+     * 1. if 'http-action-port' is set, use that.
+     * 2. if 'http-action-port-name' is set, use that to lookup the port value.
+     * 3. if a `KubernetesPorbePortBuild` is set, then use that to lookup the port.
+     * 4. if we still haven't found a port fallback to 8080.
+     *
      * @return a decorator for configures the port of the http action of the probe.
      */
     public static DecoratorBuildItem createProbeHttpPortDecorator(String name, String target, ProbeConfig probeConfig,
+            Optional<KubernetesProbePortNameBuildItem> portName,
             List<KubernetesPortBuildItem> ports) {
 
         //1. check if `httpActionPort` is defined
         //2. lookup port by `httpPortName`
         //3. fallback to DEFAULT_HTTP_PORT
+        String httpPortName = probeConfig.httpActionPortName
+                .or(() -> portName.map(KubernetesProbePortNameBuildItem::getName))
+                .orElse(HTTP_PORT);
+
         Integer port = probeConfig.httpActionPort
-                .orElse(ports.stream().filter(p -> probeConfig.httpActionPortName.equals(p.getName()))
+                .orElse(ports.stream().filter(p -> httpPortName.equals(p.getName()))
                         .map(KubernetesPortBuildItem::getPort).findFirst().orElse(DEFAULT_HTTP_PORT));
         return new DecoratorBuildItem(target, new ApplyHttpGetActionPortDecorator(name, name, port));
     }

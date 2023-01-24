@@ -20,8 +20,8 @@ public class ProbeConfig {
     /**
      * The port name ot use for selecting the port to congiure for the http get.
      */
-    @ConfigItem(defaultValue = "http")
-    String httpActionPortName;
+    @ConfigItem
+    Optional<String> httpActionPortName;
 
     /**
      * The http path to use for the probe For this to work, the container port also

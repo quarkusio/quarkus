@@ -51,6 +51,7 @@ import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
@@ -131,6 +132,7 @@ public class VanillaKubernetesProcessor {
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels, List<KubernetesEnvBuildItem> envs,
             Optional<ContainerImageInfoBuildItem> image, Optional<KubernetesCommandBuildItem> command,
+            Optional<KubernetesProbePortNameBuildItem> portName,
             List<KubernetesPortBuildItem> ports, Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath, List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot,
@@ -240,8 +242,10 @@ public class VanillaKubernetesProcessor {
         }
 
         // Probe port handling
-        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, config.livenessProbe, ports));
-        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, config.readinessProbe, ports));
+        result.add(
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, config.livenessProbe, portName, ports));
+        result.add(
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, config.readinessProbe, portName, ports));
 
         // Handle remote debug configuration
         if (config.remoteDebug.enabled) {

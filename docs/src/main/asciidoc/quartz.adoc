@@ -141,7 +141,8 @@ public class TaskBean {
 
 === Scheduling Jobs Programmatically
 
-It is also possible to leverage the Quartz API directly.
+An injected `io.quarkus.scheduler.Scheduler` can be used to <<scheduler-reference.adoc#programmatic_scheduling,schedule a job programmatically>>.
+However, it is also possible to leverage the Quartz API directly.
 You can inject the underlying `org.quartz.Scheduler` in any bean:
 
 [source,java]

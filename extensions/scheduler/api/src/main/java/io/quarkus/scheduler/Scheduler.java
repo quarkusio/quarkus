@@ -1,6 +1,12 @@
 package io.quarkus.scheduler;
 
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
+import io.quarkus.scheduler.Scheduled.SkipPredicate;
+import io.smallrye.mutiny.Uni;
 
 /**
  * The container provides a built-in bean with bean type {@link Scheduler} and qualifier
@@ -57,4 +63,117 @@ public interface Scheduler {
      * @return the trigger of a specific job or null for non-existent identity.
      */
     Trigger getScheduledJob(String identity);
+
+    /**
+     * Creates a new job definition. The job is not scheduled until the {@link JobDefinition#schedule()} method is called.
+     * <p>
+     * The properties of the job definition have the same semantics as their equivalents in the {@link Scheduled}
+     * annotation.
+     *
+     * @param identity The identity must be unique for the scheduler
+     * @return a new job definition
+     * @see Scheduled#identity()
+     */
+    JobDefinition newJob(String identity);
+
+    /**
+     * Removes the job previously added via {@link #newJob(String)}.
+     * <p>
+     * It is a no-op if the identified job was not added programmatically.
+     *
+     * @param identity
+     * @return the trigger or {@code null} if no such job exists
+     */
+    Trigger unscheduleJob(String identity);
+
+    /**
+     * The job definition is a builder-like API that can be used to define a job programmatically.
+     * <p>
+     * No job is scheduled until the {@link #setTask(Consumer)} or {@link #setAsyncTask(Function)} method is called.
+     * <p>
+     * The implementation is not thread-safe and should not be reused.
+     */
+    interface JobDefinition {
+
+        /**
+         * The schedule is defined either by {@link #setCron(String)} or by {@link #setInterval(String)}. If both methods are
+         * used, then the cron expression takes precedence.
+         * <p>
+         * {@link Scheduled#cron()}
+         *
+         * @param cron
+         * @return self
+         * @see Scheduled#cron()
+         */
+        JobDefinition setCron(String cron);
+
+        /**
+         * The schedule is defined either by {@link #setCron(String)} or by {@link #setInterval(String)}. If both methods are
+         * used, then the cron expression takes precedence.
+         * <p>
+         * {@link Scheduled#every()}
+         *
+         * @param every
+         * @return self
+         * @see Scheduled#every()
+         */
+        JobDefinition setInterval(String every);
+
+        /**
+         * {@link Scheduled#delayed()}
+         *
+         * @param period
+         * @return self
+         * @see Scheduled#delayed()
+         */
+        JobDefinition setDelayed(String period);
+
+        /**
+         * {@link Scheduled#concurrentExecution()}
+         *
+         * @param concurrentExecution
+         * @return self
+         * @see Scheduled#concurrentExecution()
+         */
+        JobDefinition setConcurrentExecution(ConcurrentExecution concurrentExecution);
+
+        /**
+         * {@link Scheduled#skipExecutionIf()}
+         *
+         * @param skipPredicate
+         * @return self
+         * @see Scheduled#skipExecutionIf()
+         */
+        JobDefinition setSkipPredicate(SkipPredicate skipPredicate);
+
+        /**
+         * {@link Scheduled#overdueGracePeriod()}
+         *
+         * @param period
+         * @return self
+         * @see Scheduled#overdueGracePeriod()
+         */
+        JobDefinition setOverdueGracePeriod(String period);
+
+        /**
+         *
+         * @param task
+         * @return self
+         */
+        JobDefinition setTask(Consumer<ScheduledExecution> task);
+
+        /**
+         *
+         * @param asyncTask
+         * @return self
+         */
+        JobDefinition setAsyncTask(Function<ScheduledExecution, Uni<Void>> asyncTask);
+
+        /**
+         * Attempts to schedule the job.
+         *
+         * @return the trigger
+         */
+        Trigger schedule();
+    }
 }

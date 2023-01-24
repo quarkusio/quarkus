@@ -25,6 +25,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
@@ -33,6 +34,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
+import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyWriter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Uni;
@@ -46,11 +49,13 @@ public class MultipartResponseTest {
     URI baseUri;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest();
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class, TestJacksonBasicMessageBodyWriter.class));
 
     @Test
     void shouldParseMultipartResponse() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = createClient();
         MultipartData data = client.getFile();
         assertThat(data.file).exists();
         verifyWooHooFile(data.file, 10000);
@@ -64,7 +69,7 @@ public class MultipartResponseTest {
 
     @Test
     void shouldParseUniMultipartResponse() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = createClient();
         MultipartData data = client.uniGetFile().await().atMost(Duration.ofSeconds(10));
         assertThat(data.file).exists();
         verifyWooHooFile(data.file, 10000);
@@ -78,7 +83,7 @@ public class MultipartResponseTest {
 
     @Test
     void shouldParseCompletionStageMultipartResponse() throws ExecutionException, InterruptedException, TimeoutException {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = createClient();
         MultipartData data = client.csGetFile().toCompletableFuture().get(10, TimeUnit.SECONDS);
         assertThat(data.file).exists();
         verifyWooHooFile(data.file, 10000);
@@ -92,7 +97,7 @@ public class MultipartResponseTest {
 
     @Test
     void shouldParseMultipartResponseWithSmallFile() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = createClient();
         MultipartData data = client.getSmallFile();
         assertThat(data.file).exists();
         verifyWooHooFile(data.file, 1);
@@ -105,7 +110,7 @@ public class MultipartResponseTest {
     @EnabledIfSystemProperty(named = "test-resteasy-reactive-large-files", matches = "true")
     @Test
     void shouldParseMultipartResponseWithLargeFile() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = createClient();
         MultipartData data = client.getLargeFile();
         assertThat(data.file).exists();
         assertThat(data.file.length()).isEqualTo(ONE_GIGA);
@@ -113,7 +118,7 @@ public class MultipartResponseTest {
 
     @Test
     void shouldParseMultipartResponseWithNulls() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = createClient();
         MultipartData data = client.getFileEmpty();
         assertThat(data.file).isNull();
         assertThat(data.name).isNull();
@@ -122,7 +127,7 @@ public class MultipartResponseTest {
 
     @Test
     void shouldParseMultipartResponseWithSetters() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = createClient();
         MultipartDataWithSetters data = client.getFileWithSetters();
         assertThat(data.file).exists();
         assertThat(data.name).isEqualTo("foo");
@@ -133,13 +138,13 @@ public class MultipartResponseTest {
 
     @Test
     void shouldBeSaneOnServerError() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = createClient();
         assertThatThrownBy(client::error).isInstanceOf(ClientWebApplicationException.class);
     }
 
     @Test
     void shouldParseMultipartResponseWithClientBuilderApi() {
-        javax.ws.rs.client.Client client = ClientBuilder.newBuilder().build();
+        javax.ws.rs.client.Client client = ClientBuilder.newBuilder().register(new TestJacksonBasicMessageBodyReader()).build();
         MultipartDataForClientBuilder data = client.target(baseUri)
                 .path("/give-me-file")
                 .request(MediaType.MULTIPART_FORM_DATA)
@@ -150,6 +155,11 @@ public class MultipartResponseTest {
         assertThat(data.panda.height).isEqualTo("medium");
         assertThat(data.panda.mood).isEqualTo("happy");
         assertThat(data.numbers).containsSequence(2008, 2011, 2014);
+    }
+
+    private Client createClient() {
+        return RestClientBuilder.newBuilder().baseUri(baseUri).register(new TestJacksonBasicMessageBodyReader())
+                .build(Client.class);
     }
 
     void verifyWooHooFile(File file, int expectedTimes) {
@@ -167,6 +177,8 @@ public class MultipartResponseTest {
     }
 
     @Path("/give-me-file")
+    @RegisterProvider(TestJacksonBasicMessageBodyReader.class)
+    @RegisterProvider(TestJacksonBasicMessageBodyWriter.class)
     public interface Client {
         @GET
         @Produces(MediaType.MULTIPART_FORM_DATA)

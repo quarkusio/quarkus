@@ -37,15 +37,15 @@ import io.vertx.ext.web.RoutingContext;
 
 public class StreamJsonTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest();
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class));
 
     @TestHTTPResource
     URI uri;
 
     @Test
     void shouldReadStreamJsonStringAsMulti() throws InterruptedException {
-        var client = RestClientBuilder.newBuilder().baseUri(uri)
-                .build(Client.class);
+        var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<String>();
         var completionLatch = new CountDownLatch(1);
         client.readString().onCompletion().invoke(completionLatch::countDown)
@@ -60,8 +60,7 @@ public class StreamJsonTest {
 
     @Test
     void shouldReadNdjsonPojoAsMulti() throws InterruptedException {
-        var client = RestClientBuilder.newBuilder().baseUri(uri)
-                .build(Client.class);
+        var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
         client.readPojo().onCompletion().invoke(completionLatch::countDown)
@@ -79,8 +78,7 @@ public class StreamJsonTest {
     @Test
     void shouldReadNdjsonPojoFromReactiveRoutes() throws InterruptedException {
         URI reactiveRoutesBaseUri = URI.create(uri.toString() + "/rr");
-        var client = RestClientBuilder.newBuilder().baseUri(reactiveRoutesBaseUri)
-                .build(Client.class);
+        var client = createClient(reactiveRoutesBaseUri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
         client.readPojo().onCompletion().invoke(completionLatch::countDown)
@@ -96,8 +94,7 @@ public class StreamJsonTest {
 
     @Test
     void shouldReadNdjsonFromSingleMessage() throws InterruptedException {
-        var client = RestClientBuilder.newBuilder().baseUri(uri)
-                .build(Client.class);
+        var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
         client.readPojoSingle().onCompletion().invoke(completionLatch::countDown)
@@ -110,6 +107,11 @@ public class StreamJsonTest {
                 Message.of("zero", "0"), Message.of("one", "1"),
                 Message.of("two", "2"), Message.of("three", "3"));
         assertThat(collected).hasSize(4).containsAll(expected);
+    }
+
+    private Client createClient(URI uri) {
+        return RestClientBuilder.newBuilder().baseUri(uri).register(new TestJacksonBasicMessageBodyReader())
+                .build(Client.class);
     }
 
     @Path("/stream")

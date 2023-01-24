@@ -9,6 +9,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ public class MediaTypeSuffixTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, Client.class))
+                    .addClasses(HelloResource.class, Client.class, TestJacksonBasicMessageBodyReader.class))
             .withConfigurationResource("media-type-suffix-application.properties");
 
     @Test
@@ -37,6 +38,7 @@ public class MediaTypeSuffixTest {
 
     @RegisterRestClient(configKey = "test")
     @Path("/hello")
+    @RegisterProvider(TestJacksonBasicMessageBodyReader.class)
     public interface Client {
 
         @GET

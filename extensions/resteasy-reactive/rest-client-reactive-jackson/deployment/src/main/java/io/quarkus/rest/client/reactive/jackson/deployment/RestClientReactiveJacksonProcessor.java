@@ -7,6 +7,7 @@ import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_
 import java.util.Collections;
 import java.util.List;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -42,9 +43,6 @@ public class RestClientReactiveJacksonProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
-        if (!jacksonProviderDefined.isEmpty()) {
-            return;
-        }
         // make these beans to they can get instantiated with the Quarkus CDI configured Jsonb object
         additionalBean.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(ClientJacksonMessageBodyReader.class.getName())
@@ -57,6 +55,7 @@ public class RestClientReactiveJacksonProcessor {
                                 Object.class.getName())
                                 .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.CLIENT)
                                 .build());
         additionalReaders
                 .produce(
@@ -64,6 +63,7 @@ public class RestClientReactiveJacksonProcessor {
                                 JsonArray.class.getName())
                                 .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.CLIENT)
                                 .build());
         additionalReaders
                 .produce(
@@ -71,6 +71,7 @@ public class RestClientReactiveJacksonProcessor {
                                 JsonObject.class.getName())
                                 .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.CLIENT)
                                 .build());
         additionalWriters
                 .produce(
@@ -78,6 +79,7 @@ public class RestClientReactiveJacksonProcessor {
                                 Object.class.getName())
                                 .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.CLIENT)
                                 .build());
         additionalWriters
                 .produce(
@@ -85,6 +87,7 @@ public class RestClientReactiveJacksonProcessor {
                                 JsonArray.class.getName())
                                 .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.CLIENT)
                                 .build());
         additionalWriters
                 .produce(
@@ -92,6 +95,7 @@ public class RestClientReactiveJacksonProcessor {
                                 JsonObject.class.getName())
                                 .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
                                 .setBuiltin(true)
+                                .setRuntimeType(RuntimeType.CLIENT)
                                 .build());
     }
 }

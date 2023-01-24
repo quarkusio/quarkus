@@ -1,10 +1,9 @@
 package io.quarkus.it.keycloak;
 
-import static io.restassured.RestAssured.given;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
-import org.keycloak.representations.idm.RealmRepresentation;
 
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -13,15 +12,17 @@ public class AdminClientTestCase {
 
     @Test
     public void testGetExistingRealm() {
-        RealmRepresentation realm = given()
-                .when().get("/admin-client/realm").as(RealmRepresentation.class);
-        assertEquals("quarkus", realm.getRealm());
+        when().get("/admin-client/realm")
+                .then()
+                .statusCode(200)
+                .body(equalTo("quarkus"));
     }
 
     @Test
     public void testGetNewRealm() {
-        RealmRepresentation realm = given()
-                .when().get("/admin-client/newrealm").as(RealmRepresentation.class);
-        assertEquals("quarkus2", realm.getRealm());
+        when().get("/admin-client/newrealm")
+                .then()
+                .statusCode(200)
+                .body(equalTo("quarkus2"));
     }
 }

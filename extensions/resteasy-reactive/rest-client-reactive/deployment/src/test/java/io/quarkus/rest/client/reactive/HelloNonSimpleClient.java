@@ -10,6 +10,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import io.smallrye.mutiny.Uni;
@@ -20,6 +21,8 @@ import io.smallrye.mutiny.Uni;
 // https://github.com/quarkusio/quarkus/issues/21375
 //
 @RegisterRestClient(configKey = "hello2")
+@RegisterProvider(TestJacksonBasicMessageBodyReader.class)
+@RegisterProvider(TestJacksonBasicMessageBodyWriter.class)
 public interface HelloNonSimpleClient {
     @POST
     @Consumes(MediaType.TEXT_PLAIN)

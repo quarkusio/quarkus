@@ -1,7 +1,9 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.ofType;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.param;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.responseType;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.uniType;
 
 import java.lang.annotation.Annotation;
 import java.util.function.Supplier;
@@ -134,9 +136,10 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
-                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
-                resourceMetadata.getIdType(), resourceMetadata.getEntityType(), UriInfo.class);
-        methodCreator.setParameterNames(new String[] { "id", "entity", "uriInfo" });
+                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                param("id", resourceMetadata.getIdType()),
+                param("entity", resourceMetadata.getEntityType()),
+                param("uriInfo", UriInfo.class));
 
         // Add method annotations
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_UPDATE_METHOD_NAME), "{id}"));

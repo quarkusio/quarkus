@@ -1,14 +1,24 @@
 package io.quarkus.rest.data.panache.deployment.utils;
 
+import static io.quarkus.gizmo.Type.classType;
+import static io.quarkus.gizmo.Type.parameterizedType;
+import static io.quarkus.rest.data.panache.deployment.methods.StandardMethodImplementor.toType;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.ws.rs.core.Response;
+
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.SignatureBuilder;
+import io.quarkus.gizmo.Type;
+import io.smallrye.mutiny.Uni;
 
 public final class SignatureMethodCreator {
 
+    private static final Type RESPONSE_TYPE = Type.classType(Response.class);
+
     /**
      * Creates a method using a signature (which allows declaring parameterized types like lists).
      *
@@ -20,86 +30,44 @@ public final class SignatureMethodCreator {
      * version of the method you want to see the signature.
      */
     public static MethodCreator getMethodCreator(String methodName, ClassCreator classCreator, ReturnType returnType,
-            List<Parameter> parameters) {
-        List<Object> paramTypes = new ArrayList<>();
+            Parameter... parameters) {
+        List<Type> paramTypes = new ArrayList<>();
         List<String> paramNames = new ArrayList<>();
+        List<Object> paramClasses = new ArrayList<>();
         for (Parameter param : parameters) {
             paramNames.add(param.name);
             paramTypes.add(param.type);
+            paramClasses.add(param.clazz);
         }
-        MethodCreator methodCreator = getMethodCreator(methodName, classCreator, returnType, paramTypes.toArray(new Object[0]));
+
+        MethodCreator methodCreator = classCreator.getMethodCreator(methodName, returnType.classType,
+                paramClasses.toArray(new Object[0]));
+        SignatureBuilder.MethodSignatureBuilder signatureBuilder = SignatureBuilder.forMethod()
+                .setReturnType(returnType.type);
+        paramTypes.forEach(signatureBuilder::addParameterType);
+        methodCreator.setSignature(signatureBuilder.build());
         methodCreator.setParameterNames(paramNames.toArray(new String[0]));
-        return methodCreator;
-    }
-
-    /**
-     * Creates a method using a signature (which allows declaring parameterized types like lists).
-     *
-     * For example, for the method: "List<String> list(List<String> sort, int size, int other, String uri)"
-     * It will use the following signature the generated the method:
-     * "(Ljava/util/List<Ljava/lang/String;>;IILjava/lang/String;)Ljava/util/List<Ljava/lang/String;>;".
-     *
-     * One useful utility to verify the method signatures is using "javap -v Test.class" where the Test java class is a compiled
-     * version of the method you want to see the signature.
-     */
-    public static MethodCreator getMethodCreator(String methodName, ClassCreator classCreator, ReturnType returnType,
-            Object... parameters) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(methodName, returnType.type, parameters);
-
-        StringBuilder signatureBuilder = new StringBuilder();
-        // Params first within parenthesis. If method is: "void method(Integer a)", it should return "(Ljava/lang/Integer;)":
-        signatureBuilder.append("(");
-        parametersToSignature(signatureBuilder, parameters);
-
-        signatureBuilder.append(")");
-
-        // Then, result type. If method is: "List<String> method(Integer a)",
-        // it should return "Ljava/util/List<Ljava/lang/String;>;"
-        signatureBuilder.append(stringToSignature(returnType.type.getName()));
-        if (returnType.parameterTypes.length > 0) {
-            signatureBuilder.append("<");
-            parametersToSignature(signatureBuilder, returnType.parameterTypes);
-            signatureBuilder.append(">");
-        }
-
-        signatureBuilder.append(";");
-
-        methodCreator.setSignature(signatureBuilder.toString());
 
         return methodCreator;
-    }
-
-    private static void parametersToSignature(StringBuilder signatureBuilder, Object[] parameters) {
-        for (Object parameter : parameters) {
-            if (parameter instanceof Class) {
-                signatureBuilder.append(DescriptorUtils.classToStringRepresentation((Class<?>) parameter));
-            } else if (parameter instanceof String) {
-                signatureBuilder.append(stringToSignature((String) parameter) + ";");
-            }
-        }
-    }
-
-    private static String stringToSignature(String className) {
-        return "L" + className.replace('.', '/');
-    }
-
-    public static ReturnType ofType(Class<?> type, Object... parameterTypes) {
-        ReturnType returnType = new ReturnType();
-        returnType.type = type;
-        returnType.parameterTypes = parameterTypes;
-        return returnType;
     }
 
     public static Parameter param(String name, Object type) {
+        return param(name, type, toType(type));
+    }
+
+    public static Parameter param(String name, Object clazz, Type type) {
         Parameter parameter = new Parameter();
         parameter.name = name;
+        parameter.clazz = clazz;
         parameter.type = type;
+
         return parameter;
     }
 
     public static class Parameter {
         private String name;
-        private Object type;
+        private Type type;
+        private Object clazz;
 
         public String getName() {
             return name;
@@ -107,7 +75,26 @@ public final class SignatureMethodCreator {
     }
 
     public static class ReturnType {
-        private Class<?> type;
-        private Object[] parameterTypes;
+        private Class<?> classType;
+        private Type type;
+    }
+
+    public static ReturnType responseType() {
+        ReturnType returnType = new ReturnType();
+        returnType.classType = Response.class;
+        returnType.type = RESPONSE_TYPE;
+        return returnType;
+    }
+
+    public static ReturnType uniType(Object... arguments) {
+        ReturnType returnType = new ReturnType();
+        Type[] typeArguments = new Type[arguments.length];
+        for (int index = 0; index < arguments.length; index++) {
+            typeArguments[index] = toType(arguments[index]);
+        }
+
+        returnType.classType = Uni.class;
+        returnType.type = parameterizedType(classType(Uni.class), typeArguments);
+        return returnType;
     }
 }

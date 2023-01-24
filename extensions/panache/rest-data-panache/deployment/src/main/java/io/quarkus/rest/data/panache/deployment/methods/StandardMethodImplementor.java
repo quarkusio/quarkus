@@ -27,6 +27,7 @@ import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo.Type;
 import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
@@ -233,6 +234,19 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected boolean isNotReactivePanache() {
         return !capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
+    }
+
+    public static Type toType(Object object) {
+        if (object instanceof Type) {
+            return (Type) object;
+        } else if (object instanceof String) {
+            return Type.classType((String) object);
+        } else if (object instanceof Class) {
+            return Type.classType((Class<?>) object);
+        }
+
+        throw new IllegalArgumentException("Unsupported object of type " + object.getClass()
+                + ". Supported types are Type, String and Class");
     }
 
     private static Class<?> toClass(String className) {

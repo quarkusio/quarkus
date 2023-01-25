@@ -88,6 +88,7 @@ import io.quarkus.qute.deployment.QuteProcessor.LookupConfig;
 import io.quarkus.qute.deployment.QuteProcessor.Match;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.Types.AssignableInfo;
+import io.quarkus.qute.deployment.Types.HierarchyIndexer;
 import io.quarkus.qute.generator.Descriptors;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.i18n.Localized;
@@ -426,6 +427,7 @@ public class MessageBundleProcessor {
 
         LookupConfig lookupConfig = new QuteProcessor.FixedLookupConfig(index, QuteProcessor.initDefaultMembersFilter(), false);
         Map<DotName, AssignableInfo> assignableCache = new HashMap<>();
+        HierarchyIndexer hierarchyIndexer = new HierarchyIndexer(index);
 
         // bundle name -> (key -> method)
         Map<String, Map<String, MethodInfo>> bundleMethodsMap = new HashMap<>();
@@ -544,8 +546,8 @@ public class MessageBundleProcessor {
                                             results, excludes, incorrectExpressions, expression, index,
                                             implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
                                             extensionMethodExcludes, checkedTemplate, lookupConfig, namedBeans,
-                                            namespaceTemplateData,
-                                            regularExtensionMethods, namespaceExtensionMethods, assignableCache);
+                                            namespaceTemplateData, regularExtensionMethods, namespaceExtensionMethods,
+                                            assignableCache, hierarchyIndexer);
                                     Match match = results.get(param.toOriginalString());
                                     if (match != null && !match.isEmpty() && !Types.isAssignableFrom(match.type(),
                                             methodParams.get(idx), index, assignableCache)) {

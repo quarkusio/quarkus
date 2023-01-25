@@ -121,6 +121,7 @@ import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.TypeCheck;
 import io.quarkus.qute.deployment.TypeInfos.Info;
 import io.quarkus.qute.deployment.Types.AssignableInfo;
+import io.quarkus.qute.deployment.Types.HierarchyIndexer;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator.ResolveCreator;
@@ -831,6 +832,7 @@ public class QuteProcessor {
 
         LookupConfig lookupConfig = new FixedLookupConfig(index, initDefaultMembersFilter(), false);
         Map<DotName, AssignableInfo> assignableCache = new HashMap<>();
+        HierarchyIndexer hierarchyIndexer = new HierarchyIndexer(index);
         int expressionsValidated = 0;
 
         for (TemplateAnalysis templateAnalysis : templatesAnalysis.getAnalysis()) {
@@ -859,7 +861,7 @@ public class QuteProcessor {
                         incorrectExpressions, expression, index, implicitClassToMembersUsed, templateIdToPathFun,
                         generatedIdsToMatches, extensionMethodExcludes,
                         checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData, regularExtensionMethods,
-                        namespaceExtensionMethods, assignableCache);
+                        namespaceExtensionMethods, assignableCache, hierarchyIndexer);
                 generatedIdsToMatches.put(expression.getGeneratedId(), match);
             }
 
@@ -869,7 +871,7 @@ public class QuteProcessor {
                 if (defaultValue != null) {
                     Match match;
                     if (defaultValue.isLiteral()) {
-                        match = new Match(index, assignableCache);
+                        match = new Match(hierarchyIndexer, assignableCache);
                         setMatchValues(match, defaultValue, generatedIdsToMatches, index);
                     } else {
                         match = generatedIdsToMatches.get(defaultValue.getGeneratedId());
@@ -976,7 +978,7 @@ public class QuteProcessor {
             Map<String, TemplateDataBuildItem> namespaceTemplateData,
             List<TemplateExtensionMethodBuildItem> regularExtensionMethods,
             Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods,
-            Map<DotName, AssignableInfo> assignableCache) {
+            Map<DotName, AssignableInfo> assignableCache, HierarchyIndexer hierarchyIndexer) {
 
         LOGGER.debugf("Validate %s from %s", expression, expression.getOrigin());
 
@@ -992,13 +994,14 @@ public class QuteProcessor {
                         validateNestedExpressions(config, templateAnalysis, null, results, excludes,
                                 incorrectExpressions, param, index, implicitClassToMembersUsed, templateIdToPathFun,
                                 generatedIdsToMatches, extensionMethodExcludes, checkedTemplate, lookupConfig, namedBeans,
-                                namespaceTemplateData, regularExtensionMethods, namespaceExtensionMethods, assignableCache);
+                                namespaceTemplateData, regularExtensionMethods, namespaceExtensionMethods, assignableCache,
+                                hierarchyIndexer);
                     }
                 }
             }
         }
 
-        Match match = new Match(index, assignableCache);
+        Match match = new Match(hierarchyIndexer, assignableCache);
 
         String namespace = expression.getNamespace();
         TypeInfos.TypeInfo dataNamespaceExpTypeInfo = null;
@@ -2279,14 +2282,14 @@ public class QuteProcessor {
 
     static class Match {
 
-        private final IndexView index;
+        private final HierarchyIndexer indexer;
         private final Map<DotName, AssignableInfo> assignableCache;
 
         private ClassInfo clazz;
         private Type type;
 
-        Match(IndexView index, Map<DotName, AssignableInfo> assignableCache) {
-            this.index = index;
+        Match(HierarchyIndexer indexer, Map<DotName, AssignableInfo> assignableCache) {
+            this.indexer = indexer;
             this.assignableCache = assignableCache;
         }
 
@@ -2342,19 +2345,20 @@ public class QuteProcessor {
         void autoExtractType() {
             if (clazz != null) {
                 // Make sure that hierarchy of the matching class is indexed
-                Types.indexHierarchy(clazz, index);
-                boolean hasCompletionStage = Types.isAssignableFrom(Names.COMPLETION_STAGE, clazz.name(), index,
+                indexer.indexHierarchy(clazz);
+                boolean hasCompletionStage = Types.isAssignableFrom(Names.COMPLETION_STAGE, clazz.name(), indexer.index,
                         assignableCache);
                 boolean hasUni = hasCompletionStage ? false
-                        : Types.isAssignableFrom(Names.UNI, clazz.name(), index, assignableCache);
+                        : Types.isAssignableFrom(Names.UNI, clazz.name(), indexer.index, assignableCache);
                 if (hasCompletionStage || hasUni) {
                     Set<Type> closure = Types.getTypeClosure(clazz, Types.buildResolvedMap(
-                            getParameterizedTypeArguments(), getTypeParameters(), new HashMap<>(), index), index);
+                            getParameterizedTypeArguments(), getTypeParameters(), new HashMap<>(), indexer.index),
+                            indexer.index);
                     // CompletionStage<List<Item>> => List<Item>
                     // Uni<List<String>> => List<String>
                     this.type = extractMatchType(closure, hasCompletionStage ? Names.COMPLETION_STAGE : Names.UNI,
                             FIRST_PARAM_TYPE_EXTRACT_FUN);
-                    this.clazz = index.getClassByName(type.name());
+                    this.clazz = indexer.index.getClassByName(type.name());
                 }
             }
         }

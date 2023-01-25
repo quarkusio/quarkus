@@ -12,7 +12,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -467,10 +469,20 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
     private Index index(Iterable<Class<?>> classes) throws IOException {
         Indexer indexer = new Indexer();
+        Set<String> packages = new HashSet<>();
         for (Class<?> clazz : classes) {
+            packages.add(clazz.getPackageName());
             try (InputStream stream = ArcTestContainer.class.getClassLoader()
                     .getResourceAsStream(clazz.getName().replace('.', '/') + ".class")) {
                 indexer.index(stream);
+            }
+        }
+        for (String pkg : packages) {
+            try (InputStream stream = ArcTestContainer.class.getClassLoader()
+                    .getResourceAsStream(pkg.replace('.', '/') + "/package-info.class")) {
+                if (stream != null) {
+                    indexer.index(stream);
+                }
             }
         }
         return indexer.complete();

@@ -42,6 +42,9 @@ class BeanTypeAssignabilityRules {
     }
 
     private boolean matchesNoBoxing(Type requiredType, Type beanType) {
+        if (Types.isArray(requiredType) && Types.isArray(beanType)) {
+            return matchesNoBoxing(Types.getArrayComponentType(requiredType), Types.getArrayComponentType(beanType));
+        }
         if (requiredType instanceof Class<?>) {
             if (beanType instanceof Class<?>) {
                 return matches((Class<?>) requiredType, (Class<?>) beanType);

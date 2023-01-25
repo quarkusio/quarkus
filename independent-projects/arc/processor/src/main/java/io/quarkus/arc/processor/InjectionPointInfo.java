@@ -14,9 +14,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
+import javax.enterprise.inject.spi.DefinitionException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -31,12 +34,28 @@ import org.jboss.jandex.Type;
  */
 public class InjectionPointInfo {
 
+    private static boolean isNamedWithoutValue(AnnotationInstance annotation) {
+        if (annotation.name().equals(DotNames.NAMED)) {
+            AnnotationValue name = annotation.value();
+            return name == null || name.asString().isEmpty();
+        }
+        return false;
+    }
+
     static InjectionPointInfo fromField(FieldInfo field, ClassInfo beanClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         Collection<AnnotationInstance> annotations = beanDeployment.getAnnotations(field);
         for (AnnotationInstance annotation : annotations) {
-            beanDeployment.extractQualifiers(annotation).forEach(qualifiers::add);
+            for (AnnotationInstance annotationInstance : beanDeployment.extractQualifiers(annotation)) {
+                // if the qualifier is `@Named` without value, replace it with `@Named(fieldName)
+                if (isNamedWithoutValue(annotationInstance)) {
+                    annotationInstance = AnnotationInstance.builder(annotationInstance.name())
+                            .value(field.name())
+                            .buildWithTarget(annotationInstance.target());
+                }
+                qualifiers.add(annotationInstance);
+            }
         }
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
@@ -70,7 +89,12 @@ public class InjectionPointInfo {
             }
             Set<AnnotationInstance> paramQualifiers = new HashSet<>();
             for (AnnotationInstance paramAnnotation : paramAnnotations) {
-                beanDeployment.extractQualifiers(paramAnnotation).forEach(paramQualifiers::add);
+                for (AnnotationInstance annotationInstance : beanDeployment.extractQualifiers(paramAnnotation)) {
+                    if (isNamedWithoutValue(annotationInstance)) {
+                        throw new DefinitionException("@Named without value may not be used on method parameter: " + method);
+                    }
+                    paramQualifiers.add(annotationInstance);
+                }
             }
             Type type = resolveType(paramType, beanClass, method.declaringClass(), beanDeployment);
             injectionPoints.add(new InjectionPointInfo(type,
@@ -259,7 +283,7 @@ public class InjectionPointInfo {
     }
 
     private static Type resolveType(Type type, ClassInfo beanClass, ClassInfo declaringClass, BeanDeployment beanDeployment) {
-        if (type.kind() == org.jboss.jandex.Type.Kind.CLASS) {
+        if (type.kind() == Type.Kind.PRIMITIVE || type.kind() == Type.Kind.CLASS) {
             return type;
         }
         Map<ClassInfo, Map<String, Type>> resolvedTypeVariables = Types.resolvedTypeVariables(beanClass, beanDeployment);

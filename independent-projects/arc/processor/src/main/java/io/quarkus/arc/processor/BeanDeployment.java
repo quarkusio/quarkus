@@ -900,7 +900,7 @@ public class BeanDeployment {
                 }
             }
 
-            if (annotationStore.hasAnnotation(beanClass, DotNames.VETOED)) {
+            if (isVetoed(beanClass)) {
                 // Skip vetoed bean classes
                 continue;
             }
@@ -1094,6 +1094,20 @@ public class BeanDeployment {
         return beans;
     }
 
+    private boolean isVetoed(ClassInfo beanClass) {
+        if (annotationStore.hasAnnotation(beanClass, DotNames.VETOED)) {
+            return true;
+        }
+
+        // using immutable index, because we expect that if class is discovered,
+        // the whole package is indexed (otherwise we'd get a lot of warnings that
+        // package-info.class couldn't be loaded during on-demand indexing)
+        String packageName = beanClass.name().packagePrefix();
+        org.jboss.jandex.ClassInfo packageClass = beanArchiveImmutableIndex.getClassByName(
+                DotName.createSimple(packageName + ".package-info"));
+        return packageClass != null && annotationStore.hasAnnotation(packageClass, DotNames.VETOED);
+    }
+
     private boolean isExcluded(ClassInfo beanClass) {
         if (!excludeTypes.isEmpty()) {
             for (Predicate<ClassInfo> exclude : excludeTypes) {
@@ -1250,7 +1264,7 @@ public class BeanDeployment {
         }
         List<InterceptorInfo> interceptors = new ArrayList<>();
         for (ClassInfo interceptorClass : interceptorClasses.values()) {
-            if (annotationStore.hasAnnotation(interceptorClass, DotNames.VETOED) || isExcluded(interceptorClass)) {
+            if (isVetoed(interceptorClass) || isExcluded(interceptorClass)) {
                 // Skip vetoed interceptors
                 continue;
             }
@@ -1277,7 +1291,7 @@ public class BeanDeployment {
         }
         List<DecoratorInfo> decorators = new ArrayList<>();
         for (ClassInfo decoratorClass : decoratorClasses.values()) {
-            if (annotationStore.hasAnnotation(decoratorClass, DotNames.VETOED) || isExcluded(decoratorClass)) {
+            if (isVetoed(decoratorClass) || isExcluded(decoratorClass)) {
                 // Skip vetoed decorators
                 continue;
             }

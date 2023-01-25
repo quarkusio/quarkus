@@ -431,15 +431,18 @@ public class ObserverGenerator extends AbstractGenerator {
                 referenceHandles[i] = notify.invokeInterfaceMethod(MethodDescriptors.EVENT_CONTEXT_GET_METADATA,
                         notify.getMethodParam(0));
             } else {
+                InjectionPointInfo injectionPoint = injectionPointsIterator.next();
                 ResultHandle childCtxHandle = notify.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD, ctxHandle);
                 ResultHandle providerSupplierHandle = notify
                         .readInstanceField(FieldDescriptor.of(observerCreator.getClassName(),
-                                injectionPointToProviderField.get(injectionPointsIterator.next()),
+                                injectionPointToProviderField.get(injectionPoint),
                                 Supplier.class.getName()), notify.getThis());
                 ResultHandle providerHandle = notify.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
                         providerSupplierHandle);
-                ResultHandle referenceHandle = notify.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                        providerHandle, childCtxHandle);
+                AssignableResultHandle referenceHandle = notify.createVariable(Object.class);
+                notify.assign(referenceHandle, notify.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                        providerHandle, childCtxHandle));
+                BeanGenerator.checkPrimitiveInjection(notify, injectionPoint, referenceHandle);
                 referenceHandles[i] = referenceHandle;
             }
         }

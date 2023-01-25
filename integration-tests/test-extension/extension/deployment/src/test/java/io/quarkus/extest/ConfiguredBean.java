@@ -8,12 +8,15 @@ import io.quarkus.extest.runtime.config.FooRuntimeConfig;
 import io.quarkus.extest.runtime.config.PrefixConfig;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
+import io.quarkus.extest.runtime.config.TestShadowBuildTimeToRunTimeConfig;
 import io.quarkus.extest.runtime.config.named.PrefixNamedConfig;
 
 @ApplicationScoped
 public class ConfiguredBean {
     @Inject
     TestRunTimeConfig runTimeConfig;
+    @Inject
+    TestShadowBuildTimeToRunTimeConfig shadowBuildTimeToRunTimeConfig;
     @Inject
     TestBuildAndRunTimeConfig buildTimeConfig;
     @Inject
@@ -27,6 +30,10 @@ public class ConfiguredBean {
 
     public TestRunTimeConfig getRunTimeConfig() {
         return runTimeConfig;
+    }
+
+    public TestShadowBuildTimeToRunTimeConfig getShadowBuildTimeToRunTimeConfig() {
+        return shadowBuildTimeToRunTimeConfig;
     }
 
     public TestBuildAndRunTimeConfig getBuildTimeConfig() {

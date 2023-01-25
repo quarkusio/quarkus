@@ -55,13 +55,6 @@ body:
       value: |
         - 
 
-  - type: checkboxes
-    attributes:
-      label: GitHub Applications?
-      description: Do you need any of these GitHub applications enabled in your repository?
-      options:
-        - label: "[Stale](https://github.com/marketplace/stale) - Automatically close stale Issues and Pull Requests that tend to accumulate during a project"
-
   - type: textarea
     attributes:
       label: Additional context

@@ -940,22 +940,23 @@ public class BeanGenerator extends AbstractGenerator {
             Map<DecoratorInfo, String> decoratorToProviderSupplierField,
             String targetPackage, boolean isApplicationClass) {
 
-        MethodCreator create = beanCreator.getMethodCreator("create", providerType.descriptorName(), CreationalContext.class)
-                .setModifiers(ACC_PUBLIC);
+        MethodCreator doCreate = beanCreator
+                .getMethodCreator("doCreate", providerType.descriptorName(), CreationalContext.class)
+                .setModifiers(ACC_PRIVATE);
 
         if (bean.isClassBean()) {
             implementCreateForClassBean(classOutput, beanCreator, bean, providerType, baseName,
                     injectionPointToProviderSupplierField, interceptorToProviderSupplierField, decoratorToProviderSupplierField,
                     reflectionRegistration,
-                    targetPackage, isApplicationClass, create);
+                    targetPackage, isApplicationClass, doCreate);
         } else if (bean.isProducerMethod()) {
             implementCreateForProducerMethod(classOutput, beanCreator, bean, providerType, baseName,
                     injectionPointToProviderSupplierField, reflectionRegistration,
-                    targetPackage, isApplicationClass, create);
+                    targetPackage, isApplicationClass, doCreate);
         } else if (bean.isProducerField()) {
             implementCreateForProducerField(classOutput, beanCreator, bean, providerType, baseName,
                     injectionPointToProviderSupplierField, reflectionRegistration,
-                    targetPackage, isApplicationClass, create);
+                    targetPackage, isApplicationClass, doCreate);
         } else if (bean.isSynthetic()) {
             if (bean.getScope().isNormal()) {
                 // Normal scoped synthetic beans should never return null
@@ -963,20 +964,36 @@ public class BeanGenerator extends AbstractGenerator {
                         .getMethodCreator("createSynthetic", providerType.descriptorName(), CreationalContext.class)
                         .setModifiers(ACC_PRIVATE);
                 bean.getCreatorConsumer().accept(createSynthetic);
-                ResultHandle ret = create.invokeVirtualMethod(createSynthetic.getMethodDescriptor(), create.getThis(),
-                        create.getMethodParam(0));
-                BytecodeCreator nullBeanInstance = create.ifNull(ret).trueBranch();
+                ResultHandle ret = doCreate.invokeVirtualMethod(createSynthetic.getMethodDescriptor(), doCreate.getThis(),
+                        doCreate.getMethodParam(0));
+                BytecodeCreator nullBeanInstance = doCreate.ifNull(ret).trueBranch();
                 StringBuilderGenerator message = Gizmo.newStringBuilder(nullBeanInstance);
                 message.append("Null contextual instance was produced by a normal scoped synthetic bean: ");
                 message.append(Gizmo.toString(nullBeanInstance, nullBeanInstance.getThis()));
                 ResultHandle e = nullBeanInstance.newInstance(
                         MethodDescriptor.ofConstructor(CreationException.class, String.class), message.callToString());
                 nullBeanInstance.throwException(e);
-                create.returnValue(ret);
+                doCreate.returnValue(ret);
             } else {
-                bean.getCreatorConsumer().accept(create);
+                bean.getCreatorConsumer().accept(doCreate);
             }
         }
+
+        MethodCreator create = beanCreator.getMethodCreator("create", providerType.descriptorName(), CreationalContext.class)
+                .setModifiers(ACC_PUBLIC);
+        TryBlock tryBlock = create.tryBlock();
+        tryBlock.returnValue(
+                tryBlock.invokeSpecialMethod(doCreate.getMethodDescriptor(), tryBlock.getThis(), tryBlock.getMethodParam(0)));
+        // `Reflections.newInstance()` throws `CreationException` on its own,
+        // but that's handled like all other `RuntimeException`s
+        // also ignore custom Throwables, they are virtually never used in practice
+        CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
+        catchBlock.ifFalse(catchBlock.instanceOf(catchBlock.getCaughtException(), RuntimeException.class))
+                .falseBranch().throwException(catchBlock.getCaughtException());
+        ResultHandle creationException = catchBlock.newInstance(
+                MethodDescriptor.ofConstructor(CreationException.class, Throwable.class),
+                catchBlock.getCaughtException());
+        catchBlock.throwException(creationException);
 
         // Bridge method needed
         MethodCreator bridgeCreate = beanCreator.getMethodCreator("create", Object.class, CreationalContext.class)

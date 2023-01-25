@@ -1,6 +1,8 @@
 package io.quarkus.container.image.deployment;
 
 import static io.quarkus.container.image.deployment.util.EnablementUtil.*;
+import static io.quarkus.container.spi.ImageReference.DEFAULT_TAG;
+import static io.quarkus.deployment.builditem.ApplicationInfoBuildItem.UNSET_VALUE;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -91,7 +93,11 @@ public class ContainerImageProcessor {
                     + effectiveGroup + "' and name '" + effectiveName + "' is invalid");
         }
 
-        final String effectiveTag = containerImageConfig.tag.orElse(app.getVersion());
+        String effectiveTag = containerImageConfig.tag.orElse(app.getVersion());
+        if (effectiveTag.equals(UNSET_VALUE)) {
+            effectiveTag = DEFAULT_TAG;
+        }
+
         if (!ImageReference.isValidTag(effectiveTag)) {
             throw new IllegalArgumentException("The supplied container-image tag '" + effectiveTag + "' is invalid");
         }

@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.container.spi.ImageReference.DEFAULT_TAG;
+import static io.quarkus.deployment.builditem.ApplicationInfoBuildItem.UNSET_VALUE;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOY;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_TARGET;
 import static io.quarkus.kubernetes.deployment.Constants.DOCKER;
@@ -142,7 +144,9 @@ public class KubernetesConfigUtil {
         Arrays.stream(platformConfigurations).forEach(p -> {
             p.getPartOf().ifPresent(g -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".part-of", g));
             p.getName().ifPresent(n -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".name", n));
-            p.getVersion().ifPresent(v -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".version", v));
+            p.getVersion()
+                    .map(v -> v.equals(UNSET_VALUE) ? DEFAULT_TAG : v)
+                    .ifPresent(v -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".version", v));
         });
 
         Map<String, Object> unPrefixed = StreamSupport.stream(config.getPropertyNames().spliterator(), false)

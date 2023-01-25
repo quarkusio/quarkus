@@ -37,6 +37,7 @@ import io.quarkus.extest.runtime.config.OverrideBuildTimeConfigSource;
 import io.quarkus.extest.runtime.config.PrefixConfig;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
+import io.quarkus.extest.runtime.config.TestShadowBuildTimeToRunTimeConfig;
 import io.quarkus.extest.runtime.config.named.PrefixNamedConfig;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -391,5 +392,21 @@ public class ConfiguredBeanTest {
         assertTrue(runTimeDefaults.isPresent());
         // java.version should not be recorded
         assertFalse(runTimeDefaults.get().getPropertyNames().contains("java.version"));
+    }
+
+    @Test
+    void shadowBuildTimeToRunTimeConfig() {
+        TestShadowBuildTimeToRunTimeConfig shadowBuildTimeToRunTimeConfig = configuredBean.getShadowBuildTimeToRunTimeConfig();
+        ConfigValue btConfigValue = shadowBuildTimeToRunTimeConfig.btConfigValue;
+
+        assertEquals("quarkus.bt.bt-config-value", btConfigValue.getName());
+        assertEquals("value", btConfigValue.getValue());
+
+        Optional<ConfigSource> source = config.getConfigSource("RunTime Defaults");
+        assertTrue(source.isPresent());
+        ConfigSource defaultValues = source.get();
+
+        assertTrue(defaultValues.getPropertyNames().contains("quarkus.bt.bt-config-value"));
+        assertEquals("${test.record.expansion}", defaultValues.getValue("quarkus.bt.bt-config-value"));
     }
 }

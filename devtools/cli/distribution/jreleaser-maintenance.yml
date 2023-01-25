@@ -50,12 +50,6 @@ distributions:
       - path: target/quarkus-cli-{{projectVersion}}.tar.gz
 
 packagers:
-  brew:
-    active: ALWAYS
-    continueOnError: false
-    multiPlatform: true
-    extraProperties:
-      skipJava: true
   sdkman:
     active: ALWAYS
     continueOnError: false

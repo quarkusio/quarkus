@@ -43,7 +43,7 @@
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
         <smallrye-common.version>1.10.0</smallrye-common.version>
-        <smallrye-config.version>2.9.2</smallrye-config.version>
+        <smallrye-config.version>2.9.3</smallrye-config.version>
         <smallrye-health.version>3.1.2</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.22</smallrye-open-api.version>
@@ -85,7 +85,7 @@
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
         <graal-sdk.version>21.3.2</graal-sdk.version>
         <gizmo.version>1.0.10.Final</gizmo.version>
-        <jackson-bom.version>2.13.3</jackson-bom.version>
+        <jackson-bom.version>2.13.4.20221013</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.15</commons-codec.version>
@@ -118,7 +118,7 @@
         <cronutils.version>9.1.6</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
-        <postgresql-jdbc.version>42.3.3</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.5.1</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.7.5</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.28</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
@@ -161,7 +161,7 @@
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.7.1</liquibase.version>
         <liquibase-mongodb.version>4.7.1</liquibase-mongodb.version>
-        <snakeyaml.version>1.30</snakeyaml.version>
+        <snakeyaml.version>1.33</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.3.4</mongo-client.version>
         <mongo-crypt.version>1.2.1</mongo-crypt.version>
@@ -188,6 +188,7 @@
         <picocli.version>4.6.3</picocli.version>
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>
         <commons-compress.version>1.21</commons-compress.version>
+        <commons-text.version>1.10.0</commons-text.version>
         <gson.version>2.9.0</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.17.1</log4j2-api.version>
@@ -204,6 +205,7 @@
         <strimzi-oauth.version>0.9.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.15.2</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.4</java-buildpack-client.version>
+        <sshd-common.version>2.9.2</sshd-common.version>
     </properties>
 
     <dependencyManagement>
@@ -1297,12 +1299,27 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-amqp-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-messaging-mqtt</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-mqtt-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2850,6 +2867,11 @@
                 <version>${commons-lang3.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-text</artifactId>
+                <version>${commons-text.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>${commons-codec.version}</version>
@@ -2943,6 +2965,17 @@
                     <exclusion>
                         <groupId>org.apache.tomcat.embed</groupId>
                         <artifactId>tomcat-embed-core</artifactId>
+                    </exclusion>
+                    <!-- jaeger-thrift 3.43.3 pulls in a banned version of annotation-api -->
+                    <exclusion>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
+                    </exclusion>
+                    <!-- it also pulls in the jakarta annotations via the 'org.apache.tomcat:tomcat-annotations-api' which seems to be a copy of 'jakarta.annotation:jakarta.annotation-api'-->
+                    <!-- https://mvnrepository.com/artifact/org.apache.tomcat/tomcat-annotations-api -->
+                    <exclusion>
+                        <groupId>org.apache.tomcat</groupId>
+                        <artifactId>tomcat-annotations-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -4314,6 +4347,16 @@
                         <artifactId>jcl-over-slf4j</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-common</artifactId>
+                <version>${sshd-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-core</artifactId>
+                <version>${sshd-common.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.wildfly.security</groupId>

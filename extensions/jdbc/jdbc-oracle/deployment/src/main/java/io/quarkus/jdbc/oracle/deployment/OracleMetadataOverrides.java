@@ -34,8 +34,9 @@ import io.quarkus.maven.dependency.GACT;
  */
 public final class OracleMetadataOverrides {
 
-    static final String DRIVER_JAR_MATCH_REGEX = ".*com\\.oracle\\.database\\.jdbc.*";
-    static final String NATIVE_IMAGE_RESOURCE_MATCH_REGEX = "/META-INF/native-image/(?:native-image\\.properties|reflect-config\\.json)";
+    static final String DRIVER_JAR_MATCH_REGEX = "com\\.oracle\\.database\\.jdbc";
+    static final String NATIVE_IMAGE_RESOURCE_MATCH_REGEX = "/META-INF/native-image/native-image\\.properties";
+    static final String NATIVE_IMAGE_REFLECT_CONFIG_MATCH_REGEX = "/META-INF/native-image/reflect-config\\.json";
 
     /**
      * Should match the contents of {@literal reflect-config.json}
@@ -106,9 +107,13 @@ public final class OracleMetadataOverrides {
     }
 
     @BuildStep
-    ExcludeConfigBuildItem excludeOracleDirectives() {
-        // Excludes both native-image.properties and reflect-config.json, which are reimplemented above
-        return new ExcludeConfigBuildItem(DRIVER_JAR_MATCH_REGEX, NATIVE_IMAGE_RESOURCE_MATCH_REGEX);
+    void excludeOracleDirectives(BuildProducer<ExcludeConfigBuildItem> nativeImageExclusions) {
+        // Excludes both native-image.properties and reflect-config.json, which are reimplemented above.
+        // N.B. this could be expressed by using a single regex to match both resources,
+        // but such a regex would include a ? char, which breaks arguments parsing on Windows.
+        nativeImageExclusions.produce(new ExcludeConfigBuildItem(DRIVER_JAR_MATCH_REGEX, NATIVE_IMAGE_RESOURCE_MATCH_REGEX));
+        nativeImageExclusions
+                .produce(new ExcludeConfigBuildItem(DRIVER_JAR_MATCH_REGEX, NATIVE_IMAGE_REFLECT_CONFIG_MATCH_REGEX));
     }
 
     @BuildStep

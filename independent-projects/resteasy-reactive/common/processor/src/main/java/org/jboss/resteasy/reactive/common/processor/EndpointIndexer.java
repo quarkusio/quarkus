@@ -97,6 +97,7 @@ import javax.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -298,11 +299,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private String sanitizePath(String path) {
         // this simply replaces the whitespace characters (not part of a path variable) with %20
         // TODO: this might have to be more complex, URL encoding maybe?
-        boolean inVariable = false;
+        // zero braces indicates we are outside of a variable
+        int bracesCount = 0;
         StringBuilder replaced = null;
         for (int i = 0; i < path.length(); i++) {
             char c = path.charAt(i);
-            if ((c == ' ') && (!inVariable)) {
+            if ((c == ' ') && (bracesCount == 0)) {
                 if (replaced == null) {
                     replaced = new StringBuilder(path.length() + 2);
                     replaced.append(path, 0, i);
@@ -314,9 +316,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 replaced.append(c);
             }
             if (c == '{') {
-                inVariable = true;
+                bracesCount++;
             } else if (c == '}') {
-                inVariable = false;
+                bracesCount--;
             }
         }
         if (replaced == null) {
@@ -626,7 +628,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             if (returnsMultipart && !blocking) {
                 throw new DeploymentException(
-                        "Endpoints that produce a Multipart result can only be used on non blocking methods. Offending method is '"
+                        "Endpoints that produce a Multipart result can only be used on blocking methods. Offending method is '"
                                 + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
             }
 
@@ -1180,6 +1182,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             if (convertible) {
                 handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
+        } else if (paramType.kind() == Kind.ARRAY) {
+            ArrayType at = paramType.asArrayType();
+            typeHandled = true;
+            builder.setSingle(false);
+            elementType = toClassName(at.component(), currentClassInfo, actualEndpointInfo, index);
+            if (convertible) {
+                handleArrayParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            }
         }
 
         if (!typeHandled) {
@@ -1250,6 +1260,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            PARAM builder, String elementType) {
+    }
+
+    protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             PARAM builder, String elementType) {
     }
 

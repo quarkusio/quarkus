@@ -132,5 +132,5 @@ public class DataSourceReactiveRuntimeConfig {
      * Set the pool name, used when the pool is shared among datasources, otherwise ignored.
      */
     @ConfigItem
-    public Optional<String> name;
+    public Optional<String> name = Optional.empty();
 }

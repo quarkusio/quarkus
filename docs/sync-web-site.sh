@@ -2,20 +2,34 @@
 
 git clone -b develop --single-branch git@github.com:quarkusio/quarkusio.github.io.git target/web-site
 
+if [ $# -eq 0 ]; then
+  BRANCH="main"
+else
+  BRANCH=$1
+fi
+
+if [[ $BRANCH == "main" ]]; then
+  TARGET_GUIDES=target/web-site/_guides
+  TARGET_CONFIG=target/web-site/_generated-config/latest
+else
+  TARGET_GUIDES=target/web-site/_versions/${BRANCH}/guides
+  TARGET_CONFIG=target/web-site/_generated-config/${BRANCH}
+fi
+
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \
     --exclude='**/attributes.adoc' \
     --exclude='**/guides.md' \
     src/main/asciidoc/* \
-    target/web-site/_guides
+    $TARGET_GUIDES
 
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \
     --exclude='**/attributes.adoc' \
     ../target/asciidoc/generated/ \
-    target/web-site/_generated-config/latest
+    $TARGET_CONFIG
 
 echo "Sync done!"
 echo "=========="

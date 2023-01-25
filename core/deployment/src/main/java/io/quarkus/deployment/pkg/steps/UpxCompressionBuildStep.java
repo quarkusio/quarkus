@@ -115,7 +115,8 @@ public class UpxCompressionBuildStep {
 
         String volumeOutputPath = nativeImage.getPath().toFile().getParentFile().getAbsolutePath();
         if (SystemUtils.IS_OS_WINDOWS) {
-            volumeOutputPath = FileUtil.translateToVolumePath(volumeOutputPath);
+            volumeOutputPath = FileUtil.translateToVolumePath(volumeOutputPath,
+                    containerRuntime == NativeConfig.ContainerRuntime.PODMAN);
         } else if (SystemUtils.IS_OS_LINUX) {
             String uid = getLinuxID("-ur");
             String gid = getLinuxID("-gr");

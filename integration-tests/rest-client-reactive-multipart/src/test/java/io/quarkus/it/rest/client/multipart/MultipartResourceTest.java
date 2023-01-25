@@ -217,6 +217,18 @@ public class MultipartResourceTest {
         assertMultipartResponseContains(response, "file", MediaType.TEXT_PLAIN, HELLO_WORLD);
     }
 
+    @Test
+    public void shouldProperlyHandleOctetStreamFile() {
+        // @formatter:off
+        given()
+                .header("Content-Type", "text/plain")
+                .when().get("/client/octet-stream")
+                .then()
+                .statusCode(200)
+                .body(equalTo("test"));
+        // @formatter:on
+    }
+
     private void assertMultipartResponseContains(String response, String name, String contentType, Object value) {
         String[] lines = response.split("--");
         assertThat(lines).anyMatch(line -> line.contains(String.format(EXPECTED_CONTENT_DISPOSITION_PART, name))

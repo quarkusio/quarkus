@@ -50,24 +50,12 @@ distributions:
       - path: target/quarkus-cli-{{projectVersion}}.tar.gz
 
 packagers:
-  brew:
-    active: ALWAYS
-    continueOnError: false
-    multiPlatform: true
-    extraProperties:
-      skipJava: true
   sdkman:
     active: ALWAYS
     continueOnError: false
     connectTimeout: 20
     readTimeout: 60
     candidate: quarkus
-  chocolatey:
-    active: ALWAYS
-    continueOnError: true
-    remoteBuild: true
-    iconUrl: https://quarkus.io/assets/images/chocolatey-app-icon.png
-    packageVersion: '{{projectVersionMajor}}.{{projectVersionMinor}}.{{projectVersionPatch}}'
 
 announce:
   sdkman:

@@ -11,6 +11,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.URIDecoder;
@@ -219,11 +220,17 @@ public class UriInfoImpl implements UriInfo {
 
     @Override
     public URI resolve(URI uri) {
-        return null;
+        return getBaseUri().resolve(uri);
     }
 
     @Override
     public URI relativize(URI uri) {
-        return null;
+        URI from = getRequestUri();
+        URI to = uri;
+        if (uri.getScheme() == null && uri.getHost() == null) {
+            to = getBaseUriBuilder().replaceQuery(null).path(uri.getPath()).replaceQuery(uri.getQuery())
+                    .fragment(uri.getFragment()).build();
+        }
+        return UriBuilderImpl.relativize(from, to);
     }
 }

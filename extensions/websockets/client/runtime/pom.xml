@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-websockets-client</artifactId>
     <name>Quarkus - WebSockets Client - Runtime</name>
-    <description>WebSocket communication channel support</description>
+    <description>Client for WebSocket communication channel</description>
 
     <dependencies>
         <dependency>

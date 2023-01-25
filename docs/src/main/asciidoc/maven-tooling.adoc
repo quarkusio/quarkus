@@ -889,11 +889,11 @@ Here is a list of system properties the Quarkus bootstrap Maven resolver checks 
 | The Maven home dir is used to resolve the global settings file unless it was explicitly provided on the command line with the `-gs` argument
 
 | `maven.settings`
-| `~/m2/settings.xml`
+| `~/.m2/settings.xml`
 | Unless the custom settings file has been provided with the `-s` argument, this property can be used to point the resolver to a custom Maven settings file
 
 | `maven.repo.local`
-| `~/m2/repository`
+| `~/.m2/repository`
 | This property could be used to configure a custom local Maven repository directory, if it is different from the default one and the one specified in the `settings.xml`
 
 | `maven.top-level-basedir`
@@ -919,7 +919,7 @@ These system properties above could be added to, e.g., a `surefire` and/or `fail
         <version>${surefire-plugin.version}</version>
         <configuration>
           <systemPropertyVariables>
-            <maven.home>${maven.hom}</maven.home> <1>
+            <maven.home>${maven.home}</maven.home> <1>
             <maven.repo.local>${settings.localRepository}</maven.repo.local> <2>
             <maven.settings>${session.request.userSettingsFile.path}</maven.settings> <3>
             <maven.top-level-basedir>${session.topLevelProject.basedir.absolutePath}</maven.top-level-basedir> <4>

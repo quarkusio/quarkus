@@ -1,6 +1,7 @@
 package io.quarkus.agroal.runtime;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -130,12 +131,12 @@ public class DataSourceJdbcRuntimeConfig {
      * validation. Setting this setting to STRICT may lead to failures in those cases.
      */
     @ConfigItem
-    public Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement;
+    public Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement = Optional.empty();
 
     /**
      * Other unspecified properties to be passed to the JDBC driver when creating new connections.
      */
     @ConfigItem
-    public Map<String, String> additionalJdbcProperties;
+    public Map<String, String> additionalJdbcProperties = Collections.emptyMap();
 
 }

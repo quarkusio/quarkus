@@ -1,6 +1,7 @@
 package io.quarkus.devservices.common;
 
 import java.util.Collections;
+import java.util.Locale;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -33,7 +34,7 @@ public final class ConfigureUtil {
             container.setNetwork(Network.SHARED);
         }
 
-        String hostName = hostNamePrefix + "-" + Base58.randomString(5);
+        String hostName = (hostNamePrefix + "-" + Base58.randomString(5)).toLowerCase(Locale.ROOT);
         container.setNetworkAliases(Collections.singletonList(hostName));
 
         return hostName;

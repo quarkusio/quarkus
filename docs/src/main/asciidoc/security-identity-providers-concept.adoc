@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Identity providers
 include::_attributes.adoc[]
 :categories: security
+
 In the Quarkus Security framework, identity providers play a key role in authentication and authorization, providing services for storing and verifying user identities.
 The JPA `IdentityProvider` creates a `SecurityIdentity` instance used during user authentication to verify and authorize access requests, making your Quarkus application secure.
 [[identity-providers]]

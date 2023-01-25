@@ -350,35 +350,6 @@ public class ValueResolverGenerator {
 
         BytecodeCreator zeroParamsBranch = resolve.ifZero(paramsCount).trueBranch();
 
-        for (FieldInfo field : fields) {
-            String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
-            if (getterName != null && noneMethodMatches(methods, getterName)) {
-                LOGGER.debugf("Forced getter added: %s", field);
-                BytecodeCreator getterMatch = zeroParamsBranch.createScope();
-                // Match the getter name
-                BytecodeCreator notMatched = getterMatch.ifTrue(Gizmo.equals(getterMatch, getterMatch.load(getterName),
-                        name)).falseBranch();
-                // Match the property name
-                notMatched.ifTrue(Gizmo.equals(notMatched, notMatched.load(field.name()),
-                        name)).falseBranch().breakScope(getterMatch);
-                ResultHandle value = getterMatch.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
-                                DescriptorUtils.typeToString(field.type())),
-                        base);
-                getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
-            } else {
-                LOGGER.debugf("Field added: %s", field);
-                // Match field name
-                BytecodeCreator fieldMatch = zeroParamsBranch
-                        .ifTrue(Gizmo.equals(zeroParamsBranch, resolve.load(field.name()), name))
-                        .trueBranch();
-                ResultHandle value = fieldMatch
-                        .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
-                                base);
-                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
-            }
-        }
-
         if (!noParamMethods.isEmpty()) {
             Switch.StringSwitch nameSwitch = zeroParamsBranch.stringSwitch(name);
             Set<String> matchedNames = new HashSet<>();
@@ -418,6 +389,35 @@ public class ValueResolverGenerator {
                     }
                 };
                 nameSwitch.caseOf(matchingNames, invokeMethod);
+            }
+        }
+
+        for (FieldInfo field : fields) {
+            String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
+            if (getterName != null && noneMethodMatches(methods, getterName)) {
+                LOGGER.debugf("Forced getter added: %s", field);
+                BytecodeCreator getterMatch = zeroParamsBranch.createScope();
+                // Match the getter name
+                BytecodeCreator notMatched = getterMatch.ifTrue(Gizmo.equals(getterMatch, getterMatch.load(getterName),
+                        name)).falseBranch();
+                // Match the property name
+                notMatched.ifTrue(Gizmo.equals(notMatched, notMatched.load(field.name()),
+                        name)).falseBranch().breakScope(getterMatch);
+                ResultHandle value = getterMatch.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
+                                DescriptorUtils.typeToString(field.type())),
+                        base);
+                getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
+            } else {
+                LOGGER.debugf("Field added: %s", field);
+                // Match field name
+                BytecodeCreator fieldMatch = zeroParamsBranch
+                        .ifTrue(Gizmo.equals(zeroParamsBranch, resolve.load(field.name()), name))
+                        .trueBranch();
+                ResultHandle value = fieldMatch
+                        .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
+                                base);
+                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
             }
         }
 
@@ -1306,10 +1306,6 @@ public class ValueResolverGenerator {
             for (Type i : method.parameterTypes()) {
                 params.add(i.name());
             }
-        }
-
-        public MethodInfo getMethod() {
-            return method;
         }
 
         @Override

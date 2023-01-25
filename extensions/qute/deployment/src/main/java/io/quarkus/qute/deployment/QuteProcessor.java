@@ -2456,17 +2456,7 @@ public class QuteProcessor {
             if (interfaceNames != null) {
                 addInterfaces(clazz, config.index(), interfaceNames);
             }
-            // Fields
-            for (FieldInfo field : clazz.fields()) {
-                if (!config.filter().test(field)) {
-                    continue;
-                }
-                if (field.name().equals(name)) {
-                    // Name matches and it's either an enum constant or a non-static field
-                    return field;
-                }
-            }
-            // Methods
+            // Methods; getters should take precedence over fields
             for (MethodInfo method : clazz.methods()) {
                 if (method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
                         && config.filter().test(method)
@@ -2475,6 +2465,16 @@ public class QuteProcessor {
                     // Skip void, non-public, static and synthetic methods
                     // Method name must match (exact or getter)
                     return method;
+                }
+            }
+            // Fields
+            for (FieldInfo field : clazz.fields()) {
+                if (!config.filter().test(field)) {
+                    continue;
+                }
+                if (field.name().equals(name)) {
+                    // Name matches and it's either an enum constant or a non-static field
+                    return field;
                 }
             }
             DotName superName = clazz.superName();

@@ -76,7 +76,7 @@ jobs:
           ### Flags accepted can be found here https://jekyllrb.com/docs/configuration/options/#build-command-options
       - name: Publishing to surge for preview
         id: deploy
-        run: npx surge ./quarkusio/_site --domain https://quarkus-io-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
+        run: npx surge ./_site --domain https://quarkus-io-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
       - name: Update PR status comment on success
         uses: actions-cool/maintain-one-comment@v3.0.0
         with:

@@ -35,7 +35,7 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
 
     @Override
     public Consumer<BuildChainBuilder> produce(Index testClassesIndex) {
-        return new Consumer<BuildChainBuilder>() {
+        return new Consumer<>() {
 
             @Override
             public void accept(BuildChainBuilder buildChainBuilder) {

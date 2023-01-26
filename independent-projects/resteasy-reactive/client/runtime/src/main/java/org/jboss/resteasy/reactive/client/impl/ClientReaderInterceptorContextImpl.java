@@ -28,7 +28,6 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
     final ConfigurationImpl configuration;
     final Serialisers serialisers;
     InputStream inputStream;
-    boolean done = false;
     private int index = 0;
     private final ReaderInterceptor[] interceptors;
     private final MultivaluedMap<String, String> headers = new CaseInsensitiveMap<>();

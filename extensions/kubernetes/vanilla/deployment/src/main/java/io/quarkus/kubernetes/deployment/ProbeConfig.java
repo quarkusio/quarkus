@@ -11,14 +11,14 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class ProbeConfig {
 
     /**
-     * The port number to use when configuring the http get.
-     * If not configured the port that corresponds to the `httpActionPortName` will be used.
+     * The port number to use when configuring the {@literal http get} action.
+     * If not configured, the port corresponding to the {@code httpActionPortName} will be used.
      */
     @ConfigItem
     Optional<Integer> httpActionPort;
 
     /**
-     * The port name ot use for selecting the port to congiure for the http get.
+     * The port name for selecting the port of the {@literal HTTP get} action.
      */
     @ConfigItem
     Optional<String> httpActionPortName;

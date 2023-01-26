@@ -603,7 +603,7 @@ spec:
 
 CPU & Memory limits and requests can be applied to a `Container` (more info in https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/[Kubernetes documentation]) using the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.resources.requests.memory=64Mi
 quarkus.kubernetes.resources.requests.cpu=250m
@@ -629,7 +629,7 @@ containers:
 
 Kubernetes exposes applications using https://kubernetes.io/docs/concepts/services-networking/ingress[Ingress resources]. To generate the Ingress resource, just apply the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.ingress.expose=true
 ----
@@ -767,7 +767,7 @@ spec:
 
 To secure the incoming connections, Kubernetes allows enabling https://kubernetes.io/docs/concepts/services-networking/ingress/#tls[TLS] within the Ingress resource by specifying a Secret that contains a TLS private key and certificate. You can generate a secured Ingress resource by simply adding the "tls.secret-name" properties:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.ingress.expose=true
 quarkus.kubernetes.ingress.target-port=https

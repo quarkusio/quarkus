@@ -425,7 +425,7 @@ Supported forwarding address headers are:
 
 One can easily add a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint by listing a cookie name and a `SameSite` attribute, for example:
 
-[source]
+[source,properties]
 ----
 quarkus.http.same-site-cookie.jwt.value=Lax
 quarkus.http.same-site-cookie.session.value=Strict

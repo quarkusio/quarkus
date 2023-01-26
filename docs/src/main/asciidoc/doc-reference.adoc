@@ -4,11 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="doc-reference"]
-= About Quarkus documentation
+= Quarkus style and content guidelines
 include::_attributes.adoc[]
 :categories: contributing
 
-A detailed reference for the structure and composition of Quarkus documentation.
+Guidelines are provided to help you to contribute clear and consistent content that is also sourced in the required structure and composition of Quarkus documentation.
 
 == AsciiDoc syntax
 
@@ -139,15 +139,15 @@ Minimally, each document should define and id and a title, and include common at
 [source,asciidoc]
 ----
 [id="doc-reference"] // <1>
-= Quarkus documentation reference // <2>
+= Quarkus style and content guidelines // <2>
 \include::_attributes.adoc[] // <3>
 :categories: contributing // <4>
 ----
 
 <1> Use the filename as the ID for the document.
-<2> Define the document title following guidance in <<Titles and headings>>
-<3> Include common document attributes
-<4> Specify the relevant <<Categories>> (comma separated)
+<2> Define the document title following guidance in <<Titles and headings>>.
+<3> Include common document attributes.
+<4> Specify the relevant <<Categories>> (comma separated).
 
 ==== Other common document attributes:
 
@@ -198,7 +198,7 @@ If you end up with deeply nested sections, think about the following:
 For example, if this is a reference, should some of this content be moved to a concept doc or how-to guide instead?
 - Can the content be reorganized to make it simpler to consume?
 
-See xref:{doc-guides}/doc-concept.adoc[Quarkus documentation concepts] for more information about content types and organization.
+See xref:{doc-guides}/doc-concept.adoc[Quarkus documentation content types] for more information about content types and organization.
 ====
 
 === Links

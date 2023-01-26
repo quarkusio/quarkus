@@ -4,20 +4,27 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="doc-concept"]
-= Quarkus documentation concepts
+= Quarkus documentation content types
 include::_attributes.adoc[]
 :categories: contributing
 :fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
 
-Overview of concepts underlying the structure and composition of Quarkus docs.
+Quarkus documentation is structured into four distinct content types: concepts, how-tos, tutorials, and references.
+The composition and structure of Quarkus docs follow the Diátaxis systematic documentation framework for technical documentation authoring.
+Each content type resolves a different user need, fulfills a different purpose, and requires a different approach to its creation.
 
-== Content Types
+== Diátaxis documentation framework
 
-We are aligning Quarkus docs with the Diátaxis documentation framework{fn-diataxis}, which defines a core content structure that addresses the different needs users have when consulting docs. 
+We chose to align Quarkus docs with the Diátaxis documentation framework{fn-diataxis}, which defines a core content structure that addresses the different needs users have when consulting docs. 
+
+image::diataxis-framework.png[The content types in the Diátaxis documentation framework{fn-diataxis},width=70%, align=center]
+
+*Image credit: https://diataxis.fr/*
+
 What follows is a brief summary of the different document types, but their site is worth a read if you want to understand more of the reasoning behind this classification.
 
 [[concept]]
-=== Concept guides (Explanation)
+== Concept guides (Explanation)
 
 > Explanation is _discussion_ that clarifies and illuminates a particular topic. Explanation is _understanding-oriented_.
 
@@ -34,7 +41,7 @@ You can cite design decisions, historical reasons, and technical constraints to 
 - may express opinions about advantages and drawbacks of the concept that you are explaining relative to different potential use cases or applications.
 
 [[howto-guide]]
-=== How-To guides
+== How-to guides
 
 > How-to guides are _directions_ that take the reader through the steps required to solve a real-world problem. How-to guides are _goal-oriented_.
 
@@ -49,7 +56,7 @@ Good how-to guides:
 - are practical (rather than complete).
 
 [[reference]]
-=== Reference guides
+== Reference guides
 
 > Reference guides are _technical descriptions_ of the machinery and how to operate it. Reference material is _information-oriented_.
 
@@ -66,7 +73,7 @@ Good reference guides:
 
 
 [[tutorial]]
-=== Tutorials
+== Tutorials
 
 > Tutorials are _lessons_ that take the reader by the hand through a series of steps to complete a project of some kind. Tutorials are _learning-oriented_.
 

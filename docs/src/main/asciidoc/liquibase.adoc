@@ -124,7 +124,7 @@ Now you can start your application and Quarkus will run the Liquibase's update m
 
 [source,java]
 ----
-import org.quarkus.liquibase.LiquibaseFactory; <1>
+import io.quarkus.liquibase.LiquibaseFactory; <1>
 
 @ApplicationScoped
 public class MigrationService {
@@ -195,7 +195,7 @@ Quarkus will already have run the migrate operation.
 
 [source,java]
 ----
-import org.quarkus.liquibase.LiquibaseFactory;
+import io.quarkus.liquibase.LiquibaseFactory;
 
 @ApplicationScoped
 public class MigrationService {

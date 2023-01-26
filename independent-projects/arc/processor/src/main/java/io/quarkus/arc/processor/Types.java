@@ -517,12 +517,13 @@ public final class Types {
             boolean throwOnProducerWildcard,
             Map<String, Type> resolvedTypeParameters,
             BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<String, Type>> resolvedTypeVariablesConsumer,
-            Set<Type> unrestrictedBeanTypes) {
+            Set<Type> unrestrictedBeanTypes, boolean rawGeneric) {
         Set<Type> types = new HashSet<>();
         List<TypeVariable> typeParameters = classInfo.typeParameters();
 
         if (typeParameters.isEmpty()
-                || !typeParameters.stream().allMatch(it -> resolvedTypeParameters.containsKey(it.identifier()))) {
+                || !typeParameters.stream().allMatch(it -> resolvedTypeParameters.containsKey(it.identifier()))
+                || rawGeneric) {
             // Not a parameterized type or a raw type
             types.add(Type.create(classInfo.name(), Kind.CLASS));
         } else {
@@ -562,7 +563,8 @@ public final class Types {
                             interfaceClassInfo.typeParameters(), resolvedTypeParameters, beanDeployment.getBeanArchiveIndex());
                 }
                 types.addAll(getTypeClosure(interfaceClassInfo, producerFieldOrMethod, false, resolved, beanDeployment,
-                        resolvedTypeVariablesConsumer, unrestrictedBeanTypes));
+                        resolvedTypeVariablesConsumer, unrestrictedBeanTypes,
+                        rawGeneric || isRawGeneric(interfaceType, interfaceClassInfo)));
             }
         }
         // Superclass
@@ -576,11 +578,17 @@ public final class Types {
                             resolvedTypeParameters, beanDeployment.getBeanArchiveIndex());
                 }
                 types.addAll(getTypeClosure(superClassInfo, producerFieldOrMethod, false, resolved, beanDeployment,
-                        resolvedTypeVariablesConsumer, unrestrictedBeanTypes));
+                        resolvedTypeVariablesConsumer, unrestrictedBeanTypes,
+                        rawGeneric || isRawGeneric(classInfo.superClassType(), superClassInfo)));
             }
         }
         unrestrictedBeanTypes.addAll(types);
         return types;
+    }
+
+    // if the superclass type is CLASS *AND* and superclass info has type parameters, then it's raw type
+    private static boolean isRawGeneric(Type superClassType, ClassInfo superClassInfo) {
+        return Kind.CLASS.equals(superClassType.kind()) && !superClassInfo.typeParameters().isEmpty();
     }
 
     static Set<Type> getTypeClosure(ClassInfo classInfo, AnnotationTarget producerFieldOrMethod,
@@ -588,7 +596,7 @@ public final class Types {
             BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<String, Type>> resolvedTypeVariablesConsumer,
             Set<Type> unrestrictedBeanTypes) {
         return getTypeClosure(classInfo, producerFieldOrMethod, true, resolvedTypeParameters, beanDeployment,
-                resolvedTypeVariablesConsumer, unrestrictedBeanTypes);
+                resolvedTypeVariablesConsumer, unrestrictedBeanTypes, false);
     }
 
     static Set<Type> getDelegateTypeClosure(InjectionPointInfo delegateInjectionPoint, BeanDeployment beanDeployment) {

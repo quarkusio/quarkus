@@ -1111,3 +1111,26 @@ In that case, the interceptor implementation doesn't need to be thread-safe.
 Due to a limitation in Hibernate ORM itself,
 `@PreDestroy` methods on `@Dependent`-scoped interceptors will never get called.
 ====
+
+
+[[statement_inspectors]]
+== Statement Inspectors
+
+You can assign a `org.hibernate.engine.jdbc.spi.StatementInspector` to your `SessionFactory` by simply defining a CDI bean with the appropriate qualifier:
+
+[source,java]
+----
+@PersistenceUnitExtension // <1>
+public class MyStatementInspector implements StatementInspector { // <2>
+    @Override
+    public String inspect(String sql) {
+        // ...
+        return sql;
+    }
+}
+----
+<1> Annotate the statement inspector implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+<2> Implement `org.hibernate.engine.jdbc.spi.StatementInspector`.

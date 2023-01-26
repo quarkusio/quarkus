@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: quarkusio/quarkusio.github.io
       - name: Download PR Artifact
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -22,9 +25,6 @@ jobs:
         id: pr
         run: |
           echo "id=$(<documentation-temp/pr-id.txt)" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v3
-        with:
-          repository: quarkusio/quarkusio.github.io
       - name: Sync documentation
         shell: bash
         run: |

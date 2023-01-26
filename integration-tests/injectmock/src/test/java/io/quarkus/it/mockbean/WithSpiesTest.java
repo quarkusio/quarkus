@@ -15,7 +15,7 @@ import io.quarkus.test.junit.mockito.InjectSpy;
 @QuarkusTest
 class WithSpiesTest {
 
-    @InjectSpy
+    @InjectSpy(convertScopes = true)
     CapitalizerService capitalizerService;
 
     @InjectSpy

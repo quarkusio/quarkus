@@ -1,5 +1,6 @@
 package io.quarkus.test.junit.mockito.internal;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,14 +26,16 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.junit.mockito.InjectSpy;
 
 public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implements TestBuildChainCustomizerProducer {
 
     private static final DotName INJECT_MOCK = DotName.createSimple(InjectMock.class.getName());
+    private static final DotName INJECT_SPY = DotName.createSimple(InjectSpy.class.getName());
 
     @Override
     public Consumer<BuildChainBuilder> produce(Index testClassesIndex) {
-        return new Consumer<BuildChainBuilder>() {
+        return new Consumer<>() {
 
             @Override
             public void accept(BuildChainBuilder buildChainBuilder) {
@@ -40,7 +43,9 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                     @Override
                     public void execute(BuildContext context) {
                         Set<DotName> mockTypes = new HashSet<>();
-                        List<AnnotationInstance> instances = testClassesIndex.getAnnotations(INJECT_MOCK);
+                        List<AnnotationInstance> instances = new ArrayList<>();
+                        instances.addAll(testClassesIndex.getAnnotations(INJECT_MOCK));
+                        instances.addAll(testClassesIndex.getAnnotations(INJECT_SPY));
                         for (AnnotationInstance instance : instances) {
                             if (instance.target().kind() != AnnotationTarget.Kind.FIELD) {
                                 continue;

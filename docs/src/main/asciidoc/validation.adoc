@@ -13,7 +13,7 @@ This guide covers how to use Hibernate Validator/Bean Validation for:
  * validating the input/output of your REST services;
  * validating the parameters and return values of the methods of your business services.
 
-THIS IS A TEST 2.
+THIS IS A TEST 3.
 
 == Prerequisites
 

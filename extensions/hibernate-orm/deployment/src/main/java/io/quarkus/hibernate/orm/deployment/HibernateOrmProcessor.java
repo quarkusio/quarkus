@@ -1183,7 +1183,11 @@ public final class HibernateOrmProcessor {
         // Hibernate Validator integration: we force the callback mode to have bootstrap errors reported rather than validation ignored
         // if there is any issue when bootstrapping Hibernate Validator.
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
-            descriptor.getProperties().setProperty(AvailableSettings.JPA_VALIDATION_MODE, ValidationMode.CALLBACK.name());
+            if (persistenceUnitConfig.validation.enabled) {
+                descriptor.getProperties().setProperty(AvailableSettings.JPA_VALIDATION_MODE, ValidationMode.CALLBACK.name());
+            } else {
+                descriptor.getProperties().setProperty(AvailableSettings.JPA_VALIDATION_MODE, ValidationMode.NONE.name());
+            }
         }
 
         // Collect the storage engines if MySQL or MariaDB

@@ -57,6 +57,14 @@ public class ClientHeaderParamFromPropertyTest {
         assertThat(client.missingNonRequiredProperty()).isEqualTo(HEADER_VALUE);
     }
 
+    @Test
+    void shouldSupportAdditionalTextOnHeaderProperty() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
+                .build(Client.class);
+
+        assertThat(client.supportAdditionalText()).isEqualTo("Bearer " + HEADER_VALUE + " Token");
+    }
+
     @Path("/")
     @ApplicationScoped
     public static class Resource {
@@ -64,6 +72,13 @@ public class ClientHeaderParamFromPropertyTest {
         public String returnHeaderValue(@HeaderParam("my-header") String header) {
             return header;
         }
+
+        @GET
+        @Path("/additional-text")
+        public String returnAdditionalText(@HeaderParam("additional-text") String header) {
+            return header;
+        }
+
     }
 
     @ClientHeaderParam(name = "my-header", value = "${my.property-value}")
@@ -78,5 +93,11 @@ public class ClientHeaderParamFromPropertyTest {
         @GET
         @ClientHeaderParam(name = "some-other-header", value = "${non-existent-property}", required = false)
         String missingNonRequiredProperty();
+
+        @GET
+        @ClientHeaderParam(name = "additional-text", value = "Bearer ${my.property-value} Token")
+        @Path("/additional-text")
+        String supportAdditionalText();
+
     }
 }

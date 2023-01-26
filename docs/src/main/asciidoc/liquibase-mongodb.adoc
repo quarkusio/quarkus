@@ -127,7 +127,7 @@ Quarkus will already have run the migrate operation.
 
 [source,java]
 ----
-import org.quarkus.liquibase.LiquibaseFactory;
+import io.quarkus.liquibase.LiquibaseFactory;
 
 @ApplicationScoped
 public class MigrationService {

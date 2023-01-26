@@ -72,7 +72,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("ClusterIP", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(2).anySatisfy(p -> {
                         assertThat(p.getNodePort()).isNull();
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
@@ -109,7 +109,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(2).anySatisfy(p -> {
                         assertThat(p.getNodePort()).isNotNull();
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);

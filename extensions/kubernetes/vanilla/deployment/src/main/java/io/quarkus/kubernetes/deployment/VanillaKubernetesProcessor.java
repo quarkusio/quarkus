@@ -1,11 +1,9 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.dekorate.kubernetes.decorator.AddServiceResourceDecorator.distinct;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
-import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.INGRESS;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
@@ -122,7 +120,6 @@ public class VanillaKubernetesProcessor {
         }
 
         return result;
-
     }
 
     @BuildStep
@@ -149,9 +146,9 @@ public class VanillaKubernetesProcessor {
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
-        result.addAll(
-                KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration, annotations,
-                        labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
+        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration,
+                annotations, labels, command, port, livenessPath, readinessPath, roles, roleBindings));
 
         KubernetesConfig.DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         if (deploymentKind != KubernetesConfig.DeploymentResourceKind.Deployment) {
@@ -187,12 +184,8 @@ public class VanillaKubernetesProcessor {
                         new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), INGRESS)));
             }
 
-            Optional<Port> defaultHostPort = KubernetesCommonHelper.combinePorts(ports, config).values().stream()
-                    .filter(distinct(p -> p.getName()))
-                    .findFirst();
-
             for (IngressRuleConfig rule : config.ingress.rules.values()) {
-                result.add(new DecoratorBuildItem(KUBERNETES, new AddIngressRuleDecorator(name, defaultHostPort,
+                result.add(new DecoratorBuildItem(KUBERNETES, new AddIngressRuleDecorator(name, port,
                         new IngressRuleBuilder()
                                 .withHost(rule.host)
                                 .withPath(rule.path)
@@ -239,17 +232,17 @@ public class VanillaKubernetesProcessor {
             if (!nodeConfigPorts.isEmpty()) {
                 for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
                     result.add(new DecoratorBuildItem(KUBERNETES,
-                            new AddNodePortDecorator(name, entry.getValue().nodePort.getAsInt(), Optional.of(entry.getKey()))));
+                            new AddNodePortDecorator(name, entry.getValue().nodePort.getAsInt(), entry.getKey())));
                 }
             } else if (config.nodePort.isPresent()) {
-                result.add(new DecoratorBuildItem(KUBERNETES, new AddNodePortDecorator(name, config.nodePort.getAsInt())));
+                result.add(new DecoratorBuildItem(KUBERNETES,
+                        new AddNodePortDecorator(name, config.nodePort.getAsInt(), config.ingress.targetPort)));
             }
         }
 
         // Probe port handling
-        Integer port = ports.stream().filter(p -> HTTP_PORT.equals(p.getName())).map(KubernetesPortBuildItem::getPort)
-                .findFirst().orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyHttpGetActionPortDecorator(name, name, port)));
+        Integer portNumber = port.map(Port::getContainerPort).orElse(DEFAULT_HTTP_PORT);
+        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyHttpGetActionPortDecorator(name, name, portNumber)));
 
         // Handle remote debug configuration
         if (config.remoteDebug.enabled) {

@@ -54,7 +54,7 @@ public class KnativeWithHealthTest {
                     assertThat(spec.getTemplate()).satisfies(template -> {
                         assertThat(template.getSpec()).satisfies(templateSpec -> {
                             assertThat(templateSpec.getContainers()).hasSize(1).singleElement().satisfies(c -> {
-                                assertThat(c.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                                assertThat(c.getPorts()).hasSize(1).anySatisfy(p -> {
                                     assertThat(p.getName()).isEqualTo("http1");
                                 });
                                 assertThat(c.getReadinessProbe()).isNotNull().satisfies(p -> {

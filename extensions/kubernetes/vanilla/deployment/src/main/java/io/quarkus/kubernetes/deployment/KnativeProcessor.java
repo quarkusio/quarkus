@@ -29,6 +29,7 @@ import io.dekorate.knative.decorator.ApplyRevisionNameDecorator;
 import io.dekorate.knative.decorator.ApplyServiceAccountToRevisionSpecDecorator;
 import io.dekorate.knative.decorator.ApplyTrafficDecorator;
 import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddConfigMapDataDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapResourceProvidingDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
@@ -116,9 +117,12 @@ public class KnativeProcessor {
     @BuildStep
     public List<ConfiguratorBuildItem> createConfigurators(KnativeConfig config, List<KubernetesPortBuildItem> ports) {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
-        KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
-            result.add(new ConfiguratorBuildItem(new AddPortToKnativeConfig(value)));
-        });
+        KubernetesCommonHelper.combinePorts(ports, config).values()
+                .stream()
+                // At the moment, Knative only supports single port binding: https://github.com/knative/serving/issues/8471
+                .filter(p -> p.getName().equals("http"))
+                .findFirst()
+                .ifPresent(value -> result.add(new ConfiguratorBuildItem(new AddPortToKnativeConfig(value))));
         return result;
     }
 
@@ -151,9 +155,9 @@ public class KnativeProcessor {
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config, metricsConfiguration,
-                annotations,
-                labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
+        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, "http");
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config, metricsConfiguration, annotations,
+                labels, command, port, livenessPath, readinessPath, roles, roleBindings));
 
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(KNATIVE, new ApplyContainerImageDecorator(name, i.getImage())));

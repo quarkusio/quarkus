@@ -2,7 +2,6 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
-import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_NODE_PORT_VALUE;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_PORT_NUMBER;
@@ -21,6 +20,7 @@ import java.util.stream.Stream;
 
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
@@ -75,10 +75,11 @@ public class DevClusterHelper {
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
+        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
         result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, config,
                 metricsConfiguration,
                 annotations, labels, command,
-                ports, livenessPath, readinessPath, roles, roleBindings));
+                port, livenessPath, readinessPath, roles, roleBindings));
 
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage())));
@@ -106,17 +107,19 @@ public class DevClusterHelper {
         if (!nodeConfigPorts.isEmpty()) {
             for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
                 result.add(new DecoratorBuildItem(KUBERNETES,
-                        new AddNodePortDecorator(name, entry.getValue().nodePort.getAsInt(), Optional.of(entry.getKey()))));
+                        new AddNodePortDecorator(name, entry.getValue().nodePort.getAsInt(), entry.getKey())));
             }
         } else {
-            result.add(new DecoratorBuildItem(clusterKind, new AddNodePortDecorator(name, config.getNodePort()
-                    .orElseGet(() -> getStablePortNumberInRange(name, MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)))));
+            result.add(new DecoratorBuildItem(clusterKind,
+                    new AddNodePortDecorator(name,
+                            config.getNodePort().orElseGet(
+                                    () -> getStablePortNumberInRange(name, MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)),
+                            config.ingress.targetPort)));
         }
 
         //Probe port handling
-        Integer port = ports.stream().filter(p -> HTTP_PORT.equals(p.getName())).map(KubernetesPortBuildItem::getPort)
-                .findFirst().orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyHttpGetActionPortDecorator(name, name, port)));
+        Integer portNumber = port.map(Port::getContainerPort).orElse(DEFAULT_HTTP_PORT);
+        result.add(new DecoratorBuildItem(clusterKind, new ApplyHttpGetActionPortDecorator(name, name, portNumber)));
 
         // Handle init Containers
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(clusterKind, name, initContainers, result));

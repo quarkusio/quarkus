@@ -23,9 +23,10 @@ public class RouteConfig {
 
     /**
      * The target named port. If not provided, it will be deducted from the Service resource ports.
+     * Options are: "http" and "https".
      */
-    @ConfigItem
-    Optional<String> targetPort;
+    @ConfigItem(defaultValue = "http")
+    String targetPort;
 
     /**
      * Custom annotations to add to exposition (route or ingress) resources

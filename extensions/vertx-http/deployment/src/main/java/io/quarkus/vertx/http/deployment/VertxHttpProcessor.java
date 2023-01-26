@@ -56,6 +56,7 @@ import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.HttpHostConfigSource;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
@@ -147,9 +148,20 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    public KubernetesPortBuildItem kubernetes() {
+    public void kubernetes(BuildProducer<KubernetesPortBuildItem> kubernetesPorts) {
+        HttpConfiguration.InsecureRequests insecureRequests = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.http.insecure-requests", HttpConfiguration.InsecureRequests.class)
+                .orElse(HttpConfiguration.InsecureRequests.ENABLED);
+        if (insecureRequests != HttpConfiguration.InsecureRequests.DISABLED) {
+            // ssl is not disabled
+            int sslPort = ConfigProvider.getConfig()
+                    .getOptionalValue("quarkus.http.ssl-port", Integer.class)
+                    .orElse(8443);
+            kubernetesPorts.produce(new KubernetesPortBuildItem(sslPort, "https"));
+        }
+
         int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
-        return new KubernetesPortBuildItem(port, "http");
+        kubernetesPorts.produce(new KubernetesPortBuildItem(port, "http"));
     }
 
     @BuildStep

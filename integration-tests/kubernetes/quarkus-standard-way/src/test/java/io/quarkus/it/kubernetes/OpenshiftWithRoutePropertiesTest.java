@@ -45,7 +45,7 @@ public class OpenshiftWithRoutePropertiesTest {
 
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getSelector()).contains(entry("app.kubernetes.io/name", "test-it"));
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(2).anySatisfy(p -> {
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });

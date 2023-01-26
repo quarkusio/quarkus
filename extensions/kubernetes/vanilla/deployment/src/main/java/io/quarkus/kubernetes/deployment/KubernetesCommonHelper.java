@@ -1,6 +1,7 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import static io.dekorate.kubernetes.decorator.AddServiceResourceDecorator.distinct;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
@@ -121,6 +122,23 @@ public class KubernetesCommonHelper {
     /**
      * Creates the configurator build items.
      */
+    public static Optional<Port> getPort(List<KubernetesPortBuildItem> ports, KubernetesConfig config) {
+        return getPort(ports, config, config.ingress.targetPort);
+    }
+
+    /**
+     * Creates the configurator build items.
+     */
+    public static Optional<Port> getPort(List<KubernetesPortBuildItem> ports, PlatformConfiguration config, String targetPort) {
+        return combinePorts(ports, config).values().stream()
+                .filter(distinct(p -> p.getName()))
+                .filter(p -> p.getName().equals(targetPort))
+                .findFirst();
+    }
+
+    /**
+     * Creates the configurator build items.
+     */
     public static Map<String, Port> combinePorts(List<KubernetesPortBuildItem> ports,
             PlatformConfiguration config) {
         Map<String, Port> allPorts = new HashMap<>();
@@ -159,7 +177,7 @@ public class KubernetesCommonHelper {
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             Optional<KubernetesCommandBuildItem> command,
-            List<KubernetesPortBuildItem> ports,
+            Optional<Port> port,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessProbePath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessProbePath,
             List<KubernetesRoleBuildItem> roles,
@@ -167,7 +185,7 @@ public class KubernetesCommonHelper {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
         result.addAll(createLabelDecorators(project, target, name, config, labels));
-        result.addAll(createAnnotationDecorators(project, target, name, config, metricsConfiguration, annotations, ports));
+        result.addAll(createAnnotationDecorators(project, target, name, config, metricsConfiguration, annotations, port));
         result.addAll(createPodDecorators(project, target, name, config));
         result.addAll(createContainerDecorators(project, target, name, config));
         result.addAll(createMountAndVolumeDecorators(project, target, name, config));
@@ -177,7 +195,7 @@ public class KubernetesCommonHelper {
         result.addAll(createArgsDecorator(project, target, name, config, command));
 
         //Handle Probes
-        if (!ports.isEmpty()) {
+        if (!port.isEmpty()) {
             result.addAll(createProbeDecorators(name, target, config.getLivenessProbe(), config.getReadinessProbe(),
                     livenessProbePath, readinessProbePath));
         }
@@ -606,7 +624,7 @@ public class KubernetesCommonHelper {
             PlatformConfiguration config,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             List<KubernetesAnnotationBuildItem> annotations,
-            List<KubernetesPortBuildItem> ports) {
+            Optional<Port> port) {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
         annotations.forEach(a -> {
@@ -649,14 +667,14 @@ public class KubernetesCommonHelper {
             metricsConfiguration.ifPresent(m -> {
                 String path = m.metricsEndpoint();
                 String prefix = config.getPrometheusConfig().prefix;
-                if (!ports.isEmpty() && path != null) {
+                if (port.isPresent() && path != null) {
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                             config.getPrometheusConfig().scrape.orElse(prefix + "/scrape"), "true",
                             PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                             config.getPrometheusConfig().path.orElse(prefix + "/path"), path, PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.getPrometheusConfig().port.orElse(prefix + "/port"), "" + ports.get(0).getPort(),
+                            config.getPrometheusConfig().port.orElse(prefix + "/port"), "" + port.get().getContainerPort(),
                             PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                             config.getPrometheusConfig().scheme.orElse(prefix + "/scheme"), "http",

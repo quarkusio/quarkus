@@ -17,21 +17,20 @@ jobs:
           workflow: ${{ github.event.workflow_run.workflow_id }}
           workflow_conclusion: success
           name: documentation
-          path: documentation
+          path: documentation-temp
       - name: Store PR id as variable
         id: pr
         run: |
-          echo "id=$(<documentation/pr-id.txt)" >> $GITHUB_OUTPUT
-          rm -f pr-id.txt
+          echo "id=$(<documentation-temp/pr-id.txt)" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           repository: quarkusio/quarkusio.github.io
-          path: quarkusio
       - name: Sync documentation
         shell: bash
         run: |
-          chmod 755 ./documentation/docs/sync-web-site.sh
-          ./documentation/docs/sync-web-site.sh main ../../quarkusio/
+          chmod 755 ./documentation-temp/docs/sync-web-site.sh
+          ./documentation-temp/docs/sync-web-site.sh main ../../
+          rm -rf documentation-temp
       - name: Set up ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -58,7 +57,7 @@ jobs:
           ### If the jekyll website source is not in root, specify the directory. (in this case, sample_site)
           ### By default, this is not required as the action searches for a _config.yml automatically.
           #
-          gem_src: quarkusio
+          #gem_src: quarkusio
           ### By default, this is not required as the action searches for a _config.yml automatically.
           ### However, if there are multiple Gemfiles, the action may not be able to determine which to use.
           ### In that case, specify the directory. (in this case, sample_site)

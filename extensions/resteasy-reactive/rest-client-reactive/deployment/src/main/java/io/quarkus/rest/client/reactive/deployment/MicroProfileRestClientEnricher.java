@@ -217,9 +217,9 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             boolean required = annotation.valueWithDefault(index, "required").asBoolean();
             ResultHandle valuesList = creator.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
             for (String value : values) {
-                if (value.startsWith("${") && value.endsWith("}")) {
+                if (value.contains("${")) {
                     ResultHandle queryValueFromConfig = creator.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(ConfigUtils.class, "getConfigValue", String.class, String.class,
+                            MethodDescriptor.ofMethod(ConfigUtils.class, "interpolate", String.class, String.class,
                                     boolean.class),
                             creator.load(value), creator.load(required));
                     creator.ifNotNull(queryValueFromConfig)
@@ -501,9 +501,9 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             boolean required = annotation.valueWithDefault(index, "required").asBoolean();
             ResultHandle headerList = fillHeaders.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
             for (String value : values) {
-                if (value.startsWith("${") && value.endsWith("}")) {
+                if (value.contains("${")) {
                     ResultHandle headerValueFromConfig = fillHeaders.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(ConfigUtils.class, "getConfigValue", String.class, String.class,
+                            MethodDescriptor.ofMethod(ConfigUtils.class, "interpolate", String.class, String.class,
                                     boolean.class),
                             fillHeaders.load(value), fillHeaders.load(required));
                     fillHeaders.ifNotNull(headerValueFromConfig)

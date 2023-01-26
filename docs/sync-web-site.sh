@@ -95,15 +95,17 @@ rsync -vr --delete \
     target/asciidoc/sources/ \
     $TARGET_GUIDES
 
-echo
-echo "Copying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
-echo
-rsync -vr --delete \
-    --exclude='**/*.html' \
-    --exclude='**/index.adoc' \
-    --exclude='**/_attributes.adoc' \
-    ../target/asciidoc/generated/ \
-    $TARGET_CONFIG
+if [ -f ../target/asciidoc/generated/ ]; then
+  echo
+  echo "Copying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
+  echo
+  rsync -vr --delete \
+      --exclude='**/*.html' \
+      --exclude='**/index.adoc' \
+      --exclude='**/_attributes.adoc' \
+      ../target/asciidoc/generated/ \
+      $TARGET_CONFIG
+fi
 
 if [ -f target/indexByType.yaml ]; then
   echo

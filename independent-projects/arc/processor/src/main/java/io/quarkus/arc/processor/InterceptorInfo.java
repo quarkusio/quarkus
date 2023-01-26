@@ -20,6 +20,8 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.impl.Sets;
+
 /**
  *
  * @author Martin Kouba
@@ -41,7 +43,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
     InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings,
             List<Injection> injections, int priority) {
         super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
-                Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
+                Sets.singletonHashSet(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
                 null, null, false, Collections.emptyList(), null, false, null, priority);
         this.bindings = bindings;
         List<MethodInfo> aroundInvokes = new ArrayList<>();

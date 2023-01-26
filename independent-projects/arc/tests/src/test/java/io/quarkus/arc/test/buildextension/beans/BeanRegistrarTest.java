@@ -7,6 +7,7 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.util.AnnotationLiteral;
+import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
@@ -34,7 +36,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanRegistrar;
@@ -96,6 +100,41 @@ public class BeanRegistrarTest {
             val += v;
         }
         assertEquals(64l, val);
+    }
+
+    @Test
+    public void testSyntheticBeanType() {
+        InjectableBean<Integer> integerBean = Arc.container().instance(Integer.class).getBean();
+        assertBeanTypes(integerBean, Object.class, Integer.class);
+
+        InjectableBean<String> stringBean = Arc.container().instance(String.class).getBean();
+        assertBeanTypes(stringBean, Object.class, String.class);
+
+        InjectableBean<String> stringNextBean = Arc.container().instance(String.class, new NextQualifierLiteral()).getBean();
+        assertBeanTypes(stringNextBean, Object.class, String.class);
+
+        InjectableBean<List> listBean = Arc.container().instance(List.class).getBean();
+        assertBeanTypes(listBean, Object.class, List.class, new TypeLiteral<List<String>>() {
+        }.getType());
+
+        InjectableInstance<Long> longInstance = Arc.container().select(Long.class);
+        for (InstanceHandle<Long> longHandle : longInstance.handles()) {
+            InjectableBean<Long> longBean = longHandle.getBean();
+            if (longBean.getPriority() == 10) {
+                assertBeanTypes(longBean, Object.class, Long.class);
+            } else if (longBean.getPriority() == 5) {
+                assertBeanTypes(longBean, Object.class, Long.class, Double.class);
+            } else {
+                fail();
+            }
+        }
+    }
+
+    private static void assertBeanTypes(InjectableBean<?> bean, java.lang.reflect.Type... expectedTypes) {
+        assertEquals(expectedTypes.length, bean.getTypes().size());
+        for (java.lang.reflect.Type expectedType : expectedTypes) {
+            assertTrue(bean.getTypes().contains(expectedType));
+        }
     }
 
     @Singleton

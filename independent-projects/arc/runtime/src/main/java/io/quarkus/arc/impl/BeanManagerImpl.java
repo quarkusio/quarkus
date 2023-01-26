@@ -58,7 +58,8 @@ public class BeanManagerImpl implements BeanManager {
         Objects.requireNonNull(beanType, "Bean type is null");
         Objects.requireNonNull(ctx, "CreationalContext is null");
         if (!BeanTypeAssignabilityRules.instance().matches(beanType, bean.getTypes())) {
-            throw new IllegalArgumentException("Type " + beanType + " is not a bean type of " + bean);
+            throw new IllegalArgumentException("Type " + beanType + " is not a bean type of " + bean
+                    + "; its bean types are: " + bean.getTypes());
         }
         if (bean instanceof InjectableBean && ctx instanceof CreationalContextImpl) {
             return ArcContainerImpl.instance().beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx).get();

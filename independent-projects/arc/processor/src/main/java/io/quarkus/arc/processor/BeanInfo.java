@@ -26,6 +26,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -117,6 +118,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.providerType = providerType;
         this.beanDeployment = beanDeployment;
         this.scope = scope != null ? scope : BuiltinScope.DEPENDENT.getInfo();
+        types.add(ClassType.OBJECT_TYPE);
         this.types = types;
         for (Type type : types) {
             Beans.analyzeType(type, beanDeployment);

@@ -153,7 +153,7 @@ tests while having the application running in parallel.
 .Changing the test port
 ====
 You can configure the ports used by tests by configuring `quarkus.http.test-port` for HTTP and `quarkus.http.test-ssl-port` for HTTPS in your `application.properties`:
-[source]
+[source,properties]
 ----
 quarkus.http.test-port=8083
 quarkus.http.test-ssl-port=8446
@@ -169,7 +169,7 @@ so no additional configuration should be required.
 When using REST Assured in your test, the connection and response timeouts are set to 30 seconds.
 You can override this setting with the `quarkus.http.test-timeout` property:
 
-[source]
+[source,properties]
 ----
 quarkus.http.test-timeout=10s
 ----

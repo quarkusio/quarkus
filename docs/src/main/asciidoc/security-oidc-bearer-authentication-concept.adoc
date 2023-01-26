@@ -6,7 +6,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="security-oidc-bearer-authentication-concept"]
 = OIDC Bearer authentication
 include::_attributes.adoc[]
-:categories: security
+:categories: security,web
+
+:summary: To secure HTTP access to JAX-RS endpoints in your application, you can use Bearer authentication provided by the Quarkus OpenID Connect (OIDC) extension.
 
 == Overview of the Bearer authentication mechanism in Quarkus
 

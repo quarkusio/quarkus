@@ -1,5 +1,6 @@
 package io.quarkus.confluent.registry.common;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
@@ -19,9 +20,12 @@ public class ConfluentRegistryClientProcessor {
         if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
                 x -> x.getGroupId().equals("io.confluent")
                         && x.getArtifactId().equals("kafka-schema-serializer"))) {
-            reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, false, false,
-                            "io.confluent.kafka.serializers.context.NullContextNameStrategy"));
+
+            String nullContextNameStrategy = "io.confluent.kafka.serializers.context.NullContextNameStrategy";
+            if (QuarkusClassLoader.isClassPresentAtRuntime(nullContextNameStrategy)) {
+                // Class not present before v7.0.0
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, nullContextNameStrategy));
+            }
 
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, true, false,

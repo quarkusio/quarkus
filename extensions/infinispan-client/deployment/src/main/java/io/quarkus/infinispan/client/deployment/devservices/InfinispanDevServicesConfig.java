@@ -74,6 +74,42 @@ public class InfinispanDevServicesConfig {
     @ConfigItem
     public Optional<List<String>> artifacts;
 
+    /**
+     * Add a site name to start the Infinispan Server Container with Cross Site Replication enabled (ex. lon).
+     * Cross Site Replication is the capability to connect two separate Infinispan Server Clusters that might run
+     * in different Data Centers, and configure backup caches to copy the data across the clusters with active-active
+     * or active-passive replication.
+     * See more about Cross Site Replication in the Infinispan Documentation
+     * https://infinispan.org/docs/stable/titles/xsite/xsite.html
+     * Configure {@link #mcastPort} to avoid forming a cluster with any other running Infinispan Server container.
+     */
+    @ConfigItem
+    public Optional<String> site;
+
+    /**
+     * If you are running an Infinispan Server already in docker, if the containers use the same mcastPort they will form a
+     * cluster.
+     * Set a different mcastPort to create a separate cluster in Docker (e. 46656).
+     * A common use case in a local Docker development mode, is the need of having two different Infinispan Clusters
+     * with Cross Site Replication enabled.
+     * see
+     * https://github.com/infinispan/infinispan-simple-tutorials/blob/main/infinispan-remote/cross-site-replication/docker-compose/
+     */
+    @ConfigItem
+    public OptionalInt mcastPort;
+
+    /**
+     * Runs the Infinispan Server container with tracing enabled. Traces are disabled by default
+     */
+    @ConfigItem(name = "tracing.enabled", defaultValue = "false")
+    public Optional<Boolean> tracing;
+
+    /**
+     * Sets Infinispan Server otlp endpoint. Default value is http://localhost:4317
+     */
+    @ConfigItem(name = "tracing.exporter.otlp.endpoint", defaultValue = "http://localhost:4317")
+    public Optional<String> exporterOtlpEndpoint;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)

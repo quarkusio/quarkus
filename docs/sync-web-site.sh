@@ -132,9 +132,15 @@ else
 Run one of the following command to check the web site (if not done already):
 
 - If you have Jekyll set up locally:
+
+    ./target/web-site/serve-only-latest-guides.sh
+
+    OR if you want to generate all versions include the maintenance branches (2.7, 2.13...):
+
     (cd target/web-site && bundle exec jekyll serve)
 
 - If you have Docker or Podman:
+
     cd target/web-site
     docker run --rm --volume=\"$PWD:/srv/jekyll:Z\" \\
         --publish 4000:4000 jekyll/jekyll:4.1.0 jekyll serve --incremental

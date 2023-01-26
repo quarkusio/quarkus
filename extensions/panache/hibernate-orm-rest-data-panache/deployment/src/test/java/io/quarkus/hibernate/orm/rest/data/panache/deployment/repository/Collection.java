@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.rest.data.panache.deployment.repository;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
@@ -17,6 +18,12 @@ public class Collection extends PanacheEntityBase {
     public String id;
 
     public String name;
+
+    /**
+     * This field is used to reproduce the issue: https://github.com/quarkusio/quarkus/issues/30605
+     */
+    @Column(name = "type", columnDefinition = "int default 100")
+    public int type;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "collection")
     public List<Item> items = new LinkedList<>();

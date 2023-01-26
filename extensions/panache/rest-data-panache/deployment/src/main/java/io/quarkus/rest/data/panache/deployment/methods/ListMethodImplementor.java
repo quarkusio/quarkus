@@ -1,11 +1,13 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
 import static io.quarkus.arc.processor.DotNames.BOOLEAN;
+import static io.quarkus.arc.processor.DotNames.BYTE;
 import static io.quarkus.arc.processor.DotNames.CHARACTER;
 import static io.quarkus.arc.processor.DotNames.DOUBLE;
 import static io.quarkus.arc.processor.DotNames.FLOAT;
 import static io.quarkus.arc.processor.DotNames.INTEGER;
 import static io.quarkus.arc.processor.DotNames.LONG;
+import static io.quarkus.arc.processor.DotNames.SHORT;
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
@@ -15,6 +17,7 @@ import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplemento
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.param;
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.responseType;
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.uniType;
+import static io.quarkus.rest.data.panache.deployment.utils.TypeUtils.primitiveToClass;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -255,7 +258,8 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         return resourceMetadata.getFields().entrySet()
                 .stream()
                 .filter(e -> isFieldTypeCompatibleForQueryParam(e.getValue()))
-                .map(e -> param(e.getKey(), e.getValue().name().toString()))
+                // we need to map primitive types to classes to make the fields nullable
+                .map(e -> param(e.getKey(), primitiveToClass(e.getValue().name().toString())))
                 .collect(Collectors.toList());
     }
 
@@ -354,9 +358,11 @@ public class ListMethodImplementor extends StandardMethodImplementor {
                 || fieldType.name().equals(BOOLEAN)
                 || fieldType.name().equals(CHARACTER)
                 || fieldType.name().equals(DOUBLE)
+                || fieldType.name().equals(SHORT)
                 || fieldType.name().equals(FLOAT)
                 || fieldType.name().equals(INTEGER)
                 || fieldType.name().equals(LONG)
+                || fieldType.name().equals(BYTE)
                 || fieldType.kind() == Type.Kind.PRIMITIVE;
     }
 }

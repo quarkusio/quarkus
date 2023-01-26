@@ -87,6 +87,26 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
+    void shouldListWithPrimitiveFilter() {
+        given().accept("application/json")
+                .when()
+                .queryParam("type", 100)
+                .get("/collections")
+                .then().statusCode(200)
+                .and().body("id", contains("empty", "full"));
+    }
+
+    @Test
+    void shouldListWithPrimitiveFilterAndNoResults() {
+        given().accept("application/json")
+                .when()
+                .queryParam("type", 99)
+                .get("/collections")
+                .then().statusCode(200)
+                .and().body("id", empty());
+    }
+
+    @Test
     void shouldListWithFilter() {
         given().accept("application/json")
                 .when()

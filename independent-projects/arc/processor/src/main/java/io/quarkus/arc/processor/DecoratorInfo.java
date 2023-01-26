@@ -12,6 +12,8 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
+import io.quarkus.arc.impl.Sets;
+
 public class DecoratorInfo extends BeanInfo implements Comparable<DecoratorInfo> {
 
     private final InjectionPointInfo delegateInjectionPoint;
@@ -20,7 +22,7 @@ public class DecoratorInfo extends BeanInfo implements Comparable<DecoratorInfo>
     DecoratorInfo(AnnotationTarget target, BeanDeployment beanDeployment, InjectionPointInfo delegateInjectionPoint,
             Set<Type> decoratedTypes, List<Injection> injections, int priority) {
         super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
-                Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
+                Sets.singletonHashSet(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
                 null, null, false, Collections.emptyList(), null, false, null, priority);
         this.delegateInjectionPoint = delegateInjectionPoint;
         this.decoratedTypes = decoratedTypes;

@@ -1,6 +1,7 @@
 package io.quarkus.arc.impl;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 public final class Sets {
@@ -30,4 +31,9 @@ public final class Sets {
         }
     }
 
+    public static <E> HashSet<E> singletonHashSet(E element) {
+        HashSet<E> result = new HashSet<>();
+        result.add(element);
+        return result;
+    }
 }

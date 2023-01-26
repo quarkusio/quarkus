@@ -407,7 +407,7 @@ Additionally, you can also filter by the entity fields by adding a query param w
 ]
 ----
 
-IMPORTANT: Filtering by fields is only supported for primitive types.
+IMPORTANT: Filtering by fields is only supported for String, Boolean, Character, Double, Float, Integer, Long, Short, Byte and the primitive types.
 
 == Complex filtering to list entities using @NamedQuery
 

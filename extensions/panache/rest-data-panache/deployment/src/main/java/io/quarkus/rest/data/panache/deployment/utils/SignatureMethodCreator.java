@@ -2,7 +2,7 @@ package io.quarkus.rest.data.panache.deployment.utils;
 
 import static io.quarkus.gizmo.Type.classType;
 import static io.quarkus.gizmo.Type.parameterizedType;
-import static io.quarkus.rest.data.panache.deployment.methods.StandardMethodImplementor.toType;
+import static io.quarkus.rest.data.panache.deployment.utils.TypeUtils.toGizmoType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +52,7 @@ public final class SignatureMethodCreator {
     }
 
     public static Parameter param(String name, Object type) {
-        return param(name, type, toType(type));
+        return param(name, type, toGizmoType(type));
     }
 
     public static Parameter param(String name, Object clazz, Type type) {
@@ -90,7 +90,7 @@ public final class SignatureMethodCreator {
         ReturnType returnType = new ReturnType();
         Type[] typeArguments = new Type[arguments.length];
         for (int index = 0; index < arguments.length; index++) {
-            typeArguments[index] = toType(arguments[index]);
+            typeArguments[index] = toGizmoType(arguments[index]);
         }
 
         returnType.classType = Uni.class;

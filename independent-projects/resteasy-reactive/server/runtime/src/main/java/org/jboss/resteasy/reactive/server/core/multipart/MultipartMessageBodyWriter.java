@@ -153,7 +153,7 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         } else if (value instanceof FileDownload) {
             return "; filename=\"" + ((FileDownload) value).fileName() + "\"";
         } else if (partFileName != null) {
-            return partFileName;
+            return "; filename=\"" + partFileName + "\"";
         }
 
         return "";

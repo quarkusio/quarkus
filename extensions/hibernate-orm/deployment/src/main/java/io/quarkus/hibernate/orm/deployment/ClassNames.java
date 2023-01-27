@@ -55,5 +55,6 @@ public class ClassNames {
     public static final DotName SESSION = createConstant("org.hibernate.Session");
 
     public static final DotName INTERCEPTOR = createConstant("org.hibernate.Interceptor");
+    public static final DotName STATEMENT_INSPECTOR = createConstant("org.hibernate.resource.jdbc.spi.StatementInspector");
 
 }

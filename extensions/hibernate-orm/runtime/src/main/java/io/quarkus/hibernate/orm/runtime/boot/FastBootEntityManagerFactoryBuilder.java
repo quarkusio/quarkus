@@ -23,6 +23,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.proxy.EntityNotFoundDelegate;
+import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
@@ -183,6 +184,12 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
                 Interceptor.class, persistenceUnitName);
         if (!interceptorInstance.isUnsatisfied()) {
             options.applyStatelessInterceptorSupplier(interceptorInstance::get);
+        }
+
+        InjectableInstance<StatementInspector> statementInspectorInstance = PersistenceUnitUtil
+                .singleExtensionInstanceForPersistenceUnit(StatementInspector.class, persistenceUnitName);
+        if (!statementInspectorInstance.isUnsatisfied()) {
+            options.applyStatementInspector(statementInspectorInstance.get());
         }
     }
 

@@ -97,7 +97,7 @@ Note that this script also builds:
 
 #### OpenRewrite
 
-The OpenRewrite transformation is done in one unique step to alleviate dependency issues we had before switching to this approach.
+The OpenRewrite transformation is done in one unique step to alleviate the dependency issues we had before switching to this approach.
 You don't need to run OpenRewrite for the modules you add to `transform.sh`, you just need to adjust the configuration.
 
 OpenRewrite recipes are declared in the `jakarta/rewrite.yml` file.

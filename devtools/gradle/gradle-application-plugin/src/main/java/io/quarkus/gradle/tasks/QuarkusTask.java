@@ -13,8 +13,6 @@ public abstract class QuarkusTask extends DefaultTask {
     private QuarkusPluginExtension extension;
 
     QuarkusTask(String description) {
-        GradleLogger.logSupplier = this::getLogger;
-
         setDescription(description);
         setGroup("quarkus");
     }

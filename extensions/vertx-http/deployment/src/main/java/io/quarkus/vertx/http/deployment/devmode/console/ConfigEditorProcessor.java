@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http.deployment.devmode.console;
 
-import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -46,7 +44,6 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsRecorder;
@@ -215,7 +212,6 @@ public class ConfigEditorProcessor {
         if (values != null && !values.isEmpty()) {
             try {
                 Path configPath = getConfigPath();
-                List<String> profiles = ConfigUtils.getProfiles();
                 List<String> lines = Files.readAllLines(configPath);
                 for (Map.Entry<String, String> entry : values.entrySet()) {
                     String name = entry.getKey();
@@ -223,17 +219,11 @@ public class ConfigEditorProcessor {
                     int nameLine = -1;
                     for (int i = 0, linesSize = lines.size(); i < linesSize; i++) {
                         String line = lines.get(i);
-                        for (String profile : profiles) {
-                            String profileName = !profile.equals(DEVELOPMENT.getDefaultProfile()) ? "%" + profile + "." + name
-                                    : name;
-                            if (line.startsWith(profileName + "=")) {
-                                name = profileName;
-                                nameLine = i;
-                                break;
-                            }
+                        if (line.startsWith(name + "=")) {
+                            nameLine = i;
+                            break;
                         }
                     }
-
                     if (nameLine != -1) {
                         if (value.isEmpty()) {
                             lines.remove(nameLine);

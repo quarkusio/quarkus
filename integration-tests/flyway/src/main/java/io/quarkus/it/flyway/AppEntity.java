@@ -18,6 +18,8 @@ public class AppEntity {
 
     private String name;
 
+    private String createdBy;
+
     public int getId() {
         return id;
     }
@@ -32,6 +34,14 @@ public class AppEntity {
 
     public void setName(final String name) {
         this.name = name;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 
     @Override

@@ -5,11 +5,14 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 @DisplayName("Tests flyway extension")
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Our Windows CI does not have Docker installed properly")
 public class FlywayFunctionalityTest {
 
     @Test
@@ -43,15 +46,24 @@ public class FlywayFunctionalityTest {
     }
 
     @Test
-    @DisplayName("Returns whether the init-sql is CREATE CONSTANT IF NOT EXISTS ONE_HUNDRED VALUE 100 or not")
+    @DisplayName("Returns whether the init-sql is CREATE SCHEMA IF NOT EXISTS TEST_SCHEMA;CREATE OR REPLACE FUNCTION f_my_constant() RETURNS integer LANGUAGE plpgsql as $func$ BEGIN return 100; END $func$; or not")
     public void testReturnInitSql() {
-        when().get("/flyway/init-sql").then().body(is("CREATE CONSTANT IF NOT EXISTS ONE_HUNDRED VALUE 100"));
+        when().get("/flyway/init-sql").then().body(is(
+                "CREATE SCHEMA IF NOT EXISTS TEST_SCHEMA;CREATE OR REPLACE FUNCTION f_my_constant() RETURNS integer LANGUAGE plpgsql as $func$ BEGIN return 100; END $func$;"));
     }
 
     @Test
     @DisplayName("Returns whether the init-sql executed")
     public void testInitSqlExecuted() {
         when().get("/flyway/init-sql-result").then().body(is("100"));
+    }
+
+    @Test
+    @DisplayName("Returns if the created-by user is scott")
+    public void testCreatedByUserIsDifferent() {
+        when().get("/flyway/created-by").then()
+                .log().ifValidationFails()
+                .body(is("scott"));
     }
 
 }

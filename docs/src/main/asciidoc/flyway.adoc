@@ -198,6 +198,41 @@ The syntax is as follows: `quarkus.flyway.[optional name.][datasource property]`
 
 NOTE: Without configuration, Flyway is set up for every datasource using the default settings.
 
+== Customizing Flyway
+
+In cases where Flyway needs to be configured in addition to the configuration options that Quarkus provides, the `io.quarkus.flyway.FlywayConfigurationCustomizer` class comes in handy.
+
+To customize Flyway for the default datasource, simply add a bean like so:
+
+[source,java]
+----
+@Singleton
+public static class MyCustomizer implements FlywayConfigurationCustomizer {
+
+    @Override
+    public void customize(FluentConfiguration configuration) {
+        // do something with configuration
+    }
+}
+----
+
+When named datasources are used, the `@FlywayDataSource` annotation can be used to specify the datasource to which the customizer applies.
+For example, if there are multiple datasources one of which is called `users` and customization of Flyway is needed for only that datasource,
+then the following code can be used:
+
+[source,java]
+----
+@Singleton
+@FlywayDataSource("users")
+public static class UsersCustomizer implements FlywayConfigurationCustomizer {
+
+    @Override
+    public void customize(FluentConfiguration configuration) {
+        // do something with configuration
+    }
+}
+----
+
 == Using the Flyway object
 
 In case you are interested in using the `Flyway` object directly, you can inject it as follows:

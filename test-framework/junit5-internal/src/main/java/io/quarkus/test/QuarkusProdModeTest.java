@@ -655,7 +655,7 @@ public class QuarkusProdModeTest
                 .map(Integer::parseInt)
                 .orElse(DEFAULT_HTTP_PORT_INT);
 
-        // If http port is 0, then we need to set the port to null in order to use the `quarkus.https.test-port` property
+        // If http port is 0, then we need to set the port to null in order to use the `quarkus.http.test-ssl-port` property
         // which is done in `RestAssuredURLManager.setURL`.
         if (httpPort == 0) {
             httpPort = null;

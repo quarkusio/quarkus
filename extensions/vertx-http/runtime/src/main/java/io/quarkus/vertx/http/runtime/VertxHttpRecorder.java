@@ -1348,8 +1348,8 @@ public class VertxHttpRecorder {
 
                     }
                     if (clearHttpsProperty) {
-                        String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.https.test-port"
-                                : "quarkus.https.port";
+                        String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.http.test-ssl-port"
+                                : "quarkus.http.ssl-port";
                         System.clearProperty(portPropertyName);
                         if (launchMode.isDevOrTest()) {
                             System.clearProperty(propertyWithProfilePrefix(portPropertyName));

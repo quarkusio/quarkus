@@ -95,15 +95,17 @@ rsync -vr --delete \
     target/asciidoc/sources/ \
     $TARGET_GUIDES
 
-echo
-echo "Copying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
-echo
-rsync -vr --delete \
-    --exclude='**/*.html' \
-    --exclude='**/index.adoc' \
-    --exclude='**/_attributes.adoc' \
-    ../target/asciidoc/generated/ \
-    $TARGET_CONFIG
+if [ -f ../target/asciidoc/generated/ ]; then
+  echo
+  echo "Copying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
+  echo
+  rsync -vr --delete \
+      --exclude='**/*.html' \
+      --exclude='**/index.adoc' \
+      --exclude='**/_attributes.adoc' \
+      ../target/asciidoc/generated/ \
+      $TARGET_CONFIG
+fi
 
 if [ -f target/indexByType.yaml ]; then
   echo
@@ -130,9 +132,15 @@ else
 Run one of the following command to check the web site (if not done already):
 
 - If you have Jekyll set up locally:
+
+    ./target/web-site/serve-only-latest-guides.sh
+
+    OR if you want to generate all versions include the maintenance branches (2.7, 2.13...):
+
     (cd target/web-site && bundle exec jekyll serve)
 
 - If you have Docker or Podman:
+
     cd target/web-site
     docker run --rm --volume=\"$PWD:/srv/jekyll:Z\" \\
         --publish 4000:4000 jekyll/jekyll:4.1.0 jekyll serve --incremental

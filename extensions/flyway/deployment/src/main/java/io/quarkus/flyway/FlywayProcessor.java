@@ -68,8 +68,6 @@ import io.quarkus.runtime.util.ClassPathUtils;
 class FlywayProcessor {
 
     private static final String CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL = "classpath";
-    private static final String JAR_APPLICATION_MIGRATIONS_PROTOCOL = "jar";
-    private static final String FILE_APPLICATION_MIGRATIONS_PROTOCOL = "file";
 
     private static final String FLYWAY_BEAN_NAME_PREFIX = "flyway_";
 

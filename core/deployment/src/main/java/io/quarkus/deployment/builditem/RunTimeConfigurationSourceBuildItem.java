@@ -8,7 +8,10 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Define an additional configuration source which is used at run time.
+ *
+ * @deprecated Please use {@link RunTimeConfigBuilderBuildItem} instead.
  */
+@Deprecated
 public final class RunTimeConfigurationSourceBuildItem extends MultiBuildItem {
     private final String className;
     private final OptionalInt priority;

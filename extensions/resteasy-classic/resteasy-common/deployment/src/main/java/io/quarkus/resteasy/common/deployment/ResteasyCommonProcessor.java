@@ -53,13 +53,13 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
-import io.quarkus.resteasy.common.runtime.config.ResteasyConfigSourceProvider;
+import io.quarkus.resteasy.common.runtime.config.ResteasyConfigBuilder;
 import io.quarkus.resteasy.common.runtime.providers.ServerFormUrlEncodedProvider;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
@@ -130,15 +130,14 @@ public class ResteasyCommonProcessor {
     @BuildStep
     void addStaticInitConfigSourceProvider(
             Capabilities capabilities,
-            BuildProducer<StaticInitConfigSourceProviderBuildItem> initConfigSourceProvider,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         if (!capabilities.isCapabilityWithPrefixPresent(Capability.SERVLET)) {
             return;
         }
 
-        initConfigSourceProvider.produce(
-                new StaticInitConfigSourceProviderBuildItem(ResteasyConfigSourceProvider.class.getName()));
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(ResteasyConfigBuilder.class));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 ServletConfigSourceImpl.class,

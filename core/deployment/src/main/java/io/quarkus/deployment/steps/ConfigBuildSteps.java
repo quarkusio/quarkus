@@ -38,6 +38,7 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 class ConfigBuildSteps {
 
+    // Added in the RunTimeConfigurationGenerator to the runtime Config
     static final String PROVIDER_CLASS_NAME = "io.quarkus.runtime.generated.ConfigSourceProviderImpl";
 
     static final String SERVICES_PREFIX = "META-INF/services/";

@@ -12,18 +12,31 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 
+import io.quarkus.flyway.FlywayConfigurationCustomizer;
+
 class FlywayCreator {
 
     private static final String[] EMPTY_ARRAY = new String[0];
 
     private final FlywayDataSourceRuntimeConfig flywayRuntimeConfig;
     private final FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig;
+    private final List<FlywayConfigurationCustomizer> customizers;
     private Collection<Callback> callbacks = Collections.emptyList();
 
+    // only used for tests
     public FlywayCreator(FlywayDataSourceRuntimeConfig flywayRuntimeConfig,
             FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig) {
         this.flywayRuntimeConfig = flywayRuntimeConfig;
         this.flywayBuildTimeConfig = flywayBuildTimeConfig;
+        this.customizers = Collections.emptyList();
+    }
+
+    public FlywayCreator(FlywayDataSourceRuntimeConfig flywayRuntimeConfig,
+            FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig,
+            List<FlywayConfigurationCustomizer> customizers) {
+        this.flywayRuntimeConfig = flywayRuntimeConfig;
+        this.flywayBuildTimeConfig = flywayBuildTimeConfig;
+        this.customizers = customizers;
     }
 
     public FlywayCreator withCallbacks(Collection<Callback> callbacks) {
@@ -106,6 +119,10 @@ class FlywayCreator {
                 Arrays.asList(configure.getLocations()));
         configure.javaMigrationClassProvider(new QuarkusFlywayClassProvider<>(quarkusPathLocationScanner.scanForClasses()));
         configure.resourceProvider(new QuarkusFlywayResourceProvider(quarkusPathLocationScanner.scanForResources()));
+
+        for (FlywayConfigurationCustomizer customizer : customizers) {
+            customizer.customize(configure);
+        }
 
         return configure.load();
     }

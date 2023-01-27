@@ -279,7 +279,8 @@ public class BeanGenerator extends AbstractGenerator {
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
         if (bean.hasDestroyLogic()) {
-            implementDestroy(bean, beanCreator, providerType, Collections.emptyMap(), isApplicationClass, baseName);
+            implementDestroy(bean, beanCreator, providerType, Collections.emptyMap(), isApplicationClass, baseName,
+                    targetPackage);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
                 Collections.emptyMap(), Collections.emptyMap(),
@@ -363,7 +364,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementSupplierGet(beanCreator);
         if (bean.hasDestroyLogic()) {
             implementDestroy(bean, beanCreator, providerType, injectionPointToProviderSupplierField, isApplicationClass,
-                    baseName);
+                    baseName, targetPackage);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
                 injectionPointToProviderSupplierField,
@@ -448,7 +449,8 @@ public class BeanGenerator extends AbstractGenerator {
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
         if (bean.hasDestroyLogic()) {
-            implementDestroy(bean, beanCreator, providerType, injectionPointToProviderField, isApplicationClass, baseName);
+            implementDestroy(bean, beanCreator, providerType, injectionPointToProviderField, isApplicationClass, baseName,
+                    targetPackage);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
                 injectionPointToProviderField,
@@ -529,7 +531,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
         if (bean.hasDestroyLogic()) {
-            implementDestroy(bean, beanCreator, providerType, null, isApplicationClass, baseName);
+            implementDestroy(bean, beanCreator, providerType, null, isApplicationClass, baseName, targetPackage);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
                 Collections.emptyMap(), Collections.emptyMap(),
@@ -795,7 +797,8 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     protected void implementDestroy(BeanInfo bean, ClassCreator beanCreator, ProviderType providerType,
-            Map<InjectionPointInfo, String> injectionPointToProviderField, boolean isApplicationClass, String baseName) {
+            Map<InjectionPointInfo, String> injectionPointToProviderField, boolean isApplicationClass, String baseName,
+            String targetPackage) {
 
         MethodCreator destroy = beanCreator
                 .getMethodCreator("destroy", void.class, providerType.descriptorName(), CreationalContext.class)
@@ -817,9 +820,11 @@ public class BeanGenerator extends AbstractGenerator {
                         DotNames.PRE_DESTROY,
                         bean.getDeployment().getBeanArchiveIndex());
                 for (MethodInfo callback : preDestroyCallbacks) {
-                    if (Modifier.isPrivate(callback.flags())) {
-                        privateMembers.add(isApplicationClass, String.format("@PreDestroy callback %s#%s()",
-                                callback.declaringClass().name(), callback.name()));
+                    if (isReflectionFallbackNeeded(callback, targetPackage)) {
+                        if (Modifier.isPrivate(callback.flags())) {
+                            privateMembers.add(isApplicationClass, String.format("@PreDestroy callback %s#%s()",
+                                    callback.declaringClass().name(), callback.name()));
+                        }
                         reflectionRegistration.registerMethod(callback);
                         destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
                                 destroy.loadClass(callback.declaringClass().name().toString()),

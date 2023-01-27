@@ -8,7 +8,7 @@ buckets:
     timeout: P3D
   maintenance:
     reproducer:
-      label: "needs-reproducer"
+      label: "triage/needs-reproducer"
       needed:
         delay: P21D
         timeout: P3D

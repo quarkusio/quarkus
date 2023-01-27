@@ -367,11 +367,11 @@ timers, look for `http_server_requests_seconds_count`, `http_server_requests_sec
 ----
 # HELP http_server_requests_seconds
 # TYPE http_server_requests_seconds summary
-http_server_requests_seconds_count{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}",} 1.0
-http_server_requests_seconds_sum{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}",} 0.017385896
+http_server_requests_seconds_count{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}"} 1.0
+http_server_requests_seconds_sum{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}"} 0.017385896
 # HELP http_server_requests_seconds_max
 # TYPE http_server_requests_seconds_max gauge
-http_server_requests_seconds_max{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}",} 0.017385896
+http_server_requests_seconds_max{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}"} 0.017385896
 #
 ----
 
@@ -397,6 +397,11 @@ property accepts a comma-separated list defining an association between a simple
 string. For example, setting
 `quarkus.micrometer.binder.http-server.match-patterns=/example/prime/[0-9]+=/example/{jellybeans}` would use the value
 `/example/{jellybeans}` for the uri attribute any time the requested uri matches `/example/prime/[0-9]+`.
+
+.Exported metrics format
+
+By default, the  metrics are exported using the Prometheus format `application/openmetrics-text`,
+you can revert to the former format by specifying the `Accept` request header to `plain/text` (`curl -H "Accept: plain/text" localhost:8080/q/metrics/`).
 
 == Using MeterFilter to configure metrics
 

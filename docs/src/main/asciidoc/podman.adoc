@@ -123,14 +123,14 @@ For a detailed explanation, see this https://quarkus.io/blog/quarkus-devservices
 
 Edit `~/.testcontainers.properties` and add the following line
 
-[source,bash]
+[source,properties]
 ----
 ryuk.container.privileged=true
 ----
 
 Alternatively, you can disable ryuk:
 
-[source]
+[source,bash]
 ----
 export TESTCONTAINERS_RYUK_DISABLED=true #not recommended - see above!
 ----

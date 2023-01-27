@@ -238,6 +238,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(property = "skipCodestartValidation")
     boolean skipCodestartValidation;
 
+    @Parameter(defaultValue = "${maven.compiler.release}", readonly = true)
+    String minimumJavaVersion;
+
     ArtifactCoords deploymentCoords;
     CollectResult collectedDeploymentDeps;
     DependencyResult runtimeDeps;
@@ -456,6 +459,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
 
         setBuiltWithQuarkusCoreVersion(extObject);
+        addJavaVersion(extObject);
         addCapabilities(extObject);
         addSource(extObject);
         addExtensionDependencies(extObject);
@@ -682,6 +686,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                 metadata.put("scm-" + e.getKey(), e.getValue());
 
             }
+        }
+    }
+
+    public void addJavaVersion(ObjectNode extObject) {
+        ObjectNode metadataNode = getMetadataNode(extObject);
+        // Ignore if already set
+        if (!metadataNode.has("minimum-java-version") && minimumJavaVersion != null) {
+            metadataNode.put("minimum-java-version", minimumJavaVersion);
         }
     }
 

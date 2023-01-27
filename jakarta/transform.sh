@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -u -o pipefail
+set -x -e -u -o pipefail
 shopt -s failglob
 
 # Use `export REWRITE_OFFLINE=true` to avoid building components from external repositories

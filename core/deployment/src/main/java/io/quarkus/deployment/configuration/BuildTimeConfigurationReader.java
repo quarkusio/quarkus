@@ -445,68 +445,58 @@ public final class BuildTimeConfigurationReader {
                     Container matched = buildTimePatternMap.match(ni);
                     if (matched instanceof FieldContainer) {
                         ConfigValue configValue = config.getConfigValue(propertyName);
-                        if (configValue.getValue() == null) {
-                            continue;
+                        if (configValue.getValue() != null) {
+                            allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                            ni.goToEnd();
+                            // cursor is located after group property key (if any)
+                            getGroup((FieldContainer) matched, ni);
+                            // we don't have to set the field because the group object init does it for us
                         }
-                        allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
-                        ni.goToEnd();
-                        // cursor is located after group property key (if any)
-                        getGroup((FieldContainer) matched, ni);
-                        // we don't have to set the field because the group object init does it for us
-                        continue;
                     } else if (matched != null) {
                         assert matched instanceof MapContainer;
                         ConfigValue configValue = config.getConfigValue(propertyName);
-                        if (configValue.getValue() == null) {
-                            continue;
+                        if (configValue.getValue() != null) {// it's a leaf value within a map
+                            // these must always be explicitly set
+                            ni.goToEnd();
+                            // cursor is located after the map key
+                            String key = ni.getPreviousSegment();
+                            Map<String, Object> map = getMap((MapContainer) matched, ni);
+                            // we always have to set the map entry ourselves
+                            Field field = matched.findField();
+                            Converter<?> converter = getConverter(config, field, ConverterType.of(field));
+                            map.put(key, config.convertValue(configValue, converter));
+                            allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
-                        // it's a leaf value within a map
-                        // these must always be explicitly set
-                        ni.goToEnd();
-                        // cursor is located after the map key
-                        final String key = ni.getPreviousSegment();
-                        final Map<String, Object> map = getMap((MapContainer) matched, ni);
-                        // we always have to set the map entry ourselves
-                        Field field = matched.findField();
-                        Converter<?> converter = getConverter(config, field, ConverterType.of(field));
-                        map.put(key, config.convertValue(configValue, converter));
-                        allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
-                        continue;
                     }
                     // build time (run time visible) patterns
                     ni.goToStart();
                     matched = buildTimeRunTimePatternMap.match(ni);
                     if (matched instanceof FieldContainer) {
                         ConfigValue configValue = config.getConfigValue(propertyName);
-                        if (configValue.getValue() == null) {
-                            continue;
+                        if (configValue.getValue() != null) {
+                            ni.goToEnd();
+                            // cursor is located after group property key (if any)
+                            getGroup((FieldContainer) matched, ni);
+                            allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                            buildTimeRunTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
-                        ni.goToEnd();
-                        // cursor is located after group property key (if any)
-                        getGroup((FieldContainer) matched, ni);
-                        allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
-                        buildTimeRunTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
-                        continue;
                     } else if (matched != null) {
                         assert matched instanceof MapContainer;
                         ConfigValue configValue = config.getConfigValue(propertyName);
-                        if (configValue.getValue() == null) {
-                            continue;
+                        if (configValue.getValue() != null) {// it's a leaf value within a map
+                            // these must always be explicitly set
+                            ni.goToEnd();
+                            // cursor is located after the map key
+                            String key = ni.getPreviousSegment();
+                            Map<String, Object> map = getMap((MapContainer) matched, ni);
+                            // we always have to set the map entry ourselves
+                            Field field = matched.findField();
+                            Converter<?> converter = getConverter(config, field, ConverterType.of(field));
+                            map.put(key, config.convertValue(configValue, converter));
+                            // cache the resolved value
+                            allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                            buildTimeRunTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
-                        // it's a leaf value within a map
-                        // these must always be explicitly set
-                        ni.goToEnd();
-                        // cursor is located after the map key
-                        final String key = ni.getPreviousSegment();
-                        final Map<String, Object> map = getMap((MapContainer) matched, ni);
-                        // we always have to set the map entry ourselves
-                        Field field = matched.findField();
-                        Converter<?> converter = getConverter(config, field, ConverterType.of(field));
-                        map.put(key, config.convertValue(configValue, converter));
-                        // cache the resolved value
-                        allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
-                        buildTimeRunTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
-                        continue;
                     }
                     // run time patterns
                     ni.goToStart();
@@ -517,7 +507,6 @@ public final class BuildTimeConfigurationReader {
                         if (configValue.getValue() != null) {
                             runTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
-                        continue;
                     }
                     // also check for the bootstrap properties since those need to be added to runTimeDefaultValues as well
                     ni.goToStart();
@@ -528,11 +517,11 @@ public final class BuildTimeConfigurationReader {
                         if (configValue.getValue() != null) {
                             runTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
-                        continue;
                     }
 
-                    // If we reach here it means we were not able to match the property (and it shares roots namespace)
-                    unknownBuildProperties.add(propertyName);
+                    if (matched == null) {
+                        unknownBuildProperties.add(propertyName);
+                    }
                 } else {
                     // it's not managed by us; record it
                     ConfigValue configValue = withoutExpansion(() -> runtimeDefaultsConfig.getConfigValue(propertyName));

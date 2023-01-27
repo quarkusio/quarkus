@@ -102,10 +102,10 @@ public class IdeProcessor {
                             }
                         }
                     }
-                    if (matches.size() == 1) {
-                        result = matches.get(0);
-                    } else if (matches.size() == 0 && runningIdes.size() > 0) {
+                    if ((matches.size() == 0 && runningIdes.size() > 0)) {
                         result = runningIdes.iterator().next();
+                    } else if (matches.size() >= 1) {
+                        result = matches.get(0);
                     }
                 }
             }

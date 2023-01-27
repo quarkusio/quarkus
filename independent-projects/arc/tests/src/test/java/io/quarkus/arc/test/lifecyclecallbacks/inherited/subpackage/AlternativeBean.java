@@ -1,10 +1,10 @@
-package io.quarkus.arc.test.interceptors.postConstruct.inherited.subpackage;
+package io.quarkus.arc.test.lifecyclecallbacks.inherited.subpackage;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Alternative;
 
-import io.quarkus.arc.test.interceptors.postConstruct.inherited.OriginalBean;
+import io.quarkus.arc.test.lifecyclecallbacks.inherited.OriginalBean;
 
 @Alternative
 @ApplicationScoped

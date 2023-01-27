@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
+import static io.quarkus.vertx.http.runtime.TrustedProxyCheck.allowAll;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,6 +72,7 @@ import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
+import io.quarkus.vertx.http.runtime.TrustedProxyCheck.TrustedProxyCheckBuilder;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
 import io.quarkus.vertx.http.runtime.devmode.VertxHttpHotReplacementSetup;
 import io.quarkus.vertx.http.runtime.filters.Filter;
@@ -534,16 +536,24 @@ public class VertxHttpRecorder {
             root = mainRouter;
         }
 
-        warnIfProxyAddressForwardingAllowedWithMultipleHeaders(httpConfiguration);
-        ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(httpConfiguration);
-        if (forwardingProxyOptions.proxyAddressForwarding) {
+        if (httpConfiguration.proxy.proxyAddressForwarding) {
+            warnIfProxyAddressForwardingAllowedWithMultipleHeaders(httpConfiguration);
+            final ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(httpConfiguration);
+            final TrustedProxyCheckBuilder proxyCheckBuilder = forwardingProxyOptions.trustedProxyCheckBuilder;
             Handler<HttpServerRequest> delegate = root;
-            root = new Handler<HttpServerRequest>() {
-                @Override
-                public void handle(HttpServerRequest event) {
-                    delegate.handle(new ForwardedServerRequestWrapper(event, forwardingProxyOptions));
-                }
-            };
+            if (proxyCheckBuilder == null) {
+                // no proxy check => we do not restrict who can send `X-Forwarded` or `X-Forwarded-*` headers
+                final TrustedProxyCheck allowAllProxyCheck = allowAll();
+                root = new Handler<HttpServerRequest>() {
+                    @Override
+                    public void handle(HttpServerRequest event) {
+                        delegate.handle(new ForwardedServerRequestWrapper(event, forwardingProxyOptions, allowAllProxyCheck));
+                    }
+                };
+            } else {
+                // restrict who can send `Forwarded`, `X-Forwarded` or `X-Forwarded-*` headers
+                root = new ForwardedProxyHandler(proxyCheckBuilder, vertx, delegate, forwardingProxyOptions);
+            }
         }
         boolean quarkusWrapperNeeded = false;
 

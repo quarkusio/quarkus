@@ -7,7 +7,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.Router;
 
 @ApplicationScoped
-class ForwardedHandlerInitializer {
+public class ForwardedHandlerInitializer {
 
     public void register(@Observes Router router) {
         router.route("/forward").handler(rc -> rc.response()

@@ -188,10 +188,7 @@ public final class Types {
 
         } else if (Kind.ARRAY.equals(type.kind())) {
             ArrayType array = type.asArrayType();
-            Type elementType = array.component();
-            while (elementType.kind() == Kind.ARRAY) {
-                elementType = elementType.asArrayType().component();
-            }
+            Type elementType = getArrayElementType(array);
 
             ResultHandle arrayHandle;
             if (elementType.kind() == Kind.PRIMITIVE || elementType.kind() == Kind.CLASS) {
@@ -351,12 +348,23 @@ public final class Types {
         }
     }
 
+    static Type getArrayElementType(ArrayType array) {
+        Type elementType = array.component();
+        while (elementType.kind() == Kind.ARRAY) {
+            elementType = elementType.asArrayType().component();
+        }
+        return elementType;
+    }
+
     static Set<Type> getProducerMethodTypeClosure(MethodInfo producerMethod, BeanDeployment beanDeployment) {
         Set<Type> types;
         Set<Type> unrestrictedBeanTypes = new HashSet<>();
         Type returnType = producerMethod.returnType();
         if (returnType.kind() == Kind.TYPE_VARIABLE) {
             throw new DefinitionException("A type variable is not a legal bean type: " + producerMethod);
+        }
+        if (returnType.kind() == Kind.ARRAY) {
+            checkArrayType(returnType.asArrayType(), producerMethod);
         }
         if (returnType.kind() == Kind.PRIMITIVE || returnType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
@@ -392,6 +400,9 @@ public final class Types {
         Type fieldType = producerField.type();
         if (fieldType.kind() == Kind.TYPE_VARIABLE) {
             throw new DefinitionException("A type variable is not a legal bean type: " + producerField);
+        }
+        if (fieldType.kind() == Kind.ARRAY) {
+            checkArrayType(fieldType.asArrayType(), producerField);
         }
         if (fieldType.kind() == Kind.PRIMITIVE || fieldType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
@@ -480,6 +491,18 @@ public final class Types {
             }
             return resolved;
         }
+    }
+
+    /**
+     * Throws {@code DefinitionException} if given {@code producerFieldOrMethod},
+     * whose type is given {@code arrayType}, is invalid due to the rules for arrays.
+     */
+    static void checkArrayType(ArrayType arrayType, AnnotationTarget producerFieldOrMethod) {
+        Type elementType = getArrayElementType(arrayType);
+        if (elementType.kind() == Kind.TYPE_VARIABLE) {
+            throw new DefinitionException("A type variable array is not a legal bean type: " + producerFieldOrMethod);
+        }
+        containsWildcard(elementType, producerFieldOrMethod, true);
     }
 
     /**

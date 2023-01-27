@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -69,18 +70,13 @@ public class TypesTest {
             }
         }
         ClassInfo producerClass = index.getClassByName(producerName);
-        final String producersName = "produce";
-        assertThrows(DefinitionException.class,
-                () -> Types.getProducerMethodTypeClosure(producerClass.method(producersName), dummyDeployment));
-        assertThrows(DefinitionException.class,
-                () -> Types.getProducerFieldTypeClosure(producerClass.field(producersName), dummyDeployment));
-
-        // now assert the same with nested wildcard
-        final String nestedWildCardProducersName = "produceNested";
-        assertThrows(DefinitionException.class,
-                () -> Types.getProducerMethodTypeClosure(producerClass.method(nestedWildCardProducersName), dummyDeployment));
-        assertThrows(DefinitionException.class,
-                () -> Types.getProducerFieldTypeClosure(producerClass.field(nestedWildCardProducersName), dummyDeployment));
+        for (String name : Arrays.asList("produce", "produceNested", "produceTypeVar",
+                "produceArray", "produceNestedArray", "produceTypeVarArray")) {
+            assertThrows(DefinitionException.class,
+                    () -> Types.getProducerMethodTypeClosure(producerClass.method(name), dummyDeployment));
+            assertThrows(DefinitionException.class,
+                    () -> Types.getProducerFieldTypeClosure(producerClass.field(name), dummyDeployment));
+        }
 
         // now assert following ones do NOT throw, the wildcard in the hierarchy is just ignored
         final String wildcardInTypeHierarchy = "eagleProducer";
@@ -140,9 +136,33 @@ public class TypesTest {
             return null;
         }
 
+        public T produceTypeVar() {
+            return null;
+        }
+
+        public List<? extends Number>[][] produceArray() {
+            return null;
+        }
+
+        public List<Set<? extends Number>>[][] produceNestedArray() {
+            return null;
+        }
+
+        public T[][] produceTypeVarArray() {
+            return null;
+        }
+
         List<? extends Number> produce;
 
         List<Set<? extends Number>> produceNested;
+
+        public T produceTypeVar;
+
+        List<? extends Number>[] produceArray;
+
+        List<Set<? extends Number>>[] produceNestedArray;
+
+        public T[] produceTypeVarArray;
 
         // following producer should NOT throw an exception because the return types doesn't contain wildcard
         // but the hierarchy of the return type actually contains one

@@ -21,6 +21,7 @@ import javax.enterprise.inject.spi.DefinitionException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -186,13 +187,26 @@ public final class Types {
             getParameterizedType(variable, creator, tccl, type.asParameterizedType(), cache, typeVariables);
 
         } else if (Kind.ARRAY.equals(type.kind())) {
-            Type componentType = type.asArrayType().component();
-            // E.g. String[] -> new GenericArrayTypeImpl(String.class)
-            AssignableResultHandle componentTypeHandle = creator.createVariable(Object.class);
-            getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache, typeVariables);
-            ResultHandle arrayHandle = creator.newInstance(
-                    MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
-                    componentTypeHandle);
+            ArrayType array = type.asArrayType();
+            Type elementType = array.component();
+            while (elementType.kind() == Kind.ARRAY) {
+                elementType = elementType.asArrayType().component();
+            }
+
+            ResultHandle arrayHandle;
+            if (elementType.kind() == Kind.PRIMITIVE || elementType.kind() == Kind.CLASS) {
+                // can produce a java.lang.Class representation of the array type
+                // E.g. String[] -> String[].class
+                arrayHandle = doLoadClass(creator, array.name().toString(), tccl);
+            } else {
+                // E.g. List<String>[] -> new GenericArrayTypeImpl(new ParameterizedTypeImpl(List.class, String.class))
+                Type componentType = type.asArrayType().component();
+                AssignableResultHandle componentTypeHandle = creator.createVariable(Object.class);
+                getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache, typeVariables);
+                arrayHandle = creator.newInstance(
+                        MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
+                        componentTypeHandle);
+            }
             if (cache != null) {
                 cache.put(type, arrayHandle, creator);
             }

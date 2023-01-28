@@ -913,7 +913,7 @@ public final class Beans {
                         String superName,
                         String[] interfaces) {
                     super.visit(version, access, name, signature, superName, interfaces);
-                    MethodVisitor mv = visitMethod(Modifier.PUBLIC, Methods.INIT, "()V", null,
+                    MethodVisitor mv = visitMethod(Modifier.PUBLIC | Opcodes.ACC_SYNTHETIC, Methods.INIT, "()V", null,
                             null);
                     mv.visitCode();
                     mv.visitVarInsn(Opcodes.ALOAD, 0);

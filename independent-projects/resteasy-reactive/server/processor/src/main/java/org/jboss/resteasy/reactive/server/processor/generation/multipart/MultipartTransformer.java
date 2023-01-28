@@ -70,7 +70,8 @@ public class MultipartTransformer implements BiFunction<String, ClassVisitor, Cl
 
         @Override
         public void visitEnd() {
-            MethodVisitor injectMethod = visitMethod(Opcodes.ACC_PUBLIC, INJECT_METHOD_NAME, INJECT_METHOD_DESCRIPTOR, null,
+            MethodVisitor injectMethod = visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, INJECT_METHOD_NAME,
+                    INJECT_METHOD_DESCRIPTOR, null,
                     null);
             injectMethod.visitParameter("ctx", 0 /* modifiers */);
             injectMethod.visitCode();

@@ -223,7 +223,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         public void visitEnd() {
             // FIXME: handle setters
             // FIXME: handle multi fields
-            MethodVisitor injectMethod = visitMethod(Opcodes.ACC_PUBLIC, INJECT_METHOD_NAME, INJECT_METHOD_DESCRIPTOR, null,
+            MethodVisitor injectMethod = visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, INJECT_METHOD_NAME,
+                    INJECT_METHOD_DESCRIPTOR, null,
                     null);
             injectMethod.visitParameter("ctx", 0 /* modifiers */);
             injectMethod.visitCode();
@@ -333,7 +334,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
             if (!seenClassInit && !partTypes.isEmpty()) {
                 // add a class init method for the part types special fields
-                MethodVisitor mv = super.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
+                MethodVisitor mv = super.visitMethod(Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, "<clinit>", "()V", null, null);
                 for (Entry<FieldInfo, ServerIndexedParameter> entry : partTypes.entrySet()) {
                     generateMultipartFormStaticInit(mv, entry.getKey(), entry.getValue());
                 }

@@ -51,7 +51,7 @@ public class CodeFlowDevModeTestCase {
 
             // Default tenant is disabled and client secret is wrong
             HtmlPage page = webClient.getPage("http://localhost:8080/unprotected");
-            assertEquals("unprotected", page.getBody().asText());
+            assertEquals("unprotected", page.getBody().asNormalizedText());
 
             try {
                 webClient.getPage("http://localhost:8080/protected");
@@ -95,7 +95,7 @@ public class CodeFlowDevModeTestCase {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
 
             assertEquals("custom", page.getWebClient().getCookieManager().getCookie("q_session").getValue().split("\\|")[3]);
 
@@ -122,7 +122,7 @@ public class CodeFlowDevModeTestCase {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("tenant-config-resolver:alice", page.getBody().asText());
+            assertEquals("tenant-config-resolver:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }

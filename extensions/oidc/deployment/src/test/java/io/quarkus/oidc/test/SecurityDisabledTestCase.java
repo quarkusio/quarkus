@@ -30,7 +30,7 @@ public class SecurityDisabledTestCase {
         try (final WebClient webClient = createWebClient()) {
 
             HtmlPage page = webClient.getPage("http://localhost:8081/unprotected");
-            assertEquals("unprotected", page.getBody().asText());
+            assertEquals("unprotected", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }

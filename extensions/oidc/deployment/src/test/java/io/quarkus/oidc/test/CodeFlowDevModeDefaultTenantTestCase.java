@@ -59,7 +59,7 @@ public class CodeFlowDevModeDefaultTenantTestCase {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
 
             webClient.getCookieManager().clearCookies();
         }

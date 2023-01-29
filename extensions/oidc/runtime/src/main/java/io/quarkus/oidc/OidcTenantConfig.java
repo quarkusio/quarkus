@@ -603,7 +603,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public static class Authentication {
 
         /**
-         * SameSite attribute values for the session, state and post logout cookies.
+         * SameSite attribute values for the session cookie.
          */
         public enum CookieSameSite {
             STRICT,
@@ -767,7 +767,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<String> cookieDomain = Optional.empty();
 
         /**
-         * SameSite attribute for the session, state and post logout cookies.
+         * SameSite attribute for the session cookie.
          */
         @ConfigItem(defaultValue = "strict")
         public CookieSameSite cookieSameSite = CookieSameSite.STRICT;

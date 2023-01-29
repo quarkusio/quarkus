@@ -55,9 +55,9 @@ public class CodeFlowTest {
                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
             verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"), null, "web-app", false);
 
-            String stateCookieString = webResponse.getResponseHeaderValue("Set-Cookie");
-            assertTrue(stateCookieString.startsWith("q_auth_Default_test="));
-            assertTrue(stateCookieString.contains("SameSite=Strict"));
+            Cookie stateCookie = getStateCookie(webClient, null);
+            assertNotNull(stateCookie);
+            assertNull(stateCookie.getSameSite());
 
             webClient.getCookieManager().clearCookies();
 
@@ -95,6 +95,7 @@ public class CodeFlowTest {
 
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);
+            assertEquals("strict", sessionCookie.getSameSite());
 
             webClient.getCookieManager().clearCookies();
         }
@@ -176,10 +177,6 @@ public class CodeFlowTest {
             verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "xforwarded%2Ftenant-https",
                     true);
 
-            String stateCookieString = webResponse.getResponseHeaderValue("Set-Cookie");
-            assertTrue(stateCookieString.startsWith("q_auth_tenant-https_test="));
-            assertTrue(stateCookieString.contains("SameSite=Lax"));
-
             HtmlPage page = webClient.getPage(keycloakUrl);
 
             assertEquals("Sign in to quarkus", page.getTitleText());
@@ -195,6 +192,7 @@ public class CodeFlowTest {
             String endpointLocation = webResponse.getResponseHeaderValue("location");
 
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
+            assertNull(stateCookie.getSameSite());
             verifyCodeVerifier(stateCookie, keycloakUrl);
 
             assertTrue(endpointLocation.startsWith("https"));
@@ -222,6 +220,7 @@ public class CodeFlowTest {
             assertEquals("tenant-https:reauthenticated", page.getBody().asNormalizedText());
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
             assertNotNull(sessionCookie);
+            assertEquals("lax", sessionCookie.getSameSite());
             webClient.getCookieManager().clearCookies();
         }
     }

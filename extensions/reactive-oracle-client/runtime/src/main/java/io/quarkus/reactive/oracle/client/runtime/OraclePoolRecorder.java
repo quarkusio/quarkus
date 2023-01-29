@@ -7,14 +7,20 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.Instance;
+
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
+import io.quarkus.reactive.oracle.client.OraclePoolCreator;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -72,7 +78,7 @@ public class OraclePoolRecorder {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return OraclePool.pool(vertx, oracleConnectOptions, poolOptions);
+        return createPool(vertx, poolOptions, oracleConnectOptions, dataSourceName);
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -151,4 +157,46 @@ public class OraclePoolRecorder {
         return oracleConnectOptions;
     }
 
+    private OraclePool createPool(Vertx vertx, PoolOptions poolOptions, OracleConnectOptions oracleConnectOptions,
+            String dataSourceName) {
+        Instance<OraclePoolCreator> instance;
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            instance = Arc.container().select(OraclePoolCreator.class);
+        } else {
+            instance = Arc.container().select(OraclePoolCreator.class,
+                    new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
+        }
+        if (instance.isResolvable()) {
+            OraclePoolCreator.Input input = new DefaultInput(vertx, poolOptions, oracleConnectOptions);
+            return instance.get().create(input);
+        }
+        return OraclePool.pool(vertx, oracleConnectOptions, poolOptions);
+    }
+
+    private static class DefaultInput implements OraclePoolCreator.Input {
+        private final Vertx vertx;
+        private final PoolOptions poolOptions;
+        private final OracleConnectOptions oracleConnectOptions;
+
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, OracleConnectOptions oracleConnectOptions) {
+            this.vertx = vertx;
+            this.poolOptions = poolOptions;
+            this.oracleConnectOptions = oracleConnectOptions;
+        }
+
+        @Override
+        public Vertx vertx() {
+            return vertx;
+        }
+
+        @Override
+        public PoolOptions poolOptions() {
+            return poolOptions;
+        }
+
+        @Override
+        public OracleConnectOptions oracleConnectOptions() {
+            return oracleConnectOptions;
+        }
+    }
 }

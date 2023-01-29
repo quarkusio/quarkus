@@ -702,6 +702,58 @@ For example, you could expire idle connections after 60 minutes:
 quarkus.datasource.reactive.idle-timeout=PT60M
 ----
 
+== Customizing pool creation
+
+Sometimes, the database connection pool cannot be configured only by declaration.
+
+You may need to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
+
+In this case, you can customize pool creation by creating a class implementing an interface which depends on the target database:
+
+[cols="30,70"]
+|===
+|Database |Pool creator class name
+
+|IBM Db2
+|`io.quarkus.reactive.db2.client.DB2PoolCreator`
+
+|MariaDB/MySQL
+|`io.quarkus.reactive.mysql.client.MySQLPoolCreator`
+
+|Microsoft SQL Server
+|`io.quarkus.reactive.mssql.client.MSSQLPoolCreator`
+
+|Oracle
+|`io.quarkus.reactive.oracle.client.OraclePoolCreator`
+
+|PostgreSQL
+|`io.quarkus.reactive.pg.client.PgPoolCreator`
+|===
+
+Here's an example for PostgreSQL:
+
+[source,java]
+----
+import javax.inject.Singleton;
+
+import io.quarkus.reactive.pg.client.PgPoolCreator;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.PoolOptions;
+
+@Singleton
+public class CustomPgPoolCreator implements PgPoolCreator {
+
+    @Override
+    public PgPool create(Input input) {
+        PgConnectOptions connectOptions = input.pgConnectOptions();
+        PoolOptions poolOptions = input.poolOptions();
+        // Customize connectOptions, poolOptions or both, as required
+        return PgPool.pool(input.vertx(), connectOptions, poolOptions);
+    }
+}
+----
+
 == Configuration Reference
 
 === Common Datasource

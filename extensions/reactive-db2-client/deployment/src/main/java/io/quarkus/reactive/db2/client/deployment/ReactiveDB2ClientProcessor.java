@@ -1,12 +1,26 @@
 package io.quarkus.reactive.db2.client.deployment;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
+
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.deployment.devconsole.Name;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -33,6 +47,7 @@ import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
+import io.quarkus.reactive.db2.client.DB2PoolCreator;
 import io.quarkus.reactive.db2.client.runtime.DB2PoolRecorder;
 import io.quarkus.reactive.db2.client.runtime.DB2ServiceBindingConverter;
 import io.quarkus.reactive.db2.client.runtime.DataSourcesReactiveDB2Config;
@@ -86,6 +101,34 @@ class ReactiveDB2ClientProcessor {
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
         return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.DB2);
+    }
+
+    @BuildStep
+    void unremoveableBeans(BuildProducer<UnremovableBeanBuildItem> producer) {
+        producer.produce(UnremovableBeanBuildItem.beanTypes(DB2PoolCreator.class));
+    }
+
+    @BuildStep
+    void validateBeans(ValidationPhaseBuildItem validationPhase,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
+        // no two Db2PoolCreator beans can be associated with the same datasource
+        Map<String, Boolean> seen = new HashMap<>();
+        for (BeanInfo beanInfo : validationPhase.getContext().beans()
+                .matchBeanTypes(new DB2PoolCreatorBeanClassPredicate())) {
+            Set<Name> qualifiers = new TreeSet<>(); // use a TreeSet in order to get a predictable iteration order
+            for (AnnotationInstance qualifier : beanInfo.getQualifiers()) {
+                qualifiers.add(Name.from(qualifier));
+            }
+            String qualifiersStr = qualifiers.stream().map(Name::toString).collect(Collectors.joining("_"));
+            if (seen.getOrDefault(qualifiersStr, false)) {
+                errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                        new IllegalStateException(
+                                "There can be at most one bean of type '" + DB2PoolCreator.class.getName()
+                                        + "' for each datasource.")));
+            } else {
+                seen.put(qualifiersStr, true);
+            }
+        }
     }
 
     @BuildStep
@@ -234,6 +277,16 @@ class ReactiveDB2ClientProcessor {
             configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", dataSourceName).done();
             configurator.addQualifier().annotation(ReactiveDataSource.class).addValue("value", dataSourceName)
                     .done();
+        }
+    }
+
+    private static class DB2PoolCreatorBeanClassPredicate implements Predicate<Set<Type>> {
+        private static final Type DB2_POOL_CREATOR = Type.create(DotName.createSimple(DB2PoolCreator.class.getName()),
+                Type.Kind.CLASS);
+
+        @Override
+        public boolean test(Set<Type> types) {
+            return types.contains(DB2_POOL_CREATOR);
         }
     }
 }

@@ -13,14 +13,20 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.Instance;
+
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
+import io.quarkus.reactive.db2.client.DB2PoolCreator;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -78,7 +84,7 @@ public class DB2PoolRecorder {
             log.warn(
                     "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return DB2Pool.pool(vertx, connectOptions, poolOptions);
+        return createPool(vertx, poolOptions, connectOptions, dataSourceName);
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -185,5 +191,48 @@ public class DB2PoolRecorder {
         dataSourceReactiveRuntimeConfig.additionalProperties.forEach(connectOptions::addProperty);
 
         return connectOptions;
+    }
+
+    private DB2Pool createPool(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions dB2ConnectOptions,
+            String dataSourceName) {
+        Instance<DB2PoolCreator> instance;
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            instance = Arc.container().select(DB2PoolCreator.class);
+        } else {
+            instance = Arc.container().select(DB2PoolCreator.class,
+                    new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
+        }
+        if (instance.isResolvable()) {
+            DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, dB2ConnectOptions);
+            return instance.get().create(input);
+        }
+        return DB2Pool.pool(vertx, dB2ConnectOptions, poolOptions);
+    }
+
+    private static class DefaultInput implements DB2PoolCreator.Input {
+        private final Vertx vertx;
+        private final PoolOptions poolOptions;
+        private final DB2ConnectOptions dB2ConnectOptions;
+
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions dB2ConnectOptions) {
+            this.vertx = vertx;
+            this.poolOptions = poolOptions;
+            this.dB2ConnectOptions = dB2ConnectOptions;
+        }
+
+        @Override
+        public Vertx vertx() {
+            return vertx;
+        }
+
+        @Override
+        public PoolOptions poolOptions() {
+            return poolOptions;
+        }
+
+        @Override
+        public DB2ConnectOptions db2ConnectOptions() {
+            return dB2ConnectOptions;
+        }
     }
 }

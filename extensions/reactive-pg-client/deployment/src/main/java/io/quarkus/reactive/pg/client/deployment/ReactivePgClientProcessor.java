@@ -1,12 +1,26 @@
 package io.quarkus.reactive.pg.client.deployment;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
+
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.deployment.devconsole.Name;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -34,6 +48,7 @@ import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
+import io.quarkus.reactive.pg.client.PgPoolCreator;
 import io.quarkus.reactive.pg.client.runtime.DataSourcesReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
 import io.quarkus.reactive.pg.client.runtime.PostgreSQLServiceBindingConverter;
@@ -119,6 +134,33 @@ class ReactivePgClientProcessor {
         healthChecks
                 .produce(new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourcesHealthCheck",
                         dataSourcesBuildTimeConfig.healthEnabled));
+    }
+
+    @BuildStep
+    void unremoveableBeans(BuildProducer<UnremovableBeanBuildItem> producer) {
+        producer.produce(UnremovableBeanBuildItem.beanTypes(PgPoolCreator.class));
+    }
+
+    @BuildStep
+    void validateBeans(ValidationPhaseBuildItem validationPhase,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
+        // no two PgPoolCreator beans can be associated with the same datasource
+        Map<String, Boolean> seen = new HashMap<>();
+        for (BeanInfo beanInfo : validationPhase.getContext().beans().matchBeanTypes(new PgPoolCreatorBeanClassPredicate())) {
+            Set<Name> qualifiers = new TreeSet<>(); // use a TreeSet in order to get a predictable iteration order
+            for (AnnotationInstance qualifier : beanInfo.getQualifiers()) {
+                qualifiers.add(Name.from(qualifier));
+            }
+            String qualifiersStr = qualifiers.stream().map(Name::toString).collect(Collectors.joining("_"));
+            if (seen.getOrDefault(qualifiersStr, false)) {
+                errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                        new IllegalStateException(
+                                "There can be at most one bean of type '" + PgPoolCreator.class.getName()
+                                        + "' for each datasource.")));
+            } else {
+                seen.put(qualifiersStr, true);
+            }
+        }
     }
 
     @BuildStep
@@ -241,6 +283,16 @@ class ReactivePgClientProcessor {
             configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", dataSourceName).done();
             configurator.addQualifier().annotation(ReactiveDataSource.class).addValue("value", dataSourceName)
                     .done();
+        }
+    }
+
+    private static class PgPoolCreatorBeanClassPredicate implements Predicate<Set<Type>> {
+        private static final Type PG_POOL_CREATOR = Type.create(DotName.createSimple(PgPoolCreator.class.getName()),
+                Type.Kind.CLASS);
+
+        @Override
+        public boolean test(Set<Type> types) {
+            return types.contains(PG_POOL_CREATOR);
         }
     }
 }

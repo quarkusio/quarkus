@@ -69,11 +69,11 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice, cache size: 0", page.getBody().asText());
+            assertEquals("alice, cache size: 0", page.getBody().asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "code-flow"));
 
             page = webClient.getPage("http://localhost:8081/code-flow/logout");
-            assertEquals("Welcome, clientId: quarkus-web-app", page.getBody().asText());
+            assertEquals("Welcome, clientId: quarkus-web-app", page.getBody().asNormalizedText());
             assertNull(getSessionCookie(webClient, "code-flow"));
             // Clear the post logout cookie
             webClient.getCookieManager().clearCookies();
@@ -97,7 +97,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("user: alice", page.getBody().asText());
+            assertEquals("user: alice", page.getBody().asNormalizedText());
             Cookie sessionCookie = getSessionCookie(webClient, tenant);
             assertNotNull(sessionCookie);
             // default session cookie format: "idtoken|accesstoken|refreshtoken"
@@ -105,7 +105,7 @@ public class CodeFlowAuthorizationTest {
 
             // repeat the call with the session cookie containing the encrypted id token
             page = webClient.getPage("http://localhost:8081/code-flow-encrypted-id-token/" + tenant);
-            assertEquals("user: alice", page.getBody().asText());
+            assertEquals("user: alice", page.getBody().asNormalizedText());
 
             webClient.getCookieManager().clearCookies();
         }
@@ -124,12 +124,12 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
 
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
 
             page = webClient.getPage("http://localhost:8081/code-flow-form-post");
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
 
             // Session is still active
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
@@ -166,12 +166,12 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
 
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
 
             page = webClient.getPage("http://localhost:8081/code-flow-form-post");
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
 
             // Session is still active
             Cookie sessionCookie = getSessionCookie(webClient, "code-flow-form-post");
@@ -225,7 +225,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice:alice:alice, cache size: 1", page.getBody().asText());
+            assertEquals("alice:alice:alice, cache size: 1", page.getBody().asNormalizedText());
 
             Cookie sessionCookie = getSessionCookie(webClient, tenantId);
             assertNotNull(sessionCookie);
@@ -250,7 +250,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice:alice:alice, cache size: 0", page.getBody().asText());
+            assertEquals("alice:alice:alice, cache size: 0", page.getBody().asNormalizedText());
 
             Cookie sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(sessionCookie);
@@ -260,7 +260,7 @@ public class CodeFlowAuthorizationTest {
             // refresh
             Thread.sleep(3000);
             page = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
-            assertEquals("alice:alice:bob, cache size: 0", page.getBody().asText());
+            assertEquals("alice:alice:bob, cache size: 0", page.getBody().asNormalizedText());
 
             webClient.getCookieManager().clearCookies();
         }

@@ -56,19 +56,19 @@ public class BearerTokenAuthorizationTest {
             // First call after a redirect, tenant-id is initially calculated from the state `q_auth` cookie.
             // 'reauthenticated' flag is set is because, in fact, it is actually a 2nd call due to
             // quarkus-oidc doing a final redirect after completing a code flow to drop the redirect OIDC parameters
-            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asText());
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
             assertNull(getStateCookie(webClient, "tenant-web-app"));
 
             // Second call after a redirect, tenant-id is calculated from the state `q_session` cookie
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
-            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asText());
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
             assertNull(getStateCookie(webClient, "tenant-web-app"));
 
             // Local logout
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp?logout=true");
-            assertEquals("tenant-web-app:alice:reauthenticated:logout", page.getBody().asText());
+            assertEquals("tenant-web-app:alice:reauthenticated:logout", page.getBody().asNormalizedText());
             assertNull(getSessionCookie(webClient, "tenant-web-app"));
             assertNull(getStateCookie(webClient, "tenant-web-app"));
 
@@ -98,7 +98,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-web-app2:alice", page.getBody().asText());
+            assertEquals("tenant-web-app2:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -114,7 +114,7 @@ public class BearerTokenAuthorizationTest {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("userName: alice, idToken: true, accessToken: true, refreshToken: true",
-                    page.getBody().asText());
+                    page.getBody().asNormalizedText());
 
             Cookie sessionCookie = getSessionCookie(page.getWebClient(), "tenant-web-app-refresh");
             assertNotNull(sessionCookie);
@@ -181,7 +181,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("alice:web-app", page.getBody().asText());
+            assertEquals("alice:web-app", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -205,7 +205,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("alice:web-app", page.getBody().asText());
+            assertEquals("alice:web-app", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
         RestAssured.given().auth().oauth2(getAccessToken("alice", "hybrid"))
@@ -228,10 +228,10 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-web-app-no-discovery:alice", page.getBody().asText());
+            assertEquals("tenant-web-app-no-discovery:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app-no-discovery/api/user/webapp-no-discovery");
-            assertEquals("tenant-web-app-no-discovery:alice", page.getBody().asText());
+            assertEquals("tenant-web-app-no-discovery:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -247,7 +247,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asText());
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
             // tenant-web-app2
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
@@ -256,7 +256,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-web-app2:alice", page.getBody().asText());
+            assertEquals("tenant-web-app2:alice", page.getBody().asNormalizedText());
 
             webClient.getCookieManager().clearCookies();
         }
@@ -568,7 +568,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-web-app-dynamic:alice", page.getBody().asText());
+            assertEquals("tenant-web-app-dynamic:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }

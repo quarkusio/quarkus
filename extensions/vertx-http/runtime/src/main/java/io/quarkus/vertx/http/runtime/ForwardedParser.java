@@ -47,6 +47,7 @@ class ForwardedParser {
 
     private final HttpServerRequest delegate;
     private final ForwardingProxyOptions forwardingProxyOptions;
+    private final TrustedProxyCheck trustedProxyCheck;
 
     private boolean calculated;
     private String host;
@@ -56,9 +57,11 @@ class ForwardedParser {
     private String absoluteURI;
     private SocketAddress remoteAddress;
 
-    ForwardedParser(HttpServerRequest delegate, ForwardingProxyOptions forwardingProxyOptions) {
+    ForwardedParser(HttpServerRequest delegate, ForwardingProxyOptions forwardingProxyOptions,
+            TrustedProxyCheck trustedProxyCheck) {
         this.delegate = delegate;
         this.forwardingProxyOptions = forwardingProxyOptions;
+        this.trustedProxyCheck = trustedProxyCheck;
     }
 
     public String scheme() {
@@ -108,59 +111,61 @@ class ForwardedParser {
         setHostAndPort(delegate.host(), port);
         uri = delegate.uri();
 
-        String forwarded = delegate.getHeader(FORWARDED);
-        if (forwardingProxyOptions.allowForwarded && forwarded != null) {
-            Matcher matcher = FORWARDED_PROTO_PATTERN.matcher(forwarded);
-            if (matcher.find()) {
-                scheme = (matcher.group(1).trim());
-                port = -1;
-            }
-
-            matcher = FORWARDED_HOST_PATTERN.matcher(forwarded);
-            if (matcher.find()) {
-                setHostAndPort(matcher.group(1).trim(), port);
-            }
-
-            matcher = FORWARDED_FOR_PATTERN.matcher(forwarded);
-            if (matcher.find()) {
-                remoteAddress = parseFor(matcher.group(1).trim(), remoteAddress.port());
-            }
-        } else if (forwardingProxyOptions.allowXForwarded) {
-            String protocolHeader = delegate.getHeader(X_FORWARDED_PROTO);
-            if (protocolHeader != null) {
-                scheme = getFirstElement(protocolHeader);
-                port = -1;
-            }
-
-            String forwardedSsl = delegate.getHeader(X_FORWARDED_SSL);
-            boolean isForwardedSslOn = forwardedSsl != null && forwardedSsl.equalsIgnoreCase("on");
-            if (isForwardedSslOn) {
-                scheme = HTTPS_SCHEME;
-                port = -1;
-            }
-
-            if (forwardingProxyOptions.enableForwardedHost) {
-                String hostHeader = delegate.getHeader(forwardingProxyOptions.forwardedHostHeader);
-                if (hostHeader != null) {
-                    setHostAndPort(getFirstElement(hostHeader), port);
+        if (trustedProxyCheck.isProxyAllowed()) {
+            String forwarded = delegate.getHeader(FORWARDED);
+            if (forwardingProxyOptions.allowForwarded && forwarded != null) {
+                Matcher matcher = FORWARDED_PROTO_PATTERN.matcher(forwarded);
+                if (matcher.find()) {
+                    scheme = (matcher.group(1).trim());
+                    port = -1;
                 }
-            }
 
-            if (forwardingProxyOptions.enableForwardedPrefix) {
-                String prefixHeader = delegate.getHeader(forwardingProxyOptions.forwardedPrefixHeader);
-                if (prefixHeader != null) {
-                    uri = appendPrefixToUri(prefixHeader, uri);
+                matcher = FORWARDED_HOST_PATTERN.matcher(forwarded);
+                if (matcher.find()) {
+                    setHostAndPort(matcher.group(1).trim(), port);
                 }
-            }
 
-            String portHeader = delegate.getHeader(X_FORWARDED_PORT);
-            if (portHeader != null) {
-                port = parsePort(getFirstElement(portHeader), port);
-            }
+                matcher = FORWARDED_FOR_PATTERN.matcher(forwarded);
+                if (matcher.find()) {
+                    remoteAddress = parseFor(matcher.group(1).trim(), remoteAddress.port());
+                }
+            } else if (forwardingProxyOptions.allowXForwarded) {
+                String protocolHeader = delegate.getHeader(X_FORWARDED_PROTO);
+                if (protocolHeader != null) {
+                    scheme = getFirstElement(protocolHeader);
+                    port = -1;
+                }
 
-            String forHeader = delegate.getHeader(X_FORWARDED_FOR);
-            if (forHeader != null) {
-                remoteAddress = parseFor(getFirstElement(forHeader), remoteAddress.port());
+                String forwardedSsl = delegate.getHeader(X_FORWARDED_SSL);
+                boolean isForwardedSslOn = forwardedSsl != null && forwardedSsl.equalsIgnoreCase("on");
+                if (isForwardedSslOn) {
+                    scheme = HTTPS_SCHEME;
+                    port = -1;
+                }
+
+                if (forwardingProxyOptions.enableForwardedHost) {
+                    String hostHeader = delegate.getHeader(forwardingProxyOptions.forwardedHostHeader);
+                    if (hostHeader != null) {
+                        setHostAndPort(getFirstElement(hostHeader), port);
+                    }
+                }
+
+                if (forwardingProxyOptions.enableForwardedPrefix) {
+                    String prefixHeader = delegate.getHeader(forwardingProxyOptions.forwardedPrefixHeader);
+                    if (prefixHeader != null) {
+                        uri = appendPrefixToUri(prefixHeader, uri);
+                    }
+                }
+
+                String portHeader = delegate.getHeader(X_FORWARDED_PORT);
+                if (portHeader != null) {
+                    port = parsePort(getFirstElement(portHeader), port);
+                }
+
+                String forHeader = delegate.getHeader(X_FORWARDED_FOR);
+                if (forHeader != null) {
+                    remoteAddress = parseFor(getFirstElement(forHeader), remoteAddress.port());
+                }
             }
         }
 

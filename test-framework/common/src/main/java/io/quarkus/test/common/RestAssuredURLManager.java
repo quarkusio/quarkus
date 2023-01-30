@@ -115,7 +115,7 @@ public class RestAssuredURLManager {
             try {
                 oldPort = (Integer) portField.get(null);
                 if (port == null) {
-                    port = useSecureConnection ? getPortFromConfig(DEFAULT_HTTPS_PORT, "quarkus.https.test-port")
+                    port = useSecureConnection ? getPortFromConfig(DEFAULT_HTTPS_PORT, "quarkus.http.test-ssl-port")
                             : getPortFromConfig(DEFAULT_HTTP_PORT, "quarkus.lambda.mock-event-server.test-port",
                                     "quarkus.http.test-port");
                 }

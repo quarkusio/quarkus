@@ -1,10 +1,12 @@
 package io.quarkus.extest;
 
-import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toSet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
@@ -28,11 +30,22 @@ public class UnknownBuildConfigTest {
     void unknownBuildConfig() {
         List<LogRecord> logRecords = prodModeTestResults.getRetainedBuildLogRecords();
 
-        Optional<LogRecord> unknownBuildKey = logRecords.stream()
-                .filter(logRecord -> asList(Optional.ofNullable(logRecord.getParameters()).orElse(new Object[0]))
-                        .contains("quarkus.build.unknown.prop"))
-                .findFirst();
-        assertTrue(unknownBuildKey.isPresent());
-        assertTrue(unknownBuildKey.get().getMessage().startsWith("Unrecognized configuration key"));
+        // These are the expected unknown properties in the test extension. This could probably be improved, because
+        // these are generated with the rename test. If there is a change we know that something happened.
+        Set<Object> unrecognized = logRecords.stream()
+                .filter(logRecord -> logRecord.getMessage().startsWith("Unrecognized configuration key"))
+                .map(logRecord -> Optional.ofNullable(logRecord.getParameters())
+                        .map(parameters -> parameters[0])
+                        .orElse(new Object[0]))
+                .collect(toSet());
+
+        assertEquals(7, logRecords.size());
+        assertTrue(unrecognized.contains("quarkus.unknown.prop"));
+        assertTrue(unrecognized.contains("quarkus.build.unknown.prop"));
+        assertTrue(unrecognized.contains("quarkus.rename-old.prop"));
+        assertTrue(unrecognized.contains("quarkus.rename-old.only-in-new"));
+        assertTrue(unrecognized.contains("quarkus.rename-old.only-in-old"));
+        assertTrue(unrecognized.contains("quarkus.rename-old.in-both"));
+        assertTrue(unrecognized.contains("quarkus.rename-old.with-default"));
     }
 }

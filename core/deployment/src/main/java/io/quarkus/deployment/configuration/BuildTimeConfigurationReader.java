@@ -443,6 +443,7 @@ public final class BuildTimeConfigurationReader {
                 if (ni.hasNext() && PropertiesUtil.isPropertyInRoot(registeredRoots, ni)) {
                     // build time patterns
                     Container matched = buildTimePatternMap.match(ni);
+                    boolean knownProperty = matched != null;
                     if (matched instanceof FieldContainer) {
                         ConfigValue configValue = config.getConfigValue(propertyName);
                         if (configValue.getValue() != null) {
@@ -471,6 +472,7 @@ public final class BuildTimeConfigurationReader {
                     // build time (run time visible) patterns
                     ni.goToStart();
                     matched = buildTimeRunTimePatternMap.match(ni);
+                    knownProperty = knownProperty || matched != null;
                     if (matched instanceof FieldContainer) {
                         ConfigValue configValue = config.getConfigValue(propertyName);
                         if (configValue.getValue() != null) {
@@ -501,6 +503,7 @@ public final class BuildTimeConfigurationReader {
                     // run time patterns
                     ni.goToStart();
                     matched = runTimePatternMap.match(ni);
+                    knownProperty = knownProperty || matched != null;
                     if (matched != null) {
                         // it's a run-time default (record for later)
                         ConfigValue configValue = withoutExpansion(() -> runtimeDefaultsConfig.getConfigValue(propertyName));
@@ -511,6 +514,7 @@ public final class BuildTimeConfigurationReader {
                     // also check for the bootstrap properties since those need to be added to runTimeDefaultValues as well
                     ni.goToStart();
                     matched = bootstrapPatternMap.match(ni);
+                    knownProperty = knownProperty || matched != null;
                     if (matched != null) {
                         // it's a run-time default (record for later)
                         ConfigValue configValue = withoutExpansion(() -> runtimeDefaultsConfig.getConfigValue(propertyName));
@@ -519,7 +523,7 @@ public final class BuildTimeConfigurationReader {
                         }
                     }
 
-                    if (matched == null) {
+                    if (!knownProperty) {
                         unknownBuildProperties.add(propertyName);
                     }
                 } else {

@@ -20,11 +20,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FilenameUtils;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
@@ -407,7 +407,7 @@ public class ConfigGenerationBuildStep {
                 if (!Files.isDirectory(path)) {
                     configWatchedFiles.add(path.toString());
                     for (String profile : config.getProfiles()) {
-                        configWatchedFiles.add(appendProfileToFilename(path.toString(), profile));
+                        configWatchedFiles.add(appendProfileToFilename(path, profile));
                     }
                 }
             }
@@ -425,9 +425,23 @@ public class ConfigGenerationBuildStep {
         configRecorder.handleNativeProfileChange(config.getProfiles());
     }
 
-    private String appendProfileToFilename(String path, String activeProfile) {
-        String pathWithoutExtension = FilenameUtils.removeExtension(path);
-        return String.format("%s-%s.%s", pathWithoutExtension, activeProfile, FilenameUtils.getExtension(path));
+    private String appendProfileToFilename(Path path, String activeProfile) {
+        String pathWithoutExtension = getPathWithoutExtension(path);
+        return String.format("%s-%s.%s", pathWithoutExtension, activeProfile, getFileExtension(path));
+    }
+
+    private static String getFileExtension(Path path) {
+        Objects.requireNonNull(path, "path should not be null");
+        String fileName = path.getFileName().toString();
+        int dotIndex = fileName.lastIndexOf('.');
+        return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
+    }
+
+    private static String getPathWithoutExtension(Path path) {
+        Objects.requireNonNull(path, "path should not be null");
+        String fileName = path.toString();
+        int dotIndex = fileName.lastIndexOf('.');
+        return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
     }
 
     private static void generateDefaultsConfigSource(

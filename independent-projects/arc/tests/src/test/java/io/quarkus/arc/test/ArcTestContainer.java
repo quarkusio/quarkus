@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcInitConfig;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.ResourceReferenceProvider;
 import io.quarkus.arc.processor.AlternativePriorities;
@@ -468,7 +469,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                     .setContextClassLoader(testClassLoader);
 
             // Now we are ready to initialize Arc
-            Arc.initialize();
+            Arc.initialize(ArcInitConfig.builder().setStrictCompatibility(strictCompatibility).build());
 
         } catch (Throwable e) {
             if (shouldFail) {

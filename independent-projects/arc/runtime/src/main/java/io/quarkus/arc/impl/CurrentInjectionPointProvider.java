@@ -34,7 +34,7 @@ import io.quarkus.arc.InjectableReferenceProvider;
 public class CurrentInjectionPointProvider<T> implements InjectableReferenceProvider<T> {
 
     static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Object.class, Collections.emptySet(), null, null,
-            null, -1);
+            null, -1, false);
 
     static final Supplier<InjectionPoint> EMPTY_SUPPLIER = new Supplier<InjectionPoint>() {
 
@@ -49,10 +49,11 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
     private final InjectionPoint injectionPoint;
 
     public CurrentInjectionPointProvider(InjectableBean<?> bean, Supplier<InjectableReferenceProvider<T>> delegateSupplier,
-            Type requiredType, Set<Annotation> qualifiers, Set<Annotation> annotations, Member javaMember, int position) {
+            Type requiredType, Set<Annotation> qualifiers, Set<Annotation> annotations, Member javaMember, int position,
+            boolean isTransient) {
         this.delegateSupplier = delegateSupplier;
         this.injectionPoint = new InjectionPointImpl(requiredType, requiredType, qualifiers, bean, annotations, javaMember,
-                position);
+                position, isTransient);
     }
 
     @Override
@@ -70,17 +71,16 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
     }
 
     public static class InjectionPointImpl implements InjectionPoint {
-
         private final Type requiredType;
         private final Set<Annotation> qualifiers;
         private final InjectableBean<?> bean;
         private final Annotated annotated;
         private final Member member;
+        private final boolean isTransient;
 
         public InjectionPointImpl(Type injectionPointType, Type requiredType, Set<Annotation> qualifiers,
-                InjectableBean<?> bean,
-                Set<Annotation> annotations,
-                Member javaMember, int position) {
+                InjectableBean<?> bean, Set<Annotation> annotations, Member javaMember,
+                int position, boolean isTransient) {
             this.requiredType = requiredType;
             this.qualifiers = qualifiers;
             this.bean = bean;
@@ -93,6 +93,7 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
                 this.annotated = null;
             }
             this.member = javaMember;
+            this.isTransient = isTransient;
         }
 
         @Override
@@ -127,7 +128,7 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
 
         @Override
         public boolean isTransient() {
-            return false;
+            return isTransient;
         }
 
     }

@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import java.lang.reflect.Member;
+import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -192,6 +193,8 @@ enum BuiltinBean {
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
                 ctx.reflectionRegistration);
+        boolean isTransient = ctx.injectionPoint.isField()
+                && Modifier.isTransient(ctx.injectionPoint.getTarget().asField().flags());
         ResultHandle beanHandle;
         switch (ctx.targetInfo.kind()) {
             case OBSERVER:
@@ -207,9 +210,10 @@ enum BuiltinBean {
         }
         ResultHandle instanceProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class,
-                        InjectableBean.class, Set.class, Member.class, int.class),
+                        InjectableBean.class, Set.class, Member.class, int.class, boolean.class),
                 parameterizedType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
-                ctx.constructor.load(ctx.injectionPoint.getPosition()));
+                ctx.constructor.load(ctx.injectionPoint.getPosition()),
+                ctx.constructor.load(isTransient));
         ResultHandle instanceProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, instanceProvider);
         ctx.constructor.writeInstanceField(

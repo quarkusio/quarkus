@@ -60,7 +60,8 @@ public final class Instances {
     @SuppressWarnings("unchecked")
     public static <T> List<T> listOf(InjectableBean<?> targetBean, Type injectionPointType, Type requiredType,
             Set<Annotation> requiredQualifiers,
-            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
+            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
+            boolean isTransient) {
         List<InjectableBean<?>> beans = resolveAllBeans(requiredType, requiredQualifiers);
         if (beans.isEmpty()) {
             return Collections.emptyList();
@@ -68,7 +69,7 @@ public final class Instances {
         List<T> list = new ArrayList<>(beans.size());
         InjectionPoint prev = InjectionPointProvider
                 .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean,
-                        annotations, javaMember, position));
+                        annotations, javaMember, position, isTransient));
         try {
             for (InjectableBean<?> bean : beans) {
                 list.add(getBeanInstance((CreationalContextImpl<T>) creationalContext, (InjectableBean<T>) bean));
@@ -81,14 +82,14 @@ public final class Instances {
     }
 
     public static <T> List<InstanceHandle<T>> listOfHandles(InjectableBean<?> targetBean, Type injectionPointType,
-            Type requiredType,
-            Set<Annotation> requiredQualifiers,
-            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
+            Type requiredType, Set<Annotation> requiredQualifiers,
+            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
+            boolean isTransient) {
         Supplier<InjectionPoint> supplier = new Supplier<InjectionPoint>() {
             @Override
             public InjectionPoint get() {
                 return new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean,
-                        annotations, javaMember, position);
+                        annotations, javaMember, position, isTransient);
             }
         };
         return listOfHandles(supplier, requiredType, requiredQualifiers, creationalContext);

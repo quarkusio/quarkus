@@ -1929,14 +1929,17 @@ public class BeanGenerator extends AbstractGenerator {
         ResultHandle annotationsHandle = collectInjectionPointAnnotations(classOutput, beanCreator, bean.getDeployment(),
                 constructor, injectionPoint, annotationLiterals, injectionPointAnnotationsPredicate);
         ResultHandle javaMemberHandle = getJavaMemberHandle(constructor, injectionPoint, reflectionRegistration);
+        boolean isTransient = injectionPoint.isField() && Modifier.isTransient(injectionPoint.getTarget().asField().flags());
 
         return constructor.newInstance(
                 MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
                         Supplier.class, java.lang.reflect.Type.class,
-                        Set.class, Set.class, Member.class, int.class),
+                        Set.class, Set.class, Member.class, int.class, boolean.class),
                 constructor.getThis(), constructor.getMethodParam(paramIdx),
                 Types.getTypeHandle(constructor, injectionPoint.getType(), tccl),
-                requiredQualifiersHandle, annotationsHandle, javaMemberHandle, constructor.load(injectionPoint.getPosition()));
+                requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
+                constructor.load(injectionPoint.getPosition()),
+                constructor.load(isTransient));
     }
 
     private void initializeProxy(BeanInfo bean, String baseName, ClassCreator beanCreator) {

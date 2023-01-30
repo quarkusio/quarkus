@@ -42,6 +42,6 @@ public class OpenApiDefaultPathTestCase {
 
         RestAssured.given()
                 .when().options(OPEN_API_PATH)
-                .then().header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+                .then().header("Allow", "GET, HEAD, OPTIONS");
     }
 }

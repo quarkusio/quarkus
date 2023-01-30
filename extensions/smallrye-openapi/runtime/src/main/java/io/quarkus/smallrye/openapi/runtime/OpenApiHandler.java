@@ -5,12 +5,10 @@ import java.util.List;
 import io.quarkus.arc.Arc;
 import io.smallrye.openapi.runtime.io.Format;
 import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -21,20 +19,8 @@ public class OpenApiHandler implements Handler<RoutingContext> {
     private volatile OpenApiDocumentService openApiDocumentService;
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
     private static final String QUERY_PARAM_FORMAT = "format";
-    private static final MultiMap RESPONSE_HEADERS = new HeadersMultiMap();
 
-    static {
-        RESPONSE_HEADERS.add("access-control-allow-origin", "*");
-        RESPONSE_HEADERS.add("access-control-allow-credentials", "true");
-        RESPONSE_HEADERS.add("access-control-allow-methods", ALLOWED_METHODS);
-        RESPONSE_HEADERS.add("access-control-allow-headers", "Content-Type, Authorization");
-        RESPONSE_HEADERS.add("access-control-max-age", "86400");
-    }
-
-    final boolean corsEnabled;
-
-    public OpenApiHandler(boolean corsEnabled) {
-        this.corsEnabled = corsEnabled;
+    public OpenApiHandler() {
     }
 
     @Override
@@ -43,10 +29,6 @@ public class OpenApiHandler implements Handler<RoutingContext> {
         HttpServerResponse resp = event.response();
 
         if (req.method().equals(HttpMethod.OPTIONS)) {
-            if (!corsEnabled) {
-                //if the cors filter is enabled we let it set the headers
-                resp.headers().addAll(RESPONSE_HEADERS);
-            }
             resp.headers().set("Allow", ALLOWED_METHODS);
             event.next();
         } else {
@@ -74,10 +56,6 @@ public class OpenApiHandler implements Handler<RoutingContext> {
                 }
             }
 
-            if (!corsEnabled) {
-                //if the cors filter is enabled we let it set the headers
-                resp.headers().addAll(RESPONSE_HEADERS);
-            }
             resp.headers().set("Content-Type", format.getMimeType() + ";charset=UTF-8");
             byte[] schemaDocument = getOpenApiDocumentService().getDocument(format);
             resp.end(Buffer.buffer(schemaDocument));

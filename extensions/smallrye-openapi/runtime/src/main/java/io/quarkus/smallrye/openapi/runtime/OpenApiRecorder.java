@@ -11,7 +11,6 @@ import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -44,13 +43,7 @@ public class OpenApiRecorder {
 
     public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig) {
         if (runtimeConfig.enable) {
-            if (!configuration.getValue().corsEnabled && LaunchMode.NORMAL == LaunchMode.current()) {
-                log.info(
-                        "CORS filtering is disabled and cross-origin resource sharing is allowed without restriction, which is not recommended in production."
-                                + " Please configure the CORS filter through 'quarkus.http.cors.*' properties."
-                                + " For more information, see Quarkus HTTP CORS documentation");
-            }
-            return new OpenApiHandler(configuration.getValue().corsEnabled);
+            return new OpenApiHandler();
         } else {
             return new OpenApiNotFoundHandler();
         }

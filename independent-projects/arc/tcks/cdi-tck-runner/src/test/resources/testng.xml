@@ -100,12 +100,6 @@
                     <exclude name="testInterceptorsImplementInterceptorInterface"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.dynamic.handle.InstanceHandleTest">
-                <methods>
-                    <exclude name="testGetHandle"/>
-                    <exclude name="testHandles"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.context.dependent.DependentContextTest">
                 <methods>
                     <!-- https://github.com/jakartaee/cdi-tck/pull/452 -->

@@ -32,14 +32,15 @@ metadata:
   - "reactive"
   status: "stable" <6>
   guide: "https://quarkus.io/guides/resteasy-reactive" <7>
-  codestart: <8>
+  icon-url: "https://quarkus.io/assets/images/about/icon-reactive.svg" <8>
+  codestart: <9>
     name: "resteasy-reactive"
     languages:
       - "java"
       - "kotlin"
       - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
-  config: <9>
+  config: <10>
   - "quarkus.resteasy-reactive."
 ----
 
@@ -50,8 +51,9 @@ metadata:
 <5> Categories the extension should appear under on https://code.quarkus.io[code.quarkus.io]. This field can be omitted, the extension will still be listed on https://code.quarkus.io[code.quarkus.io] but won't be categorized
 <6> Maturity status that could be `stable`, `preview`, `experimental`. It is up to extension maintainers to evaluate the maturity status and communicate it to the users
 <7> Link to the extension guide or documentation page
-<8> https://quarkus.io/guides/extension-codestart[Codestart] information
-<9> Configuration prefix
+<8> Link to an externally hosted image. This is used in the Quarkus dev tools as the extension icon. It should be square, and any resolution greater than 220 pixels. Supported formats are png, jpeg, tiff, webp, and svg. Alternatively, if you https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview[set the social media preview] on the extension's source code repository, the tools will pick up that image.
+<9> https://quarkus.io/guides/extension-codestart[Codestart] information
+<10> Configuration prefix
 
 And here is the final version of the file included in the runtime JAR augmented with other information collected by the Quarkus Maven plugin:
 

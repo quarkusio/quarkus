@@ -831,18 +831,21 @@ public class SmallRyeOpenApiProcessor {
         return false;
     }
 
-    private OpenAPI generateStaticModel(SmallRyeOpenApiConfig openApiConfig, List<Pattern> ignorePatterns, Path target)
+    private OpenAPI generateStaticModel(SmallRyeOpenApiConfig smallRyeOpenApiConfig, List<Pattern> ignorePatterns, Path target)
             throws IOException {
-        if (openApiConfig.ignoreStaticDocument) {
+        Config config = ConfigProvider.getConfig();
+        OpenApiConfig openApiConfigg = OpenApiConfigImpl.fromConfig(config);
+        if (smallRyeOpenApiConfig.ignoreStaticDocument) {
             return null;
         } else {
-            List<Result> results = findStaticModels(openApiConfig, ignorePatterns, target);
+            List<Result> results = findStaticModels(smallRyeOpenApiConfig, ignorePatterns, target);
             if (!results.isEmpty()) {
                 OpenAPI mergedStaticModel = new OpenAPIImpl();
                 for (Result result : results) {
                     try (InputStream is = result.inputStream;
                             OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
-                        OpenAPI staticFileModel = io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
+                        OpenAPI staticFileModel = io.smallrye.openapi.runtime.OpenApiProcessor
+                                .modelFromStaticFile(openApiConfigg, staticFile);
                         mergedStaticModel = MergeUtil.mergeObjects(mergedStaticModel, staticFileModel);
                     }
                 }

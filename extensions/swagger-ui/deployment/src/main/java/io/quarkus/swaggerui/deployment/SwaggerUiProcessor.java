@@ -373,6 +373,9 @@ public class SwaggerUiProcessor {
             String oauthScopes = swaggerUiConfig.oauthScopes.get();
             options.put(Option.oauthScopes, oauthScopes);
         }
+        if (swaggerUiConfig.queryConfigEnabled.isPresent()) {
+            options.put(Option.queryConfigEnabled, swaggerUiConfig.queryConfigEnabled.get());
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> oauthAdditionalQueryStringParamMap = new HashMap<>();

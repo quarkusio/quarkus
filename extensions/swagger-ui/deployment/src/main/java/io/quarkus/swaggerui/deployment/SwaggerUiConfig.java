@@ -351,4 +351,10 @@ public class SwaggerUiConfig {
     @ConfigItem
     Optional<String> preauthorizeApiKeyApiKeyValue;
 
+    /**
+     * If set to true, this allows the user to modify and test different query parameters in the API request
+     */
+    @ConfigItem
+    Optional<String> queryConfigEnabled;
+
 }

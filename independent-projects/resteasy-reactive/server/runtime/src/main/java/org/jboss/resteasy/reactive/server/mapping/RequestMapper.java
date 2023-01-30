@@ -51,17 +51,25 @@ public class RequestMapper<T> {
         pathMatcherBuilder.addPrefixPath(stem, list);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     public RequestMatch<T> map(String path) {
-        int pathLength = path.length();
-        PathMatcher.PathMatch<ArrayList<RequestPath<T>>> initialMatch = requestPaths.match(path);
+        var result = mapFromPathMatcher(path, requestPaths.match(path));
+        if (result != null) {
+            return result;
+        }
+
+        // the following code is meant to handle cases like https://github.com/quarkusio/quarkus/issues/30667
+        return mapFromPathMatcher(path, requestPaths.defaultMatch(path));
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private RequestMatch<T> mapFromPathMatcher(String path, PathMatcher.PathMatch<ArrayList<RequestPath<T>>> initialMatch) {
+        var value = initialMatch.getValue();
         if (initialMatch.getValue() == null) {
             return null;
         }
-
-        ArrayList<RequestPath<T>> value = initialMatch.getValue();
-        for (int index = 0; index < value.size(); index++) {
-            RequestPath<T> potentialMatch = value.get(index);
+        int pathLength = path.length();
+        for (int index = 0; index < ((List<RequestPath<T>>) value).size(); index++) {
+            RequestPath<T> potentialMatch = ((List<RequestPath<T>>) value).get(index);
             String[] params = (maxParams > 0) ? new String[maxParams] : EMPTY_STRING_ARRAY;
             int paramCount = 0;
             boolean matched = true;

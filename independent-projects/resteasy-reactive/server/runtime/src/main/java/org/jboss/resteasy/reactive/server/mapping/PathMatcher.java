@@ -50,6 +50,10 @@ class PathMatcher<T> implements Dumpable {
                 }
             }
         }
+        return defaultMatch(path);
+    }
+
+    PathMatch<T> defaultMatch(String path) {
         return new PathMatch<>("/", path, defaultHandler);
     }
 

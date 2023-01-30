@@ -11,6 +11,7 @@ import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.MethodProperties;
 import io.quarkus.rest.data.panache.ResourceProperties;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 
 class PanacheRepositoryResourcePathCustomisationTest extends AbstractPathCustomisationTest {
 
@@ -27,18 +28,18 @@ class PanacheRepositoryResourcePathCustomisationTest extends AbstractPathCustomi
             extends PanacheRepositoryResource<CollectionsRepository, Collection, String> {
 
         @MethodProperties(path = "api")
-        List<Collection> list(Page page, Sort sort);
+        Uni<List<Collection>> list(Page page, Sort sort);
 
         @MethodProperties(path = "api")
-        Collection get(String name);
+        Uni<Collection> get(String name);
 
         @MethodProperties(path = "api")
-        Collection add(Collection collection);
+        Uni<Collection> add(Collection collection);
 
         @MethodProperties(path = "api")
-        Collection update(String name, Collection collection);
+        Uni<Collection> update(String name, Collection collection);
 
         @MethodProperties(path = "api")
-        boolean delete(String name);
+        Uni<Boolean> delete(String name);
     }
 }

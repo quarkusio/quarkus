@@ -2,6 +2,7 @@ package io.quarkus.hibernate.reactive.rest.data.panache;
 
 import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
 import io.quarkus.rest.data.panache.MethodProperties;
+import io.quarkus.rest.data.panache.ReactiveRestDataResource;
 import io.quarkus.rest.data.panache.ResourceProperties;
 import io.quarkus.rest.data.panache.RestDataResource;
 
@@ -18,6 +19,6 @@ import io.quarkus.rest.data.panache.RestDataResource;
  * @param <ID> ID type of the entity.
  */
 public interface PanacheRepositoryResource<Repository extends PanacheRepositoryBase<Entity, ID>, Entity, ID>
-        extends RestDataResource<Entity, ID> {
+        extends ReactiveRestDataResource<Entity, ID> {
 
 }

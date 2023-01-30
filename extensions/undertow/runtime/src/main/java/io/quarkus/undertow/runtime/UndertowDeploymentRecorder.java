@@ -564,6 +564,15 @@ public class UndertowDeploymentRecorder {
                         // Not sure what to do here
                         ManagedContext requestContext = beanContainer.requestContext();
                         if (requestContext.isActive()) {
+                            if (currentVertxRequest.getCurrent() == null && exchange != null
+                                    && exchange.getDelegate() instanceof VertxHttpExchange) {
+                                // goal here is to add event to the Vert.X request when Smallrye Context Propagation
+                                // creates fresh instance of request context without the event; we experienced
+                                // the request context activated and terminated by ActivateRequestContextInterceptor
+                                // invoked for the SecurityIdentityAugmentor that was (re)created during permission checks
+                                addEventToVertxRequest(exchange);
+                            }
+
                             return action.call(exchange, context);
                         } else if (exchange == null) {
                             requestContext.activate();
@@ -578,9 +587,7 @@ public class UndertowDeploymentRecorder {
                             try {
                                 requestContext.activate(existingRequestContext);
 
-                                VertxHttpExchange delegate = (VertxHttpExchange) exchange.getDelegate();
-                                RoutingContext rc = (RoutingContext) delegate.getContext();
-                                currentVertxRequest.setCurrent(rc);
+                                RoutingContext rc = addEventToVertxRequest(exchange);
 
                                 if (association != null) {
                                     QuarkusHttpUser existing = (QuarkusHttpUser) rc.user();
@@ -630,6 +637,13 @@ public class UndertowDeploymentRecorder {
                                 }
                             }
                         }
+                    }
+
+                    private RoutingContext addEventToVertxRequest(HttpServerExchange exchange) {
+                        VertxHttpExchange delegate = (VertxHttpExchange) exchange.getDelegate();
+                        RoutingContext rc = (RoutingContext) delegate.getContext();
+                        currentVertxRequest.setCurrent(rc);
+                        return rc;
                     }
                 };
             }

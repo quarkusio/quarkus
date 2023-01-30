@@ -14,7 +14,7 @@ import java.util.Objects;
 /**
  * A simple JSON string generator.
  */
-final class Json {
+public final class Json {
 
     private static final String OBJECT_START = "{";
     private static final String OBJECT_END = "}";
@@ -47,7 +47,7 @@ final class Json {
     /**
      * @return the new JSON array builder, empty builders are not ignored
      */
-    static JsonArrayBuilder array() {
+    public static JsonArrayBuilder array() {
         return new JsonArrayBuilder(false);
     }
 
@@ -65,7 +65,7 @@ final class Json {
      *
      * @return the new JSON object builder, empty builders are not ignored
      */
-    static JsonObjectBuilder object() {
+    public static JsonObjectBuilder object() {
         return new JsonObjectBuilder(false);
     }
 
@@ -142,7 +142,7 @@ final class Json {
     /**
      * JSON array builder.
      */
-    static class JsonArrayBuilder extends JsonBuilder<JsonArrayBuilder> {
+    public static class JsonArrayBuilder extends JsonBuilder<JsonArrayBuilder> {
 
         private final List<Object> values;
 
@@ -156,12 +156,12 @@ final class Json {
             return this;
         }
 
-        JsonArrayBuilder add(JsonObjectBuilder value) {
+        public JsonArrayBuilder add(JsonObjectBuilder value) {
             addInternal(value);
             return this;
         }
 
-        JsonArrayBuilder add(String value) {
+        public JsonArrayBuilder add(String value) {
             addInternal(value);
             return this;
         }
@@ -205,7 +205,7 @@ final class Json {
         }
 
         @Override
-        void appendTo(Appendable appendable) throws IOException {
+        public void appendTo(Appendable appendable) throws IOException {
             appendable.append(ARRAY_START);
             int idx = 0;
             for (ListIterator<Object> iterator = values.listIterator(); iterator.hasNext();) {
@@ -231,7 +231,7 @@ final class Json {
     /**
      * JSON object builder.
      */
-    static class JsonObjectBuilder extends JsonBuilder<JsonObjectBuilder> {
+    public static class JsonObjectBuilder extends JsonBuilder<JsonObjectBuilder> {
 
         private final Map<String, Object> properties;
 
@@ -240,22 +240,22 @@ final class Json {
             this.properties = new HashMap<String, Object>();
         }
 
-        JsonObjectBuilder put(String name, String value) {
+        public JsonObjectBuilder put(String name, String value) {
             putInternal(name, value);
             return this;
         }
 
-        JsonObjectBuilder put(String name, JsonObjectBuilder value) {
+        public JsonObjectBuilder put(String name, JsonObjectBuilder value) {
             putInternal(name, value);
             return this;
         }
 
-        JsonObjectBuilder put(String name, JsonArrayBuilder value) {
+        public JsonObjectBuilder put(String name, JsonArrayBuilder value) {
             putInternal(name, value);
             return this;
         }
 
-        JsonObjectBuilder put(String name, boolean value) {
+        public JsonObjectBuilder put(String name, boolean value) {
             putInternal(name, value);
             return this;
         }
@@ -295,7 +295,7 @@ final class Json {
         }
 
         @Override
-        void appendTo(Appendable appendable) throws IOException {
+        public void appendTo(Appendable appendable) throws IOException {
             appendable.append(OBJECT_START);
             int idx = 0;
             for (Iterator<Entry<String, Object>> iterator = properties.entrySet().iterator(); iterator.hasNext();) {

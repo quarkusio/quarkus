@@ -8,33 +8,23 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
-import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
@@ -54,7 +44,6 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.NativeImageFeatureUtils;
 import io.quarkus.runtime.ResourceHelper;
 import io.quarkus.runtime.graal.ResourcesFeature;
-import io.quarkus.runtime.graal.WeakReflection;
 
 public class NativeImageFeatureStep {
 
@@ -80,12 +69,6 @@ public class NativeImageFeatureStep {
             CONFIGURATION_CONDITION,
             "alwaysTrue", CONFIGURATION_CONDITION);
 
-    private static final MethodDescriptor REGISTER_LAMBDA_CAPTURING_CLASS = ofMethod(
-            "org.graalvm.nativeimage.impl.RuntimeSerializationSupport",
-            "registerLambdaCapturingClass", void.class,
-            CONFIGURATION_CONDITION,
-            String.class);
-
     private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
             NativeImageFeatureUtils.class,
             "lookupMethod", Method.class, Class.class, String.class, Class[].class);
@@ -95,18 +78,12 @@ public class NativeImageFeatureStep {
             "findModule", Module.class, String.class);
     private static final MethodDescriptor INVOKE = ofMethod(
             Method.class, "invoke", Object.class, Object.class, Object[].class);
-    static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String LEGACY_JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String JNI_RUNTIME_ACCESS = "org.graalvm.nativeimage.hosted.RuntimeJNIAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
-    static final String DURING_SETUP_ACCESS = Feature.DuringSetupAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
     static final String RUNTIME_RESOURCE_SUPPORT = "org.graalvm.nativeimage.impl.RuntimeResourceSupport";
-    public static final MethodDescriptor WEAK_REFLECTION_REGISTRATION = MethodDescriptor.ofMethod(WeakReflection.class,
-            "register", void.class, Feature.BeforeAnalysisAccess.class, Class.class, boolean.class, boolean.class,
-            boolean.class);
-    public static final String RUNTIME_SERIALIZATION = "org.graalvm.nativeimage.hosted.RuntimeSerialization";
 
     @BuildStep
     GeneratedResourceBuildItem generateNativeResourcesList(List<NativeImageResourceBuildItem> resources,
@@ -127,9 +104,7 @@ public class NativeImageFeatureStep {
 
     @BuildStep
     void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> features,
-            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
-            List<LambdaCapturingTypeBuildItem> lambdaCapturingTypeBuildItems,
-            List<NativeImageResourcePatternsBuildItem> resourcePatterns) {
+            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
         // required in order to access org.graalvm.nativeimage.impl.RuntimeSerializationSupport and org.graalvm.nativeimage.impl.ConfigurationCondition
         features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl"));
         // required in order to access com.oracle.svm.core.jni.JNIRuntimeAccess in GraalVM 22.2.x
@@ -148,14 +123,9 @@ public class NativeImageFeatureStep {
             List<NativeImageProxyDefinitionBuildItem> proxies,
             List<NativeImageResourcePatternsBuildItem> resourcePatterns,
             List<NativeImageResourceBundleBuildItem> resourceBundles,
-            List<ReflectiveMethodBuildItem> reflectiveMethods,
-            List<ReflectiveFieldBuildItem> reflectiveFields,
-            List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
-            List<ForceNonWeakReflectiveClassBuildItem> nonWeakReflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
             List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
-            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
-            List<LambdaCapturingTypeBuildItem> lambdaCapturingTypeBuildItems) {
+            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
@@ -167,50 +137,6 @@ public class NativeImageFeatureStep {
         // Add getDescription (from GraalVM 22.2.0+)
         MethodCreator getDescription = file.getMethodCreator("getDescription", String.class);
         getDescription.returnValue(getDescription.load("Auto-generated class by Quarkus from the existing extensions"));
-
-        MethodCreator duringSetup = file.getMethodCreator("duringSetup", "V", DURING_SETUP_ACCESS);
-        // Register Lambda Capturing Types
-        if (!lambdaCapturingTypeBuildItems.isEmpty()) {
-
-            BranchResult graalVm22_3Test = duringSetup
-                    .ifGreaterEqualZero(duringSetup.invokeVirtualMethod(VERSION_COMPARE_TO,
-                            duringSetup.invokeStaticMethod(VERSION_CURRENT),
-                            duringSetup.marshalAsArray(int.class, duringSetup.load(22), duringSetup.load(3))));
-            /* GraalVM >= 22.3 */
-            try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
-                MethodDescriptor registerLambdaCapturingClass = ofMethod(RUNTIME_SERIALIZATION, "registerLambdaCapturingClass",
-                        void.class, Class.class);
-                for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
-                    TryBlock tryBlock = greaterThan22_2.tryBlock();
-
-                    tryBlock.invokeStaticMethod(registerLambdaCapturingClass,
-                            tryBlock.loadClassFromTCCL(i.getClassName()));
-
-                    CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-                    catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
-                            catchBlock.getCaughtException());
-                }
-            }
-            /* GraalVM < 22.3 */
-            try (BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch()) {
-                ResultHandle runtimeSerializationSupportSingleton = smallerThan22_3.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                        smallerThan22_3.loadClassFromTCCL("org.graalvm.nativeimage.impl.RuntimeSerializationSupport"));
-                ResultHandle configAlwaysTrue = smallerThan22_3.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
-
-                for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
-                    TryBlock tryBlock = smallerThan22_3.tryBlock();
-
-                    tryBlock.invokeInterfaceMethod(REGISTER_LAMBDA_CAPTURING_CLASS, runtimeSerializationSupportSingleton,
-                            configAlwaysTrue,
-                            tryBlock.load(i.getClassName()));
-
-                    CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-                    catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
-                            catchBlock.getCaughtException());
-                }
-            }
-        }
-        duringSetup.returnValue(null);
 
         MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", BEFORE_ANALYSIS_ACCESS);
         TryBlock overallCatch = beforeAn.tryBlock();
@@ -513,137 +439,6 @@ public class NativeImageFeatureStep {
         }
         int count = 0;
 
-        final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
-        final Set<String> forcedNonWeakClasses = new HashSet<>();
-        for (ForceNonWeakReflectiveClassBuildItem nonWeakReflectiveClassBuildItem : nonWeakReflectiveClassBuildItems) {
-            forcedNonWeakClasses.add(nonWeakReflectiveClassBuildItem.getClassName());
-        }
-        for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
-            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i.isConstructors(), i.isMethods(), i.isFields(),
-                    i.areFinalFieldsWritable(),
-                    i.isWeak(),
-                    i.isSerialization(),
-                    i.getClassNames().toArray(new String[0]));
-        }
-        for (ReflectiveFieldBuildItem i : reflectiveFields) {
-            addReflectiveField(reflectiveClasses, i);
-        }
-        for (ReflectiveMethodBuildItem i : reflectiveMethods) {
-            addReflectiveMethod(reflectiveClasses, i);
-        }
-
-        for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false, false,
-                    i.providers().toArray(new String[] {}));
-        }
-
-        MethodDescriptor registerSerializationMethod = null;
-
-        MethodCreator registerForReflection = file
-                .getMethodCreator("registerForReflection", void.class, Feature.BeforeAnalysisAccess.class)
-                .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-
-        for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
-            MethodCreator mv = file.getMethodCreator("registerClass" + count++, void.class, Feature.BeforeAnalysisAccess.class);
-            mv.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-            registerForReflection.invokeStaticMethod(mv.getMethodDescriptor(), registerForReflection.getMethodParam(0));
-
-            TryBlock tc = mv.tryBlock();
-
-            ResultHandle clazz = tc.loadClassFromTCCL(entry.getKey());
-            //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
-            ResultHandle constructors = tc
-                    .invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
-            ResultHandle methods = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class), clazz);
-            ResultHandle fields = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
-
-            if (!entry.getValue().weak) {
-                ResultHandle carray = tc.newArray(Class.class, tc.load(1));
-                tc.writeArrayValue(carray, 0, clazz);
-                tc.invokeStaticMethod(ofMethod(RUNTIME_REFLECTION, "register", void.class, Class[].class),
-                        carray);
-
-                if (entry.getValue().constructors) {
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                            constructors);
-                } else if (!entry.getValue().ctorSet.isEmpty()) {
-                    ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
-                    for (ReflectiveMethodBuildItem ctor : entry.getValue().ctorSet) {
-                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.getParams().length));
-                        for (int i = 0; i < ctor.getParams().length; ++i) {
-                            String type = ctor.getParams()[i];
-                            tc.writeArrayValue(paramArray, i, tc.loadClassFromTCCL(type));
-                        }
-                        ResultHandle fhandle = tc.invokeVirtualMethod(
-                                ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz,
-                                paramArray);
-                        tc.writeArrayValue(farray, 0, fhandle);
-                        tc.invokeStaticMethod(
-                                ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                                farray);
-                    }
-                }
-                if (entry.getValue().methods) {
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                            methods);
-                } else if (!entry.getValue().methodSet.isEmpty()) {
-                    ResultHandle farray = tc.newArray(Method.class, tc.load(1));
-                    for (ReflectiveMethodBuildItem method : entry.getValue().methodSet) {
-                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.getParams().length));
-                        for (int i = 0; i < method.getParams().length; ++i) {
-                            String type = method.getParams()[i];
-                            tc.writeArrayValue(paramArray, i, tc.loadClassFromTCCL(type));
-                        }
-                        ResultHandle fhandle = tc.invokeVirtualMethod(
-                                ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz,
-                                tc.load(method.getName()), paramArray);
-                        tc.writeArrayValue(farray, 0, fhandle);
-                        tc.invokeStaticMethod(
-                                ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
-                                farray);
-                    }
-                }
-                if (entry.getValue().fields) {
-                    tc.invokeStaticMethod(
-                            ofMethod(RUNTIME_REFLECTION, "register", void.class,
-                                    boolean.class, boolean.class, Field[].class),
-                            tc.load(entry.getValue().finalFieldsWritable), tc.load(entry.getValue().serialization), fields);
-                } else if (!entry.getValue().fieldSet.isEmpty()) {
-                    ResultHandle farray = tc.newArray(Field.class, tc.load(1));
-                    for (String field : entry.getValue().fieldSet) {
-                        ResultHandle fhandle = tc.invokeVirtualMethod(
-                                ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, tc.load(field));
-                        tc.writeArrayValue(farray, 0, fhandle);
-                        tc.invokeStaticMethod(
-                                ofMethod(RUNTIME_REFLECTION, "register", void.class, Field[].class),
-                                farray);
-                    }
-                }
-            } else {
-                tc.invokeStaticMethod(WEAK_REFLECTION_REGISTRATION, tc.getMethodParam(0), clazz,
-                        tc.load(entry.getValue().constructors), tc.load(entry.getValue().methods),
-                        tc.load(entry.getValue().fields));
-            }
-
-            if (entry.getValue().serialization) {
-                if (registerSerializationMethod == null) {
-                    registerSerializationMethod = createRegisterSerializationForClassMethod(file);
-                }
-
-                tc.invokeStaticMethod(registerSerializationMethod, clazz);
-            }
-
-            CatchBlockCreator cc = tc.addCatch(Throwable.class);
-            //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-            mv.returnValue(null);
-        }
-        registerForReflection.returnVoid();
-        overallCatch.invokeStaticMethod(registerForReflection.getMethodDescriptor(), beforeAnalysisParam);
-
-        count = 0;
-
         for (JniRuntimeAccessBuildItem jniAccessible : jniRuntimeAccessibleClasses) {
             for (String className : jniAccessible.getClassNames()) {
                 MethodCreator mv = file.getMethodCreator("registerJniAccessibleClass" + count++, "V");
@@ -726,102 +521,6 @@ public class NativeImageFeatureStep {
         beforeAn.returnValue(null);
 
         file.close();
-    }
-
-    private MethodDescriptor createRegisterSerializationForClassMethod(ClassCreator file) {
-        // method to register class for registration
-        MethodCreator addSerializationForClass = file.getMethodCreator("registerSerializationForClass", "V", Class.class);
-        addSerializationForClass.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-        ResultHandle clazz = addSerializationForClass.getMethodParam(0);
-
-        TryBlock tc = addSerializationForClass.tryBlock();
-
-        ResultHandle runtimeSerializationClass = tc.loadClassFromTCCL(RUNTIME_SERIALIZATION);
-        ResultHandle registerArgTypes = tc.newArray(Class.class, tc.load(1));
-        tc.writeArrayValue(registerArgTypes, 0, tc.loadClassFromTCCL(Class[].class));
-        ResultHandle registerLookupMethod = tc.invokeStaticMethod(LOOKUP_METHOD, runtimeSerializationClass,
-                tc.load("register"), registerArgTypes);
-        ResultHandle registerArgs = tc.newArray(Object.class, tc.load(1));
-        ResultHandle classesToRegister = tc.newArray(Class.class, tc.load(1));
-        tc.writeArrayValue(classesToRegister, 0, clazz);
-        tc.writeArrayValue(registerArgs, 0, classesToRegister);
-        tc.invokeVirtualMethod(INVOKE, registerLookupMethod,
-                tc.loadNull(), registerArgs);
-        tc.returnValue(null);
-
-        addSerializationForClass.returnValue(null);
-
-        return addSerializationForClass.getMethodDescriptor();
-    }
-
-    public void addReflectiveMethod(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveMethodBuildItem methodInfo) {
-        String cl = methodInfo.getDeclaringClass();
-        ReflectionInfo existing = reflectiveClasses.get(cl);
-        if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false, false));
-        }
-        if (methodInfo.getName().equals("<init>")) {
-            existing.ctorSet.add(methodInfo);
-        } else {
-            existing.methodSet.add(methodInfo);
-        }
-    }
-
-    public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,
-            boolean constructors, boolean method,
-            boolean fields, boolean finalFieldsWritable, boolean weak, boolean serialization,
-            String... className) {
-        for (String cl : className) {
-            ReflectionInfo existing = reflectiveClasses.get(cl);
-            if (existing == null) {
-                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields, finalFieldsWritable,
-                        !forcedNonWeakClasses.contains(cl) && weak, serialization));
-            } else {
-                if (constructors) {
-                    existing.constructors = true;
-                }
-                if (method) {
-                    existing.methods = true;
-                }
-                if (fields) {
-                    existing.fields = true;
-                }
-                if (serialization) {
-                    existing.serialization = true;
-                }
-            }
-        }
-    }
-
-    public void addReflectiveField(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveFieldBuildItem fieldInfo) {
-        String cl = fieldInfo.getDeclaringClass();
-        ReflectionInfo existing = reflectiveClasses.get(cl);
-        if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false, false));
-        }
-        existing.fieldSet.add(fieldInfo.getName());
-    }
-
-    static final class ReflectionInfo {
-        boolean constructors;
-        boolean methods;
-        boolean fields;
-        boolean finalFieldsWritable;
-        boolean weak;
-        boolean serialization;
-        Set<String> fieldSet = new HashSet<>();
-        Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
-        Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
-
-        private ReflectionInfo(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-                boolean weak, boolean serialization) {
-            this.methods = methods;
-            this.fields = fields;
-            this.constructors = constructors;
-            this.finalFieldsWritable = finalFieldsWritable;
-            this.weak = weak;
-            this.serialization = serialization;
-        }
     }
 
 }

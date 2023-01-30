@@ -80,6 +80,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -418,6 +419,7 @@ public class KafkaProcessor {
     @BuildStep
     public void withSasl(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveClassConditionBuildItem> reflectiveClassCondition,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
 
         reflectiveClass
@@ -441,6 +443,10 @@ public class KafkaProcessor {
         for (ClassInfo authenticateCallbackHandler : index.getIndex().getAllKnownImplementors(AUTHENTICATE_CALLBACK_HANDLER)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, authenticateCallbackHandler.name().toString()));
         }
+        // Add a condition for the optional authenticate callback handler
+        reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
+                "org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerValidatorCallbackHandler",
+                "org.jose4j.keys.resolvers.VerificationKeyResolver"));
     }
 
     private void registerJDKLoginModules(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {

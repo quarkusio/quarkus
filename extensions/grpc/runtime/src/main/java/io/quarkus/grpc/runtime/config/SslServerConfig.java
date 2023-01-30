@@ -44,8 +44,8 @@ public class SslServerConfig {
     /**
      * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
      */
-    @ConfigItem(defaultValue = "password")
-    public String keyStorePassword;
+    @ConfigItem
+    public Optional<String> keyStorePassword;
 
     /**
      * An optional trust store which holds the certificate information of the certificates to trust

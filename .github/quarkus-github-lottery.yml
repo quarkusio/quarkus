@@ -7,8 +7,8 @@ buckets:
     delay: PT0S
     timeout: P3D
   maintenance:
-    reproducer:
-      label: "triage/needs-reproducer"
+    feedback:
+      labels: ["triage/needs-reproducer", "triage/needs-feedback"]
       needed:
         delay: P21D
         timeout: P3D
@@ -30,7 +30,7 @@ participants:
     maintenance:
       labels: ["area/hibernate-orm", "area/hibernate-search", "area/elasticsearch"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
-      reproducer:
+      feedback:
         needed:
           maxIssues: 4
         provided:
@@ -45,7 +45,7 @@ participants:
     maintenance:
       labels: ["area/hibernate-validator", "area/jakarta"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
-      reproducer:
+      feedback:
         needed:
           maxIssues: 4
         provided:
@@ -63,7 +63,7 @@ participants:
     maintenance:
       labels: ["area/arc", "area/scheduler", "area/qute"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
-      reproducer:
+      feedback:
         needed:
           maxIssues: 4
         provided:
@@ -78,7 +78,7 @@ participants:
     maintenance:
       labels: ["area/graphql", "area/smallrye", "area/health", "area/kotlin", "area/metrics", "area/registry", "area/platform"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
-      reproducer:
+      feedback:
         needed:
           maxIssues: 4
         provided:
@@ -93,7 +93,7 @@ participants:
     maintenance:
       labels: ["area/build", "area/cli", "area/devmode", "area/dev-ui", "area/gradle", "area/jbang", "area/devtools"]
       days: ["WEDNESDAY", "FRIDAY"]
-      reproducer:
+      feedback:
         needed:
           maxIssues: 4
         provided:
@@ -108,7 +108,7 @@ participants:
     maintenance:
       labels: ["area/core", "area/testing", "area/kotlin", "area/spring", "area/resteasy-reactive", "area/kubernetes"]
       days: ["WEDNESDAY", "FRIDAY"]
-      reproducer:
+      feedback:
         needed:
           maxIssues: 4
         provided:
@@ -126,7 +126,7 @@ participants:
     maintenance:
       labels: ["area/security", "area/oidc", "area/keycloak-authorization"]
       days: ["MONDAY", "WEDNESDAY", "FRIDAY"]
-      reproducer:
+      feedback:
         needed:
           maxIssues: 4
         provided:
@@ -141,7 +141,7 @@ participants:
     maintenance:
       labels: ["area/arc"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
-      reproducer:
+      feedback:
         needed:
           maxIssues: 4
         provided:

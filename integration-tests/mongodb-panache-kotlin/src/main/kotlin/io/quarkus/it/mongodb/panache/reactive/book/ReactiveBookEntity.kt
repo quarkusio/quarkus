@@ -11,7 +11,7 @@ import org.bson.codecs.pojo.annotations.BsonProperty
 import java.time.LocalDate
 import java.util.ArrayList
 
-@MongoEntity(collection = "TheBookEntity", clientName = "cl2")
+@MongoEntity(collection = "TheBookEntity", clientName = "cl2", readPreference = "primary")
 class ReactiveBookEntity : ReactivePanacheMongoEntity() {
     companion object : ReactivePanacheMongoCompanion<ReactiveBookEntity>
 

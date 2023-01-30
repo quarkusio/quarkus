@@ -179,7 +179,7 @@ public class MongoClientConfig {
     public Optional<String> readConcern;
 
     /**
-     * Configures the read preferences.
+     * Configures the read preference.
      * Supported values are: {@code primary|primaryPreferred|secondary|secondaryPreferred|nearest}
      */
     @ConfigItem

@@ -11,7 +11,7 @@ import org.bson.codecs.pojo.annotations.BsonProperty
 import org.bson.types.ObjectId
 import java.time.LocalDate
 
-@MongoEntity(collection = "TheBookEntity", clientName = "cl2")
+@MongoEntity(collection = "TheBookEntity", clientName = "cl2", readPreference = "primary")
 class BookEntity : PanacheMongoEntity() {
     companion object : PanacheMongoCompanion<BookEntity> {
         override fun findById(id: ObjectId): BookEntity {

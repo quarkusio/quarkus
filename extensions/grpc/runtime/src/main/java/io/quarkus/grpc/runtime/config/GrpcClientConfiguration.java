@@ -29,6 +29,12 @@ public class GrpcClientConfiguration {
     public ClientXds xds;
 
     /**
+     * Configure InProcess usage, if enabled.
+     */
+    @ConfigItem
+    public InProcess inProcess;
+
+    /**
      * The gRPC service port.
      */
     @ConfigItem(defaultValue = "9000")
@@ -37,7 +43,7 @@ public class GrpcClientConfiguration {
     /**
      * The host name / IP on which the service is exposed.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "localhost")
     public String host;
 
     /**

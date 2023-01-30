@@ -1932,6 +1932,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-grpc-inprocess</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-grpc-api</artifactId>
                 <version>${project.version}</version>
             </dependency>

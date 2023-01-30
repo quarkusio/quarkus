@@ -230,7 +230,7 @@ public class Channels {
             interceptorContainer.getSortedGlobalInterceptors().forEach(builder::intercept);
 
             LOGGER.info(String.format("Creating %s gRPC channel ...",
-                    provider != null ? provider.channelInfo() : "Netty"));
+                    provider != null ? provider.channelInfo(config) : "Netty"));
 
             return builder.build();
         } else {

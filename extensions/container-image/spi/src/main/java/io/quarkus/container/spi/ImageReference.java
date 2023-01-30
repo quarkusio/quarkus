@@ -26,8 +26,8 @@ import io.quarkus.runtime.util.StringUtil;
  */
 public class ImageReference {
 
+    public static final String DEFAULT_TAG = "latest";
     private static final String DOCKER_HUB_REGISTRY = "registry-1.docker.io";
-    private static final String DEFAULT_TAG = "latest";
     private static final String LIBRARY_REPOSITORY_PREFIX = "library/";
 
     /**

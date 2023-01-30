@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -623,6 +624,7 @@ public class NativeImageBuildStep {
                 return this;
             }
 
+            @SuppressWarnings("deprecation")
             public NativeImageInvokerInfo build() {
                 List<String> nativeImageArgs = new ArrayList<>();
                 boolean enableSslNative = false;
@@ -823,6 +825,14 @@ public class NativeImageBuildStep {
                 }
                 if (nativeConfig.enableVmInspection) {
                     nativeImageArgs.add("-H:+AllowVMInspection");
+                }
+
+                if (nativeConfig.monitoring.isPresent()) {
+                    List<NativeConfig.MonitoringOption> monitoringOptions = nativeConfig.monitoring.get();
+                    if (!monitoringOptions.isEmpty()) {
+                        nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
+                                .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
+                    }
                 }
                 if (nativeConfig.autoServiceLoaderRegistration) {
                     nativeImageArgs.add("-H:+UseServiceLoaderFeature");

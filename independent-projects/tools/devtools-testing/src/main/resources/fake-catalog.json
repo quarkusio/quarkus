@@ -220,10 +220,28 @@
         "keywords": [
           "uncategorized"
         ],
+        "categories": [
+          "unknown"
+        ],
         "status": "preview",
         "built-with-quarkus-core": "999-FAKE"
       },
       "artifact": "io.quarkus:quarkus-uncategorized-extension::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name": "extension in unknown category",
+      "description": "Some unknown category extension",
+      "metadata": {
+        "keywords": [
+          "unknown-category"
+        ],
+        "status": "preview",
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-unknown-category-extension::jar:999-FAKE",
       "origins": [
         "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]

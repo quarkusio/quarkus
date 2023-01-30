@@ -442,7 +442,7 @@ public class TopologyProducer {
 The Kafka Streams extension is configured via the Quarkus configuration file `application.properties`.
 Create the file `aggregator/src/main/resources/application.properties` with the following contents:
 
-[source]
+[source,properties]
 ----
 quarkus.kafka-streams.bootstrap-servers=localhost:9092
 quarkus.kafka-streams.application-server=${hostname}:8080

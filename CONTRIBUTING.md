@@ -48,6 +48,7 @@ fixes, documentation, examples... But first, read this page (including the small
 * [Extensions](#extensions)
     + [Descriptions](#descriptions)
     + [Update dependencies to extensions](#update-dependencies-to-extensions)
+    + [Check security vulnerabilities](#check-security-vulnerabilities)
 * [The small print](#the-small-print)
 * [Frequently Asked Questions](#frequently-asked-questions)
 
@@ -693,6 +694,12 @@ were changed by the script.
 
 When removing an extension make sure to also remove all dependencies to it from all `pom.xml`. It's easy to miss this as
 long as the extension artifact is still present in your local Maven repository.
+
+### Check security vulnerabilities
+
+When adding a new extension or updating the dependencies of an existing one,
+it is recommended to run in the extension directory the [OWASP Dependency Check](https://jeremylong.github.io/DependencyCheck) with `mvn -Dowasp-check`
+so that known security vulnerabilities in the extension dependencies can be detected early.
 
 ## The small print
 

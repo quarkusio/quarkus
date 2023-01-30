@@ -221,7 +221,7 @@ public class DockerProcessor {
             }
         }
 
-        if (pushContainerImage) {
+        if (!useBuildx && pushContainerImage) {
             // If not using buildx, push the images
             loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, dockerConfig);
 

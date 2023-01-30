@@ -30,8 +30,7 @@ class MyKotlinEntity {
     var id: Long? = null
     var field: String? = null
 }
-{/if}
-{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-orm-panache-kotlin')}
+{#else}
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
 import javax.persistence.Entity

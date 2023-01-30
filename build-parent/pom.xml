@@ -101,7 +101,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>20.0.2</keycloak.version>
+        <keycloak.version>20.0.3</keycloak.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
@@ -176,6 +176,7 @@
 
         <!-- google cloud functions invoker-->
         <gcf-invoker.version>1.1.1</gcf-invoker.version>
+        <owasp-dependency-check-plugin.version>7.4.4</owasp-dependency-check-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -723,6 +724,17 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${owasp-dependency-check-plugin.version}</version>
+                    <configuration>
+                        <!-- Disable Net Analyzer -->
+                        <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                        <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+                        <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
@@ -1239,7 +1251,17 @@
                 </plugins>
             </build>
         </profile>
-
+        <profile>
+            <id>owasp-check</id>
+            <activation>
+                <property>
+                    <name>owasp-check</name>
+                </property>
+            </activation>
+            <build>
+                <defaultGoal>dependency-check:check</defaultGoal>
+            </build>
+        </profile>
         <profile>
             <id>Windows</id>
             <activation>

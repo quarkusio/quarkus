@@ -1,13 +1,14 @@
 package io.quarkus.qute.deployment;
 
-import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -17,12 +18,15 @@ import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.DotNames;
 
 public final class Types {
 
     static final String JAVA_LANG_PREFIX = "java.lang.";
+
+    private static final Logger LOG = Logger.getLogger(Types.class);
 
     static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
             IndexView index) {
@@ -138,58 +142,99 @@ public final class Types {
 
     static class AssignableInfo {
 
+        static AssignableInfo from(ClassInfo classInfo, IndexView index) {
+            if (classInfo.isInterface()) {
+                return new AssignableInfo(null, toNames(index.getAllKnownImplementors(classInfo.name())),
+                        toNames(index.getAllKnownSubinterfaces(classInfo.name())));
+            } else {
+                return new AssignableInfo(toNames(index.getAllKnownSubclasses(classInfo.name())), null, null);
+            }
+        }
+
+        private static Set<DotName> toNames(Collection<ClassInfo> classes) {
+            return classes.stream().map(ClassInfo::name).collect(Collectors.toSet());
+        }
+
         final Set<DotName> subclasses;
         final Set<DotName> implementors;
-        final Set<DotName> extendingInterfaces;
+        final Set<DotName> subInterfaces;
 
-        public AssignableInfo(Collection<ClassInfo> subclasses, Collection<ClassInfo> implementors,
-                Set<DotName> extendingInterfaces) {
-            this.subclasses = new HashSet<>();
-            for (ClassInfo subclass : subclasses) {
-                this.subclasses.add(subclass.name());
-            }
-            this.implementors = new HashSet<>();
-            for (ClassInfo implementor : implementors) {
-                this.implementors.add(implementor.name());
-            }
-            this.extendingInterfaces = extendingInterfaces;
+        AssignableInfo(Set<DotName> subclasses, Set<DotName> implementors, Set<DotName> subInterfaces) {
+            this.subclasses = subclasses;
+            this.implementors = implementors;
+            this.subInterfaces = subInterfaces;
         }
 
         boolean isAssignableFrom(DotName clazz) {
-            return subclasses.contains(clazz) || implementors.contains(clazz) || extendingInterfaces.contains(clazz);
+            if (subclasses != null && subclasses.contains(clazz)) {
+                return true;
+            }
+            if (implementors != null && implementors.contains(clazz)) {
+                return true;
+            }
+            return subInterfaces != null && subInterfaces.contains(clazz);
         }
 
     }
 
-    static boolean isAssignableFrom(DotName class1, DotName class2, IndexView index,
+    static boolean isAssignableFrom(DotName className1, DotName className2, IndexView index,
             Map<DotName, AssignableInfo> assignableCache) {
         // java.lang.Object is assignable from any type
-        if (class1.equals(DotNames.OBJECT)) {
+        if (className1.equals(DotNames.OBJECT)) {
             return true;
         }
         // type1 is the same as type2
-        if (class1.equals(class2)) {
+        if (className1.equals(className2)) {
             return true;
         }
-        AssignableInfo assignableInfo = assignableCache.get(class1);
+        ClassInfo class1 = index.getClassByName(className1);
+        AssignableInfo assignableInfo = assignableCache.get(className1);
         if (assignableInfo == null) {
-            assignableInfo = new AssignableInfo(index.getAllKnownSubclasses(class1), index.getAllKnownImplementors(class1),
-                    getAllInterfacesExtending(class1, index));
-            assignableCache.put(class1, assignableInfo);
+            // No cached info
+            assignableInfo = AssignableInfo.from(class1, index);
+            assignableCache.put(className1, assignableInfo);
+            return assignableInfo.isAssignableFrom(className2);
+        } else {
+            if (assignableInfo.isAssignableFrom(className2)) {
+                return true;
+            }
+            // Cached info does not match - try to update the assignable info (a computing index is used)
+            assignableInfo = AssignableInfo.from(class1, index);
+            if (assignableInfo.isAssignableFrom(className2)) {
+                // Update the cache
+                assignableCache.put(className1, assignableInfo);
+                return true;
+            }
         }
-        return assignableInfo.isAssignableFrom(class2);
+        return false;
     }
 
-    static void indexHierarchy(ClassInfo classInfo, IndexView index) {
-        // Interfaces
-        for (DotName interfaceName : classInfo.interfaceNames()) {
-            index.getClassByName(interfaceName);
+    // This class is not thread-safe
+    static class HierarchyIndexer {
+
+        final IndexView index;
+        final Set<DotName> processed;
+
+        public HierarchyIndexer(IndexView index) {
+            this.index = Objects.requireNonNull(index);
+            this.processed = new HashSet<>();
         }
-        // Superclass
-        DotName superName = classInfo.superName();
-        if (superName != null && !superName.equals(DotNames.OBJECT)) {
-            indexHierarchy(index.getClassByName(superName), index);
+
+        void indexHierarchy(ClassInfo classInfo) {
+            if (classInfo != null && processed.add(classInfo.name())) {
+                LOG.debugf("Index hierarchy of: %s", classInfo);
+                // Interfaces
+                for (DotName interfaceName : classInfo.interfaceNames()) {
+                    indexHierarchy(index.getClassByName(interfaceName));
+                }
+                // Superclass
+                DotName superName = classInfo.superName();
+                if (superName != null && !superName.equals(DotNames.OBJECT)) {
+                    indexHierarchy(index.getClassByName(superName));
+                }
+            }
         }
+
     }
 
     static Type box(Type type) {
@@ -220,21 +265,6 @@ public final class Types {
             default:
                 throw new IllegalArgumentException("Unsupported primitive: " + primitive);
         }
-    }
-
-    private static Set<DotName> getAllInterfacesExtending(DotName target, IndexView index) {
-        Set<DotName> ret = new HashSet<>();
-        for (ClassInfo clazz : index.getKnownClasses()) {
-            if (!Modifier.isInterface(clazz.flags())
-                    || clazz.isAnnotation()
-                    || clazz.isEnum()) {
-                continue;
-            }
-            if (clazz.interfaceNames().contains(target)) {
-                ret.add(clazz.name());
-            }
-        }
-        return ret;
     }
 
 }

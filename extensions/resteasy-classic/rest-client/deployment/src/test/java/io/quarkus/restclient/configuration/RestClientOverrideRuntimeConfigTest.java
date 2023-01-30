@@ -39,8 +39,7 @@ public class RestClientOverrideRuntimeConfigTest {
     @Test
     void overrideConfig() {
         // Build time property recording
-        Optional<ConfigSource> specifiedDefaultValues = config
-                .getConfigSource("RunTime Defaults");
+        Optional<ConfigSource> specifiedDefaultValues = config.getConfigSource("RunTime Defaults");
         assertTrue(specifiedDefaultValues.isPresent());
         assertTrue(specifiedDefaultValues.get().getPropertyNames()
                 .contains("io.quarkus.restclient.configuration.EchoClient/mp-rest/url"));

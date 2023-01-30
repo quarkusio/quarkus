@@ -117,9 +117,10 @@ public class OidcProvider implements Closeable {
         if (!enforceExpReq) {
             // Expiry check was skipped during the initial verification but if the logout token contains the exp claim
             // then it must be verified
-            final Long exp = result.localVerificationResult.getLong(Claims.exp.name());
-            if (exp != null) {
-                verifyExpiry(exp);
+            if (isTokenExpired(result.localVerificationResult.getLong(Claims.exp.name()))) {
+                String error = String.format("Logout token for client %s has expired", oidcConfig.clientId.get());
+                LOG.debugf(error);
+                throw new InvalidJwtException(error, List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null);
             }
         }
         return result;
@@ -175,19 +176,21 @@ public class OidcProvider implements Closeable {
         }
         TokenVerificationResult result = new TokenVerificationResult(OidcUtils.decodeJwtContent(token), null);
 
-        if (oidcConfig.token.age.isPresent()) {
+        verifyTokenAge(result.localVerificationResult.getLong(Claims.iat.name()));
+        return result;
+    }
+
+    private void verifyTokenAge(Long iat) throws InvalidJwtException {
+        if (oidcConfig.token.age.isPresent() && iat != null) {
             final long now = now() / 1000;
-            // 'iat' is guaranteed to be present if no exception has been thrown by 'verifyJwtTokenInternal'
-            final long iat = result.localVerificationResult.getLong(Claims.iat.name());
 
             if (now - iat > oidcConfig.token.age.get().toSeconds() + getLifespanGrace()) {
-                final String errorMessage = "Logout token age exceeds the configured token age property";
+                final String errorMessage = "Token age exceeds the configured token age property";
                 LOG.debugf(errorMessage);
                 throw new InvalidJwtException(errorMessage,
                         List.of(new ErrorCodeValidator.Error(ErrorCodes.ISSUED_AT_INVALID_PAST, errorMessage)), null);
             }
         }
-        return result;
     }
 
     public Uni<TokenVerificationResult> refreshJwksAndVerifyJwtToken(String token) {
@@ -226,9 +229,18 @@ public class OidcProvider implements Closeable {
                             LOG.debugf("Token issued to client %s is not active", oidcConfig.clientId.get());
                             throw new AuthenticationFailedException();
                         }
-                        Long exp = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
-                        if (exp != null) {
-                            verifyExpiry(exp);
+                        if (isTokenExpired(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP))) {
+                            String error = String.format("Token issued to client %s has expired",
+                                    oidcConfig.clientId.get());
+                            LOG.debugf(error);
+                            throw new AuthenticationFailedException(
+                                    new InvalidJwtException(error,
+                                            List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null));
+                        }
+                        try {
+                            verifyTokenAge(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_IAT));
+                        } catch (InvalidJwtException ex) {
+                            throw new AuthenticationFailedException(ex);
                         }
 
                         return introspectionResult;
@@ -237,11 +249,8 @@ public class OidcProvider implements Closeable {
                 });
     }
 
-    private void verifyExpiry(Long exp) {
-        if (now() / 1000 > exp + getLifespanGrace()) {
-            LOG.debugf("Token issued to client %s has expired", oidcConfig.clientId.get());
-            throw new AuthenticationFailedException();
-        }
+    private boolean isTokenExpired(Long exp) {
+        return exp != null && now() / 1000 > exp + getLifespanGrace();
     }
 
     private int getLifespanGrace() {

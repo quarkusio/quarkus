@@ -1147,9 +1147,9 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<String> principalClaim = Optional.empty();
 
         /**
-         * Refresh expired ID tokens.
-         * If this property is enabled then a refresh token request will be performed if the ID token has expired
-         * and, if successful, the local session will be updated with the new set of tokens.
+         * Refresh expired authorization code flow ID or access tokens.
+         * If this property is enabled then a refresh token request will be performed if the authorization code
+         * ID or access token has expired and, if successful, the local session will be updated with the new set of tokens.
          * Otherwise, the local session will be invalidated and the user redirected to the OpenID Provider to re-authenticate.
          * In this case the user may not be challenged again if the OIDC provider session is still active.
          *
@@ -1164,8 +1164,9 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * Refresh token time skew in seconds.
          * If this property is enabled then the configured number of seconds is added to the current time
-         * when checking whether the access token should be refreshed. If the sum is greater than this access token's
-         * expiration time then a refresh is going to happen.
+         * when checking if the authorization code ID or access token should be refreshed.
+         * If the sum is greater than the authorization code ID or access token's expiration time then a refresh is going to
+         * happen.
          *
          * This property will be ignored if the 'refresh-expired' property is not enabled.
          */

@@ -85,7 +85,7 @@
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <graal-sdk.version>22.3.0</graal-sdk.version>
         <graal-svm.version>${graal-sdk.version}</graal-svm.version>
-        <gizmo.version>1.5.0.Final</gizmo.version>
+        <gizmo.version>1.6.0.Final</gizmo.version>
         <jackson-bom.version>2.14.1</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
@@ -124,7 +124,7 @@
         <postgresql-jdbc.version>42.5.1</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.1.1</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
-        <mssql-jdbc.version>11.2.0.jre11</mssql-jdbc.version>
+        <mssql-jdbc.version>11.2.3.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>21.5.0.0</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
@@ -134,7 +134,7 @@
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
-        <infinispan.version>14.0.5.Final</infinispan.version>
+        <infinispan.version>14.0.6.Final</infinispan.version>
         <infinispan.protostream.version>4.5.1.Final</infinispan.protostream.version>
         <caffeine.version>3.1.1</caffeine.version>
         <netty.version>4.1.86.Final</netty.version>
@@ -142,7 +142,7 @@
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <mutiny.version>1.8.0</mutiny.version>
-        <kafka3.version>3.3.1</kafka3.version>
+        <kafka3.version>3.3.2</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.8.4</snappy.version>
         <strimzi-test-container.version>0.100.0</strimzi-test-container.version>
@@ -181,7 +181,7 @@
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.10.1</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
-        <keycloak.version>20.0.2</keycloak.version>
+        <keycloak.version>20.0.3</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
         <checker-qual.version>3.29.0</checker-qual.version>
         <error-prone-annotations.version>2.17.0</error-prone-annotations.version>

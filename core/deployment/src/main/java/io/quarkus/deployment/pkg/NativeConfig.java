@@ -213,7 +213,7 @@ public class NativeConfig {
      * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
      * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17}.
      */
-    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
+    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}", defaultValueDocumentation = "mandrel")
     public String builderImage;
 
     public String getEffectiveBuilderImage() {
@@ -241,10 +241,19 @@ public class NativeConfig {
     public Optional<List<String>> containerRuntimeOptions;
 
     /**
-     * If the resulting image should allow VM introspection
+     * If the resulting image should allow VM introspection.
+     *
+     * @deprecated Use {@code quarkus.native.monitoring} instead.
      */
     @ConfigItem
+    @Deprecated
     public boolean enableVmInspection;
+
+    /**
+     * Enable monitoring options that allow the VM to be inspected at run time.
+     */
+    @ConfigItem
+    public Optional<List<MonitoringOption>> monitoring;
 
     /**
      * If full stack traces are enabled in the resulting image
@@ -451,5 +460,12 @@ public class NativeConfig {
     public static enum BuilderImageProvider {
         GRAALVM,
         MANDREL;
+    }
+
+    public enum MonitoringOption {
+        HEAPDUMP,
+        JVMSTAT,
+        JFR,
+        ALL
     }
 }

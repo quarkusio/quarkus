@@ -666,7 +666,7 @@ Specify the _load script_ you want to load using:
 
 [source, properties]
 ----
-quarkus.redis.load-script=import.sql # import.sql is the default in dev, no-file is the default in prod
+quarkus.redis.load-script=import.redis # import.redis is the default in dev mode, no-file is the default in production mode
 quarkus.redis.my-redis.load-script=actors.redis, movies.redis
 ----
 

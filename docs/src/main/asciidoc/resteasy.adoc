@@ -215,16 +215,16 @@ Failure to do so will prevent Jackson specific customizations provided by variou
 [source,java]
 ----
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.arc.All;
 import io.quarkus.jackson.ObjectMapperCustomizer;
-
-import javax.enterprise.inject.Instance;
+import java.util.List;
 import javax.inject.Singleton;
 
 public class CustomObjectMapper {
 
     // Replaces the CDI producer for ObjectMapper built into Quarkus
     @Singleton
-    ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers) {
+    ObjectMapper objectMapper(@All List<ObjectMapperCustomizer> customizers) {
         ObjectMapper mapper = myObjectMapper(); // Custom `ObjectMapper`
 
         // Apply all ObjectMapperCustomizer beans (incl. Quarkus)

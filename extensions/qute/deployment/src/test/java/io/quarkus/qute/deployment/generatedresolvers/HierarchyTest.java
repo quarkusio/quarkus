@@ -67,6 +67,9 @@ public class HierarchyTest {
     @TemplateData
     public static class Bar extends Foo {
 
+        // getName() takes precedence
+        public final String name = "Manny";
+
         @Override
         public String getName() {
             return "bar";

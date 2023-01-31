@@ -147,12 +147,16 @@ public class OidcCommonUtils {
             try {
                 byte[] keyStoreData = getFileContent(oidcConfig.tls.keyStoreFile.get());
                 io.vertx.core.net.KeyStoreOptions keyStoreOptions = new KeyStoreOptions()
-                        .setPassword(oidcConfig.tls.keyStorePassword)
                         .setAlias(oidcConfig.tls.keyStoreKeyAlias.orElse(null))
                         .setAliasPassword(oidcConfig.tls.keyStoreKeyPassword.orElse(null))
                         .setValue(io.vertx.core.buffer.Buffer.buffer(keyStoreData))
                         .setType(getStoreType(oidcConfig.tls.keyStoreFileType, oidcConfig.tls.keyStoreFile.get()))
                         .setProvider(oidcConfig.tls.keyStoreProvider.orElse(null));
+
+                if (oidcConfig.tls.keyStorePassword.isPresent()) {
+                    keyStoreOptions.setPassword(oidcConfig.tls.keyStorePassword.get());
+                }
+
                 options.setKeyCertOptions(keyStoreOptions);
 
             } catch (IOException ex) {
@@ -310,8 +314,19 @@ public class OidcCommonUtils {
                 } else if (creds.jwt.keyStoreFile.isPresent()) {
                     KeyStore ks = KeyStore.getInstance("JKS");
                     InputStream is = ResourceUtils.getResourceStream(creds.jwt.keyStoreFile.get());
-                    ks.load(is, creds.jwt.keyStorePassword.toCharArray());
-                    key = ks.getKey(creds.jwt.keyId.get(), creds.jwt.keyPassword.toCharArray());
+
+                    if (creds.jwt.keyStorePassword.isPresent()) {
+                        ks.load(is, creds.jwt.keyStorePassword.get().toCharArray());
+                    } else {
+                        ks.load(is, null);
+                    }
+
+                    if (creds.jwt.keyPassword.isPresent()) {
+                        key = ks.getKey(creds.jwt.keyId.get(), creds.jwt.keyPassword.get().toCharArray());
+                    } else {
+                        throw new ConfigurationException(
+                                "When using a key store, the `quarkus.oidc-client.credentials.jwt.key-password` property must be set");
+                    }
                 }
             } catch (Exception ex) {
                 throw new ConfigurationException("Key can not be loaded", ex);

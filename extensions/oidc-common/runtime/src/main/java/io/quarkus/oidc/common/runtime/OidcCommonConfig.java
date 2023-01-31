@@ -257,10 +257,10 @@ public class OidcCommonConfig {
             public Optional<String> keyStoreFile = Optional.empty();
 
             /**
-             * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
+             * A parameter to specify the password of the key store file.
              */
-            @ConfigItem(defaultValue = "password")
-            public String keyStorePassword;
+            @ConfigItem
+            public Optional<String> keyStorePassword;
 
             /**
              * The private key id/alias
@@ -271,8 +271,8 @@ public class OidcCommonConfig {
             /**
              * The private key password
              */
-            @ConfigItem(defaultValue = "password")
-            public String keyPassword;
+            @ConfigItem
+            public Optional<String> keyPassword;
 
             /**
              * JWT audience ('aud') claim value.
@@ -456,8 +456,8 @@ public class OidcCommonConfig {
         /**
          * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
          */
-        @ConfigItem(defaultValue = "password")
-        public String keyStorePassword;
+        @ConfigItem
+        public Optional<String> keyStorePassword;
 
         /**
          * An optional parameter to select a specific key in the key store. When SNI is disabled, if the key store contains

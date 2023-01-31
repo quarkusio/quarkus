@@ -1,11 +1,11 @@
 package io.quarkus.kubernetes.client.runtime;
 
+import javax.enterprise.inject.spi.CDI;
+
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.kubernetes.client.vertx.VertxHttpClientBuilder;
 import io.vertx.core.Vertx;
-
-import javax.enterprise.inject.spi.CDI;
 
 public class QuarkusHttpClientFactory implements io.fabric8.kubernetes.client.http.HttpClient.Factory {
 

@@ -102,7 +102,7 @@ public class KubernetesDeployer {
     }
 
     @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
-    public void deploy(KubernetesClientBuildItem kubernetesClient,
+    public void deploy(KubernetesClientBuildItem kubernetesClientSupplier,
             Capabilities capabilities,
             List<KubernetesDeploymentClusterBuildItem> deploymentClusters,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
@@ -130,10 +130,11 @@ public class KubernetesDeployer {
             return;
         }
 
-        final KubernetesClient client = Clients.fromConfig(kubernetesClient.getClient().getConfiguration());
-        deploymentResult
-                .produce(deploy(selectedDeploymentTarget.get().getEntry(), client, outputTarget.getOutputDirectory(),
-                        openshiftConfig, applicationInfo, optionalResourceDefinitions));
+        try (final KubernetesClient client = Clients.fromConfig(kubernetesClientSupplier.getConfig())) {
+            deploymentResult
+                    .produce(deploy(selectedDeploymentTarget.get().getEntry(), client, outputTarget.getOutputDirectory(),
+                            openshiftConfig, applicationInfo, optionalResourceDefinitions));
+        }
     }
 
     /**

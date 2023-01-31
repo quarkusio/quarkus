@@ -171,7 +171,7 @@ public class S2iProcessor {
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
     public void s2iBuildFromJar(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClient,
+            KubernetesClientBuildItem kubernetesClientSupplier,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
@@ -201,20 +201,21 @@ public class S2iProcessor {
                     "No Openshift manifests were generated so no s2i process will be taking place");
             return;
         }
+        try (KubernetesClient kubernetesClient = kubernetesClientSupplier.getClient().get()) {
+            String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
+            LOG.info("Performing s2i binary build with jar on server: " + kubernetesClient.getMasterUrl()
+                    + " in namespace:" + namespace + ".");
 
-        String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
-        LOG.info("Performing s2i binary build with jar on server: " + kubernetesClient.getClient().getMasterUrl()
-                + " in namespace:" + namespace + ".");
-
-        createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(), jar.getPath(),
-                out.getOutputDirectory().resolve("lib"));
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
-        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(S2I));
+            createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(), jar.getPath(),
+                    out.getOutputDirectory().resolve("lib"));
+            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+            containerImageBuilder.produce(new ContainerImageBuilderBuildItem(S2I));
+        }
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class, NativeBuild.class })
     public void s2iBuildFromNative(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClient,
+            KubernetesClientBuildItem kubernetesClientSupplier,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
@@ -233,28 +234,30 @@ public class S2iProcessor {
             return;
         }
 
-        String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
-        LOG.info("Performing s2i binary build with native image on server: " + kubernetesClient.getClient().getMasterUrl()
-                + " in namespace:" + namespace + ".");
+        try (KubernetesClient kubernetesClient = kubernetesClientSupplier.getClient().get()) {
+            String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
+            LOG.info("Performing s2i binary build with native image on server: " + kubernetesClient.getMasterUrl()
+                    + " in namespace:" + namespace + ".");
 
-        Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
-                .stream()
-                .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
-                .findFirst();
+            Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
+                    .stream()
+                    .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
+                    .findFirst();
 
-        if (openshiftYml.isEmpty()) {
-            LOG.warn(
-                    "No Openshift manifests were generated so no s2i process will be taking place");
-            return;
+            if (openshiftYml.isEmpty()) {
+                LOG.warn(
+                        "No Openshift manifests were generated so no s2i process will be taking place");
+                return;
+            }
+
+            createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(),
+                    nativeImage.getPath());
+            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
+            containerImageBuilder.produce(new ContainerImageBuilderBuildItem(S2I));
         }
-
-        createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(),
-                nativeImage.getPath());
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
-        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(S2I));
     }
 
-    public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,
+    public static void createContainerImage(KubernetesClient kubernetesClient,
             GeneratedFileSystemResourceBuildItem openshiftManifests,
             S2iConfig s2iConfig,
             Path output,
@@ -270,7 +273,7 @@ public class S2iProcessor {
             throw new RuntimeException("Error creating the s2i binary build archive.", e);
         }
 
-        Config config = kubernetesClient.getClient().getConfiguration();
+        Config config = kubernetesClient.getConfiguration();
         //Let's disable http2 as it causes issues with duplicate build triggers.
         config.setHttp2Disable(true);
         try (KubernetesClient client = Clients.fromConfig(config)) {

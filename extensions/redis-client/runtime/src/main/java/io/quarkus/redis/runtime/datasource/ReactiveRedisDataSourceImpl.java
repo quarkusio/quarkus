@@ -26,6 +26,7 @@ import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.search.ReactiveSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
+import io.quarkus.redis.datasource.stream.ReactiveStreamCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
 import io.quarkus.redis.datasource.timeseries.ReactiveTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
@@ -284,6 +285,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public <K> ReactiveBitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new ReactiveBitMapCommandsImpl<>(this, redisKeyType);
+    }
+
+    @Override
+    public <K, F, V> ReactiveStreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> fieldType, Class<V> valueType) {
+        return new ReactiveStreamCommandsImpl<>(this, redisKeyType, fieldType, valueType);
     }
 
     @Override

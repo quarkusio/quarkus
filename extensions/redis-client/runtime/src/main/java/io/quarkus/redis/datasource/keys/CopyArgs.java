@@ -3,10 +3,12 @@ package io.quarkus.redis.datasource.keys;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.quarkus.redis.datasource.RedisCommandExtraArguments;
+
 /**
  * Arguments for the Redis <a href="https://redis.io/commands/copy">COPY</a> command.
  */
-public class CopyArgs {
+public class CopyArgs implements RedisCommandExtraArguments {
 
     private long destinationDb = -1;
 
@@ -34,6 +36,7 @@ public class CopyArgs {
         return this;
     }
 
+    @Override
     public List<String> toArgs() {
         List<String> args = new ArrayList<>();
         if (destinationDb != -1) {

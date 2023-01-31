@@ -274,8 +274,8 @@ As mentioned above, the API is divided into groups:
 - pubsub - `pubsub()`
 - set - `.set(memberType)`
 - sorted-set - `.sortedSet(memberType)`
-- stream (not available yet)
 - string - `.value(valueType)`
+- stream - `.stream(`valueType`)
 - transactions - `withTransaction`
 - json - `.json()` (requires the https://redis.com/modules/redis-json/[RedisJSON] module on the server side)
 - bloom - `.bloom()` (requires the https://redis.com/modules/redis-bloom/[RedisBloom] module on the server side)

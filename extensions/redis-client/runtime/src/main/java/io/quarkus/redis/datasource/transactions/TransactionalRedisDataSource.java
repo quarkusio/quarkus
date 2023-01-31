@@ -15,6 +15,7 @@ import io.quarkus.redis.datasource.list.TransactionalListCommands;
 import io.quarkus.redis.datasource.search.TransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
+import io.quarkus.redis.datasource.stream.TransactionalStreamCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
 import io.quarkus.redis.datasource.timeseries.TransactionalTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
@@ -275,6 +276,34 @@ public interface TransactionalRedisDataSource {
      */
     default TransactionalBitMapCommands<String> bitmap() {
         return bitmap(String.class);
+    }
+
+    /**
+     * Gets the object to execute commands manipulating streams.
+     * <p>
+     *
+     * @param redisKeyType the class of the keys
+     * @param typeOfField the class of the fields
+     * @param typeOfValue the class of the values
+     * @param <K> the type of the redis key
+     * @param <F> the type of the fields (map's keys)
+     * @param <V> the type of the value
+     * @return the object to execute commands manipulating streams.
+     */
+    <K, F, V> TransactionalStreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> typeOfField,
+            Class<V> typeOfValue);
+
+    /**
+     * Gets the object to execute commands manipulating stream..
+     * <p>
+     * This is a shortcut on {@code stream(String.class, String.class, V)}
+     *
+     * @param typeOfValue the class of the values
+     * @param <V> the type of the value
+     * @return the object to execute commands manipulating streams.
+     */
+    default <V> TransactionalStreamCommands<String, String, V> stream(Class<V> typeOfValue) {
+        return stream(String.class, String.class, typeOfValue);
     }
 
     /**

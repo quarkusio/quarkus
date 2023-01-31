@@ -20,6 +20,7 @@ import io.quarkus.redis.datasource.pubsub.PubSubCommands;
 import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
+import io.quarkus.redis.datasource.stream.StreamCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
 import io.quarkus.redis.datasource.timeseries.TimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TopKCommands;
@@ -377,6 +378,29 @@ public interface RedisDataSource {
      */
     default BitMapCommands<String> bitmap() {
         return bitmap(String.class);
+    }
+
+    /**
+     * Gets the object to execute commands manipulating streams.
+     *
+     * @param redisKeyType the class of the keys
+     * @param fieldType the class of the fields included in the message exchanged on the streams
+     * @param valueType the class of the values included in the message exchanged on the streams
+     * @param <K> the type of the redis key
+     * @param <F> the type of the fields (map's keys)
+     * @param <V> the type of the value
+     * @return the object to execute commands manipulating streams.
+     */
+    <K, F, V> StreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> fieldType, Class<V> valueType);
+
+    /**
+     * Gets the object to execute commands manipulating streams, using a string key, and string fields.
+     *
+     * @param <V> the type of the value
+     * @return the object to execute commands manipulating streams.
+     */
+    default <V> StreamCommands<String, String, V> stream(Class<V> typeOfValue) {
+        return stream(String.class, String.class, typeOfValue);
     }
 
     /**

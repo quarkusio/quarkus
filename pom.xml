@@ -377,6 +377,22 @@
                         </plugin>
                     </plugins>
                 </pluginManagement>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <version>4.21.0-SNAPSHOT</version>
+                        <configuration>
+                            <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
+                            <activeStyles>
+                                <style>io.quarkus.style.maven</style>
+                            </activeStyles>
+                            <activeRecipes>
+                                <recipe>io.quarkus.parent</recipe>
+                            </activeRecipes>
+                        </configuration>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
     </profiles>

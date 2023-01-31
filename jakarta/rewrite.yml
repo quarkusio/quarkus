@@ -8,6 +8,15 @@ styleConfigs:
       indentSize: 4
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.parent
+displayName: Adjust versions in parent
+recipeList:
+  # TestNG update, needed for the MicroProfile TCKs
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: testng.version
+      newValue: '7.4.0'
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-versions
 displayName: Adjust Jakarta versions
 recipeList:
@@ -627,10 +636,6 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
       newValue: '3.0'
-  # TestNG update, needed for the MicroProfile TCKs
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: testng.version
-      newValue: '7.4.0'
 # TODO, these ones probably still need a change:
 #        <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
 #        <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>

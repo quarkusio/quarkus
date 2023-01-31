@@ -199,12 +199,9 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                         charset = charset == null ? "UTF-8" : charset;
                         byte[] separator = "\n".getBytes(charset);
                         int start = 0;
-                        if (startsWith(bytes, separator)) {
-                            start += separator.length;
-                        }
                         while (start < bytes.length) {
                             int end = bytes.length;
-                            for (int i = start; i < bytes.length - separator.length; i++) {
+                            for (int i = start; i < end; i++) {
                                 if (bytes[i] == separator[0]) {
                                     int j;
                                     boolean matches = true;
@@ -222,7 +219,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                             }
 
                             if (start < end) {
-                                ByteArrayInputStream in = new ByteArrayInputStream(bytes, start, end - start);
+                                ByteArrayInputStream in = new ByteArrayInputStream(bytes, start, end);
                                 R item = restClientRequestContext.readEntity(in, responseType, mediaType,
                                         response.getMetadata());
                                 multiRequest.emitter.emit(item);
@@ -240,18 +237,6 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                     // which calls emitter.complete()
                     multiRequest.emitter.fail(t);
                 }
-            }
-
-            private boolean startsWith(byte[] array, byte[] prefix) {
-                if (array.length < prefix.length) {
-                    return false;
-                }
-                for (int i = 0; i < prefix.length; i++) {
-                    if (array[i] != prefix[i]) {
-                        return false;
-                    }
-                }
-                return true;
             }
         });
 

@@ -153,7 +153,6 @@ public class StreamTestCase {
 
     private void testJsonMulti(String path) {
         Client client = ClientBuilder.newBuilder().register(new JacksonBasicMessageBodyReader(new ObjectMapper())).build();
-
         WebTarget target = client.target(uri.toString() + path);
         Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);
         List<Message> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));

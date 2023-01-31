@@ -5,6 +5,7 @@ import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import java.util.List;
 import java.util.Optional;
 
+import io.fabric8.knative.client.DefaultKnativeClient;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
@@ -22,12 +23,13 @@ public class KnativeDeployer {
                 return;
             }
             if (target.getEntry().getName().equals(KNATIVE)) {
-                // use 'isSupported' once https://github.com/fabric8io/kubernetes-client/issues/4447 is resolved
-                if (client.getClient().hasApiGroup("knative.dev", false)) {
-                    deploymentCluster.produce(new KubernetesDeploymentClusterBuildItem(KNATIVE));
-                } else {
-                    throw new IllegalStateException(
-                            "Knative was requested as a deployment, but the target cluster is not a Knative cluster!");
+                try (DefaultKnativeClient knativeClient = client.getClient().adapt(DefaultKnativeClient.class)) {
+                    if (knativeClient.isSupported()) {
+                        deploymentCluster.produce(new KubernetesDeploymentClusterBuildItem(KNATIVE));
+                    } else {
+                        throw new IllegalStateException(
+                                "Knative was requested as a deployment, but the target cluster is not a Knative cluster!");
+                    }
                 }
             }
         });

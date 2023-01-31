@@ -104,8 +104,9 @@ public class LoggingSetupRecorder {
         final Logger rootLogger = logContext.getLogger("");
 
         if (config.level.intValue() < buildConfig.minLevel.intValue()) {
-            log.warnf("Root log level %s set below minimum logging level %s, promoting it to %s",
-                    config.level, buildConfig.minLevel, buildConfig.minLevel);
+            log.warnf(
+                    "Root log level %s set below minimum logging level %s, promoting it to %s. Set the build time configuration property 'quarkus.log.min-level' to '%s' to avoid this warning",
+                    config.level, buildConfig.minLevel, buildConfig.minLevel, config.level);
 
             rootLogger.setLevel(buildConfig.minLevel);
         } else {
@@ -222,9 +223,10 @@ public class LoggingSetupRecorder {
                             CategoryBuildTimeConfig::getMinLevel, categoryDefaultMinLevels, buildConfig.minLevel);
 
                     if (logLevel.intValue() < minLogLevel.intValue()) {
-                        log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s",
+                        log.warnf(
+                                "Log level %s for category '%s' set below minimum logging level %s, promoting it to %s. Set the build time configuration property 'quarkus.log.category.\"%s\".level' to '%s' to avoid this warning",
                                 logLevel,
-                                categoryName, minLogLevel, minLogLevel);
+                                categoryName, minLogLevel, minLogLevel, categoryName, logLevel);
 
                         config.level = InheritableLevel.of(minLogLevel.toString());
                     }
@@ -315,8 +317,12 @@ public class LoggingSetupRecorder {
                     categoryDefaultMinLevels, buildConfig.minLevel);
 
             if (logLevel.intValue() < minLogLevel.intValue()) {
-                log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
-                        entry.getKey(), minLogLevel, minLogLevel);
+                String category = entry.getKey();
+                log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s. "
+                        +
+                        "Set the build time configuration property 'quarkus.log.category.\"%s\".level' to '%s' to avoid this warning",
+                        logLevel,
+                        category, minLogLevel, minLogLevel, category, logLevel);
 
                 entry.getValue().level = InheritableLevel.of(minLogLevel.toString());
             }

@@ -348,11 +348,13 @@ public class ValueResolverGenerator {
             }
         }
 
-        BytecodeCreator zeroParamsBranch = resolve.ifZero(paramsCount).trueBranch();
+        if (!noParamMethods.isEmpty() || !fields.isEmpty()) {
 
-        if (!noParamMethods.isEmpty()) {
+            BytecodeCreator zeroParamsBranch = resolve.ifZero(paramsCount).trueBranch();
+
             Switch.StringSwitch nameSwitch = zeroParamsBranch.stringSwitch(name);
             Set<String> matchedNames = new HashSet<>();
+
             for (MethodKey methodKey : noParamMethods) {
                 // No params - just invoke the method if the name matches
                 MethodInfo method = methodKey.method;
@@ -390,34 +392,42 @@ public class ValueResolverGenerator {
                 };
                 nameSwitch.caseOf(matchingNames, invokeMethod);
             }
-        }
 
-        for (FieldInfo field : fields) {
-            String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
-            if (getterName != null && noneMethodMatches(methods, getterName)) {
-                LOGGER.debugf("Forced getter added: %s", field);
-                BytecodeCreator getterMatch = zeroParamsBranch.createScope();
-                // Match the getter name
-                BytecodeCreator notMatched = getterMatch.ifTrue(Gizmo.equals(getterMatch, getterMatch.load(getterName),
-                        name)).falseBranch();
-                // Match the property name
-                notMatched.ifTrue(Gizmo.equals(notMatched, notMatched.load(field.name()),
-                        name)).falseBranch().breakScope(getterMatch);
-                ResultHandle value = getterMatch.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
-                                DescriptorUtils.typeToString(field.type())),
-                        base);
-                getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
-            } else {
-                LOGGER.debugf("Field added: %s", field);
-                // Match field name
-                BytecodeCreator fieldMatch = zeroParamsBranch
-                        .ifTrue(Gizmo.equals(zeroParamsBranch, resolve.load(field.name()), name))
-                        .trueBranch();
-                ResultHandle value = fieldMatch
-                        .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
-                                base);
-                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
+            for (FieldInfo field : fields) {
+                String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
+                if (getterName != null && noneMethodMatches(methods, getterName) && matchedNames.add(getterName)) {
+                    LOGGER.debugf("Forced getter added: %s", field);
+                    List<String> matching;
+                    if (matchedNames.add(field.name())) {
+                        matching = List.of(getterName, field.name());
+                    } else {
+                        matching = List.of(getterName);
+                    }
+                    Consumer<BytecodeCreator> invokeMethod = new Consumer<BytecodeCreator>() {
+                        @Override
+                        public void accept(BytecodeCreator bc) {
+                            ResultHandle value = bc.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
+                                            DescriptorUtils.typeToString(field.type())),
+                                    base);
+                            bc.returnValue(bc.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
+                        }
+                    };
+                    nameSwitch.caseOf(matching, invokeMethod);
+                } else if (matchedNames.add(field.name())) {
+                    LOGGER.debugf("Field added: %s", field);
+                    Consumer<BytecodeCreator> invokeMethod = new Consumer<BytecodeCreator>() {
+                        @Override
+                        public void accept(BytecodeCreator bc) {
+                            ResultHandle value = bc.readInstanceField(
+                                    FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
+                                    base);
+                            ResultHandle ret = bc.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value);
+                            bc.returnValue(ret);
+                        }
+                    };
+                    nameSwitch.caseOf(field.name(), invokeMethod);
+                }
             }
         }
 

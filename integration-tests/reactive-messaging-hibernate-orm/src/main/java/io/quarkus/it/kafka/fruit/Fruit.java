@@ -1,4 +1,4 @@
-package io.quarkus.it.kafka;
+package io.quarkus.it.kafka.fruit;
 
 import javax.persistence.Entity;
 

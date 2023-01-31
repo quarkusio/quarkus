@@ -26,6 +26,12 @@
         <dependency>
             <groupId>org.jboss.narayana.rts</groupId>
             <artifactId>lra-service-base</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.spec.javax.ws.rs</groupId>
+                    <artifactId>jboss-jaxrs-api_3.0_spec</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jboss.narayana.rts</groupId>
@@ -97,7 +103,6 @@
                         <artifactId>rewrite-maven-plugin</artifactId>
                         <configuration>
                             <activeRecipes>
-                                <recipe>io.quarkus.narayana-lra-switch</recipe>
                                 <recipe>io.quarkus.jakarta-jaxrs-switch</recipe>
                                 <recipe>io.quarkus.jakarta-angus-activation-switch</recipe>
                             </activeRecipes>

@@ -21,6 +21,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame.OutputType;
 import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -47,6 +48,7 @@ public class ValeAsciidocLint {
     Path valeDir;
     Path srcDir;
     Path targetDir;
+    Path valeConfigFile;
 
     public static void main(String[] args) throws Exception {
         if (args == null) {
@@ -64,7 +66,10 @@ public class ValeAsciidocLint {
                         : docsDir().resolve("src/main/asciidoc"))
                 .setTargetDir(args.length >= 3
                         ? Path.of(args[2])
-                        : docsDir().resolve("target"));
+                        : docsDir().resolve("target"))
+                .setValeConfig(args.length >= 4
+                        ? Path.of(args[0])
+                        : docsDir().resolve(".vale.ini"));
 
         Map<String, ChecksBySeverity> results = linter.lintFiles();
         linter.resultsToYaml(results, null);
@@ -82,6 +87,11 @@ public class ValeAsciidocLint {
 
     public ValeAsciidocLint setValeDir(Path valeDir) {
         this.valeDir = valeDir;
+        return this;
+    }
+
+    public ValeAsciidocLint setValeConfig(Path valeConfig) {
+        this.valeConfigFile = valeConfig;
         return this;
     }
 
@@ -151,10 +161,14 @@ public class ValeAsciidocLint {
             throw new IllegalStateException(
                     String.format("Target directory (%s) does not exist. Exiting.%n", targetDir.toAbsolutePath()));
         }
+        if (!Files.exists(valeConfigFile) || !Files.isRegularFile(valeConfigFile)) {
+            throw new IllegalStateException(
+                    String.format("Vale config file (%s) does not exist. Exiting.%n", valeConfigFile.toAbsolutePath()));
+        }
 
         DockerImageName valeImage = DockerImageName.parse(imageName);
 
-        List<String> command = new ArrayList<>(List.of("--config=/vale/vale.ini",
+        List<String> command = new ArrayList<>(List.of("--config=/.vale.ini",
                 "--minAlertLevel=" + minAlertLevel.name(),
                 "--output=JSON",
                 "--no-exit"));
@@ -174,8 +188,9 @@ public class ValeAsciidocLint {
         }
 
         try (GenericContainer<?> container = new GenericContainer<>(valeImage)
-                .withFileSystemBind(valeDir.toString(), "/vale", BindMode.READ_ONLY)
+                .withFileSystemBind(valeDir.toString(), "/.vale", BindMode.READ_ONLY)
                 .withFileSystemBind(srcDir.toString(), "/asciidoc", BindMode.READ_ONLY)
+                .withCopyFileToContainer(MountableFile.forHostPath(valeConfigFile), "/.vale.ini")
                 .withStartupCheckStrategy(new IndefiniteWaitOneShotStartupCheckStrategy())
                 .withCommand(command.toArray(new String[0]))) {
 

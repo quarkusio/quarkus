@@ -133,7 +133,7 @@ Our builds use https://vale.sh[Vale] to check grammar, style, and word usage in 
 
 [NOTE]
 ====
-* The Quarkus configuration for vale is `vale.ini`, which is in the `docs/.vale` directory.
+* The Quarkus configuration for Vale is in `docs/.vale.ini`.
 * The Quarkus style rules are in YAML format in the `docs/.vale/styles` directory.
 ====
 
@@ -166,7 +166,11 @@ If you install the https://vale.sh/docs/vale-cli/installation/[Vale CLI], you mu
 
 [source,shell]
 ----
-vale --config=docs/.vale/vale.ini --minAlertLevel=warning docs/src/main/asciidoc
+# Run from the Quarkus project root
+vale --config=docs/.vale.ini --minAlertLevel=warning docs/src/main/asciidoc
+
+# Run from within the docs directory
+vale --minAlertLevel=warning src/main/asciidoc
 ----
 
 For more information, see the https://vale.sh/manual/[Vale CLI Manual].
@@ -175,11 +179,10 @@ For more information, see the https://vale.sh/manual/[Vale CLI Manual].
 
 https://vale.sh/docs/integrations/guide/[Vale IDE integrations] require the Vale CLI to be installed.
 
-Each has its own configuration requirements. The Visual Studio Code IDE extension, for example, requires two workspace settings:
+Each IDE integration has its own configuration requirements. The Visual Studio Code IDE extension, for example, requires definition of the Vale CLI path:
 
 [source,json]
 ----
-"vale.valeCLI.config": "/path/to/quarkus/docs/.vale/vale.ini",
 "vale.valeCLI.path": "/path/to/vale"
 ----
 

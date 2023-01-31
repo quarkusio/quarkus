@@ -24,6 +24,8 @@ public class LocalValeLintTest {
         Path valeDir = ChangedFiles.getPath("vale.dir", ".vale");
         Path gitDir = ChangedFiles.getPath("git.dir", "../.git");
 
+        Path configFile = Path.of(System.getProperty("vale.config", ".vale.ini"));
+
         YamlMetadataGenerator metadataGenerator = new YamlMetadataGenerator()
                 .setSrcDir(srcDir)
                 .setTargetDir(targetDir);
@@ -31,6 +33,7 @@ public class LocalValeLintTest {
         ValeAsciidocLint linter = new ValeAsciidocLint()
                 .setValeAlertLevel(System.getProperty("valeLevel"))
                 .setValeImageName(System.getProperty("vale.image"))
+                .setValeConfig(configFile)
                 .setValeDir(valeDir)
                 .setSrcDir(srcDir)
                 .setTargetDir(targetDir);

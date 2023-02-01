@@ -45,6 +45,9 @@ class ForwardedParser {
     private static final Pattern FORWARDED_PROTO_PATTERN = Pattern.compile("proto=\"?([^;,\"]+)\"?");
     private static final Pattern FORWARDED_FOR_PATTERN = Pattern.compile("for=\"?([^;,\"]+)\"?");
 
+    private final static int PORT_MIN_VALID_VALUE = 0;
+    private final static int PORT_MAX_VALID_VALUE = 65535;
+
     private final HttpServerRequest delegate;
     private final ForwardingProxyOptions forwardingProxyOptions;
     private final TrustedProxyCheck trustedProxyCheck;
@@ -226,9 +229,15 @@ class ForwardedParser {
     private int parsePort(String portToParse, int defaultPort) {
         if (portToParse != null && portToParse.length() > 0) {
             try {
-                return Integer.parseInt(portToParse);
+                int port = Integer.parseInt(portToParse);
+                if (port < PORT_MIN_VALID_VALUE || port > PORT_MAX_VALID_VALUE) {
+                    log.errorf("Failed to validate a port from \"forwarded\"-type headers, using the default port %d",
+                            defaultPort);
+                    return defaultPort;
+                }
+                return port;
             } catch (NumberFormatException ignored) {
-                log.error("Failed to parse a port from \"forwarded\"-type headers.");
+                log.errorf("Failed to parse a port from \"forwarded\"-type headers, using the default port %d", defaultPort);
             }
         }
         return defaultPort;

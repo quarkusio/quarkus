@@ -149,19 +149,12 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.transaction-api.version
       newValue: '2.0.1'
-  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.jta
-      oldArtifactId: narayana-jta
-      newGroupId: org.jboss.narayana.jta
-      newArtifactId: narayana-jta-jakarta
-  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.jts
-      oldArtifactId: narayana-jts-integration
-      newGroupId: org.jboss.narayana.jts
-      newArtifactId: narayana-jts-integration-jakarta
   - org.openrewrite.maven.ChangePropertyValue:
       key: agroal.version
       newValue: '2.0'
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: narayana.version
+      newValue: 6.0.0.CR1
   # Validation
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.validation-api.version
@@ -473,16 +466,6 @@ recipeList:
       exclusionGroupId: javax.activation
       exclusionArtifactId: javax.activation-api
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.jta
-      oldArtifactId: narayana-jta
-      newGroupId: org.jboss.narayana.jta
-      newArtifactId: narayana-jta-jakarta
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.jts
-      oldArtifactId: narayana-jts-integration
-      newGroupId: org.jboss.narayana.jts
-      newArtifactId: narayana-jts-integration-jakarta
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.hibernate
       oldArtifactId: hibernate-core
       newGroupId: org.hibernate
@@ -534,31 +517,6 @@ recipeList:
       newArtifactId: hibernate-search-mapper-orm-jakarta
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: io.quarkus.narayana-lra-switch
-displayName: Switch Narayana LRA dependencies
-recipeList:
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.rts
-      oldArtifactId: narayana-lra
-      newGroupId: org.jboss.narayana.rts
-      newArtifactId: narayana-lra-jakarta
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.rts
-      oldArtifactId: lra-service-base
-      newGroupId: org.jboss.narayana.rts
-      newArtifactId: lra-service-base-jakarta
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.rts
-      oldArtifactId: lra-proxy-api
-      newGroupId: org.jboss.narayana.rts
-      newArtifactId: lra-proxy-api-jakarta
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.rts
-      oldArtifactId: lra-client
-      newGroupId: org.jboss.narayana.rts
-      newArtifactId: lra-client-jakarta
----
-type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.smallrye
 displayName: Adjust SmallRye dependencies
 recipeList:
@@ -595,26 +553,6 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-lra.version
       newValue: '2.0-RC1'
-  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.rts
-      oldArtifactId: narayana-lra
-      newGroupId: org.jboss.narayana.rts
-      newArtifactId: narayana-lra-jakarta
-  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.rts
-      oldArtifactId: lra-service-base
-      newGroupId: org.jboss.narayana.rts
-      newArtifactId: lra-service-base-jakarta
-  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.rts
-      oldArtifactId: lra-proxy-api
-      newGroupId: org.jboss.narayana.rts
-      newArtifactId: lra-proxy-api-jakarta
-  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
-      oldGroupId: org.jboss.narayana.rts
-      oldArtifactId: lra-client
-      newGroupId: org.jboss.narayana.rts
-      newArtifactId: lra-client-jakarta
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-metrics-api.version
       newValue: '4.0.1'

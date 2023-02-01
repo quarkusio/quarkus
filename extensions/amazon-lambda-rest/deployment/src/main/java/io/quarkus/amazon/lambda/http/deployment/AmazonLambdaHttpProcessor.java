@@ -2,7 +2,7 @@ package io.quarkus.amazon.lambda.http.deployment;
 
 import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
 
-import org.jboss.logging.Logger;
+import org.jboss.jandex.DotName;
 
 import io.quarkus.amazon.lambda.deployment.LambdaUtil;
 import io.quarkus.amazon.lambda.deployment.ProvidedAmazonLambdaHandlerBuildItem;
@@ -23,6 +23,7 @@ import io.quarkus.amazon.lambda.http.model.ErrorModel;
 import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.amazon.lambda.http.model.MultiValuedTreeMap;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -31,15 +32,16 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 
 public class AmazonLambdaHttpProcessor {
-    private static final Logger log = Logger.getLogger(AmazonLambdaHttpProcessor.class);
+    private static final DotName AWS_PROXY_REQUEST_CONTEXT = DotName.createSimple(AwsProxyRequestContext.class);
 
     @BuildStep
     public void setupCDI(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
-        builder.addBeanClasses(AwsHttpContextProducers.class);
+        builder.addBeanClasses(AwsHttpContextProducers.class).setUnremovable();
         additionalBeans.produce(builder.build());
     }
 
@@ -111,5 +113,12 @@ public class AmazonLambdaHttpProcessor {
         output = LambdaUtil.copyResource("http/sam.native.yaml")
                 .replace("${lambdaName}", lambdaName);
         LambdaUtil.writeFile(target, "sam.native.yaml", output);
+    }
+
+    @BuildStep
+    public void resteasyReactiveIntegration(BuildProducer<ContextTypeBuildItem> contextTypeProducer,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer) {
+        contextTypeProducer.produce(new ContextTypeBuildItem(AWS_PROXY_REQUEST_CONTEXT));
+        unremovableBeanProducer.produce(UnremovableBeanBuildItem.beanTypes(AWS_PROXY_REQUEST_CONTEXT));
     }
 }

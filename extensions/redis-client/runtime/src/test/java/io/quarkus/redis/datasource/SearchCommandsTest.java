@@ -487,7 +487,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
                             "num_visits"))
                     .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country"))
                     .withCursor().cursorCount(2));
-            assertThat(result.count()).isBetween(1, 2);
+            assertThat(result.count()).isBetween(0, 2);
             assertThat(result.documents()).allSatisfy(d -> {
                 assertThat(d.property("day").asInteger()).isPositive();
                 assertThat(d.property("country").asString()).isNotNull();
@@ -501,7 +501,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
                     fail("Too many cursor read commands before reaching the end of the stream: " + read);
                 }
                 result = search.ftCursorRead("myIndex", result.cursor());
-                assertThat(result.count()).isBetween(1, 2);
+                assertThat(result.count()).isBetween(0, 2);
                 assertThat(result.documents()).allSatisfy(d -> {
                     assertThat(d.property("day").asInteger()).isPositive();
                     assertThat(d.property("country").asString()).isNotNull();

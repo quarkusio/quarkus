@@ -14,7 +14,11 @@ public final class SingleResultNode implements ResultNode {
     private final Object value;
     private final ExpressionNode node;
 
-    public SingleResultNode(Object value, ExpressionNode expressionNode) {
+    public SingleResultNode(Object value) {
+        this(value, null);
+    }
+
+    SingleResultNode(Object value, ExpressionNode expressionNode) {
         this.value = extractValue(value);
         this.node = expressionNode != null && expressionNode.hasEngineResultMappers() ? expressionNode : null;
     }

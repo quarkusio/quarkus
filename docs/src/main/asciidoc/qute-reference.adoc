@@ -1483,7 +1483,7 @@ public class CustomSectionFactory implements SectionHelperFactory<CustomSectionF
 
         @Override
         public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-            return CompletableFuture.completedStage(new SingleResultNode(service.getValue(), null)); <4>
+            return CompletableFuture.completedStage(new SingleResultNode(service.getValue())); <4>
         }
     }
 }

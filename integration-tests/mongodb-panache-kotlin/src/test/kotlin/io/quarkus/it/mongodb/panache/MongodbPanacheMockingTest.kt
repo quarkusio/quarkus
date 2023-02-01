@@ -11,13 +11,10 @@ import jakarta.inject.Inject
 import jakarta.ws.rs.WebApplicationException
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.DisabledOnOs
-import org.junit.jupiter.api.condition.OS
 import org.mockito.Mockito
 import java.util.Collections
 
 @QuarkusTest
-@DisabledOnOs(OS.WINDOWS)
 class MongodbPanacheMockingTest {
     @Inject
     lateinit var realPersonRepository: PersonRepository

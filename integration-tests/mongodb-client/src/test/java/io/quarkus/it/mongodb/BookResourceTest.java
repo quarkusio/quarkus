@@ -10,8 +10,6 @@ import jakarta.json.bind.Jsonb;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -22,7 +20,6 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 @QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = "version", value = "V4_2"))
-@DisabledOnOs(OS.WINDOWS)
 public class BookResourceTest {
     private static Jsonb jsonb;
 

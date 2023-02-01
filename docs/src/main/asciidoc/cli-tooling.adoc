@@ -503,6 +503,8 @@ quarkus build
 
 NOTE: Output will vary depending on the build tool your project is using (Maven, Gradle, or JBang).
 
+NOTE: Run `quarkus build --clean` to perform clean as part of the build.
+
 === Development mode
 
 [source,shell]
@@ -537,6 +539,7 @@ Tests paused, press [r] to resume
 
 NOTE: Output will vary depending on the build tool your project is using (Maven, Gradle, or JBang).
 
+NOTE: Run `quarkus dev --clean` to perform clean as part of the build.
 
 [[quarkus-version-compatibility]]
 [WARNING]

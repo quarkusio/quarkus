@@ -88,9 +88,7 @@ public class CsrfRequestResponseReactiveFilter {
         if (requestMethodIsSafe(requestContext)) {
             // safe HTTP method, tolerate the absence of a token
             if (cookieToken == null && isCsrfTokenRequired(routing, config)) {
-                // Set the CSRF cookie with a randomly generated value
-                byte[] tokenBytes = new byte[config.tokenSize];
-                secureRandom.nextBytes(tokenBytes);
+                byte[] tokenBytes = generateCsrfTokenBytes(config);
                 routing.put(CSRF_TOKEN_BYTES_KEY, tokenBytes);
                 routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes));
             }
@@ -148,6 +146,13 @@ public class CsrfRequestResponseReactiveFilter {
         }
     }
 
+    private byte[] generateCsrfTokenBytes(CsrfReactiveConfig config) {
+        // Generate CSRF token
+        byte[] tokenBytes = new byte[config.tokenSize];
+        secureRandom.nextBytes(tokenBytes);
+        return tokenBytes;
+    }
+
     private static boolean isMatchingMediaType(MediaType contentType, MediaType expectedType) {
         return contentType.getType().equals(expectedType.getType())
                 && contentType.getSubtype().equals(expectedType.getSubtype());
@@ -179,16 +184,15 @@ public class CsrfRequestResponseReactiveFilter {
                 byte[] csrfTokenBytes = (byte[]) routing.get(CSRF_TOKEN_BYTES_KEY);
 
                 if (csrfTokenBytes == null) {
-                    throw new IllegalStateException(
-                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                    csrfTokenBytes = generateCsrfTokenBytes(config);
                 }
                 cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey.get());
             } else {
                 String csrfToken = (String) routing.get(CSRF_TOKEN_KEY);
 
                 if (csrfToken == null) {
-                    throw new IllegalStateException(
-                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                    byte[] csrfTokenBytes = generateCsrfTokenBytes(config);
+                    csrfToken = Base64.getUrlEncoder().withoutPadding().encodeToString(csrfTokenBytes);
                 }
                 cookieValue = csrfToken;
             }

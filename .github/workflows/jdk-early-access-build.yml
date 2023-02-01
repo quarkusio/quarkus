@@ -77,10 +77,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.ref || 'main' }}
-      - uses: n1hility/cancel-previous-runs@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: jdk-early-access-build.yml
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Get Date

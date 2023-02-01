@@ -1514,6 +1514,37 @@ For example, when registering types and methods for reflection access,
 the analysis can’t easily see what’s behind those types or methods,
 so it has to do more work to complete the analysis step.
 
+=== I get a `AnalysisError\$ParsingError` when building a native executable due to an `UnresolvedElementException`, what can I do?
+
+When building a native executable Quarkus requires all classes being referenced by the code, no matter if they are build-time or run-time initialized, to be present in the classpath.
+This way it ensures that there will be no crashes at runtime due to potential `NoClassDefFoundError` exceptions.
+To achieve this it makes use of GraalVM's `--link-at-build-time` parameter:
+
+[source]
+----
+--link-at-build-time  require types to be fully defined at image build-time. If used
+                      without args, all classes in scope of the option are required to
+                      be fully defined.
+----
+
+This, however, may result in an `AnalysisError\$ParsingError` due to an `UnresolvedElementException` at build time.
+This is often caused because the application references a class from an https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html#optional-dependencies[optional dependency].
+
+If you have access to the source code responsible for the reference to the missing dependency and can alter it, you should consider one of the following:
+
+1. Remove the reference if it's not actually necessary.
+2. Move the affected code in a sub-module and make the dependency non-optional (as is the best practice).
+3. Make the dependency non-optional.
+
+In the unfortunate case where the reference causing the issue is made by a 3rd party library, that you cannot modify, you should consider one of the following:
+
+1. Use a class/method substitution to remove the said reference.
+2. Add the optional dependency as a non-optional dependency of your project.
+
+Note that although option (1) is the best choice performance wise, as it minimizes the applications footprint,it might not be trivial to implement.
+To make matters worse, it's also not easy to maintain as it is tightly coupled to the 3rd party library implementation. 
+Option (2) is a straight forward alternative to work around the issue, but comes at the cost of including possibly never invoked code in the resulting native executable.
+
 === I get an `OutOfMemoryError` (OOME) building native executables, what can I do?
 
 Building native executables is not only time consuming, but it also takes a fair amount of memory.

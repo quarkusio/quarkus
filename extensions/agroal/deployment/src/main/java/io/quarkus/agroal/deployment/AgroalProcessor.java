@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
@@ -344,14 +345,13 @@ class AgroalProcessor {
             }
         }
 
-        throw new ConfigurationException("Unable to find a JDBC driver corresponding to the database kind '"
-                + dbKind + "' for the "
-                + (DataSourceUtil.isDefault(dataSourceName) ? "default datasource"
-                        : "datasource '" + dataSourceName + "'")
-                + ". Either provide a suitable JDBC driver extension, define the driver manually, or disable the JDBC datasource by adding "
-                + (DataSourceUtil.isDefault(dataSourceName) ? "'quarkus.datasource.jdbc=false'"
-                        : "'quarkus.datasource." + dataSourceName + ".jdbc=false'")
-                + " to your configuration if you don't need it.");
+        throw new ConfigurationException(String.format(
+                "Unable to find a JDBC driver corresponding to the database kind '%s' for the %s (available: '%s'). "
+                        + "Check if it's a typo, otherwise provide a suitable JDBC driver extension, define the driver manually,"
+                        + " or disable the JDBC datasource by adding '%s=false' to your configuration if you don't need it.",
+                dbKind, DataSourceUtil.isDefault(dataSourceName) ? "default datasource" : "datasource '" + dataSourceName + "'",
+                jdbcDriverBuildItems.stream().map(JdbcDriverBuildItem::getDbKind).collect(Collectors.joining("','")),
+                DataSourceUtil.dataSourcePropertyKey(dataSourceName, "jdbc")));
     }
 
     @BuildStep

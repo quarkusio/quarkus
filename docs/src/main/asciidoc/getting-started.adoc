@@ -93,7 +93,7 @@ In addition, you can see the `quarkus-maven-plugin` responsible of the packaging
     <dependencies>
         <dependency>
             <groupId>${quarkus.platform.group-id}</groupId>
-            <artifactId>quarkus-bom</artifactId>
+            <artifactId>${quarkus.platform.artifact-id}</artifactId>
             <version>${quarkus.platform.version}</version>
             <type>pom</type>
             <scope>import</scope>

@@ -13,8 +13,6 @@ public abstract class QuarkusTask extends DefaultTask {
     private QuarkusPluginExtension extension;
 
     QuarkusTask(String description) {
-        GradleLogger.logSupplier = this::getLogger;
-
         setDescription(description);
         setGroup("quarkus");
     }
@@ -36,8 +34,9 @@ public abstract class QuarkusTask extends DefaultTask {
                 realProperties.setProperty(key, (String) value);
             }
         }
-        if (!extension().getQuarkusBuildProperties().isEmpty()) {
-            extension().getQuarkusBuildProperties().entrySet().stream().filter(entry -> entry.getKey().startsWith("quarkus."))
+        Map<String, String> quarkusBuildProperties = extension().getQuarkusBuildProperties().get();
+        if (!quarkusBuildProperties.isEmpty()) {
+            quarkusBuildProperties.entrySet().stream().filter(entry -> entry.getKey().startsWith("quarkus."))
                     .forEach(entry -> {
                         realProperties.put(entry.getKey(), entry.getValue());
                     });

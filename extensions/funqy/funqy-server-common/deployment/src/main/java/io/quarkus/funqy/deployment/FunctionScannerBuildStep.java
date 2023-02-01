@@ -201,7 +201,8 @@ public class FunctionScannerBuildStep {
                                 public void visit(int version, int access, String name, String signature, String superName,
                                         String[] interfaces) {
                                     super.visit(version, access, name, signature, superName, interfaces);
-                                    MethodVisitor ctor = visitMethod(Modifier.PUBLIC, "<init>", "()V", null,
+                                    MethodVisitor ctor = visitMethod(Modifier.PUBLIC | Opcodes.ACC_SYNTHETIC, "<init>", "()V",
+                                            null,
                                             null);
                                     ctor.visitCode();
                                     ctor.visitVarInsn(Opcodes.ALOAD, 0);

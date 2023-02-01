@@ -231,7 +231,7 @@ public class OpenshiftProcessor {
     public void openshiftBuildFromJar(OpenshiftConfig openshiftConfig,
             S2iConfig s2iConfig,
             ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClient,
+            KubernetesClientBuildItem kubernetesClientSupplier,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
@@ -263,26 +263,28 @@ public class OpenshiftProcessor {
             return;
         }
 
-        String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
-        LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
-                + kubernetesClient.getClient().getMasterUrl() + " in namespace:" + namespace + ".");
-        //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
-        //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
-        //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
-        String outputDirName = out.getOutputDirectory().getFileName().toString();
-        String contextRoot = getContextRoot(outputDirName, packageConfig.isFastJar(), config.buildStrategy);
-        if (packageConfig.isFastJar()) {
-            createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
-                    jar.getPath().getParent());
-        } else if (jar.getLibraryDir() != null) { //When using uber-jar the libraryDir is going to be null, potentially causing NPE.
-            createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
-                    jar.getPath(), jar.getLibraryDir());
-        } else {
-            createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
-                    jar.getPath());
+        try (KubernetesClient kubernetesClient = kubernetesClientSupplier.getClient().get()) {
+            String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
+            LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
+                    + kubernetesClient.getMasterUrl() + " in namespace:" + namespace + ".");
+            //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
+            //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
+            //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
+            String outputDirName = out.getOutputDirectory().getFileName().toString();
+            String contextRoot = getContextRoot(outputDirName, packageConfig.isFastJar(), config.buildStrategy);
+            if (packageConfig.isFastJar()) {
+                createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
+                        jar.getPath().getParent());
+            } else if (jar.getLibraryDir() != null) { //When using uber-jar the libraryDir is going to be null, potentially causing NPE.
+                createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
+                        jar.getPath(), jar.getLibraryDir());
+            } else {
+                createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
+                        jar.getPath());
+            }
+            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+            containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
         }
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
-        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
     }
 
     private String getContextRoot(String outputDirName, boolean isFastJar, BuildStrategy buildStrategy) {
@@ -298,7 +300,7 @@ public class OpenshiftProcessor {
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class, NativeBuild.class })
     public void openshiftBuildFromNative(OpenshiftConfig openshiftConfig, S2iConfig s2iConfig,
             ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClient,
+            KubernetesClientBuildItem kubernetesClientSupplier,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
@@ -319,31 +321,33 @@ public class OpenshiftProcessor {
             return;
         }
 
-        String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
+        try (KubernetesClient kubernetesClient = kubernetesClientSupplier.getClient().get()) {
+            String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
 
-        LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
-                + kubernetesClient.getClient().getMasterUrl() + " in namespace:" + namespace + ".");
-        Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
-                .stream()
-                .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
-                .findFirst();
+            LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
+                    + kubernetesClient.getMasterUrl() + " in namespace:" + namespace + ".");
+            Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
+                    .stream()
+                    .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
+                    .findFirst();
 
-        if (openshiftYml.isEmpty()) {
-            LOG.warn(
-                    "No Openshift manifests were generated so no openshift build process will be taking place");
-            return;
+            if (openshiftYml.isEmpty()) {
+                LOG.warn(
+                        "No Openshift manifests were generated so no openshift build process will be taking place");
+                return;
+            }
+            //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
+            //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
+            //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
+            String contextRoot = config.buildStrategy == BuildStrategy.DOCKER ? "target" : null;
+            createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, out.getOutputDirectory(),
+                    nativeImage.getPath());
+            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
+            containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
         }
-        //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
-        //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
-        //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
-        String contextRoot = config.buildStrategy == BuildStrategy.DOCKER ? "target" : null;
-        createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, out.getOutputDirectory(),
-                nativeImage.getPath());
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
-        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
     }
 
-    public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,
+    public static void createContainerImage(KubernetesClient kubernetesClient,
             GeneratedFileSystemResourceBuildItem openshiftManifests,
             OpenshiftConfig openshiftConfig,
             String base,
@@ -360,7 +364,7 @@ public class OpenshiftProcessor {
             throw new RuntimeException("Error creating the openshift binary build archive.", e);
         }
 
-        Config config = kubernetesClient.getClient().getConfiguration();
+        Config config = kubernetesClient.getConfiguration();
         //Let's disable http2 as it causes issues with duplicate build triggers.
         config.setHttp2Disable(true);
         try (KubernetesClient client = Clients.fromConfig(config)) {

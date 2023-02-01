@@ -13,6 +13,6 @@ public class KubernetesClientBuildStep {
 
     @BuildStep
     public KubernetesClientBuildItem process(TlsConfig tlsConfig) {
-        return new KubernetesClientBuildItem(createClient(buildConfig, tlsConfig));
+        return new KubernetesClientBuildItem(createConfig(buildConfig, tlsConfig));
     }
 }

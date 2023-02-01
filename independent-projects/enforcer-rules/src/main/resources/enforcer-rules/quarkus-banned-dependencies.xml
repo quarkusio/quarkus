@@ -102,6 +102,8 @@
                 <exclude>org.javassist:javassist</exclude>
                 <!-- Jandex moved to SmallRye -->
                 <exclude>org.jboss:jandex</exclude>
+                <!-- Ensure Fabric8 Kubernetes Client won't propagate its OkHttp implementation -->
+                <exclude>io.fabric8:kubernetes-httpclient-okhttp</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

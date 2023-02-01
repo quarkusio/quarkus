@@ -163,7 +163,7 @@ public class OpenTelemetryTestCase {
         Assertions.assertEquals("opentelemetry-integration-test", spanData.get("attr_messaging.kafka.consumer_group"));
         Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.partition"));
         Assertions.assertEquals("kafka-consumer-" + channel, spanData.get("attr_messaging.kafka.client_id"));
-        Assertions.assertEquals("0", spanData.get("attr_offset"));
+        Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.message.offset"));
     }
 
     private void verifyCdiCall(Map<String, Object> spanData, Map<String, Object> parentSpanData) {

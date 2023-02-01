@@ -632,7 +632,7 @@ recipeList:
       newValue: '3.0.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-reactive-messaging.version
-      newValue: '4.1.1'
+      newValue: '4.2.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
       newValue: '3.0'

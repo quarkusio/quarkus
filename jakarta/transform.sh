@@ -367,7 +367,7 @@ git cherry-pick -x ${JAKARTA_10_CDI_HASH}
 
 ## JAX-RS/RESTEasy Reactive
 git fetch origin jakarta-10-jaxrs
-git rev-list 3e7b6d56854a7402f7e2cfc6edbaa49b2da0f959..origin/jakarta-10-jaxrs | tac | xargs git cherry-pick -x
+git rev-list 0608f5eeaf4109214a40d9342d2b89405f831155..origin/jakarta-10-jaxrs | tac | xargs git cherry-pick -x
 
 ## Kotlin not parent first
 git fetch origin jakarta-10-misc

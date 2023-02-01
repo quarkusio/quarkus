@@ -700,13 +700,22 @@ public final class Beans {
             }
 
         } else if (bean.isProducerField() || bean.isProducerMethod()) {
-            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(),
-                    bean.isProducerMethod() ? bean.getTarget().get().asMethod().returnType()
-                            : bean.getTarget().get().asField().type());
-            // can be null for primitive types
+            String methodOrField = bean.isProducerMethod() ? "method" : "field";
+            String classifier = "Producer " + methodOrField + " for a normal scoped bean";
+
+            Type type = bean.isProducerMethod() ? bean.getTarget().get().asMethod().returnType()
+                    : bean.getTarget().get().asField().type();
+            if (bean.getScope().isNormal()) {
+                if (type.kind() == Kind.PRIMITIVE) {
+                    errors.add(new DeploymentException(String.format("%s must not have a primitive type", classifier)));
+                } else if (type.kind() == Kind.ARRAY) {
+                    errors.add(new DeploymentException(String.format("%s must not have an array type", classifier)));
+                }
+            }
+
+            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), type);
+            // null for primitive or array types, but those are covered above
             if (returnTypeClass != null && bean.getScope().isNormal() && !Modifier.isInterface(returnTypeClass.flags())) {
-                String methodOrField = bean.isProducerMethod() ? "method" : "field";
-                String classifier = "Producer " + methodOrField + " for a normal scoped bean";
                 if (Modifier.isFinal(returnTypeClass.flags())) {
                     if (bean.getDeployment().transformUnproxyableClasses) {
                         bytecodeTransformerConsumer

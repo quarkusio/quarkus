@@ -36,7 +36,7 @@ public class CustomSectionFactory implements SectionHelperFactory<CustomSectionH
 
         @Override
         public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-            return CompletableFuture.completedStage(new SingleResultNode(bar, null));
+            return CompletableFuture.completedStage(new SingleResultNode(bar));
         }
     }
 

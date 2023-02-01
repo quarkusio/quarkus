@@ -1461,7 +1461,7 @@ import io.quarkus.qute.SectionHelper;
 import io.quarkus.qute.SectionHelperFactory;
 
 @EngineConfiguration <1>
-public class CustomSectionFactory implements SectionHelperFactory<CustomSectionHelper> {
+public class CustomSectionFactory implements SectionHelperFactory<CustomSectionFactory.CustomSectionHelper> {
 
     @Inject
     Service service; <2>
@@ -1472,7 +1472,7 @@ public class CustomSectionFactory implements SectionHelperFactory<CustomSectionH
     }
 
     @Override
-    public SectionHelper initialize(SectionInitContext context) {
+    public CustomSectionHelper initialize(SectionInitContext context) {
         if (context.getParameter("foo") == null) {
             throw new IllegalStateException("Foo param not found"); <3>
         }
@@ -1483,7 +1483,7 @@ public class CustomSectionFactory implements SectionHelperFactory<CustomSectionH
 
         @Override
         public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-            return CompletableFuture.completedStage(new SingleResultNode(service.getValue(), null)); <4>
+            return CompletableFuture.completedStage(new SingleResultNode(service.getValue())); <4>
         }
     }
 }

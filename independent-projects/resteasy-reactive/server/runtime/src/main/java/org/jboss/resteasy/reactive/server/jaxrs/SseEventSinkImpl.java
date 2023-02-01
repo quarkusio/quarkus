@@ -32,15 +32,7 @@ public class SseEventSinkImpl implements SseEventSink {
         if (isClosed())
             throw new IllegalStateException("Already closed");
         // NOTE: we can't cast event to OutboundSseEventImpl because the TCK sends us its own subclass
-        CompletionStage<?> ret = SseUtil.send(context, event, Collections.emptyList());
-        if (broadcaster != null) {
-            return ret.whenComplete((value, x) -> {
-                if (x != null) {
-                    broadcaster.fireException(this, x);
-                }
-            });
-        }
-        return ret;
+        return SseUtil.send(context, event, Collections.emptyList());
     }
 
     @Override

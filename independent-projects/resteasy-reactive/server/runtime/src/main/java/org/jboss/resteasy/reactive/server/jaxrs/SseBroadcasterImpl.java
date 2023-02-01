@@ -127,11 +127,4 @@ public class SseBroadcasterImpl implements SseBroadcaster {
             listener.accept(sseEventSink);
         }
     }
-
-    synchronized void fireException(SseEventSinkImpl sseEventSink, Throwable t) {
-        for (BiConsumer<SseEventSink, Throwable> listener : onErrorListeners) {
-            listener.accept(sseEventSink, t);
-        }
-    }
-
 }

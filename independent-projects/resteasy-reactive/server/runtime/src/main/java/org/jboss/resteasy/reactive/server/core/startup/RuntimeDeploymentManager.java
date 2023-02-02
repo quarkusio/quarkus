@@ -278,22 +278,35 @@ public class RuntimeDeploymentManager {
         public MappersKey(URITemplate path) {
             this.path = path;
 
-            // create a key without any names. Names of e.g. default regex components can differ, but the component still has the same meaning.
-            StringBuilder keyBuilder = new StringBuilder();
-            for (URITemplate.TemplateComponent component : path.components) {
-                keyBuilder.append(component.type);
-                keyBuilder.append(";");
-                keyBuilder.append(component.literalText);
-                keyBuilder.append(";");
-                if (component.pattern != null) {
-                    // (?<id1>[a-zA-Z]+) -> [a-zA-Z]+
-                    String pattern = component.pattern.pattern();
-                    keyBuilder.append(component.pattern.pattern(), pattern.indexOf('>') + 1, pattern.length() - 1);
+            if (path.components.length == 0) {
+                this.key = "";
+            } else {
+                // create a key without any names. Names of e.g. default regex components can differ, but the component still has the same meaning.
+                StringBuilder keyBuilder = new StringBuilder();
+                for (URITemplate.TemplateComponent component : path.components) {
+                    int standardLength = component.type.name().length() + 1
+                            + (component.literalText != null ? component.literalText.length() : 0) + 1 + 1;
+                    int additionalLength = 0;
+                    if (component.pattern != null) {
+                        additionalLength = component.pattern.pattern().length();
+                    }
+                    StringBuilder kb = new StringBuilder(standardLength + additionalLength);
+                    kb.append(component.type);
+                    kb.append(";");
+                    kb.append(component.literalText);
+                    kb.append(";");
+                    if (component.pattern != null) {
+                        // (?<id1>[a-zA-Z]+) -> [a-zA-Z]+
+                        String pattern = component.pattern.pattern();
+                        kb.append(component.pattern.pattern(), pattern.indexOf('>') + 1, pattern.length() - 1);
+                    }
+                    kb.append("|");
+                    keyBuilder.append(kb);
                 }
-                keyBuilder.append("|");
+
+                this.key = keyBuilder.toString();
             }
 
-            this.key = keyBuilder.toString();
         }
 
         @Override

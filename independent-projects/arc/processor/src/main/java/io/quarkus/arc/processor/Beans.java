@@ -172,7 +172,7 @@ public final class Beans {
 
         if (isAlternative) {
             if (priority == null) {
-                priority = declaringBean.getAlternativePriority();
+                priority = declaringBean.getPriority();
             }
             priority = initAlternativePriority(producerMethod, priority, stereotypes, beanDeployment);
             if (priority == null) {
@@ -287,7 +287,7 @@ public final class Beans {
 
         if (isAlternative) {
             if (priority == null) {
-                priority = declaringBean.getAlternativePriority();
+                priority = declaringBean.getPriority();
             }
             priority = initAlternativePriority(producerField, priority, stereotypes, beanDeployment);
             // after all attempts, priority is still null

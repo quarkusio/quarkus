@@ -846,6 +846,7 @@ public class BeanGenerator extends AbstractGenerator {
             // Invoke the disposer method
             // declaringProvider.get(new CreationalContextImpl<>()).dispose()
             MethodInfo disposerMethod = bean.getDisposer().getDisposerMethod();
+            boolean isStatic = Modifier.isStatic(disposerMethod.flags());
 
             ResultHandle declaringProviderSupplierHandle = destroy.readInstanceField(
                     FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
@@ -855,15 +856,21 @@ public class BeanGenerator extends AbstractGenerator {
                     MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
             ResultHandle ctxHandle = destroy.newInstance(
                     MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), destroy.loadNull());
-            ResultHandle declaringProviderInstanceHandle = destroy.invokeInterfaceMethod(
-                    MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
-                    ctxHandle);
-
-            if (bean.getDeclaringBean().getScope().isNormal()) {
-                // We need to unwrap the client proxy
+            ResultHandle declaringProviderInstanceHandle;
+            if (isStatic) {
+                // for static disposers, we don't need to resolve this handle
+                // the `null` will only be used for reflective invocation in case the disposer is private, which is OK
+                declaringProviderInstanceHandle = destroy.loadNull();
+            } else {
                 declaringProviderInstanceHandle = destroy.invokeInterfaceMethod(
-                        MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
-                        declaringProviderInstanceHandle);
+                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
+                        ctxHandle);
+                if (bean.getDeclaringBean().getScope().isNormal()) {
+                    // We need to unwrap the client proxy
+                    declaringProviderInstanceHandle = destroy.invokeInterfaceMethod(
+                            MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
+                            declaringProviderInstanceHandle);
+                }
             }
 
             ResultHandle[] referenceHandles = new ResultHandle[disposerMethod.parametersCount()];
@@ -904,6 +911,8 @@ public class BeanGenerator extends AbstractGenerator {
                 destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
                         destroy.loadClass(disposerMethod.declaringClass().name().toString()),
                         destroy.load(disposerMethod.name()), paramTypesArray, declaringProviderInstanceHandle, argsArray);
+            } else if (isStatic) {
+                destroy.invokeStaticMethod(MethodDescriptor.of(disposerMethod), referenceHandles);
             } else {
                 destroy.invokeVirtualMethod(MethodDescriptor.of(disposerMethod), declaringProviderInstanceHandle,
                         referenceHandles);
@@ -912,8 +921,8 @@ public class BeanGenerator extends AbstractGenerator {
             // Destroy @Dependent instances injected into method parameters of a disposer method
             destroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
 
-            // If the declaring bean is @Dependent we must destroy the instance afterwards
-            if (BuiltinScope.DEPENDENT.is(bean.getDisposer().getDeclaringBean().getScope())) {
+            // If the declaring bean is @Dependent and the disposer is not static, we must destroy the instance afterwards
+            if (BuiltinScope.DEPENDENT.is(bean.getDisposer().getDeclaringBean().getScope()) && !isStatic) {
                 destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
                         declaringProviderInstanceHandle, ctxHandle);
             }
@@ -927,7 +936,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         // Bridge method needed
         MethodCreator bridgeDestroy = beanCreator.getMethodCreator("destroy", void.class, Object.class, CreationalContext.class)
-                .setModifiers(ACC_PUBLIC);
+                .setModifiers(ACC_PUBLIC | ACC_BRIDGE);
         bridgeDestroy.returnValue(bridgeDestroy.invokeVirtualMethod(destroy.getMethodDescriptor(), bridgeDestroy.getThis(),
                 bridgeDestroy.getMethodParam(0),
                 bridgeDestroy.getMethodParam(1)));
@@ -940,22 +949,23 @@ public class BeanGenerator extends AbstractGenerator {
             Map<DecoratorInfo, String> decoratorToProviderSupplierField,
             String targetPackage, boolean isApplicationClass) {
 
-        MethodCreator create = beanCreator.getMethodCreator("create", providerType.descriptorName(), CreationalContext.class)
-                .setModifiers(ACC_PUBLIC);
+        MethodCreator doCreate = beanCreator
+                .getMethodCreator("doCreate", providerType.descriptorName(), CreationalContext.class)
+                .setModifiers(ACC_PRIVATE);
 
         if (bean.isClassBean()) {
             implementCreateForClassBean(classOutput, beanCreator, bean, providerType, baseName,
                     injectionPointToProviderSupplierField, interceptorToProviderSupplierField, decoratorToProviderSupplierField,
                     reflectionRegistration,
-                    targetPackage, isApplicationClass, create);
+                    targetPackage, isApplicationClass, doCreate);
         } else if (bean.isProducerMethod()) {
             implementCreateForProducerMethod(classOutput, beanCreator, bean, providerType, baseName,
                     injectionPointToProviderSupplierField, reflectionRegistration,
-                    targetPackage, isApplicationClass, create);
+                    targetPackage, isApplicationClass, doCreate);
         } else if (bean.isProducerField()) {
             implementCreateForProducerField(classOutput, beanCreator, bean, providerType, baseName,
                     injectionPointToProviderSupplierField, reflectionRegistration,
-                    targetPackage, isApplicationClass, create);
+                    targetPackage, isApplicationClass, doCreate);
         } else if (bean.isSynthetic()) {
             if (bean.getScope().isNormal()) {
                 // Normal scoped synthetic beans should never return null
@@ -963,20 +973,36 @@ public class BeanGenerator extends AbstractGenerator {
                         .getMethodCreator("createSynthetic", providerType.descriptorName(), CreationalContext.class)
                         .setModifiers(ACC_PRIVATE);
                 bean.getCreatorConsumer().accept(createSynthetic);
-                ResultHandle ret = create.invokeVirtualMethod(createSynthetic.getMethodDescriptor(), create.getThis(),
-                        create.getMethodParam(0));
-                BytecodeCreator nullBeanInstance = create.ifNull(ret).trueBranch();
+                ResultHandle ret = doCreate.invokeVirtualMethod(createSynthetic.getMethodDescriptor(), doCreate.getThis(),
+                        doCreate.getMethodParam(0));
+                BytecodeCreator nullBeanInstance = doCreate.ifNull(ret).trueBranch();
                 StringBuilderGenerator message = Gizmo.newStringBuilder(nullBeanInstance);
                 message.append("Null contextual instance was produced by a normal scoped synthetic bean: ");
                 message.append(Gizmo.toString(nullBeanInstance, nullBeanInstance.getThis()));
                 ResultHandle e = nullBeanInstance.newInstance(
                         MethodDescriptor.ofConstructor(CreationException.class, String.class), message.callToString());
                 nullBeanInstance.throwException(e);
-                create.returnValue(ret);
+                doCreate.returnValue(ret);
             } else {
-                bean.getCreatorConsumer().accept(create);
+                bean.getCreatorConsumer().accept(doCreate);
             }
         }
+
+        MethodCreator create = beanCreator.getMethodCreator("create", providerType.descriptorName(), CreationalContext.class)
+                .setModifiers(ACC_PUBLIC);
+        TryBlock tryBlock = create.tryBlock();
+        tryBlock.returnValue(
+                tryBlock.invokeSpecialMethod(doCreate.getMethodDescriptor(), tryBlock.getThis(), tryBlock.getMethodParam(0)));
+        // `Reflections.newInstance()` throws `CreationException` on its own,
+        // but that's handled like all other `RuntimeException`s
+        // also ignore custom Throwables, they are virtually never used in practice
+        CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
+        catchBlock.ifFalse(catchBlock.instanceOf(catchBlock.getCaughtException(), RuntimeException.class))
+                .falseBranch().throwException(catchBlock.getCaughtException());
+        ResultHandle creationException = catchBlock.newInstance(
+                MethodDescriptor.ofConstructor(CreationException.class, Throwable.class),
+                catchBlock.getCaughtException());
+        catchBlock.throwException(creationException);
 
         // Bridge method needed
         MethodCreator bridgeCreate = beanCreator.getMethodCreator("create", Object.class, CreationalContext.class)
@@ -1224,6 +1250,8 @@ public class BeanGenerator extends AbstractGenerator {
         AssignableResultHandle instanceHandle;
 
         MethodInfo producerMethod = bean.getTarget().get().asMethod();
+        boolean isStatic = Modifier.isStatic(producerMethod.flags());
+
         instanceHandle = create.createVariable(DescriptorUtils.extToInt(providerType.className()));
         // instance = declaringProviderSupplier.get().get(new CreationalContextImpl<>()).produce()
         ResultHandle ctxHandle = create.newInstance(
@@ -1235,8 +1263,9 @@ public class BeanGenerator extends AbstractGenerator {
                 create.getThis());
         ResultHandle declaringProviderHandle = create.invokeInterfaceMethod(
                 MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
-        if (Modifier.isStatic(producerMethod.flags())) {
-            // for static producers, we don't need to resolve this this handle
+        if (isStatic) {
+            // for static producers, we don't need to resolve this handle
+            // the `null` will only be used for reflective invocation in case the producer is private, which is OK
             declaringProviderInstanceHandle = create.loadNull();
         } else {
             declaringProviderInstanceHandle = create.invokeInterfaceMethod(
@@ -1292,7 +1321,7 @@ public class BeanGenerator extends AbstractGenerator {
                     argsArray));
         } else {
             ResultHandle invokeMethodHandle;
-            if (Modifier.isStatic(producerMethod.flags())) {
+            if (isStatic) {
                 invokeMethodHandle = create.invokeStaticMethod(MethodDescriptor.of(producerMethod),
                         referenceHandles);
             } else {
@@ -1309,8 +1338,8 @@ public class BeanGenerator extends AbstractGenerator {
                             bean.getTarget().get().asMethod().name() + "()");
         }
 
-        // If the declaring bean is @Dependent we must destroy the instance afterwards
-        if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope())) {
+        // If the declaring bean is @Dependent and the producer is not static, we must destroy the instance afterwards
+        if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope()) && !isStatic) {
             create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
                     declaringProviderInstanceHandle, ctxHandle);
         }

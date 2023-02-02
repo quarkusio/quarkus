@@ -79,6 +79,7 @@ transform_kotlin_module () {
     find $1 -name '*.kt' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
     find $1 -name '*.kts' | xargs --no-run-if-empty sed -i "s@annotation(\"${package}@annotation(\"${newPackage}@g"
     find $1 -name 'build*.gradle' | xargs --no-run-if-empty sed -i "s@annotation(\"${package}@annotation(\"${newPackage}@g"
+    find $1 -name 'pom*.xml' | grep -v 'integration-tests/simple' | xargs --no-run-if-empty sed -i "s@annotation=${package}@annotation=${newPackage}@g"
   done
 }
 
@@ -311,7 +312,12 @@ find integration-tests/gradle -name build.gradle | xargs sed -i 's/javax.ws.rs.P
 
 transform_documentation
 sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+sed -i 's@javax/json@jakarta/json@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+sed -i 's@javax/inject@jakarta/inject@g' docs/src/main/asciidoc/resteasy-reactive.adoc
 sed -i 's@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/2.1.1@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+sed -i 's@https://javadoc.io/doc/io.smallrye.reactive/mutiny/1.6.0@https://javadoc.io/doc/io.smallrye.reactive/mutiny/2.1.0@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+sed -i 's@https://javadoc.io/doc/javax.json/javax.json-api/1.1.4@https://javadoc.io/doc/jakarta.json/jakarta.json-api/2.1.1@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+sed -i 's@https://javadoc.io/static/jakarta.inject/jakarta.inject/1@https://javadoc.io/static/jakarta.inject/jakarta.inject-api/2.0.1@g' docs/src/main/asciidoc/resteasy-reactive.adoc
 sed -i 's@/specs/jaxrs/2.1/index.html@https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html@g' docs/src/main/asciidoc/resteasy-reactive.adoc
 
 # Clean some Transformer issues

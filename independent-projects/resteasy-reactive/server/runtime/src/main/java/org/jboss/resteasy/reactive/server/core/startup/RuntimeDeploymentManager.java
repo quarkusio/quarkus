@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -299,22 +298,24 @@ public class RuntimeDeploymentManager {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null) {
                 return false;
-            MappersKey that = (MappersKey) o;
-            return key.equals(that.key);
+            }
+
+            return key.equals(((MappersKey) o).key);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(key);
+            return key.hashCode();
         }
 
         @Override
         public int compareTo(MappersKey o) {
-            if (key.compareTo(o.key) == 0) {
+            if (key.equals(o.key)) {
                 return 0;
             }
 

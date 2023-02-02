@@ -67,7 +67,6 @@ public class KubernetesClientProcessor {
     private static final DotName VISITABLE_BUILDER = DotName.createSimple(VisitableBuilder.class.getName());
     private static final DotName CUSTOM_RESOURCE = DotName.createSimple(CustomResource.class.getName());
 
-    private static final Predicate<DotName> IS_OKHTTP_CLASS = d -> d.toString().startsWith("okhttp3");
     private static final DotName JSON_FORMAT = DotName.createSimple(JsonFormat.class.getName());
     private static final String[] EMPTY_STRINGS_ARRAY = new String[0];
 
@@ -114,8 +113,7 @@ public class KubernetesClientProcessor {
         findWatchedClasses(CUSTOM_RESOURCE, applicationIndex, combinedIndexBuildItem, watchedClasses, 2,
                 false);
 
-        Predicate<DotName> reflectionIgnorePredicate = ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE
-                .or(IS_OKHTTP_CLASS);
+        Predicate<DotName> reflectionIgnorePredicate = ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE;
         for (DotName className : watchedClasses) {
             if (reflectionIgnorePredicate.test(className)) {
                 continue;

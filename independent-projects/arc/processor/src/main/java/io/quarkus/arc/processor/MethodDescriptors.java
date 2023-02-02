@@ -163,9 +163,7 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_AROUND_INVOKE = MethodDescriptor.ofMethod(
             InvocationContexts.class,
-            "performAroundInvoke",
-            Object.class, Object.class, Method.class, Function.class, Object[].class, List.class,
-            Set.class);
+            "performAroundInvoke", Object.class, Object.class, Object[].class, InterceptedMethodMetadata.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
@@ -230,7 +228,7 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INTERCEPTED_METHOD_METADATA_CONSTRUCTOR = MethodDescriptor.ofConstructor(
             InterceptedMethodMetadata.class,
-            List.class, Method.class, Set.class);
+            List.class, Method.class, Set.class, Function.class);
 
     public static final MethodDescriptor CREATIONAL_CTX_HAS_DEPENDENT_INSTANCES = MethodDescriptor.ofMethod(
             CreationalContextImpl.class,

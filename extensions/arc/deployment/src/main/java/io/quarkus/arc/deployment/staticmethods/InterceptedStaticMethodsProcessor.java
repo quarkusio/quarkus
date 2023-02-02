@@ -46,7 +46,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.impl.InterceptedStaticMethods;
-import io.quarkus.arc.impl.InterceptedStaticMethods.InterceptedStaticMethod;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.DotNames;
@@ -77,7 +76,7 @@ public class InterceptedStaticMethodsProcessor {
     private static final Logger LOGGER = Logger.getLogger(InterceptedStaticMethodsProcessor.class);
 
     static final MethodDescriptor INTERCEPTED_STATIC_METHODS_REGISTER = MethodDescriptor
-            .ofMethod(InterceptedStaticMethods.class, "register", void.class, String.class, InterceptedStaticMethod.class);
+            .ofMethod(InterceptedStaticMethods.class, "register", void.class, String.class, InterceptedMethodMetadata.class);
     static final MethodDescriptor INTERCEPTED_STATIC_METHODS_AROUND_INVOKE = MethodDescriptor
             .ofMethod(InterceptedStaticMethods.class, "aroundInvoke", Object.class, String.class, Object[].class);
 
@@ -322,23 +321,19 @@ public class InterceptedStaticMethodsProcessor {
             }
         }
 
+        // Create forwarding function
+        ResultHandle forwardingFunc = createForwardingFunction(init, interceptedStaticMethod.getTarget(), method);
+
         // Now create metadata for the given intercepted method
         ResultHandle metadataHandle = init.newInstance(MethodDescriptors.INTERCEPTED_METHOD_METADATA_CONSTRUCTOR,
-                chainHandle, methodHandle, bindingsHandle);
+                chainHandle, methodHandle, bindingsHandle, forwardingFunc);
 
         // Needed when running on native image
         reflectiveMethods.produce(new ReflectiveMethodBuildItem(method));
 
-        // Create forwarding function
-        ResultHandle forwardingFunc = createForwardingFunction(init, interceptedStaticMethod.getTarget(), method);
-
-        ResultHandle staticMethodHandle = init.newInstance(
-                MethodDescriptor.ofConstructor(InterceptedStaticMethod.class, Function.class, InterceptedMethodMetadata.class),
-                forwardingFunc, metadataHandle);
-
         // Call InterceptedStaticMethods.register()
         init.invokeStaticMethod(INTERCEPTED_STATIC_METHODS_REGISTER, init.load(interceptedStaticMethod.getHash()),
-                staticMethodHandle);
+                metadataHandle);
         init.returnValue(null);
         return name;
     }

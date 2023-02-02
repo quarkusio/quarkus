@@ -31,7 +31,7 @@ public class DataSourceReactiveRuntimeConfig {
     /**
      * The datasource pool maximum size.
      */
-    @ConfigItem
+    @ConfigItem(defaultValueDocumentation = "20")
     public OptionalInt maxSize = OptionalInt.empty();
 
     /**

@@ -4,11 +4,14 @@ import java.util.Collections;
 
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
-import io.dekorate.openshift.decorator.ApplyDeploymentTriggerDecorator;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.openshift.api.model.DeploymentConfigSpecFluent;
 
 public class RemoveDeploymentTriggerDecorator extends NamedResourceDecorator<DeploymentConfigSpecFluent<?>> {
+
+    public RemoveDeploymentTriggerDecorator(String name) {
+        super(name);
+    }
 
     @Override
     public void andThenVisit(DeploymentConfigSpecFluent<?> deploymentConfigSpec, ObjectMeta objectMeta) {
@@ -16,7 +19,7 @@ public class RemoveDeploymentTriggerDecorator extends NamedResourceDecorator<Dep
     }
 
     @Override
-    public Class<? extends Decorator>[] after() {
-        return new Class[] { ApplyDeploymentTriggerDecorator.class };
+    public Class<? extends Decorator>[] before() {
+        return new Class[] { ChangeDeploymentTriggerDecorator.class };
     }
 }

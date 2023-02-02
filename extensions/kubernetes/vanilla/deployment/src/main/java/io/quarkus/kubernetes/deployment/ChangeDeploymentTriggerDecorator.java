@@ -11,6 +11,6 @@ public class ChangeDeploymentTriggerDecorator extends ApplyDeploymentTriggerDeco
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { ApplyDeploymentTriggerDecorator.class, RemoveDeploymentTriggerDecorator.class };
+        return new Class[] { ApplyDeploymentTriggerDecorator.class };
     }
 }

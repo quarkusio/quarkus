@@ -567,13 +567,6 @@ triage:
       directories:
         - extensions/vertx
         - integration-tests/vertx
-    - id: tika
-      labels: [area/tika]
-      title: tika
-      notify: [sberyozkin]
-      directories:
-        - extensions/tika/
-        - integration-tests/tika/
     - id: testing
       title: "quarkusintegrationtest"
       labels: [area/testing]

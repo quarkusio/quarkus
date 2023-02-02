@@ -96,6 +96,8 @@ public class DB2PoolRecorder {
 
         if (dataSourceReactiveRuntimeConfig.maxSize.isPresent()) {
             poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize.getAsInt());
+        } else {
+            poolOptions.setMaxSize(20);
         }
 
         if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {

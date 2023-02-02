@@ -79,6 +79,7 @@ transform_kotlin_module () {
     find $1 -name '*.kt' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
     find $1 -name '*.kts' | xargs --no-run-if-empty sed -i "s@annotation(\"${package}@annotation(\"${newPackage}@g"
     find $1 -name 'build*.gradle' | xargs --no-run-if-empty sed -i "s@annotation(\"${package}@annotation(\"${newPackage}@g"
+    find $1 -name 'pom*.xml' | grep -v 'integration-tests/simple' | xargs --no-run-if-empty sed -i "s@annotation=${package}@annotation=${newPackage}@g"
   done
 }
 

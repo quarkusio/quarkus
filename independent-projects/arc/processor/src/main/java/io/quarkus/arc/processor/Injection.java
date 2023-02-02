@@ -50,6 +50,24 @@ public class Injection {
                         "Multiple @Inject constructors found on " + beanTarget.asClass().name() + ":\n"
                                 + injectConstructors.stream().map(Object::toString).collect(Collectors.joining("\n")));
             }
+            for (AnnotationTarget injectConstructor : injectConstructors) {
+                Set<AnnotationInstance> parameterAnnotations = Annotations.getParameterAnnotations(beanDeployment,
+                        injectConstructor.asMethod());
+                for (AnnotationInstance annotation : parameterAnnotations) {
+                    if (DotNames.DISPOSES.equals(annotation.name())) {
+                        throw new DefinitionException(
+                                "Bean constructor must not have a @Disposes parameter: " + injectConstructor);
+                    }
+                    if (DotNames.OBSERVES.equals(annotation.name())) {
+                        throw new DefinitionException(
+                                "Bean constructor must not have an @Observes parameter: " + injectConstructor);
+                    }
+                    if (DotNames.OBSERVES_ASYNC.equals(annotation.name())) {
+                        throw new DefinitionException(
+                                "Bean constructor must not have an @ObservesAsync parameter: " + injectConstructor);
+                    }
+                }
+            }
 
             Set<MethodInfo> initializerMethods = injections.stream()
                     .filter(it -> it.isMethod() && !it.isConstructor())

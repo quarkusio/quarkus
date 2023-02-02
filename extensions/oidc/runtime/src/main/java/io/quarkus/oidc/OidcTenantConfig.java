@@ -769,8 +769,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * SameSite attribute for the session cookie.
          */
-        @ConfigItem(defaultValue = "strict")
-        public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
+        @ConfigItem(defaultValue = "lax")
+        public CookieSameSite cookieSameSite = CookieSameSite.LAX;
 
         /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.

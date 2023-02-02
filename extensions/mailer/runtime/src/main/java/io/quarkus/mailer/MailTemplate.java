@@ -56,6 +56,12 @@ public interface MailTemplate {
 
         MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId);
 
+        MailTemplateInstance addInlineAttachment(String name, byte[] data, String contentType, String contentId);
+
+        MailTemplateInstance addAttachment(String name, File file, String contentType);
+
+        MailTemplateInstance addAttachment(String name, byte[] data, String contentType);
+
         /**
          *
          * @param key

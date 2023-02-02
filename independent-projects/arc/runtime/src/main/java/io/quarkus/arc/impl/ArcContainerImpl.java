@@ -177,7 +177,8 @@ public class ArcContainerImpl implements ArcContainer {
                         notifierOrNull(Set.of(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
                         notifierOrNull(Set.of(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE))),
                 new ApplicationContext(),
-                new SingletonContext());
+                new SingletonContext(),
+                new DependentContext());
 
         // Add custom contexts
         for (Components c : components) {

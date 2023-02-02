@@ -192,24 +192,7 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.context.dependent.DependentContextTest">
                 <methods>
-                    <exclude name="testContextGetWithCreationalContextReturnsNewInstance"/>
-                    <exclude name="testContextIsActiveWhenInvokingProducerMethod"/>
-                    <exclude name="testDependentsDestroyedWhenProducerMethodCompletes"/>
                     <exclude name="testContextIsActiveDuringInjection"/>
-                    <exclude name="testInstanceUsedForProducerFieldNotShared"/>
-                    <exclude name="testDependentsDestroyedWhenProducerFieldCompletes"/>
-                    <exclude name="testInstanceUsedForObserverMethodNotShared"/>
-                    <exclude name="testContextGetWithCreateFalseReturnsNull"/>
-                    <exclude name="testContextIsActiveDuringBeanCreation"/>
-                    <exclude name="testDependentsDestroyedWhenObserverMethodEvaluationCompletes"/>
-                    <exclude name="testContextIsActiveWhenInvokingProducerField"/>
-                    <exclude name="testContextIsActiveWhenCreatingObserverMethodInstance"/>
-                    <exclude name="testContextIsActiveWhenInvokingDisposalMethod"/>
-                    <exclude name="testDependentsDestroyedWhenDisposerMethodCompletes"/>
-                    <exclude name="testInstanceUsedForDisposalMethodNotShared"/>
-                    <exclude name="testInstanceUsedForProducerMethodNotShared"/>
-                    <exclude name="testContextIsActive"/>
-                    <exclude name="testContextScopeType"/>
                     <!-- https://github.com/jakartaee/cdi-tck/issues/454 -->
                     <exclude name="testDependentScopedInterceptorsAreDependentObjectsOfBean"></exclude>
                 </methods>
@@ -217,11 +200,6 @@
             <class name="org.jboss.cdi.tck.tests.context.GetFromContextualTest">
                 <methods>
                     <exclude name="testGetMayNotCreateNewInstanceUnlessCreationalContextGiven"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.definition.bean.BeanDefinitionTest">
-                <methods>
-                    <exclude name="testBeanClientCanCastBeanInstanceToAnyBeanType"/>
                 </methods>
             </class>
         </classes>

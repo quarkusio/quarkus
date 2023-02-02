@@ -1,8 +1,10 @@
 package io.quarkus.arc.processor;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -171,6 +173,16 @@ public final class Annotations {
             }
         }
         return null;
+    }
+
+    public static Collection<AnnotationInstance> onlyRuntimeVisible(Collection<AnnotationInstance> annotations) {
+        List<AnnotationInstance> result = new ArrayList<>(annotations.size());
+        for (AnnotationInstance annotation : annotations) {
+            if (annotation.runtimeVisible()) {
+                result.add(annotation);
+            }
+        }
+        return result;
     }
 
 }

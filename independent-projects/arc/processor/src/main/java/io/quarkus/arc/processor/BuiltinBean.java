@@ -314,13 +314,10 @@ enum BuiltinBean {
 
     private static void generateResourceBytecode(GeneratorContext ctx) {
         ResultHandle annotations = ctx.constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-        // For a resource field the required qualifiers contain all annotations declared on the field
-        // (hence we need to check if they are runtime-retained and their classes are available)
+        // For a resource field the required qualifiers contain all runtime-retained annotations
+        // declared on the field (hence we need to check if their classes are available)
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
             for (AnnotationInstance annotation : ctx.injectionPoint.getRequiredQualifiers()) {
-                if (!annotation.runtimeVisible()) {
-                    continue;
-                }
                 ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getBeanArchiveIndex(), annotation.name());
                 if (annotationClass == null) {
                     continue;

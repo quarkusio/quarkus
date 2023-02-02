@@ -2027,9 +2027,6 @@ public class BeanGenerator extends AbstractGenerator {
                 annotationHandle = constructor
                         .readStaticField(FieldDescriptor.of(InjectLiteral.class, "INSTANCE", InjectLiteral.class));
             } else {
-                if (!annotation.runtimeVisible()) {
-                    continue;
-                }
                 ClassInfo annotationClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
                 if (annotationClass == null) {
                     continue;

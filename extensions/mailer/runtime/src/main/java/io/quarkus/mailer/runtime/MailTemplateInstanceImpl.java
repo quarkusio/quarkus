@@ -88,6 +88,24 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     }
 
     @Override
+    public MailTemplateInstance addInlineAttachment(String name, byte[] data, String contentType, String contentId) {
+        this.mail.addInlineAttachment(name, data, contentType, contentId);
+        return this;
+    }
+
+    @Override
+    public MailTemplateInstance addAttachment(String name, File file, String contentType) {
+        this.mail.addAttachment(name, file, contentType);
+        return this;
+    }
+
+    @Override
+    public MailTemplateInstance addAttachment(String name, byte[] data, String contentType) {
+        this.mail.addAttachment(name, data, contentType);
+        return this;
+    }
+
+    @Override
     public MailTemplateInstance data(String key, Object value) {
         this.templateInstance.data(key, value);
         return this;

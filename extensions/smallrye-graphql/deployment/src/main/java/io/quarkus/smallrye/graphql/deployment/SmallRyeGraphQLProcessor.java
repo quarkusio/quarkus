@@ -139,6 +139,8 @@ public class SmallRyeGraphQLProcessor {
     private static final List<String> SUPPORTED_WEBSOCKET_SUBPROTOCOLS = List.of(SUBPROTOCOL_GRAPHQL_WS,
             SUBPROTOCOL_GRAPHQL_TRANSPORT_WS);
 
+    private static final String ALLOW_MULTIPART_POST = "smallrye.graphql.allowMultiPartPost";
+
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
         featureProducer.produce(new FeatureBuildItem(Feature.SMALLRYE_GRAPHQL));
@@ -377,8 +379,9 @@ public class SmallRyeGraphQLProcessor {
         // Queries and Mutations
         boolean allowGet = getBooleanConfigValue(ConfigKey.ALLOW_GET, false);
         boolean allowQueryParametersOnPost = getBooleanConfigValue(ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
+        boolean allowMultiPartPost = getBooleanConfigValue(ALLOW_MULTIPART_POST, false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
-                allowGet, allowQueryParametersOnPost, runBlocking);
+                allowGet, allowQueryParametersOnPost, allowMultiPartPost, runBlocking);
 
         HttpRootPathBuildItem.Builder requestBuilder = httpRootPathBuildItem.routeBuilder()
                 .routeFunction(graphQLConfig.rootPath, recorder.routeFunction(bodyHandlerBuildItem.getHandler()))

@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATYPE_JSON;
-
 import org.eclipse.microprofile.graphql.DefaultValue;
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
@@ -9,11 +7,11 @@ import org.eclipse.microprofile.graphql.Query;
 import org.hamcrest.CoreMatchers;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.restassured.RestAssured;
 
 /**
  * Basic tests for Mutation
@@ -27,17 +25,14 @@ public class GraphQLMutationTest extends AbstractGraphQLTest {
                     .addAsResource(new StringAsset(getPropertyAsString()), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
-    @Test
-    public void testMutation() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testMutation(String contentType) {
         String request = getPayload("mutation hello{\n" +
                 "  hello\n" +
                 "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
+        post("/graphql", contentType, request)
                 .then()
                 .assertThat()
                 .statusCode(200)
@@ -46,17 +41,14 @@ public class GraphQLMutationTest extends AbstractGraphQLTest {
 
     }
 
-    @Test
-    public void testError() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testError(String contentType) {
         String request = getPayload("mutation error{\n" +
                 "  error\n" +
                 "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
+        post("/graphql", contentType, request)
                 .then()
                 .assertThat()
                 .statusCode(200)

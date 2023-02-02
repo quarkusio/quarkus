@@ -11,6 +11,8 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -81,8 +83,9 @@ public class GraphQLTest extends AbstractGraphQLTest {
 
     }
 
-    @Test
-    public void testSourcePost() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testSourcePost(String contentType) {
         String fooRequest = getPayload("{\n" +
                 "  foo {\n" +
                 "    message\n" +
@@ -93,11 +96,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 "  }\n" +
                 "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
+        post("/graphql", contentType, fooRequest)
                 .then()
                 .assertThat()
                 .statusCode(200)
@@ -107,8 +106,9 @@ public class GraphQLTest extends AbstractGraphQLTest {
 
     }
 
-    @Test
-    public void testWrongAcceptType() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testWrongAcceptType(String contentType) {
         String fooRequest = getPayload("{\n" +
                 "  foo {\n" +
                 "    message\n" +
@@ -119,25 +119,20 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 "  }\n" +
                 "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_TEXT)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
+        post("/graphql", contentType, fooRequest, MEDIATYPE_TEXT)
                 .then()
                 .assertThat()
                 .statusCode(406);
     }
 
-    @Test
-    public void testUTF8Charset() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testUTF8Charset(String contentType) {
         String fooRequest = getPayload("{\n" +
                 "  testCharset(characters:\"óôöúüýáâäçéëíî®©\")\n" +
                 "}");
 
-        byte[] response = RestAssured.given().when()
-                .body(fooRequest)
-                .post("/graphql")
+        byte[] response = post("/graphql", contentType, fooRequest)
                 .then()
                 .assertThat()
                 .statusCode(200)
@@ -148,16 +143,14 @@ public class GraphQLTest extends AbstractGraphQLTest {
         Assertions.assertTrue(decodedResponse.contains("{\"data\":{\"testCharset\":\"óôöúüýáâäçéëíî®©\"}}"));
     }
 
-    @Test
-    public void testCP1250Charset() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testCP1250Charset(String contentType) {
         String fooRequest = getPayload("{\n" +
                 "  testCharset(characters:\"óôöúüýáâäçéëíî®©\")\n" +
                 "}");
 
-        byte[] response = RestAssured.given().when()
-                .accept("application/json;charset=CP1250")
-                .body(fooRequest)
-                .post("/graphql")
+        byte[] response = post("/graphql", contentType, fooRequest, "application/json;charset=CP1250")
                 .then()
                 .assertThat()
                 .statusCode(200)
@@ -168,8 +161,9 @@ public class GraphQLTest extends AbstractGraphQLTest {
         Assertions.assertTrue(decodedResponse.contains("{\"data\":{\"testCharset\":\"óôöúüýáâäçéëíî®©\"}}"));
     }
 
-    @Test
-    public void testSourcePost2() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testSourcePost2(String contentType) {
         String foosRequest = getPayload("{\n" +
                 "  foos {\n" +
                 "    message\n" +
@@ -180,11 +174,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 "  }\n" +
                 "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(foosRequest)
-                .post("/graphql")
+        post("/graphql", contentType, foosRequest)
                 .then()
                 .assertThat()
                 .statusCode(200)
@@ -194,19 +184,16 @@ public class GraphQLTest extends AbstractGraphQLTest {
 
     }
 
-    @Test
-    public void testGenerics() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testGenerics(String contentType) {
         String foosRequest = getPayload("{\n" +
                 "  generics {\n" +
                 "    message\n" +
                 "  }\n" +
                 "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(foosRequest)
-                .post("/graphql")
+        post("/graphql", contentType, foosRequest)
                 .then()
                 .assertThat()
                 .statusCode(200)
@@ -220,15 +207,12 @@ public class GraphQLTest extends AbstractGraphQLTest {
      * which technically is forbidden by the JSON spec, but we want to seamlessly support
      * queries from Java text blocks, for example, which preserve line breaks and tab characters.
      */
-    @Test
-    public void testQueryWithNewlinesAndTabs() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testQueryWithNewlinesAndTabs(String contentType) {
         String foosRequest = "{\"query\": \"query myquery { \n generics { \n \t message } } \"}";
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(foosRequest)
-                .post("/graphql")
+        post("/graphql", contentType, foosRequest)
                 .then()
                 .assertThat()
                 .statusCode(200)
@@ -237,14 +221,12 @@ public class GraphQLTest extends AbstractGraphQLTest {
                         "{\"data\":{\"generics\":{\"message\":\"I know it\"}}}"));
     }
 
-    @Test
-    public void testContext() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testContext(String contentType) {
         String query = getPayload("{context}");
 
-        RestAssured.given()
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql")
+        post("/graphql", contentType, query)
                 .then()
                 .assertThat()
                 .statusCode(200)
@@ -252,8 +234,9 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 .body(CoreMatchers.containsString("{\"data\":{\"context\":\"/context\"}}"));
     }
 
-    @Test
-    public void testUnion() {
+    @ParameterizedTest
+    @ValueSource(strings = { MEDIATYPE_JSON, MEDIATYPE_MULTIPART })
+    public void testUnion(String contentType) {
         String unionRequest = getPayload("{\n" +
                 "  testUnion {\n" +
                 "    __typename\n" +
@@ -263,11 +246,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 "  }\n" +
                 "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(unionRequest)
-                .post("/graphql")
+        post("/graphql", contentType, unionRequest)
                 .then()
                 .assertThat()
                 .statusCode(200)

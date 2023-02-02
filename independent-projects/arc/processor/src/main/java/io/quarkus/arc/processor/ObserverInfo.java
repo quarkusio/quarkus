@@ -63,12 +63,18 @@ public class ObserverInfo implements InjectionTargetInfo {
                     declaringBean.getDeployment().getBeanArchiveIndex());
         }
 
+        Reception reception = initReception(isAsync, declaringBean.getDeployment(), observerMethod);
+        if (reception == Reception.IF_EXISTS && BuiltinScope.DEPENDENT.is(declaringBean.getScope())) {
+            throw new DefinitionException("@Dependent bean must not have a conditional observer method: "
+                    + observerMethod);
+        }
+
         return create(null, declaringBean.getDeployment(), declaringBean.getTarget().get().asClass().name(), declaringBean,
                 observerMethod, injection,
                 eventParameter,
                 observedType,
                 initQualifiers(declaringBean.getDeployment(), observerMethod, eventParameter),
-                initReception(isAsync, declaringBean.getDeployment(), observerMethod),
+                reception,
                 initTransactionPhase(isAsync, declaringBean.getDeployment(), observerMethod), isAsync, priority, transformers,
                 buildContext, jtaCapabilities, null, Collections.emptyMap());
     }

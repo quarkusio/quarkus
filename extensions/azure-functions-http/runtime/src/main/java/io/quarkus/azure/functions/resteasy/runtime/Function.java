@@ -23,6 +23,6 @@ public class Function extends BaseFunction {
                             deploymentStatus.getBytes(StandardCharsets.UTF_8));
             return responseBuilder.build();
         }
-        return dispatch(request);
+        return dispatch(request, context);
     }
 }

@@ -125,7 +125,7 @@ and then you can use `OidcClient.refreshTokens` method with a provided refresh t
 
 Using the `urn:ietf:params:oauth:grant-type:token-exchange` or `urn:ietf:params:oauth:grant-type:jwt-bearer` grants may be required if you are building a complex microservices application and would like to avoid the same `Bearer` token be propagated to and used by more than one service. Please see <<token-propagation-reactive,Token Propagation in MicroProfile RestClient Reactive filter>> and <<token-propagation,Token Propagation in MicroProfile RestClient filter>> for more details.
 
-Using `OidcClient` to support the `authorization code` grant might be required if for some reasons you can not use the xref:security-openid-connect-web-authentication.adoc[Quarkus OpenID Connect extension] to support Authorization Code Flow. If there is a very good reason for you to implement Authorization Code Flow then you can configure `OidcClient` as follows:
+Using `OidcClient` to support the `authorization code` grant might be required if for some reason you cannot use the xref:security-oidc-code-flow-authentication-concept.adoc[Quarkus OIDC extension] to support Authorization Code Flow. If there is a very good reason for you to implement Authorization Code Flow then you can configure `OidcClient` as follows:
 
 [source,properties]
 ----
@@ -861,7 +861,7 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 [[token-propagation-reactive]]
 == Token Propagation Reactive
 
-The `quarkus-oidc-token-propagation-reactive` extension provides RestEasy Reactive Client `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` that simplifies the propagation of authentication information by propagating the xref:security-oidc-bearer-authentication-concept.adoc[Bearer token] present in the current active request or the token acquired from the xref:security-openid-connect-web-authentication.adoc[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
+The `quarkus-oidc-token-propagation-reactive` extension provides RestEasy Reactive Client `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` that simplifies the propagation of authentication information by propagating the xref:security-oidc-bearer-authentication-concept.adoc[Bearer token] present in the current active request or the token acquired from the xref:security-oidc-code-flow-authentication-concept.adoc[Authorization code flow mechanism], as the HTTP `Authorization` header's `Bearer` scheme value.
 
 You can selectively register `AccessTokenRequestReactiveFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation, for example:
 
@@ -937,7 +937,7 @@ quarkus.oidc-token-propagation-reactive.exchange-token=true
 == Token Propagation
 
 The `quarkus-oidc-token-propagation` extension provides two JAX-RS `javax.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
-`io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the xref:security-oidc-bearer-authentication-concept.adoc[Bearer token] present in the current active request or the token acquired from the xref:security-openid-connect-web-authentication.adoc[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
+`io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the xref:security-oidc-bearer-authentication-concept.adoc[Bearer token] present in the current active request or the token acquired from the xref:security-oidc-code-flow-authentication-concept.adoc[Authorization code flow mechanism], as the HTTP `Authorization` header's `Bearer` scheme value.
 The `io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter` provides the same functionality, but in addition provides support for JWT tokens.
 
 When you need to propagate the current Authorization Code Flow access token then the immediate token propagation will work well - as the code flow access tokens (as opposed to ID tokens) are meant to be propagated for the current Quarkus endpoint to access the remote services on behalf of the currently authenticated user.
@@ -1110,5 +1110,5 @@ However, these features may be added in the future.
 
 * xref:security-openid-connect-client.adoc[OpenID Connect Client and Token Propagation Quickstart]
 * xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
-* xref:security-openid-connect-web-authentication.adoc[Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow]
+* xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

@@ -37,7 +37,7 @@ image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer authentica
 3. The Client uses the access token to retrieve the service data from the Quarkus service.
 4. The Quarkus service verifies the bearer access token signature using the verification keys, checks the token expiry date and other claims, allows the request to proceed if the token is valid, and returns the service response to the Client.
 
-If you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications].
+If you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications].
 Also, if you use Keycloak and bearer tokens, see xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization].
 
 For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
@@ -313,7 +313,7 @@ Please see xref:security-openid-connect-client-reference.adoc#token-propagation[
 [[oidc-provider-authentication]]
 === Oidc Provider Client Authentication
 
-`quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenID Connect Provider has to be done. If the bearer token has to be introspected then `OidcProviderClient` has to authenticate to the OpenID Connect Provider. Please see xref:security-openid-connect-web-authentication.adoc#oidc-provider-client-authentication[OidcProviderClient Authentication] for more information about all the supported authentication options.
+`quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenID Connect Provider has to be done. If the bearer token has to be introspected then `OidcProviderClient` has to authenticate to the OpenID Connect Provider. Please see xref:security-oidc-code-flow-authentication-concept.adoc#oidc-provider-client-authentication[OidcProviderClient Authentication] for more information about all the supported authentication options.
 
 [[integration-testing]]
 === Testing

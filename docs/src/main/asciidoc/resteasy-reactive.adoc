@@ -13,6 +13,7 @@ include::_attributes.adoc[]
 :mutinyapi: https://javadoc.io/doc/io.smallrye.reactive/mutiny/1.6.0
 :httpspec: https://tools.ietf.org/html/rfc7231
 :jsonpapi: https://javadoc.io/doc/javax.json/javax.json-api/1.1.4
+:injectapi: https://javadoc.io/static/jakarta.inject/jakarta.inject/1
 :vertxapi: https://javadoc.io/doc/io.vertx/vertx-core/latest/index.html
 :resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
 :resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/{quarkus-version}
@@ -1068,7 +1069,7 @@ public class Endpoint {
 ----
 
 You can also inject those context objects using
-https://javadoc.io/static/javax.inject/javax.inject/1/javax/inject/Inject.html[`@Inject`] on fields of the same
+{injectapi}/javax/inject/Inject.html[`@Inject`] on fields of the same
 type:
 
 [source,java]

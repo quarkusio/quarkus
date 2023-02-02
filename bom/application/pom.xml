@@ -208,6 +208,7 @@
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.3</org-crac.version>
         <sshd-common.version>2.9.2</sshd-common.version>
+        <mime4j.version>0.8.9</mime4j.version>
     </properties>
 
     <dependencyManagement>
@@ -5988,6 +5989,11 @@
                         <artifactId>junit</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.james</groupId>
+                <artifactId>apache-mime4j</artifactId>
+                <version>${mime4j.version}</version>
             </dependency>
 
             <!-- Relocations -->

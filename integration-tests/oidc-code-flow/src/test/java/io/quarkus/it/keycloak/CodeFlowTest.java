@@ -95,7 +95,7 @@ public class CodeFlowTest {
 
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);
-            assertEquals("strict", sessionCookie.getSameSite());
+            assertEquals("lax", sessionCookie.getSameSite());
 
             webClient.getCookieManager().clearCookies();
         }
@@ -220,7 +220,7 @@ public class CodeFlowTest {
             assertEquals("tenant-https:reauthenticated", page.getBody().asNormalizedText());
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
             assertNotNull(sessionCookie);
-            assertEquals("lax", sessionCookie.getSameSite());
+            assertEquals("strict", sessionCookie.getSameSite());
             webClient.getCookieManager().clearCookies();
         }
     }

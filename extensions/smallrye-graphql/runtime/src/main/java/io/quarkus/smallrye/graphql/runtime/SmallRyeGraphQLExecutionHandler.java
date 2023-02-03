@@ -223,10 +223,14 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 if (isValidAcceptRequest(a.rawValue())) {
                     return a.rawValue();
                 }
+
+                if (a.rawValue().startsWith("*/*")) {
+                    return DEFAULT_RESPONSE_CONTENT_TYPE;
+                }
             }
             // Seems like an unknown accept is passed in
             String accept = ctx.request().getHeader("Accept");
-            if (accept != null && !accept.isEmpty() && !accept.startsWith("*/*")) {
+            if (accept != null && !accept.isEmpty()) {
                 return accept;
             }
         }

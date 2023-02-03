@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Azure Functions (Serverless) with RESTEasy Reactive, Undertow, or Reactive Routes
+= Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: cloud
@@ -22,39 +22,24 @@ NOTE: Only text based media types are supported at the moment as Azure Functions
 
 include::{includes}/prerequisites.adoc[]
 * https://azure.microsoft.com[An Azure Account].  Free accounts work.
+* https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools] version 4.x
 * https://docs.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI Installed]
 
 == Solution
 
-This guide walks you through running a Maven Archetype to generate a sample project that contains three http endpoints
-written with JAX-RS APIs, Servlet APIs, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] APIs.  After building, you will then be able to deploy
-to Azure.
+This guide walks you through running a maven project that can deploy a Resteasy Reactive endpoint to Azure Functions.
+While only JAX-RS is provided as an example, you can easily replace it with the HTTP framework of your choice.
 
 == Creating the Maven Deployment Project
 
-Create the Azure Maven project for your Quarkus application using our Maven Archetype.
+You can download the example code from Quarkus's application generator at https://code.quarkus.io/d?e=azure-functions-http&cn=code.quarkus.io[this link].
 
+You can also generate this example with the Quarkus CLI:
 
 [source,bash,subs=attributes+]
 ----
-mvn archetype:generate \
-    -DarchetypeGroupId=io.quarkus \
-    -DarchetypeArtifactId=quarkus-azure-functions-http-archetype \
-    -DarchetypeVersion={quarkus-version}
+quarkus create app --extension=quarkus-azure-functions-http
 ----
-
-Running this command will run maven in interactive mode and it will ask you to fill in some build properties:
-
-* `groupId` - The maven groupId of this generated project.  Type in `org.acme`.
-* `artifactId` - The maven artifactId of this generated project. Type in `quarkus-demo`
-* `version` - Version of this generated project.
-* `package` - defaults to `groupId`
-* `appName` - Use the default value.  This is the application name in Azure.  It must be a unique subdomain name under `*.azurewebsites.net`. Otherwise, deploying to Azure will fail.
-* `appRegion` - Defaults to `westus`.  Dependent on your azure region.
-* `function` - Use the default which is `quarkus`.  Name of your azure function. Can be anything you want.
-* `resourceGroup` - Use the default value.  Any value is fine though.
-
-The values above are defined as properties in the generated `pom.xml` file.
 
 == Login to Azure
 
@@ -65,40 +50,55 @@ If you don't log in to Azure you won't be able to deploy.
 az login
 ----
 
-== Build and Deploy to Azure
+== Quarkus dev mode
 
-The `pom.xml` you generated in the previous step pulls in the `azure-functions-maven-plugin`.  Running maven install
+Quarkus dev mode works by just running your application as a HTTP endpoint.
+
+[source,bash,subs=attributes+]
+----
+./mvnw clean package quarkus:dev
+----
+
+
+
+== Run locally in Azure Functions simulated environment
+
+If you want to try your app with a simulated local Azure Functions environment, you can
+use this command
+
+[source,bash,subs=attributes+]
+----
+./mvnw clean package azure-functions:run
+----
+
+Note that you must have the https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools]
+installed for this to work!
+
+== Deploy to Azure
+
+The `pom.xml` you generated in the previous step pulls in the `azure-functions-maven-plugin`.  Running maven package
 generates config files and a staging directory required by the `azure-functions-maven-plugin`.  Here's
 how to execute it.
 
 [source,bash,subs=attributes+]
 ----
-./mvnw clean install azure-functions:deploy
+./mvnw clean package azure-functions:deploy
 ----
-
-If you haven't already created your function up at azure, then build an uber-jar, package it, create the function
-at Azure, and deploy it.
 
 If deployment is a success, the azure plugin will tell you the base URL to access your function.
 
 i.e.
 [source]
 ----
-Successfully deployed the artifact to https://quarkus-demo-123451234.azurewebsites.net
+[INFO] HTTP Trigger Urls:
+[INFO] 	 QuarkusHttp : https://{appName}.azurewebsites.net/api/{*path}
 ----
 
 The URL to access the service would be
 
 https://{appName}.azurewebsites.net/api/hello
-https://{appName}.azurewebsites.net/api/servlet/hello
-https://{appName}.azurewebsites.net/api/vertx/hello
-https://{appName}.azurewebsites.net/api/funqyHello
 
 == Extension maven dependencies
-
-The sample project includes the RESTEasy Reactive, Undertow, Reactive Routes, xref:funqy-http.adoc[Funqy HTTP] extensions.  If you are only using one of those
-APIs (i.e. jax-rs only), respectively remove the maven dependency `quarkus-resteasy-reactive`, `quarkus-undertow`, `quarkus-funqy-http`, and/or
-`quarkus-reactive-routes`.
 
 You must include the `quarkus-azure-functions-http` extension as this is a generic bridge between the Azure Functions
 runtime and the HTTP framework you are writing your microservices in.
@@ -106,11 +106,7 @@ runtime and the HTTP framework you are writing your microservices in.
 == Azure Deployment Descriptors
 
 Templates for Azure Functions deployment descriptors (`host.json`, `function.json`) are within
-the `azure-config` directory.  Edit them as you need to.  Rerun the build when you are ready.
-
-*NOTE*: If you change the `function.json` `path` attribute or if you add a `routePrefix`,
-your jax-rs endpoints won't route correctly.  See <<config-azure-paths>> for more information.
-
+base Edit them as you need to.  Rerun the build when you are ready.
 
 [#config-azure-paths]
 == Configuring Root Paths
@@ -118,7 +114,4 @@ your jax-rs endpoints won't route correctly.  See <<config-azure-paths>> for mor
 The default route prefix for an Azure Function is `/api`.  All of your JAX-RS, Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must
 explicitly take this into account.  In the generated project this is handled by the
 `quarkus.http.root-path` switch in `application.properties`
-
-If you modify the `path` or add a `routePrefix` within the `azure-config/function.json`
-deployment descriptor, your code or configuration must also reflect any prefixes you specify for your path.
 

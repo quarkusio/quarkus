@@ -156,6 +156,7 @@
         <module>amazon-lambda-http</module>
         <!-- AWS API Gateway REST API -->
         <module>amazon-lambda-rest</module>
+        <module>azure-functions</module>
         <module>azure-functions-http</module>
 
         <!-- New Frameworks -->

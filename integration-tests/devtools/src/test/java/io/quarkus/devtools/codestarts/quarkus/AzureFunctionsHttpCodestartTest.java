@@ -16,13 +16,6 @@ public class AzureFunctionsHttpCodestartTest {
             .build();
 
     @Test
-    void testContent() throws Throwable {
-        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "azure-config/function.json");
-        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "azure-config/host.json");
-        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "azure-config/local.settings.json");
-    }
-
-    @Test
     @EnabledIfSystemProperty(named = "build-projects", matches = "true")
     void buildAllProjectsForLocalUse() throws Throwable {
         codestartTest.buildAllProjects();

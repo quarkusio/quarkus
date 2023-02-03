@@ -16,7 +16,6 @@ import org.hibernate.reactive.mutiny.Mutiny.Session;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractJpaOperations<PanacheQueryType> {
@@ -29,8 +28,6 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
             Object paramsArrayOrMap);
 
     protected abstract Uni<List<?>> list(PanacheQueryType query);
-
-    protected abstract Multi<?> stream(PanacheQueryType query);
 
     //
     // Instance methods
@@ -177,30 +174,6 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return list(find(entityClass, query, sort, params));
     }
 
-    public Multi<?> stream(Class<?> entityClass, String query, Object... params) {
-        return stream(find(entityClass, query, params));
-    }
-
-    public Multi<?> stream(Class<?> entityClass, String query, Sort sort, Object... params) {
-        return stream(find(entityClass, query, sort, params));
-    }
-
-    public Multi<?> stream(Class<?> entityClass, String query, Map<String, Object> params) {
-        return stream(find(entityClass, query, params));
-    }
-
-    public Multi<?> stream(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        return stream(find(entityClass, query, sort, params));
-    }
-
-    public Multi<?> stream(Class<?> entityClass, String query, Parameters params) {
-        return stream(find(entityClass, query, params));
-    }
-
-    public Multi<?> stream(Class<?> entityClass, String query, Sort sort, Parameters params) {
-        return stream(find(entityClass, query, sort, params));
-    }
-
     public PanacheQueryType findAll(Class<?> entityClass) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
         Uni<Mutiny.Session> session = getSession();
@@ -219,14 +192,6 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public Uni<List<?>> listAll(Class<?> entityClass, Sort sort) {
         return list(findAll(entityClass, sort));
-    }
-
-    public Multi<?> streamAll(Class<?> entityClass) {
-        return stream(findAll(entityClass));
-    }
-
-    public Multi<?> streamAll(Class<?> entityClass, Sort sort) {
-        return stream(findAll(entityClass, sort));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

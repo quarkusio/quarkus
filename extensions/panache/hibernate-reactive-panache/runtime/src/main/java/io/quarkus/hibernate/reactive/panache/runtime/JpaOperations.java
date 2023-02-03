@@ -5,10 +5,10 @@ import java.util.List;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public class JpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
+
     public static final JpaOperations INSTANCE = new JpaOperations();
 
     @Override
@@ -23,8 +23,4 @@ public class JpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
         return (Uni) query.list();
     }
 
-    @Override
-    protected Multi<?> stream(PanacheQueryImpl<?> query) {
-        return query.stream();
-    }
 }

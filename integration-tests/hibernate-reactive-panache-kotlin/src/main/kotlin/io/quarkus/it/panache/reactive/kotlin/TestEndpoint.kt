@@ -176,10 +176,6 @@ class TestEndpoint {
                         query.list()
                     }.flatMap { list ->
                         assertEquals(1, list.size)
-                        assertEquals(livePerson, list[0])
-                        query.stream().collect().asList()
-                    }.flatMap { list ->
-                        assertEquals(1, list.size)
                         query.firstResult()
                     }.flatMap { result ->
                         assertEquals(livePerson, result)
@@ -252,12 +248,6 @@ class TestEndpoint {
                 Person.listAll()
             }.flatMap { persons ->
                 assertEquals(0, persons.size)
-                Person.findAll().stream().collect().asList()
-            }.flatMap { personStream ->
-                assertEquals(0, personStream.size)
-                Person.streamAll().collect().asList()
-            }.flatMap { personStream ->
-                assertEquals(0, personStream.size)
                 assertThrows(NoResultException::class.java) {
                     Person.findAll().singleResult()
                 }
@@ -292,14 +282,6 @@ class TestEndpoint {
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.listAll()
-                    }.flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        Person.findAll().stream().collect().asList()
-                    }.flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        Person.streamAll().collect().asList()
                     }.flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
@@ -347,26 +329,6 @@ class TestEndpoint {
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.find("name", "stef").list()
-                    }.flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        Person.find("name = ?1", "stef").stream().collect().asList()
-                    }.flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        Person.stream("name = ?1", "stef").collect().asList()
-                    }.flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        Person.stream("name = :name", with("name", "stef").map()).collect().asList()
-                    }.flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        Person.stream("name = :name", with("name", "stef")).collect().asList()
-                    }.flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        Person.find("name", "stef").stream().collect().asList()
                     }.flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
@@ -725,12 +687,6 @@ class TestEndpoint {
                 personDao.listAll()
             }.flatMap { persons ->
                 assertEquals(0, persons.size)
-                personDao.findAll().stream().collect().asList()
-            }.flatMap { personStream ->
-                assertEquals(0, personStream.size)
-                personDao.streamAll().collect().asList()
-            }.flatMap { personStream ->
-                assertEquals(0, personStream.size)
                 assertThrows(NoResultException::class.java) {
                     personDao.findAll().singleResult()
                 }
@@ -773,17 +729,6 @@ class TestEndpoint {
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         personDao.listAll()
-                    }
-                    .flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        personDao.findAll().stream()
-                            .collect().asList()
-                    }
-                    .flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        personDao.streamAll().collect().asList()
                     }
                     .flatMap { persons ->
                         assertEquals(1, persons.size)
@@ -841,35 +786,6 @@ class TestEndpoint {
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         personDao.find("name", "stef").list()
-                    }
-                    .flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        personDao.find("name = ?1", "stef").stream()
-                            .collect().asList()
-                    }
-                    .flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        personDao.stream("name = ?1", "stef").collect().asList()
-                    }
-                    .flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        personDao.stream("name = :name", with("name", "stef").map())
-                            .collect().asList()
-                    }
-                    .flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        personDao.stream("name = :name", with("name", "stef"))
-                            .collect().asList()
-                    }
-                    .flatMap { persons ->
-                        assertEquals(1, persons.size)
-                        assertEquals(person, persons[0])
-                        personDao.find("name", "stef").stream()
-                            .collect().asList()
                     }
                     .flatMap { persons ->
                         assertEquals(1, persons.size)
@@ -1273,16 +1189,10 @@ class TestEndpoint {
                         Person.listAll(sort1)
                     }.flatMap { list ->
                         assertEquals(order1, list)
-                        Person.streamAll(sort1).collect().asList()
-                    }.flatMap { list ->
-                        assertEquals(order1, list)
                         Person.find("name", sort2, "stef").list()
                     }.flatMap { list ->
                         assertEquals(order2, list)
                         Person.list("name", sort2, "stef")
-                    }.flatMap { list ->
-                        assertEquals(order2, list)
-                        Person.stream("name", sort2, "stef").collect().asList()
                     }.flatMap { list ->
                         assertEquals(order2, list)
                         Person.find("name = :name", sort2, with("name", "stef").map())
@@ -1292,18 +1202,10 @@ class TestEndpoint {
                         Person.list("name = :name", sort2, with("name", "stef").map())
                     }.flatMap { list ->
                         assertEquals(order2, list)
-                        Person.stream("name = :name", sort2, with("name", "stef").map())
-                            .collect().asList()
-                    }.flatMap { list ->
-                        assertEquals(order2, list)
                         Person.find("name = :name", sort2, with("name", "stef")).list()
                     }.flatMap { list ->
                         assertEquals(order2, list)
                         Person.list("name = :name", sort2, with("name", "stef"))
-                    }.flatMap { list ->
-                        assertEquals(order2, list)
-                        Person.stream("name = :name", sort2, with("name", "stef"))
-                            .collect().asList()
                     }
             }.flatMap { Person.deleteAll() }
             .map { count ->

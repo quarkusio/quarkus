@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.kotlin.runtime
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations
-import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
 import org.hibernate.reactive.mutiny.Mutiny
 
@@ -10,8 +9,6 @@ class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
         PanacheQueryImpl<Any>(session, query, orderBy, paramsArrayOrMap)
 
     override fun list(query: PanacheQueryImpl<*>): Uni<MutableList<*>> = query.list() as Uni<MutableList<*>>
-
-    override fun stream(query: PanacheQueryImpl<*>): Multi<*> = query.stream()
 
     companion object {
         /**

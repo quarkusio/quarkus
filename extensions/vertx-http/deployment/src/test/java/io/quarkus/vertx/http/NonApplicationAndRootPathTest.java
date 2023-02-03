@@ -2,8 +2,8 @@ package io.quarkus.vertx.http;
 
 import java.util.function.Consumer;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

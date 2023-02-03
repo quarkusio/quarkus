@@ -201,7 +201,7 @@ public class SmallRyeGraphQLProcessor {
         // Add a condition for the optional eventing services
         reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(TracingService.class, "io.opentracing.Tracer"));
         reflectiveClassCondition
-                .produce(new ReflectiveClassConditionBuildItem(ValidationService.class, "javax.validation.ValidatorFactory"));
+                .produce(new ReflectiveClassConditionBuildItem(ValidationService.class, "jakarta.validation.ValidatorFactory"));
 
         // Use MicroProfile Config (We use the one from the CDI Module)
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(MicroProfileConfig.class.getName()));
@@ -400,7 +400,7 @@ public class SmallRyeGraphQLProcessor {
         adapterClasses.addAll(
                 getAdapterClasses(index, DotName.createSimple("jakarta.json.bind.annotation.JsonbTypeAdapter")));
         adapterClasses.addAll(
-                getAdapterClasses(index, DotName.createSimple("javax.json.bind.annotation.JsonbTypeAdapter")));
+                getAdapterClasses(index, DotName.createSimple("jakarta.json.bind.annotation.JsonbTypeAdapter")));
         return adapterClasses;
     }
 

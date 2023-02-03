@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <microprofile-metrics-tck.version>3.0.1</microprofile-metrics-tck.version>
+        <microprofile-metrics-tck.version>4.0.1</microprofile-metrics-tck.version>
     </properties>
 
     <modules>

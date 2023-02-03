@@ -1,9 +1,9 @@
 package org.acme
 
 import org.acme.api.AdminAPI
-import javax.enterprise.context.ApplicationScoped
-import javax.ws.rs.core.Response
-import javax.ws.rs.core.UriInfo
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.core.UriInfo
 
 
 @ApplicationScoped

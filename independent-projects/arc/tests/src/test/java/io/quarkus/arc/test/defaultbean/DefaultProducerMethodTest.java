@@ -3,9 +3,9 @@ package io.quarkus.arc.test.defaultbean;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.CDI;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

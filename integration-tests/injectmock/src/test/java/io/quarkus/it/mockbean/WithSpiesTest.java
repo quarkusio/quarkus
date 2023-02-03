@@ -3,7 +3,7 @@ package io.quarkus.it.mockbean;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

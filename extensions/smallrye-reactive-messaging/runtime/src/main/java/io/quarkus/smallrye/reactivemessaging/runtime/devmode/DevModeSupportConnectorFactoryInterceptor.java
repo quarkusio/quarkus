@@ -3,10 +3,10 @@ package io.quarkus.smallrye.reactivemessaging.runtime.devmode;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import javax.annotation.Priority;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;

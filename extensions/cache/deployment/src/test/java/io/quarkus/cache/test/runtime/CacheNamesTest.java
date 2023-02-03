@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

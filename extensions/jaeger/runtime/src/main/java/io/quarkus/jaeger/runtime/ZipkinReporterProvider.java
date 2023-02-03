@@ -1,7 +1,7 @@
 package io.quarkus.jaeger.runtime;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class ZipkinReporterProvider {

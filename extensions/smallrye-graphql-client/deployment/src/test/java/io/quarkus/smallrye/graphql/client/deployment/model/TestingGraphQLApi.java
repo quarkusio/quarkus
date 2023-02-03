@@ -2,7 +2,7 @@ package io.quarkus.smallrye.graphql.client.deployment.model;
 
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;

@@ -3,7 +3,7 @@ package io.quarkus.micrometer.runtime.export;
 import java.util.Optional;
 import java.util.function.Function;
 
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Produces;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;

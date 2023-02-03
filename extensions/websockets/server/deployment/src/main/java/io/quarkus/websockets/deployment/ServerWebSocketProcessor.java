@@ -4,7 +4,7 @@ import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Optional;
 
-import javax.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpoint;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;

@@ -101,8 +101,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.xml.bind</groupId>
-            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

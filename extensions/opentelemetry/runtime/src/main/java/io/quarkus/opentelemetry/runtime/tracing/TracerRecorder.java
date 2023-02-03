@@ -3,10 +3,10 @@ package io.quarkus.opentelemetry.runtime.tracing;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.CDI;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.resources.Resource;

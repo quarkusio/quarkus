@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.URL;
 
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;

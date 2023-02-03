@@ -1,9 +1,9 @@
 package io.quarkus.micrometer.runtime.binder.grpc;
 
-import javax.enterprise.inject.spi.Prioritized;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.interceptor.Interceptor.Priority;
+import jakarta.enterprise.inject.spi.Prioritized;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.Interceptor.Priority;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor;

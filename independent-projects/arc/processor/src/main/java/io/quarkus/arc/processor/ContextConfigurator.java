@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import javax.enterprise.context.NormalScope;
+import jakarta.enterprise.context.NormalScope;
 
 import io.quarkus.arc.ContextCreator;
 import io.quarkus.arc.InjectableContext;

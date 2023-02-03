@@ -1,6 +1,6 @@
 package org.acme.funqygooglecloudfunctions;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.cloudevents.CloudEvent;
 import io.quarkus.funqy.Funq;

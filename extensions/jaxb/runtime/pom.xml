@@ -38,8 +38,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.xml.bind</groupId>
-            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
     </dependencies>
 
@@ -51,7 +51,7 @@
                 <configuration>
                     <excludedArtifacts>
                         <excludedArtifact>javax.xml.bind:jaxb-api</excludedArtifact>
-                        <excludedArtifact>jakarta.xml.bind:jakarta.xml.bind-api</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</excludedArtifact>
                     </excludedArtifacts>
                 </configuration>
             </plugin>

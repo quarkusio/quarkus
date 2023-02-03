@@ -6,9 +6,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.function.Supplier;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

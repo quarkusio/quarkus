@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 

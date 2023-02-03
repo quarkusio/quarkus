@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
-import javax.interceptor.InvocationContext;
+import jakarta.interceptor.InvocationContext;
 
 public final class InterceptedStaticMethods {
 

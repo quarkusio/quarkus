@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 
 @Path("blah")
 public class SubResourceLocatorImpFoo implements SubResourceLocatorFoo {

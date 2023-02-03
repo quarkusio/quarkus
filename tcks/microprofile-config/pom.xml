@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile Config</name>
 
     <properties>
-        <microprofile-config-tck.version>2.0.1</microprofile-config-tck.version>
+        <microprofile-config-tck.version>3.0.1</microprofile-config-tck.version>
     </properties>
 
     <build>

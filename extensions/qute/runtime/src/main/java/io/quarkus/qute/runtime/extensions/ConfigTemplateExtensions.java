@@ -5,7 +5,7 @@ import static io.quarkus.qute.TemplateExtension.DEFAULT_PRIORITY;
 
 import java.util.Optional;
 
-import javax.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.Vetoed;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 

@@ -1,6 +1,6 @@
 package io.quarkus.rest.client.reactive.runtime.spi;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.client.spi.MissingMessageBodyReaderErrorMessageContextualizer;
 

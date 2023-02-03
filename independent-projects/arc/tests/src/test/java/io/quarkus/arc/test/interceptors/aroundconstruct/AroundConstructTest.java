@@ -6,12 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.interceptor.AroundConstruct;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.AroundConstruct;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import javax.enterprise.inject.Stereotype;
+import jakarta.enterprise.inject.Stereotype;
 
 import io.quarkus.test.common.QuarkusTestResource;
 

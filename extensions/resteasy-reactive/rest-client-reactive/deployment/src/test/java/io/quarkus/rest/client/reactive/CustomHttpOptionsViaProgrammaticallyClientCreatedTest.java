@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.ext.ContextResolver;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.ext.ContextResolver;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.resteasy.reactive.RestResponse;

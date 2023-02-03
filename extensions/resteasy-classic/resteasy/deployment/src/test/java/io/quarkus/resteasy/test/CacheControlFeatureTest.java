@@ -2,7 +2,7 @@ package io.quarkus.resteasy.test;
 
 import static io.restassured.RestAssured.when;
 
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.HttpHeaders;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

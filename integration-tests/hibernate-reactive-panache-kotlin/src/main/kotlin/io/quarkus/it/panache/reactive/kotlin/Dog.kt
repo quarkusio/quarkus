@@ -2,10 +2,10 @@ package io.quarkus.it.panache.reactive.kotlin
 
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntityBase
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
-import javax.persistence.ManyToOne
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.Id
+import jakarta.persistence.ManyToOne
 
 @Entity
 class Dog() : PanacheEntityBase {

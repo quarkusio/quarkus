@@ -32,14 +32,7 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate.search</groupId>
-            <artifactId>hibernate-search-mapper-orm-coordination-outbox-polling</artifactId>
-            <exclusions>
-                <!-- We use Jakarta Persistence artifacts instead -->
-                <exclusion>
-                    <groupId>javax.persistence</groupId>
-                    <artifactId>javax.persistence-api</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>hibernate-search-mapper-orm-coordination-outbox-polling-jakarta</artifactId>
         </dependency>
     </dependencies>
 

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.openapi.OASFilter;

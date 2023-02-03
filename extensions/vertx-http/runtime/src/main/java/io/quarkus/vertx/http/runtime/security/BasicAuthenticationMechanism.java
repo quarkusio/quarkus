@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 

@@ -5,7 +5,8 @@ import static io.quarkus.keycloak.admin.client.common.KeycloakAdminClientConfigU
 import java.util.function.Supplier;
 
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.client.Client;
+
+import jakarta.ws.rs.client.Client;
 
 import org.keycloak.admin.client.ClientBuilderWrapper;
 import org.keycloak.admin.client.Keycloak;

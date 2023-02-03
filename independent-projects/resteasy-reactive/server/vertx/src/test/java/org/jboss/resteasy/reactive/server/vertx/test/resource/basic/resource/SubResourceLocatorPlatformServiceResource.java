@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 @Path("/platform")
 public interface SubResourceLocatorPlatformServiceResource {

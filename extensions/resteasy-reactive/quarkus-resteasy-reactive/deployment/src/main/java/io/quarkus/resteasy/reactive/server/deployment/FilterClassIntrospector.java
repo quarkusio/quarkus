@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 
-import javax.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.container.ResourceInfo;
 
 import org.jboss.jandex.MethodInfo;
 import org.objectweb.asm.ClassReader;

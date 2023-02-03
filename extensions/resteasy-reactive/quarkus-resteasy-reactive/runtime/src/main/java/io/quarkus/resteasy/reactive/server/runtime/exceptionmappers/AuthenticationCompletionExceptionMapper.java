@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.server.runtime.exceptionmappers;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import io.quarkus.security.AuthenticationCompletionException;
 

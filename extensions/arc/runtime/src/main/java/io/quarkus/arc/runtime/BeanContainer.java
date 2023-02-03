@@ -84,7 +84,7 @@ public interface BeanContainer {
      * }
      * </pre>
      *
-     * @return the context for {@link javax.enterprise.context.RequestScoped}
+     * @return the context for {@link jakarta.enterprise.context.RequestScoped}
      * @throws IllegalStateException If the container is not running
      */
     ManagedContext requestContext();

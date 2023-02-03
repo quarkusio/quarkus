@@ -9,9 +9,9 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import javax.enterprise.inject.Produces
-import javax.inject.Inject
-import javax.inject.Singleton
+import jakarta.enterprise.inject.Produces
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 import kotlin.reflect.full.createType
 
 class CustomBeanTest {

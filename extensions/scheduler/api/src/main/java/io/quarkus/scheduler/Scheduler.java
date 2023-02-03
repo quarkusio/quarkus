@@ -10,7 +10,7 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * The container provides a built-in bean with bean type {@link Scheduler} and qualifier
- * {@link javax.enterprise.inject.Default}.
+ * {@link jakarta.enterprise.inject.Default}.
  */
 public interface Scheduler {
 

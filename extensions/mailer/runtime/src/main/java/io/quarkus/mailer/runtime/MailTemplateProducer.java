@@ -3,13 +3,13 @@ package io.quarkus.mailer.runtime;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.AnnotatedParameter;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.AnnotatedParameter;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 

@@ -1,7 +1,7 @@
 package io.quarkus.rest.client.reactive.error.clientexceptionmapper;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 

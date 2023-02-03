@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.server.StreamingOutputStream;
 

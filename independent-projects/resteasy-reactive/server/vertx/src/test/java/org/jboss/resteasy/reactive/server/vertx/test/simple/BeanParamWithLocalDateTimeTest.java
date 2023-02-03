@@ -3,10 +3,10 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 import java.time.LocalDateTime;
 import java.util.function.Supplier;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;

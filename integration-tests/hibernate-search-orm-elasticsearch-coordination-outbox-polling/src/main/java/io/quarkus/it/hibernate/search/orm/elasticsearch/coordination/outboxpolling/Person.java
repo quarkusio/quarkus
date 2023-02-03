@@ -1,8 +1,8 @@
 package io.quarkus.it.hibernate.search.orm.elasticsearch.coordination.outboxpolling;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;

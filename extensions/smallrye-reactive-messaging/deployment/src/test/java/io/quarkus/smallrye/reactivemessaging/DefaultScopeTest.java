@@ -2,14 +2,14 @@ package io.quarkus.smallrye.reactivemessaging;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.spi.Bean;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.junit.jupiter.api.Test;

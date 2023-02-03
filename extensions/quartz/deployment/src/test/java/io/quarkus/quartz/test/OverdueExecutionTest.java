@@ -3,7 +3,7 @@ package io.quarkus.quartz.test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;

@@ -6,7 +6,7 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;

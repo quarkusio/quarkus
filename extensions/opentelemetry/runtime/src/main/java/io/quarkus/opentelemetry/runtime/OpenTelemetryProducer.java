@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.runtime;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;

@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

@@ -1,8 +1,8 @@
 package io.quarkus.smallrye.reactivemessaging.kafka;
 
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.MappedSuperclass;
 
 import org.apache.kafka.common.TopicPartition;
 

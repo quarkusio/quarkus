@@ -2,7 +2,7 @@ package io.quarkus.smallrye.faulttolerance.test.timeout;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.faulttolerance.exceptions.TimeoutException;
 import org.junit.jupiter.api.Test;

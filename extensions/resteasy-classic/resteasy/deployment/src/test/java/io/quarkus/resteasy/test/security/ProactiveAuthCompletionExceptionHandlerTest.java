@@ -2,8 +2,8 @@ package io.quarkus.resteasy.test.security;
 
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

@@ -6,11 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Disposes;
-import javax.enterprise.inject.Produces;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Disposes;
+import jakarta.enterprise.inject.Produces;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

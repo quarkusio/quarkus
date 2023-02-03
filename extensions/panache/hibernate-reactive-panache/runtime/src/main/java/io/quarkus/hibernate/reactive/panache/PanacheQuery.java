@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import javax.persistence.LockModeType;
-import javax.persistence.NoResultException;
-import javax.persistence.NonUniqueResultException;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.NonUniqueResultException;
 
 import org.hibernate.Session;
 import org.hibernate.annotations.FilterDef;

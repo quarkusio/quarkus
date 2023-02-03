@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;

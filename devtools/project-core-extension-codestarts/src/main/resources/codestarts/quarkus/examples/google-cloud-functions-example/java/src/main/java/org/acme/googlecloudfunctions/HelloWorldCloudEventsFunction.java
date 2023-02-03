@@ -1,6 +1,6 @@
 package org.acme.googlecloudfunctions;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import com.google.cloud.functions.CloudEventsFunction;
 

@@ -3,8 +3,8 @@ package io.quarkus.resteasy.test.security;
 import java.util.List;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.control.ActivateRequestContext;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

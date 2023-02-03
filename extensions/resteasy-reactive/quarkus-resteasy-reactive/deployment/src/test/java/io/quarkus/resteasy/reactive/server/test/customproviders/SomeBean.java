@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.customproviders;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class SomeBean {

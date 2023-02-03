@@ -3,8 +3,8 @@ package io.quarkus.it.shared;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/shared")
 public class SharedResource {

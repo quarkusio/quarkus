@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import javax.enterprise.util.Nonbinding;
+import jakarta.enterprise.util.Nonbinding;
 
 import org.jboss.jandex.DotName;
 

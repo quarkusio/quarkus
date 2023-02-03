@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.vetoed.subpkg;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 @Dependent
 public class PackageVetoed {

@@ -23,9 +23,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.interceptor.InvocationContext;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.InterceptionType;
+import jakarta.interceptor.InvocationContext;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;

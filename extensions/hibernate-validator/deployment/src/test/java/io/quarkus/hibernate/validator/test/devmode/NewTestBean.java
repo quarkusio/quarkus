@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.validator.test.devmode;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 public class NewTestBean {
     @NotNull(message = "My new bean message")

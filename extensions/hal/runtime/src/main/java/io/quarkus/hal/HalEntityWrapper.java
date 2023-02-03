@@ -3,7 +3,7 @@ package io.quarkus.hal;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.ws.rs.core.Link;
+import jakarta.ws.rs.core.Link;
 
 /**
  * The Hal entity wrapper that includes the entity and the Hal links.

@@ -2,7 +2,7 @@ package io.quarkus.stork;
 
 import java.util.function.Supplier;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.smallrye.stork.integration.DefaultStorkInfrastructure;
 import io.vertx.core.Vertx;

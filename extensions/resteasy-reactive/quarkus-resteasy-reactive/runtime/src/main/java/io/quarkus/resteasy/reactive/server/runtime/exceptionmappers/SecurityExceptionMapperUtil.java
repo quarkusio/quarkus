@@ -4,7 +4,7 @@ import static org.jboss.resteasy.reactive.server.exceptionmappers.AsyncException
 
 import java.util.function.Function;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;

@@ -9,14 +9,14 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.inject.Singleton;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;

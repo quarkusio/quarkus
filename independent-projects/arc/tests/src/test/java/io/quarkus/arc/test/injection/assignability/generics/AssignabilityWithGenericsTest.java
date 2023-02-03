@@ -9,13 +9,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
-import javax.enterprise.event.ObservesAsync;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.ObservesAsync;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

@@ -2,7 +2,7 @@ package ilove.quark.us
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
-import javax.persistence.Entity
+import jakarta.persistence.Entity
 
 /**
  * Example JPA entity defined as a Kotlin Panache Entity.

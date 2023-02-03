@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.List;
 import java.util.stream.Stream;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.bson.Document;
 import org.bson.codecs.pojo.annotations.BsonId;

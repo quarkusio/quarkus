@@ -1,7 +1,7 @@
 package io.quarkus.undertow.test;
 
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
+import jakarta.inject.Inject;
+import jakarta.servlet.ServletContext;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

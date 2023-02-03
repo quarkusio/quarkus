@@ -2,12 +2,12 @@ package io.quarkus.narayana.jta.runtime;
 
 import java.util.Objects;
 
-import javax.enterprise.context.BeforeDestroyed;
-import javax.enterprise.context.Destroyed;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.event.Event;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.Destroyed;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.event.Event;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.TransactionScoped;
 
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 

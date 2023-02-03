@@ -1,6 +1,6 @@
 package io.quarkus.it.kafka.people;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntity;
 

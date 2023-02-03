@@ -4,14 +4,14 @@ import io.quarkus.test.common.http.TestHTTPResource
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.module.kotlin.extensions.Then
 import io.restassured.module.kotlin.extensions.When
+import jakarta.ws.rs.client.ClientBuilder
+import jakarta.ws.rs.client.WebTarget
+import jakarta.ws.rs.sse.SseEventSource
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
-import javax.ws.rs.client.ClientBuilder
-import javax.ws.rs.client.WebTarget
-import javax.ws.rs.sse.SseEventSource
 
 @QuarkusTest
 class FlowResourceTest {

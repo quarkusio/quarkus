@@ -7,10 +7,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.Stereotype;
-import javax.inject.Named;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Stereotype;
+import jakarta.inject.Named;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

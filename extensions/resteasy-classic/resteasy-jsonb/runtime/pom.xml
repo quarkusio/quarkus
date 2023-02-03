@@ -26,7 +26,6 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-binding-provider</artifactId>
             <exclusions>
-                <!-- we let quarkus-jsonp bring the appropriate impl -->
                 <exclusion>
                     <groupId>org.glassfish</groupId>
                     <artifactId>jakarta.json</artifactId>

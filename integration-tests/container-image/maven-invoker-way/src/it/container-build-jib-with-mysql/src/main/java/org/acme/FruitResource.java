@@ -2,10 +2,10 @@ package org.acme;
 
 import io.smallrye.common.annotation.Blocking;
 
-import javax.inject.Inject;
-import javax.ws.rs.Path;
-import javax.ws.rs.GET;
-import javax.persistence.EntityManager;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 
 @Path("fruits")

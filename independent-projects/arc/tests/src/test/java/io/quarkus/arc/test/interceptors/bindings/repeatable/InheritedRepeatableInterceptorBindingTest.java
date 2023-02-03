@@ -11,14 +11,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
-import javax.interceptor.AroundConstruct;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InterceptorBinding;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.interceptor.AroundConstruct;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InterceptorBinding;
+import jakarta.interceptor.InvocationContext;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

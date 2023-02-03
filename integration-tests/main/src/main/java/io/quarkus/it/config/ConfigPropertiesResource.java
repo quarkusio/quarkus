@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Optional;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;

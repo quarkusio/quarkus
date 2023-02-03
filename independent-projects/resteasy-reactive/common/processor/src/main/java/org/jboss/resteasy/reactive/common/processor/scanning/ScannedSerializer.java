@@ -2,8 +2,8 @@ package org.jboss.resteasy.reactive.common.processor.scanning;
 
 import java.util.List;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.RuntimeType;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.RuntimeType;
 
 public class ScannedSerializer {
 

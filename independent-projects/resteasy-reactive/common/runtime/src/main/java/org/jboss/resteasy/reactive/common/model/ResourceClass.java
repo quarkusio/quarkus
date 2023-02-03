@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.resteasy.reactive.common.core.LazyUnmanagedBeanFactory;
 import org.jboss.resteasy.reactive.common.util.URLUtils;

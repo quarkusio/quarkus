@@ -3,9 +3,9 @@ package io.quarkus.it.panache.reactive;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 

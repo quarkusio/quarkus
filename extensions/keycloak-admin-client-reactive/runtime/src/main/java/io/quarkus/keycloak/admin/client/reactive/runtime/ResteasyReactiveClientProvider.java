@@ -2,12 +2,13 @@ package io.quarkus.keycloak.admin.client.reactive.runtime;
 
 import java.util.List;
 
-import javax.enterprise.inject.Instance;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
+
+import jakarta.enterprise.inject.Instance;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;

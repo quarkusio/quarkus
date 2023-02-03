@@ -7,11 +7,11 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Named;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Named;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

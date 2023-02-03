@@ -3,8 +3,8 @@ package io.quarkus.hibernate.search.orm.elasticsearch.test.offline;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import javax.inject.Inject;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import org.hibernate.search.mapper.orm.entity.SearchIndexedEntity;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;

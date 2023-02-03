@@ -10,14 +10,14 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.BeforeDestroyed;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 import org.jboss.logging.Logger;
 

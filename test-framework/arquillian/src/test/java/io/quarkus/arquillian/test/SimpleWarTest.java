@@ -2,7 +2,7 @@ package io.quarkus.arquillian.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit5.ArquillianExtension;

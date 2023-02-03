@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.client.spi;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.core.GenericType;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.core.GenericType;
 
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;

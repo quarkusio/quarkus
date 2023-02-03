@@ -7,7 +7,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 
-import javax.json.Json;
+import jakarta.json.Json;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

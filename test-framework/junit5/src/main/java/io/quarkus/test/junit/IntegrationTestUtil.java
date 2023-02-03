@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.Alternative;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.Config;

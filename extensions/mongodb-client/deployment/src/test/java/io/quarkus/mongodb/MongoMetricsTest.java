@@ -3,7 +3,7 @@ package io.quarkus.mongodb;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.metrics.Metric;
 import org.eclipse.microprofile.metrics.MetricID;

@@ -1,6 +1,6 @@
 package io.quarkus.reactive.pg.client;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.vertx.pgclient.PgPool;
 

@@ -6,15 +6,15 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.interceptor.InvocationContext;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.ElementKind;
-import javax.validation.Path;
-import javax.validation.Validator;
-import javax.validation.executable.ExecutableValidator;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.interceptor.InvocationContext;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.ElementKind;
+import jakarta.validation.Path;
+import jakarta.validation.Validator;
+import jakarta.validation.executable.ExecutableValidator;
 
 /**
  * NOTE: this is a copy of the interceptor present in hibernate-validator-cdi.

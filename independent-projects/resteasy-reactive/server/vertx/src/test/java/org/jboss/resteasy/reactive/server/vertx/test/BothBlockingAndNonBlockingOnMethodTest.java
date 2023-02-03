@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.ws.rs.Path;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

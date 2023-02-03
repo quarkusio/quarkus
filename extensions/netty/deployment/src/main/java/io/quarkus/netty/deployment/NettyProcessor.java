@@ -7,7 +7,7 @@ import java.util.OptionalInt;
 import java.util.Random;
 import java.util.function.Supplier;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;

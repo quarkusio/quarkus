@@ -1,6 +1,6 @@
 package io.quarkus.grpc.server.devmode;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.grpc.ForwardingServerCall;
 import io.grpc.Metadata;

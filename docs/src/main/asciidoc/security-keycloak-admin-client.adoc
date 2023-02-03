@@ -67,9 +67,9 @@ package org.acme.keycloak.admin.client;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.RoleRepresentation;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.List;
 
 @Path("/api/admin")
@@ -121,10 +121,10 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.idm.RoleRepresentation;
 
-import javax.annotations.PostConstruct;
-import javax.annotations.PreConstruct;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotations.PostConstruct;
+import jakarta.annotations.PreConstruct;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.List;
 
 @Path("/api/admin")

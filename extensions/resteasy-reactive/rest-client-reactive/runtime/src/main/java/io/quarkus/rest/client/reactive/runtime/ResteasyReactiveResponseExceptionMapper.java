@@ -1,6 +1,6 @@
 package io.quarkus.rest.client.reactive.runtime;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;

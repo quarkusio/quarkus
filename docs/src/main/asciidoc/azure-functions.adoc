@@ -28,7 +28,7 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.Optional;
 
 public class Function {

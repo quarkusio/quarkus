@@ -2,7 +2,7 @@ package io.quarkus.arc.impl;
 
 import java.util.function.Consumer;
 
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;

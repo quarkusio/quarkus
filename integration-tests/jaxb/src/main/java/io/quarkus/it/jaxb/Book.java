@@ -2,7 +2,7 @@ package io.quarkus.it.jaxb;
 
 import java.awt.Image;
 
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class Book {

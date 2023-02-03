@@ -7,8 +7,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.InjectableBean;

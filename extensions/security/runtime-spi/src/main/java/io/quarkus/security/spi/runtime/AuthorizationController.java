@@ -1,6 +1,6 @@
 package io.quarkus.security.spi.runtime;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 /**
  * controller that allows authorization to be disabled in tests.

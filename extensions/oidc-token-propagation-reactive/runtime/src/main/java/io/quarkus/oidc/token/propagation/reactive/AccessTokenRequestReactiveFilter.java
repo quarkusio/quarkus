@@ -4,13 +4,13 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Priority;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;

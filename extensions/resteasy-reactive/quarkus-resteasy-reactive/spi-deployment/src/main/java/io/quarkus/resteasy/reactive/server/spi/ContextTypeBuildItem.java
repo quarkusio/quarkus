@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.spi;
 
-import javax.ws.rs.core.Context;
+import jakarta.ws.rs.core.Context;
 
 import org.jboss.jandex.DotName;
 

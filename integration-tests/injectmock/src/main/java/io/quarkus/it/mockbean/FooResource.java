@@ -2,9 +2,9 @@ package io.quarkus.it.mockbean;
 
 import java.util.Collections;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 @Path("foo")
 public class FooResource {

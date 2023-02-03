@@ -2,8 +2,8 @@ package io.quarkus.hibernate.orm.naming;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.AfterEach;

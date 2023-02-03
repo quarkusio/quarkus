@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.enterprise.event.Event;
-import javax.enterprise.event.Observes;
-import javax.inject.Qualifier;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Qualifier;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;

@@ -3,7 +3,7 @@ package io.quarkus.resteasy.reactive.links.runtime;
 import java.util.Collections;
 import java.util.List;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 

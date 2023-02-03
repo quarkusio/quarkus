@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * Used when a Resource method needs to return a multipart output

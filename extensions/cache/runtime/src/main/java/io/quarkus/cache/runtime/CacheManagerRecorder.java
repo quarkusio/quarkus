@@ -5,7 +5,7 @@ import static io.quarkus.cache.runtime.CacheConfig.CAFFEINE_CACHE_TYPE;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheManagerBuilder;

@@ -76,7 +76,7 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-jpamodelgen</artifactId>
+            <artifactId>hibernate-jpamodelgen-jakarta</artifactId>
             <scope>provided</scope>
             <!-- Exclude these dependencies, since they are banned -->
             <exclusions>

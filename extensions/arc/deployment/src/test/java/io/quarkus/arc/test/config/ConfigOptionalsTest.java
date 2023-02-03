@@ -9,10 +9,10 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

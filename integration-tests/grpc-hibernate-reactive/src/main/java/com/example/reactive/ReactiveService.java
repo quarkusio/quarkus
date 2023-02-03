@@ -2,8 +2,8 @@ package com.example.reactive;
 
 import java.util.Objects;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 

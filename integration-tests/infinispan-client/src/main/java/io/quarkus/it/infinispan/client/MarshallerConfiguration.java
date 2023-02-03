@@ -1,7 +1,7 @@
 package io.quarkus.it.infinispan.client;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;

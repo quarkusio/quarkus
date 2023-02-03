@@ -70,10 +70,10 @@ Let's write a simple JAX-RS resource which has all the tokens returned in the au
 ----
 package org.acme.security.openid.connect.web.authentication;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 

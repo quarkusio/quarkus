@@ -5,8 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.core.Feature;
+import jakarta.ws.rs.container.DynamicFeature;
+import jakarta.ws.rs.core.Feature;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;

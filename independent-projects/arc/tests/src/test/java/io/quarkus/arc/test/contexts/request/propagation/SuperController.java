@@ -3,10 +3,10 @@ package io.quarkus.arc.test.contexts.request.propagation;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 @RequestScoped
 public class SuperController {

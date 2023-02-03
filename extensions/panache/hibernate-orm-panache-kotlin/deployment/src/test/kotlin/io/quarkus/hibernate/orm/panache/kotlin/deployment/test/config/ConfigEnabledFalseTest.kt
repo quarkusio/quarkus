@@ -7,7 +7,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import javax.persistence.EntityManagerFactory
+import jakarta.persistence.EntityManagerFactory
 
 class ConfigEnabledFalseTest {
     companion object {

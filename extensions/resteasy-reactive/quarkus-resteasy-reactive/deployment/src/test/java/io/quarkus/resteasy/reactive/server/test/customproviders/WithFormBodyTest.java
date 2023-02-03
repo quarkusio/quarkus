@@ -2,8 +2,8 @@ package io.quarkus.resteasy.reactive.server.test.customproviders;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.RestForm;

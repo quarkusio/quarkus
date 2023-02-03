@@ -4,7 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

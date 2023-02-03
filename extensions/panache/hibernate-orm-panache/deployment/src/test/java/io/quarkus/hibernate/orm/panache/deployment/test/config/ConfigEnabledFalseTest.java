@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.panache.deployment.test.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityManagerFactory;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

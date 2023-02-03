@@ -3,7 +3,7 @@ package io.quarkus.resteasy.links.runtime.hal;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 import org.jboss.resteasy.links.LinksProvider;
 import org.jboss.resteasy.links.RESTServiceDiscovery;

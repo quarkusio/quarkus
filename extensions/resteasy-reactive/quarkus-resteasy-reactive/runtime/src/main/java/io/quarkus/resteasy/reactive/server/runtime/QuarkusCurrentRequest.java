@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
-import javax.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.ContextNotActiveException;
 
 import org.jboss.resteasy.reactive.server.core.CurrentRequest;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;

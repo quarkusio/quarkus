@@ -1,6 +1,6 @@
 package ilove.quark.us.googlecloudfunctions;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;

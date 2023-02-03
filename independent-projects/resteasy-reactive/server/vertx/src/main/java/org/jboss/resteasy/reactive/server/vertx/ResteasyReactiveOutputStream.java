@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.core.LazyResponse;

@@ -5,9 +5,9 @@ import static org.hamcrest.Matchers.*;
 
 import java.net.URL;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.stream.JsonParser;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.stream.JsonParser;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;

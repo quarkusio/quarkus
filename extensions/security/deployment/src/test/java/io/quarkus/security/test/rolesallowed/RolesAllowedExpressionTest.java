@@ -8,9 +8,9 @@ import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 import java.util.Collections;
 import java.util.Set;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;

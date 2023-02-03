@@ -71,16 +71,6 @@
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-plugin-api</artifactId>
                 <version>${maven-core.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.annotation</groupId>
-                        <artifactId>javax.annotation-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.inject</groupId>
-                        <artifactId>javax.inject</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
@@ -119,10 +109,6 @@
                 <version>${maven-core.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>javax.inject</groupId>
-                        <artifactId>javax.inject</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.checkerframework</groupId>
                         <artifactId>checker-qual</artifactId>
                     </exclusion>
@@ -146,18 +132,11 @@
                         <artifactId>plexus-cipher</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>javax.annotation</groupId>
-                        <artifactId>javax.annotation-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.inject</groupId>
-                        <artifactId>javax.inject</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-api</artifactId>
                     </exclusion>
-                    <exclusion><!-- let's prefer the plexus-utils pulled by maven-resolver-provider -->
+                    <exclusion>
+                        <!-- let's prefer the plexus-utils pulled by maven-resolver-provider -->
                         <groupId>org.codehaus.plexus</groupId>
                         <artifactId>plexus-utils</artifactId>
                     </exclusion>
@@ -199,14 +178,20 @@
                 <version>${jakarta.inject-api.version}</version>
             </dependency>
             <dependency>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>${javax.annotation-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${javax.inject.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-resolver-provider</artifactId>
                 <version>${maven-core.version}</version>
                 <exclusions>
-                    <exclusion>
-                        <groupId>javax.inject</groupId>
-                        <artifactId>javax.inject</artifactId>
-                    </exclusion>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-api</artifactId>
@@ -218,10 +203,6 @@
                 <artifactId>maven-settings-builder</artifactId>
                 <version>${maven-core.version}</version>
                 <exclusions>
-                    <exclusion>
-                        <groupId>javax.inject</groupId>
-                        <artifactId>javax.inject</artifactId>
-                    </exclusion>
                     <exclusion>
                         <groupId>org.codehaus.plexus</groupId>
                         <artifactId>plexus-utils</artifactId>

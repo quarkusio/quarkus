@@ -14,12 +14,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import javax.inject.Inject;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Providers;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;

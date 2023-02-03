@@ -68,7 +68,7 @@ import io.quarkus.vertx.web.Route.HttpMethod;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.vertx.ext.web.RoutingContext;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped // <1>
 public class MyDeclarativeRoutes {
@@ -95,7 +95,7 @@ public class MyDeclarativeRoutes {
     }
 }
 ----
-<1> If there is a reactive route found on a class with no scope annotation then `@javax.inject.Singleton` is added automatically.
+<1> If there is a reactive route found on a class with no scope annotation then `@jakarta.inject.Singleton` is added automatically.
 <2> The `@Route` annotation indicates that the method is a reactive route. Again, by default, the code contained in the method must not block.
 <3> The method gets a https://vertx.io/docs/apidocs/io/vertx/ext/web/RoutingContext.html[`RoutingContext`] as a parameter. From the `RoutingContext` you can retrieve the HTTP request (using `request()`) and write the response using `response().end(...)`.
 <4> If the annotated method does not return `void` the arguments are optional.

@@ -1,6 +1,6 @@
 package io.quarkus.kubernetes.client.runtime;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.http.HttpClient;

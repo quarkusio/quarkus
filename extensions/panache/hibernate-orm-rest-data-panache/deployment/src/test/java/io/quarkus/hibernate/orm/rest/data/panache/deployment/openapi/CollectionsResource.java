@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.rest.data.panache.deployment.openapi;
 
-import javax.annotation.security.RolesAllowed;
+import jakarta.annotation.security.RolesAllowed;
 
 import io.quarkus.hibernate.orm.rest.data.panache.PanacheRepositoryResource;
 import io.quarkus.rest.data.panache.MethodProperties;

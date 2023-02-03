@@ -9,7 +9,7 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;

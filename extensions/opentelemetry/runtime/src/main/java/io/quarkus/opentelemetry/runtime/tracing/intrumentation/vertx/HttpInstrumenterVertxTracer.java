@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.OpenTelemetry;

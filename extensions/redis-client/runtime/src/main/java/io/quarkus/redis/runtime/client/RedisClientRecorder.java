@@ -10,8 +10,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
 
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;

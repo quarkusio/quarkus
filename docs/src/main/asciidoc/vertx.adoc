@@ -121,9 +121,9 @@ import io.vertx.mutiny.core.Vertx;
 
 import java.nio.charset.StandardCharsets;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/vertx")                        // <1>
 public class VertxResource {
@@ -291,7 +291,7 @@ So, first, add the following imports to the `src/main/java/org/acme/VertxResourc
 ----
 
 import io.vertx.mutiny.core.eventbus.EventBus;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.QueryParam;
 
 ----
 
@@ -324,7 +324,7 @@ package org.acme;
 
 import io.quarkus.vertx.ConsumeEvent;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped                          // <1>
 public class GreetingService {

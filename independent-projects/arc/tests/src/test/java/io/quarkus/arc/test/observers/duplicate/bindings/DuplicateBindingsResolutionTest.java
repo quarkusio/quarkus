@@ -2,9 +2,9 @@ package io.quarkus.arc.test.observers.duplicate.bindings;
 
 import java.lang.annotation.Annotation;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,7 @@ import io.quarkus.arc.test.ArcTestContainer;
 
 /**
  * Tests that when you try to resolve observer methods via
- * {@link javax.enterprise.inject.spi.BeanManager#resolveObserverMethods(Object, Annotation...)},
+ * {@link jakarta.enterprise.inject.spi.BeanManager#resolveObserverMethods(Object, Annotation...)},
  * you will get an exception if you pass in twice the same annotation that is not repeatable.
  */
 public class DuplicateBindingsResolutionTest {

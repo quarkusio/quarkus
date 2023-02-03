@@ -162,7 +162,7 @@ final class Methods {
         return addInterceptedMethodCandidates(beanDeployment, classInfo, classInfo, candidates, Set.copyOf(classLevelBindings),
                 bytecodeTransformerConsumer, transformUnproxyableClasses,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
-                        beanDeployment.getBeanArchiveIndex()),
+                        beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods()),
                 false, new HashSet<>());
     }
 
@@ -519,14 +519,17 @@ final class Methods {
 
         private final BiFunction<Type, Type, Boolean> assignableFromFun;
         private final IndexView beanArchiveIndex;
+        private final Set<MethodInfo> producersAndObservers;
         private ClassInfo clazz;
         private ClassInfo originalClazz;
         private List<MethodInfo> regularMethods;
         private Set<MethodInfo> bridgeMethods = new HashSet<>();
 
-        public SubclassSkipPredicate(BiFunction<Type, Type, Boolean> assignableFromFun, IndexView beanArchiveIndex) {
+        public SubclassSkipPredicate(BiFunction<Type, Type, Boolean> assignableFromFun, IndexView beanArchiveIndex,
+                Set<MethodInfo> producersAndObservers) {
             this.assignableFromFun = assignableFromFun;
             this.beanArchiveIndex = beanArchiveIndex;
+            this.producersAndObservers = producersAndObservers;
         }
 
         void startProcessing(ClassInfo clazz, ClassInfo originalClazz) {
@@ -556,6 +559,10 @@ final class Methods {
                 return hasImplementation(method);
             } else if (method.isSynthetic()) {
                 // Skip non-bridge synthetic methods
+                return true;
+            }
+            if (Modifier.isPrivate(method.flags()) && !producersAndObservers.contains(method)) {
+                // Skip a private method that is not and observer or producer
                 return true;
             }
             if (method.hasAnnotation(DotNames.POST_CONSTRUCT) || method.hasAnnotation(DotNames.PRE_DESTROY)) {

@@ -970,7 +970,8 @@ public class BeanDeployment {
                                 beanClass);
                         beanClasses.add(beanClass);
                     }
-                } else if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
+                }
+                if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
                     // Disposers are not inherited
                     disposerMethods.add(method);
                 }

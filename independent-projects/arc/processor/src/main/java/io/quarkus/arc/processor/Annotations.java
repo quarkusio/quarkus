@@ -112,6 +112,17 @@ public final class Annotations {
      *
      * @param beanDeployment
      * @param method
+     * @param name
+     * @return whether given method has a parameter that has an annotation with given name
+     */
+    public static boolean hasParameterAnnotation(BeanDeployment beanDeployment, MethodInfo method, DotName name) {
+        return contains(getParameterAnnotations(beanDeployment, method), name);
+    }
+
+    /**
+     *
+     * @param beanDeployment
+     * @param method
      * @return collection of annotations present on all parameters of given method
      */
     public static Set<AnnotationInstance> getParameterAnnotations(BeanDeployment beanDeployment, MethodInfo method) {

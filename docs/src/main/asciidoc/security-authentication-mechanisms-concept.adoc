@@ -3,19 +3,40 @@
 include::_attributes.adoc[]
 :categories: security,web
 
-The Quarkus Security framework supports multiple authentication mechanisms, which you can use to secure your applications. 
-Some of the supported authentication mechanisms are built into Quarkus and some require you to add an extension.
-You can also combine authentication mechanisms. 
+The Quarkus Security framework supports multiple authentication mechanisms, which you can use to secure your applications.
+Some supported authentication mechanisms are built into Quarkus, and some require you to add an extension.
+You can also combine authentication mechanisms.
 
 Before you choose an authentication mechanism for securing your Quarkus applications, review the information provided.
+
+.Authentication requirements and mechanisms
+[source, adoc]
+|===
+^|Authentication requirement ^| Authentication mechanism
+
+^|Username and password ^|xref:security-basic-authentication-concept.adoc[Basic], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
+
+^|Bearer access token  ^a| xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
+
+^|Single sign-on (SSO) ^|xref:security-oidc-code-flow-authentication-concept.adoc[OIDC Code Flow], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
+
+^|Client certificate  ^|xref:security-authentication-mechanisms-concept.adoc#mutual-tls[Mutual TLS (MTLS)]
+
+^|WebAuthn ^|xref:security-webauthn-concept.adoc[WebAuthn]
+
+^|Kerberos ticket    ^|link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
+|===
+
+* See also the <<table>> table featured later in this section.
+
 
 == Built-in authentication support
 
 Quarkus Security provides the following built-in authentication mechanisms:
 
 * xref:security-basic-authentication-concept.adoc[Basic authentication]
-* <<Form-based authentication>>
-* <<mutual TLS authentication>> 
+* <<form-auth>>
+* <<mutual-tls>>
 
 === Basic authentication
 
@@ -31,9 +52,10 @@ Instead, the authentication information is stored in an encrypted cookie, which 
 To apply encryption, add the `quarkus.http.auth.session.encryption-key` property, and ensure that the value you set is at least 16 characters long.
 This key is hashed using SHA-256.
 The resulting digest is used as a key for AES-256 encryption of the cookie value. 
-The cookie contains an expiry time as part of the encrypted value, so all nodes in the cluster must have their clocks synchronized. At one-minute intervals, a new cookie gets generated with an updated expiry time if the session is in use.
+The cookie contains an expiry time as part of the encrypted value, so all nodes in the cluster must have their clocks synchronized.
+At one-minute intervals, a new cookie gets generated with an updated expiry time if the session is in use.
 
-Single Page Application (SPA) typically wants to avoid redirects, which can be done by removing default page paths, as outlined in the following example:
+Single-page application (SPA) typically wants to avoid redirects, which can be done by removing default page paths, as outlined in the following example:
 
 [source,properties]
 ----
@@ -126,7 +148,7 @@ Quarkus Security also supports the following authentication mechanisms through e
 
 https://webauthn.guide/[WebAuthn] is an authentication mechanism that replaces passwords.
 When you write a service for registering new users, or logging them in, instead of asking for a password, you can use WebAuthn, which replaces the password.
-For more information, see xref:security-webauthn.adoc[Secure a Quarkus application by using the WebAuthn authentication mechanism].
+For more information, see xref:security-webauthn-concept.adoc[Secure a Quarkus application by using the WebAuthn authentication mechanism].
 
 
 === OpenID Connect authentication
@@ -153,22 +175,24 @@ For more information about OIDC authentication and authorization methods you can
 [options="header"]
 |====
 |OIDC topic |Quarkus information resource
-|Bearer Token authentication mechanism|xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
-|Authorization Code Flow authentication mechanism|xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
-|Multiple tenants that can support Bearer Token or Authorization Code Flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
+|Bearer token authentication mechanism|xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
+|Authorization code flow authentication mechanism|xref:security-oidc-code-flow-authentication-concept.adoc[OpenID Connect (OIDC) authorization code flow mechanism]
+|Multiple tenants that can support bearer token or authorization code flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
 |Using Keycloak to centralize authorization|xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]
 |Configuring Keycloak programmatically|xref:security-keycloak-admin-client.adoc[Using the Keycloak admin client]
 |====
 
 [NOTE]
 ====
-* If you need to enable the Quarkus OIDC extension at runtime, set `quarkus.oidc.tenant-enabled=false` at build time and then re-enable it at runtime by using a system property.
+If you need to enable the Quarkus OIDC extension at runtime, set `quarkus.oidc.tenant-enabled=false` at build time and then re-enable it at runtime by using a system property.
+
 For more information about managing the individual tenant configurations in multitenant OIDC deployments, see the _Disabling tenant configurations_ section in the xref:security-openid-connect-multitenancy.adoc#disable-tenant[Using OpenID Connect (OIDC) multi-tenancy] guide.
 ====
 
 ==== OpenID Connect client and filters
 
 The `quarkus-oidc-client` extension provides `OidcClient` for acquiring and refreshing access tokens from OpenID Connect and OAuth2 providers that support the following token grants:
+
 * `client-credentials`
 * `password`
 * `refresh_token`
@@ -193,7 +217,7 @@ For more information, see the xref:security-openid-connect-client.adoc[OpenID Co
 
 The `quarkus-smallrye-jwt` extension provides a MicroProfile JSON Web Token (JWT) 1.2.1 implementation and multiple options to verify signed and encrypted `JWT` tokens and represents them as `org.eclipse.microprofile.jwt.JsonWebToken`.
 
-`quarkus-smallrye-jwt` is an alternative to the `quarkus-oidc` Bearer Token authentication mechanism, and verifies only `JWT` tokens by using either PEM keys or the refreshable `JWK` key set.
+`quarkus-smallrye-jwt` is an alternative to the `quarkus-oidc` Bearer Token authentication mechanism, and verifies only `JWT` tokens by using either Privacy Enhanced Mail (PEM) keys or the refreshable `JWK` key set.
 `quarkus-smallrye-jwt` also provides the JWT generation API, which you can use to easily create `signed`, `inner-signed`, and `encrypted` `JWT` tokens.
 
 For more information, see xref:security-jwt.adoc[Using SmallRye JWT role-based access control].
@@ -207,7 +231,9 @@ For more information, see xref:security-oauth2.adoc[Using OAuth2].
 
 == Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms
 
-Use the following information to help you to decide which authentication mechanism to use to secure your Quarkus applications:
+Use the following information to select the appropriate token authentication mechanism to secure your Quarkus applications.
+
+.List of authentication mechanism use-cases
 
 * `quarkus-oidc` requires an OpenID Connect provider such as Keycloak, which can be used to verify the Bearer tokens or authenticate the end users with the Authorization Code flow.
 In both cases, `quarkus-oidc` requires a connection to the specified OpenID Connect provider.
@@ -217,14 +243,16 @@ In both cases, `quarkus-oidc` requires a connection to the specified OpenID Conn
 
 * If your Bearer tokens must be verified, use `quarkus-oidc`, `quarkus-smallrye-jwt`, or `quarkus-elytron-security-oauth2`.
 
-* If your Bearer tokens are in a JWT format, you can use either of the three extensions. Both `quarkus-oidc` and `quarkus-smallrye-jwt` support refreshing the JsonWebKey (JWK) set when the OpenID Connect provider rotates the keys.
+* If your Bearer tokens are in a JSON web token (JWT) format, you can use any of the extensions listed above.
+Both `quarkus-oidc` and `quarkus-smallrye-jwt` support refreshing the JsonWebKey (JWK) set when the OpenID Connect provider rotates the keys.
 Therefore, if remote token introspection must be avoided or is unsupported by the providers, use `quarkus-oidc` or `quarkus-smallrye-jwt` for verifying JWT tokens.
 
 * If you need to introspect the JWT tokens remotely, you can use either `quarkus-oidc` or `quarkus-elytron-security-oauth2` because they support the verification of the opaque or binary tokens by using remote introspection.
 `quarkus-smallrye-jwt` does not support the remote introspection of both opaque or JWT tokens but instead relies on the locally available keys that are usually retrieved from the OpenID Connect provider.
 
-* `quarkus-oidc` and `quarkus-smallrye-jwt` support the injecting of JWT and opaque tokens into the endpoint code.
-Injected JWT tokens provide more information about the user. All extensions can have the tokens injected as `Principal`.
+* `quarkus-oidc` and `quarkus-smallrye-jwt` support the JWT and opaque tokens injection into the endpoint code.
+Injected JWT tokens provide more information about the user.
+All extensions can have the tokens injected as `Principal`.
 
 * `quarkus-smallrye-jwt` supports more key formats than `quarkus-oidc`. `quarkus-oidc` uses only the JWK-formatted keys that are part of a JWK set, whereas `quarkus-smallrye-jwt` supports PEM keys.
 
@@ -235,74 +263,42 @@ While `quarkus-oidc` and `quarkus-elytron-security-oauth2` can also verify such 
 
 [NOTE]
 ====
-Your decision to choose whether to use opaque or JWT token format will be driven by architectural considerations.
+Architectural considerations drive your decision to use opaque or JSON web token (JWT) token format.
 Opaque tokens tend to be much shorter than JWT tokens but need most of the token-associated state to be maintained in the provider database.
 Opaque tokens are effectively database pointers.
-JWT tokens are significantly longer than the opaque tokens but the providers are effectively delegating storing most of the token-associated state to the client by storing it as the token claims and either signing or encrypting them.
+
+JWT tokens are significantly longer than opaque tokens. Still, the providers effectively delegate most of the token-associated state to the client by storing it as the token claims and either signing or encrypting them.
 ====
 
-The following table provides a summary of the options for each authentication mechanism:
-
+[[table]]
+.Token authentication mechanism comparison
 |===
-| | quarkus-oidc| quarkus-smallrye-jwt | quarkus-elytron-security-oauth2
+^|Feature required 3+^| Authentication mechanism
 
-|Requires Bearer JWT verification
-|Local verification or introspection
-|Local verification
-|Introspection
-|Requires Bearer opaque token verification
-|Introspection
-|No
-|Introspection
-|Refreshing `JsonWebKey` set for verifying JWT tokens
-|Yes
-|Yes
-|No
-|Represent token as `Principal`
-|Yes
-|Yes
-|Yes
-|Inject JWT as MP JSON Web Token (JWT)
-|Yes
-|Yes
-|No
-|Authorization Code Flow
-|Yes
-|No
-|No
-|Multi-tenancy
-|Yes
-|No
-|No
-|User info support
-|Yes
-|No
-|No
-|PEM key format support
-|No
-|Yes
-|No
-|SecretKey support
-|No
-|In JSON Web Key (JWK) format
-|No
-|Inner-signed and encrypted or encrypted tokens
-|Introspection
-|Local verification
-|Introspection
-|Custom token verification
-|No
-|With injected JWT parser
-|No
-|Accept JWT as a cookie
-|No
-|Yes
-|No
+^| ^s|`quarkus-oidc` ^s|`quarkus-smallrye-jwt` ^s| `quarkus-elytron-security-oauth2`
+
+s|Bearer JWT verification ^|Local verification or introspection  ^|Local verification  ^|Introspection
+
+s|Bearer opaque token verification ^|Introspection   ^|No  ^|Introspection
+s|Refreshing `JsonWebKey` set for verifying JWT tokens  ^|Yes   ^|Yes  ^|No
+s|Represent token as `Principal`  ^|Yes   ^|Yes  ^|Yes
+s|Inject JWT as MP JWT  ^|Yes   ^|Yes  ^|No
+
+s|Authorization code flow  ^| Yes  ^|No  ^|No
+s|Multi-tenancy ^| Yes  ^|No  ^|No
+s|User information support  ^| Yes  ^|No  ^|No
+s|PEM key format support  ^|No   ^|Yes  ^|No
+
+s|SecretKey support ^|No ^|In JSON Web Key (JWK) format ^|No
+s|Inner-signed and encrypted or encrypted tokens ^|Introspection ^|Local verification ^|Introspection
+s|Custom token verification ^|No ^|With injected JWT parser ^|No
+s|JWT as a cookie support ^|No ^|Yes ^|Yes
 |===
+
 
 == Combining authentication mechanisms
 
-If the user credentials are provided by different sources, you can combine  authentication mechanisms.
+If the user credentials are provided by different sources, you can combine authentication mechanisms.
 For example, you can combine built-in `Basic` and `quarkus-oidc` `Bearer` authentication mechanisms.
 
 [IMPORTANT]

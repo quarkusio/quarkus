@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-authorize-web-endpoints-reference"]
-= Authorize web endpoints
+= Authorization of web endpoints
 include::_attributes.adoc[]
 :categories: security,web
 

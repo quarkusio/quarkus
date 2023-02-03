@@ -174,7 +174,7 @@ Select a realm, enter the client id and secret, a relative service endpoint path
 [[develop-web-app-applications]]
 === Developing OpenID Connect Web App Applications
 
-If you develop a xref:security-oidc-web-authentication-concept.adoc[Quarkus OIDC web-app application], then you should set `quarkus.oidc.application-type=web-app` in `application.properties` before starting the application.
+If you develop a xref:security-oidc-code-flow-authentication-concept.adoc[Quarkus OIDC web-app application], then you should set `quarkus.oidc.application-type=web-app` in `application.properties` before starting the application.
 
 You will see a screen like this one:
 
@@ -212,7 +212,7 @@ It will ensure that if you access the application from the browser in dev mode, 
 You can run the tests against a Keycloak container started in a test mode in a xref:continuous-testing.adoc[Continuous Testing] mode.
 
 It is also recommended to run the integration tests against Keycloak using `Dev Services for Keycloak`.
-For more information, see xref:security-oidc-bearer-authentication-concept.adoc#integration-testing-keycloak-devservices[Testing OpenID onnect Service Applications with Dev Services] and xref:security-oidc-web-authentication-concept.adoc#integration-testing-keycloak-devservices[Testing OpenID Connect WebApp Applications with Dev Services].
+For more information, see xref:security-oidc-bearer-authentication-concept.adoc#integration-testing-keycloak-devservices[Testing OpenID onnect Service Applications with Dev Services] and xref:security-oidc-code-flow-authentication-concept.adoc#integration-testing-keycloak-devservices[Testing OpenID Connect WebApp Applications with Dev Services].
 
 [[keycloak-initialization]]
 === Keycloak Initialization
@@ -312,7 +312,7 @@ If you work with other providers then a Dev UI experience described in the <<key
 The current access token is used by default to test the service with `Swagger UI` or `GrapghQL UI`. If the provider (other than Keycloak) returns a binary access token then it will be used with `Swagger UI` or `GrapghQL UI` only if this provider has a token introspection endpoint otherwise an `IdToken` which is always in a JWT format will be passed to `Swagger UI` or `GrapghQL UI`. In such cases you can verify with the manual Dev UI test that `401` will always be returned for the current binary access token. Also note that using `IdToken` as a fallback with either of these UIs is only possible with the authorization code flow.
 ====
 
-Some providers such as `Auth0` do not support a standard RP initiated logout so the provider specific logout properties will have to be configured for a logout option be visible. For more information, see xref:security-oidc-web-authentication-concept.adoc#user-initiated-logout[OpenID Connect User-Initiated Logout].
+Some providers such as `Auth0` do not support a standard RP initiated logout so the provider specific logout properties will have to be configured for a logout option be visible. For more information, see xref:security-oidc-code-flow-authentication-concept.adoc#user-initiated-logout[OpenID Connect User-Initiated Logout].
 
 Similarly, if you'd like to use a `password` or `client_credentials` grant for Dev UI to acquire the tokens then you may have to configure some extra provider specific properties, for example:
 
@@ -409,5 +409,5 @@ This document refers to the `http://localhost:8080/q/dev` Dev UI URL in several 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
-* xref:security-oidc-web-authentication-concept.adoc[Web authentication using OIDC authorization code flow]
+* xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

@@ -14,7 +14,7 @@ When serving multiple customers from the same application (e.g.: SaaS), each cus
 
 Please read the xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] guide if you need to authorize a tenant using Bearer Token Authorization.
 
-If you need to authenticate and authorize a tenant using OpenID Connect Authorization Code Flow, read the xref:security-oidc-web-authentication-concept.adoc[Web authentication using OIDC authorization code flow] guide.
+If you need to authenticate and authorize a tenant using OpenID Connect Authorization Code Flow, read the xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications] guide.
 
 Also see the xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties] reference guide.
 

@@ -1,5 +1,5 @@
 [id="security-oidc-code-flow-authentication-tutorial"]
-= Protect a web application by using OIDC authorization code flow mechanism
+= Protect a web application by using OIDC authorization code flow
 include::_attributes.adoc[]
 :categories: security,web
 

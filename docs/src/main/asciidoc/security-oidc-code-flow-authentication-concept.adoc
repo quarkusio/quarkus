@@ -37,8 +37,9 @@ The following tokens are issued:
 
 See also the xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties] reference guide.
 
-For information about protecting your applications using Bearer Token authorization, see xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication].
+To learn about how you can protect web applications by using the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 
+If you want to protect your applications by using Bearer Token authentication, see xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication].
 For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
 == Using the authorization code flow mechanism

@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +67,7 @@ public class SerializedApplication {
             data.writeInt(VERSION);
             data.writeUTF(mainClass);
             data.writeShort(classPath.size());
-            Map<String, List<Integer>> directlyIndexedResourcesToCPJarIndex = new HashMap<>();
+            Map<String, List<Integer>> directlyIndexedResourcesToCPJarIndex = new LinkedHashMap<>();
             for (int i = 0; i < classPath.size(); i++) {
                 Path jar = classPath.get(i);
                 String relativePath = applicationRoot.relativize(jar).toString().replace('\\', '/');
@@ -199,8 +200,8 @@ public class SerializedApplication {
                 }
             }
 
-            Set<String> dirs = new HashSet<>();
-            Map<String, List<String>> fullyIndexedPaths = new HashMap<>();
+            Set<String> dirs = new LinkedHashSet<>();
+            Map<String, List<String>> fullyIndexedPaths = new LinkedHashMap<>();
             Enumeration<? extends ZipEntry> entries = zip.entries();
             boolean hasDefaultPackage = false;
             while (entries.hasMoreElements()) {

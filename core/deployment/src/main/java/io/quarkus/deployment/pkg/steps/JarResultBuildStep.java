@@ -622,13 +622,13 @@ public class JarResultBuildStep {
             }
         }
 
-        List<Path> jars = new ArrayList<>();
+        FastJarJars.FastJarJarsBuilder fastJarJarsBuilder = new FastJarJars.FastJarJarsBuilder();
         List<Path> parentFirst = new ArrayList<>();
         //we process in order of priority
         //transformed classes first
         if (!transformedClasses.getTransformedClassesByJar().isEmpty()) {
             Path transformedZip = quarkus.resolve(TRANSFORMED_BYTECODE_JAR);
-            jars.add(transformedZip);
+            fastJarJarsBuilder.setTransformed(transformedZip);
             try (FileSystem out = ZipUtils.newZip(transformedZip)) {
                 for (Set<TransformedClassesBuildItem.TransformedClass> transformedSet : transformedClasses
                         .getTransformedClassesByJar().values()) {
@@ -649,7 +649,7 @@ public class JarResultBuildStep {
         }
         //now generated classes and resources
         Path generatedZip = quarkus.resolve(GENERATED_BYTECODE_JAR);
-        jars.add(generatedZip);
+        fastJarJarsBuilder.setGenerated(generatedZip);
         try (FileSystem out = ZipUtils.newZip(generatedZip)) {
             for (GeneratedClassBuildItem i : generatedClasses) {
                 String fileName = i.getName().replace('.', '/') + ".class";
@@ -678,7 +678,7 @@ public class JarResultBuildStep {
 
         //now the application classes
         Path runnerJar = appDir.resolve(outputTargetBuildItem.getBaseName() + DOT_JAR);
-        jars.add(runnerJar);
+        fastJarJarsBuilder.setRunner(runnerJar);
 
         if (!rebuild) {
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
@@ -693,10 +693,11 @@ public class JarResultBuildStep {
         final Map<ArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
         for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
             if (!rebuild) {
-                copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib, jars, true,
+                copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib,
+                        fastJarJarsBuilder::addDep, true,
                         classPath, appDep, transformedClasses, removed);
             } else if (includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies(), removed)) {
-                appDep.getResolvedPaths().forEach(jars::add);
+                appDep.getResolvedPaths().forEach(fastJarJarsBuilder::addDep);
             }
             if (parentFirstKeys.contains(appDep.getKey())) {
                 appDep.getResolvedPaths().forEach(parentFirst::add);
@@ -709,7 +710,7 @@ public class JarResultBuildStep {
                             "Additional application archives can only be provided from the user providers directory. " + path
                                     + " is not present in " + userProviders);
                 }
-                jars.add(path);
+                fastJarJarsBuilder.addDep(path);
             }
         }
 
@@ -731,8 +732,22 @@ public class JarResultBuildStep {
 
         Path appInfo = buildDir.resolve(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
         try (OutputStream out = Files.newOutputStream(appInfo)) {
-            SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, parentFirst,
-                    nonExistentResources);
+            FastJarJars fastJarJars = fastJarJarsBuilder.build();
+            List<Path> allJars = new ArrayList<>();
+            if (fastJarJars.transformed != null) {
+                allJars.add(fastJarJars.transformed);
+            }
+            allJars.add(fastJarJars.generated);
+            allJars.add(fastJarJars.runner);
+            List<Path> sortedDeps = new ArrayList<>(fastJarJars.deps);
+            Collections.sort(sortedDeps);
+            allJars.addAll(sortedDeps);
+            List<Path> sortedParentFirst = new ArrayList<>(parentFirst);
+            Collections.sort(sortedParentFirst);
+            List<String> sortedNonExistentResources = new ArrayList<>(nonExistentResources);
+            Collections.sort(sortedNonExistentResources);
+            SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, allJars, sortedParentFirst,
+                    sortedNonExistentResources);
         }
 
         runnerJar.toFile().setReadable(true, false);
@@ -765,7 +780,8 @@ public class JarResultBuildStep {
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
                 Files.createDirectories(deploymentLib);
                 for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
-                    copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
+                    copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, (p) -> {
+                    },
                             false, classPath,
                             appDep, new TransformedClassesBuildItem(Map.of()), removed); //we don't care about transformation here, so just pass in an empty item
                 }
@@ -866,7 +882,7 @@ public class JarResultBuildStep {
     }
 
     private void copyDependency(Set<ArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
-            Map<ArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, List<Path> jars,
+            Map<ArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, Consumer<Path> targetPathConsumer,
             boolean allowParentFirst, StringBuilder classPath, ResolvedDependency appDep,
             TransformedClassesBuildItem transformedClasses, Set<ArtifactKey> removedDeps)
             throws IOException {
@@ -888,7 +904,7 @@ public class JarResultBuildStep {
                 classPath.append(" ").append(LIB).append("/").append(BOOT_LIB).append("/").append(fileName);
             } else {
                 targetPath = libDir.resolve(fileName);
-                jars.add(targetPath);
+                targetPathConsumer.accept(targetPath);
             }
             runtimeArtifacts.computeIfAbsent(appDep.getKey(), (s) -> new ArrayList<>(1)).add(targetPath);
 
@@ -1476,6 +1492,51 @@ public class JarResultBuildStep {
         public boolean test(String path) {
             return UBER_JAR_IGNORED_ENTRIES.contains(path)
                     || path.endsWith("module-info.class");
+        }
+    }
+
+    static class FastJarJars {
+        private final Path transformed;
+        private final Path generated;
+        private final Path runner;
+        private final List<Path> deps;
+
+        public FastJarJars(FastJarJarsBuilder builder) {
+            this.transformed = builder.transformed;
+            this.generated = builder.generated;
+            this.runner = builder.runner;
+            this.deps = builder.deps;
+        }
+
+        public static class FastJarJarsBuilder {
+            private Path transformed;
+            private Path generated;
+            private Path runner;
+            private final List<Path> deps = new ArrayList<>();
+
+            public FastJarJarsBuilder setTransformed(Path transformed) {
+                this.transformed = transformed;
+                return this;
+            }
+
+            public FastJarJarsBuilder setGenerated(Path generated) {
+                this.generated = generated;
+                return this;
+            }
+
+            public FastJarJarsBuilder setRunner(Path runner) {
+                this.runner = runner;
+                return this;
+            }
+
+            public FastJarJarsBuilder addDep(Path dep) {
+                this.deps.add(dep);
+                return this;
+            }
+
+            public FastJarJars build() {
+                return new FastJarJars(this);
+            }
         }
     }
 

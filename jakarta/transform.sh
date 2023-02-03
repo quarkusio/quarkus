@@ -56,6 +56,7 @@ clean_project () {
 clean_maven_repository () {
   if [ -d ~/.m2/repository/io/quarkus ]; then
     find ~/.m2/repository/io/quarkus -name '999-jakarta-SNAPSHOT' -exec rm -rf {} +
+    find ~/.m2/repository/io/quarkus -name '999-SNAPSHOT' -exec rm -rf {} +
   fi
 }
 
@@ -195,9 +196,6 @@ set_property () {
 clean_maven_repository
 # Note for future me: we cannot use ./mvnw clean here
 clean_project
-
-# TODO REMOVE FOR FINAL VERSION
-./update-version.sh 999-jakarta-SNAPSHOT
 
 ## let's build what's required to be able to run the rewrite
 ./mvnw -B -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-extension-maven-plugin -pl :quarkus-enforcer-rules -pl :quarkus-maven-plugin -pl :quarkus-bom-test -am clean install -DskipTests -DskipITs -Dinvoker.skip

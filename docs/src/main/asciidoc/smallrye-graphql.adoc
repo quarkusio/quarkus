@@ -667,7 +667,7 @@ Add the following to our `FilmResource` class:
 ----
     @Query
     @Description("Get all characters from a galaxy far far away")
-    public List<Characters> characters() {
+    public List<Character> characters() {
         return service.getAllCharacters();
     }
 ----

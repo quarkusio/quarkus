@@ -554,6 +554,9 @@ final class Methods {
                 // Skip bridge methods that have a corresponding "implementation method" on the same class
                 // The algorithm we use to detect these methods is best effort, i.e. there might be use cases where the detection fails
                 return hasImplementation(method);
+            } else if (method.isSynthetic()) {
+                // Skip non-bridge synthetic methods
+                return true;
             }
             if (method.hasAnnotation(DotNames.POST_CONSTRUCT) || method.hasAnnotation(DotNames.PRE_DESTROY)) {
                 // @PreDestroy and @PostConstruct methods declared on the bean are NOT candidates for around invoke interception

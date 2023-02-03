@@ -11,7 +11,8 @@
         <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-class-change-agent</artifactId>
+    <!-- Using "klass" instead of "class", which is not allowed in automatic module name of the resulting JAR. -->
+    <artifactId>quarkus-klass-change-agent</artifactId>
     <name>Quarkus - Core - Class Change Agent</name>
     <description>
         A Java Agent that exposes the instrumentation API. This allows for super fast

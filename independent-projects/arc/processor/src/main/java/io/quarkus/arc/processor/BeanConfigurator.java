@@ -55,17 +55,17 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
 
             String name = this.name;
             if (name == null) {
-                name = Beans.initStereotypeName(stereotypes, implClass);
+                name = Beans.initStereotypeName(stereotypes, implClass, beanDeployment);
             }
 
             Boolean alternative = this.alternative;
             if (alternative == null) {
-                alternative = Beans.initStereotypeAlternative(stereotypes);
+                alternative = Beans.initStereotypeAlternative(stereotypes, beanDeployment);
             }
 
             Integer priority = this.priority;
             if (priority == null) {
-                priority = Beans.initStereotypeAlternativePriority(stereotypes);
+                priority = Beans.initStereotypeAlternativePriority(stereotypes, implClass, beanDeployment);
             }
 
             beanConsumer.accept(new BeanInfo.Builder()

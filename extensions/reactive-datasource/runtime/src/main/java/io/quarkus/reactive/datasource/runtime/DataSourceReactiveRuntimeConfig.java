@@ -31,8 +31,8 @@ public class DataSourceReactiveRuntimeConfig {
     /**
      * The datasource pool maximum size.
      */
-    @ConfigItem(defaultValueDocumentation = "20")
-    public OptionalInt maxSize = OptionalInt.empty();
+    @ConfigItem(defaultValue = "20")
+    public int maxSize = 20;
 
     /**
      * When a new connection object is created, the pool assigns it an event loop.

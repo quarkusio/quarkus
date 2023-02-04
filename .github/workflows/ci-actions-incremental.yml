@@ -575,8 +575,8 @@ jobs:
     name: Quickstarts Compilation - JDK ${{matrix.java.name}}
     runs-on: ${{matrix.java.os-name}}
     needs: build-jdk11
-    # Skip the jakarta-rewrite and 3.0 branches and main in forks
-    if: github.ref_name != 'jakarta-rewrite' && github.ref_name != '3.0' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    # Skip main in forks
+    if: (github.repository == 'quarkusio/quarkus' && (github.event_name != 'pull_request' || github.base_ref == 'main')) || !endsWith(github.ref, '/main')
     timeout-minutes: 90
     strategy:
       fail-fast: false

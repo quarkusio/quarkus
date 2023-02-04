@@ -552,7 +552,7 @@ jobs:
     runs-on: ${{matrix.java.os-name}}
     needs: build-jdk11
     # Skip main in forks
-    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
+    if: (github.repository == 'quarkusio/quarkus' && (github.event_name != 'pull_request' || github.base_ref == 'main')) || !endsWith(github.ref, '/main')
     timeout-minutes: 90
     strategy:
       fail-fast: false

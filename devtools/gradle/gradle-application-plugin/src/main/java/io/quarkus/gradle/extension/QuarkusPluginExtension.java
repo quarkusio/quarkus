@@ -1,12 +1,15 @@
 package io.quarkus.gradle.extension;
 
+import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_PACKAGE_ADD_RUNNER_SUFFIX;
+import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_PACKAGE_OUTPUT_NAME;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -42,11 +45,19 @@ public class QuarkusPluginExtension {
     private final MapProperty<String, String> quarkusBuildProperties;
     private final SourceSetExtension sourceSetExtension;
 
+    private final Property<Boolean> cacheLargeArtifacts;
+    private final Property<Boolean> cleanupBuildOutput;
+
     public QuarkusPluginExtension(Project project) {
         this.project = project;
 
         finalName = project.getObjects().property(String.class);
         finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
+
+        this.cleanupBuildOutput = project.getObjects().property(Boolean.class)
+                .convention(true);
+        this.cacheLargeArtifacts = project.getObjects().property(Boolean.class)
+                .convention(!System.getenv().containsKey("CI"));
 
         this.sourceSetExtension = new SourceSetExtension();
         this.quarkusBuildProperties = project.getObjects().mapProperty(String.class, String.class);
@@ -96,32 +107,64 @@ public class QuarkusPluginExtension {
         }
     }
 
-    public String buildNativeRunnerName(final Map<String, Object> taskSystemProps) {
-        Properties properties = new Properties(taskSystemProps.size());
-        properties.putAll(taskSystemProps);
-        quarkusBuildProperties.get().entrySet()
-                .forEach(buildEntry -> properties.putIfAbsent(buildEntry.getKey(), buildEntry.getValue()));
-        System.getProperties().entrySet()
-                .forEach(propEntry -> properties.putIfAbsent(propEntry.getKey(), propEntry.getValue()));
-        System.getenv().entrySet().forEach(
-                envEntry -> properties.putIfAbsent(envEntry.getKey(), envEntry.getValue()));
-        StringBuilder nativeRunnerName = new StringBuilder();
+    public String resolveBuildProperty(String propertyKey, Map<String, Object> taskSystemProps, String defaultValue) {
+        Object v = taskSystemProps.get(propertyKey);
+        if (v instanceof String) {
+            return v.toString();
+        }
+        String s = quarkusBuildProperties.get().get(propertyKey);
+        if (s != null) {
+            return s;
+        }
+        s = System.getProperty(propertyKey);
+        if (s != null) {
+            return s;
+        }
+        s = System.getenv(propertyKey.toUpperCase(Locale.ROOT).replace('.', '_'));
+        if (s != null) {
+            return s;
+        }
+        return defaultValue;
+    }
 
-        if (properties.containsKey("quarkus.package.output-name")) {
-            nativeRunnerName.append(properties.get("quarkus.package.output-name"));
-        } else {
-            nativeRunnerName.append(finalName());
+    public String buildNativeRunnerBaseName(Map<String, Object> taskSystemProps) {
+        return resolveBuildProperty(QUARKUS_PACKAGE_OUTPUT_NAME, taskSystemProps, finalName());
+    }
+
+    public String buildNativeRunnerName(Map<String, Object> taskSystemProps) {
+        String outputName = buildNativeRunnerBaseName(taskSystemProps);
+        if (Boolean.parseBoolean(resolveBuildProperty(QUARKUS_PACKAGE_ADD_RUNNER_SUFFIX, taskSystemProps, "true"))) {
+            return outputName + "-runner";
         }
-        if (!properties.containsKey("quarkus.package.add-runner-suffix")
-                || (properties.containsKey("quarkus.package.add-runner-suffix")
-                        && Boolean.parseBoolean((String) properties.get("quarkus.package.add-runner-suffix")))) {
-            nativeRunnerName.append("-runner");
-        }
-        return nativeRunnerName.toString();
+        return outputName;
     }
 
     public Property<String> getFinalName() {
         return finalName;
+    }
+
+    /**
+     * Whether the build output, build/*-runner[.jar] and build/quarkus-app, for other package types than the
+     * currently configured one are removed, default is 'true'.
+     */
+    public Property<Boolean> getCleanupBuildOutput() {
+        return cleanupBuildOutput;
+    }
+
+    public void setCleanupBuildOutput(boolean cleanupBuildOutput) {
+        this.cleanupBuildOutput.set(cleanupBuildOutput);
+    }
+
+    /**
+     * Whether large build artifacts, like uber-jar and native runners, are cached. Defaults to 'false' if the 'CI' environment
+     * variable is set, otherwise defaults to 'true'.
+     */
+    public Property<Boolean> getCacheLargeArtifacts() {
+        return cacheLargeArtifacts;
+    }
+
+    public void setCacheLargeArtifacts(boolean cacheLargeArtifacts) {
+        this.cacheLargeArtifacts.set(cacheLargeArtifacts);
     }
 
     public String finalName() {

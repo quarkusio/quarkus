@@ -23,13 +23,6 @@ dependencies {
 group 'org.acme'
 version '1.0.0-SNAPSHOT'
 
-quarkus {
-    properties {
-        set("package.type", "fast-jar")
-        set("package.output-directory", "build-gradle-output-dir")
-    }
-}
-
 compileJava {
     options.encoding = 'UTF-8'
     options.compilerArgs << '-parameters'

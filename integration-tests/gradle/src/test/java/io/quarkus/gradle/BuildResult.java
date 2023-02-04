@@ -1,9 +1,8 @@
 package io.quarkus.gradle;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,13 +20,11 @@ public class BuildResult {
     private BuildResult() {
     }
 
-    public static BuildResult of(InputStream input) {
+    public static BuildResult of(File logFile) throws IOException {
         BuildResult result = new BuildResult();
-        final List<String> outputLines = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))
-                .lines()
-                .collect(Collectors.toList());
+        List<String> outputLines = Files.readAllLines(logFile.toPath());
         result.setTasks(outputLines.stream()
-                .filter(l -> l.length() != 0 && l.startsWith(TASK_RESULT_PREFIX))
+                .filter(l -> l.startsWith(TASK_RESULT_PREFIX))
                 .map(l -> l.replaceFirst(TASK_RESULT_PREFIX, "").trim())
                 .map(l -> l.split(" "))
                 .collect(Collectors.toMap(p -> p[0], p -> {

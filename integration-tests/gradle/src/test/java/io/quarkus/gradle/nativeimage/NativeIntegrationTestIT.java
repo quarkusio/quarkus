@@ -16,7 +16,7 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
 
         BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative");
 
-        assertThat(testResult.getTasks().get(":testNative")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
     }
 
     @Test
@@ -25,7 +25,7 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
 
         final BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative",
                 "-Dquarkus.package.output-name=test");
-        assertThat(testResult.getTasks().get(":testNative")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
     }
 
     @Test
@@ -34,7 +34,7 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
 
         final BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative",
                 "-Dquarkus.package.add-runner-suffix=false");
-        assertThat(testResult.getTasks().get(":testNative")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
     }
 
 }

@@ -1,9 +1,7 @@
 package io.quarkus.gradle;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +44,6 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .redirectInput(ProcessBuilder.Redirect.INHERIT)
                 .redirectError(logOutput)
                 .redirectOutput(logOutput)
-                .redirectError(logOutput)
                 .start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(p::destroyForcibly));
@@ -57,14 +54,12 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         if (!done) {
             destroyProcess(p);
         }
-        try (InputStream is = new FileInputStream(logOutput)) {
-            final BuildResult commandResult = BuildResult.of(is);
-            int exitCode = p.exitValue();
-            if (exitCode != 0) {
-                printCommandOutput(projectDir, command, commandResult, exitCode);
-            }
-            return commandResult;
+        final BuildResult commandResult = BuildResult.of(logOutput);
+        int exitCode = p.exitValue();
+        if (exitCode != 0) {
+            printCommandOutput(projectDir, command, commandResult, exitCode);
         }
+        return commandResult;
     }
 
     protected void setSystemProperty(String name, String value) {

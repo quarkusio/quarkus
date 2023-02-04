@@ -36,7 +36,9 @@ import io.quarkus.gradle.tasks.ImageBuild;
 import io.quarkus.gradle.tasks.ImagePush;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
 import io.quarkus.gradle.tasks.QuarkusBuild;
+import io.quarkus.gradle.tasks.QuarkusBuildApp;
 import io.quarkus.gradle.tasks.QuarkusBuildConfiguration;
+import io.quarkus.gradle.tasks.QuarkusBuildDependencies;
 import io.quarkus.gradle.tasks.QuarkusDev;
 import io.quarkus.gradle.tasks.QuarkusGenerateCode;
 import io.quarkus.gradle.tasks.QuarkusGoOffline;
@@ -46,6 +48,7 @@ import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusListPlatforms;
 import io.quarkus.gradle.tasks.QuarkusRemoteDev;
 import io.quarkus.gradle.tasks.QuarkusRemoveExtension;
+import io.quarkus.gradle.tasks.QuarkusShowEffectiveConfig;
 import io.quarkus.gradle.tasks.QuarkusTest;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusUpdate;
@@ -55,7 +58,17 @@ import io.quarkus.runtime.LaunchMode;
 public class QuarkusPlugin implements Plugin<Project> {
 
     public static final String ID = "io.quarkus";
+    public static final String QUARKUS_PROFILE = "quarkus.profile";
+    public static final String DEFAULT_PROFILE = "prod";
+    public static final String QUARKUS_PACKAGE_OUTPUT_NAME = "quarkus.package.output-name";
+    public static final String QUARKUS_PACKAGE_ADD_RUNNER_SUFFIX = "quarkus.package.add-runner-suffix";
     public static final String QUARKUS_PACKAGE_TYPE = "quarkus.package.type";
+    public static final String DEFAULT_PACKAGE_TYPE = "jar";
+    public static final String OUTPUT_DIRECTORY = "quarkus.package.output-directory";
+    public static final String DEFAULT_OUTPUT_DIRECTORY = "quarkus-app";
+    public static final String CLASS_LOADING_REMOVED_ARTIFACTS = "quarkus.class-loading.removed-artifacts";
+    public static final String CLASS_LOADING_PARENT_FIRST_ARTIFACTS = "quarkus.class-loading.parent-first-artifacts";
+    public static final String QUARKUS_ARTIFACT_PROPERTIES = "quarkus-artifact.properties";
 
     public static final String EXTENSION_NAME = "quarkus";
     public static final String LIST_EXTENSIONS_TASK_NAME = "listExtensions";
@@ -66,6 +79,9 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String QUARKUS_GENERATE_CODE_TASK_NAME = "quarkusGenerateCode";
     public static final String QUARKUS_GENERATE_CODE_DEV_TASK_NAME = "quarkusGenerateCodeDev";
     public static final String QUARKUS_GENERATE_CODE_TESTS_TASK_NAME = "quarkusGenerateCodeTests";
+    public static final String QUARKUS_BUILD_DEP_TASK_NAME = "quarkusDependenciesBuild";
+    public static final String QUARKUS_BUILD_APP_TASK_NAME = "quarkusAppBuild";
+    public static final String QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME = "quarkusShowEffectiveConfig";
     public static final String QUARKUS_BUILD_TASK_NAME = "quarkusBuild";
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
     public static final String QUARKUS_REMOTE_DEV_TASK_NAME = "quarkusRemoteDev";
@@ -96,6 +112,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     private final ToolingModelBuilderRegistry registry;
 
+    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     public QuarkusPlugin(ToolingModelBuilderRegistry registry) {
         this.registry = registry;
@@ -148,11 +165,38 @@ public class QuarkusPlugin implements Plugin<Project> {
         TaskProvider<QuarkusGenerateCode> quarkusGenerateCodeTests = tasks.register(QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
                 QuarkusGenerateCode.class, task -> task.setTest(true));
 
-        QuarkusBuildConfiguration buildConfig = new QuarkusBuildConfiguration(project);
+        QuarkusBuildConfiguration buildConfig = new QuarkusBuildConfiguration(project, quarkusExt);
 
-        TaskProvider<QuarkusBuild> quarkusBuild = tasks.register(QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class, build -> {
-            build.dependsOn(quarkusGenerateCode);
-            build.getForcedProperties().set(buildConfig.getForcedProperties());
+        TaskProvider<QuarkusBuildDependencies> quarkusBuildDep = tasks.register(QUARKUS_BUILD_DEP_TASK_NAME,
+                QuarkusBuildDependencies.class, buildConfig);
+        quarkusBuildDep.configure(task -> {
+            task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
+        });
+
+        TaskProvider<QuarkusShowEffectiveConfig> quarkusShowConfig = tasks.register(QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME,
+                QuarkusShowEffectiveConfig.class, buildConfig);
+        quarkusShowConfig.configure(task -> {
+            task.setDescription("Show effective Quarkus build configuration.");
+        });
+
+        TaskProvider<QuarkusBuildApp> quarkusBuildApp = tasks.register(QUARKUS_BUILD_APP_TASK_NAME,
+                QuarkusBuildApp.class, buildConfig);
+        quarkusBuildApp.configure(task -> {
+            task.dependsOn(quarkusGenerateCode);
+            task.getOutputs().doNotCacheIf(
+                    "Not adding uber-jars, native binaries and mutable-jar package type to Gradle " +
+                            "build cache by default. To allow caching of uber-jars, native binaries and mutable-jar " +
+                            "package type, set 'cacheUberAndNativeRunners' in the 'quarkus' Gradle extension to 'true'.",
+                    t -> !task.isCachedByDefault() && !quarkusExt.getCacheLargeArtifacts().get());
+        });
+
+        TaskProvider<QuarkusBuild> quarkusBuild = tasks.register(QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class, buildConfig);
+        quarkusBuild.configure(build -> {
+            build.dependsOn(quarkusBuildDep, quarkusBuildApp);
+            build.getOutputs().doNotCacheIf(
+                    "Collects and combines the outputs of " + QUARKUS_BUILD_APP_TASK_NAME + " and "
+                            + QUARKUS_BUILD_DEP_TASK_NAME,
+                    t -> !quarkusExt.getCacheLargeArtifacts().get());
         });
 
         TaskProvider<ImageBuild> imageBuild = tasks.register(IMAGE_BUILD_TASK_NAME, ImageBuild.class, buildConfig);
@@ -242,7 +286,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                                 quarkusGenerateCode,
                                 quarkusGenerateCodeTests);
                     });
-                    quarkusBuild.configure(
+                    quarkusBuildApp.configure(
                             task -> task.dependsOn(classesTask, resourcesTask, tasks.named(JavaPlugin.JAR_TASK_NAME)));
 
                     SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
@@ -310,7 +354,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                         t.useJUnitPlatform();
                     });
                     // quarkusBuild is expected to run after the project has passed the tests
-                    quarkusBuild.configure(task -> task.shouldRunAfter(tasks.withType(Test.class)));
+                    quarkusBuildApp.configure(task -> task.shouldRunAfter(tasks.withType(Test.class)));
 
                     SourceSet generatedSourceSet = sourceSets.create(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
                     SourceSet generatedTestSourceSet = sourceSets.create(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);

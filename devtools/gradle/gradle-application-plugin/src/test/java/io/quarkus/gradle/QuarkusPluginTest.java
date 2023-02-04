@@ -41,6 +41,8 @@ public class QuarkusPluginTest {
         assertTrue(project.getPluginManager().hasPlugin(QuarkusPlugin.ID));
 
         TaskContainer tasks = project.getTasks();
+        assertNotNull(tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_APP_TASK_NAME));
+        assertNotNull(tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_DEP_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.QUARKUS_DEV_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.BUILD_NATIVE_TASK_NAME));
@@ -70,9 +72,19 @@ public class QuarkusPluginTest {
 
         TaskContainer tasks = project.getTasks();
 
+        Task quarkusAppBuild = tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_APP_TASK_NAME);
+        assertThat(getDependantProvidedTaskName(quarkusAppBuild))
+                .contains(JavaPlugin.CLASSES_TASK_NAME)
+                .contains(QuarkusPlugin.QUARKUS_GENERATE_CODE_TASK_NAME);
+
+        Task quarkusDepBuild = tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_DEP_TASK_NAME);
+        assertThat(getDependantProvidedTaskName(quarkusDepBuild))
+                .isEmpty();
+
         Task quarkusBuild = tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME);
         assertThat(getDependantProvidedTaskName(quarkusBuild))
-                .contains(JavaPlugin.CLASSES_TASK_NAME);
+                .contains(QuarkusPlugin.QUARKUS_BUILD_APP_TASK_NAME)
+                .contains(QuarkusPlugin.QUARKUS_BUILD_APP_TASK_NAME);
 
         Task quarkusDev = tasks.getByName(QuarkusPlugin.QUARKUS_DEV_TASK_NAME);
         assertThat(getDependantProvidedTaskName(quarkusDev))

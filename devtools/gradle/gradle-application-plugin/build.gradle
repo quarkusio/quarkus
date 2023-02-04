@@ -7,6 +7,7 @@ dependencies {
     implementation "io.quarkus:quarkus-devtools-common:${version}"
     implementation "io.quarkus:quarkus-core-deployment:${version}"
     implementation "io.quarkus:quarkus-bootstrap-gradle-resolver:${version}"
+    implementation "io.smallrye.config:smallrye-config-source-yaml:${smallrye_config_version}"
 
     implementation project(":gradle-model")
 

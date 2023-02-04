@@ -14,9 +14,12 @@ import java.util.function.Consumer;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
@@ -31,6 +34,7 @@ import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
+@CacheableTask
 public class QuarkusGenerateCode extends QuarkusTask {
 
     public static final String QUARKUS_GENERATED_SOURCES = "quarkus-generated-sources";
@@ -66,6 +70,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
     }
 
     @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
     public Set<File> getInputDirectory() {
         Set<File> inputDirectories = new HashSet<>();
 

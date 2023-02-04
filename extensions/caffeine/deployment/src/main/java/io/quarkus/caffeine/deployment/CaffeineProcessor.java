@@ -3,6 +3,7 @@ package io.quarkus.caffeine.deployment;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -12,8 +13,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.runtime.metrics.MetricsFactory;
 
 public class CaffeineProcessor {
 
@@ -48,5 +52,19 @@ public class CaffeineProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     NativeImageFeatureBuildItem nativeImageFeature() {
         return new NativeImageFeatureBuildItem(CacheConstructorsFeature.class);
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageSystemPropertyBuildItem registerRecordStatsImplementationsIfMicrometerAround(
+            Optional<MetricsCapabilityBuildItem> metricsCapability) {
+        if (metricsCapability.isEmpty()) {
+            return null;
+        }
+        if (!metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+            return null;
+        }
+
+        return new NativeImageSystemPropertyBuildItem(CacheConstructorsFeature.REGISTER_RECORD_STATS_IMPLEMENTATIONS,
+                "true");
     }
 }

@@ -149,6 +149,7 @@ updates:
       # Elasticsearch - we do not update the high level client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer
+      - dependency-name: co.elastic.clients:elasticsearch-java
       # Others
       - dependency-name: com.puppycrawl.tools:checkstyle
       - dependency-name: com.google.cloud.functions:*

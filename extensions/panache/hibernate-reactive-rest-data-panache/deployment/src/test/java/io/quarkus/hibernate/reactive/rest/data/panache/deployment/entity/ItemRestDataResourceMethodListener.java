@@ -7,7 +7,7 @@ import static io.quarkus.hibernate.reactive.rest.data.panache.deployment.entity.
 import static io.quarkus.hibernate.reactive.rest.data.panache.deployment.entity.PanacheEntityResourceMethodListenerTest.ON_BEFORE_SAVE_COUNTER;
 import static io.quarkus.hibernate.reactive.rest.data.panache.deployment.entity.PanacheEntityResourceMethodListenerTest.ON_BEFORE_UPDATE_COUNTER;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.hibernate.reactive.rest.data.panache.RestDataResourceMethodListener;
 

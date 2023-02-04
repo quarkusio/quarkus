@@ -5,13 +5,14 @@ import static org.awaitility.Awaitility.await;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Flow;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.Typed;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Typed;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -24,7 +25,6 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
@@ -89,7 +89,7 @@ public class ConnectorAttachmentCustomEmitterTest {
     static class CustomEmitterImpl<T> implements MessagePublisherProvider<T>, CustomEmitter<T> {
 
         @Override
-        public Publisher<Message<? extends T>> getPublisher() {
+        public Flow.Publisher<Message<? extends T>> getPublisher() {
             return Multi.createFrom().range(0, 5).map(Message::of).map(m -> (Message<T>) m);
         }
     }

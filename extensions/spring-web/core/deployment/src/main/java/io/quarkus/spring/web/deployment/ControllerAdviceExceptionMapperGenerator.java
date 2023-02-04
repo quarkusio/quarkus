@@ -7,14 +7,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
@@ -72,7 +72,7 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
     /**
      * We need to go through each parameter of the method of the ControllerAdvice
      * and make sure it's supported
-     * The javax.ws.rs.ext.ExceptionMapper only has one parameter, the exception, however
+     * The jakarta.ws.rs.ext.ExceptionMapper only has one parameter, the exception, however
      * other parameters can be obtained using @Context and therefore injected into the target method
      */
     @Override

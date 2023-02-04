@@ -1,6 +1,6 @@
 package io.quarkus.spring.data.rest.paged;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class Record extends AbstractEntity<Long> {

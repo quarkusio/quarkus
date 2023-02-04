@@ -3,11 +3,11 @@ package io.quarkus.hibernate.orm.rest.data.panache.deployment.entity;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 

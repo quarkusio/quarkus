@@ -2,13 +2,13 @@ package org.jboss.resteasy.reactive.server.runtime.kotlin
 
 import io.smallrye.mutiny.coroutines.asMulti
 import io.vertx.core.Vertx
+import jakarta.enterprise.inject.spi.CDI
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler
 import java.util.concurrent.Executor
-import javax.enterprise.inject.spi.CDI
 
 class FlowToPublisherHandler : ServerRestHandler {
 

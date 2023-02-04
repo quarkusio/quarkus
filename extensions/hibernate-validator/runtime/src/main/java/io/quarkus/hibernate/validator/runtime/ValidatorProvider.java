@@ -1,9 +1,9 @@
 package io.quarkus.hibernate.validator.runtime;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import javax.validation.Validator;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
+import jakarta.validation.Validator;
 
 import org.hibernate.validator.HibernateValidatorFactory;
 

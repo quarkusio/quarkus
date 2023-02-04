@@ -2,13 +2,13 @@ package io.quarkus.hibernate.orm.lazyloading;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.LazyGroup;

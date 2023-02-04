@@ -3,8 +3,8 @@ package io.quarkus.resteasy.reactive.server.test.status;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
 import org.junit.jupiter.api.Test;

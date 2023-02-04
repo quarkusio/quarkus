@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.transaction.UserTransaction;
+import jakarta.inject.Inject;
+import jakarta.transaction.UserTransaction;
 
 import org.hibernate.Hibernate;
 import org.hibernate.Session;

@@ -10,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.Collection;
 import java.util.Collections;
 
-import javax.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.AnnotationLiteral;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;

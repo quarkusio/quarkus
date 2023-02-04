@@ -1,6 +1,6 @@
 package io.quarkus.keycloak.admin.client.reactive;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 import org.jboss.jandex.DotName;
 import org.keycloak.admin.client.Keycloak;

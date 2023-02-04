@@ -46,9 +46,9 @@
         </dependency>
         <!-- Used to test wrong @Singleton detection -->
         <dependency>
-            <groupId>org.jboss.spec.javax.ejb</groupId>
-            <artifactId>jboss-ejb-api_3.1_spec</artifactId>
-            <version>1.0.2.Final</version>
+            <groupId>jakarta.ejb</groupId>
+            <artifactId>jakarta.ejb-api</artifactId>
+            <version>4.0.1</version>
             <scope>test</scope>
         </dependency>
 

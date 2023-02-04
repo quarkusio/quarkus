@@ -87,9 +87,9 @@ Throughout the course of this guide, the following JPA Entity will be used:
 ----
 package org.acme.spring.data.rest;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
 @Entity
 public class Fruit {
@@ -419,12 +419,12 @@ It is important to annotate the correct method in order to customize its REST en
 
 ==== Securing endpoints
 
-This extension will automatically use the Security annotations within the package `javax.annotation.security` that are defined on your resource interfaces:
+This extension will automatically use the Security annotations within the package `jakarta.annotation.security` that are defined on your resource interfaces:
 
 [source,java]
 ----
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.RolesAllowed;
+import jakarta.annotation.security.DenyAll;
+import jakarta.annotation.security.RolesAllowed;
 
 @DenyAll
 public interface FruitResource extends CrudRepository<Fruit, Long> {

@@ -2,10 +2,10 @@ package io.quarkus.jaxb.runtime;
 
 import java.util.Map;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.PropertyException;
-import javax.xml.bind.Unmarshaller;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.PropertyException;
+import jakarta.xml.bind.Unmarshaller;
 
 /**
  * Meant to be implemented by a CDI bean that provides arbitrary customization for the default {@link JAXBContext}.

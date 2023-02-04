@@ -31,17 +31,8 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate.search</groupId>
-            <artifactId>hibernate-search-mapper-orm</artifactId>
+            <artifactId>hibernate-search-mapper-orm-jakarta</artifactId>
             <exclusions>
-                <!-- We use Jakarta Persistence artifacts instead -->
-                <exclusion>
-                    <groupId>javax.persistence</groupId>
-                    <artifactId>javax.persistence-api</artifactId>
-                </exclusion>
-                <!--
-                The activation implementation is coming from the quarkus-hibernate-orm extension.
-                The implementation contains the API.
-                -->
                 <exclusion>
                     <groupId>jakarta.activation</groupId>
                     <artifactId>jakarta.activation-api</artifactId>

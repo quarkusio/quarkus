@@ -1,10 +1,10 @@
 package io.quarkus.resteasy.reactive.server.test.security;
 
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static jakarta.ws.rs.core.Response.Status.UNAUTHORIZED;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;

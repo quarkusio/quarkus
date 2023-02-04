@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.qualifiers.defaultvalues;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 @Dependent
 @AnimalQualifier("cat")

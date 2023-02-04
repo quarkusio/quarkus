@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.interceptors.noclassinterceptors;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.NoClassInterceptors;
 

@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile GraphQL</name>
 
     <properties>
-        <microprofile-graphql-tck.version>1.1.0</microprofile-graphql-tck.version>
+        <microprofile-graphql-tck.version>2.0</microprofile-graphql-tck.version>
     </properties>
 
     <build>

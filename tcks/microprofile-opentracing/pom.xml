@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile OpenTracing Parent</name>
 
     <properties>
-        <microprofile-opentracing-tck.version>2.0</microprofile-opentracing-tck.version>
+        <microprofile-opentracing-tck.version>3.0</microprofile-opentracing-tck.version>
     </properties>
 
     <modules>

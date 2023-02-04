@@ -40,7 +40,8 @@
                 <configuration>
                     <runnerParentFirstArtifacts>
                         <!-- Needed because org.jboss.logmanager.formatters.JsonFormatter loads javax.json.Json in its constructor -->
-                        <runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.eclipse.parsson:parsson</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>jakarta.json:jakarta.json-api</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>
                 </configuration>
             </plugin>

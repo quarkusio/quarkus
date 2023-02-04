@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile Health</name>
 
     <properties>
-        <microprofile-health-tck.version>3.1</microprofile-health-tck.version>
+        <microprofile-health-tck.version>4.0</microprofile-health-tck.version>
     </properties>
 
     <build>

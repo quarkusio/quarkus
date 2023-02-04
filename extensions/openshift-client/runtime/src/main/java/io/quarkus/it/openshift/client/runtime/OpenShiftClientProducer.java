@@ -1,8 +1,8 @@
 package io.quarkus.it.openshift.client.runtime;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 

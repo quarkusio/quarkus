@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.multipart;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 /**
  * Represents one part of a multipart request

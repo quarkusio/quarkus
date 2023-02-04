@@ -12,6 +12,8 @@ import io.restassured.RestAssured.given
 import io.restassured.RestAssured.`when`
 import io.restassured.http.ContentType
 import io.smallrye.mutiny.Uni
+import jakarta.json.bind.JsonbBuilder
+import jakarta.persistence.PersistenceException
 import org.hamcrest.Matchers.`is`
 import org.hibernate.reactive.mutiny.Mutiny
 import org.junit.jupiter.api.Assertions
@@ -20,8 +22,6 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import javax.json.bind.JsonbBuilder
-import javax.persistence.PersistenceException
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 

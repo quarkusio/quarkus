@@ -3,43 +3,41 @@ package io.quarkus.arc.impl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.el.ELResolver;
-import javax.el.ExpressionFactory;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.event.Event;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Stereotype;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
-import javax.enterprise.inject.spi.AnnotatedField;
-import javax.enterprise.inject.spi.AnnotatedMember;
-import javax.enterprise.inject.spi.AnnotatedMethod;
-import javax.enterprise.inject.spi.AnnotatedParameter;
-import javax.enterprise.inject.spi.AnnotatedType;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanAttributes;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.Decorator;
-import javax.enterprise.inject.spi.Extension;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.InjectionTarget;
-import javax.enterprise.inject.spi.InjectionTargetFactory;
-import javax.enterprise.inject.spi.InterceptionFactory;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.enterprise.inject.spi.Interceptor;
-import javax.enterprise.inject.spi.ObserverMethod;
-import javax.enterprise.inject.spi.ProducerFactory;
-import javax.inject.Qualifier;
-import javax.interceptor.InterceptorBinding;
+import jakarta.el.ELResolver;
+import jakarta.el.ExpressionFactory;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.spi.Context;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Stereotype;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.enterprise.inject.spi.AnnotatedField;
+import jakarta.enterprise.inject.spi.AnnotatedMember;
+import jakarta.enterprise.inject.spi.AnnotatedMethod;
+import jakarta.enterprise.inject.spi.AnnotatedParameter;
+import jakarta.enterprise.inject.spi.AnnotatedType;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanAttributes;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.Decorator;
+import jakarta.enterprise.inject.spi.Extension;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.InjectionTargetFactory;
+import jakarta.enterprise.inject.spi.InterceptionFactory;
+import jakarta.enterprise.inject.spi.InterceptionType;
+import jakarta.enterprise.inject.spi.Interceptor;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.enterprise.inject.spi.ProducerFactory;
+import jakarta.inject.Qualifier;
+import jakarta.interceptor.InterceptorBinding;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
@@ -119,14 +117,6 @@ public class BeanManagerImpl implements BeanManager {
     @Override
     public void validate(InjectionPoint injectionPoint) {
         throw new UnsupportedOperationException();
-    }
-
-    // Deprecated method which can be safely removed once we use CDI 4.0+
-    @Deprecated
-    public void fireEvent(Object event, Annotation... qualifiers) {
-        Set<Annotation> eventQualifiers = new HashSet<>();
-        Collections.addAll(eventQualifiers, qualifiers);
-        new EventImpl<Object>(event.getClass(), eventQualifiers).fire(event);
     }
 
     @Override
@@ -239,12 +229,6 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public <T> AnnotatedType<T> createAnnotatedType(Class<T> type) {
-        throw new UnsupportedOperationException();
-    }
-
-    // Deprecated method which can be safely removed once we use CDI 4.0+
-    @Deprecated
-    public <T> InjectionTarget<T> createInjectionTarget(AnnotatedType<T> type) {
         throw new UnsupportedOperationException();
     }
 

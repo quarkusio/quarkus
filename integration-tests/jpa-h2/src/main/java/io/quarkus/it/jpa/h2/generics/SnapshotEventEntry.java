@@ -1,6 +1,6 @@
 package io.quarkus.it.jpa.h2.generics;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 /**
  * This strange mapping is useful to verify that Hibernate ORM can

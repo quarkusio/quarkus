@@ -1,7 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
 
 import io.vertx.ext.web.RoutingContext;
 

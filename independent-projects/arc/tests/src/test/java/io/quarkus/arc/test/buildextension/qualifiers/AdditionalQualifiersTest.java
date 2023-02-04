@@ -16,8 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Singleton;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package io.quarkus.spring.data.rest.deployment;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.logging.Logger;
 

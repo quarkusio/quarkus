@@ -5,7 +5,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 
-import javax.ws.rs.core.Link;
+import jakarta.ws.rs.core.Link;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;

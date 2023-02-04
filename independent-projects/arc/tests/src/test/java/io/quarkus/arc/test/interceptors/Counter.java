@@ -2,7 +2,7 @@ package io.quarkus.arc.test.interceptors;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class Counter {

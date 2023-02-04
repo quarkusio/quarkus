@@ -1,10 +1,10 @@
 package io.quarkus.arc.test.interceptor;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

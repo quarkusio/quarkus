@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.deployment.tracing.instrumentation;
 
 import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
-import static javax.interceptor.Interceptor.Priority.LIBRARY_AFTER;
+import static jakarta.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
 import java.util.Optional;
 import java.util.function.BooleanSupplier;

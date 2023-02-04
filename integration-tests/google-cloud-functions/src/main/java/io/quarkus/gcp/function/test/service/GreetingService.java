@@ -1,6 +1,6 @@
 package io.quarkus.gcp.function.test.service;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class GreetingService {

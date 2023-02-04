@@ -2,7 +2,7 @@ package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import java.util.List;
 
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 
 @Path("/tagged")
 public class AutoTagResource extends AutoTagFetchableResource<String> {

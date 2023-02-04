@@ -27,8 +27,8 @@
         </dependency>
         <!-- EL implementation -->
         <dependency>
-           <groupId>org.glassfish</groupId>
-           <artifactId>jakarta.el</artifactId>
+           <groupId>org.glassfish.expressly</groupId>
+           <artifactId>expressly</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.config</groupId>
@@ -88,8 +88,8 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>

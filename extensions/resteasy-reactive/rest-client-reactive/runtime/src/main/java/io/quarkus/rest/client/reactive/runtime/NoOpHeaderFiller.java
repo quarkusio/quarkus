@@ -1,6 +1,6 @@
 package io.quarkus.rest.client.reactive.runtime;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import io.quarkus.rest.client.reactive.HeaderFiller;
 

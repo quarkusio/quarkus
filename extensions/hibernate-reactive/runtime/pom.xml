@@ -33,7 +33,7 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate.reactive</groupId>
-            <artifactId>hibernate-reactive-core</artifactId>
+            <artifactId>hibernate-reactive-core-jakarta</artifactId>
             <exclusions>
                 <!-- Make sure Quarkus can manage Mutiny via quarkus-mutiny -->
                 <exclusion>

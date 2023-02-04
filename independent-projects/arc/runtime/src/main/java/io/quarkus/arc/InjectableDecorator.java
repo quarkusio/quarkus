@@ -1,6 +1,6 @@
 package io.quarkus.arc;
 
-import javax.enterprise.inject.spi.Decorator;
+import jakarta.enterprise.inject.spi.Decorator;
 
 /**
  * Quarkus representation of a decorator bean.

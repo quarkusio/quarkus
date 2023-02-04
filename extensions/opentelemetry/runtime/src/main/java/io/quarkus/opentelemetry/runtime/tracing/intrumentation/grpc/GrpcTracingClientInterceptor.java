@@ -2,7 +2,7 @@ package io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc;
 
 import static io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.grpc.CallOptions;
 import io.grpc.Channel;

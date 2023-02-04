@@ -298,7 +298,7 @@ MicroProfileCustomValue value;
 
 === Converter priority
 
-The `javax.annotation.Priority` annotation overrides the `Converter` priority and change converters precedence to fine
+The `jakarta.annotation.Priority` annotation overrides the `Converter` priority and change converters precedence to fine
 tune the execution order. By default, if no `@Priority` is specified by the `Converter`, the converter is registered
 with a priority of `100`. Consider:
 
@@ -306,7 +306,7 @@ with a priority of `100`. Consider:
 ----
 package org.acme.config;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 import org.eclipse.microprofile.config.spi.Converter;
 
 @Priority(150)
@@ -368,7 +368,7 @@ The `ConfigSourceInterceptorFactory` may initialize an interceptor with access t
 ----
 package org.acme.config;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigLogging;

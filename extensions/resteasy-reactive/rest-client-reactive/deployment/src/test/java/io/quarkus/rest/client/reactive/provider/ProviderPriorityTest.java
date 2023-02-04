@@ -3,7 +3,7 @@ package io.quarkus.rest.client.reactive.provider;
 import static io.quarkus.rest.client.reactive.RestClientTestUtil.setUrlForClass;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

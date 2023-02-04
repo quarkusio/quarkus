@@ -3,12 +3,12 @@ package org.jboss.resteasy.reactive.client.spi;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 public interface MissingMessageBodyReaderErrorMessageContextualizer {
 
     /**
-     * Takes the same input as {@link javax.ws.rs.ext.MessageBodyReader#isReadable(Class, Type, Annotation[], MediaType)}
+     * Takes the same input as {@link jakarta.ws.rs.ext.MessageBodyReader#isReadable(Class, Type, Annotation[], MediaType)}
      * and returns a {@code String} that contextualizes the error message.
      * The result can be null if this class is not able to provide any useful context information.
      */

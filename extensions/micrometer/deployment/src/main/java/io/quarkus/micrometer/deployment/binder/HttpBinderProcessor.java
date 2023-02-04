@@ -2,8 +2,8 @@ package io.quarkus.micrometer.deployment.binder;
 
 import java.util.function.BooleanSupplier;
 
-import javax.inject.Singleton;
-import javax.servlet.DispatcherType;
+import jakarta.inject.Singleton;
+import jakarta.servlet.DispatcherType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -35,7 +35,7 @@ public class HttpBinderProcessor {
     static final String RESTEASY_REACTIVE_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRestEasyReactiveContainerFilter";
     static final String UNDERTOW_SERVLET_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderUndertowServletFilter";
 
-    private static final String REST_CLIENT_REQUEST_FILTER = "javax.ws.rs.client.ClientRequestFilter";
+    private static final String REST_CLIENT_REQUEST_FILTER = "jakarta.ws.rs.client.ClientRequestFilter";
     private static final String REST_CLIENT_METRICS_FILTER = "io.quarkus.micrometer.runtime.binder.RestClientMetricsFilter";
 
     static class HttpServerBinderEnabled implements BooleanSupplier {

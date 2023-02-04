@@ -63,7 +63,7 @@
         </dependency>
         <dependency>
             <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-client-hotrod</artifactId>
+            <artifactId>infinispan-client-hotrod-jakarta</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.infinispan</groupId>

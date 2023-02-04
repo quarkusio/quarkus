@@ -1,13 +1,13 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
 import io.quarkus.smallrye.reactivemessaging.sendSuspending
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.POST
+import jakarta.ws.rs.Path
 import kotlinx.coroutines.delay
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.rest.client.inject.RestClient
-import javax.ws.rs.GET
-import javax.ws.rs.POST
-import javax.ws.rs.Path
 
 @Path("country")
 class CountriesEndpoint(

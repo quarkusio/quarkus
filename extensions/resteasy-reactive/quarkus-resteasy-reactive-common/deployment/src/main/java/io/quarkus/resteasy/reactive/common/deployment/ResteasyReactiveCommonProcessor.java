@@ -17,8 +17,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.ext.RuntimeDelegate;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;

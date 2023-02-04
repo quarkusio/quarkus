@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 import org.quartz.Job;

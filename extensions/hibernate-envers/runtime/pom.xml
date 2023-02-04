@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-envers</artifactId>
+            <artifactId>hibernate-envers-jakarta</artifactId>
             <!-- We need to repeat the same exclusions applied on hibernate-core -->
             <exclusions>
                 <exclusion>

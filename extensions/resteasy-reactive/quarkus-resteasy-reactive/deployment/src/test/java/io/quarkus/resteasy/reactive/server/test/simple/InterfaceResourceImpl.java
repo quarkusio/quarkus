@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class InterfaceResourceImpl implements InterfaceResource {
 

@@ -12,6 +12,12 @@ import io.quarkus.panache.common.Parameters.with
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.exception.PanacheQueryException
 import io.smallrye.mutiny.Uni
+import jakarta.inject.Inject
+import jakarta.persistence.LockModeType
+import jakarta.persistence.NoResultException
+import jakarta.persistence.NonUniqueResultException
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
 import org.hibernate.engine.spi.SelfDirtinessTracker
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,12 +25,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import java.util.function.Supplier
 import java.util.stream.Stream
-import javax.inject.Inject
-import javax.persistence.LockModeType
-import javax.persistence.NoResultException
-import javax.persistence.NonUniqueResultException
-import javax.ws.rs.GET
-import javax.ws.rs.Path
 
 @Path("test")
 class TestEndpoint {

@@ -3,10 +3,10 @@ package io.quarkus.resteasy.reactive.kotlin.serialization.common.runtime
 import io.quarkus.arc.All
 import io.quarkus.arc.DefaultBean
 import io.quarkus.resteasy.reactive.kotlin.serialization.common.JsonBuilderCustomizer
+import jakarta.enterprise.inject.Produces
+import jakarta.inject.Singleton
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
-import javax.enterprise.inject.Produces
-import javax.inject.Singleton
 
 @Singleton
 class JsonProducer {

@@ -1,7 +1,7 @@
 package io.quarkus.it.arc;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Lock;
 import io.quarkus.arc.Unremovable;

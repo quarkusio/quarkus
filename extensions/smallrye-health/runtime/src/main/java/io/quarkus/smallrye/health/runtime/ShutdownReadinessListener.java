@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.health.runtime;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.health.Readiness;
 

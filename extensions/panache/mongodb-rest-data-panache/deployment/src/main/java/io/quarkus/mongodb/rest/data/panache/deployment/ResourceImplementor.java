@@ -5,7 +5,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import java.util.List;
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.logging.Logger;

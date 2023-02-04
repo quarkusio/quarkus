@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.graphql.runtime;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import graphql.schema.GraphQLSchema;
 import io.smallrye.graphql.execution.SchemaPrinter;

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import io.smallrye.common.annotation.CheckReturnValue
 import io.smallrye.mutiny.Uni
-import javax.json.bind.annotation.JsonbTransient
+import jakarta.json.bind.annotation.JsonbTransient
 
 interface PanacheEntityBase {
     /**

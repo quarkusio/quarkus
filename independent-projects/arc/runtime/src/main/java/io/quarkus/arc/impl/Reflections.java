@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.enterprise.inject.CreationException;
+import jakarta.enterprise.inject.CreationException;
 
 /**
  * Neither the class nor its methods are considered a public API and should only be used internally.

@@ -2,7 +2,7 @@ package io.quarkus.datasource.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;

@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.HttpHeaders;
 
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.jaxrs.AbstractRestResponseBuilder;

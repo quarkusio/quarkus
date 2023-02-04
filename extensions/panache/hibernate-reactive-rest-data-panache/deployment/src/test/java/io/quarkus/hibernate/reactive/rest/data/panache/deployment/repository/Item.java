@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository;
 
-import javax.persistence.Entity;
-import javax.persistence.NamedQuery;
+import jakarta.persistence.Entity;
+import jakarta.persistence.NamedQuery;
 
 @Entity
 @NamedQuery(name = "Item.containsInName", query = "from Item where name like CONCAT('%', CONCAT(:name, '%'))")

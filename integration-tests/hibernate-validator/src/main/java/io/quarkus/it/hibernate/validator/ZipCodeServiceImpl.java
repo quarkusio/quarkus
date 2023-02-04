@@ -1,6 +1,6 @@
 package io.quarkus.it.hibernate.validator;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class ZipCodeServiceImpl implements ZipCodeService {

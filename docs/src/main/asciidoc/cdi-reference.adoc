@@ -212,7 +212,7 @@ public class CounterBean {
 * Dependency injection and lookup
 ** Field, constructor and initializer/setter injection
 ** Type-safe resolution
-** Programmatic lookup via `javax.enterprise.inject.Instance`
+** Programmatic lookup via `jakarta.enterprise.inject.Instance`
 ** Client proxies
 ** Injection point metadata
 * Scopes and contexts; see xref:cdi.adoc#bean-scope-available[here] for details
@@ -455,7 +455,7 @@ An _unused_ bean:
 * is not _unremovable_, and
 * is not eligible for injection to any injection point in the dependency tree, and
 * does not declare any producer which is eligible for injection to any injection point in the dependency tree, and
-* is not eligible for injection into any `javax.enterprise.inject.Instance` or `javax.inject.Provider` injection point.
+* is not eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider` injection point.
 
 Unused interceptors and decorators are not associated with any bean.
 
@@ -655,7 +655,7 @@ NOTE: Properties set at runtime have absolutely no effect on the bean resolution
 In CDI, an alternative bean may be selected either globally for an application by means of `@Priority`, or for a bean archive using a `beans.xml` descriptor.
 Quarkus has a simplified bean discovery and the content of `beans.xml` is ignored.
 
-The disadvantage of `@javax.annotation.Priority` is that it has `@Target({ TYPE, PARAMETER })` and so it cannot be used for producer methods and fields.
+The disadvantage of `@jakarta.annotation.Priority` is that it has `@Target({ TYPE, PARAMETER })` and so it cannot be used for producer methods and fields.
 This problem should be fixed in Common Annotations 2.1.
 Users are encouraged to use `@io.quarkus.arc.Priority` instead, until Quarkus upgrades to this version of `jakarta.annotation-api`.
 
@@ -838,7 +838,7 @@ Other interceptors could be provided to log method invocations to different targ
 
 === Caching the Result of Programmatic Lookup
 
-In certain situations, it is practical to obtain a bean instance programmatically via an injected `javax.enterprise.inject.Instance` and `Instance.get()`.
+In certain situations, it is practical to obtain a bean instance programmatically via an injected `jakarta.enterprise.inject.Instance` and `Instance.get()`.
 However, according to the specification the `get()` method must identify the matching bean and obtain a contextual reference.
 As a consequence, a new instance of a  `@Dependent` bean is returned from each invocation of `get()`.
 Moreover, this instance is a dependent object of the injected `Instance`.
@@ -890,11 +890,11 @@ class Consumer {
 }
 ----
 
-TIP: It is also possible to clear the cached value via `io.quarkus.arc.InjectableInstance.clearCache()`. In this case, you'll need to inject the Quarkus-specific `io.quarkus.arc.InjectableInstance` instead of `javax.enterprise.inject.Instance`.
+TIP: It is also possible to clear the cached value via `io.quarkus.arc.InjectableInstance.clearCache()`. In this case, you'll need to inject the Quarkus-specific `io.quarkus.arc.InjectableInstance` instead of `jakarta.enterprise.inject.Instance`.
 
 === Declaratively Choose Beans That Can Be Obtained by Programmatic Lookup
 
-It is sometimes useful to narrow down the set of beans that can be obtained by programmatic lookup via `javax.enterprise.inject.Instance`.
+It is sometimes useful to narrow down the set of beans that can be obtained by programmatic lookup via `jakarta.enterprise.inject.Instance`.
 Typically, a user needs to choose the appropriate implementation of an interface based on a runtime configuration property.
 
 Imagine that we have two beans implementing the interface `org.acme.Service`.
@@ -944,7 +944,7 @@ Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` a
 
 === Injecting Multiple Bean Instances Intuitively
 
-In CDI, it's possible to inject multiple bean instances (aka contextual references) via the `javax.enterprise.inject.Instance` which implements `java.lang.Iterable`.
+In CDI, it's possible to inject multiple bean instances (aka contextual references) via the `jakarta.enterprise.inject.Instance` which implements `java.lang.Iterable`.
 However, it's not exactly intuitive.
 Therefore, a new way was introduced in Quarkus - you can inject a `java.util.List` annotated with the `io.quarkus.arc.All` qualifier.
 The type of elements in the list is used as the required type when performing the lookup.
@@ -962,7 +962,7 @@ public class Processor {
 <1> The injected instance is an _immutable list_ of the contextual references of the _disambiguated_ beans.
 <2> For this injection point the required type is `Service` and no additional qualifiers are declared.
 
-TIP: The list is sorted by priority as defined by `io.quarkus.arc.InjectableBean#getPriority()`. Higher priority goes first. In general, the `@javax.annotation.Priority` and `@io.quarkus.arc.Priority` annotations can be used to assign the priority to a class bean, producer method or producer field.
+TIP: The list is sorted by priority as defined by `io.quarkus.arc.InjectableBean#getPriority()`. Higher priority goes first. In general, the `@jakarta.annotation.Priority` and `@io.quarkus.arc.Priority` annotations can be used to assign the priority to a class bean, producer method or producer field.
 
 If an injection point declares no other qualifier than `@All` then `@Any` is used, i.e. the behavior is equivalent to `@Inject @Any Instance<Service>`.
 
@@ -1042,7 +1042,7 @@ If an exception is thrown by an asynchronous observer then the `CompletionStage`
 However, if the event producer does not care then the exception is ignored silently.
 Therefore, Quarkus logs an error message by default.
 It is also possible to implement a custom `AsyncObserverExceptionHandler`.
-A bean that implements this interface should be `@javax.inject.Singleton` or `@javax.enterprise.context.ApplicationScoped`.
+A bean that implements this interface should be `@jakarta.inject.Singleton` or `@jakarta.enterprise.context.ApplicationScoped`.
 
 .`NoopAsyncObserverExceptionHandler`
 [source, java]

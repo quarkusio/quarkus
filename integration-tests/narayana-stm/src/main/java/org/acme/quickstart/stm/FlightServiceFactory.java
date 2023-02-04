@@ -1,6 +1,6 @@
 package org.acme.quickstart.stm;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.stm.Container;
 

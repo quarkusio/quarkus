@@ -69,7 +69,7 @@
         <smallrye-mutiny-vertx-binding.version>3.2.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.2.0.RC1</smallrye-reactive-messaging.version>
         <smallrye-stork.version>1.4.1</smallrye-stork.version>
-        <jakarta.activation.version>2.1.0</jakarta.activation.version>
+        <jakarta.activation.version>2.1.1</jakarta.activation.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
         <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>

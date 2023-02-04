@@ -59,17 +59,10 @@ updates:
       - dependency-name: org.scala-lang:*
       - dependency-name: net.alchim31.maven:scala-maven-plugin
       # SmallRye
-      - dependency-name: io.smallrye:smallrye-jwt
-      - dependency-name: io.smallrye:smallrye-health
-      - dependency-name: io.smallrye:smallrye-metrics
-      - dependency-name: io.smallrye:smallrye-open-api
-      - dependency-name: io.smallrye:smallrye-opentracing
-      - dependency-name: io.smallrye:smallrye-fault-tolerance
-      - dependency-name: io.smallrye:smallrye-context-propagation
+      - dependency-name: io.smallrye:*
       - dependency-name: io.smallrye.common:*
-      - dependency-name: io.smallrye.config:smallrye-config
-      - dependency-name: io.smallrye.reactive:mutiny
-      - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
+      - dependency-name: io.smallrye.config:*
+      - dependency-name: io.smallrye.reactive:*
       # Swagger-UI
       - dependency-name: org.webjars:swagger-ui
       # RX Java 2
@@ -95,9 +88,6 @@ updates:
       - dependency-name: org.jboss.narayana.stm:*
       # Agroal
       - dependency-name: io.agroal:*
-      # Jandex
-      - dependency-name: io.smallrye:jandex
-      - dependency-name: io.smallrye:jandex-maven-plugin
       # WireMock
       - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
@@ -181,12 +171,10 @@ updates:
       - dependency-name: com.h2database:h2
       - dependency-name: io.github.crac:org-crac
       # Jakarta 9/10 preparation
-      - dependency-name: jakarta.activation:jakarta.activation-api
-      - dependency-name: org.eclipse.angus:angus-activation
+      - dependency-name: jakarta.*:*
+      - dependency-name: org.eclipse.*:*
       - dependency-name: org.glassfish.expressly:expressly
       - dependency-name: com.sun.xml.bind:jaxb-impl
-      - dependency-name: jakarta.xml.bind:jakarta.xml.bind-api
-      - dependency-name: org.eclipse.parsson:*
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues
@@ -215,10 +203,6 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: org.glassfish:jakarta-el
-        update-types: ["version-update:semver-major"]
-      - dependency-name: org.eclipse:yasson
-        update-types: ["version-update:semver-major"]
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/devtools/gradle"

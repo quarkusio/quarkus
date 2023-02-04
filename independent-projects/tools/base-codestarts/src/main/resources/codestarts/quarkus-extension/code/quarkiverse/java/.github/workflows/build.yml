@@ -22,6 +22,14 @@ on:
       - '*.txt'
       - '.all-contributorsrc'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     name: Build on ${{ matrix.os }}

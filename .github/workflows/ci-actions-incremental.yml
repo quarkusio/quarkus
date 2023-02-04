@@ -69,21 +69,6 @@ jobs:
           name: pull-request-number-${{ github.event.number }}
           path: pull-request-number
           retention-days: 1
-  attach-report-issue-number:
-    runs-on: ubuntu-latest
-    name: Attach report issue number
-    if: github.ref_name == 'jakarta-rewrite' || github.ref_name == '3.0'
-    steps:
-      - name: Create file
-        shell: bash
-        run: |
-          echo -n 25363 > report-issue-number
-      - name: Upload report issue number
-        uses: actions/upload-artifact@v3
-        with:
-          name: report-issue-number-25363
-          path: report-issue-number
-          retention-days: 1
   ci-sanity-check:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
@@ -139,10 +124,6 @@ jobs:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
           key: q2maven-${{ steps.get-date.outputs.date }}
-      - name: Prepare Jakarta artifacts
-        if: github.ref_name == 'jakarta-rewrite' || github.ref_name == '3.0'
-        shell: bash
-        run: ./jakarta/prepare.sh
       - name: Build
         run: |
           ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install
@@ -570,8 +551,8 @@ jobs:
     name: Quickstarts Compilation - JDK ${{matrix.java.name}}
     runs-on: ${{matrix.java.os-name}}
     needs: build-jdk11
-    # Skip the jakarta-rewrite and 3.0 branches and main in forks
-    if: github.ref_name != 'jakarta-rewrite' && github.ref_name != '3.0' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    # Skip main in forks
+    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
     timeout-minutes: 90
     strategy:
       fail-fast: false

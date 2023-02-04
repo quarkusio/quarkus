@@ -281,16 +281,17 @@ final class Methods {
                     && !Annotations.contains(methodAnnotations, DotNames.OBSERVES_ASYNC)) {
                 String message;
                 if (methodLevelBindings.size() == 1) {
-                    message = String.format("%s will have no effect on method %s.%s() because the method is private",
+                    message = String.format("%s will have no effect on method %s.%s() because the method is private.",
                             methodLevelBindings.iterator().next(), classInfo.name(), method.name());
                 } else {
                     message = String.format(
-                            "Annotations %s will have no effect on method %s.%s() because the method is private",
+                            "Annotations %s will have no effect on method %s.%s() because the method is private.",
                             methodLevelBindings.stream().map(AnnotationInstance::toString).collect(Collectors.joining(",")),
                             classInfo.name(), method.name());
                 }
                 if (beanDeployment.failOnInterceptedPrivateMethod) {
-                    throw new DeploymentException(message);
+                    throw new DeploymentException(message
+                            + " Either remove the annotation from the method, or turn this exception into a simple warning by setting configuration property 'quarkus.arc.fail-on-intercepted-private-method' to 'false'.");
                 } else {
                     LOGGER.warn(message);
                 }

@@ -24,12 +24,13 @@ import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
 import io.quarkus.cache.deployment.exception.KeyGeneratorConstructorException;
-import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * This class tests many kinds of {@link DeploymentException} causes related to caching annotations.
+ * <p>
+ * See {@link PrivateMethodExceptionsTest} for tests related to annotations on private methods.
  */
 public class DeploymentExceptionsTest {
 
@@ -42,9 +43,7 @@ public class DeploymentExceptionsTest {
             .withApplicationRoot((jar) -> jar.addClasses(TestResource.class, TestBean.class))
             .assertException(t -> {
                 assertEquals(DeploymentException.class, t.getClass());
-                assertEquals(11, t.getSuppressed().length);
-                assertPrivateMethodTargetException(t, "shouldThrowPrivateMethodTargetException", 1);
-                assertPrivateMethodTargetException(t, "shouldAlsoThrowPrivateMethodTargetException", 2);
+                assertEquals(8, t.getSuppressed().length);
                 assertVoidReturnTypeTargetException(t, "showThrowVoidReturnTypeTargetException");
                 assertClassTargetException(t, TestResource.class, 1);
                 assertClassTargetException(t, TestBean.class, 2);
@@ -53,11 +52,6 @@ public class DeploymentExceptionsTest {
                 assertKeyGeneratorConstructorException(t, KeyGen3.class);
                 assertKeyGeneratorConstructorException(t, KeyGen4.class);
             });
-
-    private static void assertPrivateMethodTargetException(Throwable t, String expectedMethodName, long expectedCount) {
-        assertEquals(expectedCount, filterSuppressed(t, PrivateMethodTargetException.class)
-                .filter(s -> expectedMethodName.equals(s.getMethodInfo().name())).count());
-    }
 
     private static void assertVoidReturnTypeTargetException(Throwable t, String expectedMethodName) {
         assertEquals(1, filterSuppressed(t, VoidReturnTypeTargetException.class)
@@ -87,19 +81,6 @@ public class DeploymentExceptionsTest {
     // Single annotation test.
     @CacheInvalidate(cacheName = "should-throw-class-target-exception")
     static class TestResource {
-
-        @GET
-        // Single annotation test.
-        @CacheInvalidateAll(cacheName = "should-throw-private-method-target-exception")
-        private void shouldThrowPrivateMethodTargetException() {
-        }
-
-        @GET
-        // Repeated annotations test.
-        @CacheInvalidate(cacheName = "should-throw-private-method-target-exception")
-        @CacheInvalidate(cacheName = "should-throw-private-method-target-exception")
-        private void shouldAlsoThrowPrivateMethodTargetException() {
-        }
 
         @GET
         @CacheResult(cacheName = "should-throw-void-return-type-target-exception")

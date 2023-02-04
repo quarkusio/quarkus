@@ -221,7 +221,7 @@ triage:
     - id: micrometer
       labels: [area/metrics]
       title: "micrometer"
-      notify: [ebullient]
+      notify: [ebullient, brunobat]
       notifyInPullRequest: true
       directories:
         - extensions/micrometer

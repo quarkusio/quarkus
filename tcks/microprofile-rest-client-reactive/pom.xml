@@ -15,7 +15,7 @@
 
     <properties>
         <wiremock.server.port>8766</wiremock.server.port>
-        <microprofile-rest-client-tck.version>3.0</microprofile-rest-client-tck.version>
+        <microprofile-rest-client-tck.version>3.0.1</microprofile-rest-client-tck.version>
         <!--
         Disabling the enforcer because of:
 

@@ -50,7 +50,7 @@ import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
-import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
+import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.EntityManagerMessageLogger;
 import org.hibernate.internal.util.StringHelper;
@@ -81,6 +81,7 @@ import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactory;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 
 /**
@@ -592,14 +593,19 @@ public class FastBootMetadataBuilder {
         if (idGeneratorStrategyProviderSetting != null) {
             final IdentifierGeneratorStrategyProvider idGeneratorStrategyProvider = strategySelector
                     .resolveStrategy(IdentifierGeneratorStrategyProvider.class, idGeneratorStrategyProviderSetting);
-            final MutableIdentifierGeneratorFactory identifierGeneratorFactory = ssr
-                    .getService(MutableIdentifierGeneratorFactory.class);
+            final IdentifierGeneratorFactory identifierGeneratorFactory = ssr
+                    .getService(IdentifierGeneratorFactory.class);
             if (identifierGeneratorFactory == null) {
                 throw persistenceException("Application requested custom identifier generator strategies, "
                         + "but the MutableIdentifierGeneratorFactory could not be found");
             }
+            if (!(identifierGeneratorFactory instanceof QuarkusMutableIdentifierGeneratorFactory)) {
+                throw persistenceException(
+                        "Unexpected implementation of IdentifierGeneratorFactory: do not override core components");
+            }
+            final QuarkusMutableIdentifierGeneratorFactory qIdGenerator = (QuarkusMutableIdentifierGeneratorFactory) identifierGeneratorFactory;
             for (Map.Entry<String, Class<?>> entry : idGeneratorStrategyProvider.getStrategies().entrySet()) {
-                identifierGeneratorFactory.register(entry.getKey(), entry.getValue());
+                qIdGenerator.register(entry.getKey(), entry.getValue());
             }
         }
     }

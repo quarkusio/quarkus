@@ -3,31 +3,28 @@ package io.quarkus.hibernate.orm.runtime.service;
 import java.util.Map;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.id.factory.internal.MutableIdentifierGeneratorFactoryInitiator;
-import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
+import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 /**
- * Needs to mimic MutableIdentifierGeneratorFactoryInitiator, but allows us to capture
- * which Identifier strategies are being used, so that we can keep a reference to the classed
+ * We need to mimic the standard IdentifierGeneratorFactory but allowing
+ * to capture which Identifier strategies are being used, so that we can keep a reference to the classed
  * needed at runtime.
  *
- * @see MutableIdentifierGeneratorFactoryInitiator
+ * @see IdentifierGeneratorFactory
  */
 public final class QuarkusMutableIdentifierGeneratorFactoryInitiator
-        implements StandardServiceInitiator<MutableIdentifierGeneratorFactory> {
-
-    private final MutableIdentifierGeneratorFactory sfScopedSingleton = new QuarkusMutableIdentifierGeneratorFactory();
+        implements StandardServiceInitiator<IdentifierGeneratorFactory> {
 
     @Override
-    public MutableIdentifierGeneratorFactory initiateService(final Map configurationValues,
+    public IdentifierGeneratorFactory initiateService(final Map configurationValues,
             final ServiceRegistryImplementor registry) {
-        return sfScopedSingleton;
+        return new QuarkusMutableIdentifierGeneratorFactory(registry);
     }
 
     @Override
-    public Class<MutableIdentifierGeneratorFactory> getServiceInitiated() {
-        return MutableIdentifierGeneratorFactory.class;
+    public Class<IdentifierGeneratorFactory> getServiceInitiated() {
+        return IdentifierGeneratorFactory.class;
     }
 
 }

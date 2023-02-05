@@ -45,8 +45,8 @@ import jakarta.xml.bind.JAXBElement;
 
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
+import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -1185,7 +1185,8 @@ public final class HibernateOrmProcessor {
         // if there is any issue when bootstrapping Hibernate Validator.
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
             if (persistenceUnitConfig.validation.enabled) {
-                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.CALLBACK.name());
+                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE,
+                        ValidationMode.CALLBACK.name());
             } else {
                 descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
             }

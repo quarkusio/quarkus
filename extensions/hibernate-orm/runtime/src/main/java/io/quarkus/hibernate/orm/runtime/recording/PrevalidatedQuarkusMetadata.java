@@ -13,6 +13,7 @@ import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.model.IdentifierGeneratorDefinition;
+import org.hibernate.boot.model.NamedEntityGraphDefinition;
 import org.hibernate.boot.model.TypeDefinition;
 import org.hibernate.boot.model.relational.Database;
 import org.hibernate.boot.query.NamedHqlQueryDefinition;
@@ -22,7 +23,6 @@ import org.hibernate.boot.query.NamedResultSetMappingDescriptor;
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.MetadataBuildingOptions;
 import org.hibernate.boot.spi.MetadataImplementor;
-import org.hibernate.boot.model.NamedEntityGraphDefinition;
 import org.hibernate.engine.spi.FilterDefinition;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.mapping.Component;
@@ -32,6 +32,7 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Table;
 import org.hibernate.query.named.NamedObjectRepository;
 import org.hibernate.query.sqm.function.SqmFunctionDescriptor;
+import org.hibernate.query.sqm.function.SqmFunctionRegistry;
 import org.hibernate.type.Type;
 import org.hibernate.type.spi.TypeConfiguration;
 
@@ -260,8 +261,18 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
+    public SqmFunctionRegistry getFunctionRegistry() {
+        return metadata.getFunctionRegistry();
+    }
+
+    @Override
     public NamedObjectRepository buildNamedQueryRepository(SessionFactoryImplementor sessionFactory) {
         return metadata.buildNamedQueryRepository(sessionFactory);
+    }
+
+    @Override
+    public void orderColumns(boolean forceOrdering) {
+        metadata.orderColumns(forceOrdering);
     }
 
     @Override

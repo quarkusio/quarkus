@@ -63,7 +63,7 @@ public class ResteasyBuiltinsProcessor {
                 ClassInfo classInfo = index.getIndex().getClassByName(DotName.createSimple(className));
                 if (!hasSecurityAnnotation(classInfo)) {
                     for (MethodInfo methodInfo : classInfo.methods()) {
-                        if (isRestEndpointMethod(methodInfo) && !hasSecurityAnnotation(methodInfo)) {
+                        if (isRestEndpointMethod(index, methodInfo) && !hasSecurityAnnotation(methodInfo)) {
                             methods.add(methodInfo);
                         }
                     }

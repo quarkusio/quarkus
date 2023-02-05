@@ -5,6 +5,8 @@ import java.util.Map;
 
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.FlushModeType;
@@ -610,6 +612,34 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
+    public CacheStoreMode getCacheStoreMode() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getCacheStoreMode();
+        }
+    }
+
+    @Override
+    public CacheRetrieveMode getCacheRetrieveMode() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getCacheRetrieveMode();
+        }
+    }
+
+    @Override
+    public void setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+        try (SessionResult emr = acquireSession()) {
+            emr.session.setCacheStoreMode(cacheStoreMode);
+        }
+    }
+
+    @Override
+    public void setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+        try (SessionResult emr = acquireSession()) {
+            emr.session.setCacheRetrieveMode(cacheRetrieveMode);
+        }
+    }
+
+    @Override
     public SessionFactory getSessionFactory() {
         return sessionFactory;
     }
@@ -837,6 +867,13 @@ public class TransactionScopedSession implements Session {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             emr.session.lock(object, lockMode);
+        }
+    }
+
+    @Override
+    public void lock(Object object, LockOptions lockOptions) {
+        try (SessionResult emr = acquireSession()) {
+            emr.session.lock(object, lockOptions);
         }
     }
 

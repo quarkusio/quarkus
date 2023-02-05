@@ -36,13 +36,10 @@ updates:
       - dependency-name: org.glassfish:jakarta-el
       - dependency-name: com.google.cloud.tools:jib-core
       # Quarkus
-      - dependency-name: io.quarkus.gizmo:gizmo
-      - dependency-name: io.quarkus.http:*
-      - dependency-name: io.quarkus:quarkus-fs-util
-      - dependency-name: io.quarkus:quarkus-spring-*-api
+      - dependency-name: io.quarkus.*:*
+      - dependency-name: io.quarkus:*
       # Elytron
-      - dependency-name: org.wildfly.security:wildfly-elytron
-      - dependency-name: org.wildfly.security:wildfly-elytron-*
+      - dependency-name: org.wildfly.security:*
       - dependency-name: org.wildfly.openssl:*
       # JDBC Drivers
       - dependency-name: org.postgresql:postgresql

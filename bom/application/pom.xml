@@ -185,7 +185,7 @@
         <mockito.version>5.1.1</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.10.1</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
-        <quarkus-security.version>2.0.0.Alpha2</quarkus-security.version>
+        <quarkus-security.version>2.0.1.Final</quarkus-security.version>
         <keycloak.version>20.0.3</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
         <checker-qual.version>3.30.0</checker-qual.version>

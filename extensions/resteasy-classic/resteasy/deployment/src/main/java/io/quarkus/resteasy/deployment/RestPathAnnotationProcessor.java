@@ -1,7 +1,12 @@
 package io.quarkus.resteasy.deployment;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -9,6 +14,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -17,6 +23,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.runtime.QuarkusRestPathTemplate;
@@ -49,6 +56,7 @@ public class RestPathAnnotationProcessor {
 
     @BuildStep
     void findRestPaths(
+            CombinedIndexBuildItem index,
             Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<AnnotationsTransformerBuildItem> transformers,
             Optional<ResteasyJaxrsConfigBuildItem> restApplicationPathBuildItem) {
@@ -80,7 +88,7 @@ public class RestPathAnnotationProcessor {
                 MethodInfo methodInfo = target.asMethod();
                 ClassInfo classInfo = methodInfo.declaringClass();
 
-                if (!isRestEndpointMethod(methodInfo)) {
+                if (!isRestEndpointMethod(index, methodInfo)) {
                     return;
                 }
                 // Don't create annotations for rest clients
@@ -93,13 +101,23 @@ public class RestPathAnnotationProcessor {
                 if (annotation != null) {
                     stringBuilder = new StringBuilder(slashify(annotation.value().asString()));
                 } else {
-                    stringBuilder = new StringBuilder();
+                    // Fallback: look for @Path on interface-method with same name
+                    stringBuilder = searchPathAnnotationOnInterfaces(index, methodInfo)
+                            .map(annotationInstance -> new StringBuilder(slashify(annotationInstance.value().asString())))
+                            .orElse(new StringBuilder());
                 }
 
                 // Look for @Path annotation on the class
                 annotation = classInfo.classAnnotation(REST_PATH);
                 if (annotation != null) {
                     stringBuilder.insert(0, slashify(annotation.value().asString()));
+                } else {
+                    // Fallback: look for @Path on interfaces
+                    getAllClassInterfaces(index, List.of(classInfo), new ArrayList<>()).stream()
+                            .filter(interfaceClassInfo -> interfaceClassInfo.hasAnnotation(REST_PATH))
+                            .findFirst()
+                            .map(interfaceClassInfo -> interfaceClassInfo.annotation(REST_PATH).value())
+                            .ifPresent(annotationValue -> stringBuilder.insert(0, slashify(annotationValue.asString())));
                 }
 
                 if (restPathPrefix != null) {
@@ -134,7 +152,56 @@ public class RestPathAnnotationProcessor {
         return '/' + path;
     }
 
-    static boolean isRestEndpointMethod(MethodInfo methodInfo) {
+    /**
+     * Searches for the same method as passed in methodInfo parameter in all implemented interfaces and yields an
+     * Optional containing the JAX-RS Path annotation.
+     *
+     * @param index Jandex-Index for additional lookup
+     * @param methodInfo the method to find
+     * @return Optional with the annotation if found. Never null.
+     */
+    static Optional<AnnotationInstance> searchPathAnnotationOnInterfaces(CombinedIndexBuildItem index, MethodInfo methodInfo) {
+
+        Collection<ClassInfo> allClassInterfaces = getAllClassInterfaces(index, List.of(methodInfo.declaringClass()),
+                new ArrayList<>());
+
+        return allClassInterfaces.stream()
+                .map(interfaceClassInfo -> interfaceClassInfo.method(
+                        methodInfo.name(),
+                        methodInfo.parameterTypes().toArray(new Type[] {})))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(resolvedMethodInfo -> resolvedMethodInfo.annotation(REST_PATH));
+    }
+
+    /**
+     * Recursively get all interfaces given as classInfo collection.
+     *
+     * @param index Jandex-Index for additional lookup
+     * @param classInfos the class(es) to search. Ends the recursion when empty.
+     * @param resultAcc accumulator for tail-recursion
+     * @return Collection of all interfaces und their parents. Never null.
+     */
+    private static Collection<ClassInfo> getAllClassInterfaces(
+            CombinedIndexBuildItem index,
+            Collection<ClassInfo> classInfos,
+            List<ClassInfo> resultAcc) {
+        Objects.requireNonNull(index);
+        Objects.requireNonNull(classInfos);
+        Objects.requireNonNull(resultAcc);
+        if (classInfos.isEmpty()) {
+            return resultAcc;
+        }
+        List<ClassInfo> interfaces = classInfos.stream()
+                .flatMap(classInfo -> classInfo.interfaceNames().stream())
+                .map(dotName -> index.getIndex().getClassByName(dotName))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toUnmodifiableList());
+        resultAcc.addAll(interfaces);
+        return getAllClassInterfaces(index, interfaces, resultAcc);
+    }
+
+    static boolean isRestEndpointMethod(CombinedIndexBuildItem index, MethodInfo methodInfo) {
 
         if (!methodInfo.hasAnnotation(REST_PATH)) {
             // Check for @Path on class and not method
@@ -143,7 +210,8 @@ public class RestPathAnnotationProcessor {
                     return true;
                 }
             }
-            return false;
+            // Search for interface
+            return searchPathAnnotationOnInterfaces(index, methodInfo).isPresent();
         }
         return true;
     }

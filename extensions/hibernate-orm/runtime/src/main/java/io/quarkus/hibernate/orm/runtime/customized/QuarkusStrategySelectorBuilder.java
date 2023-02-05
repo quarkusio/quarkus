@@ -26,11 +26,11 @@ import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder;
-import org.hibernate.type.FormatMapper;
-import org.hibernate.type.jackson.JacksonJsonFormatMapper;
-import org.hibernate.type.jackson.JacksonXmlFormatMapper;
-import org.hibernate.type.jakartajson.JsonBJsonFormatMapper;
-import org.hibernate.type.jaxb.JaxbXmlFormatMapper;
+import org.hibernate.type.format.FormatMapper;
+import org.hibernate.type.format.jackson.JacksonJsonFormatMapper;
+import org.hibernate.type.format.jackson.JacksonXmlFormatMapper;
+import org.hibernate.type.format.jakartajson.JsonBJsonFormatMapper;
+import org.hibernate.type.format.jaxb.JaxbXmlFormatMapper;
 
 /**
  * Similar to {@link org.hibernate.boot.registry.selector.internal.StrategySelectorBuilder} but

@@ -509,6 +509,7 @@ public class JarResultBuildStep {
                 });
     }
 
+    @SuppressWarnings("deprecation")
     private JarBuildItem buildLegacyThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses,
@@ -541,6 +542,7 @@ public class JarResultBuildStep {
                 suffixToClassifier(packageConfig.getRunnerSuffix()));
     }
 
+    @SuppressWarnings("deprecation")
     private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses,
@@ -599,19 +601,11 @@ public class JarResultBuildStep {
         Path decompiledOutputDir = null;
         boolean wasDecompiledSuccessfully = true;
         Decompiler decompiler = null;
-        if (packageConfig.fernflower.enabled || packageConfig.quiltflower.enabled) {
+        if (packageConfig.quiltflower.enabled) {
             decompiledOutputDir = buildDir.getParent().resolve("decompiled");
             FileUtil.deleteDirectory(decompiledOutputDir);
             Files.createDirectory(decompiledOutputDir);
-            if (packageConfig.fernflower.enabled) {
-                decompiler = new Decompiler.FernflowerDecompiler();
-                Path jarDirectory = Paths.get(packageConfig.fernflower.jarDirectory);
-                if (!Files.exists(jarDirectory)) {
-                    Files.createDirectory(jarDirectory);
-                }
-                decompiler.init(new Decompiler.Context(packageConfig.fernflower.hash, jarDirectory, decompiledOutputDir));
-                decompiler.downloadIfNecessary();
-            } else if (packageConfig.quiltflower.enabled) {
+            if (packageConfig.quiltflower.enabled) {
                 decompiler = new Decompiler.QuiltflowerDecompiler();
                 Path jarDirectory = Paths.get(packageConfig.quiltflower.jarDirectory);
                 if (!Files.exists(jarDirectory)) {
@@ -644,7 +638,7 @@ public class JarResultBuildStep {
                 }
             }
             if (decompiler != null) {
-                wasDecompiledSuccessfully &= decompiler.decompile(transformedZip);
+                wasDecompiledSuccessfully = decompiler.decompile(transformedZip);
             }
         }
         //now generated classes and resources
@@ -760,7 +754,7 @@ public class JarResultBuildStep {
             //to memory, split them, discard comments, sort them, then write them to disk
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             outputTargetBuildItem.getBuildSystemProperties().store(out, null);
-            List<String> lines = Arrays.stream(new String(out.toByteArray(), StandardCharsets.UTF_8).split("\n"))
+            List<String> lines = Arrays.stream(out.toString(StandardCharsets.UTF_8).split("\n"))
                     .filter(s -> !s.startsWith("#")).sorted().collect(Collectors.toList());
             Path buildSystemProps = quarkus.resolve(BUILD_SYSTEM_PROPERTIES);
             try (OutputStream fileOutput = Files.newOutputStream(buildSystemProps)) {

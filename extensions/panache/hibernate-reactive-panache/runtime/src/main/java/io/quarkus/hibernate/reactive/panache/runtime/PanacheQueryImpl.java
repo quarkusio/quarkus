@@ -12,7 +12,6 @@ import io.quarkus.hibernate.reactive.panache.PanacheQuery;
 import io.quarkus.hibernate.reactive.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
@@ -147,11 +146,6 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public <T extends Entity> Uni<List<T>> list() {
         return delegate.list();
-    }
-
-    @Override
-    public <T extends Entity> Multi<T> stream() {
-        return delegate.stream();
     }
 
     @Override

@@ -41,10 +41,6 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
     public boolean supportsMethod(Class<?> originalTestClass, Method originalTestMethod) {
         return hasAnnotation(RunOnVertxContext.class, originalTestMethod.getAnnotations())
                 || hasAnnotation(RunOnVertxContext.class, originalTestClass.getAnnotations())
-                || hasAnnotation("io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional",
-                        originalTestMethod.getAnnotations())
-                || hasAnnotation("io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional",
-                        originalTestClass.getAnnotations())
                 || hasAnnotation(TestReactiveTransaction.class, originalTestMethod.getAnnotations())
                 || hasAnnotation(TestReactiveTransaction.class, originalTestClass.getAnnotations());
     }
@@ -102,7 +98,8 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             runOnVertxContext = c.getAnnotation(RunOnVertxContext.class);
         }
         if (runOnVertxContext == null) {
-            return false;
+            // Use duplicated context if @TestReactiveTransaction is present
+            return m.isAnnotationPresent(TestReactiveTransaction.class);
         } else {
             return runOnVertxContext.duplicateContext();
         }

@@ -2,12 +2,12 @@ package io.quarkus.it.panache.reactive;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.persistence.PersistenceException;
 
-import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
@@ -18,6 +18,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
@@ -65,9 +67,10 @@ public class PanacheFunctionalityTest {
     }
 
     @DisabledOnIntegrationTest
+    @RunOnVertxContext
     @Test
-    public void testPanacheInTest() {
-        Assertions.assertEquals(0, Person.count().await().indefinitely());
+    public void testPanacheInTest(UniAsserter asserter) {
+        asserter.assertEquals(() -> Panache.withSession(() -> Person.count()), 0l);
     }
 
     @Test
@@ -157,25 +160,24 @@ public class PanacheFunctionalityTest {
     }
 
     @DisabledOnIntegrationTest
-    @ReactiveTransactional
+    @RunOnVertxContext
     @Test
-    Uni<Void> testTransaction() {
-        Transaction transaction = Panache.currentTransaction().await().indefinitely();
-        Assertions.assertNotNull(transaction);
-        return Uni.createFrom().nullItem();
+    void testTransaction(UniAsserter asserter) {
+        asserter.assertNotNull(() -> Panache.withTransaction(() -> Panache.currentTransaction()));
     }
 
     @DisabledOnIntegrationTest
+    @RunOnVertxContext
     @Test
-    void testNoTransaction() {
-        Transaction transaction = Panache.currentTransaction().await().indefinitely();
-        Assertions.assertNull(transaction);
+    void testNoTransaction(UniAsserter asserter) {
+        asserter.assertNull(() -> Panache.withSession(() -> Panache.currentTransaction()));
     }
 
     @DisabledOnIntegrationTest
+    @RunOnVertxContext
     @Test
-    public void testBug7102() {
-        createBug7102()
+    public void testBug7102(UniAsserter asserter) {
+        asserter.execute(() -> createBug7102()
                 .flatMap(person -> {
                     return getBug7102(person.id)
                             .flatMap(person1 -> {
@@ -187,18 +189,17 @@ public class PanacheFunctionalityTest {
                                 Assertions.assertEquals("jozo", person2.name);
                                 return null;
                             });
-                }).flatMap(v -> Person.deleteAll())
-                .await().indefinitely();
+                }).flatMap(v -> Panache.withTransaction(() -> Person.deleteAll())));
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     Uni<Person> createBug7102() {
         Person personPanache = new Person();
         personPanache.name = "pero";
         return personPanache.persistAndFlush().map(v -> personPanache);
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     Uni<Void> updateBug7102(Long id) {
         return Person.<Person> findById(id)
                 .map(person -> {
@@ -207,7 +208,7 @@ public class PanacheFunctionalityTest {
                 });
     }
 
-    @ReactiveTransactional
+    @WithSession
     Uni<Person> getBug7102(Long id) {
         return Person.findById(id);
     }
@@ -234,39 +235,60 @@ public class PanacheFunctionalityTest {
     }
 
     @DisabledOnIntegrationTest
-    @ReactiveTransactional
+    @RunOnVertxContext
     @Test
     @Order(200)
     public void testReactiveTransactional(UniAsserter asserter) {
-        asserter.assertNotNull(() -> Panache.currentTransaction());
-        asserter.assertEquals(() -> Person.count(), 0l);
-        asserter.assertNotNull(() -> new Person().persist());
-        asserter.assertEquals(() -> Person.count(), 1l);
+        asserter.assertEquals(() -> reactiveTransactional(), 1l);
+    }
+
+    @WithTransaction
+    Uni<Long> reactiveTransactional() {
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNotNull(tx))
+                .chain(tx -> Person.count())
+                .invoke(count -> assertEquals(0l, count))
+                .call(() -> new Person().persist())
+                .chain(tx -> Person.count());
     }
 
     @DisabledOnIntegrationTest
-    @ReactiveTransactional
+    @RunOnVertxContext
     @Test
     @Order(201)
     public void testReactiveTransactional2(UniAsserter asserter) {
-        asserter.assertNotNull(() -> Panache.currentTransaction());
-        // make sure the previous one was NOT rolled back
-        asserter.assertEquals(() -> Person.count(), 1l);
-        // now delete everything and cause a rollback
-        asserter.assertEquals(() -> Person.deleteAll(), 1l);
-        asserter.execute(() -> Panache.currentTransaction().invoke(tx -> tx.markForRollback()));
+        asserter.assertTrue(() -> reactiveTransactional2());
+    }
+
+    @WithTransaction
+    Uni<Boolean> reactiveTransactional2() {
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNotNull(tx))
+                .chain(tx -> Person.count())
+                .invoke(count -> assertEquals(1l, count))
+                .chain(() -> Person.deleteAll())
+                .invoke(count -> assertEquals(1l, count))
+                .chain(() -> Panache.currentTransaction())
+                .invoke(tx -> tx.markForRollback())
+                .map(tx -> true);
     }
 
     @DisabledOnIntegrationTest
-    @ReactiveTransactional
+    @RunOnVertxContext
     @Test
     @Order(202)
     public void testReactiveTransactional3(UniAsserter asserter) {
-        asserter.assertNotNull(() -> Panache.currentTransaction());
-        // make sure it was rolled back
-        asserter.assertEquals(() -> Person.count(), 1l);
-        // and clean up
-        asserter.assertEquals(() -> Person.deleteAll(), 1l);
+        asserter.assertEquals(() -> testReactiveTransactional3(), 1l);
+    }
+
+    @ReactiveTransactional
+    Uni<Long> testReactiveTransactional3() {
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNotNull(tx))
+                .chain(tx -> Person.count())
+                // make sure it was rolled back
+                .invoke(count -> assertEquals(1l, count))
+                .call(() -> Person.deleteAll());
     }
 
     @DisabledOnIntegrationTest
@@ -274,6 +296,6 @@ public class PanacheFunctionalityTest {
     @Test
     @Order(300)
     public void testPersistenceException(UniAsserter asserter) {
-        asserter.assertFailedWith(() -> new Person().delete(), PersistenceException.class);
+        asserter.assertFailedWith(() -> Panache.withTransaction(() -> new Person().delete()), PersistenceException.class);
     }
 }

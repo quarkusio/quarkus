@@ -5,16 +5,18 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
-@ReactiveTransactional
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
+
+@WithSession
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)
-public class ReactiveTransactionalInterceptor extends AbstractUniInterceptor {
+public class WithSessionInterceptor extends AbstractUniInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {
-        // Note that intercepted methods annotated with @ReactiveTransactional are validated at build time
-        // The build fails if the method does not return Uni
-        return SessionOperations.withTransaction(() -> proceedUni(context));
+        // Note that intercepted methods annotated with @WithSession are validated at build time
+        // The build fails if a method does not return Uni
+        return SessionOperations.withSession(s -> proceedUni(context));
     }
 
 }

@@ -10,10 +10,10 @@ import jakarta.enterprise.inject.Alternative;
 /**
  * If a bean is annotated with this annotation, it is considered an enabled alternative with given priority.
  * Effectively, this is a shortcut for {@code Alternative} plus {@code Priority} annotations.
+ * <p>
+ * This annotation can be used not only on bean classes, but also method and field producers.
  *
- * This annotation can be used not only on bean classes, but also method and field producers (unlike pure {@code Priority}).
- *
- * @deprecated Use {@link Alternative} and {@link io.quarkus.arc.Priority}/{@link jakarta.annotation.Priority} instead
+ * @deprecated Use {@link Alternative} and {@link jakarta.annotation.Priority} instead
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })

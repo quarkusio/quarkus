@@ -1,14 +1,10 @@
 package io.quarkus.grpc.deployment;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
-import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -48,26 +44,30 @@ public class GrpcPostProcessing {
     public void postprocess() {
         SourceRoot sr = new SourceRoot(root);
         try {
-            // Parse all files from root
-            List<ParseResult<CompilationUnit>> results = sr.tryToParse();
-            for (ParseResult<CompilationUnit> result : results) {
-                if (result.isSuccessful()) {
-                    CompilationUnit unit = result.getResult().orElseThrow(); // the parsing succeed, so we can retrieve the cu
-                    CompilationUnit.Storage storage = unit.getStorage().orElseThrow(); // we read from the FS, so we have a storage
-                    if (unit.getPrimaryType().isPresent()) {
-                        TypeDeclaration<?> type = unit.getPrimaryType().get();
-                        postprocess(unit, type, context.config());
-                    }
-                    Files.write(storage.getPath(), List.of(unit.toString()), StandardCharsets.UTF_8);
-                } else {
-                    // Compilation issue - report and skip
-                    log.errorf(
-                            "Unable to parse a class generated using protoc, skipping post-processing for this " +
-                                    "file. Reported problems are %s",
-                            result.toString());
-                }
+            sr.parse("", new SourceRoot.Callback() {
+                @Override
+                public com.github.javaparser.utils.SourceRoot.Callback.Result process(Path localPath, Path absolutePath,
+                        com.github.javaparser.ParseResult<CompilationUnit> result) {
+                    if (result.isSuccessful()) {
+                        CompilationUnit unit = result.getResult().orElseThrow(); // the parsing succeed, so we can retrieve the cu
 
-            }
+                        if (unit.getPrimaryType().isPresent()) {
+                            TypeDeclaration<?> type = unit.getPrimaryType().get();
+                            postprocess(unit, type, context.config());
+                            return Result.SAVE;
+                        }
+
+                    } else {
+                        // Compilation issue - report and skip
+                        log.errorf(
+                                "Unable to parse a class generated using protoc, skipping post-processing for this " +
+                                        "file. Reported problems are %s",
+                                result.toString());
+                    }
+
+                    return Result.DONT_SAVE;
+                }
+            });
         } catch (Exception e) {
             // read issue, report and exit
             log.error("Unable to parse the classes generated using protoc - skipping gRPC post processing", e);

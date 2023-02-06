@@ -99,6 +99,11 @@ To enable this feature, the property `quarkus.bootstrap.workspace-discovery` nee
 when invoking the build tool, either as a build tool property. Setting this property in `application.properties` will **not** work because
 this property needs to be known very early on in the build process.
 
+==== AppCDS
+
+Quarkus supports generating and including an link:https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing[Application Class Data Sharing] archive when generating a container image using Jib.
+See the xref:appcds.adoc[AppCDS documentation] for more details.
+
 [#docker]
 === Docker
 

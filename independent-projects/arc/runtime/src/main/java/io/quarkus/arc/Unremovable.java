@@ -18,8 +18,7 @@ import java.lang.annotation.Target;
  * <li>does not declare an observer,</li>
  * <li>does not declare any producer which is eligible for injection to any injection point,</li>
  * <li>is not directly eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider`
- * injection
- * point</li>
+ * injection point</li>
  * </ul>
  */
 @Retention(RetentionPolicy.RUNTIME)

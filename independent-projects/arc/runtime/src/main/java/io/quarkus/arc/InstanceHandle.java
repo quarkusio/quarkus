@@ -41,9 +41,8 @@ public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {
 
     /**
      * Destroy the instance as defined by
-     * {@link jakarta.enterprise.context.spi.Contextual#destroy(Object, jakarta.enterprise.context.spi.CreationalContext)}. If
-     * this
-     * is a CDI contextual instance it is also removed from the underlying context.
+     * {@link jakarta.enterprise.context.spi.Contextual#destroy(Object, jakarta.enterprise.context.spi.CreationalContext)}.
+     * If this is a CDI contextual instance, it is also removed from the underlying context.
      *
      * @see AlterableContext#destroy(jakarta.enterprise.context.spi.Contextual)
      */

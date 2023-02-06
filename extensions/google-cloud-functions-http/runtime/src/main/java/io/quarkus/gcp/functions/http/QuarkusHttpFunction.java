@@ -40,6 +40,12 @@ public class QuarkusHttpFunction implements HttpFunction {
 
     private static final int BUFFER_SIZE = 8096;
 
+    private final String USER_AGENT = "User-Agent";
+    private final String USER_AGENT_VALUE = String.format(
+            "quarkus/%s-%s-%s-%s",
+            System.getProperty("quarkus.version"), System.getProperty("java.vm.specification.version"),
+            System.getProperty("java.vendor"), System.getProperty("java.vendor.version"));
+
     static {
         StringWriter error = new StringWriter();
         PrintWriter errorWriter = new PrintWriter(error, true);
@@ -99,6 +105,8 @@ public class QuarkusHttpFunction implements HttpFunction {
         for (Map.Entry<String, List<String>> header : request.getHeaders().entrySet()) {
             nettyRequest.headers().add(header.getKey(), header.getValue());
         }
+
+        nettyRequest.headers().set(USER_AGENT, USER_AGENT_VALUE);
 
         HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
         if (request.getContentLength() != 0) {

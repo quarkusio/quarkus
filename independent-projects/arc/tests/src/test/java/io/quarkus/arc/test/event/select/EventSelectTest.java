@@ -22,67 +22,56 @@ public class EventSelectTest {
 
     @Test
     public <T> void testEventSelectThrowsExceptionIfEventTypeHasTypeVariable() {
-        try {
-            SecuritySensor sensor = Arc.container().select(SecuritySensor.class).get();
-            sensor.securityEvent.select(new TypeLiteral<SecurityEvent_Illegal<T>>() {
-            });
-            Assertions.fail("Event#select should throw IllegalArgumentException if the event uses type variable");
-        } catch (IllegalArgumentException iae) {
-            // expected
-        }
+        SecuritySensor sensor = Arc.container().select(SecuritySensor.class).get();
+        TypeLiteral<SecurityEvent_Illegal<T>> typeLiteral = new TypeLiteral<SecurityEvent_Illegal<T>>() {
+        };
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> {
+                    sensor.securityEvent.select(typeLiteral);
+                }, "Event#select should throw IllegalArgumentException if the event uses type variable");
+
+        // do the same but with raw type passed into select(Class<U> subtype, Annotation ... qualifiers)
+        Assertions.assertThrows(IllegalArgumentException.class, () -> sensor.securityEvent.select(SecurityEvent_Illegal.class),
+                "Event#select should throw IllegalArgumentException if the event uses type variable");
     }
 
     @Test
     public void testEventSelectThrowsExceptionForDuplicateBindingType() {
-        try {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
             SecuritySensor sensor = Arc.container().select(SecuritySensor.class).get();
             sensor.securityEvent.select(new SystemTest.SystemTestLiteral("a") {
             },
                     new SystemTest.SystemTestLiteral("b") {
                     });
-            Assertions.fail("Event#select should throw IllegalArgumentException when there are duplicate bindings specified.");
-        } catch (IllegalArgumentException iae) {
-            // expected
-        }
+        }, "Event#select should throw IllegalArgumentException when there are duplicate bindings specified.");
     }
 
     @Test
     public void testEventSelectWithSubtypeThrowsExceptionForDuplicateBindingType() {
-        try {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
             SecuritySensor sensor = Arc.container().select(SecuritySensor.class).get();
             sensor.securityEvent.select(BreakInEvent.class, new SystemTest.SystemTestLiteral("a") {
             },
                     new SystemTest.SystemTestLiteral("b") {
                     });
-            Assertions.fail(
-                    "Event#select should throw IllegalArgumentException when selecting a subtype with duplicate bindings.");
-        } catch (IllegalArgumentException iae) {
-            // expected
-        }
+        }, "Event#select should throw IllegalArgumentException when selecting a subtype with duplicate bindings.");
     }
 
     @Test
     public void testEventSelectThrowsExceptionIfAnnotationIsNotBindingType() {
-        try {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
             SecuritySensor sensor = Arc.container().select(SecuritySensor.class).get();
             sensor.securityEvent.select(new AnnotationLiteral<NotABindingType>() {
             });
-            Assertions.fail("Event#select should throw IllegalArgumentException if the annotation is not a binding type.");
-        } catch (IllegalArgumentException iae) {
-            // expected
-        }
+        }, "Event#select should throw IllegalArgumentException if the annotation is not a binding type.");
     }
 
     @Test
     public void testEventSelectWithSubtypeThrowsExceptionIfAnnotationIsNotBindingType() {
-        try {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
             SecuritySensor sensor = Arc.container().select(SecuritySensor.class).get();
             sensor.securityEvent.select(BreakInEvent.class, new AnnotationLiteral<NotABindingType>() {
             });
-            Assertions.fail(
-                    "Event#select should throw IllegalArgumentException when selecting a subtype and using annotation that is not a binding type.");
-        } catch (IllegalArgumentException iae) {
-            // expected
-        }
+        }, "Event#select should throw IllegalArgumentException when selecting a subtype and using annotation that is not a binding type.");
     }
 }

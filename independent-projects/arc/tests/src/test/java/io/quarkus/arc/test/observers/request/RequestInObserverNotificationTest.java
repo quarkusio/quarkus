@@ -14,6 +14,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
@@ -32,11 +33,12 @@ public class RequestInObserverNotificationTest {
     @Test
     public void testObserverNotification() {
         ArcContainer container = Arc.container();
-        AtomicReference<String> msg = new AtomicReference<String>();
+        AtomicReference<String> msg = new AtomicReference<>();
         RequestFoo.DESTROYED.set(false);
 
         // Request context should be activated automatically
-        container.beanManager().getEvent().select(AtomicReference.class).fire(msg);
+        container.beanManager().getEvent().select(new TypeLiteral<AtomicReference<String>>() {
+        }).fire(msg);
         String fooId1 = msg.get();
         assertNotNull(fooId1);
         assertTrue(RequestFoo.DESTROYED.get());
@@ -50,7 +52,8 @@ public class RequestInObserverNotificationTest {
             requestContext.activate();
             String fooId2 = container.instance(RequestFoo.class).get().getId();
             assertNotEquals(fooId1, fooId2);
-            container.beanManager().getEvent().select(AtomicReference.class).fire(msg);
+            container.beanManager().getEvent().select(new TypeLiteral<AtomicReference<String>>() {
+            }).fire(msg);
             assertEquals(fooId2, msg.get());
         } finally {
             requestContext.terminate();

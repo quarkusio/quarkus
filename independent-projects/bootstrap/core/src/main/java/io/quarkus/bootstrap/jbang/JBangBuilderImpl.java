@@ -61,13 +61,17 @@ public class JBangBuilderImpl {
                     .setManagingProject(new GACTV("io.quarkus", "quarkus-bom", "", "pom", getQuarkusVersion()))
                     .setForcedDependencies(dependencies.stream().map(s -> {
                         String[] parts = s.getKey().split(":");
+                        // The format of maven coordinate used in what jbang calls `canonical` form.
+                        // The form is described here: https://github.com/jbangdev/jbang/blob/main/src/main/java/dev/jbang/dependencies/MavenCoordinate.java#L118
+                        // Despite the fact that is non standard it's still used for compatibility reasons by the IntegrationManager:
+                        // https://github.com/jbangdev/jbang/blob/main/src/main/java/dev/jbang/spi/IntegrationManager.java#L73
                         Dependency artifact;
                         if (parts.length == 3) {
                             artifact = new ArtifactDependency(parts[0], parts[1], null, ArtifactCoords.TYPE_JAR, parts[2]);
                         } else if (parts.length == 4) {
                             artifact = new ArtifactDependency(parts[0], parts[1], null, parts[2], parts[3]);
                         } else if (parts.length == 5) {
-                            artifact = new ArtifactDependency(parts[0], parts[1], parts[3], parts[2], parts[4]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], parts[2], parts[3], parts[4]);
                         } else {
                             throw new RuntimeException("Invalid artifact " + s.getKey());
                         }

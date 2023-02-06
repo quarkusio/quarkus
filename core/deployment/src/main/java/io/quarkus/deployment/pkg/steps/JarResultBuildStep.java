@@ -601,19 +601,11 @@ public class JarResultBuildStep {
         Path decompiledOutputDir = null;
         boolean wasDecompiledSuccessfully = true;
         Decompiler decompiler = null;
-        if (packageConfig.fernflower.enabled || packageConfig.quiltflower.enabled) {
+        if (packageConfig.quiltflower.enabled) {
             decompiledOutputDir = buildDir.getParent().resolve("decompiled");
             FileUtil.deleteDirectory(decompiledOutputDir);
             Files.createDirectory(decompiledOutputDir);
-            if (packageConfig.fernflower.enabled) {
-                decompiler = new Decompiler.FernflowerDecompiler();
-                Path jarDirectory = Paths.get(packageConfig.fernflower.jarDirectory);
-                if (!Files.exists(jarDirectory)) {
-                    Files.createDirectory(jarDirectory);
-                }
-                decompiler.init(new Decompiler.Context(packageConfig.fernflower.hash, jarDirectory, decompiledOutputDir));
-                decompiler.downloadIfNecessary();
-            } else if (packageConfig.quiltflower.enabled) {
+            if (packageConfig.quiltflower.enabled) {
                 decompiler = new Decompiler.QuiltflowerDecompiler();
                 Path jarDirectory = Paths.get(packageConfig.quiltflower.jarDirectory);
                 if (!Files.exists(jarDirectory)) {

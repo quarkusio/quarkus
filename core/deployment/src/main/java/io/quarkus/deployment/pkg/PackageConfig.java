@@ -235,13 +235,6 @@ public class PackageConfig {
     public boolean includeDependencyList;
 
     /**
-     * Fernflower Decompiler configuration
-     */
-    @ConfigItem
-    @Deprecated(forRemoval = true)
-    public FernflowerConfig fernflower;
-
-    /**
      * Quiltflower Decompiler configuration
      */
     @ConfigItem
@@ -288,30 +281,6 @@ public class PackageConfig {
 
     public String getRunnerSuffix() {
         return addRunnerSuffix ? runnerSuffix : "";
-    }
-
-    @ConfigGroup
-    @Deprecated(forRemoval = true)
-    public static class FernflowerConfig {
-
-        /**
-         * An advanced option that will decompile generated and transformed bytecode into the 'decompiled' directory.
-         * This is only taken into account when fast-jar is used.
-         */
-        @ConfigItem(defaultValue = "false")
-        public boolean enabled;
-
-        /**
-         * The git hash to use to download the fernflower tool from https://jitpack.io/com/github/fesh0r/fernflower/
-         */
-        @ConfigItem(defaultValue = "dbf407a655")
-        public String hash;
-
-        /**
-         * The directory into which to save the fernflower tool if it doesn't exist
-         */
-        @ConfigItem(defaultValue = "${user.home}/.quarkus")
-        public String jarDirectory;
     }
 
     @ConfigGroup

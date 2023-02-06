@@ -177,7 +177,7 @@
         <owasp-dependency-check-plugin.version>7.4.4</owasp-dependency-check-plugin.version>
 
         <!-- Jakarta JMS API -->
-        <jakarta.jms-api.version>2.0.3</jakarta.jms-api.version>
+        <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
     </properties>
 
     <dependencyManagement>

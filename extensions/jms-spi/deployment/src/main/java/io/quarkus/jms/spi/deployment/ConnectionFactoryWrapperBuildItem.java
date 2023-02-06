@@ -2,7 +2,7 @@ package io.quarkus.jms.spi.deployment;
 
 import java.util.function.Function;
 
-import javax.jms.ConnectionFactory;
+import jakarta.jms.ConnectionFactory;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 

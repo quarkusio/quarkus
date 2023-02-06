@@ -1,6 +1,13 @@
 package io.quarkus.grpc.deployment;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -43,6 +50,7 @@ public class GrpcPostProcessing {
 
     public void postprocess() {
         SourceRoot sr = new SourceRoot(root);
+        Map<Path, Path> changedFiles = new HashMap<Path, Path>();
         try {
             sr.parse("", new SourceRoot.Callback() {
                 @Override
@@ -54,9 +62,19 @@ public class GrpcPostProcessing {
                         if (unit.getPrimaryType().isPresent()) {
                             TypeDeclaration<?> type = unit.getPrimaryType().get();
                             postprocess(unit, type, context.config());
-                            return Result.SAVE;
-                        }
 
+                            // save to a tempory file first, then move all temporary unit files at the same time
+                            try {
+                                unit.setStorage(Files.createTempFile(null, null),
+                                        sr.getParserConfiguration().getCharacterEncoding())
+                                        .getStorage().get().save(sr.getPrinter());
+                            } catch (IOException ex) {
+                                throw new RuntimeException(ex);
+                            }
+
+                            changedFiles.put(unit.getStorage().get().getPath(), absolutePath);
+                            return Result.DONT_SAVE;
+                        }
                     } else {
                         // Compilation issue - report and skip
                         log.errorf(
@@ -68,9 +86,32 @@ public class GrpcPostProcessing {
                     return Result.DONT_SAVE;
                 }
             });
+
+            changedFiles.entrySet().stream().forEach(new Consumer<Entry<Path, Path>>() {
+                @Override
+                public void accept(Entry<Path, Path> entry) {
+                    try {
+                        Files.move(entry.getKey(), entry.getValue(), StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            });
+            changedFiles.clear();
+
         } catch (Exception e) {
             // read issue, report and exit
             log.error("Unable to parse the classes generated using protoc - skipping gRPC post processing", e);
+        } finally {
+            changedFiles.entrySet().stream().forEach(new Consumer<Entry<Path, Path>>() {
+                @Override
+                public void accept(Entry<Path, Path> e) {
+                    try {
+                        Files.deleteIfExists(e.getKey());
+                    } catch (IOException discard) {
+                    }
+                }
+            });
         }
     }
 

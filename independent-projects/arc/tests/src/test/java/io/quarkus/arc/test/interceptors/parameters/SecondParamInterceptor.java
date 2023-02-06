@@ -6,19 +6,16 @@ import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
 @Simple
-@Priority(1)
+@Priority(2)
 @Interceptor
-public class ParamInterceptor {
+public class SecondParamInterceptor {
 
     @AroundInvoke
     Object interceptParameters(InvocationContext ctx) throws Exception {
-
         Object[] params = ctx.getParameters();
         if (params.length == 1 && params[0] != null) {
-            if (params[0] instanceof CharSequence) {
-                params[0] = params[0].getClass().getSimpleName();
-            } else if (params[0] instanceof Number) {
-                params[0] = 123456;
+            if (params[0] instanceof Number) {
+                params[0] = ((Number) params[0]).intValue() + 1;
             }
             ctx.setParameters(params);
         }

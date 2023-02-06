@@ -1,23 +1,27 @@
 package io.quarkus.arc.impl;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Set;
 
 /**
- * A simple InvocationContext implementation used for PostConstruct and PreDestroy callbacks.
+ * A simple stateful {@link javax.interceptor.InvocationContext} implementation used for {@link javax.annotation.PostConstruct}
+ * and {@link javax.annotation.PreDestroy} callbacks.
  * <p>
  * All lifecycle callback interceptors of a specific chain must be invoked on the same thread.
  */
 class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
 
+    protected final Set<Annotation> bindings;
+    protected final List<InterceptorInvocation> chain;
     private int position = 0;
 
-    LifecycleCallbackInvocationContext(Object target, Constructor<?> constructor, Object[] parameters,
-            Set<Annotation> interceptorBindings, List<InterceptorInvocation> chain) {
-        super(target, null, constructor, parameters, null, interceptorBindings, chain);
+    LifecycleCallbackInvocationContext(Object target, Object[] parameters,
+            Set<Annotation> bindings, List<InterceptorInvocation> chain) {
+        super(target, parameters, new ContextDataMap(bindings));
+        this.chain = chain;
+        this.bindings = bindings;
     }
 
     @Override
@@ -44,11 +48,26 @@ class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
         }
     }
 
+    @Override
+    public Set<Annotation> getInterceptorBindings() {
+        return bindings;
+    }
+
+    @Override
+    public Object[] getParameters() {
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public void setParameters(Object[] params) {
+        throw new IllegalStateException();
+    }
+
     protected void interceptorChainCompleted() throws Exception {
         // No-op
     }
 
-    protected Object invokeNext() throws Exception {
+    private Object invokeNext() throws Exception {
         try {
             return chain.get(position++).invoke(this);
         } finally {

@@ -650,7 +650,7 @@ public class BeanInfo implements InjectionTargetInfo {
         ClassInfo classInfo = target.get().asClass();
         addDecoratedMethods(candidates, classInfo, classInfo, bound,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
-                        beanDeployment.getBeanArchiveIndex()));
+                        beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods()));
 
         Map<MethodInfo, DecorationInfo> decoratedMethods = new HashMap<>(candidates.size());
         for (Entry<MethodKey, DecorationInfo> entry : candidates.entrySet()) {

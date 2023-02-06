@@ -11,16 +11,34 @@ import java.util.function.Supplier;
  */
 class AroundConstructInvocationContext extends LifecycleCallbackInvocationContext {
 
+    private final Constructor<?> constructor;
     private final Supplier<Object> aroundConstructForward;
 
     AroundConstructInvocationContext(Constructor<?> constructor, Object[] parameters, Set<Annotation> interceptorBindings,
             List<InterceptorInvocation> chain, Supplier<Object> aroundConstructForward) {
-        super(null, constructor, parameters, interceptorBindings, chain);
+        super(null, parameters, interceptorBindings, chain);
         this.aroundConstructForward = aroundConstructForward;
+        this.constructor = constructor;
     }
 
     protected void interceptorChainCompleted() throws Exception {
         target = aroundConstructForward.get();
+    }
+
+    @Override
+    public Constructor<?> getConstructor() {
+        return constructor;
+    }
+
+    @Override
+    public Object[] getParameters() {
+        return parameters;
+    }
+
+    @Override
+    public void setParameters(Object[] params) {
+        validateParameters(constructor, params);
+        this.parameters = params;
     }
 
 }

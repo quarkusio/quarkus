@@ -674,6 +674,21 @@ public class BeanDeployment {
         return alternativePriorities != null ? alternativePriorities.compute(target, stereotypes) : null;
     }
 
+    Set<MethodInfo> getObserverAndProducerMethods() {
+        Set<MethodInfo> ret = new HashSet<>();
+        for (ObserverInfo observer : observers) {
+            if (!observer.isSynthetic()) {
+                ret.add(observer.getObserverMethod());
+            }
+        }
+        for (BeanInfo bean : beans) {
+            if (bean.isProducerMethod()) {
+                ret.add(bean.getTarget().get().asMethod());
+            }
+        }
+        return ret;
+    }
+
     private void buildContextPut(String key, Object value) {
         if (buildContext != null) {
             buildContext.putInternal(key, value);

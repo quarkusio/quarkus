@@ -25,8 +25,6 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.DisabledOnOs
-import org.junit.jupiter.api.condition.OS
 import java.io.IOException
 import java.time.Duration
 import java.util.Calendar
@@ -37,7 +35,6 @@ import java.util.concurrent.atomic.LongAdder
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource::class)
-@DisabledOnOs(OS.WINDOWS)
 internal open class ReactiveMongodbPanacheResourceTest {
     companion object {
         private val LIST_OF_BOOK_TYPE_REF: TypeRef<List<BookDTO>> = object : TypeRef<List<BookDTO>>() {}

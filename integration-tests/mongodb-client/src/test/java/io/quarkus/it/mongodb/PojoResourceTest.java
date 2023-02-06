@@ -12,8 +12,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.it.mongodb.pojo.Pojo;
 import io.quarkus.test.junit.QuarkusTest;
@@ -21,7 +19,6 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@DisabledOnOs(OS.WINDOWS)
 public class PojoResourceTest {
 
     private static Jsonb jsonb;

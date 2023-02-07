@@ -91,11 +91,7 @@ public class MySQLPoolRecorder {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
-        if (dataSourceReactiveRuntimeConfig.maxSize.isPresent()) {
-            poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize.getAsInt());
-        } else {
-            poolOptions.setMaxSize(20);
-        }
+        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize);
 
         if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
             int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());

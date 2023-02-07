@@ -52,7 +52,7 @@ public class PrometheusHandler implements Handler<RoutingContext> {
         if (acceptHeader == null) {
             return TextFormat.CONTENT_TYPE_OPENMETRICS_100;
         }
-        if (acceptHeader.startsWith("text/plain")) {
+        if (acceptHeader.contains("text/plain") || acceptHeader.contains("text/html")) {
             return TextFormat.CONTENT_TYPE_004;
         }
         return TextFormat.CONTENT_TYPE_OPENMETRICS_100;

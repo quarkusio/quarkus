@@ -702,6 +702,18 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:-ParseOnce");
                 }
 
+                if (nativeConfig.debug.enabled && graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
+                    /*
+                     * Instruct GraalVM / Mandrel to keep more accurate information about source locations when generating
+                     * debug info for debugging and monitoring tools. This parameter may break compatibility with Truffle.
+                     * Affected users should explicitly pass {@code -H:-TrackNodeSourcePosition} through
+                     * {@code quarkus.native.additional-build-args} to override it.
+                     *
+                     * See https://github.com/quarkusio/quarkus/issues/30772 for more details.
+                     */
+                    nativeImageArgs.add("-H:+TrackNodeSourcePosition");
+                }
+
                 /**
                  * This makes sure the Kerberos integration module is made available in case any library
                  * refers to it (e.g. the PostgreSQL JDBC requires it, seems plausible that many others will as well):

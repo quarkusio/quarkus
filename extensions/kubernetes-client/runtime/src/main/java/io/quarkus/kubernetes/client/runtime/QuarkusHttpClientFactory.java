@@ -1,11 +1,14 @@
 package io.quarkus.kubernetes.client.runtime;
 
+import static io.vertx.core.spi.resolver.ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME;
+
 import jakarta.enterprise.inject.spi.CDI;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.kubernetes.client.vertx.VertxHttpClientBuilder;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 
 public class QuarkusHttpClientFactory implements io.fabric8.kubernetes.client.http.HttpClient.Factory {
 
@@ -17,8 +20,29 @@ public class QuarkusHttpClientFactory implements io.fabric8.kubernetes.client.ht
         try {
             this.vertx = CDI.current().select(Vertx.class).get();
         } catch (Exception e) {
-            this.vertx = Vertx.vertx();
+            this.vertx = createVertxInstance();
         }
+    }
+
+    private Vertx createVertxInstance() {
+        // We must disable the async DNS resolver as it can cause issues when resolving the Vault instance.
+        // This is done using the DISABLE_DNS_RESOLVER_PROP_NAME system property.
+        // The DNS resolver used by vert.x is configured during the (synchronous) initialization.
+        // So, we just need to disable the async resolver around the Vert.x instance creation.
+        String originalValue = System.getProperty(DISABLE_DNS_RESOLVER_PROP_NAME);
+        Vertx vertx;
+        try {
+            System.setProperty(DISABLE_DNS_RESOLVER_PROP_NAME, "true");
+            vertx = Vertx.vertx(new VertxOptions());
+        } finally {
+            // Restore the original value
+            if (originalValue == null) {
+                System.clearProperty(DISABLE_DNS_RESOLVER_PROP_NAME);
+            } else {
+                System.setProperty(DISABLE_DNS_RESOLVER_PROP_NAME, originalValue);
+            }
+        }
+        return vertx;
     }
 
     @Override

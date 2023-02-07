@@ -26,10 +26,13 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.LogManager;
 
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
+import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSupport;
+import io.quarkus.deployment.util.CommandLineUtil;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.spi.DevModeType;
 
@@ -97,6 +100,25 @@ public class ConsoleStateManager {
             commands.add(new ConsoleCommand('s', "Force restart", null, () -> {
                 forceRestart();
             }));
+            commands.add(new ConsoleCommand('e', "Edits the command line parameters and restarts",
+                    "to edit command line args (currently '" + MessageFormat.GREEN
+                            + String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs()) + MessageFormat.RESET
+                            + "')",
+                    100, new ConsoleCommand.HelpState(() -> BLUE,
+                            () -> String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())),
+                    new Consumer<String>() {
+                        @Override
+                        public void accept(String args) {
+                            try {
+                                RuntimeUpdatesProcessor.INSTANCE.setCommandLineArgs(
+                                        CommandLineUtil.translateCommandline(args));
+                            } catch (Exception e) {
+                                Logger.getLogger(ConsoleStateManager.class).errorf(e, "Failed to parse command line %s", args);
+                                return;
+                            }
+                            RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
+                        }
+                    }));
 
             commands.add(new ConsoleCommand('i', "Toggle instrumentation based reload",
                     new ConsoleCommand.HelpState(() -> RuntimeUpdatesProcessor.INSTANCE.instrumentationEnabled()), () -> {

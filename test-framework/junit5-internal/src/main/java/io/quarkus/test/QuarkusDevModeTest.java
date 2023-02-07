@@ -286,6 +286,7 @@ public class QuarkusDevModeTest
             context.setTest(true);
             context.setAbortOnFailedStart(!allowFailedStart);
             context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
+            context.getBuildSystemProperties().put("quarkus.console.disable-input", "true"); //surefire communicates via stdin, we don't want the test to be reading input
             context.getBuildSystemProperties().putAll(buildSystemProperties);
             devModeMain = new DevModeMain(context);
             devModeMain.start();

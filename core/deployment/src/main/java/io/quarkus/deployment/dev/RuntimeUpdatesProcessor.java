@@ -1252,4 +1252,16 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
     }
 
+    public String[] getCommandLineArgs() {
+        String[] contextArgs = context.getArgs();
+        if (contextArgs == null) {
+            return new String[0];
+        }
+        return contextArgs;
+    }
+
+    public RuntimeUpdatesProcessor setCommandLineArgs(String[] commandLineArgs) {
+        this.context.setArgs(commandLineArgs);
+        return this;
+    }
 }

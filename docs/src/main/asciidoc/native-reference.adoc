@@ -153,6 +153,257 @@ $ quarkus-project-0.1-SNAPSHOT-runner -XX:PrintFlags=
   -XX:±VerboseGC                               Print more information about the heap before and after each collection. Default: - (disabled).
 ----
 
+[[rss]]
+=== Resident Set Size (RSS)
+
+As described in the
+xref:performance-measure.adoc[Measuring Performance guide],
+the footprint of Quarkus applications is measured using the resident set size (RSS).
+This is also applicable to native applications,
+but the runtime engine that manages the footprint is GraalVM rather than the JVM.
+
+The reporting techniques specified in the
+xref:performance-measure.adoc[Measuring Performance guide]
+are applicable to native applications too,
+but what causes the RSS to be higher or lower is specific to how GraalVM works.
+
+When the RSS is higher in one version of the application versus another,
+the following checks should be carried out first:
+
+* Check the <<native-reports,native build time reports>>
+and see if there are big discrepancies in the number of used packages, used classes or used methods.
+A bigger universe will result in bigger memory footprint.
+* Check the size of the binary for differences.
+Using `readelf` you can observe the size of different sections and compare them.
+The `.text` section where code lives,
+and the `.svm_heap` section where heap produced at build time lives,
+are particularly interesting.
+* Generate <<heap-dumps,heap dumps>> and inspect them with tools such as VisualVM or Eclipse MAT.
+
+Often profiling, instrumenting or tracing applications is the best way to figure out how things work.
+In the case of RSS and native applications,
+the techniques that Brendan Gregg explains in the
+https://www.brendangregg.com/FlameGraphs/memoryflamegraphs.html["Memory Leak (and Growth) Flame Graphs"] guide are particularly useful.
+This section uses the bcc/eBPF method since this is available in the Linux kernel in use for the tests.
+
+To see these in action, these techniques will be applied to the startup of Quarkus native executables.
+To capture all system calls that happen on startup,
+generate native executables with debug info,
+symbols and preserve the frame pointer:
+
+[source,bash]
+----
+$ ./mvnw package -DskipTests -Dnative \
+    -Dquarkus.native.debug.enabled \
+    -Dquarkus.native.additional-build-args=-H:-DeleteLocalSymbols,-H:+PreserveFramePointer
+----
+
+As a first step, let's measure how much RSS a native executables takes on startup:
+
+[source,bash]
+----
+$ ps -o pid,rss,command -p $(pidof quarkus-project-1.0.0-SNAPSHOT-runner)
+    PID   RSS COMMAND
+   6441 37176 ./target/quarkus-project-1.0.0-SNAPSHOT-runner
+----
+
+The aim of this execercise is to capture all the relevant information from the very first instruction.
+One way to achieve this is by running the native executable with `gdb` and instructing it to stop at the very first instruction.
+Once stopped, fire up the bcc/eBPF tracer and then request `gdb` complete the startup.
+So, let's start by running the native executable via `gdb`:
+
+[source,bash]
+----
+$ gdb ./target/quarkus-project-1.0.0-SNAPSHOT-runner
+...
+Reading symbols from ./target/quarkus-project-1.0.0-SNAPSHOT-runner...
+Reading symbols from <...>/quarkus-project/target/quarkus-project-1.0.0-SNAPSHOT-runner.debug...
+----
+
+`starti` is a `gdb` command that sets a temporary breakpoint at the very first instruction of the program's execution.
+This command is well suited for this scenario:
+
+[source,bash]
+----
+(gdb) starti
+Starting program: <...>/quarkus-project/target/quarkus-project-1.0.0-SNAPSHOT-runner
+Program stopped.
+0x00007ffff7fe4790 in _start () from /lib64/ld-linux-x86-64.so.2
+----
+
+Next invoke bcc/eBPF `stackcount` to trace a particular system call that is relevant for RSS and capture stack traces.
+`mmap` and `munmap` are interesting because of how GraalVM allocates heap.
+The very first time a thread allocates something,
+it will request a heap chunk that it will use exclusively until it has run out of space in that chunk,
+in which case it will request another heap chunk.
+So by tracing these system calls,
+the code paths that end up requesting new heap chunks will be recorded.
+
+[source,bash]
+----
+$ sudo /usr/share/bcc/tools/stackcount -P -p $(pidof quarkus-project-1.0.0-SNAPSHOT-runner) -U "t:syscalls:sys_enter_m*"
+Tracing 36 functions for "t:syscalls:sys_enter_m*"... Hit Ctrl-C to end.
+----
+
+Then go back to the `gdb` shell and instruct it to continue the startup procedure after hitting the first instruction:
+
+[source,bash]
+----
+(gdb) continue
+Continuing.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib64/libthread_db.so.1".
+[New Thread 0x7ffff65ff6c0 (LWP 7049)]
+...
+[Thread 0x7ffff4dff6c0 (LWP 7051) exited]
+...
+__  ____  __  _____   ___  __ ____  ______
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+2023-02-06 10:22:46,607 INFO  [io.quarkus] (main) quarkus-project 1.0.0-SNAPSHOT native (powered by Quarkus 2.16.1.Final) started in 0.020s. Listening on: http://0.0.0.0:8080
+2023-02-06 10:22:46,608 INFO  [io.quarkus] (main) Profile prod activated.
+2023-02-06 10:22:46,608 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation, vertx]
+----
+
+Once the startup has complete,
+press `Ctrl-C` on the `stackcount` shell and the stack traces should appear:
+
+[source,bash]
+----
+$ sudo /usr/share/bcc/tools/stackcount -P -p $(pidof quarkus-project-1.0.0-SNAPSHOT-runner) -U "t:syscalls:sys_enter_m*"
+Tracing 36 functions for "t:syscalls:sys_enter_m*"... Hit Ctrl-C to end.
+^C
+  __GI___mmap
+  AbstractCommittedMemoryProvider_allocate_918a0ef631252cb78d29dd03c08dbccf83223158
+  HeapChunkProvider_produceAlignedChunk_8214fff9e22061bbd4db5fe049c9b41ab0d75e2a
+  ThreadLocalAllocation_slowPathNewInstanceWithoutAllocating_cb30e26c12ff20c032edd4d7b692136d8122fa75
+  ThreadLocalAllocation_slowPathNewInstance_1ecc2a4758346549b4d5779d3ae68d61340736a4
+  StringLatin1_newString_737b8b7723fc21def120d47219c87491aa1f9ab3
+  StringBuilder_toString_fff5cf8f9838ca54b87be4fc46d795a7c0e01bd4
+  NameIterator_getNextSegment_8cc5f31df88d30d5785134d7b4ebaf7ea862f699
+  KeyMap_find_77bfa563bc84c3bcf95d4902f01d509fa85842dc
+  KeyMap_findRootValue_f55e492e81fa59260539cebfa004d31b057317a9
+  KeyMap_findRootValue_4348ed9ff28c4ecb3bba4f5fff255576bddeadee
+  DefaultsConfigSource_getValue_2c35a1835dc46ec608999766aa57680c372e6336
+  DisableableConfigSource_getValue_dd5a8f83e536a33a29fad8b80f41d623e9a627fd
+  ConfigValueConfigSourceWrapper_getConfigValue_09608a4de7dcb70ca60951dc60776caaab137eac
+  SmallRyeConfigSources_getValue_c683de82362e3215d4c2d292eb27ed717a72cad1
+  SecretKeysConfigSourceInterceptor_getValue_1184f5122352f2b0feb14cd2df23e0ead560cd53
+  RelocateConfigSourceInterceptor_getValue_50c035a42df6b98cdced39f216d477221493c2cb
+  RelocateConfigSourceInterceptor_getValue_50c035a42df6b98cdced39f216d477221493c2cb
+  RelocateConfigSourceInterceptor_getValue_50c035a42df6b98cdced39f216d477221493c2cb
+  ProfileConfigSourceInterceptor_getProfileValue_4b45309e0a1ab1f119fa918ab18ac8332949a106
+  ProfileConfigSourceInterceptor_getValue_e2ac71ac64266bd94f4c5091c0183f4a72e2ad33
+  ExpressionConfigSourceInterceptor_getValue_563933897d47fd84b3c2fc72001e673c1cc0c547
+  ExpressionConfigSourceInterceptor_getValue_88007ff8463db20d2a117bfbea146ce16259df0d
+  FallbackConfigSourceInterceptor_getValue_72258817427828e12e02ce243a835f8f485a162e
+  PropertyNamesConfigSourceInterceptor_getValue_d99be0b2e4266ece5d90f1f41fb0b29593c87bad
+  SmallRyeConfig_getConfigValue_8d86ddc1578d21549243d3667c0063e0133f9cfc
+  SmallRyeConfig_getValue_a16f787491eb4416549c0049336d17fca3ca0136
+  Config_initGroup$io$quarkus$vertx$http$runtime$HttpConfiguration_96d0475789c066c0346fee172bb251d464d5a408
+  Config_readConfig_a68a1a88a9311bdfd87db5b1080709177ec73023
+  ApplicationImpl_doStart_4f75ecc76b43645d5297b6092848747808c532c7
+  Application_start_f0300884f5c38b6448504f5177e19dff60a47b71
+  ApplicationLifecycleManager_run_d5cb017ad26675ebbd7be504099501fde301d161
+  Quarkus_run_7b200c41008a3c5f18cd42d608d602b518bc6c94
+  JavaMainWrapper_runCore0_030cf55ee73b0e1076836b52cdbbde2ffc0c5232
+  JavaMainWrapper_doRun_befa12b002bb2c4ede2c3e72011cc12e1c7fe82a
+  main
+  __libc_start_call_main
+    1
+...
+----
+
+[TIP]
+====
+Because bcc/eBPF captures all system calls that match the desired pattern,
+some math can be applied to calculate the number of calls made and see if that matches the expectations.
+====
+
+Combining the previous step with
+https://github.com/brendangregg/FlameGraph[flamegraph] generation provides optimal visualization:
+
+[source,bash]
+----
+$ sudo /usr/share/bcc/tools/stackcount -P -p $(pidof quarkus-project-1.0.0-SNAPSHOT-runner) -U "t:syscalls:sys_enter_m*" > mmap-munmap.stacks
+$ export FG_HOME=...
+$ ${FG_HOME}/stackcollapse.pl mmap-munmap.stacks | ${FG_HOME}/flamegraph.pl --color=mem --title="mmap/munmap Flame Graph" --countname="calls" > mmap-munmap.svg
+----
+
+The resulting flamegraph has a couple of interesting areas:
+
+image::mmap-munmap.svg[mmap/munmap flamegraph]
+
+The biggest area in our environment is the one on the right hand side under `start_thread`.
+There are several things of interest to notice there:
+
+* A lot of threads are starting up by default in this system.
+  That's normal because the environment has 32 cores,
+  and the default Vert.x/Netty behaviour is to create as many threads as cores.
+  There are other threads aside from those.
+* All threads, upon first allocation, use the thread local chunk allocation logic to get an aligned heap chunk.
+  The very first allocation for the majority of the threads involves taking the thread name and trimming it so that it can fall within the 15 character limit enforced by kernels.
+* There are both `mmap` and `munmap` calls.
+  To rationale for these calls is embedded within the GraalVM source code,
+  but to summarise:
+  ** There are 2 `mmap` calls for each allocated chunk,
+      one to reserve and one to commit.
+  ** When calculating the size to reserve,
+     the requested size to allocate can be rounded up to the page size.
+     The maintain alignment some of the reserved memory might be unreserved.
+     That is where the `munmap` calls are coming from.
+* The default size of aligned heap chunks is 1MB.
+  Hence, knowing the amount of `mmap` calls can give us an estimate of the amount of memory allocated heap chunks take.
+
+The other area of interest is the one under `__libc_start_call_main`.
+Here the stack traces on the `main` thread that trigger new heap chunks can be observerd.
+It's important to understand that these stack traces do not necessarily point to hotspots,
+but they indicate paths that in this particular run trigger new heap chunk allocations.
+So, the stack traces can vary slightly from one run to another.
+Nevertheless, these stack traces can be still be useful when comparing multiple Quarkus versions,
+and see if there has been any significant changes in the shape and code executed.
+
+[NOTE]
+====
+The stack traces might lack method calls that you would normally expect to see.
+This can happen due to methods being inlined,
+which is a typical optimization in any compiled code.
+====
+
+Other patterns of interest for bcc/eBPF tracing are:
+
+* `"c:*alloc" for malloc/calloc/realloc system calls, and `"c:free"`.
+  These are also present in Quarkus native executable startup,
+  when setting Java NIO selector (e.g. epoll) or loading cgroup files.
+* `"t:exceptions:page_fault_*"` for tracking page faults.
+
+Finally, bcc/eBPF can be extended with custom scripts to track different metrics.
+For example, https://raw.githubusercontent.com/galderz/BPF-tools/topic.1202.fix-mallocstacks/old/2017-12-23/mallocstacks.py[this sample bcc tracing script]
+counts the number of bytes allocated via `malloc`,
+as opposed to the number of calls.
+Repeat the process above but instead of using bcc's `stackcount` command,
+get the script linked and execute:
+
+[source,bash]
+----
+$ sudo mallocstacks.py -p $(pidof quarkus-project-1.0.0-SNAPSHOT-runner) -f > malloc-bytes.stacks
+----
+
+The stacks generated by this script are already collapsed,
+so the flamegraph can be generated just like this:
+
+[source,bash]
+----
+$ cat malloc-bytes.stacks | ${FG_HOME}/flamegraph.pl --color=mem --title="malloc bytes Flame Graph" --countname="bytes" > malloc-bytes.svg
+----
+
+The flamegraph that reports allocated malloc bytes looks like this:
+
+image::malloc-bytes.svg[malloc bytes flamegraph]
+
+This shows that the biggest contributor to memory requested via `malloc` is NIO/epoll.
+
 [[inspecting-and-debugging]]
 == Inspecting and Debugging Native Executables
 This debugging guide provides further details on debugging issues in Quarkus native executables that might arise during development or production.
@@ -1643,6 +1894,7 @@ com.oracle.svm.core.VM=GraalVM 22.0.0.2-Final Java 11 Mandrel Distribution
 
 See <<gc-logging,Native Memory Management GC Logging section>> for details.
 
+[[heap-dumps]]
 === Can I get a heap dump of a native executable? e.g. if it runs out of memory
 
 Starting with GraalVM 22.2.0 it is possible to create heap dumps upon request,

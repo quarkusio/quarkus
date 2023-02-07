@@ -6,6 +6,7 @@ import java.util.Set;
 
 import jakarta.enterprise.event.Reception;
 import jakarta.enterprise.event.TransactionPhase;
+import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 
 /**
@@ -30,6 +31,11 @@ public interface InjectableObserverMethod<T> extends ObserverMethod<T> {
     @Override
     default TransactionPhase getTransactionPhase() {
         return TransactionPhase.IN_PROGRESS;
+    }
+
+    @Override
+    default Bean<?> getDeclaringBean() {
+        return Arc.container().bean(getDeclaringBeanIdentifier());
     }
 
     /**

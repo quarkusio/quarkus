@@ -504,6 +504,9 @@ public class KafkaProcessor {
                 new RuntimeInitializedClassBuildItem("org.apache.kafka.common.security.authenticator.SaslClientAuthenticator"));
         producer.produce(new RuntimeInitializedClassBuildItem(
                 "org.apache.kafka.common.security.oauthbearer.internals.expiring.ExpiringCredentialRefreshingLogin"));
+        // VerificationKeyResolver is value on static map in OAuthBearerValidatorCallbackHandler
+        producer.produce(new RuntimeInitializedClassBuildItem(
+                "org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler"));
     }
 
     @BuildStep

@@ -39,7 +39,7 @@ public class SecretKeysConfigTest {
     }
 
     @ConfigMapping(prefix = "secrets.my")
-    interface MappingSecret {
+    public interface MappingSecret {
         String secret();
     }
 }

@@ -45,7 +45,7 @@ jobs:
       - name: Get Date
         id: get-date
         run: |
-          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
+          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven

@@ -471,7 +471,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-klass-change-agent</artifactId>
+                <artifactId>quarkus-class-change-agent</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

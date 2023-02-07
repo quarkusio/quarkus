@@ -1293,7 +1293,7 @@ public class DevMojo extends AbstractMojo {
             final org.eclipse.aether.artifact.Artifact a = appDep.getArtifact();
             if (!(a.getArtifactId().equals("quarkus-ide-launcher")
                     && a.getGroupId().equals("io.quarkus"))) {
-                if (a.getArtifactId().equals("quarkus-klass-change-agent")
+                if (a.getArtifactId().equals("quarkus-class-change-agent")
                         && a.getGroupId().equals("io.quarkus")) {
                     builder.jvmArgs("-javaagent:" + a.getFile().getAbsolutePath());
                 } else {

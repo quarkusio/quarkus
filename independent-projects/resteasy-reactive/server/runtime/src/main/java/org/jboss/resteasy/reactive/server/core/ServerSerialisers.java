@@ -27,6 +27,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
 import jakarta.ws.rs.core.Variant;
 import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.MessageBodyWriter;
@@ -63,6 +64,7 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathBodyHa
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathPartBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
+import org.jboss.resteasy.reactive.server.providers.serialisers.StreamingOutputMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
@@ -129,6 +131,8 @@ public class ServerSerialisers extends Serialisers {
             new Serialisers.BuiltinWriter(MultivaluedMap.class, ServerFormUrlEncodedProvider.class,
                     MediaType.APPLICATION_FORM_URLENCODED),
             new Serialisers.BuiltinWriter(InputStream.class, ServerInputStreamMessageBodyHandler.class,
+                    MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(StreamingOutput.class, StreamingOutputMessageBodyWriter.class,
                     MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(Reader.class, ServerReaderBodyHandler.class,
                     MediaType.WILDCARD),

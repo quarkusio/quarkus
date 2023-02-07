@@ -61,8 +61,10 @@ public class ObserverTransformerTest {
 
                             @Override
                             public void transform(TransformationContext context) {
-                                if (context.getMethod().name().equals("")) {
-                                    context.transform().removeAll().done();
+                                if (context.getMethod().name().equals("onMyEventRemoveQualifiers")) {
+                                    context.transform()
+                                            .remove(annotation -> annotation.name().equals(ALPHA_QUALIFIER))
+                                            .done();
                                 }
                             }
 
@@ -72,6 +74,8 @@ public class ObserverTransformerTest {
             }
         };
     }
+
+    private static final DotName ALPHA_QUALIFIER = DotName.createSimple(AlphaQualifier.class);
 
     @BravoQualifier
     @Inject
@@ -89,7 +93,7 @@ public class ObserverTransformerTest {
     @Singleton
     static class MyObserver {
 
-        void onMyEventRemoveQualifiers(@Observes @BravoQualifier MyEvent event) {
+        void onMyEventRemoveQualifiers(@Observes @AlphaQualifier @BravoQualifier MyEvent event) {
             event.log.add("onMyEventRemoveQualifiers");
         }
 

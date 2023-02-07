@@ -23,7 +23,7 @@ Quarkus Security also supports the following features:
 * <<Cross-origin resource sharing>>
 * <<Cross-site Request Forgery (CSRF) prevention>>
 * <<SameSite cookies>>
-* <<Secret engines>>
+* <<Secrets engines>>
 * <<Secure serialization>>
 * <<Secure auto-generated resources by REST Data with Panache>>
 * xref:security-vulnerability-detection-concept.adoc[Security vulnerability detection and National Vulnerability Database (NVD) registration]

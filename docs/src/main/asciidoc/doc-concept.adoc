@@ -17,7 +17,7 @@ Each content type resolves a different user need, fulfills a different purpose, 
 
 We chose to align Quarkus docs with the Diátaxis documentation framework{fn-diataxis}, which defines a core content structure that addresses the different needs users have when consulting docs. 
 
-image::diataxis-framework.png[The content types in the Diátaxis documentation framework{fn-diataxis},width=70%, align=center]
+image::diataxis-framework.png[The content types in the Diátaxis documentation framework{fn-diataxis},width=40%, align=left]
 
 *Image credit: https://diataxis.fr/*
 

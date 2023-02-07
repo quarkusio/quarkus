@@ -345,7 +345,7 @@ There are several things of interest to notice there:
 * All threads, upon first allocation, use the thread local chunk allocation logic to get an aligned heap chunk.
   The very first allocation for the majority of the threads involves taking the thread name and trimming it so that it can fall within the 15 character limit enforced by kernels.
 * There are both `mmap` and `munmap` calls.
-  To rationale for these calls is embedded within the GraalVM source code,
+  The rationale for these calls is embedded within the GraalVM source code,
   but to summarise:
   ** There are 2 `mmap` calls for each allocated chunk,
       one to reserve and one to commit.

@@ -29,7 +29,6 @@ import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.EventMetadata;
-import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.transaction.RollbackException;
@@ -347,58 +346,6 @@ class EventImpl<T> implements Event<T> {
 
         private boolean isNotTxObserver(ObserverMethod<?> observer) {
             return !isTxObserver(observer);
-        }
-
-    }
-
-    static class EventContextImpl<T> implements EventContext<T> {
-
-        private final T payload;
-
-        private final EventMetadata metadata;
-
-        public EventContextImpl(T payload, EventMetadata metadata) {
-            this.payload = payload;
-            this.metadata = metadata;
-        }
-
-        @Override
-        public T getEvent() {
-            return payload;
-        }
-
-        @Override
-        public EventMetadata getMetadata() {
-            return metadata;
-        }
-
-    }
-
-    static class EventMetadataImpl implements EventMetadata {
-
-        private final Set<Annotation> qualifiers;
-
-        private final Type eventType;
-
-        public EventMetadataImpl(Set<Annotation> qualifiers, Type eventType) {
-            this.qualifiers = qualifiers;
-            this.eventType = eventType;
-        }
-
-        @Override
-        public Set<Annotation> getQualifiers() {
-            return qualifiers;
-        }
-
-        @Override
-        public InjectionPoint getInjectionPoint() {
-            // Currently we do not support injection point of the injected Event instance which fired the event
-            return null;
-        }
-
-        @Override
-        public Type getType() {
-            return eventType;
         }
 
     }

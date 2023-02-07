@@ -9,6 +9,9 @@ import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 
+import io.quarkus.arc.impl.EventContextImpl;
+import io.quarkus.arc.impl.EventMetadataImpl;
+
 /**
  * Represents an observer method.
  *
@@ -36,6 +39,11 @@ public interface InjectableObserverMethod<T> extends ObserverMethod<T> {
     @Override
     default Bean<?> getDeclaringBean() {
         return Arc.container().bean(getDeclaringBeanIdentifier());
+    }
+
+    default void notify(T event) {
+        notify(new EventContextImpl<>(event,
+                new EventMetadataImpl(getObservedQualifiers(), event.getClass())));
     }
 
     /**

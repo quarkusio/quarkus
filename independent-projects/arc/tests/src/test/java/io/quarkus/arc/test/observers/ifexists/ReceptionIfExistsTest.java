@@ -53,7 +53,6 @@ public class ReceptionIfExistsTest {
         assertEquals(DependentObserver.class.getName() + "foo", EVENTS.get(1));
         container.requestContext().deactivate();
 
-        // TODO check reception metadata
         Set<ObserverMethod<? super String>> foundOm = Arc.container().beanManager().resolveObserverMethods("eventString");
         assertEquals(2, foundOm.size());
         for (ObserverMethod<? super String> om : foundOm) {

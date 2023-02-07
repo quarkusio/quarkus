@@ -11,8 +11,7 @@
         <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
 
-    <!-- Using "klass" instead of "class", which is not allowed in automatic module name of the resulting JAR. -->
-    <artifactId>quarkus-klass-change-agent</artifactId>
+    <artifactId>quarkus-class-change-agent</artifactId>
     <name>Quarkus - Core - Class Change Agent</name>
     <description>
         A Java Agent that exposes the instrumentation API. This allows for super fast
@@ -32,6 +31,8 @@
                         <manifestEntries>
                             <Premain-Class>io.quarkus.changeagent.ClassChangeAgent</Premain-Class>
                             <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                            <!-- "class" is not accepted in module name. -->
+                            <Automatic-Module-Name>quarkus.klass.change.agent</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>

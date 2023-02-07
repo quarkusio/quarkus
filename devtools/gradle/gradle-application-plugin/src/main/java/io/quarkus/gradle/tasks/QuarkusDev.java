@@ -538,7 +538,7 @@ public class QuarkusDev extends QuarkusTask {
             if (!(artifactId.getGroup().equals("io.quarkus")
                     && artifactId.getName().equals("quarkus-ide-launcher"))) {
                 if (artifactId.getGroup().equals("io.quarkus")
-                        && artifactId.getName().equals("quarkus-klass-change-agent")) {
+                        && artifactId.getName().equals("quarkus-class-change-agent")) {
                     builder.jvmArgs("-javaagent:" + appDep.getFile().getAbsolutePath());
                 } else {
                     builder.classpathEntry(ArtifactKey.of(appDep.getModuleVersion().getId().getGroup(), appDep.getName(),

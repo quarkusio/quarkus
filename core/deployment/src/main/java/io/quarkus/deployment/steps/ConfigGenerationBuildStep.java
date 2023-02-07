@@ -88,6 +88,10 @@ public class ConfigGenerationBuildStep {
             SmallRyeConfigBuilder.class, "withSources",
             SmallRyeConfigBuilder.class, ConfigSource[].class);
 
+    private static final MethodDescriptor WITH_MAPPING = MethodDescriptor.ofMethod(
+            SmallRyeConfigBuilder.class, "withMapping",
+            SmallRyeConfigBuilder.class, Class.class, String.class);
+
     @BuildStep
     void staticInitSources(
             BuildProducer<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviderBuildItem,
@@ -217,6 +221,33 @@ public class ConfigGenerationBuildStep {
         }
     }
 
+    @BuildStep
+    void builderMappings(
+            ConfigurationBuildItem configItem,
+            List<ConfigMappingBuildItem> configMappings,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+
+        // For Static Init Config
+        Set<ConfigClassWithPrefix> staticMappings = new HashSet<>();
+        staticMappings.addAll(staticSafeConfigMappings(configMappings));
+        staticMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
+        String staticInitMappingsConfigBuilder = "io.quarkus.runtime.generated.StaticInitMappingsConfigBuilder";
+        generateMappingsConfigBuilder(generatedClass, reflectiveClass, staticInitMappingsConfigBuilder, staticMappings);
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(staticInitMappingsConfigBuilder));
+
+        // For RunTime Config
+        Set<ConfigClassWithPrefix> runTimeMappings = new HashSet<>();
+        runTimeMappings.addAll(runtimeConfigMappings(configMappings));
+        runTimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
+        runTimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());
+        String runTimeMappingsConfigBuilder = "io.quarkus.runtime.generated.RunTimeMappingsConfigBuilder";
+        generateMappingsConfigBuilder(generatedClass, reflectiveClass, runTimeMappingsConfigBuilder, runTimeMappings);
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(runTimeMappingsConfigBuilder));
+    }
+
     /**
      * Generate the Config class that instantiates MP Config and holds all the config objects
      */
@@ -256,6 +287,7 @@ public class ConfigGenerationBuildStep {
         staticConfigSourceFactories.addAll(staticInitConfigSourceFactories.stream()
                 .map(StaticInitConfigSourceFactoryBuildItem::getFactoryClassName).collect(Collectors.toSet()));
 
+        // TODO - duplicated now builderMappings. Still required to filter the unknown properties
         Set<ConfigClassWithPrefix> staticMappings = new HashSet<>();
         staticMappings.addAll(staticSafeConfigMappings(configMappings));
         staticMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
@@ -465,6 +497,34 @@ public class ConfigGenerationBuildStep {
             ctor.invokeSpecialMethod(superCtor, ctor.getThis(), ctor.readStaticField(properties),
                     ctor.load(sourceName), ctor.load(sourceOrdinal));
             ctor.returnVoid();
+        }
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, className));
+    }
+
+    private static void generateMappingsConfigBuilder(
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            String className,
+            Set<ConfigClassWithPrefix> mappings) {
+
+        try (ClassCreator classCreator = ClassCreator.builder()
+                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
+                .className(className)
+                .interfaces(ConfigBuilder.class)
+                .setFinal(true)
+                .build()) {
+
+            MethodCreator method = classCreator.getMethodCreator(CONFIG_BUILDER);
+            ResultHandle configBuilder = method.getMethodParam(0);
+
+            for (ConfigClassWithPrefix mapping : mappings) {
+                method.invokeVirtualMethod(WITH_MAPPING, configBuilder,
+                        method.loadClass(mapping.getKlass()),
+                        method.load(mapping.getPrefix()));
+            }
+
+            method.returnValue(configBuilder);
         }
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, className));

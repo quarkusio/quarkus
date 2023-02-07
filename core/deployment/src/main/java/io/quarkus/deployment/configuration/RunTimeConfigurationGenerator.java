@@ -398,11 +398,6 @@ public final class RunTimeConfigurationGenerator {
                 clinit.invokeStaticMethod(CU_ADD_SOURCE_FACTORY_PROVIDER, buildTimeBuilder,
                         clinit.newInstance(RCSF_NEW, clinit.load(discoveredConfigSourceFactory)));
             }
-            // add mappings
-            for (ConfigClassWithPrefix configMapping : staticConfigMappings) {
-                clinit.invokeStaticMethod(CU_WITH_MAPPING, buildTimeBuilder,
-                        clinit.load(configMapping.getKlass().getName()), clinit.load(configMapping.getPrefix()));
-            }
 
             // additional config builders
             ResultHandle configBuilders = clinit.newInstance(AL_NEW);
@@ -465,11 +460,12 @@ public final class RunTimeConfigurationGenerator {
                     reinit.invokeStaticMethod(CU_ADD_SOURCE_FACTORY_PROVIDER, buildTimeBuilder,
                             reinit.newInstance(RCSF_NEW, reinit.load(discoveredConfigSourceFactory)));
                 }
-                // add mappings
-                for (ConfigClassWithPrefix configMapping : staticConfigMappings) {
-                    reinit.invokeStaticMethod(CU_WITH_MAPPING, buildTimeBuilder,
-                            reinit.load(configMapping.getKlass().getName()), reinit.load(configMapping.getPrefix()));
+                // additional config builders
+                ResultHandle configBuilders = reinit.newInstance(AL_NEW);
+                for (String configBuilder : staticConfigBuilders) {
+                    reinit.invokeVirtualMethod(AL_ADD, configBuilders, reinit.load(configBuilder));
                 }
+                reinit.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, buildTimeBuilder, configBuilders);
 
                 ResultHandle clinitConfig = reinit.checkCast(reinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
                         SmallRyeConfig.class);
@@ -551,12 +547,6 @@ public final class RunTimeConfigurationGenerator {
                 for (String discoveredConfigSourceFactory : staticConfigSourceFactories) {
                     readBootstrapConfig.invokeStaticMethod(CU_ADD_SOURCE_FACTORY_PROVIDER, bootstrapBuilder,
                             readBootstrapConfig.newInstance(RCSF_NEW, readBootstrapConfig.load(discoveredConfigSourceFactory)));
-                }
-                // add bootstrap mappings
-                for (ConfigClassWithPrefix configMapping : staticConfigMappings) {
-                    readBootstrapConfig.invokeStaticMethod(CU_WITH_MAPPING, bootstrapBuilder,
-                            readBootstrapConfig.load(configMapping.getKlass().getName()),
-                            readBootstrapConfig.load(configMapping.getPrefix()));
                 }
 
                 // add bootstrap config builders
@@ -644,12 +634,6 @@ public final class RunTimeConfigurationGenerator {
             for (String discoveredConfigSourceFactory : runtimeConfigSourceFactories) {
                 readConfig.invokeStaticMethod(CU_ADD_SOURCE_FACTORY_PROVIDER, runTimeBuilder,
                         readConfig.newInstance(RCSF_NEW, readConfig.load(discoveredConfigSourceFactory)));
-            }
-
-            // add mappings
-            for (ConfigClassWithPrefix configMapping : runtimeConfigMappings) {
-                readConfig.invokeStaticMethod(CU_WITH_MAPPING, runTimeBuilder,
-                        readConfig.load(configMapping.getKlass().getName()), readConfig.load(configMapping.getPrefix()));
             }
 
             // additional config builders

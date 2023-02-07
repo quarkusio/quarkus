@@ -41,6 +41,7 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     private static final String OPENAPI_RESPONSE_ANNOTATION = OPENAPI_PACKAGE + ".responses.APIResponse";
     private static final String OPENAPI_CONTENT_ANNOTATION = OPENAPI_PACKAGE + ".media.Content";
     private static final String OPENAPI_SCHEMA_ANNOTATION = OPENAPI_PACKAGE + ".media.Schema";
+    private static final String SCHEMA_TYPE_CLASS_NAME = "org.eclipse.microprofile.openapi.annotations.enums.SchemaType";
     private static final String SCHEMA_TYPE_ARRAY = "ARRAY";
     private static final String ROLES_ALLOWED_ANNOTATION = "jakarta.annotation.security.RolesAllowed";
     private static final Logger LOGGER = Logger.getLogger(StandardMethodImplementor.class);
@@ -197,7 +198,7 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
                     .add("implementation", clazz);
 
             if (isList) {
-                schemaAnnotation.add("type", SCHEMA_TYPE_ARRAY);
+                schemaAnnotation.add("type", schemaTypeArray());
             }
 
             element.addAnnotation(OPENAPI_RESPONSE_ANNOTATION)
@@ -233,6 +234,11 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected boolean isNotReactivePanache() {
         return !capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
+    }
+
+    private static Enum schemaTypeArray() {
+        Class<?> schemaTypeClass = toClass(SCHEMA_TYPE_CLASS_NAME);
+        return Enum.valueOf((Class<Enum>) schemaTypeClass, SCHEMA_TYPE_ARRAY);
     }
 
     private static Class<?> toClass(String className) {

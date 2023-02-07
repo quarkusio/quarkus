@@ -3,6 +3,7 @@ package io.quarkus.arc.test.observers.ifexists;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.annotation.Priority;
@@ -10,6 +11,7 @@ import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.inject.spi.ObserverMethod;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -50,6 +52,17 @@ public class ReceptionIfExistsTest {
         assertEquals(RequestScopedObserver.class.getName() + "foo", EVENTS.get(0));
         assertEquals(DependentObserver.class.getName() + "foo", EVENTS.get(1));
         container.requestContext().deactivate();
+
+        // TODO check reception metadata
+        Set<ObserverMethod<? super String>> foundOm = Arc.container().beanManager().resolveObserverMethods("eventString");
+        assertEquals(2, foundOm.size());
+        for (ObserverMethod<? super String> om : foundOm) {
+            if (om.getDeclaringBean().getBeanClass().equals(RequestScopedObserver.class)) {
+                assertEquals(Reception.IF_EXISTS, om.getReception());
+            } else {
+                assertEquals(Reception.ALWAYS, om.getReception());
+            }
+        }
     }
 
     @RequestScoped

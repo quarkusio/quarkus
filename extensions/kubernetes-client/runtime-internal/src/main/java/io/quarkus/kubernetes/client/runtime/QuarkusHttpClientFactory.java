@@ -10,7 +10,7 @@ import io.fabric8.kubernetes.client.vertx.VertxHttpClientBuilder;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 
-public class QuarkusHttpClientFactory implements io.fabric8.kubernetes.client.http.HttpClient.Factory {
+public class QuarkusHttpClientFactory implements HttpClient.Factory {
 
     private Vertx vertx;
 

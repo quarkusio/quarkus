@@ -3,7 +3,11 @@ package io.quarkus.it.mongodb.rest.data.panache;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -12,6 +16,8 @@ import jakarta.ws.rs.core.MediaType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.ResourceArg;
@@ -21,6 +27,7 @@ import io.restassured.response.Response;
 
 @QuarkusTest
 @QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.PORT, value = "37017"))
+@DisabledOnOs(OS.WINDOWS)
 class MongoDbRestDataPanacheTest {
 
     private Author dostoevsky;

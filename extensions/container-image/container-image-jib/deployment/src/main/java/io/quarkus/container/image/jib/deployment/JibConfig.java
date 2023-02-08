@@ -29,7 +29,7 @@ public class JibConfig {
      * "registry.access.redhat.com/ubi8/ubi-minimal" which is a bigger base image, but provide more built-in utilities
      * such as the microdnf package manager.
      */
-    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:1.0")
+    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:2.0")
     public String baseNativeImage;
 
     /**

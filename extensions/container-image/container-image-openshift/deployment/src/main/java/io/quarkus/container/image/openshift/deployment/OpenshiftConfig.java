@@ -15,7 +15,7 @@ public class OpenshiftConfig {
 
     public static final String DEFAULT_BASE_JVM_JDK11_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11:1.15";
     public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.15";
-    public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0";
+    public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:2.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
     public static final String DEFAULT_JVM_DOCKERFILE = "src/main/docker/Dockerfile.jvm";

@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.Base64;
+
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -24,7 +26,7 @@ public class CsrfReactiveTest {
     @Test
     public void testCsrfTokenInForm() throws Exception {
         try (final WebClient webClient = createWebClient()) {
-
+            webClient.addRequestHeader("Authorization", basicAuth("alice", "alice"));
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
 
             assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
@@ -74,7 +76,7 @@ public class CsrfReactiveTest {
     @Test
     public void testCsrfTokenInFormButNoCookie() throws Exception {
         try (final WebClient webClient = createWebClient()) {
-
+            webClient.addRequestHeader("Authorization", basicAuth("alice", "alice"));
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
 
             assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
@@ -95,6 +97,21 @@ public class CsrfReactiveTest {
             }
             webClient.getCookieManager().clearCookies();
 
+        }
+    }
+
+    public void testCsrfFailedAuthentication() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.addRequestHeader("Authorization", basicAuth("alice", "password"));
+            try {
+                webClient.getPage("http://localhost:8081/service/csrfTokenForm");
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                assertEquals("true", ex.getResponse().getResponseHeaderValue("test-mapper"));
+                assertNull(webClient.getCookieManager().getCookie("csrftoken"));
+            }
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -127,7 +144,7 @@ public class CsrfReactiveTest {
     @Test
     public void testWrongCsrfTokenCookieValue() throws Exception {
         try (final WebClient webClient = createWebClient()) {
-
+            webClient.addRequestHeader("Authorization", basicAuth("alice", "alice"));
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
 
             assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
@@ -157,7 +174,7 @@ public class CsrfReactiveTest {
     @Test
     public void testWrongCsrfTokenFormValue() throws Exception {
         try (final WebClient webClient = createWebClient()) {
-
+            webClient.addRequestHeader("Authorization", basicAuth("alice", "alice"));
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
 
             assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
@@ -196,5 +213,9 @@ public class CsrfReactiveTest {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());
         return webClient;
+    }
+
+    private String basicAuth(String user, String password) {
+        return "Basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes());
     }
 }

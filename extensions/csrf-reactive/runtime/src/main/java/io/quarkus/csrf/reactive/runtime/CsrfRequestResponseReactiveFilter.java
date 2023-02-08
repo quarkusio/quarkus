@@ -179,16 +179,18 @@ public class CsrfRequestResponseReactiveFilter {
                 byte[] csrfTokenBytes = (byte[]) routing.get(CSRF_TOKEN_BYTES_KEY);
 
                 if (csrfTokenBytes == null) {
-                    throw new IllegalStateException(
-                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                    LOG.debug("CSRF Request Filter did not set the property " + CSRF_TOKEN_BYTES_KEY
+                            + ", no CSRF cookie will be created");
+                    return;
                 }
                 cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey.get());
             } else {
                 String csrfToken = (String) routing.get(CSRF_TOKEN_KEY);
 
                 if (csrfToken == null) {
-                    throw new IllegalStateException(
-                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                    LOG.debug("CSRF Request Filter did not set the property " + CSRF_TOKEN_KEY
+                            + ", no CSRF cookie will be created");
+                    return;
                 }
                 cookieValue = csrfToken;
             }

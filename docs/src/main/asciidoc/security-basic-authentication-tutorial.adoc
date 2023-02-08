@@ -1,5 +1,5 @@
 [id="security-basic-authentication-tutorial"]
-= Secure a Quarkus application with Basic authentication
+= Secure a Quarkus application with Basic authentication and JPA
 include::_attributes.adoc[]
 :categories: security,getting-started
 

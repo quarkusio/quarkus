@@ -22,7 +22,7 @@ If you use Basic or form-based authentication, you must add an `IdentityProvider
 To get started with security in Quarkus, we recommend you combine the Quarkus built-in Basic HTTP authentication with the JPA identity provider to enable role-based access control (RBAC).
 
 * For more information about Basic authentication or form-based authentication, see the following resources:
-** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication]
-** xref:security-authentication-mechanisms-concept.adoc#form-based-authentication[Form-based authentication]
+** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
+** xref:security-authentication-mechanisms-concept.adoc#form-auth[Form-based authentication]
 ** xref:security-jdbc.adoc[Using security with JDBC]
 ** xref:security-ldap.adoc[Using security with an LDAP realm]

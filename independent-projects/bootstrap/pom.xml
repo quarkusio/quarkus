@@ -73,7 +73,7 @@
         <gradle-tooling.version>7.5.1</gradle-tooling.version>
         <quarkus-fs-util.version>0.0.9</quarkus-fs-util.version>
         <org-crac.version>0.1.3</org-crac.version>
-        <formatter-maven-plugin.version>2.21.0</formatter-maven-plugin.version>
+        <formatter-maven-plugin.version>2.22.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.8.0</impsort-maven-plugin.version>
     </properties>
     <modules>

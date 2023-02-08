@@ -604,8 +604,7 @@ jobs:
           java-version: ${{ matrix.java.java-version }}
       - name: Compile Quickstarts
         run: |
-          git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
-          git checkout development
+          git clone -b 2.16 https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3

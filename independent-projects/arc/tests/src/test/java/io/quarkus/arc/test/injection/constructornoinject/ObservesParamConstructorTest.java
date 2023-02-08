@@ -4,20 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class MultiInjectConstructorFailureTest {
+public class ObservesParamConstructorTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
-            .beanClasses(CombineHarvester.class, Head.class)
+            .beanClasses(MyBean.class)
             .shouldFail()
             .build();
 
@@ -26,28 +26,13 @@ public class MultiInjectConstructorFailureTest {
         Throwable error = container.getFailure();
         assertNotNull(error);
         assertTrue(error instanceof DefinitionException);
-        assertTrue(error.getMessage().contains("Multiple @Inject constructors found"));
+        assertTrue(error.getMessage().contains("Bean constructor must not have an @Observes parameter"));
     }
 
     @Dependent
-    static class Head {
-
-    }
-
-    @Singleton
-    static class CombineHarvester {
-
-        Head head;
-
+    static class MyBean {
         @Inject
-        public CombineHarvester() {
-            this.head = null;
+        public MyBean(@Observes String ignored) {
         }
-
-        @Inject
-        public CombineHarvester(Head head) {
-            this.head = head;
-        }
-
     }
 }

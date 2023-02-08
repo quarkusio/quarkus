@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -949,11 +950,13 @@ public class ArcProcessor {
                         injectionPoint.getTargetBean().isPresent()
                                 ? mc.load(injectionPoint.getTargetBean().get().getIdentifier())
                                 : mc.loadNull());
+                boolean isTransient = injectionPoint.isField()
+                        && Modifier.isTransient(injectionPoint.getTarget().asField().flags());
 
                 ResultHandle ret = mc.invokeStaticMethod(instancesMethod, targetBean,
                         injectionPointType, requiredType, requiredQualifiers, mc.getMethodParam(0),
                         injectionPointAnnotations,
-                        javaMember, mc.load(injectionPoint.getPosition()));
+                        javaMember, mc.load(injectionPoint.getPosition()), mc.load(isTransient));
                 mc.returnValue(ret);
             });
             configurator.done();

@@ -567,6 +567,8 @@ public class ObserverGenerator extends AbstractGenerator {
                                 injectionPointAnnotationsPredicate);
                         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint,
                                 reflectionRegistration);
+                        boolean isTransient = injectionPoint.isField()
+                                && Modifier.isTransient(injectionPoint.getTarget().asField().flags());
 
                         // Wrap the constructor arg in a Supplier so we can pass it to CurrentInjectionPointProvider c'tor.
                         ResultHandle delegateSupplier = constructor.newInstance(
@@ -575,11 +577,12 @@ public class ObserverGenerator extends AbstractGenerator {
                         ResultHandle wrapHandle = constructor.newInstance(
                                 MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
                                         Supplier.class, java.lang.reflect.Type.class,
-                                        Set.class, Set.class, Member.class, int.class),
+                                        Set.class, Set.class, Member.class, int.class, boolean.class),
                                 constructor.loadNull(), delegateSupplier,
                                 Types.getTypeHandle(constructor, injectionPoint.getType()),
                                 requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
-                                constructor.load(injectionPoint.getPosition()));
+                                constructor.load(injectionPoint.getPosition()),
+                                constructor.load(isTransient));
                         ResultHandle wrapSupplierHandle = constructor.newInstance(
                                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
 

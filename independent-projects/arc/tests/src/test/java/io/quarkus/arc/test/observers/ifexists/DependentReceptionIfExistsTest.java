@@ -1,53 +1,36 @@
-package io.quarkus.arc.test.injection.constructornoinject;
+package io.quarkus.arc.test.observers.ifexists;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
 import jakarta.enterprise.inject.spi.DefinitionException;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class MultiInjectConstructorFailureTest {
-
+public class DependentReceptionIfExistsTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
-            .beanClasses(CombineHarvester.class, Head.class)
+            .beanClasses(DependentObserver.class)
             .shouldFail()
             .build();
 
     @Test
-    public void testInjection() {
+    public void testFailure() {
         Throwable error = container.getFailure();
         assertNotNull(error);
         assertTrue(error instanceof DefinitionException);
-        assertTrue(error.getMessage().contains("Multiple @Inject constructors found"));
+        assertTrue(error.getMessage().contains("@Dependent bean must not have a conditional observer method"));
     }
 
     @Dependent
-    static class Head {
-
-    }
-
-    @Singleton
-    static class CombineHarvester {
-
-        Head head;
-
-        @Inject
-        public CombineHarvester() {
-            this.head = null;
+    static class DependentObserver {
+        void observeString(@Observes(notifyObserver = Reception.IF_EXISTS) String value) {
         }
-
-        @Inject
-        public CombineHarvester(Head head) {
-            this.head = head;
-        }
-
     }
 }

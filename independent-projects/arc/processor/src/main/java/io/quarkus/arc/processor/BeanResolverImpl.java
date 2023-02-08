@@ -277,13 +277,20 @@ class BeanResolverImpl implements BeanResolver {
         bounds = getUppermostBounds(bounds);
         stricterBounds = getUppermostBounds(stricterBounds);
         for (Type bound : bounds) {
-            for (Type stricterBound : stricterBounds) {
-                if (!beanDeployment.getAssignabilityCheck().isAssignableFrom(bound, stricterBound)) {
-                    return false;
-                }
+            if (!isAssignableFromAtLeastOne(bound, stricterBounds)) {
+                return false;
             }
         }
         return true;
+    }
+
+    boolean isAssignableFromAtLeastOne(Type type1, List<Type> types2) {
+        for (Type type2 : types2) {
+            if (beanDeployment.getAssignabilityCheck().isAssignableFrom(type1, type2)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     boolean lowerBoundsOfWildcardMatch(Type parameter, WildcardType requiredParameter) {

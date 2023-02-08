@@ -158,9 +158,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     }
 
     /**
-     * Unlike for the {@link #name(String)} method a new {@link jakarta.inject.Named} qualifier with the specified value is
-     * added
-     * to the configured bean.
+     * Unlike the {@link #name(String)} method, a new {@link jakarta.inject.Named} qualifier with the specified value
+     * is added to the configured bean.
      *
      * @param name
      * @return self

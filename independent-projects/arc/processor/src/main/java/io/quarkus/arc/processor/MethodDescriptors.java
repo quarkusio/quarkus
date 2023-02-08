@@ -264,11 +264,11 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INSTANCES_LIST_OF = MethodDescriptor
             .ofMethod(Instances.class, "listOf", List.class, InjectableBean.class, Type.class, Type.class,
-                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class);
+                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class, boolean.class);
 
     public static final MethodDescriptor INSTANCES_LIST_OF_HANDLES = MethodDescriptor
             .ofMethod(Instances.class, "listOfHandles", List.class, InjectableBean.class, Type.class, Type.class,
-                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class);
+                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class, boolean.class);
 
     public static final MethodDescriptor COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE = MethodDescriptor.ofMethod(
             ComponentsProvider.class, "unableToLoadRemovedBeanType",

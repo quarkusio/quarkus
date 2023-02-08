@@ -4,10 +4,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.el.ELResolver;
 import jakarta.el.ExpressionFactory;
@@ -125,8 +125,8 @@ public class BeanManagerImpl implements BeanManager {
         if (Types.containsTypeVariable(eventType)) {
             throw new IllegalArgumentException("The runtime type of the event object contains a type variable: " + eventType);
         }
-        Set<Annotation> eventQualifiers = Arrays.asList(qualifiers).stream().collect(Collectors.toSet());
-        return ArcContainerImpl.instance().resolveObservers(eventType, eventQualifiers).stream().collect(Collectors.toSet());
+        Set<Annotation> eventQualifiers = new HashSet<>(Arrays.asList(qualifiers));
+        return new LinkedHashSet<>(ArcContainerImpl.instance().resolveObservers(eventType, eventQualifiers));
     }
 
     @Override

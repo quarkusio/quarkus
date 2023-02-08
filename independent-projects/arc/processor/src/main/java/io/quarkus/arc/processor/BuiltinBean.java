@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import java.lang.reflect.Member;
+import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -192,6 +193,8 @@ enum BuiltinBean {
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
                 ctx.reflectionRegistration);
+        boolean isTransient = ctx.injectionPoint.isField()
+                && Modifier.isTransient(ctx.injectionPoint.getTarget().asField().flags());
         ResultHandle beanHandle;
         switch (ctx.targetInfo.kind()) {
             case OBSERVER:
@@ -207,9 +210,10 @@ enum BuiltinBean {
         }
         ResultHandle instanceProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class,
-                        InjectableBean.class, Set.class, Member.class, int.class),
+                        InjectableBean.class, Set.class, Member.class, int.class, boolean.class),
                 parameterizedType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
-                ctx.constructor.load(ctx.injectionPoint.getPosition()));
+                ctx.constructor.load(ctx.injectionPoint.getPosition()),
+                ctx.constructor.load(isTransient));
         ResultHandle instanceProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, instanceProvider);
         ctx.constructor.writeInstanceField(
@@ -310,13 +314,10 @@ enum BuiltinBean {
 
     private static void generateResourceBytecode(GeneratorContext ctx) {
         ResultHandle annotations = ctx.constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-        // For a resource field the required qualifiers contain all annotations declared on the field
-        // (hence we need to check if they are runtime-retained and their classes are available)
+        // For a resource field the required qualifiers contain all runtime-retained annotations
+        // declared on the field (hence we need to check if their classes are available)
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
             for (AnnotationInstance annotation : ctx.injectionPoint.getRequiredQualifiers()) {
-                if (!annotation.runtimeVisible()) {
-                    continue;
-                }
                 ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getBeanArchiveIndex(), annotation.name());
                 if (annotationClass == null) {
                     continue;

@@ -1,53 +1,38 @@
-package io.quarkus.arc.test.injection.constructornoinject;
+package io.quarkus.arc.test.observers.illegal;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.ObservesAsync;
 import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class MultiInjectConstructorFailureTest {
-
+public class AsyncObserverInjectTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
-            .beanClasses(CombineHarvester.class, Head.class)
+            .beanClasses(Observer.class)
             .shouldFail()
             .build();
 
     @Test
-    public void testInjection() {
+    public void trigger() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof DefinitionException);
-        assertTrue(error.getMessage().contains("Multiple @Inject constructors found"));
+        assertInstanceOf(DefinitionException.class, error);
+        assertTrue(error.getMessage().contains("Initializer method must not have an @ObservesAsync parameter"));
     }
 
     @Dependent
-    static class Head {
-
-    }
-
-    @Singleton
-    static class CombineHarvester {
-
-        Head head;
-
+    static class Observer {
         @Inject
-        public CombineHarvester() {
-            this.head = null;
+        void observe(@ObservesAsync String ignored) {
         }
-
-        @Inject
-        public CombineHarvester(Head head) {
-            this.head = head;
-        }
-
     }
 }

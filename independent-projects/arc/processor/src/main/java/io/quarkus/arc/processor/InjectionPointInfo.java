@@ -67,7 +67,7 @@ public class InjectionPointInfo {
             InjectionPointModifier transformer) {
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
-                transformer.applyTransformers(type, field, new HashSet<>(field.annotations())),
+                transformer.applyTransformers(type, field, new HashSet<>(Annotations.onlyRuntimeVisible(field.annotations()))),
                 InjectionPointKind.RESOURCE, field, -1, false, false);
     }
 

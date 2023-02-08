@@ -7,6 +7,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -14,16 +15,20 @@ import java.util.Set;
 import java.util.UUID;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Stereotype;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Named;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.test.ArcTestContainer;
 
 public class TransitiveStereotypeTest {
@@ -46,7 +51,7 @@ public class TransitiveStereotypeTest {
 
             Set<Bean<?>> metadata = bm.getBeans(MyBean.class);
             assertEquals(1, metadata.size());
-            assertEquals(RequestScoped.class, metadata.iterator().next().getScope());
+            assertMetadata((InjectableBean<?>) metadata.iterator().next());
 
             container.requestContext().deactivate();
         }
@@ -60,13 +65,23 @@ public class TransitiveStereotypeTest {
 
             Set<Bean<?>> metadata = bm.getBeans(MyBean.class);
             assertEquals(1, metadata.size());
-            assertEquals(RequestScoped.class, metadata.iterator().next().getScope());
+            assertMetadata((InjectableBean<?>) metadata.iterator().next());
 
             container.requestContext().deactivate();
         }
     }
 
+    private void assertMetadata(InjectableBean<?> bean) {
+        assertEquals(RequestScoped.class, bean.getScope());
+        assertEquals("myBean", bean.getName());
+        assertTrue(bean.isAlternative());
+        assertEquals(123, bean.getPriority());
+    }
+
     @RequestScoped
+    @Named
+    @Alternative
+    @Priority(123)
     @Stereotype
     @Target({ TYPE, METHOD, FIELD })
     @Retention(RUNTIME)

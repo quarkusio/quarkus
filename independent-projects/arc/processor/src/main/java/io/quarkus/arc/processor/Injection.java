@@ -50,6 +50,24 @@ public class Injection {
                         "Multiple @Inject constructors found on " + beanTarget.asClass().name() + ":\n"
                                 + injectConstructors.stream().map(Object::toString).collect(Collectors.joining("\n")));
             }
+            for (AnnotationTarget injectConstructor : injectConstructors) {
+                Set<AnnotationInstance> parameterAnnotations = Annotations.getParameterAnnotations(beanDeployment,
+                        injectConstructor.asMethod());
+                for (AnnotationInstance annotation : parameterAnnotations) {
+                    if (DotNames.DISPOSES.equals(annotation.name())) {
+                        throw new DefinitionException(
+                                "Bean constructor must not have a @Disposes parameter: " + injectConstructor);
+                    }
+                    if (DotNames.OBSERVES.equals(annotation.name())) {
+                        throw new DefinitionException(
+                                "Bean constructor must not have an @Observes parameter: " + injectConstructor);
+                    }
+                    if (DotNames.OBSERVES_ASYNC.equals(annotation.name())) {
+                        throw new DefinitionException(
+                                "Bean constructor must not have an @ObservesAsync parameter: " + injectConstructor);
+                    }
+                }
+            }
 
             Set<MethodInfo> initializerMethods = injections.stream()
                     .filter(it -> it.isMethod() && !it.isConstructor())
@@ -58,43 +76,58 @@ public class Injection {
                     .collect(Collectors.toSet());
             for (MethodInfo initializerMethod : initializerMethods) {
                 if (beanDeployment.hasAnnotation(initializerMethod, DotNames.PRODUCES)) {
-                    throw new DefinitionException("Initializer method must not be marked @Produces "
-                            + "(alternatively, producer method must not be marked @Inject): "
+                    throw new DefinitionException("Initializer method must not be annotated @Produces "
+                            + "(alternatively, producer method must not be annotated @Inject): "
                             + beanTarget.asClass() + "." + initializerMethod.name());
                 }
-
-                if (Annotations.contains(Annotations.getParameterAnnotations(beanDeployment, initializerMethod),
-                        DotNames.DISPOSES)) {
-                    throw new DefinitionException("Initializer method must not have a parameter marked @Disposes "
-                            + "(alternatively, disposer method must not be marked @Inject): "
+                if (Annotations.hasParameterAnnotation(beanDeployment, initializerMethod, DotNames.DISPOSES)) {
+                    throw new DefinitionException("Initializer method must not have a @Disposes parameter "
+                            + "(alternatively, disposer method must not be annotated @Inject): "
                             + beanTarget.asClass() + "." + initializerMethod.name());
                 }
-
-                if (Annotations.contains(Annotations.getParameterAnnotations(beanDeployment, initializerMethod),
-                        DotNames.OBSERVES)) {
-                    throw new DefinitionException("Initializer method must not have a parameter marked @Observes "
-                            + "(alternatively, observer method must not be marked @Inject): "
+                if (Annotations.hasParameterAnnotation(beanDeployment, initializerMethod, DotNames.OBSERVES)) {
+                    throw new DefinitionException("Initializer method must not have an @Observes parameter "
+                            + "(alternatively, observer method must not be annotated @Inject): "
                             + beanTarget.asClass() + "." + initializerMethod.name());
                 }
-
-                if (Annotations.contains(Annotations.getParameterAnnotations(beanDeployment, initializerMethod),
-                        DotNames.OBSERVES_ASYNC)) {
-                    throw new DefinitionException("Initializer method must not have a parameter marked @ObservesAsync "
-                            + "(alternatively, async observer method must not be marked @Inject): "
+                if (Annotations.hasParameterAnnotation(beanDeployment, initializerMethod, DotNames.OBSERVES_ASYNC)) {
+                    throw new DefinitionException("Initializer method must not have an @ObservesAsync parameter "
+                            + "(alternatively, async observer method must not be annotated @Inject): "
                             + beanTarget.asClass() + "." + initializerMethod.name());
                 }
             }
 
             return injections;
         } else if (Kind.METHOD.equals(beanTarget.kind())) {
-            if (beanTarget.asMethod().parameterTypes().isEmpty()) {
+            MethodInfo producerMethod = beanTarget.asMethod();
+
+            if (beanDeployment.hasAnnotation(producerMethod, DotNames.INJECT)) {
+                throw new DefinitionException("Producer method must not be annotated @Inject "
+                        + "(alternatively, initializer method must not be annotated @Produces): "
+                        + producerMethod);
+            }
+            if (Annotations.hasParameterAnnotation(beanDeployment, producerMethod, DotNames.DISPOSES)) {
+                throw new DefinitionException("Producer method must not have a @Disposes parameter "
+                        + "(alternatively, disposer method must not be annotated @Produces): "
+                        + producerMethod);
+            }
+            if (Annotations.hasParameterAnnotation(beanDeployment, producerMethod, DotNames.OBSERVES)) {
+                throw new DefinitionException("Producer method must not have an @Observes parameter "
+                        + "(alternatively, observer method must not be annotated @Produces): "
+                        + producerMethod);
+            }
+            if (Annotations.hasParameterAnnotation(beanDeployment, producerMethod, DotNames.OBSERVES_ASYNC)) {
+                throw new DefinitionException("Producer method must not have an @ObservesAsync parameter "
+                        + "(alternatively, async observer method must not be annotated @Produces): "
+                        + producerMethod);
+            }
+
+            if (producerMethod.parameterTypes().isEmpty()) {
                 return Collections.emptyList();
             }
             // All parameters are injection points
-            return Collections.singletonList(
-                    new Injection(beanTarget.asMethod(),
-                            InjectionPointInfo.fromMethod(beanTarget.asMethod(), declaringBean.getImplClazz(),
-                                    beanDeployment, transformer)));
+            return Collections.singletonList(new Injection(producerMethod,
+                    InjectionPointInfo.fromMethod(producerMethod, declaringBean.getImplClazz(), beanDeployment, transformer)));
         }
         throw new IllegalArgumentException("Unsupported annotation target");
     }
@@ -109,11 +142,8 @@ public class Injection {
             AnnotationTarget injectTarget = injectAnnotation.target();
             switch (injectAnnotation.target().kind()) {
                 case FIELD:
-                    injections
-                            .add(new Injection(injectTarget, Collections
-                                    .singletonList(
-                                            InjectionPointInfo.fromField(injectTarget.asField(), beanClass, beanDeployment,
-                                                    transformer))));
+                    injections.add(new Injection(injectTarget, Collections.singletonList(
+                            InjectionPointInfo.fromField(injectTarget.asField(), beanClass, beanDeployment, transformer))));
                     break;
                 case METHOD:
                     injections.add(new Injection(injectTarget,
@@ -152,10 +182,9 @@ public class Injection {
                         && resourceAnnotationInstance.target().asField().annotations().stream()
                                 .noneMatch(a -> DotNames.INJECT.equals(a.name()))) {
                     // Add special injection for a resource field
-                    injections.add(new Injection(resourceAnnotationInstance.target(), Collections
-                            .singletonList(InjectionPointInfo
-                                    .fromResourceField(resourceAnnotationInstance.target().asField(), beanClass,
-                                            beanDeployment, transformer))));
+                    injections.add(new Injection(resourceAnnotationInstance.target(), Collections.singletonList(
+                            InjectionPointInfo.fromResourceField(resourceAnnotationInstance.target().asField(),
+                                    beanClass, beanDeployment, transformer))));
                 }
                 // TODO setter injection
             }
@@ -181,6 +210,34 @@ public class Injection {
 
     static Injection forDisposer(MethodInfo disposerMethod, ClassInfo beanClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer, BeanInfo declaringBean) {
+        if (beanDeployment.hasAnnotation(disposerMethod, DotNames.INJECT)) {
+            throw new DefinitionException("Disposer method must not be annotated @Inject "
+                    + "(alternatively, initializer method must not have a @Disposes parameter): "
+                    + disposerMethod);
+        }
+        if (beanDeployment.hasAnnotation(disposerMethod, DotNames.PRODUCES)) {
+            throw new DefinitionException("Disposer method must not be annotated @Produces "
+                    + "(alternatively, producer method must not have a @Disposes parameter): "
+                    + disposerMethod);
+        }
+        if (Annotations.hasParameterAnnotation(beanDeployment, disposerMethod, DotNames.OBSERVES)) {
+            throw new DefinitionException("Disposer method must not have an @Observes parameter "
+                    + "(alternatively, observer method must not have a @Disposes parameter): "
+                    + disposerMethod);
+        }
+        if (Annotations.hasParameterAnnotation(beanDeployment, disposerMethod, DotNames.OBSERVES_ASYNC)) {
+            throw new DefinitionException("Disposer method must not have an @ObservesAsync parameter "
+                    + "(alternatively, async observer method must not have a @Disposes parameter): "
+                    + disposerMethod);
+        }
+        if (Annotations.getParameterAnnotations(beanDeployment, disposerMethod)
+                .stream()
+                .filter(it -> DotNames.DISPOSES.equals(it.name()))
+                .count() > 1) {
+            throw new DefinitionException("Disposer method must not have more than 1 @Disposes parameter: "
+                    + disposerMethod);
+        }
+
         return new Injection(disposerMethod, InjectionPointInfo.fromMethod(disposerMethod, beanClass, beanDeployment,
                 annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.DISPOSES)), transformer));
     }

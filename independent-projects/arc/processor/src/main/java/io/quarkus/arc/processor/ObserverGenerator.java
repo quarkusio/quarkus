@@ -226,6 +226,9 @@ public class ObserverGenerator extends AbstractGenerator {
 
         implementGetBeanClass(observerCreator, observer.getBeanClass());
         implementNotify(observer, observerCreator, injectionPointToProviderField, reflectionRegistration, isApplicationClass);
+        if (Reception.IF_EXISTS == observer.getReception()) {
+            implementIfExistsGetReception(observerCreator);
+        }
         if (observer.getPriority() != ObserverMethod.DEFAULT_PRIORITY) {
             implementGetPriority(observerCreator, observer);
         }
@@ -256,6 +259,12 @@ public class ObserverGenerator extends AbstractGenerator {
             }
             injectionPointToProvider.put(injectionPoint, "observerProviderSupplier" + providerIdx++);
         }
+    }
+
+    protected void implementIfExistsGetReception(ClassCreator observerCreator) {
+        MethodCreator getReception = observerCreator.getMethodCreator("getReception", Reception.class)
+                .setModifiers(ACC_PUBLIC);
+        getReception.returnValue(getReception.load(Reception.IF_EXISTS));
     }
 
     protected void implementGetObservedType(ClassCreator observerCreator, FieldDescriptor observedTypeField) {

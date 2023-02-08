@@ -302,6 +302,11 @@ public class Injection {
     private static List<AnnotationInstance> getAllInjectionPoints(BeanDeployment beanDeployment, ClassInfo beanClass,
             DotName name, boolean skipConstructors) {
         List<AnnotationInstance> injectAnnotations = new ArrayList<>();
+
+        // note that we can't treat static injection as a failure, because
+        // that would prevent us from even processing the AtInject TCK;
+        // hence, we just print a warning
+
         for (FieldInfo field : beanClass.fields()) {
             AnnotationInstance inject = beanDeployment.getAnnotation(field, name);
             if (inject != null) {
@@ -320,7 +325,13 @@ public class Injection {
             }
             AnnotationInstance inject = beanDeployment.getAnnotation(method, name);
             if (inject != null) {
-                injectAnnotations.add(inject);
+                if (Modifier.isStatic(method.flags())) {
+                    LOGGER.warn("An initializer method must be non-static - ignoring: "
+                            + method.declaringClass().name() + "#"
+                            + method.name() + "()");
+                } else {
+                    injectAnnotations.add(inject);
+                }
             }
         }
         return injectAnnotations;

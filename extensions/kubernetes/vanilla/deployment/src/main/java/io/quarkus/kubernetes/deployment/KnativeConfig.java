@@ -91,13 +91,6 @@ public class KnativeConfig implements PlatformConfiguration {
     Optional<String> serviceAccount;
 
     /**
-     * The host under which the application is going to be exposed
-     *
-     */
-    @ConfigItem
-    Optional<String> host;
-
-    /**
      * The application ports
      */
     @ConfigItem
@@ -293,10 +286,6 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public Optional<String> getServiceAccount() {
         return serviceAccount;
-    }
-
-    public Optional<String> getHost() {
-        return host;
     }
 
     @Override

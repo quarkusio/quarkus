@@ -188,7 +188,7 @@ triage:
     - id: tracing
       labels: [area/tracing, area/smallrye]
       title: "(trace|tracing)"
-      notify: [radcortez, Ladicek, brunobat]
+      notify: [radcortez, brunobat]
       directories:
         - extensions/smallrye-opentracing/
     - id: opentelemetry
@@ -373,7 +373,7 @@ triage:
     - id: arc
       labels: [area/arc]
       title: "\\b(arc|cdi|injection)\\b"
-      notify: [mkouba, manovotn]
+      notify: [mkouba, manovotn, Ladicek]
       directories:
         - extensions/arc/
         - independent-projects/arc/

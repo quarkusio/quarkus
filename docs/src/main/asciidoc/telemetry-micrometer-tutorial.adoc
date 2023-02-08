@@ -90,7 +90,7 @@ NOTE: Metrics appear lazily, you often won't see any data for your endpoint unti
 .Exported metrics format
 
 By default, the  metrics are exported using the Prometheus format `application/openmetrics-text`,
-you can revert to the former format by specifying the `Accept` request header to `plain/text` (`curl -H "Accept: plain/text" localhost:8080/q/metrics/`).
+you can revert to the former format by specifying the `Accept` request header to `text/plain` (`curl -H "Accept: text/plain" localhost:8080/q/metrics/`).
 
 == Inject the MeterRegistry
 

@@ -309,13 +309,7 @@ final class ClassConfigurationPropertiesUtil {
                                 break;
                             }
                         }
-                    } else {
-                        if (!fieldTypeClassInfo.hasNoArgsConstructor()) {
-                            throw new IllegalArgumentException(
-                                    "Nested configuration class '" + fieldTypeClassInfo
-                                            + "' must contain a no-args constructor ");
-                        }
-
+                    } else if (fieldTypeClassInfo.hasNoArgsConstructor()) {
                         if (!Modifier.isPublic(fieldTypeClassInfo.flags())) {
                             throw new IllegalArgumentException(
                                     "Nested configuration class '" + fieldTypeClassInfo + "' must be public ");
@@ -325,6 +319,10 @@ final class ClassConfigurationPropertiesUtil {
                                 getFullConfigName(prefixStr, namingStrategy, field), namingStrategy, failOnMismatchingMember,
                                 null, methodCreator);
                         createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, nestedConfigObject);
+                    } else {
+                        LOGGER.warn("Nested configuration class '" + fieldTypeClassInfo
+                                + "' declared in '" + currentClassInHierarchy.name() + "." + field.name() + "' is either an "
+                                + "interface or does not have a non-args constructor, so this field will not be initialized");
                     }
                 } else {
                     String fullConfigName = getFullConfigName(prefixStr, namingStrategy, field);

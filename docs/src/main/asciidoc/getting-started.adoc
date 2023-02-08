@@ -93,7 +93,7 @@ In addition, you can see the `quarkus-maven-plugin` responsible of the packaging
     <dependencies>
         <dependency>
             <groupId>${quarkus.platform.group-id}</groupId>
-            <artifactId>quarkus-bom</artifactId>
+            <artifactId>${quarkus.platform.artifact-id}</artifactId>
             <version>${quarkus.platform.version}</version>
             <type>pom</type>
             <scope>import</scope>
@@ -277,7 +277,7 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello";
+        return "Hello from RESTEasy Reactive";
     }
 }
 ----
@@ -381,7 +381,7 @@ public class GreetingResourceTest {
           .when().get("/hello")
           .then()
              .statusCode(200)    // <2>
-             .body(is("hello"));
+             .body(is("Hello from RESTEasy Reactive"));
     }
 
     @Test

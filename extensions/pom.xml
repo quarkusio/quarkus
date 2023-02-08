@@ -198,6 +198,9 @@
 
         <module>awt</module>
 
+        <!-- JMS -->
+        <module>jms-spi</module>
+
     </modules>
 
     <build>

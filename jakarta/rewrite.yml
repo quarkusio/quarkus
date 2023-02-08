@@ -567,7 +567,7 @@ recipeList:
       newValue: '3.0'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-config.version
-      newValue: '3.1.1'
+      newValue: '3.1.2'
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-fault-tolerance.version
       newValue: '6.1.0'

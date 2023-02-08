@@ -2684,13 +2684,9 @@ Not all configuration or resources can be consumed at build time. If you have cl
 [source,java]
 ----
 public final class MyExtProcessor {
-    @Inject
-    BuildProducer<NativeImageResourceBuildItem> resource;
-    @Inject
-    BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle;
 
     @BuildStep
-    void registerNativeImageResources() {
+    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resource, BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
         resource.produce(new NativeImageResourceBuildItem("/security/runtime.keys")); //<1>
 
         resource.produce(new NativeImageResourceBuildItem(

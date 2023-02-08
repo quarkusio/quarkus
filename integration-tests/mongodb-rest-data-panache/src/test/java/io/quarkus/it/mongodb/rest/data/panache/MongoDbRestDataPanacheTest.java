@@ -16,8 +16,6 @@ import jakarta.ws.rs.core.MediaType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.ResourceArg;
@@ -27,7 +25,6 @@ import io.restassured.response.Response;
 
 @QuarkusTest
 @QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.PORT, value = "37017"))
-@DisabledOnOs(OS.WINDOWS)
 class MongoDbRestDataPanacheTest {
 
     private Author dostoevsky;

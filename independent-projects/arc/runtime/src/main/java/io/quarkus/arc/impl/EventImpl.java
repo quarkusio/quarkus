@@ -132,6 +132,10 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(Class<U> subtype, Annotation... qualifiers) {
+        if (Types.containsTypeVariable(subtype)) {
+            throw new IllegalArgumentException(
+                    "Event#select(Class<U>, Annotation...) cannot be used with type variable parameter");
+        }
         ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
@@ -199,6 +203,14 @@ class EventImpl<T> implements Event<T> {
                     injectionPointTypeHierarchy.getResolver().getResolvedTypeVariables(),
                     new HierarchyDiscovery(canonicalEventType).getResolver().getResolvedTypeVariables()).build();
             resolvedType = objectTypeResolver.resolveType(canonicalEventType);
+        }
+        /*
+         * If the runtime type of the event object still contains an unresolved type variable,
+         * the container must throw an IllegalArgumentException.
+         */
+        if (Types.containsTypeVariable(resolvedType)) {
+            throw new IllegalArgumentException(
+                    "CDI event payload cannot contain unresolved type variable; found type: " + resolvedType);
         }
         return resolvedType;
     }

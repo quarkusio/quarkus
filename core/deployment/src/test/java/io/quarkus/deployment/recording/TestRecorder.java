@@ -80,6 +80,10 @@ public class TestRecorder {
         RESULT.add(bean);
     }
 
+    public void bean(TestSingleConstructorBean bean) {
+        RESULT.add(bean);
+    }
+
     public void result(RuntimeValue<TestJavaBean> bean) {
         RESULT.add(bean.getValue());
     }

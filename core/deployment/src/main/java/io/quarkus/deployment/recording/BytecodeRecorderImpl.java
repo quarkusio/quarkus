@@ -1197,19 +1197,28 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 }
             }
         } else {
-            for (Constructor<?> ctor : param.getClass().getConstructors()) {
+            Constructor<?>[] ctors = param.getClass().getConstructors();
+            Constructor<?> selectedCtor = null;
+            if (ctors.length == 1) {
+                // if there is a single constructor we use it regardless of the presence of @RecordableConstructor annotation
+                selectedCtor = ctors[0];
+            }
+            for (Constructor<?> ctor : ctors) {
                 if (RecordingAnnotationsUtil.isRecordableConstructor(ctor)) {
-                    nonDefaultConstructorHolder = new NonDefaultConstructorHolder(ctor, null);
-                    nonDefaultConstructorHandles = new DeferredParameter[ctor.getParameterCount()];
-
-                    if (ctor.getParameterCount() > 0) {
-                        Parameter[] ctorParameters = ctor.getParameters();
-                        for (int i = 0; i < ctor.getParameterCount(); ++i) {
-                            String name = ctorParameters[i].getName();
-                            constructorParamNameMap.put(name, i);
-                        }
-                    }
+                    selectedCtor = ctor;
                     break;
+                }
+            }
+            if (selectedCtor != null) {
+                nonDefaultConstructorHolder = new NonDefaultConstructorHolder(selectedCtor, null);
+                nonDefaultConstructorHandles = new DeferredParameter[selectedCtor.getParameterCount()];
+
+                if (selectedCtor.getParameterCount() > 0) {
+                    Parameter[] ctorParameters = selectedCtor.getParameters();
+                    for (int i = 0; i < selectedCtor.getParameterCount(); ++i) {
+                        String name = ctorParameters[i].getName();
+                        constructorParamNameMap.put(name, i);
+                    }
                 }
             }
         }

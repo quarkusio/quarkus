@@ -99,6 +99,7 @@
         <classmate.version>1.5.1</classmate.version>
         <hibernate-orm.version>5.6.15.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.18</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
+        <hibernate-commons-annotations.version>5.1.2.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
         <hibernate-reactive.version>1.1.9.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
@@ -5032,6 +5033,11 @@
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-jpamodelgen-jakarta</artifactId>
                 <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.common</groupId>
+                <artifactId>hibernate-commons-annotations</artifactId>
+                <version>${hibernate-commons-annotations.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.reactive</groupId>

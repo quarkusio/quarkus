@@ -3,8 +3,10 @@ package io.quarkus.arc.test.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,6 +31,12 @@ public class UnremovedConfigMappingTest {
     void unremoved() {
         UnremovedConfigMapping mapping = config.getConfigMapping(UnremovedConfigMapping.class);
         assertEquals("1234", mapping.prop());
+
+        mapping = CDI.current().select(UnremovedConfigMapping.class).get();
+        assertEquals("1234", mapping.prop());
+
+        UnremovedConfigProperties properties = CDI.current().select(UnremovedConfigProperties.class).get();
+        assertEquals("1234", properties.prop);
     }
 
     @Test
@@ -53,5 +61,11 @@ public class UnremovedConfigMappingTest {
     public interface ExtendsBase extends Base {
         @WithDefault("default")
         String myProp();
+    }
+
+    @Unremovable
+    @ConfigProperties(prefix = "mapping")
+    public static class UnremovedConfigProperties {
+        String prop;
     }
 }

@@ -120,7 +120,7 @@
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.40.3</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.41.0</docker-maven-plugin.version>
         <formatter-maven-plugin.version>2.21.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.8.0</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>

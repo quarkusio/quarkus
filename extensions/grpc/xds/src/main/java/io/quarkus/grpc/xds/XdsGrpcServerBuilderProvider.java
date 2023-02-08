@@ -90,8 +90,8 @@ public class XdsGrpcServerBuilderProvider implements GrpcBuilderProvider<XdsServ
     }
 
     @Override
-    public String serverInfo() {
-        return "xDS enabled";
+    public String serverInfo(String host, int port, GrpcServerConfiguration configuration) {
+        return String.format("gRPC server on %s:%d [xDS enabled]", host, port);
     }
 
     @Override
@@ -126,7 +126,7 @@ public class XdsGrpcServerBuilderProvider implements GrpcBuilderProvider<XdsServ
     }
 
     @Override
-    public String channelInfo() {
+    public String channelInfo(GrpcClientConfiguration configuration) {
         return "xDS";
     }
 }

@@ -26,6 +26,12 @@ public class GrpcServerConfiguration {
     public Xds xds;
 
     /**
+     * Configure InProcess usage, if enabled.
+     */
+    @ConfigItem
+    public InProcess inProcess;
+
+    /**
      * The gRPC Server port.
      */
     @ConfigItem(defaultValue = "9000")

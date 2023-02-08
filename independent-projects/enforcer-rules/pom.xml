@@ -35,6 +35,8 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
 
+        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
+        <!-- Keeping 3.0.0.M3 because 3.2.1 requires class changes -->
         <enforcer-api.version>3.0.0-M3</enforcer-api.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-core.version>3.8.7</maven-core.version>

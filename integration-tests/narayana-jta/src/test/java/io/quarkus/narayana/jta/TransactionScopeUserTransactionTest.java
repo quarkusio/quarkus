@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-class TransactionScopedTest {
+class TransactionScopeUserTransactionTest {
     @Inject
     UserTransaction tx;
 
@@ -62,22 +62,27 @@ class TransactionScopedTest {
     void scopeEventsAreEmitted() throws Exception {
         TransactionBeanWithEvents.cleanCounts();
 
-        beanEvents.doInTransaction(true);
-
-        try {
-            beanEvents.doInTransaction(false);
-        } catch (RuntimeException expected) {
-            // expect runtime exception to rollback the call
-        }
-
         tx.begin();
+        beanEvents.listenToCommitRollback();
         tx.commit();
 
-        assertEquals(3, TransactionBeanWithEvents.getInitialized(), "Expected @Initialized to be observed");
-        assertEquals(3, TransactionBeanWithEvents.getBeforeDestroyed(), "Expected @BeforeDestroyed to be observer");
-        assertEquals(3, TransactionBeanWithEvents.getDestroyed(), "Expected @Destroyed to be observer");
+        assertEquals(1, TransactionBeanWithEvents.getInitialized(), "Expected @Initialized to be observed");
+        assertEquals(1, TransactionBeanWithEvents.getBeforeDestroyed(), "Expected @BeforeDestroyed to be observed");
+        assertEquals(1, TransactionBeanWithEvents.getDestroyed(), "Expected @Destroyed to be observed");
         assertEquals(1, TransactionBeanWithEvents.getCommited(), "Expected commit to be called once");
+        assertEquals(0, TransactionBeanWithEvents.getRolledBack(), "Expected no rollback");
+        TransactionBeanWithEvents.cleanCounts();
+
+        tx.begin();
+        beanEvents.listenToCommitRollback();
+        tx.rollback();
+
+        assertEquals(1, TransactionBeanWithEvents.getInitialized(), "Expected @Initialized to be observed");
+        assertEquals(1, TransactionBeanWithEvents.getBeforeDestroyed(), "Expected @BeforeDestroyed to be observed");
+        assertEquals(1, TransactionBeanWithEvents.getDestroyed(), "Expected @Destroyed to be observed");
+        assertEquals(0, TransactionBeanWithEvents.getCommited(), "Expected no commit");
         assertEquals(1, TransactionBeanWithEvents.getRolledBack(), "Expected rollback to be called once");
+        TransactionBeanWithEvents.cleanCounts();
     }
 
 }

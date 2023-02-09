@@ -60,6 +60,7 @@
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <maven-core.version>3.8.7</maven-core.version>
         <mockito.version>5.1.1</mockito.version>
+        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0-M8</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
@@ -252,12 +253,6 @@
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-enforcer-rules</artifactId>
                         <version>${project.version}</version>
-                    </dependency>
-                    <!-- This dependency can be removed when MENFORCER-422 is available -->
-                    <dependency>
-                        <groupId>com.github.gastaldi</groupId>
-                        <artifactId>enforcer-rules</artifactId>
-                        <version>0.0.1</version>
                     </dependency>
                 </dependencies>
                 <executions>

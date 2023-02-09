@@ -140,7 +140,7 @@ public class InstrumentationProcessor {
 
         boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE);
 
-        if (isResteasyReactiveAvailable) {
+        if (!isResteasyReactiveAvailable) {
             // if RestEasy is not available then no need to continue
             return;
         }

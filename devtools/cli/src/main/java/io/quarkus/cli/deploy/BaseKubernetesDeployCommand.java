@@ -33,7 +33,7 @@ public class BaseKubernetesDeployCommand extends BuildToolDelegatingCommand {
     @Override
     public void populateContext(BuildToolContext context) {
         Map<String, String> properties = context.getPropertiesOptions().properties;
-        kubernetesOptions.masterUrl.ifPresent(u -> properties.put("quarkus.kubernetes-client.master-url", u));
+        kubernetesOptions.masterUrl.ifPresent(u -> properties.put("quarkus.kubernetes-client.api-server-url", u));
         kubernetesOptions.username.ifPresent(u -> properties.put("quarkus.kubernetes-client.username", u));
         kubernetesOptions.password.ifPresent(p -> properties.put("quarkus.kubernetes-client.password", p));
         kubernetesOptions.token.ifPresent(t -> properties.put("quarkus.kubernetes-client.token", t));

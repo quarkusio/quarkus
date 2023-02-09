@@ -288,7 +288,7 @@
                             <skipInvocation>${skipTests}</skipInvocation>
                             <filterProperties>
                                 <!-- this is on purpose to make sure the property is expanded -->
-                                <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
+                                <kubernetes-client-api-server-url>-Dinvalid-on-purpose</kubernetes-client-api-server-url>
                                 <build-result>success</build-result>
                             </filterProperties>
                         </configuration>
@@ -317,7 +317,7 @@
                             <skipInvocation>${skipTests}</skipInvocation>
                             <filterProperties>
                                 <!-- this is on purpose to make sure the property is expanded -->
-                                <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
+                                <kubernetes-client-api-server-url>-Dinvalid-on-purpose</kubernetes-client-api-server-url>
                                 <build-result>success</build-result>
                             </filterProperties>
                         </configuration>
@@ -346,7 +346,7 @@
                             <skipInvocation>${skipTests}</skipInvocation>
                             <filterProperties>
                                 <!-- this is on purpose to make sure the property is expanded -->
-                                <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
+                                <kubernetes-client-api-server-url>-Dinvalid-on-purpose</kubernetes-client-api-server-url>
                                 <build-result>success</build-result>
                             </filterProperties>
                         </configuration>

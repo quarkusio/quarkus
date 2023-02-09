@@ -6,7 +6,7 @@ import picocli.CommandLine;
 
 public class KubernetesOptions {
 
-    @CommandLine.Option(order = 3, names = { "--master-url" }, description = "The URL of the kubernetes API server")
+    @CommandLine.Option(order = 3, names = { "--api-server-url" }, description = "The URL of the kubernetes API server")
     public Optional<String> masterUrl;
 
     @CommandLine.Option(order = 4, names = { "--username" }, description = "Kubernetes username")

@@ -306,7 +306,7 @@ public class CliHelpTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "deploy", "kubernetes", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
-        assertThat(result.stdout).contains("--master-url");
+        assertThat(result.stdout).contains("--api-server-url");
         assertThat(result.stdout).contains("--token");
         assertThat(result.stdout).contains("--namespace");
         assertThat(result.stdout).contains("--deployment-kind");
@@ -318,7 +318,7 @@ public class CliHelpTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "deploy", "openshift", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
-        assertThat(result.stdout).contains("--master-url");
+        assertThat(result.stdout).contains("--api-server-url");
         assertThat(result.stdout).contains("--token");
         assertThat(result.stdout).contains("--namespace");
         assertThat(result.stdout).contains("--deployment-kind");
@@ -330,7 +330,7 @@ public class CliHelpTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "deploy", "knative", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
-        assertThat(result.stdout).contains("--master-url");
+        assertThat(result.stdout).contains("--api-server-url");
         assertThat(result.stdout).contains("--token");
         assertThat(result.stdout).contains("--namespace");
     }

@@ -71,9 +71,9 @@ oc login --token=myToken --server=myServerUrl
 TIP: You can request the token via the _Copy Login Command_ link in the OpenShift web console.
 
 Finally, you don't need to use the OpenShift CLI at all.
-Instead, set the `quarkus.kubernetes-client.master-url` config property and authenticate with the `quarkus.kubernetes-client.token`, or `quarkus.kubernetes-client.username` and `quarkus.kubernetes-client.password` respectively:
+Instead, set the `quarkus.kubernetes-client.api-server-url` config property and authenticate with the `quarkus.kubernetes-client.token`, or `quarkus.kubernetes-client.username` and `quarkus.kubernetes-client.password` respectively:
 
-:build-additional-parameters: -Dquarkus.kubernetes-client.master-url=myServerUrl -Dquarkus.kubernetes-client.token=myToken
+:build-additional-parameters: -Dquarkus.kubernetes-client.api-server-url=myServerUrl -Dquarkus.kubernetes-client.token=myToken
 include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 

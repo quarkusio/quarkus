@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -38,24 +37,25 @@ public class WrongAnnotationUsageProcessor {
 
         // Detect unsupported annotations
         List<UnsupportedAnnotation> unsupported = new ArrayList<>();
-        Function<AnnotationInstance, String> singletonFun = new Function<AnnotationInstance, String>() {
 
-            @Override
-            public String apply(AnnotationInstance annotationInstance) {
-                return String.format("%s declared on %s, use @jakarta.inject.Singleton instead",
-                        annotationInstance.toString(false), getTargetInfo(annotationInstance));
-            }
-        };
-        unsupported.add(new UnsupportedAnnotation(DotName.createSimple("com.google.inject.Singleton"), singletonFun));
-        unsupported.add(new UnsupportedAnnotation(DotName.createSimple("jakarta.ejb.Singleton"), singletonFun));
-        unsupported.add(new UnsupportedAnnotation(DotName.createSimple("groovy.lang.Singleton"), singletonFun));
-        unsupported.add(new UnsupportedAnnotation(DotName.createSimple("jakarta.ejb.Singleton"), singletonFun));
+        String correctSingleton = "@jakarta.inject.Singleton";
+        unsupported.add(new UnsupportedAnnotation("com.google.inject.Singleton", correctSingleton));
+        unsupported.add(new UnsupportedAnnotation("jakarta.ejb.Singleton", correctSingleton));
+        unsupported.add(new UnsupportedAnnotation("groovy.lang.Singleton", correctSingleton));
+
+        String correctInject = "@jakarta.inject.Inject";
+        unsupported.add(new UnsupportedAnnotation("javax.inject.Inject", correctInject));
+        unsupported.add(new UnsupportedAnnotation("com.google.inject.Inject", correctInject));
+        unsupported.add(new UnsupportedAnnotation("com.oracle.svm.core.annotate.Inject", correctInject));
+        unsupported.add(new UnsupportedAnnotation("org.gradle.internal.impldep.javax.inject.Inject",
+                correctInject));
 
         Map<AnnotationInstance, String> wrongUsages = new HashMap<>();
 
         for (UnsupportedAnnotation annotation : unsupported) {
             for (AnnotationInstance annotationInstance : index.getAnnotations(annotation.name)) {
-                wrongUsages.put(annotationInstance, annotation.messageFun.apply(annotationInstance));
+                wrongUsages.put(annotationInstance, String.format("%s declared on %s, use %s instead",
+                        annotationInstance.toString(false), getTargetInfo(annotationInstance), annotation.correctAnnotation));
             }
         }
 
@@ -108,11 +108,11 @@ public class WrongAnnotationUsageProcessor {
     private static class UnsupportedAnnotation {
 
         final DotName name;
-        final Function<AnnotationInstance, String> messageFun;
+        final String correctAnnotation;
 
-        UnsupportedAnnotation(DotName name, Function<AnnotationInstance, String> messageFun) {
-            this.name = name;
-            this.messageFun = messageFun;
+        UnsupportedAnnotation(String name, String correctAnnotation) {
+            this.name = DotName.createSimple(name);
+            this.correctAnnotation = correctAnnotation;
         }
 
     }

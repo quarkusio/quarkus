@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Singleton;
 
@@ -25,8 +26,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import com.google.inject.Inject;
 
 import io.quarkus.arc.deployment.ObserverTransformerBuildItem;
 import io.quarkus.arc.processor.ObserverTransformer;

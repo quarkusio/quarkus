@@ -1,5 +1,7 @@
 package io.quarkus.maven;
 
+import java.util.List;
+
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -7,7 +9,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.PlatformStreamCoords;
 
 /**
  * Log Quarkus-related recommended updates, such as new Quarkus platform BOM versions and
@@ -49,15 +54,27 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     @Override
     protected void processProjectState(QuarkusProject quarkusProject) throws MojoExecutionException {
 
-        final UpdateProject invoker = new UpdateProject(quarkusProject);
+        final ExtensionCatalog targetCatalog;
         try {
-            invoker.latestCatalog(getExtensionCatalogResolver().resolveExtensionCatalog());
+            if (platformVersion != null) {
+                var targetPrimaryBom = getPrimaryBom(quarkusProject.getExtensionsCatalog());
+                targetPrimaryBom = ArtifactCoords.pom(targetPrimaryBom.getGroupId(), targetPrimaryBom.getArtifactId(),
+                        platformVersion);
+                targetCatalog = getExtensionCatalogResolver().resolveExtensionCatalog(List.of(targetPrimaryBom));
+            } else if (streamId != null) {
+                var platformStream = PlatformStreamCoords.fromString(streamId);
+                targetCatalog = getExtensionCatalogResolver().resolveExtensionCatalog(platformStream);
+                platformVersion = getPrimaryBom(targetCatalog).getVersion();
+            } else {
+                targetCatalog = getExtensionCatalogResolver().resolveExtensionCatalog();
+                platformVersion = getPrimaryBom(targetCatalog).getVersion();
+            }
         } catch (RegistryResolutionException e) {
             throw new MojoExecutionException(
-                    "Failed to resolve the latest Quarkus extension catalog from the configured extension registries", e);
+                    "Failed to resolve the recommended Quarkus extension catalog from the configured extension registries", e);
         }
-
-        // TODO ALEXEY: resolve targetPlatformVersion from streamId if needed or from latest version
+        final UpdateProject invoker = new UpdateProject(quarkusProject);
+        invoker.latestCatalog(targetCatalog);
         invoker.targetPlatformVersion(platformVersion);
         invoker.perModule(perModule);
         invoker.appModel(resolveApplicationModel());
@@ -67,5 +84,9 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
         } catch (QuarkusCommandException e) {
             throw new MojoExecutionException("Failed to resolve the available updates", e);
         }
+    }
+
+    private static ArtifactCoords getPrimaryBom(ExtensionCatalog c) {
+        return c.getDerivedFrom().isEmpty() ? c.getBom() : c.getDerivedFrom().get(0).getBom();
     }
 }

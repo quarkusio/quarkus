@@ -61,16 +61,11 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             return QuarkusCommandOutcome.failure();
         }
         if (Objects.equals(projectQuarkusPlatformBom.getVersion(), targetPlatformVersion)) {
-            invocation.log().info("Instructions to repair this project:");
-            // TODO ALEXEY: if the targetPlatformVersion is equal to the project platform version, we should give instructions repair the project
             ProjectInfoCommandHandler.logState(currentState, perModule, true, invocation.getQuarkusProject().log());
-
         } else {
             invocation.log().info("Instructions to update this project from '%s' to '%s':",
                     projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
-            // TODO ALEXEY: instructions to update the project
-            logUpdates(currentState, latestCatalog, false, perModule,
-                    invocation.getQuarkusProject().log());
+            logUpdates(currentState, latestCatalog, false, perModule, invocation.getQuarkusProject().log());
         }
 
         if (generateRewriteConfig) {

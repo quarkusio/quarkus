@@ -23,9 +23,7 @@ import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.ListExtensions;
-import io.quarkus.devtools.commands.ProjectInfo;
 import io.quarkus.devtools.commands.RemoveExtensions;
-import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
@@ -133,22 +131,33 @@ public class MavenRunner implements BuildSystemRunner {
 
     @Override
     public Integer projectInfo(boolean perModule) throws Exception {
-        final ProjectInfo invoker = new ProjectInfo(quarkusProject());
-        invoker.perModule(perModule);
-        invoker.appModel(MavenProjectBuildFile.resolveApplicationModel(projectRoot));
-        return invoker.execute().isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+        ArrayDeque<String> args = new ArrayDeque<>();
+        setMavenProperties(args, true);
+        args.add("quarkus:info");
+        if (perModule) {
+            args.add("-DperModule");
+        }
+        args.add("-ntp");
+        return run(prependExecutable(args));
     }
 
     @Override
     public Integer updateProject(String targetPlatformVersion, String targetPlatformStreamId, boolean perModule)
             throws Exception {
-        final UpdateProject invoker = new UpdateProject(quarkusProject());
-        invoker.latestCatalog(quarkusProject().getExtensionsCatalog());
-        // TODO ALEXEY: resolve targetPlatformVersion from targetPlatformStreamId if needed or from latest version
-        invoker.targetPlatformVersion(targetPlatformVersion);
-        invoker.perModule(perModule);
-        invoker.appModel(MavenProjectBuildFile.resolveApplicationModel(projectRoot));
-        return invoker.execute().isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+        ArrayDeque<String> args = new ArrayDeque<>();
+        setMavenProperties(args, true);
+        args.add("quarkus:update");
+        if (targetPlatformVersion != null) {
+            args.add("-DplatformVersion=" + targetPlatformVersion);
+        }
+        if (targetPlatformStreamId != null) {
+            args.add("-DstreamId=" + targetPlatformStreamId);
+        }
+        if (perModule) {
+            args.add("-DperModule");
+        }
+        args.add("-ntp");
+        return run(prependExecutable(args));
     }
 
     @Override

@@ -1,13 +1,19 @@
 package io.quarkus.gradle.tasks;
 
+import java.util.List;
+
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.PlatformStreamCoords;
 
 public class QuarkusUpdate extends QuarkusPlatformTask {
 
@@ -26,6 +32,7 @@ public class QuarkusUpdate extends QuarkusPlatformTask {
     }
 
     @Input
+    @Optional
     public String getTargetStreamId() {
         return targetStreamId;
     }
@@ -36,6 +43,7 @@ public class QuarkusUpdate extends QuarkusPlatformTask {
     }
 
     @Input
+    @Optional
     public String getTargetPlatformVersion() {
         return targetPlatformVersion;
     }
@@ -55,15 +63,29 @@ public class QuarkusUpdate extends QuarkusPlatformTask {
         getProject().getLogger().warn(getName() + " is experimental, its options and output might change in future versions");
 
         final QuarkusProject quarkusProject = getQuarkusProject(false);
-        final UpdateProject invoker = new UpdateProject(quarkusProject);
+        final ExtensionCatalog targetCatalog;
         try {
-            invoker.latestCatalog(getExtensionCatalogResolver(quarkusProject.log()).resolveExtensionCatalog());
+            if (targetPlatformVersion != null) {
+                var targetPrimaryBom = getPrimaryBom(quarkusProject.getExtensionsCatalog());
+                targetPrimaryBom = ArtifactCoords.pom(targetPrimaryBom.getGroupId(), targetPrimaryBom.getArtifactId(),
+                        targetPlatformVersion);
+                targetCatalog = getExtensionCatalogResolver(quarkusProject.log())
+                        .resolveExtensionCatalog(List.of(targetPrimaryBom));
+            } else if (targetStreamId != null) {
+                var platformStream = PlatformStreamCoords.fromString(targetStreamId);
+                targetCatalog = getExtensionCatalogResolver(quarkusProject.log()).resolveExtensionCatalog(platformStream);
+                targetPlatformVersion = getPrimaryBom(targetCatalog).getVersion();
+            } else {
+                targetCatalog = getExtensionCatalogResolver(quarkusProject.log()).resolveExtensionCatalog();
+                targetPlatformVersion = getPrimaryBom(targetCatalog).getVersion();
+            }
         } catch (RegistryResolutionException e) {
-            throw new GradleException(
-                    "Failed to resolve the latest Quarkus extension catalog from the configured extension registries", e);
+            throw new RuntimeException(
+                    "Failed to resolve the recommended Quarkus extension catalog from the configured extension registries", e);
         }
 
-        // TODO ALEXEY: resolve targetPlatformVersion from targetPlatformStreamId if needed or from latest version
+        final UpdateProject invoker = new UpdateProject(quarkusProject);
+        invoker.latestCatalog(targetCatalog);
         invoker.targetPlatformVersion(targetPlatformVersion);
         invoker.perModule(perModule);
         invoker.appModel(extension().getApplicationModel());
@@ -72,5 +94,9 @@ public class QuarkusUpdate extends QuarkusPlatformTask {
         } catch (Exception e) {
             throw new GradleException("Failed to resolve recommended updates", e);
         }
+    }
+
+    private static ArtifactCoords getPrimaryBom(ExtensionCatalog c) {
+        return c.getDerivedFrom().isEmpty() ? c.getBom() : c.getDerivedFrom().get(0).getBom();
     }
 }

@@ -37,8 +37,6 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
 
-        // TODO ALEXEY: info about the project (versions and extensions) and hint on how to repair if broken (or to update if available - nice to have)
-
         final ApplicationModel appModel = invocation.getValue(ProjectInfo.APP_MODEL);
         final boolean logStatePerModule = invocation.getValue(ProjectInfo.PER_MODULE, false);
 

@@ -98,7 +98,7 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
         assertRegistryExtensions(infoResult.stdout, "registry.acme.org",
                 ArtifactCoords.jar("org.acme", "acme-quarkiverse-extension", "1.0"));
 
-        final CliDriver.Result rectifyResult = run(projectDir, "update", "--rectify");
+        final CliDriver.Result rectifyResult = run(projectDir, "update", "--platform-version=1.0.0");
         assertThat(rectifyResult.stdout)
                 .contains("[INFO] Update: org.acme.quarkus.platform:acme-quarkus-subatomic:1.0.0 -> remove version (managed)");
 

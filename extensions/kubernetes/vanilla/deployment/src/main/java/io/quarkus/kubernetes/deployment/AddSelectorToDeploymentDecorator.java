@@ -2,6 +2,7 @@
 package io.quarkus.kubernetes.deployment;
 
 import io.dekorate.kubernetes.decorator.AddToMatchingLabelsDecorator;
+import io.dekorate.kubernetes.decorator.AddToSelectorDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
@@ -29,6 +30,6 @@ public class AddSelectorToDeploymentDecorator extends NamedResourceDecorator<Dep
 
     @Override
     public Class<? extends Decorator>[] before() {
-        return new Class[] { AddToMatchingLabelsDecorator.class };
+        return new Class[] { AddToMatchingLabelsDecorator.class, AddToSelectorDecorator.class };
     }
 }

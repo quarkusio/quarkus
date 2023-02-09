@@ -322,7 +322,7 @@ public class OpenshiftProcessor {
                 String imageStreamWithTag = name + ":" + i.getTag();
                 result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, imageStreamWithTag)));
                 // remove the default trigger which has a wrong version
-                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator()));
+                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator(name)));
                 // re-add the trigger with the correct version
                 result.add(new DecoratorBuildItem(OPENSHIFT, new ChangeDeploymentTriggerDecorator(name, imageStreamWithTag)));
             });

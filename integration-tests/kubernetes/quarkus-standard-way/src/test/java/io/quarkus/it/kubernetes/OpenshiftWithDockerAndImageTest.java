@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -37,7 +36,6 @@ public class OpenshiftWithDockerAndImageTest {
     private ProdModeTestResults prodModeTestResults;
 
     @Test
-    @Disabled("This is failing always in the Jakarta branch and needs fixing")
     public void assertGeneratedResources() throws IOException {
         Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
 

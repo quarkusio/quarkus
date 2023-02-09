@@ -21,9 +21,11 @@ fi
 
 sed -r -i "s@<quarkus.version>[^<]+</quarkus.version>@<quarkus.version>${VERSION}</quarkus.version>@" independent-projects/tools/pom.xml
 
-sed -r -i "s@<quarkus.version>[^<]+</quarkus.version>@<quarkus.version>${VERSION}</quarkus.version>@" extensions/azure-functions-http/maven-archetype/src/main/resources/archetype-resources/pom.xml
-sed -r -i "s@<quarkus-plugin.version>[^<]+</quarkus-plugin.version>@<quarkus-plugin.version>${VERSION}</quarkus-plugin.version>@" extensions/azure-functions-http/maven-archetype/src/main/resources/archetype-resources/pom.xml
-sed -r -i "s@<quarkus.platform.version>[^<]+</quarkus.platform.version>@<quarkus.platform.version>${VERSION}</quarkus.platform.version>@" extensions/azure-functions-http/maven-archetype/src/main/resources/archetype-resources/pom.xml
+if [ -d extensions/azure-functions-http/maven-archetype ]; then
+    sed -r -i "s@<quarkus.version>[^<]+</quarkus.version>@<quarkus.version>${VERSION}</quarkus.version>@" extensions/azure-functions-http/maven-archetype/src/main/resources/archetype-resources/pom.xml
+    sed -r -i "s@<quarkus-plugin.version>[^<]+</quarkus-plugin.version>@<quarkus-plugin.version>${VERSION}</quarkus-plugin.version>@" extensions/azure-functions-http/maven-archetype/src/main/resources/archetype-resources/pom.xml
+    sed -r -i "s@<quarkus.platform.version>[^<]+</quarkus.platform.version>@<quarkus.platform.version>${VERSION}</quarkus.platform.version>@" extensions/azure-functions-http/maven-archetype/src/main/resources/archetype-resources/pom.xml
+fi
 
 sed -r -i "s@<quarkus.version>[^<]+</quarkus.version>@<quarkus.version>${VERSION}</quarkus.version>@" extensions/amazon-lambda/maven-archetype/src/main/resources/archetype-resources/pom.xml
 sed -r -i "s@<quarkus-plugin.version>[^<]+</quarkus-plugin.version>@<quarkus-plugin.version>${VERSION}</quarkus-plugin.version>@" extensions/amazon-lambda/maven-archetype/src/main/resources/archetype-resources/pom.xml

@@ -218,6 +218,11 @@ class QuarkusTransactionImpl {
         }
     }
 
+    static void begin(BeginOptions options) {
+        RequestScopedTransaction tx = Arc.container().instance(RequestScopedTransaction.class).get();
+        tx.begin(options);
+    }
+
     static void rollback() {
         try {
             getUserTransaction().rollback();
@@ -244,15 +249,14 @@ class QuarkusTransactionImpl {
 
     private static jakarta.transaction.UserTransaction getUserTransaction() {
         if (cachedUserTransaction == null) {
-            return cachedUserTransaction = com.arjuna.ats.jta.UserTransaction.userTransaction();
+            return cachedUserTransaction = Arc.container().instance(UserTransaction.class).get();
         }
         return cachedUserTransaction;
     }
 
     private static TransactionManager getTransactionManager() {
         if (cachedTransactionManager == null) {
-            return cachedTransactionManager = com.arjuna.ats.jta.TransactionManager
-                    .transactionManager();
+            return cachedTransactionManager = Arc.container().instance(TransactionManager.class).get();
         }
         return cachedTransactionManager;
     }

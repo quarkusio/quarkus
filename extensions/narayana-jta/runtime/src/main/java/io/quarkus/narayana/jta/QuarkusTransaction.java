@@ -9,8 +9,6 @@ import javax.transaction.Transactional;
 
 import com.arjuna.ats.jta.UserTransaction;
 
-import io.quarkus.arc.Arc;
-
 /**
  * A simplified transaction interface. While broadly covering the same use cases as {@link javax.transaction.UserTransaction},
  * this class is designed to be easier to use. The main features it offers over {@code UserTransaction} are:
@@ -52,8 +50,7 @@ public interface QuarkusTransaction {
      * @param options Options that apply to the new transaction
      */
     static void begin(BeginOptions options) {
-        RequestScopedTransaction tx = Arc.container().instance(RequestScopedTransaction.class).get();
-        tx.begin(options);
+        QuarkusTransactionImpl.begin(options);
     }
 
     /**

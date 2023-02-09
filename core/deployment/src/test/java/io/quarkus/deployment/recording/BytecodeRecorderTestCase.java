@@ -300,6 +300,12 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.bean(bean);
         }, new OtherTestConstructorBean("Jane", "Citizen").setAge(30));
+
+        runTest(generator -> {
+            TestSingleConstructorBean bean = new TestSingleConstructorBean("Jane", "Citizen", 30);
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(bean);
+        }, new TestSingleConstructorBean("Jane", "Citizen", 30));
     }
 
     @Test

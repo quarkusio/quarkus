@@ -854,7 +854,46 @@ public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
 == Testing
 
 Testing reactive Panache entities in a `@QuarkusTest` is slightly more complicated than testing regular Panache entities due to the asynchronous nature of the APIs and the fact that all operations need to run on a Vert.x event loop.
-The usage of `@RunOnVertxContext`, `@TestReactiveTransaction` and `UniAsserter` is described in the xref:hibernate-reactive.adoc#testing[Hibernate Reactive] guide.
+
+The `quarkus-test-vertx` dependency provides the `@io.quarkus.test.vertx.RunOnVertxContext` annotation and the `io.quarkus.test.vertx.UniAsserter` class which are intended precisely for this purpose. 
+The usage is described in the xref:hibernate-reactive.adoc#testing[Hibernate Reactive] guide.
+
+You can also extend the `io.quarkus.test.vertx.UniAsserterInterceptor` to customize the behavior of the injected `UniAsserter`.
+For example, the interceptor can be used to execute the assert methods within a separate database transaction.
+
+.`UniAsserterInterceptor` Example
+[source,java]
+----
+import io.quarkus.test.vertx.UniAsserterInterceptor;
+
+@QuarkusTest
+public class SomeTest {
+
+    static class TransactionalUniAsserterInterceptor extends UniAsserterInterceptor {
+
+        public TransactionUniAsserterInterceptor(UniAsserter asserter) {
+            super(asserter);
+        }
+
+        @Override
+        protected <T> Supplier<Uni<T>> transformUni(Supplier<Uni<T>> uniSupplier) {
+            // Assert/execute methods are invoked within a database transaction
+            return () -> Panache.withTransaction(uniSupplier);
+        }
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void testEntity(UniAsserter asserter) {
+        asserter = new TransactionalUniAsserterInterceptor(asserter); <1>
+        asserter.execute(() -> new MyEntity().persist());
+        asserter.assertEquals(() -> MyEntity.count(), 1l);
+        asserter.execute(() -> MyEntity.deleteAll());
+    }
+}
+----
+<1> The `TransactionalUniAsserterInterceptor` wraps the injected `UniAsserter`.
+
 
 == Mocking
 

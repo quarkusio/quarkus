@@ -31,6 +31,7 @@ The following table outlines some limitations of using HTTP Basic authentication
 
 
 .Limitations of HTTP Basic authentication
+[width=80%]
 [cols="35%,65%"]
 |===
 |Limitation |Description
@@ -41,7 +42,7 @@ The risk of exposing credentials as plain text increases if a load balancer term
 Also, in multi-hop deployments, the credentials can be exposed if HTTPS is used between the client and the first Quarkus endpoint only, and the credentials are propagated to the next Quarkus endpoint over HTTP.
 
 |Credentials are sent with each request
-|In Basic authentication, a username and password need to be sent with each request, which increases the risk of credentials being exposed.
+|In Basic authentication, a username and password must be sent with each request, which increases the risk of credentials being exposed.
 
 |Application complexity increases
 |The Quarkus application must validate that usernames, passwords, and roles are managed securely.
@@ -55,10 +56,17 @@ Depending on the use case, other authentication mechanisms that delegate usernam
 For more information about how you can secure your Quarkus applications by using Basic authentication, see the following resources:
 
 * xref:security-basic-authentication-howto.adoc[Enable Basic authentication]
-* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication]
+* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
+
+== Role-based access control
+
+{project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations @RolesAllowed, @DenyAll, @PermitAll on REST endpoints and CDI beans. 
+For more information, see xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints].
 
 == References
 
 * xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-architecture-concept.adoc[Quarkus Security architecture] 
 * xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
-
+* xref:security-identity-providers-concept.adoc[Identity providers]
+* xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints]

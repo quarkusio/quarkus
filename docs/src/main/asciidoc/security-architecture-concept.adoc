@@ -29,12 +29,14 @@ To learn more about security authentication in Quarkus and the supported mechani
 
 == Proactive authentication
 
-Proactive authentication is enabled in Quarkus by default. The request is always authenticated if an incoming request has a credential, even if the target page does not require authentication
+Proactive authentication is enabled in Quarkus by default. 
+The request is always authenticated if an incoming request has a credential, even if the target page does not require authentication
 For more information, see xref:security-proactive-authentication-concept.adoc[Proactive authentication].
 
 == Quarkus Security customization
 
-Quarkus Security is also highly customizable. You can customize the following core security components of Quarkus:
+Quarkus Security is also highly customizable. 
+You can customize the following core security components of Quarkus:
 
 * `HttpAuthenticationMechanism`
 * `IdentityProvider`
@@ -44,4 +46,7 @@ For more information about customizing Quarkus Security, including reactive secu
 
 == References
 
+* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-identity-providers-concept.adoc[Identity providers]
 * xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints]

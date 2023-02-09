@@ -31,7 +31,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
@@ -754,8 +753,7 @@ public class BeanProcessor {
 
         /**
          * Can be used to compute a priority of an alternative bean. A non-null computed value always
-         * takes precedence over the priority defined by {@link Priority}, {@link AlternativePriority} or an alternative
-         * stereotype.
+         * takes precedence over the priority defined by {@link Priority} or a stereotype.
          *
          * @param priorities
          * @return self

@@ -18,12 +18,11 @@ import jakarta.enterprise.inject.Stereotype;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Priority;
 import io.quarkus.arc.test.ArcTestContainer;
 
-// copy of `StereotypeAlternativeTest` that uses ArC `@Priority` and `@AlternativePriority`
+// copy of `StereotypeAlternativeTest` that uses ArC `@Priority`
 // instead of Jakarta Common Annotations `@Priority`
 public class StereotypeAlternativeArcPriorityTest {
 
@@ -49,7 +48,8 @@ public class StereotypeAlternativeArcPriorityTest {
     public @interface BeAlternative {
     }
 
-    @AlternativePriority(1)
+    @Alternative
+    @Priority(1)
     @Stereotype
     @Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
     @Retention(RetentionPolicy.RUNTIME)

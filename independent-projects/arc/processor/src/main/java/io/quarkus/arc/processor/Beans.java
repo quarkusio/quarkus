@@ -119,12 +119,7 @@ public final class Beans {
                 isAlternative = true;
                 continue;
             }
-            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotationName)) {
-                isAlternative = true;
-                priority = annotation.value().asInt();
-                continue;
-            }
-            if ((!isAlternative || priority == null) && annotationName.equals(DotNames.PRIORITY)) {
+            if (DotNames.PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 continue;
             }
@@ -179,7 +174,7 @@ public final class Beans {
             if (priority == null) {
                 // after all attempts, priority is still null, bean will be ignored
                 LOGGER.debugf(
-                        "Ignoring producer method %s - declared as an @Alternative but not selected by @AlternativePriority or quarkus.arc.selected-alternatives",
+                        "Ignoring producer method %s - declared as an @Alternative but not selected by @Priority or quarkus.arc.selected-alternatives",
                         declaringBean.getTarget().get().asClass().name() + "#" + producerMethod.name());
                 return null;
             }
@@ -234,12 +229,7 @@ public final class Beans {
                 isAlternative = true;
                 continue;
             }
-            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotationName)) {
-                isAlternative = true;
-                priority = annotation.value().asInt();
-                continue;
-            }
-            if ((!isAlternative || priority == null) && annotation.name().equals(DotNames.PRIORITY)) {
+            if (DotNames.PRIORITY.equals(annotation.name())) {
                 priority = annotation.value().asInt();
                 continue;
             }
@@ -293,7 +283,7 @@ public final class Beans {
             // after all attempts, priority is still null
             if (priority == null) {
                 LOGGER.debugf(
-                        "Ignoring producer field %s - declared as an @Alternative but not selected by @AlternativePriority or quarkus.arc.selected-alternatives",
+                        "Ignoring producer field %s - declared as an @Alternative but not selected by @Priority or quarkus.arc.selected-alternatives",
                         producerField);
                 return null;
             }
@@ -938,7 +928,7 @@ public final class Beans {
         if (computedPriority != null) {
             if (alternativePriority != null) {
                 LOGGER.infof(
-                        "Computed priority [%s] overrides the priority [%s] declared via @Priority or @AlternativePriority",
+                        "Computed priority [%s] overrides the priority [%s] declared via @Priority",
                         computedPriority, alternativePriority);
             }
             alternativePriority = computedPriority;
@@ -1124,24 +1114,19 @@ public final class Beans {
                 // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
                 return;
             }
-            if (annotationName.equals(DotNames.ALTERNATIVE)) {
+            if (DotNames.ALTERNATIVE.equals(annotationName)) {
                 isAlternative = true;
-                return;
-            }
-            if (annotationName.equals(DotNames.ALTERNATIVE_PRIORITY)) {
-                isAlternative = true;
-                priority = annotation.value().asInt();
                 return;
             }
             if (DotNames.DEFAULT_BEAN.equals(annotationName)) {
                 isDefaultBean = true;
                 return;
             }
-            if ((!isAlternative || priority == null) && annotationName.equals(DotNames.PRIORITY)) {
+            if (DotNames.PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 return;
             }
-            if (priority == null && annotationName.equals(DotNames.ARC_PRIORITY)) {
+            if (priority == null && DotNames.ARC_PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 return;
             }
@@ -1204,7 +1189,7 @@ public final class Beans {
                 if (priority == null) {
                     // after all attempts, priority is still null, bean will be ignored
                     LOGGER.debugf(
-                            "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority, @AlternativePriority or quarkus.arc.selected-alternatives",
+                            "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority or quarkus.arc.selected-alternatives",
                             beanClass.name());
                     return null;
                 }

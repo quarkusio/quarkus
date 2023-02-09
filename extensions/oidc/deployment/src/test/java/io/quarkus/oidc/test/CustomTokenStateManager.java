@@ -1,9 +1,10 @@
 package io.quarkus.oidc.test;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -13,7 +14,8 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
-@AlternativePriority(1)
+@Alternative
+@Priority(1)
 public class CustomTokenStateManager implements TokenStateManager {
 
     @Inject

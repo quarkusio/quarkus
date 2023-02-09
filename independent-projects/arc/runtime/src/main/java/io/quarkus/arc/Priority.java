@@ -14,7 +14,7 @@ import java.lang.annotation.RetentionPolicy;
  * Since Common Annotations 2.1, the {@code jakarta.annotation.Priority} is no longer
  * meta-annotated {@code @Target}, so these two annotations are equivalent.
  * <p>
- * A priority specified by {@link AlternativePriority} and {@link jakarta.annotation.Priority} takes precedence.
+ * A priority specified by {@link jakarta.annotation.Priority} takes precedence.
  *
  * @deprecated use {@link jakarta.annotation.Priority}; this annotation will be removed at some time after Quarkus 3.6
  */

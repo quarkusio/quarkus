@@ -15,9 +15,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 
-/**
- * Tests {@link io.quarkus.arc.AlternativePriority} annotation.
- */
 public class ComputedAlternativePriorityTest {
 
     @RegisterExtension

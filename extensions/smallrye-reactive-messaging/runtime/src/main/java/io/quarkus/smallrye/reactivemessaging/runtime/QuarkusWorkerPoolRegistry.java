@@ -11,12 +11,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.LoggerFactory;
 
-import io.quarkus.arc.AlternativePriority;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
@@ -25,7 +25,8 @@ import io.smallrye.reactive.messaging.providers.helpers.Validation;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.WorkerExecutor;
 
-@AlternativePriority(1)
+@Alternative
+@Priority(1)
 @ApplicationScoped
 // TODO: create a different entry for WorkerPoolRegistry than `analyzeWorker` and drop this class
 public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {

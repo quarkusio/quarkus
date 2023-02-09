@@ -1,12 +1,13 @@
 package io.quarkus.smallrye.health.runtime;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.health.AsyncHealthCheckFactory;
 import io.smallrye.health.api.AsyncHealthCheck;
@@ -19,7 +20,8 @@ import io.vertx.core.Vertx;
  * health checks with different executors provided by {@link MutinyHelper}.
  */
 @ApplicationScoped
-@AlternativePriority(1)
+@Alternative
+@Priority(1)
 public class QuarkusAsyncHealthCheckFactory extends AsyncHealthCheckFactory {
 
     @Inject

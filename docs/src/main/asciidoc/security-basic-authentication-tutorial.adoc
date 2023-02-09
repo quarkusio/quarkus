@@ -594,6 +594,9 @@ Use the following information to learn how you can securely use `OpenID Connect`
 == References
 
 * xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-architecture-concept.adoc[Quarkus Security architecture] 
+* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-identity-providers-concept.adoc[Identity providers]
 * xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
 * xref:hibernate-orm-panache.adoc[Simplified Hibernate ORM with Panache]

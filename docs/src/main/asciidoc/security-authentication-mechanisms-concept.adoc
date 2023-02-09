@@ -3,36 +3,47 @@
 include::_attributes.adoc[]
 :categories: security,web
 
-The Quarkus Security framework supports multiple authentication mechanisms, which you can use to secure your applications.
-Some supported authentication mechanisms are built into Quarkus, and some require you to add an extension.
+The Quarkus Security framework supports multiple authentication mechanisms, which you can use to secure your applications. 
 You can also combine authentication mechanisms.
 
+[TIP]
+====
 Before you choose an authentication mechanism for securing your Quarkus applications, review the information provided.
+====
+
+== Overview of supported authentication mechanisms
+
+Some supported authentication mechanisms are built into Quarkus, and some require you to add an extension, all of which are detailed in the following sections on this page:
+
+* <<Built-in authentication mechanisms>>
+* <<Other supported authentication mechanisms>>
+
+The following table maps specific authentication requirements to a supported mechanism that you can use in Quarkus:
 
 .Authentication requirements and mechanisms
+[width=80%]
 [source, adoc]
 |===
-^|Authentication requirement ^| Authentication mechanism
+|Authentication requirement | Authentication mechanism
 
-^|Username and password ^|xref:security-basic-authentication-concept.adoc[Basic], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
+|Username and password |xref:security-basic-authentication-concept.adoc[Basic], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
 
-^|Bearer access token  ^a| xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
+|Bearer access token  a| xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
 
-^|Single sign-on (SSO) ^|xref:security-oidc-code-flow-authentication-concept.adoc[OIDC Code Flow], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
+|Single sign-on (SSO) |xref:security-oidc-code-flow-authentication-concept.adoc[OIDC Code Flow], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
 
-^|Client certificate  ^|xref:security-authentication-mechanisms-concept.adoc#mutual-tls[Mutual TLS (MTLS)]
+|Client certificate  |xref:security-authentication-mechanisms-concept.adoc#mutual-tls[Mutual TLS (MTLS)]
 
-^|WebAuthn ^|xref:security-webauthn-concept.adoc[WebAuthn]
+|WebAuthn |xref:security-webauthn-concept.adoc[WebAuthn]
 
-^|Kerberos ticket    ^|link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
+|Kerberos ticket    |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
 |===
 
-* See also the <<table>> table featured later in this section.
+See also the <<table>> table featured later in this section.
 
+== Built-in authentication mechanisms
 
-== Built-in authentication support
-
-Quarkus Security provides the following built-in authentication mechanisms:
+Quarkus Security provides the following built-in authentication support:
 
 * xref:security-basic-authentication-concept.adoc[Basic authentication]
 * <<form-auth>>
@@ -40,7 +51,12 @@ Quarkus Security provides the following built-in authentication mechanisms:
 
 === Basic authentication
 
-You can secure your Quarkus application endpoints with the built-in HTTP Basic authentication mechanism. For more information, see xref:security-basic-authentication-concept.adoc[Basic authentication].
+You can secure your Quarkus application endpoints with the built-in HTTP Basic authentication mechanism. 
+For more information, see the following documentation:
+* xref:security-basic-authentication-concept.adoc[Basic authentication]
+* xref:security-identity-providers-concept.adoc[Identity providers]
+* xref:security-basic-authentication-howto.adoc[Enable Basic authentication]
+* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
 
 [[form-auth]]
 === Form-based authentication
@@ -330,3 +346,11 @@ Ensure that the value of the `auth-mechanism` property matches the authenticatio
 
 Proactive authentication is enabled in Quarkus by default. This means that if an incoming request has a credential then that request will always be authenticated, even if the target page does not require authentication.
 For more information, see xref:security-proactive-authentication-concept.adoc[Proactive authentication].
+
+== References
+
+* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-architecture-concept.adoc[Quarkus Security architecture] 
+* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-identity-providers-concept.adoc[Identity providers]
+* xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints]

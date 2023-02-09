@@ -12,7 +12,7 @@ Before you start building security into your Quarkus applications, learn about t
 The Quarkus Security framework provides built-in security mechanisms for Basic, form-based, and mutual TLS (mTLS) authentication.
 You can also integrate Quarkus with several well-known security xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[authentication mechanisms] and protocols.
 
-{project-name} also includes built-in security to allow for role-based Access control (RBAC) based on the common security annotations @RolesAllowed, @DenyAll, @PermitAll on REST endpoints and CDI beans. 
+{project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations @RolesAllowed, @DenyAll, @PermitAll on REST endpoints and CDI beans. 
 For more information, see xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints].
 
 Quarkus Security also supports the following features:
@@ -23,7 +23,7 @@ Quarkus Security also supports the following features:
 * <<Cross-origin resource sharing>>
 * <<Cross-site Request Forgery (CSRF) prevention>>
 * <<SameSite cookies>>
-* <<Secret engines>>
+* <<Secrets engines>>
 * <<Secure serialization>>
 * <<Secure auto-generated resources by REST Data with Panache>>
 * xref:security-vulnerability-detection-concept.adoc[Security vulnerability detection and National Vulnerability Database (NVD) registration]
@@ -80,3 +80,10 @@ For more information, see xref:rest-data-panache.adoc#securing-endpoints[Securin
 
 Most of the Quarkus tags are reported in the US link:https://nvd.nist.gov[National Vulnerability Database (NVD)]. 
 For information about security vulnerabilities, see xref:security-vulnerability-detection-concept.adoc[Security vulnerability detection and reporting in Quarkus].
+
+
+== References
+
+* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
+* xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
+* xref:security-protect-service-application-using-oidc-bearer-authentication-tutorial.adoc[Protect a service application by using OIDC bearer authentication]

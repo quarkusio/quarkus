@@ -152,5 +152,6 @@ public class AuthenticationFailedExceptionHandler {
 == References
 
 * xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-architecture-concept.adoc[Quarkus Security architecture] 
 * xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
-
+* xref:security-identity-providers-concept.adoc[Identity providers]

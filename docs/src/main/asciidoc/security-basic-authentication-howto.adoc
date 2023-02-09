@@ -3,7 +3,7 @@
 include::_attributes.adoc[]
 :categories: security
 
-Enable Basic authentication for your Quarkus project and allow users to authenticate with a username and password.
+Enable xref:security-basic-authentication-concept.adoc[Basic authentication] for your Quarkus project and allow users to authenticate with a username and password.
 
 == Prerequisites
 
@@ -48,3 +48,4 @@ To walk through how to configure Basic authentication together with JPA for stor
 * xref:security-overview-concept.adoc[Quarkus Security overview]
 * xref:security-identity-providers.adoc[Identity Providers]
 * xref:security-testing.adoc#configuring-user-information[Configuring User Information in application.properties]
+* xref:security-basic-authentication-concept.adoc[Basic authentication] 

@@ -389,3 +389,7 @@ It is possible to use multiple expressions in the role definition.
 == References
 
 * xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-architecture-concept.adoc[Quarkus Security architecture] 
+* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-basic-authentication-concept.adoc[Basic authentication]
+* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]

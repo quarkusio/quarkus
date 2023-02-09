@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Introduction to Contexts and Dependency Injection
+= Introduction to Contexts and Dependency Injection (CDI)
 include::_attributes.adoc[]
 :categories: core
 :summary: Quarkus DI solution is based on the [Contexts and Dependency Injection for Java 2.0](https://docs.jboss.org/cdi/spec/2.0/cdi-spec) specification. This guide explains the basics of CDI.

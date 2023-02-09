@@ -558,7 +558,7 @@ As mentioned below, this is overridden in the `native` profile.
 `maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
 <7> Use a specific `native` profile for native executable building.
 <8> Enable the `native` package type. The build will therefore produce a native executable.
-<9> Always run integration tests when building a native image (test names `*IT` and annotated with `@QuarkusIntegrationTest` or `@NativeImageTest`). +
+<9> Always run integration tests when building a native image (test names `*IT` and annotated with `@QuarkusIntegrationTest`). +
 If you do not wish to run integration tests when building a native image, simply remove this property altogether or set its value to `true`.
 
 [[fast-jar]]

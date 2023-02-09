@@ -1149,7 +1149,7 @@ You can do it with Mockito's `@InjectMock` or with `QuarkusMock`.
 
 This section shows how to replace your client with a mock. If you would like to get a more in-depth understanding of how mocking works in Quarkus, see the blog post on https://quarkus.io/blog/mocking/[Mocking CDI beans].
 
-NOTE: Mocking does not work when using `@NativeImageTest` or `@QuarkusIntegrationTest`.
+NOTE: Mocking does not work when using `@QuarkusIntegrationTest`.
 
 Let's assume you have the following client:
 [source,java]

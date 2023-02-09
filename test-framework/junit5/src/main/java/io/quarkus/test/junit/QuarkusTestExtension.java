@@ -557,11 +557,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     private boolean isNativeOrIntegrationTest(Class<?> clazz) {
         for (Class<?> i : currentTestClassStack) {
-            if (i.isAnnotationPresent(NativeImageTest.class) || i.isAnnotationPresent(QuarkusIntegrationTest.class)) {
+            if (i.isAnnotationPresent(QuarkusIntegrationTest.class)) {
                 return true;
             }
         }
-        if (clazz.isAnnotationPresent(NativeImageTest.class) || clazz.isAnnotationPresent(QuarkusIntegrationTest.class)) {
+        if (clazz.isAnnotationPresent(QuarkusIntegrationTest.class)) {
             return true;
         }
         return false;

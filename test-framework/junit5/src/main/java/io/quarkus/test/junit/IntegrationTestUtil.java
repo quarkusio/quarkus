@@ -75,13 +75,13 @@ public final class IntegrationTestUtil {
             for (Field field : current.getDeclaredFields()) {
                 if (field.getAnnotation(Inject.class) != null) {
                     throw new JUnitException(
-                            "@Inject is not supported in @NativeImageTest and @QuarkusIntegrationTest tests. Offending field is "
+                            "@Inject is not supported in @QuarkusIntegrationTest tests. Offending field is "
                                     + field.getDeclaringClass().getTypeName() + "."
                                     + field.getName());
                 }
                 if (field.getAnnotation(ConfigProperty.class) != null) {
                     throw new JUnitException(
-                            "@ConfigProperty is not supported in @NativeImageTest and @QuarkusIntegrationTest tests. Offending field is "
+                            "@ConfigProperty is not supported in @QuarkusIntegrationTest tests. Offending field is "
                                     + field.getDeclaringClass().getTypeName() + "."
                                     + field.getName());
                 }

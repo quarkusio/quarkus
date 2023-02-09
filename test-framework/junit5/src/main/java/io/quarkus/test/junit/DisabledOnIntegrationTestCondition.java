@@ -13,6 +13,7 @@ import static org.junit.platform.commons.util.AnnotationUtils.findAnnotation;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -58,16 +59,7 @@ public class DisabledOnIntegrationTestCondition implements ExecutionCondition {
                     }
                     return false;
                 }));
-        if (disabledOnIntegrationTestReason != null) {
-            return disabledOnIntegrationTestReason;
-        }
-        // support DisabledOnNativeImage for backward compatibility
-        ConditionEvaluationResult disabledOnNativeImageReason = check(context, element, DisabledOnNativeImage.class,
-                DisabledOnNativeImage::value, null);
-        if (disabledOnNativeImageReason != null) {
-            return disabledOnNativeImageReason;
-        }
-        return ENABLED;
+        return Objects.requireNonNullElse(disabledOnIntegrationTestReason, ENABLED);
     }
 
     private <T extends Annotation> ConditionEvaluationResult check(ExtensionContext context, Optional<AnnotatedElement> element,

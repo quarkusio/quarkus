@@ -773,6 +773,20 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public CookieSameSite cookieSameSite = CookieSameSite.LAX;
 
         /**
+         * If a state cookie is present then a `state` query parameter must also be present and both the state
+         * cookie name suffix and state cookie value have to match the value of the `state` query parameter when
+         * the redirect path matches the current path.
+         * However, if multiple authentications are attempted from the same browser, for example, from the different
+         * browser tabs, then the currently available state cookie may represent the authentication flow
+         * initiated from another tab and not related to the current request.
+         * Disable this property if you would like to avoid supporting multiple authorization code flows running in the same
+         * browser.
+         *
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean allowMultipleCodeFlows = true;
+
+        /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.
          */
         @ConfigItem(defaultValueDocumentation = "false")
@@ -1020,6 +1034,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setCookieSameSite(CookieSameSite cookieSameSite) {
             this.cookieSameSite = cookieSameSite;
+        }
+
+        public boolean isAllowMultipleCodeFlows() {
+            return allowMultipleCodeFlows;
+        }
+
+        public void setAllowMultipleCodeFlows(boolean allowMultipleCodeFlows) {
+            this.allowMultipleCodeFlows = allowMultipleCodeFlows;
         }
     }
 

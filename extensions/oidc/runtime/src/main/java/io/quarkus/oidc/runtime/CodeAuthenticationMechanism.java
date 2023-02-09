@@ -78,9 +78,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
-        final Cookie sessionCookie = context.request().getCookie(getSessionCookieName(oidcTenantConfig));
+        final Map<String, Cookie> cookies = context.request().cookieMap();
 
-        // if the session is already established then try to re-authenticate
+        final Cookie sessionCookie = cookies.get(getSessionCookieName(oidcTenantConfig));
+
+        // If the session is already established then try to re-authenticate
         if (sessionCookie != null) {
             LOG.debug("Session cookie is present, starting the reauthentication");
             context.put(OidcUtils.SESSION_COOKIE_NAME, sessionCookie.getName());
@@ -94,11 +96,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     });
         }
 
-        final Cookie stateCookie = context.request().getCookie(getStateCookieName(oidcTenantConfig));
-
-        // if the state cookie is available then try to complete the code flow and start a new session
-        if (stateCookie != null) {
-            LOG.debug("State cookie is present, processing an expected redirect from the OIDC provider");
+        // Check if the state cookie is available
+        if (isStateCookieAvailable(cookies)) {
+            // Authorization code flow is in progress, however it is not necessarily tied to the current request.
             if (ResponseMode.FORM_POST == oidcTenantConfig.authentication.responseMode.orElse(ResponseMode.QUERY)) {
                 if (OidcUtils.isFormUrlEncodedRequest(context)) {
                     return OidcUtils.getFormUrlEncodedData(context).onItem()
@@ -106,7 +106,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 @Override
                                 public Uni<? extends SecurityIdentity> apply(MultiMap requestParams) {
                                     return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
-                                            stateCookie,
                                             requestParams);
                                 }
                             });
@@ -115,10 +114,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         + " content type must be used with the form_post response mode");
                 return Uni.createFrom().failure(new AuthenticationFailedException());
             } else {
-                return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager, stateCookie,
+                return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
                         context.queryParams());
             }
         }
+
         // return an empty identity - this will lead to a challenge redirecting the user to OpenId Connect provider
         // unless it is detected it is a redirect from the provider in which case HTTP 401 will be returned.
         context.put(NO_OIDC_COOKIES_AVAILABLE, Boolean.TRUE);
@@ -126,15 +126,52 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     }
 
+    private boolean isStateCookieAvailable(Map<String, Cookie> cookies) {
+        for (String name : cookies.keySet()) {
+            if (name.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private Uni<SecurityIdentity> processRedirectFromOidc(RoutingContext context, OidcTenantConfig oidcTenantConfig,
-            IdentityProviderManager identityProviderManager, Cookie stateCookie, MultiMap requestParams) {
+            IdentityProviderManager identityProviderManager, MultiMap requestParams) {
+
+        // At this point it has already been detected that some state cookie is available.
+        // If the state query parameter is not available or is available but no matching state cookie is found then if
+        // 1) the redirect path matches the current request path
+        // or
+        // 2) no parallel code flows from the same browser is allowed
+        // then 401 will be returned, otherwise a new authentication challenge will be created
+        //
+        // Once the state cookie matching the state query parameter has been found,
+        // the state cookie first part value must always match the state query value
+
+        List<String> stateQueryParam = requestParams.getAll(OidcConstants.CODE_FLOW_STATE);
+        if (stateQueryParam.size() != 1) {
+            LOG.debug("State parameter can not be empty or multi-valued if the state cookie is present");
+            return stateCookieIsMissing(oidcTenantConfig, context);
+        }
+
+        final Cookie stateCookie = context.request().getCookie(
+                getStateCookieName(oidcTenantConfig) + "_" + stateQueryParam.get(0));
+
+        if (stateCookie == null) {
+            LOG.debug("Matching state cookie is not found");
+            return stateCookieIsMissing(oidcTenantConfig, context);
+        }
+
         String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
         OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
-
-        if (!isStateValid(requestParams, parsedStateCookieValue[0])) {
-            LOG.error("State verification has failed, completing the code flow with HTTP status 401");
+        if (!parsedStateCookieValue[0].equals(stateQueryParam.get(0))) {
+            LOG.debug("State cookie value does not match the state query parameter value, "
+                    + "completing the code flow with HTTP status 401");
             return Uni.createFrom().failure(new AuthenticationCompletionException());
         }
+
+        // State cookie is available, try to complete the code flow and start a new session
+        LOG.debug("State cookie is present, processing an expected redirect from the OIDC provider");
 
         if (requestParams.contains(OidcConstants.CODE_FLOW_CODE)) {
             LOG.debug("Authorization code is present, completing the code flow");
@@ -202,25 +239,22 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     }
 
+    private Uni<SecurityIdentity> stateCookieIsMissing(OidcTenantConfig oidcTenantConfig, RoutingContext context) {
+        if (!oidcTenantConfig.authentication.allowMultipleCodeFlows
+                || context.request().path().equals(getRedirectPath(oidcTenantConfig, context))) {
+            return Uni.createFrom().failure(new AuthenticationCompletionException());
+        } else {
+            context.put(NO_OIDC_COOKIES_AVAILABLE, Boolean.TRUE);
+            return Uni.createFrom().optional(Optional.empty());
+        }
+    }
+
     private String getRequestParametersAsQuery(URI requestUri, MultiMap requestParams, OidcTenantConfig oidcConfig) {
         if (ResponseMode.FORM_POST == oidcConfig.authentication.responseMode.orElse(ResponseMode.QUERY)) {
             return OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(requestParams)).toString();
         } else {
             return requestUri.getRawQuery();
         }
-    }
-
-    private boolean isStateValid(MultiMap requestParams, String cookieState) {
-        List<String> values = requestParams.getAll(OidcConstants.CODE_FLOW_STATE);
-        // IDP must return a 'state' query parameter and the value of the state cookie must start with this parameter's value
-        if (values.size() != 1) {
-            LOG.debug("State parameter can not be empty or multi-valued");
-            return false;
-        } else if (!cookieState.equals(values.get(0))) {
-            LOG.debug("State cookie value does not match the state query parameter value");
-            return false;
-        }
-        return true;
     }
 
     private Uni<SecurityIdentity> reAuthenticate(Cookie sessionCookie,
@@ -514,7 +548,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         }
 
                         // redirect_uri
-                        String redirectPath = getRedirectPath(configContext, context);
+                        String redirectPath = getRedirectPath(configContext.oidcConfig, context);
                         String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig), redirectPath);
                         LOG.debugf("Authentication request redirect_uri parameter: %s", redirectUriParam);
 
@@ -829,8 +863,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
     }
 
-    private String getRedirectPath(TenantConfigContext configContext, RoutingContext context) {
-        Authentication auth = configContext.oidcConfig.getAuthentication();
+    private String getRedirectPath(OidcTenantConfig oidcConfig, RoutingContext context) {
+        Authentication auth = oidcConfig.getAuthentication();
         return auth.getRedirectPath().isPresent() ? auth.getRedirectPath().get() : context.request().path();
     }
 
@@ -878,7 +912,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             extraStateValue.setRestorePath("?" + context.request().query());
             cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
         }
-        createCookie(context, configContext.oidcConfig, getStateCookieName(configContext.oidcConfig), cookieValue, 60 * 30);
+        createCookie(context, configContext.oidcConfig,
+                getStateCookieName(configContext.oidcConfig) + "_" + uuid, cookieValue, 60 * 30);
         return uuid;
     }
 
@@ -1070,7 +1105,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             String code, String codeVerifier) {
 
         // 'redirect_uri': typically it must match the 'redirect_uri' query parameter which was used during the code request.
-        String redirectPath = getRedirectPath(configContext, context);
+        String redirectPath = getRedirectPath(configContext.oidcConfig, context);
         String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
 

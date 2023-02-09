@@ -1014,6 +1014,31 @@ public class CodeFlowTest {
     @Test
     public void testAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListener() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
+            doTestAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListener(webClient);
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private void doTestAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListener(WebClient webClient)
+            throws IOException, InterruptedException {
+        HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-listener");
+
+        assertEquals("Sign in to quarkus", page.getTitleText());
+
+        HtmlForm loginForm = page.getForms().get(0);
+
+        loginForm.getInputByName("username").setValueAttribute("alice");
+        loginForm.getInputByName("password").setValueAttribute("alice");
+
+        page = loginForm.getInputByName("login").click();
+
+        assertEquals("RT injected(event:OIDC_LOGIN,tenantId:tenant-listener,blockingApi:true)",
+                page.getBody().asNormalizedText());
+    }
+
+    @Test
+    public void testAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListenerMultiTab() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-listener");
 
             assertEquals("Sign in to quarkus", page.getTitleText());
@@ -1023,10 +1048,11 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
+            doTestAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListener(webClient);
+
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("RT injected(event:OIDC_LOGIN,tenantId:tenant-listener,blockingApi:true)",
-                    page.getBody().asNormalizedText());
+            assertTrue(page.getBody().asNormalizedText().contains("You are already logged in"));
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -1140,7 +1166,13 @@ public class CodeFlowTest {
     }
 
     private Cookie getStateCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_auth" + (tenantId == null ? "_Default_test" : "_" + tenantId));
+        String cookieSuffix = "q_auth" + (tenantId == null ? "_Default_test" : "_" + tenantId) + "_";
+        for (Cookie c : webClient.getCookieManager().getCookies()) {
+            if (c.getName().startsWith(cookieSuffix) && c.getName().length() > cookieSuffix.length()) {
+                return c;
+            }
+        }
+        return null;
     }
 
     private String getStateCookieStateParam(WebClient webClient, String tenantId) {

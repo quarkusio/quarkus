@@ -266,6 +266,12 @@ public class ProtectedResource {
     @GET
     @Path("refresh/tenant-listener")
     public String getRefreshTokenTenantListener() {
+        throw new InternalServerErrorException("This method must not be invoked");
+    }
+
+    @GET
+    @Path("refresh/tenant-listener/callback")
+    public String getRefreshTokenTenantListenerCallback() {
         return getRefreshToken();
     }
 

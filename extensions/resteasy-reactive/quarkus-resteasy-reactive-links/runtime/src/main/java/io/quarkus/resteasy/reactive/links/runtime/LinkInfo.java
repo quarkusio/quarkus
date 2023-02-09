@@ -2,8 +2,6 @@ package io.quarkus.resteasy.reactive.links.runtime;
 
 import java.util.Set;
 
-import io.quarkus.runtime.annotations.RecordableConstructor;
-
 public final class LinkInfo {
 
     private final String rel;
@@ -14,7 +12,6 @@ public final class LinkInfo {
 
     private final Set<String> pathParameters;
 
-    @RecordableConstructor
     public LinkInfo(String rel, String entityType, String path, Set<String> pathParameters) {
         this.rel = rel;
         this.entityType = entityType;

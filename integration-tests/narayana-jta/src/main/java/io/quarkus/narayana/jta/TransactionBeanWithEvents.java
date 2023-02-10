@@ -66,6 +66,18 @@ public class TransactionBeanWithEvents {
         log.debug("Running transactional bean method");
 
         try {
+            listenToCommitRollback();
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot get transaction to register synchronization on bean call", e);
+        }
+
+        if (!isCommit) {
+            throw new RuntimeException("Rollback here!");
+        }
+    }
+
+    void listenToCommitRollback() {
+        try {
             tm.getTransaction().registerSynchronization(new Synchronization() {
                 @Override
                 public void beforeCompletion() {
@@ -84,10 +96,6 @@ public class TransactionBeanWithEvents {
             });
         } catch (Exception e) {
             throw new IllegalStateException("Cannot get transaction to register synchronization on bean call", e);
-        }
-
-        if (!isCommit) {
-            throw new RuntimeException("Rollback here!");
         }
     }
 

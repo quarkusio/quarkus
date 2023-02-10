@@ -21,6 +21,6 @@ public class InjectionPointBean extends BuiltInBean<InjectionPoint> {
 
     @Override
     public Class<?> getBeanClass() {
-        return CurrentInjectionPointProvider.InjectionPointImpl.class;
+        return InjectionPointImpl.class;
     }
 }

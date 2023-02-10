@@ -33,6 +33,7 @@ import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.DecoratorDelegateProvider;
 import io.quarkus.arc.impl.FixedValueSupplier;
 import io.quarkus.arc.impl.InjectableReferenceProviders;
+import io.quarkus.arc.impl.InjectionPointImpl;
 import io.quarkus.arc.impl.Instances;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.impl.InterceptorInvocation;
@@ -277,6 +278,10 @@ public final class MethodDescriptors {
     public static final MethodDescriptor BEANS_TO_STRING = MethodDescriptor.ofMethod(io.quarkus.arc.impl.Beans.class,
             "toString", String.class,
             InjectableBean.class);
+
+    public static final MethodDescriptor INJECTION_POINT_IMPL_CONSTRUCTOR = MethodDescriptor.ofConstructor(
+            InjectionPointImpl.class,
+            Type.class, Type.class, Set.class, InjectableBean.class, Set.class, Member.class, int.class, boolean.class);
 
     private MethodDescriptors() {
     }

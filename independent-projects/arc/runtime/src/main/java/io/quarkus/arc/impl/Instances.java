@@ -16,7 +16,6 @@ import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 
 public final class Instances {
 

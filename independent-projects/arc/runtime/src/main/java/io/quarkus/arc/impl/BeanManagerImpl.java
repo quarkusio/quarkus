@@ -290,7 +290,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Event<Object> getEvent() {
-        return new EventImpl<>(Object.class, new HashSet<>());
+        return new EventImpl<>(Object.class, new HashSet<>(), null);
     }
 
     @Override

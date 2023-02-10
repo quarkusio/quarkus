@@ -2,6 +2,7 @@ package io.quarkus.arc.impl;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.enterprise.inject.spi.EventMetadata;
@@ -11,12 +12,13 @@ import jakarta.enterprise.inject.spi.InjectionPoint;
 public final class EventMetadataImpl implements EventMetadata {
 
     private final Set<Annotation> qualifiers;
-
     private final Type eventType;
+    private final InjectionPoint injectionPoint;
 
-    public EventMetadataImpl(Set<Annotation> qualifiers, Type eventType) {
-        this.qualifiers = qualifiers;
-        this.eventType = eventType;
+    public EventMetadataImpl(Set<Annotation> qualifiers, Type eventType, InjectionPoint injectionPoint) {
+        this.qualifiers = Objects.requireNonNull(qualifiers);
+        this.eventType = Objects.requireNonNull(eventType);
+        this.injectionPoint = injectionPoint;
     }
 
     @Override
@@ -26,8 +28,7 @@ public final class EventMetadataImpl implements EventMetadata {
 
     @Override
     public InjectionPoint getInjectionPoint() {
-        // Currently we do not support injection point of the injected Event instance which fired the event
-        return null;
+        return injectionPoint;
     }
 
     @Override

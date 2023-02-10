@@ -15,12 +15,8 @@ import jakarta.enterprise.inject.spi.CDI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.test.ArcTestContainer;
 
-/**
- * Tests {@link io.quarkus.arc.AlternativePriority} annotation.
- */
 public class AlternativePriorityAnnotationTest {
 
     @RegisterExtension
@@ -56,7 +52,8 @@ public class AlternativePriorityAnnotationTest {
     }
 
     @ApplicationScoped
-    @AlternativePriority(2)
+    @Alternative
+    @Priority(2)
     static class AlternativeClassBean implements MyInterface {
 
         @Override
@@ -74,8 +71,8 @@ public class AlternativePriorityAnnotationTest {
         // this should be the selected alternative
         @Produces
         @ApplicationScoped
-        @AlternativePriority(1000)
         @Alternative
+        @Priority(1000)
         public TheUltimateImpl createUltimateImpl() {
             return new TheUltimateImpl();
         }
@@ -87,12 +84,14 @@ public class AlternativePriorityAnnotationTest {
     static class MyProducer {
         @Produces
         @ApplicationScoped
-        @AlternativePriority(3)
+        @Alternative
+        @Priority(3)
         AlternativeProducerFieldBean bar = new AlternativeProducerFieldBean();
 
         @Produces
         @ApplicationScoped
-        @AlternativePriority(4)
+        @Alternative
+        @Priority(4)
         public AlternativeProducerMethodBean createBar() {
             return new AlternativeProducerMethodBean();
         }

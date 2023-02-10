@@ -655,14 +655,10 @@ NOTE: Properties set at runtime have absolutely no effect on the bean resolution
 In CDI, an alternative bean may be selected either globally for an application by means of `@Priority`, or for a bean archive using a `beans.xml` descriptor.
 Quarkus has a simplified bean discovery and the content of `beans.xml` is ignored.
 
-The disadvantage of `@jakarta.annotation.Priority` is that it has `@Target({ TYPE, PARAMETER })` and so it cannot be used for producer methods and fields.
-This problem should be fixed in Common Annotations 2.1.
-Users are encouraged to use `@io.quarkus.arc.Priority` instead, until Quarkus upgrades to this version of `jakarta.annotation-api`.
-
 However, it is also possible to select alternatives for an application using the unified configuration.
 The `quarkus.arc.selected-alternatives` property accepts a list of string values that are used to match alternative beans.
 If any value matches then the priority of `Integer#MAX_VALUE` is used for the relevant bean.
-The priority declared via `@Priority` or `@AlternativePriority` is overridden.
+The priority declared via `@Priority` or inherited from a stereotype is overridden.
 
 .Value Examples
 |===

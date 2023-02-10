@@ -161,7 +161,8 @@ If it is the case in your production then it can be recommended that the token i
 [source, java]
 ----
 @ApplicationScoped
-@AlternativePriority(1)
+@Alternative
+@Priority(1)
 public class CustomIntrospectionUserInfoCache implements TokenIntrospectionCache, UserInfoCache {
 ...
 }

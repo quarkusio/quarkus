@@ -13,7 +13,6 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 
@@ -57,7 +56,8 @@ public class AlternativePriorityResolutionTest {
 
         @Produces
         @Singleton
-        @AlternativePriority(2)
+        @Alternative
+        @Priority(2)
         public MessageBean createBar() {
             return new MessageBean("far");
         }

@@ -47,6 +47,7 @@ import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.kubernetes.deployment.OpenshiftConfig.DeploymentResourceKind;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
@@ -168,6 +169,7 @@ public class OpenshiftProcessor {
             OpenshiftConfig config,
             ContainerImageConfig containerImageConfig,
             Optional<FallbackContainerImageRegistryBuildItem> fallbackRegistry,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Capabilities capabilities,

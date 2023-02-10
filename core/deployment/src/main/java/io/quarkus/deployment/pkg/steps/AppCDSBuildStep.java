@@ -26,6 +26,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.utilities.JavaBinFinder;
@@ -49,7 +50,9 @@ public class AppCDSBuildStep {
 
     @BuildStep
     public void build(Optional<AppCDSRequestedBuildItem> appCDsRequested,
-            JarBuildItem jarResult, OutputTargetBuildItem outputTarget, PackageConfig packageConfig,
+            JarBuildItem jarResult, OutputTargetBuildItem outputTarget,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
+            PackageConfig packageConfig,
             CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<AppCDSContainerImageBuildItem> appCDSContainerImage,
             BuildProducer<AppCDSResultBuildItem> appCDS,

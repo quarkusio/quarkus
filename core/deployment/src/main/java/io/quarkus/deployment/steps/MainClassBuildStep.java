@@ -58,6 +58,7 @@ import io.quarkus.deployment.naming.NamingConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSControlPointBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.console.QuarkusConsole;
@@ -336,6 +337,7 @@ public class MainClassBuildStep {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             Optional<QuarkusApplicationClassBuildItem> quarkusApplicationClass,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
             PackageConfig packageConfig) {
         String mainClassName = MAIN_CLASS;
         Map<String, String> quarkusMainAnnotations = new HashMap<>();

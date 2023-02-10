@@ -45,9 +45,8 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfigurationSupplierBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
@@ -98,8 +97,7 @@ class KubernetesProcessor {
     @BuildStep(onlyIfNot = IsTest.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
-            List<UberJarRequiredBuildItem> uberJarRequired,
-            List<LegacyJarRequiredBuildItem> legacyJarRequired,
+            List<OverridePackageConfigBuildItem> overridePackageConfig, // order after any config override
             PackageConfig packageConfig,
             KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
@@ -132,7 +130,7 @@ class KubernetesProcessor {
                 .map(DeploymentTargetEntry::getName)
                 .collect(Collectors.toSet());
 
-        Path artifactPath = getRunner(outputTarget, packageConfig, uberJarRequired, legacyJarRequired);
+        Path artifactPath = getRunner(outputTarget, packageConfig);
 
         try {
             // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
@@ -257,11 +255,8 @@ class KubernetesProcessor {
      * https://github.com/quarkusio/quarkus/pull/20113).
      */
     private Path getRunner(OutputTargetBuildItem outputTarget,
-            PackageConfig packageConfig,
-            List<UberJarRequiredBuildItem> uberJarRequired,
-            List<LegacyJarRequiredBuildItem> legacyJarRequired) {
-        if (!legacyJarRequired.isEmpty() || packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)
-                || !uberJarRequired.isEmpty() || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
+            PackageConfig packageConfig) {
+        if (packageConfig.isLegacyJar() || packageConfig.isUberJar()) {
             // the jar is a legacy jar or uber jar, the next logic applies:
             return outputTarget.getOutputDirectory()
                     .resolve(outputTarget.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");

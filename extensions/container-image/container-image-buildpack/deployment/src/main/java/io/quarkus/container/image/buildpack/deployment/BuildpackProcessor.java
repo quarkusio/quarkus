@@ -40,6 +40,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 public class BuildpackProcessor {
@@ -63,6 +64,7 @@ public class BuildpackProcessor {
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, BuildpackBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, BuildpackConfig buildpackConfig,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
             PackageConfig packageConfig,
             ContainerImageInfoBuildItem containerImage,
             JarBuildItem sourceJar,

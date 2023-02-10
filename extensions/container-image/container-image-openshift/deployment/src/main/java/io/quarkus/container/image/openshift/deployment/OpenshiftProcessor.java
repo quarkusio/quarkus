@@ -62,6 +62,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
@@ -119,6 +120,7 @@ public class OpenshiftProcessor {
             S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
             PackageConfig packageConfig,
             JarBuildItem jarBuildItem,
             CompiledJavaVersionBuildItem compiledJavaVersion,
@@ -174,6 +176,7 @@ public class OpenshiftProcessor {
             S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
             PackageConfig packageConfig,
             NativeImageBuildItem nativeImage,
             BuildProducer<KubernetesEnvBuildItem> envProducer,
@@ -233,7 +236,9 @@ public class OpenshiftProcessor {
             ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClientSupplier,
             ContainerImageInfoBuildItem containerImage,
-            ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
+            ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
+            PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
@@ -302,7 +307,9 @@ public class OpenshiftProcessor {
             ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClientSupplier,
             ContainerImageInfoBuildItem containerImage,
-            ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
+            ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
+            PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,

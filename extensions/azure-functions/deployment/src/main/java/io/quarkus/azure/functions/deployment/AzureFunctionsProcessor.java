@@ -20,16 +20,17 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 
 public class AzureFunctionsProcessor {
     private static final Logger log = Logger.getLogger(AzureFunctionsProcessor.class);
 
     @BuildStep
-    public LegacyJarRequiredBuildItem forceLegacy(PackageConfig config) {
+    public OverridePackageConfigBuildItem forceLegacy(PackageConfig config) {
         // Azure Functions need a legacy jar and no runner
         config.addRunnerSuffix = false;
-        return new LegacyJarRequiredBuildItem();
+        config.type = PackageConfig.BuiltInType.LEGACY_JAR.name();
+        return new OverridePackageConfigBuildItem();
     }
 
     @BuildStep

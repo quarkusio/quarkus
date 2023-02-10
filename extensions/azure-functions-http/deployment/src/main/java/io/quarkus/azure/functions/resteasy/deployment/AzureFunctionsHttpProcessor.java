@@ -11,7 +11,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 
@@ -19,7 +19,8 @@ public class AzureFunctionsHttpProcessor {
     private static final Logger log = Logger.getLogger(AzureFunctionsHttpProcessor.class);
 
     @BuildStep
-    public LegacyJarRequiredBuildItem forceLegacy(List<FeatureBuildItem> features, PackageConfig config) throws BuildException {
+    public OverridePackageConfigBuildItem forceLegacy(List<FeatureBuildItem> features, PackageConfig config)
+            throws BuildException {
         for (FeatureBuildItem item : features) {
             if (Feature.AZURE_FUNCTIONS.getName().equals(item.getName())) {
                 throw new BuildException(
@@ -29,7 +30,8 @@ public class AzureFunctionsHttpProcessor {
         }
         // Azure Functions need a legacy jar and no runner
         config.addRunnerSuffix = false;
-        return new LegacyJarRequiredBuildItem();
+        config.type = PackageConfig.BuiltInType.LEGACY_JAR.name();
+        return new OverridePackageConfigBuildItem();
     }
 
     @BuildStep

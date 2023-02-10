@@ -77,6 +77,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
@@ -198,6 +199,7 @@ class RestClientProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
             PackageConfig packageConfig,
             List<RestClientPredicateProviderBuildItem> restClientProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,

@@ -73,12 +73,11 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
-import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -153,7 +152,9 @@ public class JarResultBuildStep {
     public static final String MP_CONFIG_FILE = "META-INF/microprofile-config.properties";
 
     @BuildStep
-    OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
+    OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
+            PackageConfig packageConfig) {
         String name = packageConfig.outputName.orElseGet(bst::getBaseName);
         Path path = packageConfig.outputDirectory.map(s -> bst.getOutputDirectory().resolve(s))
                 .orElseGet(bst::getOutputDirectory);
@@ -189,10 +190,9 @@ public class JarResultBuildStep {
             ClassLoadingConfig classLoadingConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
-            List<UberJarRequiredBuildItem> uberJarRequired,
             List<UberJarMergedResourceBuildItem> uberJarMergedResourceBuildItems,
             List<UberJarIgnoredResourceBuildItem> uberJarIgnoredResourceBuildItems,
-            List<LegacyJarRequiredBuildItem> legacyJarRequired,
+            List<OverridePackageConfigBuildItem> packageConfigOverride,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
             MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
@@ -201,18 +201,11 @@ public class JarResultBuildStep {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
         }
 
-        if (!uberJarRequired.isEmpty() && !legacyJarRequired.isEmpty()) {
-            throw new RuntimeException(
-                    "Extensions with conflicting package types. One extension requires uber-jar another requires legacy format");
-        }
-
-        if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))) {
+        if (packageConfig.isUberJar()) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, uberJarMergedResourceBuildItems,
                     uberJarIgnoredResourceBuildItems, mainClassBuildItem, classLoadingConfig);
-        } else if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)) {
+        } else if (packageConfig.isLegacyJar()) {
             return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem,

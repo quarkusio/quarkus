@@ -17,6 +17,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
 
@@ -32,6 +33,7 @@ public class UberJarConfigBuildStep {
 
     @BuildStep
     void uberJarMergedResourceBuildItem(BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
             PackageConfig packageConfig) {
         if (packageConfig.isUberJar()) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

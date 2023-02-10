@@ -39,6 +39,7 @@ import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
@@ -125,6 +126,7 @@ public class VanillaKubernetesProcessor {
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget, Capabilities capabilities, KubernetesConfig config,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             List<KubernetesJobBuildItem> jobs,

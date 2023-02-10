@@ -22,6 +22,7 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.util.ExecUtil;
 import io.quarkus.kubernetes.deployment.AddPortToKubernetesConfig;
 import io.quarkus.kubernetes.deployment.DevClusterHelper;
@@ -93,6 +94,7 @@ public class KindProcessor {
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             KubernetesConfig config,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             List<KubernetesInitContainerBuildItem> initContainers,

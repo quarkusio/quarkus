@@ -36,7 +36,7 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.22.0</opentelemetry.version>
+        <opentelemetry.version>1.23.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.22.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-aws.contrib.version>1.22.0-alpha</opentelemetry-aws.contrib.version>
         <opentelemetry-aws-xray.contrib.version>1.22.0</opentelemetry-aws-xray.contrib.version>

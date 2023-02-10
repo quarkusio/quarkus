@@ -293,18 +293,25 @@ class RestClientReactiveProcessor {
                             continue;
                         }
                     }
+                    DotName providerDotName = providerClass.name();
+                    // don't register server specific types
+                    if (providerDotName.equals(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER)
+                            || providerDotName.equals(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER)
+                            || providerDotName.equals(ResteasyReactiveDotNames.EXCEPTION_MAPPER)) {
+                        continue;
+                    }
 
                     if (providerClass.interfaceNames().contains(ResteasyReactiveDotNames.FEATURE)) {
                         continue; // features should not be automatically registered for the client, see javadoc for Feature
                     }
 
-                    int priority = getAnnotatedPriority(index, providerClass.name().toString(), Priorities.USER);
+                    int priority = getAnnotatedPriority(index, providerDotName.toString(), Priorities.USER);
 
                     constructor.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addGlobalProvider",
                                     void.class, Class.class,
                                     int.class),
-                            constructor.getThis(), constructor.loadClassFromTCCL(providerClass.name().toString()),
+                            constructor.getThis(), constructor.loadClassFromTCCL(providerDotName.toString()),
                             constructor.load(priority));
                 }
             }

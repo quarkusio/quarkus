@@ -182,6 +182,24 @@ The value of the property may be `none`, which is the default value, or a comma 
 
 NOTE: `option java_generic_services = true;` will automatically be removed from proto file containing it.
 
+If the dependency contains a lot of proto files and you want to generate classes for only a subset of them, you can specify glob patterns per dependency. The path to match are relative to the path `src/main/resources` in the dependency.
+
+For instance, having the following properties in your `application.properties`:
+
+[source,properties]
+----
+quarkus.generate-code.grpc.scan-for-proto-includes."<groupId>\:<artifactId>"=foo/**,bar/**,banana/a-proto.proto
+quarkus.generate-code.grpc.scan-for-proto-excludes."<groupId>\:<artifactId>"=foo/private/**,bar/another-proto.proto
+----
+
+will include:
+
+* all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
+* all files in the `bar/` directory and its subdirectories except for `another-proto.proto`.
+* `banana/a-proto.proto` file.
+
+NOTE: `:` character in the property keys must be escaped.
+
 == Different gRPC implementations / types
 
 Another thing to take note as well is that Quarkus' gRPC support currently includes 3 different types of gRPC usage:

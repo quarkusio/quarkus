@@ -3,6 +3,9 @@ package io.quarkus.hibernate.orm.runtime.customized;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl;
+import org.hibernate.boot.model.relational.ColumnOrderingStrategy;
+import org.hibernate.boot.model.relational.ColumnOrderingStrategyLegacy;
+import org.hibernate.boot.model.relational.ColumnOrderingStrategyStandard;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.selector.StrategyRegistration;
 import org.hibernate.boot.registry.selector.StrategyRegistrationProvider;
@@ -60,6 +63,7 @@ public final class QuarkusStrategySelectorBuilder {
         addTransactionCoordinatorBuilders(strategySelector);
         addSqmMultiTableMutationStrategies(strategySelector);
         addImplicitNamingStrategies(strategySelector);
+        addColumnOrderingStrategies(strategySelector);
         addCacheKeysFactories(strategySelector);
         addJsonFormatMappers(strategySelector);
         addXmlFormatMappers(strategySelector);
@@ -142,6 +146,17 @@ public final class QuarkusStrategySelectorBuilder {
                 ImplicitDatabaseObjectNamingStrategy.class,
                 LegacyNamingStrategy.STRATEGY_NAME,
                 LegacyNamingStrategy.class);
+    }
+
+    private static void addColumnOrderingStrategies(StrategySelectorImpl strategySelector) {
+        strategySelector.registerStrategyImplementor(
+                ColumnOrderingStrategy.class,
+                "default",
+                ColumnOrderingStrategyStandard.class);
+        strategySelector.registerStrategyImplementor(
+                ColumnOrderingStrategy.class,
+                "legacy",
+                ColumnOrderingStrategyLegacy.class);
     }
 
     private static void addCacheKeysFactories(StrategySelectorImpl strategySelector) {

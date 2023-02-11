@@ -28,7 +28,6 @@ import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitia
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
-import io.quarkus.hibernate.orm.runtime.customized.DisabledBytecodeProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
@@ -39,6 +38,7 @@ import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticDialectFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.RuntimeBytecodeProviderInitiator;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -144,7 +144,7 @@ public class PreconfiguredServiceRegistryBuilder {
         final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<StandardServiceInitiator<?>>();
 
         //Enforces no bytecode enhancement will happen at runtime:
-        serviceInitiators.add(DisabledBytecodeProviderInitiator.INSTANCE);
+        serviceInitiators.add(RuntimeBytecodeProviderInitiator.INSTANCE);
 
         //Use a custom ProxyFactoryFactory which is able to use the class definitions we already created:
         serviceInitiators.add(new QuarkusRuntimeProxyFactoryFactoryInitiator(rs));

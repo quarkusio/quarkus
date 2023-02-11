@@ -197,7 +197,7 @@ public class ArcContainerImpl implements ArcContainer {
     public void init() {
         // Fire an event with qualifier @Initialized(ApplicationScoped.class)
         Set<Annotation> qualifiers = Set.of(Initialized.Literal.APPLICATION, Any.Literal.INSTANCE);
-        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false)
+        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false, null)
                 .notify("@Initialized(ApplicationScoped.class)");
         // Configure CDIProvider used for CDI.current()
         CDI.setCDIProvider(new ArcCDIProvider());
@@ -234,7 +234,6 @@ public class ArcContainerImpl implements ArcContainer {
         return instanceHandle(type, qualifiers);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T> Supplier<InstanceHandle<T>> beanInstanceSupplier(Class<T> type, Annotation... qualifiers) {
         return createInstanceSupplier(false, type, qualifiers);
@@ -268,6 +267,7 @@ public class ArcContainerImpl implements ArcContainer {
                 throw new AmbiguousResolutionException("Beans: " + resolvedBeans);
             }
         }
+        @SuppressWarnings("unchecked")
         InjectableBean<T> bean = filteredBean.size() != 1 ? null
                 : (InjectableBean<T>) filteredBean.iterator().next();
         if (bean == null) {
@@ -385,7 +385,8 @@ public class ArcContainerImpl implements ArcContainer {
             beforeDestroyQualifiers.add(BeforeDestroyed.Literal.APPLICATION);
             beforeDestroyQualifiers.add(Any.Literal.INSTANCE);
             try {
-                EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this, false).notify(toString());
+                EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this, false, null)
+                        .notify(toString());
             } catch (Exception e) {
                 LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(ApplicationScoped.class) event", e);
             }
@@ -396,7 +397,7 @@ public class ArcContainerImpl implements ArcContainer {
             destroyQualifiers.add(Destroyed.Literal.APPLICATION);
             destroyQualifiers.add(Any.Literal.INSTANCE);
             try {
-                EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this, false).notify(toString());
+                EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this, false, null).notify(toString());
             } catch (Exception e) {
                 LOGGER.warn("An error occurred during delivery of the @Destroyed(ApplicationScoped.class) event", e);
             }
@@ -444,7 +445,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     private Notifier<Object> notifierOrNull(Set<Annotation> qualifiers) {
         Notifier<Object> notifier = EventImpl.createNotifier(Object.class, Object.class,
-                qualifiers, this, false);
+                qualifiers, this, false, null);
         return notifier.isEmpty() ? null : notifier;
     }
 

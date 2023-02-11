@@ -32,7 +32,6 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.WithCaching;
-import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 
 /**
  *

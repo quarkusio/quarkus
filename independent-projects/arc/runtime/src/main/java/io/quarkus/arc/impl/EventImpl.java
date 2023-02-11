@@ -29,6 +29,7 @@ import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.transaction.RollbackException;
@@ -58,17 +59,21 @@ class EventImpl<T> implements Event<T> {
     private final Type eventType;
     private final Set<Annotation> qualifiers;
     private final ConcurrentMap<Class<?>, Notifier<? super T>> notifiers;
+    private final InjectionPoint injectionPoint;
 
     private transient volatile Notifier<? super T> lastNotifier;
 
     private static final Logger LOGGER = Logger.getLogger(EventImpl.class);
 
-    EventImpl(Type eventType, Set<Annotation> qualifiers) {
+    EventImpl(Type eventType, Set<Annotation> qualifiers, InjectionPoint injectionPoint) {
         this.eventType = initEventType(eventType);
         this.injectionPointTypeHierarchy = new HierarchyDiscovery(this.eventType);
-        this.qualifiers = qualifiers;
-        this.qualifiers.add(Any.Literal.INSTANCE);
+        Set<Annotation> eventQualifiers = new HashSet<>();
+        eventQualifiers.addAll(qualifiers);
+        eventQualifiers.add(Any.Literal.INSTANCE);
+        this.qualifiers = Set.copyOf(eventQualifiers);
         this.notifiers = new ConcurrentHashMap<>(DEFAULT_CACHE_CAPACITY);
+        this.injectionPoint = injectionPoint;
     }
 
     @Override
@@ -127,7 +132,7 @@ class EventImpl<T> implements Event<T> {
         ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergedQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergedQualifiers, qualifiers);
-        return new EventImpl<T>(eventType, mergedQualifiers);
+        return new EventImpl<T>(eventType, mergedQualifiers, injectionPoint);
     }
 
     @Override
@@ -139,7 +144,7 @@ class EventImpl<T> implements Event<T> {
         ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
-        return new EventImpl<U>(subtype, mergerdQualifiers);
+        return new EventImpl<U>(subtype, mergerdQualifiers, injectionPoint);
     }
 
     @Override
@@ -151,22 +156,22 @@ class EventImpl<T> implements Event<T> {
         }
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
-        return new EventImpl<U>(subtype.getType(), mergerdQualifiers);
+        return new EventImpl<U>(subtype.getType(), mergerdQualifiers, injectionPoint);
     }
 
     private Notifier<? super T> createNotifier(Class<?> runtimeType) {
         Type eventType = getEventType(runtimeType);
-        return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.container()));
+        return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.container()), injectionPoint);
     }
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
-            ArcContainerImpl container) {
-        return createNotifier(runtimeType, eventType, qualifiers, container, true);
+            ArcContainerImpl container, InjectionPoint injectionPoint) {
+        return createNotifier(runtimeType, eventType, qualifiers, container, true, injectionPoint);
     }
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
-            ArcContainerImpl container, boolean activateRequestContext) {
-        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
+            ArcContainerImpl container, boolean activateRequestContext, InjectionPoint injectionPoint) {
+        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType, injectionPoint);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
                 container.resolveObservers(eventType, qualifiers));
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);

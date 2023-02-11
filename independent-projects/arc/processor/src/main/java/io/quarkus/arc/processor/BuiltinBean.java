@@ -12,6 +12,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -242,10 +243,36 @@ enum BuiltinBean {
             }
         }
         ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());
+        ResultHandle annotations = BeanGenerator.collectInjectionPointAnnotations(ctx.classOutput, ctx.clazzCreator,
+                ctx.beanDeployment,
+                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
+        ResultHandle javaMember = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
+                ctx.reflectionRegistration);
+        boolean isTransient = ctx.injectionPoint.isField()
+                && Modifier.isTransient(ctx.injectionPoint.getTarget().asField().flags());
+        ResultHandle bean;
+        switch (ctx.targetInfo.kind()) {
+            case OBSERVER:
+                // For observers the first argument is always the declaring bean
+                bean = ctx.constructor.invokeInterfaceMethod(
+                        MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
+                break;
+            case BEAN:
+                bean = ctx.constructor.getThis();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+        }
+
+        ResultHandle injectionPoint = ctx.constructor.newInstance(MethodDescriptors.INJECTION_POINT_IMPL_CONSTRUCTOR,
+                parameterizedType, parameterizedType, qualifiers, bean, annotations, javaMember,
+                ctx.constructor.load(ctx.injectionPoint.getPosition()),
+                ctx.constructor.load(isTransient));
+
         ResultHandle eventProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class,
-                        Set.class),
-                parameterizedType, qualifiers);
+                        Set.class, InjectionPoint.class),
+                parameterizedType, qualifiers, injectionPoint);
         ResultHandle eventProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, eventProvider);
         ctx.constructor.writeInstanceField(

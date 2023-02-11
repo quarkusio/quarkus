@@ -43,7 +43,7 @@ public interface InjectableObserverMethod<T> extends ObserverMethod<T> {
 
     default void notify(T event) {
         notify(new EventContextImpl<>(event,
-                new EventMetadataImpl(getObservedQualifiers(), event.getClass())));
+                new EventMetadataImpl(getObservedQualifiers(), event.getClass(), null)));
     }
 
     /**

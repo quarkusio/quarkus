@@ -380,7 +380,7 @@ public class LocalProject {
                                 DefaultArtifactSources src = null;
                                 if (e.getGoals().contains(ArtifactCoords.TYPE_JAR)) {
                                     src = processJarPluginExecutionConfig(e.getConfiguration(), false);
-                                    addDefaultSourceSet &= !e.getId().equals("default-jar");
+                                    addDefaultSourceSet &= !(src != null && e.getId().equals("default-jar"));
                                 } else if (e.getGoals().contains("test-jar")) {
                                     src = processJarPluginExecutionConfig(e.getConfiguration(), true);
                                 }

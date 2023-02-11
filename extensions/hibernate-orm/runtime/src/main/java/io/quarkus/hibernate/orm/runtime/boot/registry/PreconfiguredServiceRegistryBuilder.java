@@ -36,6 +36,7 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuarkus;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusMutationExecutorServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticDialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.RuntimeBytecodeProviderInitiator;
@@ -145,6 +146,9 @@ public class PreconfiguredServiceRegistryBuilder {
 
         //Enforces no bytecode enhancement will happen at runtime:
         serviceInitiators.add(RuntimeBytecodeProviderInitiator.INSTANCE);
+
+        //Routes to the standard implementation, but w/o allowing configuration options to override it
+        serviceInitiators.add(QuarkusMutationExecutorServiceInitiator.INSTANCE);
 
         //Use a custom ProxyFactoryFactory which is able to use the class definitions we already created:
         serviceInitiators.add(new QuarkusRuntimeProxyFactoryFactoryInitiator(rs));

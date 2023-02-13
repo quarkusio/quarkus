@@ -799,7 +799,7 @@ public final class HibernateOrmProcessor {
     public void produceLoggingCategories(HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<LogCategoryBuildItem> categories) {
         if (hibernateOrmConfig.log.bindParam || hibernateOrmConfig.log.bindParameters) {
-            categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE, true));
+            categories.produce(new LogCategoryBuildItem("org.hibernate.orm.jdbc.bind", Level.TRACE, true));
         }
     }
 

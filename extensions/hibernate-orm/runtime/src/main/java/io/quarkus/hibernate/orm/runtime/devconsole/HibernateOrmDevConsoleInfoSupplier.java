@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -13,14 +14,29 @@ import java.util.function.Supplier;
 
 import org.hibernate.LockOptions;
 import org.hibernate.boot.Metadata;
-import org.hibernate.engine.spi.NamedQueryDefinition;
-import org.hibernate.engine.spi.NamedSQLQueryDefinition;
+import org.hibernate.boot.query.NamedHqlQueryDefinition;
+import org.hibernate.boot.query.NamedNativeQueryDefinition;
+import org.hibernate.boot.query.NamedQueryDefinition;
+import org.hibernate.boot.spi.AbstractNamedQueryDefinition;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.tool.hbm2ddl.SchemaExport;
+import org.hibernate.tool.schema.Action;
+import org.hibernate.tool.schema.SourceType;
 import org.hibernate.tool.schema.TargetType;
+import org.hibernate.tool.schema.internal.ExceptionHandlerCollectingImpl;
+import org.hibernate.tool.schema.internal.HibernateSchemaManagementTool;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
+import org.hibernate.tool.schema.spi.ContributableMatcher;
+import org.hibernate.tool.schema.spi.ExecutionOptions;
+import org.hibernate.tool.schema.spi.SchemaCreator;
+import org.hibernate.tool.schema.spi.SchemaDropper;
+import org.hibernate.tool.schema.spi.SchemaManagementTool;
+import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
+import org.hibernate.tool.schema.spi.ScriptSourceInput;
 import org.hibernate.tool.schema.spi.ScriptTargetOutput;
+import org.hibernate.tool.schema.spi.SourceDescriptor;
 import org.hibernate.tool.schema.spi.TargetDescriptor;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -37,17 +53,25 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         }
 
         List<QueryInfo> namedQueries = new ArrayList<>();
-        for (NamedQueryDefinition queryDefinition : metadata.getNamedQueryDefinitions()) {
-            namedQueries.add(new QueryInfo(queryDefinition));
+        {
+            List<NamedHqlQueryDefinition> namedQueriesHqlDefs = new ArrayList<>();
+            metadata.visitNamedHqlQueryDefinitions(namedQueriesHqlDefs::add);
+            for (NamedHqlQueryDefinition queryDefinition : namedQueriesHqlDefs) {
+                namedQueries.add(new QueryInfo(queryDefinition));
+            }
         }
 
         List<QueryInfo> namedNativeQueries = new ArrayList<>();
-        for (NamedSQLQueryDefinition staticQueryDefinition : metadata.getNamedNativeQueryDefinitions()) {
-            namedNativeQueries.add(new QueryInfo(staticQueryDefinition));
+        {
+            List<NamedNativeQueryDefinition> namedNativeQueriesNativeDefs = new ArrayList<>();
+            metadata.visitNamedNativeQueryDefinitions(namedNativeQueriesNativeDefs::add);
+            for (NamedNativeQueryDefinition staticQueryDefinition : namedNativeQueriesNativeDefs) {
+                namedNativeQueries.add(new QueryInfo(staticQueryDefinition));
+            }
         }
 
-        String createDDL = generateDDL(SchemaExport.Action.CREATE, metadata, serviceRegistry, importFile);
-        String dropDDL = generateDDL(SchemaExport.Action.DROP, metadata, serviceRegistry, importFile);
+        String createDDL = generateDDL(Action.CREATE, metadata, serviceRegistry, importFile);
+        String dropDDL = generateDDL(Action.DROP, metadata, serviceRegistry, importFile);
 
         INSTANCE.persistenceUnits.put(persistenceUnitName, new PersistenceUnitInfo(persistenceUnitName, managedEntities,
                 namedQueries, namedNativeQueries, createDDL, dropDDL));
@@ -57,37 +81,61 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         INSTANCE.persistenceUnits.clear();
     }
 
-    private static String generateDDL(SchemaExport.Action action, Metadata metadata, ServiceRegistry serviceRegistry,
+    private static String generateDDL(Action action, Metadata metadata, ServiceRegistry ssr,
             String importFiles) {
-        SchemaExport schemaExport = new SchemaExport();
-        schemaExport.setFormat(true);
-        schemaExport.setDelimiter(";");
-        schemaExport.setImportFiles(importFiles);
-        StringWriter writer = new StringWriter();
+        //TODO see https://hibernate.atlassian.net/browse/HHH-16207
+        final HibernateSchemaManagementTool tool = (HibernateSchemaManagementTool) ssr.getService(SchemaManagementTool.class);
+        Map<String, Object> config = new HashMap<>(ssr.getService(ConfigurationService.class).getSettings());
+        config.put(AvailableSettings.HBM2DDL_DELIMITER, ";");
+        config.put(AvailableSettings.FORMAT_SQL, true);
+        config.put(AvailableSettings.HBM2DDL_IMPORT_FILES, importFiles);
+        ExceptionHandlerCollectingImpl exceptionHandler = new ExceptionHandlerCollectingImpl();
         try {
-            schemaExport.doExecution(action, false, metadata, serviceRegistry,
-                    new TargetDescriptor() {
-                        @Override
-                        public EnumSet<TargetType> getTargetTypes() {
-                            return EnumSet.of(TargetType.SCRIPT);
-                        }
+            final ExecutionOptions executionOptions = SchemaManagementToolCoordinator.buildExecutionOptions(
+                    config,
+                    exceptionHandler);
+            StringWriter writer = new StringWriter();
+            final SourceDescriptor source = new SourceDescriptor() {
+                @Override
+                public SourceType getSourceType() {
+                    return SourceType.METADATA;
+                }
 
+                @Override
+                public ScriptSourceInput getScriptSourceInput() {
+                    return null;
+                }
+            };
+            final TargetDescriptor target = new TargetDescriptor() {
+                @Override
+                public EnumSet<TargetType> getTargetTypes() {
+                    return EnumSet.of(TargetType.SCRIPT);
+                }
+
+                @Override
+                public ScriptTargetOutput getScriptTargetOutput() {
+                    return new ScriptTargetOutputToWriter(writer) {
                         @Override
-                        public ScriptTargetOutput getScriptTargetOutput() {
-                            return new ScriptTargetOutputToWriter(writer) {
-                                @Override
-                                public void accept(String command) {
-                                    super.accept(command);
-                                }
-                            };
+                        public void accept(String command) {
+                            super.accept(command);
                         }
-                    });
+                    };
+                }
+            };
+            if (action == Action.DROP) {
+                SchemaDropper schemaDropper = tool.getSchemaDropper(executionOptions.getConfigurationValues());
+                schemaDropper.doDrop(metadata, executionOptions, ContributableMatcher.ALL, source, target);
+            } else if (action == Action.CREATE) {
+                SchemaCreator schemaDropper = tool.getSchemaCreator(executionOptions.getConfigurationValues());
+                schemaDropper.doCreation(metadata, executionOptions, ContributableMatcher.ALL, source, target);
+            }
+            return writer.toString();
         } catch (RuntimeException e) {
+            //TODO unroll the exceptionHandler ?
             StringWriter stackTraceWriter = new StringWriter();
             e.printStackTrace(new PrintWriter(stackTraceWriter));
             return "Could not generate DDL: \n" + stackTraceWriter.toString();
         }
-        return writer.toString();
     }
 
     @Override
@@ -196,15 +244,20 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         private final String lockMode;
         private final String type;
 
-        public QueryInfo(NamedQueryDefinition queryDefinition) {
-            this.name = queryDefinition.getName();
-            this.query = queryDefinition.getQuery();
-            this.cacheable = queryDefinition.isCacheable();
-            LockOptions lockOptions = queryDefinition.getLockOptions();
-            this.lockMode = lockOptions != null && lockOptions.getLockMode() != null
-                    ? lockOptions.getLockMode().name()
-                    : "";
-            this.type = queryDefinition instanceof NamedSQLQueryDefinition ? "native" : "JPQL";
+        public QueryInfo(NamedHqlQueryDefinition queryDefinition) {
+            this.name = queryDefinition.getRegistrationName();
+            this.query = queryDefinition.getHqlString();
+            this.cacheable = extractIsCacheable(queryDefinition);
+            this.lockMode = extractLockOptions(queryDefinition);
+            this.type = "JPQL";
+        }
+
+        public QueryInfo(NamedNativeQueryDefinition nativeQueryDefinition) {
+            this.name = nativeQueryDefinition.getRegistrationName();
+            this.query = nativeQueryDefinition.getSqlQueryString();
+            this.cacheable = extractIsCacheable(nativeQueryDefinition);
+            this.lockMode = extractLockOptions(nativeQueryDefinition);
+            this.type = "native";
         }
 
         public String getName() {
@@ -227,5 +280,28 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
             return type;
         }
 
+    }
+
+    private static boolean extractIsCacheable(NamedQueryDefinition definition) {
+        //TODO cleanup and expose this properly in an SPI/API?
+        if (definition instanceof AbstractNamedQueryDefinition) {
+            AbstractNamedQueryDefinition def = (AbstractNamedQueryDefinition) definition;
+            if (def.getCacheable() == Boolean.TRUE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String extractLockOptions(NamedQueryDefinition definition) {
+        //TODO cleanup and expose this properly in an SPI/API?
+        if (definition instanceof AbstractNamedQueryDefinition) {
+            final AbstractNamedQueryDefinition def = (AbstractNamedQueryDefinition) definition;
+            final LockOptions lockOptions = def.getLockOptions();
+            if (lockOptions != null && lockOptions.getLockMode() != null) {
+                return lockOptions.getLockMode().name();
+            }
+        }
+        return "";
     }
 }

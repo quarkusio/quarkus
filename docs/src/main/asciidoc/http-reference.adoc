@@ -375,6 +375,11 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |Vert.x MDC data (e.g. 'traceId' for OpenTelemetry)                           |          | `%{X,mdc-key}`
 |===
 
+[TIP]
+====
+Use `quarkus.http.access-log.exclude-pattern=/some/path/.*` to exclude all entries concerning the path `/some/path/...` (_including subsequent paths_) from the log.
+====
+
 
 [[reverse-proxy]]
 == Running behind a reverse proxy

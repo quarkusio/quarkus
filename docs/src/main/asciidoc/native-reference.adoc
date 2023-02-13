@@ -1304,13 +1304,18 @@ so `gdb` cannot find debugging symbols for our native executable,
 as indicated by the "_No debugging symbols found in ./target/debugging-native-1.0.0-SNAPSHOT-runner_" message in the beginning of `gdb`.
 
 Recompiling the Quarkus application with `-Dquarkus.native.debug.enabled` and rerunning it through `gdb` we are now able to get a backtrace making clear what caused the crash.
-On top of that, add `-H:-OmitInlinedMethodDebugLineInfo` option to avoid inlined methods being omitted from the backtrace:
+On top of that, add `-H:-OmitInlinedMethodDebugLineInfo` option to avoid inlined methods being omitted from the backtrace.
+
+Sources for third party jar dependencies, including Quarkus source code,
+are not added to the source cache by default.
+To include those, make sure you invoke `./mvnw dependency:sources` first, see the basic xref:building-native-image.adoc[Building Native Image Guide].
 
 [source,bash,subs=attributes+]
 ----
 ./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.debug.enabled \
     -Dquarkus.native.additional-build-args=-H:-OmitInlinedMethodDebugLineInfo
+./mvnw dependency:sources
 ...
 $ gdb ./target/debugging-native-1.0.0-SNAPSHOT-runner
 Reading symbols from ./target/debugging-native-1.0.0-SNAPSHOT-runner...

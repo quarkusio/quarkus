@@ -177,6 +177,7 @@
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
         <okio.version>1.17.2</okio.version><!-- keep in sync with okhttp -->
         <hibernate-quarkus-local-cache.version>0.1.1</hibernate-quarkus-local-cache.version>
+        <nats-server.version>2.9.15-rc.3</nats-server.version>
         <flapdoodle.mongo.version>4.4.1</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
@@ -5565,6 +5566,11 @@
                 <version>${awaitility.version}</version>
             </dependency>
             <dependency>
+                <groupId>berlin.yuna</groupId>
+                <artifactId>nats-server</artifactId>
+                <version>${nats-server.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>de.flapdoodle.embed</groupId>
                 <artifactId>de.flapdoodle.embed.mongo</artifactId>
                 <version>${flapdoodle.mongo.version}</version>
@@ -6019,6 +6025,16 @@
                 <artifactId>apache-mime4j</artifactId>
                 <version>${mime4j.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-nats-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-nats-server-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Relocations -->
             <dependency>
@@ -6272,7 +6288,6 @@
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->
-
         </dependencies>
     </dependencyManagement>
 

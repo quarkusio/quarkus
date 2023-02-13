@@ -1,0 +1,13 @@
+name: Nats Server
+description: Embedded Nats Server for testing purpose (no docker needed)
+metadata:
+  keywords:
+    - nats
+    - nats.io
+    - jetstream
+    - nats-server
+    - nats-runner
+#  guide: ...
+  categories:
+    - "messaging"
+  status: "preview"

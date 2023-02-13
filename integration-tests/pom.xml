@@ -24,6 +24,9 @@
     </properties>
 
     <!-- modules are in profile test-modules -->
+    <modules>
+        <module>nats-server</module>
+    </modules>
 
     <build>
         <plugins>

@@ -105,6 +105,7 @@
         <module>avro</module>
         <module>schema-registry</module>
         <module>devservices</module>
+        <module>nats-server</module>
 
         <!-- Spring -->
         <module>spring-di</module>

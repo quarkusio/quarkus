@@ -133,10 +133,13 @@ public final class Types {
     }
 
     static boolean isAssignableFrom(Type type1, Type type2, IndexView index, Map<DotName, AssignableInfo> assignableCache) {
-        // TODO consider type params in assignability rules
-        if (type1.kind() == Kind.ARRAY && type2.kind() == Kind.ARRAY) {
-            return isAssignableFrom(type1.asArrayType().component(), type2.asArrayType().component(), index, assignableCache);
+        if (type1.kind() == Kind.ARRAY) {
+            return type2.kind() == Kind.ARRAY
+                    ? isAssignableFrom(type1.asArrayType().component(), type2.asArrayType().component(), index,
+                            assignableCache)
+                    : false;
         }
+
         return Types.isAssignableFrom(box(type1).name(), box(type2).name(), index, assignableCache);
     }
 
@@ -166,6 +169,9 @@ public final class Types {
         }
 
         boolean isAssignableFrom(DotName clazz) {
+            if (clazz == null) {
+                return false;
+            }
             if (subclasses != null && subclasses.contains(clazz)) {
                 return true;
             }
@@ -188,6 +194,10 @@ public final class Types {
             return true;
         }
         ClassInfo class1 = index.getClassByName(className1);
+        if (class1 == null) {
+            // Not found in the index
+            return false;
+        }
         AssignableInfo assignableInfo = assignableCache.get(className1);
         if (assignableInfo == null) {
             // No cached info

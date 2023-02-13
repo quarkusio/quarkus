@@ -39,7 +39,7 @@ In your `pom.xml` file, add:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-redis")
+implementation("io.quarkus:quarkus-redis-client")
 ----
 
 With this dependency, you can then inject Redis clients or _datasource_ (high-level, type-safe API), such as:

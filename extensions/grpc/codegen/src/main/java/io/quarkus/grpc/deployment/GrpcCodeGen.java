@@ -29,6 +29,7 @@ import io.quarkus.deployment.CodeGenContext;
 import io.quarkus.deployment.CodeGenProvider;
 import io.quarkus.deployment.util.ProcessUtil;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.utilities.JavaBinFinder;
 import io.quarkus.utilities.OS;
@@ -47,6 +48,8 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final String PROTOC_GROUPID = "com.google.protobuf";
 
     private static final String SCAN_DEPENDENCIES_FOR_PROTO = "quarkus.generate-code.grpc.scan-for-proto";
+    private static final String SCAN_DEPENDENCIES_FOR_PROTO_INCLUDE_PATTERN = "quarkus.generate-code.grpc.scan-for-proto-include.\"%s\"";
+    private static final String SCAN_DEPENDENCIES_FOR_PROTO_EXCLUDE_PATTERN = "quarkus.generate-code.grpc.scan-for-proto-exclude.\"%s\"";
     private static final String SCAN_FOR_IMPORTS = "quarkus.generate-code.grpc.scan-for-imports";
 
     private static final String POST_PROCESS_SKIP = "quarkus.generate.code.grpc-post-processing.skip";
@@ -205,10 +208,18 @@ public class GrpcCodeGen implements CodeGenProvider {
         ApplicationModel appModel = context.applicationModel();
         List<Path> protoFilesFromDependencies = new ArrayList<>();
         for (ResolvedDependency artifact : appModel.getRuntimeDependencies()) {
+            String packageId = String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId());
+            Collection<String> includes = properties
+                    .getOptionalValues(String.format(SCAN_DEPENDENCIES_FOR_PROTO_INCLUDE_PATTERN, packageId), String.class)
+                    .orElse(List.of());
+            Collection<String> excludes = properties
+                    .getOptionalValues(String.format(SCAN_DEPENDENCIES_FOR_PROTO_EXCLUDE_PATTERN, packageId), String.class)
+                    .orElse(List.of());
+
             if (scanAll
-                    || dependenciesToScan.contains(
-                            String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId()))) {
-                extractProtosFromArtifact(workDir, protoFilesFromDependencies, protoDirectories, artifact, true);
+                    || dependenciesToScan.contains(packageId)) {
+                extractProtosFromArtifact(workDir, protoFilesFromDependencies, protoDirectories, artifact, includes, excludes,
+                        true);
             }
         }
         return protoFilesFromDependencies;
@@ -244,17 +255,19 @@ public class GrpcCodeGen implements CodeGenProvider {
             if (scanAll
                     || dependenciesToScan.contains(
                             String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId()))) {
-                extractProtosFromArtifact(workDir, new ArrayList<>(), importDirectories, artifact, false);
+                extractProtosFromArtifact(workDir, new ArrayList<>(), importDirectories, artifact, List.of(),
+                        List.of(), false);
             }
         }
         return importDirectories;
     }
 
     private void extractProtosFromArtifact(Path workDir, Collection<Path> protoFiles,
-            Set<String> protoDirectories, ResolvedDependency artifact, boolean isDependency) throws CodeGenException {
+            Set<String> protoDirectories, ResolvedDependency artifact, Collection<String> filesToInclude,
+            Collection<String> filesToExclude, boolean isDependency) throws CodeGenException {
 
         try {
-            artifact.getContentTree().walk(
+            artifact.getContentTree(new PathFilter(filesToInclude, filesToExclude)).walk(
                     pathVisit -> {
                         Path path = pathVisit.getPath();
                         if (Files.isRegularFile(path) && path.getFileName().toString().endsWith(PROTO)) {

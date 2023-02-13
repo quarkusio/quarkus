@@ -32,6 +32,7 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
         boolean secure = false;
         int version = NewCookie.DEFAULT_VERSION;
         boolean httpOnly = false;
+        NewCookie.SameSite sameSite = null;
         Date expiry = null;
 
         OrderedParameterParser parser = new OrderedParameterParser();
@@ -59,6 +60,8 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
                 version = Integer.parseInt(value);
             } else if (name.equalsIgnoreCase("HttpOnly")) {
                 httpOnly = true;
+            } else if (name.equalsIgnoreCase("SameSite")) {
+                sameSite = NewCookie.SameSite.valueOf(value.toUpperCase());
             } else if (name.equalsIgnoreCase("Expires")) {
                 try {
                     expiry = new SimpleDateFormat(OLD_COOKIE_PATTERN, Locale.US).parse(value);
@@ -71,7 +74,8 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
             cookieValue = "";
         }
 
-        return new NewCookie(cookieName, cookieValue, path, domain, version, comment, maxAge, expiry, secure, httpOnly);
+        return new NewCookie(cookieName, cookieValue, path, domain, version, comment, maxAge, expiry, secure, httpOnly,
+                sameSite);
 
     }
 
@@ -124,6 +128,10 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
             b.append(";Secure");
         if (cookie.isHttpOnly())
             b.append(";HttpOnly");
+        if (cookie.getSameSite() != null) {
+            b.append(";SameSite=");
+            b.append(cookie.getSameSite());
+        }
         return b.toString();
     }
 }

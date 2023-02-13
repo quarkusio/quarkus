@@ -632,7 +632,13 @@ public class BearerTokenAuthorizationTest {
     }
 
     private Cookie getStateCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_auth" + (tenantId == null ? "" : "_" + tenantId));
+        String cookieSuffix = "q_auth" + (tenantId == null ? "" : "_" + tenantId) + "_";
+        for (Cookie c : webClient.getCookieManager().getCookies()) {
+            if (c.getName().startsWith(cookieSuffix) && c.getName().length() > cookieSuffix.length()) {
+                return c;
+            }
+        }
+        return null;
     }
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {

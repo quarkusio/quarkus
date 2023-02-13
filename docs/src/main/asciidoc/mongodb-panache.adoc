@@ -1314,8 +1314,8 @@ import io.quarkus.mongodb.panache.common.MongoEntity;
 public class Person extends PanacheMongoEntityBase {
     @BsonId
     public Long id;
-    public String firstName;
-    public String lastName;
+    public String firstname;
+    public String lastname;
 }
 ----
 
@@ -1394,13 +1394,11 @@ public class PanacheMongoMultiTenancyTest {
         person1.id = 1L;
         person1.firstname = "Pedro";
         person1.lastname = "Pereira";
-        person1.status = Status.ALIVE;
 
         Person person2 = new Person();
         person2.id = 2L;
         person2.firstname = "Tibé";
         person2.lastname = "Venâncio";
-        person2.status = Status.ALIVE;
 
         String endpoint = "/persons";
 

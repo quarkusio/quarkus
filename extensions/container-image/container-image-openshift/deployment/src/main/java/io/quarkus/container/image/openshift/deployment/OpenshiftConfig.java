@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -20,6 +22,8 @@ public class OpenshiftConfig {
 
     public static final String DEFAULT_JVM_DOCKERFILE = "src/main/docker/Dockerfile.jvm";
     public static final String DEFAULT_NATIVE_DOCKERFILE = "src/main/docker/Dockerfile.native";
+
+    public static final String DEFAULT_BUILD_LOG_LEVEL = "INFO";
 
     public static final String FALLBACK_JAR_DIRECTORY = "/deployments/";
     public static final String FALLBACK_NATIVE_BINARY_DIRECTORY = "/home/quarkus/";
@@ -112,6 +116,12 @@ public class OpenshiftConfig {
      */
     @ConfigItem(defaultValue = "PT5M")
     Duration buildTimeout;
+
+    /**
+     * The log level of OpenShift build log.
+     */
+    @ConfigItem(defaultValue = DEFAULT_BUILD_LOG_LEVEL)
+    public Logger.Level buildLogLevel;
 
     /**
      * Check if baseJvmImage is the default

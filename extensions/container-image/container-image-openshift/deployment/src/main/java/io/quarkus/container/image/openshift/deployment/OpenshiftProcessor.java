@@ -475,13 +475,14 @@ public class OpenshiftProcessor {
                 build = updated;
                 try (LogWatch w = client.builds().withName(buildName).withPrettyOutput().watchLog();
                         Reader reader = new InputStreamReader(w.getOutput())) {
-                    display(reader);
+                    display(reader, openshiftConfig.buildLogLevel);
                 } catch (IOException e) {
                     // This may happen if the LogWatch is closed while we are still reading.
                     // We shouldn't let the build fail, so let's log a warning and display last few lines of the log
                     LOG.warn("Log stream closed, redisplaying last " + LOG_TAIL_SIZE + " entries:");
                     try {
-                        display(client.builds().withName(buildName).tailingLines(LOG_TAIL_SIZE).getLogReader());
+                        display(client.builds().withName(buildName).tailingLines(LOG_TAIL_SIZE).getLogReader(),
+                                Logger.Level.WARN);
                     } catch (IOException ex) {
                         // Let's ignore this.
                     }
@@ -525,10 +526,10 @@ public class OpenshiftProcessor {
         return new RuntimeException("Execution of openshift build failed. See build output for more details", t);
     }
 
-    private static void display(Reader logReader) throws IOException {
+    private static void display(Reader logReader, Logger.Level level) throws IOException {
         BufferedReader reader = new BufferedReader(logReader);
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-            LOG.info(line);
+            LOG.log(level, line);
         }
     }
 

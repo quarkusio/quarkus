@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-oidc-configuration-properties-reference"]
-= OIDC configuration properties
+= OpenID Connect (OIDC) configuration properties
 include::_attributes.adoc[]
 :categories: security
 

@@ -11,9 +11,9 @@ include::_attributes.adoc[]
 ====
 This guide is about https://resteasy.dev[RESTEasy Classic] which used to be the default JAX-RS implementation until Quarkus 2.8.
 
-It is now recommended to use RESTEasy Reactive, which supports equally well traditional blocking workloads and reactive workloads.
+It is now recommended to use RESTEasy Reactive, which supports both traditional blocking workloads and reactive workloads equally well.
 For more information about RESTEasy Reactive,
-please see the xref:rest-json.adoc[introductory REST JSON guide] or the more detailed xref:resteasy-reactive.adoc[RESTEasy Reactive guide].
+please see the xref:rest-json.adoc[introductory REST JSON guide] or the xref:resteasy-reactive.adoc[RESTEasy Reactive reference documentation].
 ====
 
 TIP: there is another guide if you need a xref:rest-client.adoc[REST client based on RESTEasy Classic] (including support for JSON).

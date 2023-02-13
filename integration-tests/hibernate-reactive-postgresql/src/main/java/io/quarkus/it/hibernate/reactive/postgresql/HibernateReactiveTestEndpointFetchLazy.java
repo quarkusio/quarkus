@@ -20,7 +20,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 public class HibernateReactiveTestEndpointFetchLazy {
 
     @Inject
-    Mutiny.Session mutinySession;
+    Mutiny.SessionFactory sessionFactory;
 
     // Injecting a Vert.x Pool is not required, It's used to
     // independently validate the contents of the database for the test
@@ -30,16 +30,15 @@ public class HibernateReactiveTestEndpointFetchLazy {
     @GET
     @Path("/findBooksWithMutiny/{authorId}")
     public Uni<Collection<Book>> findBooksWithMutiny(@PathParam("authorId") Integer authorId) {
-        return mutinySession.find(Author.class, authorId)
-                .chain(author -> Mutiny.fetch(author.getBooks()));
+        return sessionFactory.withSession(s -> s.find(Author.class, authorId)
+                .chain(author -> Mutiny.fetch(author.getBooks())));
     }
 
     @GET
     @Path("/getReferenceBooksWithMutiny/{authorId}")
     public Uni<Collection<Book>> getReferenceBooksWithMutiny(@PathParam("authorId") Integer authorId) {
-        return mutinySession
-                .fetch(mutinySession.getReference(Author.class, authorId))
-                .chain(author -> Mutiny.fetch(author.getBooks()));
+        return sessionFactory.withSession(s -> s.fetch(s.getReference(Author.class, authorId))
+                .chain(author -> Mutiny.fetch(author.getBooks())));
     }
 
     @POST
@@ -51,10 +50,10 @@ public class HibernateReactiveTestEndpointFetchLazy {
         author.getBooks().add(book1);
         author.getBooks().add(book2);
 
-        return mutinySession.createQuery(" delete from Book").executeUpdate()
-                .call(() -> mutinySession.createQuery("delete from Author").executeUpdate())
-                .call(() -> mutinySession.persist(author))
-                .chain(mutinySession::flush)
+        return sessionFactory.withTransaction(s -> s.createQuery(" delete from Book").executeUpdate()
+                .call(() -> s.createQuery("delete from Author").executeUpdate())
+                .call(() -> s.persist(author))
+                .chain(s::flush))
                 .chain(() -> selectNameFromId(author.getId()));
     }
 

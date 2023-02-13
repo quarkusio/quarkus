@@ -64,7 +64,6 @@ import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenc
 import io.quarkus.hibernate.reactive.runtime.HibernateReactive;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.hibernate.reactive.runtime.ReactiveSessionFactoryProducer;
-import io.quarkus.hibernate.reactive.runtime.ReactiveSessionProducer;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -87,13 +86,12 @@ public final class HibernateReactiveProcessor {
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) {
         if (descriptors.size() == 1) {
-            // Only register those beans if their EMF dependency is also available, so use the same guard as the ORM extension
+            // Only register the bean if their EMF dependency is also available, so use the same guard as the ORM extension
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionFactoryProducer.class));
-            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionProducer.class));
         } else {
             LOG.warnf(
-                    "Skipping registration of %s and %s because exactly one persistence unit is required for their registration",
-                    ReactiveSessionFactoryProducer.class.getSimpleName(), ReactiveSessionProducer.class.getSimpleName());
+                    "Skipping registration of %s bean because exactly one persistence unit is required for their registration",
+                    ReactiveSessionFactoryProducer.class.getSimpleName());
         }
     }
 

@@ -1,5 +1,7 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.project.update.QuarkusUpdateRecipe.RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +43,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
     public static final String ADD = "Add:";
     public static final String REMOVE = "Remove:";
     public static final String UPDATE = "Update:";
-    public static final String PLATFORM_RECTIFY_FORMAT = "%-7s %s";
+    public static final String ITEM_FORMAT = "%-7s %s";
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
@@ -66,18 +68,25 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             invocation.log().info("Instructions to update this project from '%s' to '%s':",
                     projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
             logUpdates(currentState, latestCatalog, false, perModule, invocation.getQuarkusProject().log());
-        }
 
-        if (generateRewriteConfig) {
-            QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
-                    projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
-            try {
-                final Path tempFile = Files.createTempFile("quarkus-project-recipe-", ".yaml");
-                QuarkusUpdates.createRecipe(tempFile,
-                        QuarkusProjectHelper.artifactResolver(), request);
-                invocation.log().info("Project update recipe has been created: %s", tempFile.toString());
-            } catch (IOException e) {
-                throw new QuarkusCommandException("Failed to create project update recipe", e);
+            if (generateRewriteConfig) {
+                QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
+                        projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
+                try {
+                    final Path tempFile = Files.createTempFile("quarkus-project-recipe-", ".yaml");
+                    QuarkusUpdates.createRecipe(tempFile,
+                            QuarkusProjectHelper.artifactResolver(), request);
+                    invocation.log().info("Project update recipe has been created:\n%s", tempFile.toString());
+
+                    invocation.log().info("The command to update this project: \n" +
+                            "mvn org.openrewrite.maven:rewrite-maven-plugin:4.39.0:run \\\n" +
+                            "  -Drewrite.configLocation=%s \\\n" +
+                            "  -DactiveRecipes=%s -e",
+                            tempFile.toString(), RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS);
+
+                } catch (IOException e) {
+                    throw new QuarkusCommandException("Failed to create project update recipe", e);
+                }
             }
         }
 
@@ -141,21 +150,21 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             log.info("Recommended Quarkus platform BOM updates:");
             if (!importVersionUpdates.isEmpty()) {
                 for (PlatformInfo importInfo : importVersionUpdates) {
-                    log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                    log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                             UpdateProjectCommandHandler.UPDATE, importInfo.imported.toCompactCoords()) + " -> "
                             + importInfo.getRecommendedVersion());
                 }
             }
             if (!newImports.isEmpty()) {
                 for (PlatformInfo importInfo : newImports) {
-                    log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                    log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                             UpdateProjectCommandHandler.ADD, importInfo.recommended.toCompactCoords()));
                 }
             }
             if (importsToBeRemoved) {
                 for (PlatformInfo importInfo : platformImports.values()) {
                     if (importInfo.recommended == null) {
-                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                        log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                                 UpdateProjectCommandHandler.REMOVE, importInfo.imported.toCompactCoords()));
                     }
                 }
@@ -229,17 +238,17 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             log.info("Extensions from " + platform.getRecommendedProviderKey() + ":");
             for (ExtensionInfo e : versionedManagedExtensions.getOrDefault(provider, Collections.emptyList())) {
                 final StringBuilder sb = new StringBuilder();
-                sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                         UpdateProjectCommandHandler.UPDATE, e.currentDep.getArtifact().toCompactCoords()));
                 sb.append(" -> remove version (managed)");
                 log.info(sb.toString());
             }
             for (ArtifactCoords e : addedExtensions.getOrDefault(provider, Collections.emptyList())) {
-                log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, UpdateProjectCommandHandler.ADD,
+                log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, UpdateProjectCommandHandler.ADD,
                         e.getKey().toGacString()));
             }
             for (ArtifactCoords e : removedExtensions.getOrDefault(provider, Collections.emptyList())) {
-                log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, UpdateProjectCommandHandler.REMOVE,
+                log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, UpdateProjectCommandHandler.REMOVE,
                         e.getKey().toGacString()));
             }
             log.info("");
@@ -250,14 +259,14 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 log.info("Extensions from " + provider.getKey() + ":");
                 for (ExtensionInfo info : provider.getValue()) {
                     if (info.currentDep.isPlatformExtension()) {
-                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                        log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                                 UpdateProjectCommandHandler.ADD,
                                 info.getRecommendedDependency().getArtifact().toCompactCoords()));
                     } else if (info.getRecommendedDependency().isPlatformExtension()) {
-                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                        log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                                 UpdateProjectCommandHandler.REMOVE, info.currentDep.getArtifact().toCompactCoords()));
                     } else {
-                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                        log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                                 UpdateProjectCommandHandler.UPDATE, info.currentDep.getArtifact().toCompactCoords() + " -> "
                                         + info.getRecommendedDependency().getVersion()));
                     }

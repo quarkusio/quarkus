@@ -27,11 +27,12 @@ public final class QuarkusUpdatesRepository {
         try {
             final ResourceLoader resourceLoader = ResourceLoaders.resolveFileResourceLoader(
                     artifactResolver.resolve(DependencyUtils.toArtifact(QUARKUS_RECIPE_GAV)).getArtifact().getFile());
+
             return resourceLoader.loadResourceAsPath("quarkus-updates/core",
                     path -> {
                         try (final Stream<Path> pathStream = Files.walk(path)) {
                             return pathStream
-                                    .filter(p -> p.getFileName().toString().matches("^\\d\\.\\d(\\.\\d)?\\.ya?ml$"))
+                                    .filter(p -> p.getFileName().toString().matches("^\\d\\H+.ya?ml$"))
                                     .filter(p -> shouldApplyRecipe(p.getFileName().toString(), currentVersion, targetVersion))
                                     .map(p -> {
                                         try {

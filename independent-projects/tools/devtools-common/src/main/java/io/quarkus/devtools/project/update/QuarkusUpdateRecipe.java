@@ -10,9 +10,10 @@ import io.quarkus.devtools.project.BuildTool;
 
 public class QuarkusUpdateRecipe {
 
+    public static final String RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS = "io.quarkus.openrewrite.Quarkus";
     public static final Map<String, Object> QUARKUS_RECIPE = Map.of(
             "type", "specs.openrewrite.org/v1beta/recipe",
-            "name", "io.quarkus.openrewrite.Quarkus",
+            "name", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS,
             "displayName", "Migrate quarkus project to a new version",
             "description", "Update Quarkus version and refactor imports and resources if needed.",
             "tags", List.of("quarkus"));

@@ -78,7 +78,7 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                 final StringBuilder sb = new StringBuilder();
                 if (platform.recommended == null) {
                     if (rectify) {
-                        sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                        sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                                 UpdateProjectCommandHandler.REMOVE, platform.imported.toCompactCoords()));
                         recommendationsAvailable = true;
                     } else {
@@ -92,30 +92,26 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                         }
                     }
                 } else if (platform.isVersionUpdateRecommended()) {
+                    sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
+                            rectify ? UpdateProjectCommandHandler.UPDATE : "", platform.imported.toCompactCoords()));
                     if (rectify) {
-                        sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                                UpdateProjectCommandHandler.UPDATE, platform.imported.toCompactCoords()));
                         sb.append(platform.imported.toCompactCoords()).append(" -> ")
                                 .append(platform.getRecommendedVersion());
                     } else {
-                        sb.append("  ");
-                        sb.append(platform.imported.toCompactCoords()).append(" | misaligned");
+                        sb.append(" ⚠");
                     }
                     recommendationsAvailable = true;
                 } else {
-                    if (rectify) {
-                        sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, "",
-                                platform.imported.toCompactCoords()));
-                    } else {
-                        sb.append("  ").append(platform.imported.toCompactCoords());
-                    }
+                    sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "",
+                            platform.imported.toCompactCoords()))
+                            .append(" ✔");
                 }
                 log.info(sb.toString());
             }
             if (rectify && recommendExtraImports) {
                 for (PlatformInfo platform : providerInfo.values()) {
                     if (platform.imported == null) {
-                        log.info(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                        log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                                 UpdateProjectCommandHandler.ADD,
                                 platform.recommended.toCompactCoords()));
                     }
@@ -177,10 +173,10 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
         if (dep.isPlatformExtension()) {
             if (rectify) {
                 if (dep.isNonRecommendedVersion()) {
-                    sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                    sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
                             UpdateProjectCommandHandler.UPDATE, ""));
                 } else {
-                    sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
+                    sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "", ""));
                 }
                 sb.append(dep.getArtifact().getGroupId()).append(':')
                         .append(dep.getArtifact().getArtifactId());
@@ -193,25 +189,26 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                         sb.append(" -> remove version (managed)");
                     }
                     recommendationsAvailable = true;
+                } else {
+                    sb.append(" ✔");
                 }
             } else {
-                sb.append("  ").append(dep.getArtifact().getGroupId()).append(':')
+                sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "", "")).append(dep.getArtifact().getGroupId())
+                        .append(':')
                         .append(dep.getArtifact().getArtifactId());
                 if (!dep.getArtifact().getClassifier().isEmpty()) {
                     sb.append(':').append(dep.getArtifact().getClassifier());
                 }
                 if (dep.isNonRecommendedVersion()) {
                     sb.append(':').append(dep.getArtifact().getVersion());
-                    sb.append(" | misaligned");
+                    sb.append(" ⚠");
                     recommendationsAvailable = true;
+                } else {
+                    sb.append(" ✔");
                 }
             }
         } else {
-            if (rectify) {
-                sb.append(String.format(UpdateProjectCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
-            } else {
-                sb.append("  ");
-            }
+            sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "", ""));
             sb.append(dep.getArtifact().toCompactCoords());
         }
         if (dep.isTransitive()) {

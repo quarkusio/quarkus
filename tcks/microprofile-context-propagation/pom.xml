@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile Context Propagation</name>
 
     <properties>
-        <microprofile-context-propagation-tck.version>1.2</microprofile-context-propagation-tck.version>
+        <microprofile-context-propagation-tck.version>1.3</microprofile-context-propagation-tck.version>
     </properties>
 
     <build>

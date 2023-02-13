@@ -1,7 +1,7 @@
 package io.quarkus.it.hibernate.search.orm.elasticsearch.multitenancy.fruit;
 
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 

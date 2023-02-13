@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.jsonb.deployment;
 
-import javax.ws.rs.RuntimeType;
+import jakarta.ws.rs.RuntimeType;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;

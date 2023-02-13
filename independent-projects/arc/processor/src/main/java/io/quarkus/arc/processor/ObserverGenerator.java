@@ -23,12 +23,12 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.event.Reception;
-import javax.enterprise.event.TransactionPhase;
-import javax.enterprise.inject.spi.EventContext;
-import javax.enterprise.inject.spi.ObserverMethod;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.enterprise.inject.spi.ObserverMethod;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -226,6 +226,9 @@ public class ObserverGenerator extends AbstractGenerator {
 
         implementGetBeanClass(observerCreator, observer.getBeanClass());
         implementNotify(observer, observerCreator, injectionPointToProviderField, reflectionRegistration, isApplicationClass);
+        if (Reception.IF_EXISTS == observer.getReception()) {
+            implementIfExistsGetReception(observerCreator);
+        }
         if (observer.getPriority() != ObserverMethod.DEFAULT_PRIORITY) {
             implementGetPriority(observerCreator, observer);
         }
@@ -256,6 +259,12 @@ public class ObserverGenerator extends AbstractGenerator {
             }
             injectionPointToProvider.put(injectionPoint, "observerProviderSupplier" + providerIdx++);
         }
+    }
+
+    protected void implementIfExistsGetReception(ClassCreator observerCreator) {
+        MethodCreator getReception = observerCreator.getMethodCreator("getReception", Reception.class)
+                .setModifiers(ACC_PUBLIC);
+        getReception.returnValue(getReception.load(Reception.IF_EXISTS));
     }
 
     protected void implementGetObservedType(ClassCreator observerCreator, FieldDescriptor observedTypeField) {
@@ -558,6 +567,8 @@ public class ObserverGenerator extends AbstractGenerator {
                                 injectionPointAnnotationsPredicate);
                         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint,
                                 reflectionRegistration);
+                        boolean isTransient = injectionPoint.isField()
+                                && Modifier.isTransient(injectionPoint.getTarget().asField().flags());
 
                         // Wrap the constructor arg in a Supplier so we can pass it to CurrentInjectionPointProvider c'tor.
                         ResultHandle delegateSupplier = constructor.newInstance(
@@ -566,11 +577,12 @@ public class ObserverGenerator extends AbstractGenerator {
                         ResultHandle wrapHandle = constructor.newInstance(
                                 MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
                                         Supplier.class, java.lang.reflect.Type.class,
-                                        Set.class, Set.class, Member.class, int.class),
+                                        Set.class, Set.class, Member.class, int.class, boolean.class),
                                 constructor.loadNull(), delegateSupplier,
                                 Types.getTypeHandle(constructor, injectionPoint.getType()),
                                 requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
-                                constructor.load(injectionPoint.getPosition()));
+                                constructor.load(injectionPoint.getPosition()),
+                                constructor.load(isTransient));
                         ResultHandle wrapSupplierHandle = constructor.newInstance(
                                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
 

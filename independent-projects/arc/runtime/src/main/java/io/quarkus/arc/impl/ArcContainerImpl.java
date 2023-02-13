@@ -26,28 +26,28 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.BeforeDestroyed;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.Destroyed;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.context.NormalScope;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.event.Event;
-import javax.enterprise.inject.AmbiguousResolutionException;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.CDI;
-import javax.enterprise.inject.spi.Decorator;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.enterprise.inject.spi.Interceptor;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Scope;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.Destroyed;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.context.NormalScope;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.Decorator;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.InterceptionType;
+import jakarta.enterprise.inject.spi.Interceptor;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Scope;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
@@ -197,7 +197,7 @@ public class ArcContainerImpl implements ArcContainer {
     public void init() {
         // Fire an event with qualifier @Initialized(ApplicationScoped.class)
         Set<Annotation> qualifiers = Set.of(Initialized.Literal.APPLICATION, Any.Literal.INSTANCE);
-        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false)
+        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false, null)
                 .notify("@Initialized(ApplicationScoped.class)");
         // Configure CDIProvider used for CDI.current()
         CDI.setCDIProvider(new ArcCDIProvider());
@@ -234,7 +234,6 @@ public class ArcContainerImpl implements ArcContainer {
         return instanceHandle(type, qualifiers);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T> Supplier<InstanceHandle<T>> beanInstanceSupplier(Class<T> type, Annotation... qualifiers) {
         return createInstanceSupplier(false, type, qualifiers);
@@ -268,6 +267,7 @@ public class ArcContainerImpl implements ArcContainer {
                 throw new AmbiguousResolutionException("Beans: " + resolvedBeans);
             }
         }
+        @SuppressWarnings("unchecked")
         InjectableBean<T> bean = filteredBean.size() != 1 ? null
                 : (InjectableBean<T>) filteredBean.iterator().next();
         if (bean == null) {
@@ -385,7 +385,8 @@ public class ArcContainerImpl implements ArcContainer {
             beforeDestroyQualifiers.add(BeforeDestroyed.Literal.APPLICATION);
             beforeDestroyQualifiers.add(Any.Literal.INSTANCE);
             try {
-                EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this, false).notify(toString());
+                EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this, false, null)
+                        .notify(toString());
             } catch (Exception e) {
                 LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(ApplicationScoped.class) event", e);
             }
@@ -396,7 +397,7 @@ public class ArcContainerImpl implements ArcContainer {
             destroyQualifiers.add(Destroyed.Literal.APPLICATION);
             destroyQualifiers.add(Any.Literal.INSTANCE);
             try {
-                EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this, false).notify(toString());
+                EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this, false, null).notify(toString());
             } catch (Exception e) {
                 LOGGER.warn("An error occurred during delivery of the @Destroyed(ApplicationScoped.class) event", e);
             }
@@ -444,7 +445,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     private Notifier<Object> notifierOrNull(Set<Annotation> qualifiers) {
         Notifier<Object> notifier = EventImpl.createNotifier(Object.class, Object.class,
-                qualifiers, this, false);
+                qualifiers, this, false, null);
         return notifier.isEmpty() ? null : notifier;
     }
 

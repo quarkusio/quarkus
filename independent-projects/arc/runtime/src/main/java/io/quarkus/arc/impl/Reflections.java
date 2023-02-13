@@ -21,6 +21,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import jakarta.enterprise.inject.CreationException;
+
 /**
  * Neither the class nor its methods are considered a public API and should only be used internally.
  */
@@ -129,7 +131,17 @@ public final class Reflections {
             }
             try {
                 return constructor.newInstance(args);
-            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (InvocationTargetException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof RuntimeException) {
+                    throw (RuntimeException) cause;
+                }
+                if (cause instanceof Error) {
+                    throw (Error) cause;
+                }
+                // this method is only used to instantiate beans, so throwing `CreationException` is fine
+                throw new CreationException(cause);
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException e) {
                 throw new RuntimeException("Cannot invoke constructor: " + clazz.getName(), e);
             }
         }

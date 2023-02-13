@@ -1,6 +1,6 @@
 package io.quarkus.grpc.example.streaming;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.grpc.test.utils.VertxGRPCTestProfile;
 import io.quarkus.test.junit.QuarkusTest;

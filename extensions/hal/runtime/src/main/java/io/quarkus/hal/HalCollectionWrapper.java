@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.ws.rs.core.Link;
+import jakarta.ws.rs.core.Link;
 
 /**
  * The Hal collection wrapper that includes the list of Hal entities {@link HalEntityWrapper}, the collection name and the Hal

@@ -23,7 +23,7 @@ import java.nio.charset.Charset;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 /**
  * Utilities for dealing with URLs

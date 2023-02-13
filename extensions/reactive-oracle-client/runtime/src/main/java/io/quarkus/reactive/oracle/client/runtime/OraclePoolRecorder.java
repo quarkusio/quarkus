@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
@@ -74,10 +74,6 @@ public class OraclePoolRecorder {
         // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
         oracleConnectOptions.setMetricsName("oracle|" + dataSourceName);
 
-        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
-            log.warn(
-                    "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
-        }
         return createPool(vertx, poolOptions, oracleConnectOptions, dataSourceName);
     }
 
@@ -88,9 +84,7 @@ public class OraclePoolRecorder {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
-        if (dataSourceReactiveRuntimeConfig.maxSize.isPresent()) {
-            poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize.getAsInt());
-        }
+        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize);
 
         if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
             int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());

@@ -70,7 +70,7 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
                         .initializedWith(MongodArguments.defaults().withUseNoJournal(false)))
                 .start(version);
 
-        return Collections.emptyMap();
+        return Collections.singletonMap("quarkus.mongodb.hosts", String.format("127.0.0.1:%d", port));
     }
 
     @Override

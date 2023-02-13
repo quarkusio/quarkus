@@ -30,6 +30,10 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
+        <angus-activation.version>1.0.0</angus-activation.version>
+        <expressly.version>5.0.0</expressly.version>
+        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.source>11</maven.compiler.source>
@@ -49,13 +53,14 @@
 
         <!-- Versions -->
         <assertj.version>3.24.2</assertj.version>
-        <jackson-bom.version>2.14.1</jackson-bom.version>
-        <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
+        <jackson-bom.version>2.14.2</jackson-bom.version>
+        <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
         <junit.version>5.9.2</junit.version>
         <commons-compress.version>1.22</commons-compress.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <maven-core.version>3.8.7</maven-core.version>
-        <mockito.version>4.11.0</mockito.version>
+        <mockito.version>5.1.1</mockito.version>
+        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0-M8</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
@@ -177,6 +182,16 @@
                 <version>${jakarta.enterprise.cdi-api.version}</version>
             </dependency>
             <dependency>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>${javax.annotation-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${javax.inject.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-core</artifactId>
                 <version>${maven-core.version}</version>
@@ -239,12 +254,6 @@
                         <artifactId>quarkus-enforcer-rules</artifactId>
                         <version>${project.version}</version>
                     </dependency>
-                    <!-- This dependency can be removed when MENFORCER-422 is available -->
-                    <dependency>
-                        <groupId>com.github.gastaldi</groupId>
-                        <artifactId>enforcer-rules</artifactId>
-                        <version>0.0.1</version>
-                    </dependency>
                 </dependencies>
                 <executions>
                     <execution>
@@ -282,7 +291,7 @@
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.21.0</version>
+                <version>2.22.0</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>
@@ -505,45 +514,6 @@
                                 </goals>
                             </execution>
                         </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>jakarta-rewrite</id>
-            <activation>
-                <property>
-                    <name>jakarta-rewrite</name>
-                </property>
-            </activation>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.openrewrite.maven</groupId>
-                            <artifactId>rewrite-maven-plugin</artifactId>
-                            <version>4.21.0-SNAPSHOT</version>
-                            <configuration>
-                                <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
-                                <activeStyles>
-                                    <style>io.quarkus.style.maven</style>
-                                </activeStyles>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-                <plugins>
-                    <plugin>
-                        <inherited>false</inherited>
-                        <groupId>org.openrewrite.maven</groupId>
-                        <artifactId>rewrite-maven-plugin</artifactId>
-                        <configuration>
-                            <activeRecipes>
-                                <recipe>io.quarkus.maven.javax.managed</recipe>
-                                <recipe>io.quarkus.maven.javax.versions</recipe>
-                                <recipe>io.quarkus.jakarta-versions</recipe>
-                            </activeRecipes>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>

@@ -11,19 +11,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.AnnotatedConstructor;
-import javax.enterprise.inject.spi.AnnotatedField;
-import javax.enterprise.inject.spi.AnnotatedParameter;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.AnnotatedConstructor;
+import jakarta.enterprise.inject.spi.AnnotatedField;
+import jakarta.enterprise.inject.spi.AnnotatedParameter;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -65,6 +65,12 @@ public class InjectionPointMetadataTest {
         assertFalse(annotatedField.isAnnotationPresent(Deprecated.class));
         assertTrue(annotatedField.getAnnotation(Singleton.class) == null);
         assertTrue(annotatedField.getAnnotations(Singleton.class).isEmpty());
+        assertFalse(injectionPoint.isTransient());
+
+        // Transient field
+        InjectionPoint transientInjectionPoint = controller.transientControlled.injectionPoint;
+        assertNotNull(transientInjectionPoint);
+        assertTrue(transientInjectionPoint.isTransient());
 
         // Method
         InjectionPoint methodInjectionPoint = controller.controlledMethod.injectionPoint;
@@ -76,6 +82,7 @@ public class InjectionPointMetadataTest {
         assertEquals(0, methodParam.getPosition());
         assertEquals(Controller.class, methodParam.getDeclaringCallable().getJavaMember().getDeclaringClass());
         assertEquals("setControlled", methodParam.getDeclaringCallable().getJavaMember().getName());
+        assertFalse(methodInjectionPoint.isTransient());
 
         // Constructor
         InjectionPoint ctorInjectionPoint = controller.controlledCtor.injectionPoint;
@@ -91,6 +98,7 @@ public class InjectionPointMetadataTest {
         assertEquals(1, ctorParam.getAnnotations().size());
         assertTrue(ctorParam.getDeclaringCallable() instanceof AnnotatedConstructor);
         assertEquals(Controller.class, ctorParam.getDeclaringCallable().getJavaMember().getDeclaringClass());
+        assertFalse(ctorInjectionPoint.isTransient());
 
         // Instance
         InjectionPoint instanceInjectionPoint = controller.instanceControlled.get().injectionPoint;
@@ -112,6 +120,7 @@ public class InjectionPointMetadataTest {
         assertTrue(annotatedField.getAnnotation(Singleton.class) == null);
         assertTrue(annotatedField.getAnnotations(Singleton.class).isEmpty());
         assertEquals(1, annotatedField.getAnnotations().size());
+        assertFalse(instanceInjectionPoint.isTransient());
     }
 
     @SuppressWarnings({ "unchecked", "serial" })
@@ -136,6 +145,7 @@ public class InjectionPointMetadataTest {
         assertTrue(annotatedParam.isAnnotationPresent(FooAnnotation.class));
         assertTrue(annotatedParam.getAnnotation(Singleton.class) == null);
         assertTrue(annotatedParam.getAnnotations(Singleton.class).isEmpty());
+        assertFalse(injectionPoint.isTransient());
     }
 
     @Singleton
@@ -152,6 +162,9 @@ public class InjectionPointMetadataTest {
 
         @Inject
         Instance<Controlled> instanceControlled;
+
+        @Inject
+        transient Controlled transientControlled;
 
         @Inject
         public Controller(BeanManager beanManager, @Singleton Controlled controlled) {

@@ -6,6 +6,14 @@ on:
     paths:
       - '.github/project.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -24,9 +32,9 @@ jobs:
 
       - name: Import GPG key
         id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v3
+        uses: crazy-max/ghaction-import-gpg@v5
         with:
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Set up JDK 11
@@ -44,35 +52,23 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-      - name: Maven release ${{steps.metadata.outputs.current-version}}
+      - name: Update latest release version in docs
         run: |
-          git checkout -b release
-          mvn -B release:prepare -Prelease -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
+          mvn -B -ntp -pl docs -am generate-resources -Denforcer.skip -Dformatter.skip -Dimpsort.skip
           if ! git diff --quiet docs/modules/ROOT/pages/includes/attributes.adoc; then
             git add docs/modules/ROOT/pages/includes/attributes.adoc
-            git commit -m "Update stable version for documentation"
+            git commit -m "Update the latest release version ${{steps.metadata.outputs.current-version}} in documentation"
           fi
-          git checkout ${{github.base_ref}}
-          git rebase release
+
+      - name: Maven release ${{steps.metadata.outputs.current-version}}
+        run: |
+          mvn -B release:prepare -Prelease -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
           mvn -B release:perform -Darguments=-DperformRelease -DperformRelease -Prelease
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
 
-      - name: Adjust tag for documentation changes
-        run: |
-          git checkout ${{steps.metadata.outputs.current-version}}
-          mvn -B clean install -DskipTests -DskipITs
-          if ! git diff --quiet docs/modules/ROOT/pages/includes/attributes.adoc; then
-            git add docs/modules/ROOT/pages/includes/attributes.adoc
-            git commit -m "Update stable version for documentation"
-            # Move the tag after inclusion of documentation adjustments
-            git tag -f ${{steps.metadata.outputs.current-version}}
-            # Push modified tag
-            git push origin refs/tags/${{steps.metadata.outputs.current-version}} -f          
-          fi
-          # Go back to base branch
-          git checkout ${{github.base_ref}}
-
       - name: Push changes to ${{github.base_ref}} branch
-        run: git push
+        run: |
+          git push
+          git push origin ${{steps.metadata.outputs.current-version}}

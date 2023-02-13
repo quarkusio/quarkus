@@ -1,6 +1,6 @@
 package io.quarkus.it.spring.web;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 public class Person {
 

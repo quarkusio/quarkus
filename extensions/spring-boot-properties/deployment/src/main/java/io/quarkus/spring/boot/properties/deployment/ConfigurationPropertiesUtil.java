@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.function.IntFunction;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.jandex.DotName;

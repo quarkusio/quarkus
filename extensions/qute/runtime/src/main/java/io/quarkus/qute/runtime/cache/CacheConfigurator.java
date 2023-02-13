@@ -3,7 +3,7 @@ package io.quarkus.qute.runtime.cache;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;

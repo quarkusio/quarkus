@@ -23,7 +23,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -31,7 +31,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
@@ -687,7 +686,7 @@ public class BeanProcessor {
          * <li>does not have a name,</li>
          * <li>does not declare an observer,</li>
          * <li>does not declare any producer which is eligible for injection to any injection point,</li>
-         * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
+         * <li>is not directly eligible for injection into any {@link jakarta.enterprise.inject.Instance} injection point</li>
          * </ul>
          *
          * @param removeUnusedBeans
@@ -754,8 +753,7 @@ public class BeanProcessor {
 
         /**
          * Can be used to compute a priority of an alternative bean. A non-null computed value always
-         * takes precedence over the priority defined by {@link Priority}, {@link AlternativePriority} or an alternative
-         * stereotype.
+         * takes precedence over the priority defined by {@link Priority} or a stereotype.
          *
          * @param priorities
          * @return self

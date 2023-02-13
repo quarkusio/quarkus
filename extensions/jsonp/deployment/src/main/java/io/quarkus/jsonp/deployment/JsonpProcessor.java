@@ -1,6 +1,6 @@
 package io.quarkus.jsonp.deployment;
 
-import org.glassfish.json.JsonProviderImpl;
+import org.eclipse.parsson.JsonProviderImpl;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import java.lang.reflect.Member;
+import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -10,7 +11,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -192,6 +194,8 @@ enum BuiltinBean {
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
                 ctx.reflectionRegistration);
+        boolean isTransient = ctx.injectionPoint.isField()
+                && Modifier.isTransient(ctx.injectionPoint.getTarget().asField().flags());
         ResultHandle beanHandle;
         switch (ctx.targetInfo.kind()) {
             case OBSERVER:
@@ -207,9 +211,10 @@ enum BuiltinBean {
         }
         ResultHandle instanceProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class,
-                        InjectableBean.class, Set.class, Member.class, int.class),
+                        InjectableBean.class, Set.class, Member.class, int.class, boolean.class),
                 parameterizedType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
-                ctx.constructor.load(ctx.injectionPoint.getPosition()));
+                ctx.constructor.load(ctx.injectionPoint.getPosition()),
+                ctx.constructor.load(isTransient));
         ResultHandle instanceProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, instanceProvider);
         ctx.constructor.writeInstanceField(
@@ -222,7 +227,7 @@ enum BuiltinBean {
         ResultHandle qualifiers = ctx.constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
             // Set<Annotation> instanceProvider1Qualifiers = new HashSet<>()
-            // instanceProvider1Qualifiers.add(javax.enterprise.inject.Default.Literal.INSTANCE)
+            // instanceProvider1Qualifiers.add(jakarta.enterprise.inject.Default.Literal.INSTANCE)
 
             for (AnnotationInstance qualifierAnnotation : ctx.injectionPoint.getRequiredQualifiers()) {
                 BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
@@ -238,10 +243,36 @@ enum BuiltinBean {
             }
         }
         ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());
+        ResultHandle annotations = BeanGenerator.collectInjectionPointAnnotations(ctx.classOutput, ctx.clazzCreator,
+                ctx.beanDeployment,
+                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
+        ResultHandle javaMember = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
+                ctx.reflectionRegistration);
+        boolean isTransient = ctx.injectionPoint.isField()
+                && Modifier.isTransient(ctx.injectionPoint.getTarget().asField().flags());
+        ResultHandle bean;
+        switch (ctx.targetInfo.kind()) {
+            case OBSERVER:
+                // For observers the first argument is always the declaring bean
+                bean = ctx.constructor.invokeInterfaceMethod(
+                        MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
+                break;
+            case BEAN:
+                bean = ctx.constructor.getThis();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+        }
+
+        ResultHandle injectionPoint = ctx.constructor.newInstance(MethodDescriptors.INJECTION_POINT_IMPL_CONSTRUCTOR,
+                parameterizedType, parameterizedType, qualifiers, bean, annotations, javaMember,
+                ctx.constructor.load(ctx.injectionPoint.getPosition()),
+                ctx.constructor.load(isTransient));
+
         ResultHandle eventProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class,
-                        Set.class),
-                parameterizedType, qualifiers);
+                        Set.class, InjectionPoint.class),
+                parameterizedType, qualifiers, injectionPoint);
         ResultHandle eventProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, eventProvider);
         ctx.constructor.writeInstanceField(
@@ -310,13 +341,10 @@ enum BuiltinBean {
 
     private static void generateResourceBytecode(GeneratorContext ctx) {
         ResultHandle annotations = ctx.constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-        // For a resource field the required qualifiers contain all annotations declared on the field
-        // (hence we need to check if they are runtime-retained and their classes are available)
+        // For a resource field the required qualifiers contain all runtime-retained annotations
+        // declared on the field (hence we need to check if their classes are available)
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
             for (AnnotationInstance annotation : ctx.injectionPoint.getRequiredQualifiers()) {
-                if (!annotation.runtimeVisible()) {
-                    continue;
-                }
                 ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getBeanArchiveIndex(), annotation.name());
                 if (annotationClass == null) {
                     continue;
@@ -342,15 +370,15 @@ enum BuiltinBean {
             Consumer<Throwable> errors) {
         if (injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
             errors.accept(
-                    new DefinitionException("An injection point of raw type javax.enterprise.inject.Instance is defined: "
+                    new DefinitionException("An injection point of raw type jakarta.enterprise.inject.Instance is defined: "
                             + injectionPoint.getTargetInfo()));
         } else if (injectionPoint.getRequiredType().kind() == Kind.WILDCARD_TYPE) {
             errors.accept(
-                    new DefinitionException("Wildcard is not a legal type argument for javax.enterprise.inject.Instance: " +
+                    new DefinitionException("Wildcard is not a legal type argument for jakarta.enterprise.inject.Instance: " +
                             injectionPoint.getTargetInfo()));
         } else if (injectionPoint.getRequiredType().kind() == Kind.TYPE_VARIABLE) {
             errors.accept(new DefinitionException(
-                    "Type variable is not a legal type argument for javax.enterprise.inject.Instance: " +
+                    "Type variable is not a legal type argument for jakarta.enterprise.inject.Instance: " +
                             injectionPoint.getTargetInfo()));
         }
     }

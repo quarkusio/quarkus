@@ -111,17 +111,23 @@ public final class AnnotationStore {
     }
 
     private Collection<AnnotationInstance> getOriginalAnnotations(AnnotationTarget target) {
+        Collection<AnnotationInstance> annotations;
         switch (target.kind()) {
             case CLASS:
-                return target.asClass().classAnnotations();
+                annotations = target.asClass().classAnnotations();
+                break;
             case METHOD:
                 // Note that the returning collection also contains method params annotations
-                return target.asMethod().annotations();
+                annotations = target.asMethod().annotations();
+                break;
             case FIELD:
-                return target.asField().annotations();
+                annotations = target.asField().annotations();
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported annotation target");
         }
+
+        return Annotations.onlyRuntimeVisible(annotations);
     }
 
     private List<AnnotationsTransformer> initTransformers(Kind kind, Collection<AnnotationsTransformer> transformers) {

@@ -3,17 +3,16 @@ package io.quarkus.arc.test.alternatives.priority;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.Alternative;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.Vetoed;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Vetoed;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 
@@ -57,7 +56,8 @@ public class AlternativePriorityResolutionTest {
 
         @Produces
         @Singleton
-        @AlternativePriority(2)
+        @Alternative
+        @Priority(2)
         public MessageBean createBar() {
             return new MessageBean("far");
         }

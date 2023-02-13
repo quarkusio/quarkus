@@ -73,8 +73,8 @@ public class AcmeCodegenProvider implements CodeGenProvider {
 		Files.createDirectories(javaFile.getParent());
 		try(PrintWriter out = new PrintWriter(Files.newBufferedWriter(javaFile))) {
 			out.println("package org.acme;");
-			out.println("import javax.ws.rs.GET;");
-			out.println("import javax.ws.rs.Path;");
+			out.println("import jakarta.ws.rs.GET;");
+			out.println("import jakarta.ws.rs.Path;");
 			out.println("@Path(\"/codegen-config\")");
 			out.println("public class " + className + " {");
 			out.println("  @GET");

@@ -254,6 +254,7 @@ public final class BuildContext {
                 throw Messages.msg.cannotMulti(id);
             }
         }
+        execution.getMetrics().buildItemProduced(value);
     }
 
     void depFinished() {

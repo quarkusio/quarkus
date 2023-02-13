@@ -2,7 +2,7 @@ package io.quarkus.resteasy.reactive.links;
 
 import java.util.Collection;
 
-import javax.ws.rs.core.Link;
+import jakarta.ws.rs.core.Link;
 
 /**
  * An injectable bean that contains methods to get the web links at class and instance levels.

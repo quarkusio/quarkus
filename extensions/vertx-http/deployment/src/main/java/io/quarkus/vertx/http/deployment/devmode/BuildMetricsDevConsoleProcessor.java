@@ -57,8 +57,8 @@ public class BuildMetricsDevConsoleProcessor {
                                 buildDuration = data.getLong("duration");
                                 buildStarted = LocalDateTime
                                         .parse(data.getString("started"), DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime();
-                                JsonArray records = data.getJsonArray("records");
 
+                                JsonArray records = data.getJsonArray("records");
                                 for (Object record : records) {
                                     JsonObject recordObj = (JsonObject) record;
                                     recordObj.put("encodedStepId", URLEncoder.encode(recordObj.getString("stepId"),
@@ -73,7 +73,10 @@ public class BuildMetricsDevConsoleProcessor {
                                     }
                                     steps.add(recordObj);
                                 }
+
                                 metrics.put("records", records);
+                                metrics.put("items", data.getJsonArray("items"));
+                                metrics.put("itemsCount", data.getInteger("itemsCount"));
                                 metrics.put("duration", buildDuration);
                             } catch (IOException e) {
                                 LOG.error(e);

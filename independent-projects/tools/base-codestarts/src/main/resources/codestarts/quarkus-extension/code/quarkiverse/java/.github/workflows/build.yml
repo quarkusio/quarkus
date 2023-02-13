@@ -22,6 +22,14 @@ on:
       - '*.txt'
       - '.all-contributorsrc'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     name: Build on ${{ matrix.os }}
@@ -45,7 +53,7 @@ jobs:
           cache: 'maven'
 
       - name: Build with Maven
-        run: mvn -B clean verify -Dno-format
+        run: mvn -B clean install -Dno-format
 
       - name: Build with Maven (Native)
-        run: mvn -B verify -Dnative -Dquarkus.native.container-build -Dnative.surefire.skip
+        run: mvn -B install -Dnative -Dquarkus.native.container-build -Dnative.surefire.skip

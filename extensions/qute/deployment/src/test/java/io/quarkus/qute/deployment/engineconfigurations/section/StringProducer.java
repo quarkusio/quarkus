@@ -1,6 +1,6 @@
 package io.quarkus.qute.deployment.engineconfigurations.section;
 
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Produces;
 
 public class StringProducer {
 

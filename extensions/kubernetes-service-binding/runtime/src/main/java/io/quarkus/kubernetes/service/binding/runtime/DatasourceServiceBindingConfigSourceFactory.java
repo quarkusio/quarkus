@@ -8,18 +8,19 @@ import org.jboss.logging.Logger;
 
 public abstract class DatasourceServiceBindingConfigSourceFactory
         implements Function<ServiceBinding, ServiceBindingConfigSource> {
-
     private static final Logger log = Logger.getLogger(DatasourceServiceBindingConfigSourceFactory.class);
 
     private final String configSourceNamePrefix;
     private final String urlPropertyName;
+    private final String prefix;
     private final String urlFormat;
     protected ServiceBinding serviceBinding;
 
     private DatasourceServiceBindingConfigSourceFactory(String configSourceNamePrefix, String urlPropertyName,
-            String urlFormat) {
+            String prefix, String urlFormat) {
         this.configSourceNamePrefix = configSourceNamePrefix;
         this.urlPropertyName = urlPropertyName;
+        this.prefix = prefix;
         this.urlFormat = urlFormat;
     }
 
@@ -47,14 +48,13 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
             log.debugf("Property 'password' was not found for datasource of type %s", serviceBinding.getType());
         }
 
-        String jdbcURL = bindingProperties.get("jdbc-url");
-        if (jdbcURL != null) {
-            properties.put(urlPropertyName, jdbcURL);
+        if (configureUrlPropertyUsingKey(properties, "jdbc-url")) {
             return properties;
         }
-        String uri = bindingProperties.get("uri");
-        if (uri != null) {
-            properties.put(urlPropertyName, uri);
+        if (configureUrlPropertyUsingKey(properties, "jdbc-uri")) {
+            return properties;
+        }
+        if (configureUrlPropertyUsingKey(properties, "uri")) {
             return properties;
         }
 
@@ -79,23 +79,37 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
         return String.format(urlFormat, type, host, portPart, database);
     }
 
+    private boolean configureUrlPropertyUsingKey(Map<String, String> properties, String key) {
+        String value = serviceBinding.getProperties().get(key);
+        if (value == null) {
+            return false;
+        } else if (value.startsWith(prefix)) {
+            properties.put(urlPropertyName, value);
+            return true;
+        }
+
+        log.warnf("The value '%s' from the property '%s' does not start with '%s'. It will be ignored.",
+                value, key, prefix);
+        return false;
+    }
+
     public static class Jdbc extends DatasourceServiceBindingConfigSourceFactory {
         public Jdbc() {
-            super("jdbc", "quarkus.datasource.jdbc.url", "jdbc:%s://%s%s/%s");
+            this("jdbc:%s://%s%s/%s");
         }
 
         public Jdbc(String urlFormat) {
-            super("jdbc", "quarkus.datasource.jdbc.url", urlFormat);
+            super("jdbc", "quarkus.datasource.jdbc.url", "jdbc:", urlFormat);
         }
     }
 
     public static class Reactive extends DatasourceServiceBindingConfigSourceFactory {
         public Reactive() {
-            super("reactive", "quarkus.datasource.reactive.url", "%s://%s%s/%s");
+            this("%s://%s%s/%s");
         }
 
         public Reactive(String urlFormat) {
-            super("reactive", "quarkus.datasource.reactive.url", urlFormat);
+            super("reactive", "quarkus.datasource.reactive.url", "", urlFormat);
         }
     }
 }

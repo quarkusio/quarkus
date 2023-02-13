@@ -2,7 +2,7 @@ package io.quarkus.qute.resteasy.deployment;
 
 import java.util.Map;
 
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;

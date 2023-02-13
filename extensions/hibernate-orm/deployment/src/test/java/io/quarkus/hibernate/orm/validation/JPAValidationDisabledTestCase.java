@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.validation;
 
 import static org.hamcrest.Matchers.is;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

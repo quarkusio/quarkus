@@ -13,10 +13,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Feature;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Feature;
 
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
@@ -131,7 +131,7 @@ public class RuntimeDeploymentManager {
 
         //it is possible that multiple resource classes use the same path
         //we use this map to merge them
-        Map<URITemplate, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> mappers = new TreeMap<>();
+        Map<MappersKey, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> mappers = new TreeMap<>();
 
         for (int i = 0; i < resourceClasses.size(); i++) {
             ResourceClass clazz = resourceClasses.get(i);
@@ -139,9 +139,12 @@ public class RuntimeDeploymentManager {
                 continue;
             }
             URITemplate classTemplate = new URITemplate(clazz.getPath(), true);
-            var perClassMappers = mappers.get(classTemplate);
+
+            MappersKey key = new MappersKey(classTemplate);
+
+            var perClassMappers = mappers.get(key);
             if (perClassMappers == null) {
-                mappers.put(classTemplate, perClassMappers = new HashMap<>());
+                mappers.put(key, perClassMappers = new HashMap<>());
             }
             for (int j = 0; j < clazz.getMethods().size(); j++) {
                 ResourceMethod method = clazz.getMethods().get(j);
@@ -153,6 +156,7 @@ public class RuntimeDeploymentManager {
             }
 
         }
+
         classMappers = new ArrayList<>(mappers.size());
         mappers.forEach(this::forEachMapperEntry);
 
@@ -208,14 +212,14 @@ public class RuntimeDeploymentManager {
                 runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404(), info.getResteasyReactiveConfig());
     }
 
-    private void forEachMapperEntry(URITemplate path,
+    private void forEachMapperEntry(MappersKey key,
             Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> classTemplates) {
-        int classTemplateNameCount = path.countPathParamNames();
+        int classTemplateNameCount = key.path.countPathParamNames();
         RuntimeMappingDeployment runtimeMappingDeployment = new RuntimeMappingDeployment(classTemplates);
         ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(runtimeMappingDeployment.buildClassMapper(),
                 classTemplateNameCount,
                 info.isResumeOn404());
-        classMappers.add(new RequestMapper.RequestPath<>(true, path,
+        classMappers.add(new RequestMapper.RequestPath<>(true, key.path,
                 new RestInitialHandler.InitialMatch(new ServerRestHandler[] { classRoutingHandler },
                         runtimeMappingDeployment.getMaxMethodTemplateNameCount() + classTemplateNameCount)));
     }
@@ -265,6 +269,71 @@ public class RuntimeDeploymentManager {
         if (prefix.endsWith("/"))
             prefix = prefix.substring(0, prefix.length() - 1);
         return prefix;
+    }
+
+    private static class MappersKey implements Comparable<MappersKey> {
+        private final String key;
+        private final URITemplate path;
+
+        public MappersKey(URITemplate path) {
+            this.path = path;
+
+            if (path.components.length == 0) {
+                this.key = "";
+            } else {
+                // create a key without any names. Names of e.g. default regex components can differ, but the component still has the same meaning.
+                StringBuilder keyBuilder = new StringBuilder();
+                for (URITemplate.TemplateComponent component : path.components) {
+                    int standardLength = component.type.name().length() + 1
+                            + (component.literalText != null ? component.literalText.length() : 0) + 1 + 1;
+                    int additionalLength = 0;
+                    if (component.pattern != null) {
+                        additionalLength = component.pattern.pattern().length();
+                    }
+                    StringBuilder kb = new StringBuilder(standardLength + additionalLength);
+                    kb.append(component.type);
+                    kb.append(";");
+                    kb.append(component.literalText);
+                    kb.append(";");
+                    if (component.pattern != null) {
+                        // (?<id1>[a-zA-Z]+) -> [a-zA-Z]+
+                        String pattern = component.pattern.pattern();
+                        kb.append(component.pattern.pattern(), pattern.indexOf('>') + 1, pattern.length() - 1);
+                    }
+                    kb.append("|");
+                    keyBuilder.append(kb);
+                }
+
+                this.key = keyBuilder.toString();
+            }
+
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null) {
+                return false;
+            }
+
+            return key.equals(((MappersKey) o).key);
+        }
+
+        @Override
+        public int hashCode() {
+            return key.hashCode();
+        }
+
+        @Override
+        public int compareTo(MappersKey o) {
+            if (key.equals(o.key)) {
+                return 0;
+            }
+
+            return path.compareTo(o.path);
+        }
     }
 
 }

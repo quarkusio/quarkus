@@ -1,9 +1,9 @@
 package io.quarkus.it.hibernate.search.orm.elasticsearch.propertyaccess;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
 
 import org.hibernate.annotations.LazyGroup;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;

@@ -1,22 +1,23 @@
 package org.jboss.resteasy.reactive.server.vertx.test.stream;
 
 import java.util.Date;
+import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.common.util.MultiCollectors;
-import org.reactivestreams.Publisher;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.buffer.Buffer;
+import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
 @Path("stream")
 public class StreamResource {
@@ -42,6 +43,13 @@ public class StreamResource {
     @Produces(MediaType.TEXT_PLAIN)
     public Publisher<String> getStreamedTextPublisher() {
         return Multi.createFrom().items("foo", "bar");
+    }
+
+    @Path("text/stream/legacy-publisher")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public org.reactivestreams.Publisher<String> getStreamedTextLegacyPublisher() {
+        return AdaptersToReactiveStreams.publisher(Multi.createFrom().items("foo", "bar"));
     }
 
     @Path("byte-arrays/collect")

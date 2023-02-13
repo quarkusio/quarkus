@@ -6,8 +6,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.quarkus.runtime.TlsConfig;
 
 public class KubernetesClientUtils {
@@ -49,13 +49,13 @@ public class KubernetesClientUtils {
     }
 
     public static KubernetesClient createClient(KubernetesClientBuildConfig buildConfig, TlsConfig tlsConfig) {
-        return new DefaultKubernetesClient(createConfig(buildConfig, tlsConfig));
+        return new KubernetesClientBuilder().withConfig(createConfig(buildConfig, tlsConfig)).build();
     }
 
     public static KubernetesClient createClient() {
         org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
         Config base = Config.autoConfigure(null);
-        return new DefaultKubernetesClient(new ConfigBuilder()
+        return new KubernetesClientBuilder().withConfig(new ConfigBuilder()
                 .withTrustCerts(config.getOptionalValue(PREFIX + "trust-certs", Boolean.class).orElse(base.isTrustCerts()))
                 .withWatchReconnectLimit(config.getOptionalValue(PREFIX + "watch-reconnect-limit", Integer.class)
                         .orElse(base.getWatchReconnectLimit()))
@@ -92,6 +92,7 @@ public class KubernetesClientUtils {
                 .withProxyPassword(
                         config.getOptionalValue(PREFIX + "proxy-password", String.class).orElse(base.getProxyPassword()))
                 .withNoProxy(config.getOptionalValue(PREFIX + "no-proxy", String[].class).orElse(base.getNoProxy()))
-                .build());
+                .build())
+                .build();
     }
 }

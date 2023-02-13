@@ -13,13 +13,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Instance;
-import javax.inject.Singleton;
-import javax.transaction.TransactionManager;
-import javax.transaction.TransactionSynchronizationRegistry;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.logging.Logger;
 import org.jboss.tm.XAResourceRecoveryRegistry;
@@ -138,16 +138,10 @@ public class DataSources {
 
         DataSourceSupport.Entry matchingSupportEntry = dataSourceSupport.entries.get(dataSourceName);
         if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
-            String errorMessage;
-            // we don't have any URL configuration so using a standard message
-            if (DataSourceUtil.isDefault(dataSourceName)) {
-                errorMessage = "quarkus.datasource.jdbc.url has not been defined";
-            } else {
-                errorMessage = "quarkus.datasource." + dataSourceName + ".jdbc.url has not been defined";
-            }
             //this is not an error situation, because we want to allow the situation where a JDBC extension
             //is installed but has not been configured
-            return new UnconfiguredDataSource(errorMessage);
+            return new UnconfiguredDataSource(
+                    DataSourceUtil.dataSourcePropertyKey(dataSourceName, "jdbc.url") + " has not been defined");
         }
 
         // we first make sure that all available JDBC drivers are loaded in the current TCCL

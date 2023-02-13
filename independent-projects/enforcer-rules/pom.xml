@@ -35,6 +35,8 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
 
+        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
+        <!-- Keeping 3.0.0.M3 because 3.2.1 requires class changes -->
         <enforcer-api.version>3.0.0-M3</enforcer-api.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-core.version>3.8.7</maven-core.version>
@@ -113,7 +115,7 @@
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.21.0</version>
+                <version>2.22.0</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>
@@ -347,31 +349,6 @@
                         </executions>
                     </plugin>
                 </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>jakarta-rewrite</id>
-            <activation>
-                <property>
-                    <name>jakarta-rewrite</name>
-                </property>
-            </activation>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.openrewrite.maven</groupId>
-                            <artifactId>rewrite-maven-plugin</artifactId>
-                            <version>4.21.0-SNAPSHOT</version>
-                            <configuration>
-                                <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
-                                <activeStyles>
-                                    <style>io.quarkus.style.maven</style>
-                                </activeStyles>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
             </build>
         </profile>
     </profiles>

@@ -1,15 +1,15 @@
 package io.quarkus.resteasy.test.security;
 
 import static io.quarkus.resteasy.test.security.ProactiveAuthHttpPolicyCustomForbiddenExHandlerTest.CustomForbiddenFailureHandler.CUSTOM_FORBIDDEN_EXCEPTION_HANDLER;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

@@ -16,8 +16,8 @@
  */
 package org.acme.my.project.itest.it;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.Path;
 
 @Path("/itest")
 @ApplicationScoped

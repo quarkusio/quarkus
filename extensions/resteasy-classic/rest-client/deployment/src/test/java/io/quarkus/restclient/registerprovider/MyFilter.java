@@ -2,9 +2,9 @@ package io.quarkus.restclient.registerprovider;
 
 import java.io.IOException;
 
-import javax.inject.Inject;
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 import org.jboss.resteasy.core.ResteasyContext;
 import org.junit.jupiter.api.Assertions;

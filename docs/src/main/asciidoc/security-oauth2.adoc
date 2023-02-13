@@ -17,7 +17,7 @@ It can be used to implement an application authentication mechanism based on tok
 This extension provides a light-weight support for using the opaque Bearer Tokens and validating them by calling an introspection endpoint.
 
 If the OAuth2 Authentication server provides JWT Bearer Tokens then you should consider using either xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] or xref:security-jwt.adoc[SmallRye JWT] extensions instead.
-OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide for more information.
+OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow. For more information, see the xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications] guide.
 
 include::{includes}/extension-status.adoc[]
 
@@ -66,10 +66,10 @@ Create the `src/main/java/org/acme/security/oauth2/TokenSecuredResource.java` fi
 ----
 package org.acme.security.oauth2;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/secured")
 public class TokenSecuredResource {
@@ -92,14 +92,14 @@ package org.acme.security.oauth2;
 
 import java.security.Principal;
 
-import javax.annotation.security.PermitAll;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.annotation.security.PermitAll;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.SecurityContext;
 
 @Path("/secured")
 @ApplicationScoped
@@ -170,15 +170,15 @@ package org.acme.security.oauth2;
 
 import java.security.Principal;
 
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.SecurityContext;
 
 @Path("/secured")
 @ApplicationScoped

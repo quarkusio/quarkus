@@ -3,9 +3,11 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -14,10 +16,10 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.AmbiguousResolutionException;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -117,13 +119,7 @@ public final class Beans {
                 isAlternative = true;
                 continue;
             }
-            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotationName)) {
-                isAlternative = true;
-                priority = annotation.value().asInt();
-                continue;
-            }
-            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1
-            if ((!isAlternative || priority == null) && annotationName.equals(DotNames.PRIORITY)) {
+            if (DotNames.PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 continue;
             }
@@ -164,21 +160,21 @@ public final class Beans {
         }
 
         if (!isAlternative) {
-            isAlternative = initStereotypeAlternative(stereotypes);
+            isAlternative = initStereotypeAlternative(stereotypes, beanDeployment);
         }
         if (name == null) {
-            name = initStereotypeName(stereotypes, producerMethod);
+            name = initStereotypeName(stereotypes, producerMethod, beanDeployment);
         }
 
         if (isAlternative) {
             if (priority == null) {
-                priority = declaringBean.getAlternativePriority();
+                priority = declaringBean.getPriority();
             }
             priority = initAlternativePriority(producerMethod, priority, stereotypes, beanDeployment);
             if (priority == null) {
                 // after all attempts, priority is still null, bean will be ignored
                 LOGGER.debugf(
-                        "Ignoring producer method %s - declared as an @Alternative but not selected by @AlternativePriority or quarkus.arc.selected-alternatives",
+                        "Ignoring producer method %s - declared as an @Alternative but not selected by @Priority or quarkus.arc.selected-alternatives",
                         declaringBean.getTarget().get().asClass().name() + "#" + producerMethod.name());
                 return null;
             }
@@ -233,13 +229,7 @@ public final class Beans {
                 isAlternative = true;
                 continue;
             }
-            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotationName)) {
-                isAlternative = true;
-                priority = annotation.value().asInt();
-                continue;
-            }
-            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1
-            if ((!isAlternative || priority == null) && annotation.name().equals(DotNames.PRIORITY)) {
+            if (DotNames.PRIORITY.equals(annotation.name())) {
                 priority = annotation.value().asInt();
                 continue;
             }
@@ -279,21 +269,21 @@ public final class Beans {
             scope = scopes.get(0);
         }
         if (!isAlternative) {
-            isAlternative = initStereotypeAlternative(stereotypes);
+            isAlternative = initStereotypeAlternative(stereotypes, beanDeployment);
         }
         if (name == null) {
-            name = initStereotypeName(stereotypes, producerField);
+            name = initStereotypeName(stereotypes, producerField, beanDeployment);
         }
 
         if (isAlternative) {
             if (priority == null) {
-                priority = declaringBean.getAlternativePriority();
+                priority = declaringBean.getPriority();
             }
             priority = initAlternativePriority(producerField, priority, stereotypes, beanDeployment);
             // after all attempts, priority is still null
             if (priority == null) {
                 LOGGER.debugf(
-                        "Ignoring producer field %s - declared as an @Alternative but not selected by @AlternativePriority or quarkus.arc.selected-alternatives",
+                        "Ignoring producer field %s - declared as an @Alternative but not selected by @Priority or quarkus.arc.selected-alternatives",
                         producerField);
                 return null;
             }
@@ -321,21 +311,14 @@ public final class Beans {
         if (stereotypes.isEmpty()) {
             return null;
         }
-        final Set<ScopeInfo> stereotypeScopes = new HashSet<>();
-        for (StereotypeInfo stereotype : stereotypes) {
-            ScopeInfo defaultScope = stereotype.getDefaultScope();
-            if (defaultScope == null) {
-                List<StereotypeInfo> parentStereotypes = new ArrayList<>(stereotype.getParentStereotypes().size());
-                for (AnnotationInstance annotation : stereotype.getParentStereotypes()) {
-                    StereotypeInfo parentStereotype = beanDeployment.getStereotype(annotation.name());
-                    parentStereotypes.add(parentStereotype);
-                }
-                defaultScope = initStereotypeScope(parentStereotypes, target, beanDeployment);
-            }
-            if (defaultScope != null) {
-                stereotypeScopes.add(defaultScope);
+
+        Set<ScopeInfo> stereotypeScopes = new HashSet<>();
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment)) {
+            if (stereotype.getDefaultScope() != null) {
+                stereotypeScopes.add(stereotype.getDefaultScope());
             }
         }
+
         return BeanDeployment.getValidScope(stereotypeScopes, target);
     }
 
@@ -346,42 +329,58 @@ public final class Beans {
         return BeanDeployment.getValidScope(beanDefiningAnnotationScopes, target);
     }
 
-    static boolean initStereotypeAlternative(List<StereotypeInfo> stereotypes) {
+    static boolean initStereotypeAlternative(List<StereotypeInfo> stereotypes, BeanDeployment beanDeployment) {
         if (stereotypes.isEmpty()) {
             return false;
         }
-        for (StereotypeInfo stereotype : stereotypes) {
+
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment)) {
             if (stereotype.isAlternative()) {
                 return true;
             }
         }
+
         return false;
     }
 
-    static Integer initStereotypeAlternativePriority(List<StereotypeInfo> stereotypes) {
+    // called when we know the bean does not declare priority on its own
+    // therefore, we can just throw when multiple priorities are inherited from stereotypes
+    static Integer initStereotypeAlternativePriority(List<StereotypeInfo> stereotypes, AnnotationTarget target,
+            BeanDeployment beanDeployment) {
         if (stereotypes.isEmpty()) {
             return null;
         }
-        for (StereotypeInfo stereotype : stereotypes) {
+
+        Set<Integer> priorities = new HashSet<>();
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment)) {
             if (stereotype.getAlternativePriority() != null) {
-                return stereotype.getAlternativePriority();
+                priorities.add(stereotype.getAlternativePriority());
             }
         }
-        return null;
+
+        if (priorities.isEmpty()) {
+            return null;
+        } else if (priorities.size() == 1) {
+            return priorities.iterator().next();
+        } else {
+            throw new DefinitionException("Bean " + target
+                    + " does not declare @Priority and inherits multiple different priorities from stereotypes");
+        }
     }
 
-    static String initStereotypeName(List<StereotypeInfo> stereotypes, AnnotationTarget target) {
+    static String initStereotypeName(List<StereotypeInfo> stereotypes, AnnotationTarget target,
+            BeanDeployment beanDeployment) {
         if (stereotypes.isEmpty()) {
             return null;
         }
-        for (StereotypeInfo stereotype : stereotypes) {
+
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment)) {
             if (stereotype.isNamed()) {
                 switch (target.kind()) {
                     case CLASS:
                         return getDefaultName(target.asClass());
                     case FIELD:
-                        return target.asField()
-                                .name();
+                        return target.asField().name();
                     case METHOD:
                         return getDefaultName(target.asMethod());
                     default:
@@ -389,7 +388,32 @@ public final class Beans {
                 }
             }
         }
+
         return null;
+    }
+
+    private static List<StereotypeInfo> stereotypesWithTransitive(List<StereotypeInfo> stereotypes,
+            BeanDeployment beanDeployment) {
+        List<StereotypeInfo> result = new ArrayList<>();
+        Set<DotName> alreadySeen = new HashSet<>(); // to guard against hypothetical stereotype cycle
+        Deque<StereotypeInfo> workQueue = new ArrayDeque<>(stereotypes);
+        while (!workQueue.isEmpty()) {
+            StereotypeInfo stereotype = workQueue.poll();
+            result.add(stereotype);
+            alreadySeen.add(stereotype.getName());
+
+            for (AnnotationInstance parentStereotype : stereotype.getParentStereotypes()) {
+                if (alreadySeen.contains(parentStereotype.name())) {
+                    continue;
+                }
+                StereotypeInfo parent = beanDeployment.getStereotype(parentStereotype.name());
+                if (parent != null) {
+                    workQueue.add(parent);
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -700,13 +724,22 @@ public final class Beans {
             }
 
         } else if (bean.isProducerField() || bean.isProducerMethod()) {
-            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(),
-                    bean.isProducerMethod() ? bean.getTarget().get().asMethod().returnType()
-                            : bean.getTarget().get().asField().type());
-            // can be null for primitive types
+            String methodOrField = bean.isProducerMethod() ? "method" : "field";
+            String classifier = "Producer " + methodOrField + " for a normal scoped bean";
+
+            Type type = bean.isProducerMethod() ? bean.getTarget().get().asMethod().returnType()
+                    : bean.getTarget().get().asField().type();
+            if (bean.getScope().isNormal()) {
+                if (type.kind() == Kind.PRIMITIVE) {
+                    errors.add(new DeploymentException(String.format("%s must not have a primitive type", classifier)));
+                } else if (type.kind() == Kind.ARRAY) {
+                    errors.add(new DeploymentException(String.format("%s must not have an array type", classifier)));
+                }
+            }
+
+            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), type);
+            // null for primitive or array types, but those are covered above
             if (returnTypeClass != null && bean.getScope().isNormal() && !Modifier.isInterface(returnTypeClass.flags())) {
-                String methodOrField = bean.isProducerMethod() ? "method" : "field";
-                String classifier = "Producer " + methodOrField + " for a normal scoped bean";
                 if (Modifier.isFinal(returnTypeClass.flags())) {
                     if (bean.getDeployment().transformUnproxyableClasses) {
                         bytecodeTransformerConsumer
@@ -889,13 +922,13 @@ public final class Beans {
             List<StereotypeInfo> stereotypes, BeanDeployment deployment) {
         if (alternativePriority == null) {
             // No @Priority or @AlernativePriority used - try stereotypes
-            alternativePriority = initStereotypeAlternativePriority(stereotypes);
+            alternativePriority = initStereotypeAlternativePriority(stereotypes, target, deployment);
         }
         Integer computedPriority = deployment.computeAlternativePriority(target, stereotypes);
         if (computedPriority != null) {
             if (alternativePriority != null) {
                 LOGGER.infof(
-                        "Computed priority [%s] overrides the priority [%s] declared via @Priority or @AlternativePriority",
+                        "Computed priority [%s] overrides the priority [%s] declared via @Priority",
                         computedPriority, alternativePriority);
             }
             alternativePriority = computedPriority;
@@ -1081,24 +1114,19 @@ public final class Beans {
                 // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
                 return;
             }
-            if (annotationName.equals(DotNames.ALTERNATIVE)) {
+            if (DotNames.ALTERNATIVE.equals(annotationName)) {
                 isAlternative = true;
-                return;
-            }
-            if (annotationName.equals(DotNames.ALTERNATIVE_PRIORITY)) {
-                isAlternative = true;
-                priority = annotation.value().asInt();
                 return;
             }
             if (DotNames.DEFAULT_BEAN.equals(annotationName)) {
                 isDefaultBean = true;
                 return;
             }
-            if ((!isAlternative || priority == null) && annotationName.equals(DotNames.PRIORITY)) {
+            if (DotNames.PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 return;
             }
-            if (priority == null && annotationName.equals(DotNames.ARC_PRIORITY)) {
+            if (priority == null && DotNames.ARC_PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 return;
             }
@@ -1150,10 +1178,10 @@ public final class Beans {
                 scope = scopes.get(0);
             }
             if (!isAlternative) {
-                isAlternative = initStereotypeAlternative(stereotypes);
+                isAlternative = initStereotypeAlternative(stereotypes, beanDeployment);
             }
             if (name == null) {
-                name = initStereotypeName(stereotypes, beanClass);
+                name = initStereotypeName(stereotypes, beanClass, beanDeployment);
             }
 
             if (isAlternative) {
@@ -1161,7 +1189,7 @@ public final class Beans {
                 if (priority == null) {
                     // after all attempts, priority is still null, bean will be ignored
                     LOGGER.debugf(
-                            "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority, @AlternativePriority or quarkus.arc.selected-alternatives",
+                            "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority or quarkus.arc.selected-alternatives",
                             beanClass.name());
                     return null;
                 }

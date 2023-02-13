@@ -3,7 +3,7 @@ package io.quarkus.scheduler.common.runtime;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import javax.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.AnnotationLiteral;
 
 import io.quarkus.scheduler.Scheduled;
 

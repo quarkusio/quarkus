@@ -8,15 +8,15 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.Providers;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.Providers;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -39,13 +39,13 @@ public class ProviderConfigInjectionWarningsTest {
                 assertEquals(4, logRecords.size());
                 Set<String> messages = logRecords.stream().map(LogRecord::getMessage).collect(Collectors.toSet());
                 assertTrue(messages.contains(
-                        "Directly injecting a org.eclipse.microprofile.config.Config into a javax.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to javax.enterprise.inject.Instance<org.eclipse.microprofile.config.Config>. Offending field is 'config' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
+                        "Directly injecting a org.eclipse.microprofile.config.Config into a jakarta.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to jakarta.enterprise.inject.Instance<org.eclipse.microprofile.config.Config>. Offending field is 'config' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
                 assertTrue(messages.contains(
-                        "Directly injecting a io.smallrye.config.SmallRyeConfig into a javax.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to javax.enterprise.inject.Instance<io.smallrye.config.SmallRyeConfig>. Offending field is 'smallRyeConfig' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
+                        "Directly injecting a io.smallrye.config.SmallRyeConfig into a jakarta.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to jakarta.enterprise.inject.Instance<io.smallrye.config.SmallRyeConfig>. Offending field is 'smallRyeConfig' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
                 assertTrue(messages.contains(
-                        "Directly injecting a org.eclipse.microprofile.config.inject.ConfigProperty into a javax.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to javax.enterprise.inject.Instance<java.lang.String>. Offending field is 'configProperty' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
+                        "Directly injecting a org.eclipse.microprofile.config.inject.ConfigProperty into a jakarta.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to jakarta.enterprise.inject.Instance<java.lang.String>. Offending field is 'configProperty' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
                 assertTrue(messages.contains(
-                        "Directly injecting a io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$MyConfigMapping into a javax.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to javax.enterprise.inject.Instance<io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$MyConfigMapping>. Offending field is 'myConfigMapping' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
+                        "Directly injecting a io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$MyConfigMapping into a jakarta.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to jakarta.enterprise.inject.Instance<io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$MyConfigMapping>. Offending field is 'myConfigMapping' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
             });
 
     @Test

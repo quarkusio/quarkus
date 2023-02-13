@@ -98,6 +98,7 @@
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>
+        <module>elasticsearch-java-client</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>
         <module>mongodb-client</module>
@@ -156,6 +157,7 @@
         <module>amazon-lambda-http</module>
         <!-- AWS API Gateway REST API -->
         <module>amazon-lambda-rest</module>
+        <module>azure-functions</module>
         <module>azure-functions-http</module>
 
         <!-- New Frameworks -->
@@ -197,6 +199,9 @@
         <module>grpc-common</module>
 
         <module>awt</module>
+
+        <!-- JMS -->
+        <module>jms-spi</module>
 
     </modules>
 

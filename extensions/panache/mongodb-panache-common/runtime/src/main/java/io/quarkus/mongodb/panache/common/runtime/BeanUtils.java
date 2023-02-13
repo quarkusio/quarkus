@@ -4,7 +4,7 @@ import java.lang.annotation.Annotation;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;

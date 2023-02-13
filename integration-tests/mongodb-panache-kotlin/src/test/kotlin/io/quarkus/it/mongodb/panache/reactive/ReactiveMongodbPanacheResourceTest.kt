@@ -16,13 +16,15 @@ import io.restassured.common.mapper.TypeRef
 import io.restassured.config.ObjectMapperConfig
 import io.restassured.parsing.Parser
 import io.restassured.response.Response
+import jakarta.ws.rs.client.Client
+import jakarta.ws.rs.client.ClientBuilder
+import jakarta.ws.rs.client.WebTarget
+import jakarta.ws.rs.sse.SseEventSource
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.DisabledOnOs
-import org.junit.jupiter.api.condition.OS
 import java.io.IOException
 import java.time.Duration
 import java.util.Calendar
@@ -30,14 +32,9 @@ import java.util.Collections
 import java.util.Date
 import java.util.GregorianCalendar
 import java.util.concurrent.atomic.LongAdder
-import javax.ws.rs.client.Client
-import javax.ws.rs.client.ClientBuilder
-import javax.ws.rs.client.WebTarget
-import javax.ws.rs.sse.SseEventSource
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource::class)
-@DisabledOnOs(OS.WINDOWS)
 internal open class ReactiveMongodbPanacheResourceTest {
     companion object {
         private val LIST_OF_BOOK_TYPE_REF: TypeRef<List<BookDTO>> = object : TypeRef<List<BookDTO>>() {}

@@ -128,9 +128,12 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Provide server info.
      *
+     * @param host server host
+     * @param port server port
+     * @param configuration full server configuration
      * @return simple server info
      */
-    String serverInfo();
+    String serverInfo(String host, int port, GrpcServerConfiguration configuration);
 
     /**
      * Does this builder provider provide a new gRPC channel instance.
@@ -170,7 +173,8 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Provide channel info.
      *
+     * @param configuration client configuration
      * @return simple channel info
      */
-    String channelInfo();
+    String channelInfo(GrpcClientConfiguration configuration);
 }

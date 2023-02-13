@@ -256,8 +256,9 @@ public abstract class QuarkusBuild extends QuarkusTask {
                 }
             });
         }
-        if (extension().getQuarkusBuildProperties().containsKey(propName)) {
-            return extension().getQuarkusBuildProperties().get(propName);
+        Map<String, String> quarkusBuildProperties = extension().getQuarkusBuildProperties().get();
+        if (quarkusBuildProperties.containsKey(propName)) {
+            return quarkusBuildProperties.get(propName);
         } else if (applicationProperties.contains(propName)) {
             return applicationProperties.getProperty(propName);
         } else if (getQuarkusBuildEnvProperties().containsKey(propName)) {

@@ -21,5 +21,6 @@
         <module>deployment</module>
         <module>runtime</module>
         <module>xds</module>
+        <module>inprocess</module>
     </modules>
 </project>

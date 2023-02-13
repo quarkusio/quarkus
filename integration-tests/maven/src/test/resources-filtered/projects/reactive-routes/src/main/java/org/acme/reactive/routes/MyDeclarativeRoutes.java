@@ -1,6 +1,6 @@
 package org.acme.reactive.routes;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.netty.util.Version;
 import io.quarkus.vertx.web.Route;

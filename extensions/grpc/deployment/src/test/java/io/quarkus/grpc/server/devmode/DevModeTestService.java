@@ -1,6 +1,6 @@
 package io.quarkus.grpc.server.devmode;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 import devmodetest.v1.Devmodetest;
 import io.grpc.examples.helloworld.GreeterGrpc;

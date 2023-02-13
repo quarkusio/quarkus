@@ -10,7 +10,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 /**
- * Synthetic bean configurator. An alternative to {@link javax.enterprise.inject.spi.configurator.BeanConfigurator}.
+ * Synthetic bean configurator. An alternative to {@link jakarta.enterprise.inject.spi.configurator.BeanConfigurator}.
  * <p>
  * This construct is not thread-safe and should not be re-used.
  *
@@ -55,17 +55,17 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
 
             String name = this.name;
             if (name == null) {
-                name = Beans.initStereotypeName(stereotypes, implClass);
+                name = Beans.initStereotypeName(stereotypes, implClass, beanDeployment);
             }
 
             Boolean alternative = this.alternative;
             if (alternative == null) {
-                alternative = Beans.initStereotypeAlternative(stereotypes);
+                alternative = Beans.initStereotypeAlternative(stereotypes, beanDeployment);
             }
 
             Integer priority = this.priority;
             if (priority == null) {
-                priority = Beans.initStereotypeAlternativePriority(stereotypes);
+                priority = Beans.initStereotypeAlternativePriority(stereotypes, implClass, beanDeployment);
             }
 
             beanConsumer.accept(new BeanInfo.Builder()

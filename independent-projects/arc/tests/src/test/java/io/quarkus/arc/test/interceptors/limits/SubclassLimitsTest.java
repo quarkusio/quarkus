@@ -31,7 +31,7 @@ public class SubclassLimitsTest {
     //        int count = 1500;
     //        StringBuilder builder = new StringBuilder();
     //        builder.append("package io.quarkus.arc.test.interceptors.limits;");
-    //        builder.append("import javax.enterprise.context.ApplicationScoped;");
+    //        builder.append("import jakarta.enterprise.context.ApplicationScoped;");
     //        builder.append("import io.quarkus.arc.test.interceptors.Simple;");
     //        builder.append("@Simple @ApplicationScoped public class LargeBean {");
     //        for (int i = 0; i < count; i++) {

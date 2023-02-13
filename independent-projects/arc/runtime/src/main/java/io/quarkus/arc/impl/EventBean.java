@@ -3,9 +3,9 @@ package io.quarkus.arc.impl;
 import java.lang.reflect.Type;
 import java.util.Set;
 
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.event.Event;
-import javax.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 public class EventBean extends BuiltInBean<Event<?>> {
 
@@ -20,7 +20,7 @@ public class EventBean extends BuiltInBean<Event<?>> {
     public Event<?> get(CreationalContext<Event<?>> creationalContext) {
         // Obtain current IP to get the required type and qualifiers
         InjectionPoint ip = InjectionPointProvider.get();
-        return new EventImpl<>(ip.getType(), ip.getQualifiers());
+        return new EventImpl<>(ip.getType(), ip.getQualifiers(), ip);
     }
 
     @Override

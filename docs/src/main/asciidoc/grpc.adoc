@@ -23,6 +23,7 @@ It:
 * integrates with the reactive engine from Quarkus as well as the reactive development model
 * allows plain-text communication as well as TLS, and TLS with mutual authentication
 * supports https://grpc.github.io/grpc/core/md_doc_grpc_xds_features.html[xDS gRPC] integration
+* supports https://grpc.github.io/grpc-java/javadoc/io/grpc/inprocess/InProcessServerBuilder.html[InProcess] gRPC development
 
 Quarkus gRPC is based on https://vertx.io/docs/vertx-grpc/java/[Vert.x gRPC].
 

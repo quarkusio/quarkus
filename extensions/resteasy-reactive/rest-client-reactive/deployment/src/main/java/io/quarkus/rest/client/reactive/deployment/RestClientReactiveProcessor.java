@@ -24,12 +24,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.enterprise.context.SessionScoped;
-import javax.enterprise.inject.Typed;
-import javax.inject.Singleton;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.MediaType;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.inject.Typed;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -293,18 +293,25 @@ class RestClientReactiveProcessor {
                             continue;
                         }
                     }
+                    DotName providerDotName = providerClass.name();
+                    // don't register server specific types
+                    if (providerDotName.equals(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER)
+                            || providerDotName.equals(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER)
+                            || providerDotName.equals(ResteasyReactiveDotNames.EXCEPTION_MAPPER)) {
+                        continue;
+                    }
 
                     if (providerClass.interfaceNames().contains(ResteasyReactiveDotNames.FEATURE)) {
                         continue; // features should not be automatically registered for the client, see javadoc for Feature
                     }
 
-                    int priority = getAnnotatedPriority(index, providerClass.name().toString(), Priorities.USER);
+                    int priority = getAnnotatedPriority(index, providerDotName.toString(), Priorities.USER);
 
                     constructor.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addGlobalProvider",
                                     void.class, Class.class,
                                     int.class),
-                            constructor.getThis(), constructor.loadClassFromTCCL(providerClass.name().toString()),
+                            constructor.getThis(), constructor.loadClassFromTCCL(providerDotName.toString()),
                             constructor.load(priority));
                 }
             }

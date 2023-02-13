@@ -22,7 +22,7 @@ However, you can enable/disable it explicitly using:
 
 [source, properties]
 ----
-quarkus.snapstart.enabled=true|false
+quarkus.snapstart.enable=true|false
 ----
 
 IMPORTANT: It does not enable/disable SnapStart for your function, only the Quarkus optimizations.
@@ -153,9 +153,9 @@ import org.crac.Core;
 import org.crac.Resource;
 import org.jboss.logging.Logger;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @Startup
 @ApplicationScoped

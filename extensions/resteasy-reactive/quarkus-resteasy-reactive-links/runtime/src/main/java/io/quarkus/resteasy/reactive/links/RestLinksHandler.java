@@ -2,8 +2,8 @@ package io.quarkus.resteasy.reactive.links;
 
 import java.util.Collection;
 
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Link;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;

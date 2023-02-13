@@ -5,7 +5,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.Bean;
 
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 
@@ -52,6 +52,8 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
     private String workerPoolName;
 
     private Type ingestedPayload;
+
+    private boolean useReactiveStreams = false;
 
     public String getBeanId() {
         return beanId;
@@ -259,5 +261,18 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     public void setWorkerPoolName(String workerPoolName) {
         this.workerPoolName = workerPoolName;
+    }
+
+    public boolean isUseReactiveStreams() {
+        return useReactiveStreams;
+    }
+
+    public void setUseReactiveStreams(boolean usesReactiveStreams) {
+        this.useReactiveStreams = usesReactiveStreams;
+    }
+
+    @Override
+    public boolean usesReactiveStreams() {
+        return useReactiveStreams;
     }
 }

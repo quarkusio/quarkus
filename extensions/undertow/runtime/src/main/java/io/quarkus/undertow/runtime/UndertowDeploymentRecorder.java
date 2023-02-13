@@ -15,20 +15,20 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.SessionTrackingMode;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.SessionTrackingMode;
 
 import org.jboss.logging.Logger;
 
@@ -564,6 +564,15 @@ public class UndertowDeploymentRecorder {
                         // Not sure what to do here
                         ManagedContext requestContext = beanContainer.requestContext();
                         if (requestContext.isActive()) {
+                            if (currentVertxRequest.getCurrent() == null && exchange != null
+                                    && exchange.getDelegate() instanceof VertxHttpExchange) {
+                                // goal here is to add event to the Vert.X request when Smallrye Context Propagation
+                                // creates fresh instance of request context without the event; we experienced
+                                // the request context activated and terminated by ActivateRequestContextInterceptor
+                                // invoked for the SecurityIdentityAugmentor that was (re)created during permission checks
+                                addEventToVertxRequest(exchange);
+                            }
+
                             return action.call(exchange, context);
                         } else if (exchange == null) {
                             requestContext.activate();
@@ -578,9 +587,7 @@ public class UndertowDeploymentRecorder {
                             try {
                                 requestContext.activate(existingRequestContext);
 
-                                VertxHttpExchange delegate = (VertxHttpExchange) exchange.getDelegate();
-                                RoutingContext rc = (RoutingContext) delegate.getContext();
-                                currentVertxRequest.setCurrent(rc);
+                                RoutingContext rc = addEventToVertxRequest(exchange);
 
                                 if (association != null) {
                                     QuarkusHttpUser existing = (QuarkusHttpUser) rc.user();
@@ -630,6 +637,13 @@ public class UndertowDeploymentRecorder {
                                 }
                             }
                         }
+                    }
+
+                    private RoutingContext addEventToVertxRequest(HttpServerExchange exchange) {
+                        VertxHttpExchange delegate = (VertxHttpExchange) exchange.getDelegate();
+                        RoutingContext rc = (RoutingContext) delegate.getContext();
+                        currentVertxRequest.setCurrent(rc);
+                        return rc;
                     }
                 };
             }

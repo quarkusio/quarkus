@@ -3,6 +3,7 @@ package io.quarkus.arquillian;
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
 import org.jboss.arquillian.container.test.spi.client.protocol.Protocol;
 import org.jboss.arquillian.core.spi.LoadableExtension;
+import org.jboss.arquillian.test.impl.TestInstanceEnricher;
 import org.jboss.arquillian.test.spi.TestEnricher;
 
 public class QuarkusExtension implements LoadableExtension {
@@ -13,6 +14,7 @@ public class QuarkusExtension implements LoadableExtension {
         builder.service(Protocol.class, QuarkusProtocol.class);
         builder.service(TestEnricher.class, InjectionEnricher.class);
         builder.service(TestEnricher.class, ArquillianResourceURLEnricher.class);
+        builder.observer(TestInstanceEnricher.class);
         builder.observer(CreationalContextDestroyer.class);
         builder.observer(QuarkusBeforeAfterLifecycle.class);
         builder.observer(RequestContextLifecycle.class);

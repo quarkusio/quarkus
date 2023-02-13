@@ -2,11 +2,10 @@ package io.quarkus.hibernate.reactive.panache;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
-import javax.persistence.LockModeType;
-import javax.persistence.NoResultException;
-import javax.persistence.NonUniqueResultException;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.NonUniqueResultException;
 
 import org.hibernate.Session;
 import org.hibernate.annotations.FilterDef;
@@ -14,13 +13,12 @@ import org.hibernate.annotations.FilterDef;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.common.annotation.CheckReturnValue;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 /**
  * <p>
  * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and
- * operating on {@link List} or {@link Stream}.
+ * operating on {@link List}.
  * </p>
  * <p>
  * Instances of this interface cannot mutate the query itself or its parameters: only paging information can be
@@ -232,23 +230,11 @@ public interface PanacheQuery<Entity> {
      * Returns the current page of results as a {@link List}.
      *
      * @return the current page of results as a {@link List}.
-     * @see #stream()
      * @see #page(Page)
      * @see #page()
      */
     @CheckReturnValue
     public <T extends Entity> Uni<List<T>> list();
-
-    /**
-     * Returns the current page of results as a {@link Stream}.
-     *
-     * @return the current page of results as a {@link Stream}.
-     * @see #list()
-     * @see #page(Page)
-     * @see #page()
-     */
-    @CheckReturnValue
-    public <T extends Entity> Multi<T> stream();
 
     /**
      * Returns the first result of the current page index. This ignores the current page size to fetch

@@ -35,10 +35,6 @@ jobs:
     if: github.repository != 'quarkusio/quarkus'
     steps:
       - uses: actions/checkout@v3
-      - uses: n1hility/cancel-previous-runs@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ci-fork-mvn-cache.yml
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
@@ -49,7 +45,7 @@ jobs:
       - name: Get Date
         id: get-date
         run: |
-          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven

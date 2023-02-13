@@ -2,8 +2,7 @@ package io.quarkus.mailer;
 
 import java.io.File;
 import java.util.*;
-
-import org.reactivestreams.Publisher;
+import java.util.concurrent.Flow.Publisher;
 
 /**
  * Represents an e-mail.

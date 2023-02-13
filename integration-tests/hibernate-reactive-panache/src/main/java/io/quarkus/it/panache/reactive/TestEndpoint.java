@@ -11,24 +11,24 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-import javax.persistence.LockModeType;
-import javax.persistence.NoResultException;
-import javax.persistence.NonUniqueResultException;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.NonUniqueResultException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.PanacheQuery;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.exception.PanacheQueryException;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -48,19 +48,9 @@ public class TestEndpoint {
         return Person.findAll().list()
                 .flatMap(persons -> {
                     Assertions.assertEquals(0, persons.size());
-
                     return Person.listAll();
                 }).flatMap(persons -> {
                     Assertions.assertEquals(0, persons.size());
-
-                    return collect(Person.findAll().stream());
-                }).flatMap(personStream -> {
-                    Assertions.assertEquals(0, personStream.size());
-
-                    return collect(Person.streamAll());
-                }).flatMap(personStream -> {
-
-                    Assertions.assertEquals(0, personStream.size());
                     return assertThrows(NoResultException.class, () -> Person.findAll().singleResult(),
                             "singleResult should have thrown");
                 }).flatMap(v -> Person.findAll().firstResult())
@@ -98,16 +88,6 @@ public class TestEndpoint {
                                 Assertions.assertEquals(person, persons.get(0));
 
                                 return Person.listAll();
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(Person.findAll().stream());
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(Person.streamAll());
                             }).flatMap(persons -> {
                                 Assertions.assertEquals(1, persons.size());
                                 Assertions.assertEquals(person, persons.get(0));
@@ -174,31 +154,6 @@ public class TestEndpoint {
                                 Assertions.assertEquals(person, persons.get(0));
 
                                 return Person.find("name", "stef").list();
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(Person.find("name = ?1", "stef").stream());
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(Person.stream("name = ?1", "stef"));
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(Person.stream("name = :name", Parameters.with("name", "stef").map()));
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(Person.stream("name = :name", Parameters.with("name", "stef")));
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(Person.find("name", "stef").stream());
                             }).flatMap(persons -> {
                                 Assertions.assertEquals(1, persons.size());
                                 Assertions.assertEquals(person, persons.get(0));
@@ -413,10 +368,6 @@ public class TestEndpoint {
                     //                            "Should have failed");
                 }).flatMap(v -> Person.deleteAll())
                 .map(v -> "OK");
-    }
-
-    private <T> Uni<List<T>> collect(Multi<T> stream) {
-        return stream.collect().asList();
     }
 
     private Uni<Void> testUpdate() {
@@ -636,19 +587,11 @@ public class TestEndpoint {
                             }).flatMap(list -> {
                                 Assertions.assertEquals(order1, list);
 
-                                return collect(Person.<Person> streamAll(sort1));
-                            }).flatMap(list -> {
-                                Assertions.assertEquals(order1, list);
-
                                 return Person.find("name", sort2, "stef").list();
                             }).flatMap(list -> {
                                 Assertions.assertEquals(order2, list);
 
                                 return Person.list("name", sort2, "stef");
-                            }).flatMap(list -> {
-                                Assertions.assertEquals(order2, list);
-
-                                return collect(Person.<Person> stream("name", sort2, "stef"));
                             }).flatMap(list -> {
                                 Assertions.assertEquals(order2, list);
 
@@ -660,20 +603,11 @@ public class TestEndpoint {
                             }).flatMap(list -> {
                                 Assertions.assertEquals(order2, list);
 
-                                return collect(
-                                        Person.<Person> stream("name = :name", sort2, Parameters.with("name", "stef").map()));
-                            }).flatMap(list -> {
-                                Assertions.assertEquals(order2, list);
-
                                 return Person.find("name = :name", sort2, Parameters.with("name", "stef")).list();
                             }).flatMap(list -> {
                                 Assertions.assertEquals(order2, list);
 
                                 return Person.list("name = :name", sort2, Parameters.with("name", "stef"));
-                            }).flatMap(list -> {
-                                Assertions.assertEquals(order2, list);
-
-                                return collect(Person.<Person> stream("name = :name", sort2, Parameters.with("name", "stef")));
                             });
                 }).flatMap(v -> Person.deleteAll())
                 .map(count -> {
@@ -792,7 +726,7 @@ public class TestEndpoint {
     @Inject
     NamedQueryWith2QueriesRepository namedQueryWith2QueriesRepository;
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("model-dao")
     public Uni<String> testModelDao() {
@@ -802,16 +736,8 @@ public class TestEndpoint {
 
                     return personDao.listAll();
                 }).flatMap(persons -> {
+
                     Assertions.assertEquals(0, persons.size());
-
-                    return collect(personDao.findAll().stream());
-                }).flatMap(personStream -> {
-                    Assertions.assertEquals(0, personStream.size());
-
-                    return collect(personDao.streamAll());
-                }).flatMap(personStream -> {
-
-                    Assertions.assertEquals(0, personStream.size());
                     return assertThrows(NoResultException.class, () -> personDao.findAll().singleResult(),
                             "singleResult should have thrown");
                 }).flatMap(v -> personDao.findAll().firstResult())
@@ -849,16 +775,6 @@ public class TestEndpoint {
                                 Assertions.assertEquals(person, persons.get(0));
 
                                 return personDao.listAll();
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(personDao.findAll().stream());
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(personDao.streamAll());
                             }).flatMap(persons -> {
                                 Assertions.assertEquals(1, persons.size());
                                 Assertions.assertEquals(person, persons.get(0));
@@ -919,31 +835,6 @@ public class TestEndpoint {
                                 Assertions.assertEquals(person, persons.get(0));
 
                                 return personDao.find("name", "stef").list();
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(personDao.find("name = ?1", "stef").stream());
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(personDao.stream("name = ?1", "stef"));
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(personDao.stream("name = :name", Parameters.with("name", "stef").map()));
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(personDao.stream("name = :name", Parameters.with("name", "stef")));
-                            }).flatMap(persons -> {
-                                Assertions.assertEquals(1, persons.size());
-                                Assertions.assertEquals(person, persons.get(0));
-
-                                return collect(personDao.find("name", "stef").stream());
                             }).flatMap(persons -> {
                                 Assertions.assertEquals(1, persons.size());
                                 Assertions.assertEquals(person, persons.get(0));
@@ -1517,7 +1408,7 @@ public class TestEndpoint {
         Assertions.assertEquals(returnType, method.getReturnType());
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("model1")
     public Uni<String> testModel1() {
@@ -1545,7 +1436,7 @@ public class TestEndpoint {
                 });
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("model2")
     public Uni<String> testModel2() {
@@ -1562,7 +1453,7 @@ public class TestEndpoint {
                 });
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("projection1")
     public Uni<String> testProjection() {
@@ -1606,7 +1497,7 @@ public class TestEndpoint {
                 });
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("projection2")
     public Uni<String> testProjection2() {
@@ -1688,7 +1579,7 @@ public class TestEndpoint {
                 .replaceWith("OK");
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("model3")
     public Uni<String> testModel3() {
@@ -1751,7 +1642,7 @@ public class TestEndpoint {
                 .map(v -> "OK");
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("composite")
     public Uni<String> testCompositeKey() {
@@ -1813,7 +1704,7 @@ public class TestEndpoint {
                 .map(v -> "OK"));
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("8254")
     public Uni<String> testBug8254() {
@@ -1857,7 +1748,7 @@ public class TestEndpoint {
                 });
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("9025")
     public Uni<String> testBug9025() {
@@ -1876,7 +1767,7 @@ public class TestEndpoint {
                 });
     }
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("9036")
     public Uni<String> testBug9036() {
@@ -1915,11 +1806,6 @@ public class TestEndpoint {
                                 assertEquals(1, list.size());
 
                                 assertEquals(livePerson, list.get(0));
-
-                                return collect(query.stream());
-                            }).flatMap(list -> {
-                                assertEquals(1, list.size());
-
                                 return query.firstResult();
                             }).flatMap(result -> {
                                 assertEquals(livePerson, result);
@@ -1944,7 +1830,7 @@ public class TestEndpoint {
 
     @GET
     @Path("testSortByNullPrecedence")
-    @ReactiveTransactional
+    @WithTransaction
     public Uni<String> testSortByNullPrecedence() {
         return Person.deleteAll()
                 .flatMap(v -> {

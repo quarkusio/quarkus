@@ -1,6 +1,6 @@
 package io.quarkus.reactive.mysql.client;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.vertx.mysqlclient.MySQLPool;
 

@@ -17,19 +17,19 @@ public class QuarkusResteasyReactiveDotNames {
     public static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
     public static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
     public static final DotName JSON_IGNORE = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
-    public static final DotName JSONB_TRANSIENT = DotName.createSimple("javax.json.bind.annotation.JsonbTransient");
+    public static final DotName JSONB_TRANSIENT = DotName.createSimple("jakarta.json.bind.annotation.JsonbTransient");
 
     public static final IgnoreTypeForReflectionPredicate IGNORE_TYPE_FOR_REFLECTION_PREDICATE = new IgnoreTypeForReflectionPredicate();
     public static final IgnoreFieldForReflectionPredicate IGNORE_FIELD_FOR_REFLECTION_PREDICATE = new IgnoreFieldForReflectionPredicate();
     public static final IgnoreMethodForReflectionPredicate IGNORE_METHOD_FOR_REFLECTION_PREDICATE = new IgnoreMethodForReflectionPredicate();
     private static final String[] PACKAGES_IGNORED_FOR_REFLECTION = {
             // JSON-P
-            "javax.json.",
+            "jakarta.json.",
             "jakarta.json.",
             // Jackson
             "com.fasterxml.jackson.databind.",
             // JAX-RS
-            "javax.ws.rs.",
+            "jakarta.ws.rs.",
             // RESTEasy
             "org.jboss.resteasy.reactive",
             // Vert.x JSON layer

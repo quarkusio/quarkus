@@ -734,7 +734,7 @@ Here's an example for PostgreSQL:
 
 [source,java]
 ----
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.reactive.pg.client.PgPoolCreator;
 import io.vertx.pgclient.PgConnectOptions;

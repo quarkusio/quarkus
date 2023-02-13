@@ -8,10 +8,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonReader;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonReader;
 
 import org.jboss.logging.Logger;
 
@@ -223,10 +223,14 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 if (isValidAcceptRequest(a.rawValue())) {
                     return a.rawValue();
                 }
+
+                if (a.rawValue().startsWith("*/*")) {
+                    return DEFAULT_RESPONSE_CONTENT_TYPE;
+                }
             }
             // Seems like an unknown accept is passed in
             String accept = ctx.request().getHeader("Accept");
-            if (accept != null && !accept.isEmpty() && !accept.startsWith("*/*")) {
+            if (accept != null && !accept.isEmpty()) {
                 return accept;
             }
         }
@@ -335,9 +339,16 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 response.setStatusCode(500)
                         .end();
             } else {
-                response.setStatusCode(200)
-                        .setStatusMessage(OK)
-                        .end(Buffer.buffer(er.getExecutionResultAsString(), requestedCharset));
+                try {
+                    response.setStatusCode(200)
+                            .setStatusMessage(OK)
+                            .end(Buffer.buffer(er.getExecutionResultAsString(), requestedCharset));
+                } catch (IllegalStateException ise) {
+                    // The application already finished the request by itself for some reason
+                    if (log.isDebugEnabled()) {
+                        log.debug("Cannot write response", ise);
+                    }
+                }
             }
         }
 

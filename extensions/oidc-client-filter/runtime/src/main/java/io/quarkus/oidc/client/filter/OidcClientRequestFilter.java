@@ -2,11 +2,11 @@ package io.quarkus.oidc.client.filter;
 
 import java.util.Optional;
 
-import javax.annotation.Priority;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.ext.Provider;
+import jakarta.annotation.Priority;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.ext.Provider;
 
 import io.quarkus.oidc.client.filter.runtime.AbstractOidcClientRequestFilter;
 import io.quarkus.oidc.client.filter.runtime.OidcClientFilterConfig;

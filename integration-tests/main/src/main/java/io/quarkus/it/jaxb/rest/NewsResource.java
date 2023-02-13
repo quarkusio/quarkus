@@ -3,10 +3,10 @@ package io.quarkus.it.jaxb.rest;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 
 import io.quarkus.it.jaxb.mapper.process.UnmarshalRSSProcess;
 import io.quarkus.it.jaxb.object.Category;

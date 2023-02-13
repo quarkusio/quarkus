@@ -3,7 +3,6 @@ package io.quarkus.gradle.extension;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -19,6 +18,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
@@ -39,7 +39,7 @@ public class QuarkusPluginExtension {
 
     private final Property<String> finalName;
 
-    private Map<String, String> quarkusBuildProperties;
+    private final MapProperty<String, String> quarkusBuildProperties;
     private final SourceSetExtension sourceSetExtension;
 
     public QuarkusPluginExtension(Project project) {
@@ -49,7 +49,7 @@ public class QuarkusPluginExtension {
         finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
 
         this.sourceSetExtension = new SourceSetExtension();
-        quarkusBuildProperties = new HashMap<>();
+        this.quarkusBuildProperties = project.getObjects().mapProperty(String.class, String.class);
     }
 
     public void beforeTest(Test task) {
@@ -99,7 +99,7 @@ public class QuarkusPluginExtension {
     public String buildNativeRunnerName(final Map<String, Object> taskSystemProps) {
         Properties properties = new Properties(taskSystemProps.size());
         properties.putAll(taskSystemProps);
-        quarkusBuildProperties.entrySet()
+        quarkusBuildProperties.get().entrySet()
                 .forEach(buildEntry -> properties.putIfAbsent(buildEntry.getKey(), buildEntry.getValue()));
         System.getProperties().entrySet()
                 .forEach(propEntry -> properties.putIfAbsent(propEntry.getKey(), propEntry.getValue()));
@@ -215,11 +215,15 @@ public class QuarkusPluginExtension {
         return classesDir;
     }
 
-    public Map<String, String> getQuarkusBuildProperties() {
+    public MapProperty<String, String> getQuarkusBuildProperties() {
         return quarkusBuildProperties;
     }
 
     public void set(String name, @Nullable String value) {
+        quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
+    }
+
+    public void set(String name, Property<String> value) {
         quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
     }
 

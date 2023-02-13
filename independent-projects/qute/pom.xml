@@ -45,9 +45,10 @@
         <version.jandex>3.0.5</version.jandex>
         <version.gizmo>1.6.0.Final</version.gizmo>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
+        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0-M8</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
-        <version.smallrye-mutiny>1.8.0</version.smallrye-mutiny>
+        <version.smallrye-mutiny>2.1.0</version.smallrye-mutiny>
     </properties>
 
     <modules>
@@ -122,12 +123,6 @@
                             <artifactId>quarkus-enforcer-rules</artifactId>
                             <version>${project.version}</version>
                         </dependency>
-                        <!-- This dependency can be removed when MENFORCER-422 is available -->
-                        <dependency>
-                            <groupId>com.github.gastaldi</groupId>
-                            <artifactId>enforcer-rules</artifactId>
-                            <version>0.0.1</version>
-                        </dependency>
                     </dependencies>
                     <executions>
                         <execution>
@@ -166,7 +161,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.21.0</version>
+                    <version>2.22.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -398,31 +393,6 @@
                         </executions>
                     </plugin>
                 </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>jakarta-rewrite</id>
-            <activation>
-                <property>
-                    <name>jakarta-rewrite</name>
-                </property>
-            </activation>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.openrewrite.maven</groupId>
-                            <artifactId>rewrite-maven-plugin</artifactId>
-                            <version>4.21.0-SNAPSHOT</version>
-                            <configuration>
-                                <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
-                                <activeStyles>
-                                    <style>io.quarkus.style.maven</style>
-                                </activeStyles>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
             </build>
         </profile>
     </profiles>

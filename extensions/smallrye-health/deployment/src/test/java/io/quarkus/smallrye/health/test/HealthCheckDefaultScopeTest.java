@@ -12,8 +12,8 @@ import static org.hamcrest.Matchers.is;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.enterprise.inject.Stereotype;
-import javax.inject.Named;
+import jakarta.enterprise.inject.Stereotype;
+import jakarta.inject.Named;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;

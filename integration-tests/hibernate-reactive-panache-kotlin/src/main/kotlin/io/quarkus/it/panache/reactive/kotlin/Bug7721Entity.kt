@@ -1,7 +1,7 @@
 package io.quarkus.it.panache.reactive.kotlin
 
-import javax.persistence.Column
-import javax.persistence.Entity
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
 
 @Entity
 class Bug7721Entity : Bug7721EntitySuperClass() {

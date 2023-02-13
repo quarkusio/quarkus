@@ -104,7 +104,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
     }
 
     private static String toPropertyArg(String name, String value) {
-        return new StringBuilder().append("-D=").append(name).append("=").append(value).toString();
+        return new StringBuilder().append("-D").append(name).append("=").append(value).toString();
     }
 
     private void printCommandOutput(File projectDir, List<String> command, BuildResult commandResult, int exitCode) {

@@ -166,6 +166,7 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+            {#if generate-native}
             <!-- Run the tests with the executable produced by the build (could be native, jvm, or container image) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -187,8 +188,10 @@
                     </execution>
                 </executions>
             </plugin>
+            {/if}
         </plugins>
     </build>
+    {#if generate-native}
     <profiles>
         <!-- Use this profile to build a native executable using GraalVM -->
         <profile>
@@ -204,4 +207,5 @@
             </properties>
         </profile>
     </profiles>
+    {/if}
 </project>

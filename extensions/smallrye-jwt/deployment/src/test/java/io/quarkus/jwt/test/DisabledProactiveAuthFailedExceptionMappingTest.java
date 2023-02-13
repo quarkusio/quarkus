@@ -1,6 +1,6 @@
 package io.quarkus.jwt.test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;

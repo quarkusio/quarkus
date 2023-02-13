@@ -1,8 +1,10 @@
 package io.quarkus.arc.processor;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -110,6 +112,17 @@ public final class Annotations {
      *
      * @param beanDeployment
      * @param method
+     * @param name
+     * @return whether given method has a parameter that has an annotation with given name
+     */
+    public static boolean hasParameterAnnotation(BeanDeployment beanDeployment, MethodInfo method, DotName name) {
+        return contains(getParameterAnnotations(beanDeployment, method), name);
+    }
+
+    /**
+     *
+     * @param beanDeployment
+     * @param method
      * @return collection of annotations present on all parameters of given method
      */
     public static Set<AnnotationInstance> getParameterAnnotations(BeanDeployment beanDeployment, MethodInfo method) {
@@ -171,6 +184,16 @@ public final class Annotations {
             }
         }
         return null;
+    }
+
+    public static Collection<AnnotationInstance> onlyRuntimeVisible(Collection<AnnotationInstance> annotations) {
+        List<AnnotationInstance> result = new ArrayList<>(annotations.size());
+        for (AnnotationInstance annotation : annotations) {
+            if (annotation.runtimeVisible()) {
+                result.add(annotation);
+            }
+        }
+        return result;
     }
 
 }

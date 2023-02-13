@@ -4,10 +4,10 @@ import static io.restassured.RestAssured.get;
 
 import java.util.function.Consumer;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.HttpHeaders;
 
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.RestPath;

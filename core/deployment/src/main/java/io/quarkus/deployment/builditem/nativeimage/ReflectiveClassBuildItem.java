@@ -17,7 +17,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean methods;
     private final boolean fields;
     private final boolean constructors;
-    private final boolean finalFieldsWritable;
     private final boolean weak;
     private final boolean serialization;
 
@@ -29,13 +28,8 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this(constructors, methods, fields, false, false, className);
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            boolean weak, Class<?>... className) {
-        this(constructors, methods, fields, finalFieldsWritable, weak, false, className);
-    }
-
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            boolean weak, boolean serialization, Class<?>... className) {
+    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization,
+            Class<?>... className) {
         List<String> names = new ArrayList<>();
         for (Class<?> i : className) {
             if (i == null) {
@@ -47,16 +41,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.methods = methods;
         this.fields = fields;
         this.constructors = constructors;
-        this.finalFieldsWritable = finalFieldsWritable;
         this.weak = weak;
         this.serialization = serialization;
-        if (weak) {
-            if (serialization) {
-                throw new RuntimeException("Weak reflection not supported with serialization");
-            }
-            if (finalFieldsWritable) {
-                throw new RuntimeException("Weak reflection not supported with finalFieldsWritable");
-            }
+        if (weak && serialization) {
+            throw new RuntimeException("Weak reflection not supported with serialization");
         }
     }
 
@@ -70,7 +58,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean serialization,
             String... className) {
-        this(constructors, methods, fields, false, false, serialization, className);
+        this(constructors, methods, fields, false, serialization, className);
     }
 
     public static ReflectiveClassBuildItem weakClass(String... className) {
@@ -79,20 +67,15 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     public static ReflectiveClassBuildItem weakClass(boolean constructors, boolean methods, boolean fields,
             String... className) {
-        return new ReflectiveClassBuildItem(constructors, methods, fields, false, true, className);
+        return new ReflectiveClassBuildItem(constructors, methods, fields, true, false, className);
     }
 
     public static ReflectiveClassBuildItem serializationClass(String... className) {
-        return new ReflectiveClassBuildItem(false, false, false, false, false, true, className);
+        return new ReflectiveClassBuildItem(false, false, false, false, true, className);
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            boolean weak, String... className) {
-        this(constructors, methods, fields, finalFieldsWritable, weak, false, className);
-    }
-
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            boolean weak, boolean serialization, String... className) {
+    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization,
+            String... className) {
         for (String i : className) {
             if (i == null) {
                 throw new NullPointerException();
@@ -102,7 +85,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.methods = methods;
         this.fields = fields;
         this.constructors = constructors;
-        this.finalFieldsWritable = finalFieldsWritable;
         this.weak = weak;
         this.serialization = serialization;
     }
@@ -123,8 +105,13 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return constructors;
     }
 
+    /**
+     * @deprecated As of GraalVM 21.2 finalFieldsWritable is no longer needed when registering fields for reflection. This will
+     *             be removed in a future verion of Quarkus.
+     */
+    @Deprecated
     public boolean areFinalFieldsWritable() {
-        return finalFieldsWritable;
+        return false;
     }
 
     public boolean isWeak() {
@@ -159,7 +146,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         private boolean constructors = true;
         private boolean methods;
         private boolean fields;
-        private boolean finalFieldsWritable;
         private boolean weak;
         private boolean serialization;
 
@@ -186,8 +172,12 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @deprecated As of GraalVM 21.2 finalFieldsWritable is no longer needed when registering fields for reflection. This
+         *             will be removed in a future verion of Quarkus.
+         */
+        @Deprecated
         public Builder finalFieldsWritable(boolean finalFieldsWritable) {
-            this.finalFieldsWritable = finalFieldsWritable;
             return this;
         }
 
@@ -202,8 +192,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, weak, serialization,
-                    className);
+            return new ReflectiveClassBuildItem(constructors, methods, fields, weak, serialization, className);
         }
     }
 }

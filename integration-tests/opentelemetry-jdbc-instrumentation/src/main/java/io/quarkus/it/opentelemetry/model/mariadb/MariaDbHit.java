@@ -1,7 +1,7 @@
 package io.quarkus.it.opentelemetry.model.mariadb;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.it.opentelemetry.model.Hit;

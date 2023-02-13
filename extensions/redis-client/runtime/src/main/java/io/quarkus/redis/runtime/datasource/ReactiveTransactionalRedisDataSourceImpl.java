@@ -20,6 +20,7 @@ import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
 import io.quarkus.redis.datasource.search.ReactiveTransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveTransactionalSortedSetCommands;
+import io.quarkus.redis.datasource.stream.ReactiveTransactionalStreamCommands;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
 import io.quarkus.redis.datasource.timeseries.ReactiveTransactionalTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.ReactiveTransactionalTopKCommands;
@@ -104,6 +105,13 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K> ReactiveTransactionalBitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new ReactiveTransactionalBitMapCommandsImpl<>(this,
                 (ReactiveBitMapCommandsImpl<K>) this.reactive.bitmap(redisKeyType), tx);
+    }
+
+    @Override
+    public <K, F, V> ReactiveTransactionalStreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> typeOfField,
+            Class<V> typeOfValue) {
+        return new ReactiveTransactionalStreamCommandsImpl<>(this,
+                (ReactiveStreamCommandsImpl<K, F, V>) this.reactive.stream(redisKeyType, typeOfField, typeOfValue), tx);
     }
 
     @Override

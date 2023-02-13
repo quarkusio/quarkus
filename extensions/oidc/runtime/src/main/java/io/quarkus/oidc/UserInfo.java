@@ -1,6 +1,6 @@
 package io.quarkus.oidc;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import io.quarkus.oidc.runtime.AbstractJsonObjectResponse;
 

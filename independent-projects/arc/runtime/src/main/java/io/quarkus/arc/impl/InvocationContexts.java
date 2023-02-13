@@ -2,13 +2,11 @@ package io.quarkus.arc.impl;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.interceptor.InvocationContext;
+import jakarta.interceptor.InvocationContext;
 
 public final class InvocationContexts {
 
@@ -18,19 +16,14 @@ public final class InvocationContexts {
     /**
      *
      * @param target
-     * @param method
-     * @param aroundInvokeForward
      * @param args
-     * @param chain
-     * @param interceptorBindings
+     * @param metadata
      * @return the return value
      * @throws Exception
      */
-    public static Object performAroundInvoke(Object target, Method method,
-            Function<InvocationContext, Object> aroundInvokeForward, Object[] args,
-            List<InterceptorInvocation> chain,
-            Set<Annotation> interceptorBindings) throws Exception {
-        return AroundInvokeInvocationContext.perform(target, method, aroundInvokeForward, args, chain, interceptorBindings);
+    public static Object performAroundInvoke(Object target, Object[] args, InterceptedMethodMetadata metadata)
+            throws Exception {
+        return AroundInvokeInvocationContext.perform(target, args, metadata);
     }
 
     /**
@@ -42,7 +35,7 @@ public final class InvocationContexts {
      */
     public static InvocationContext postConstruct(Object target, List<InterceptorInvocation> chain,
             Set<Annotation> interceptorBindings) {
-        return new LifecycleCallbackInvocationContext(target, null, null, interceptorBindings, chain);
+        return new LifecycleCallbackInvocationContext(target, null, interceptorBindings, chain);
     }
 
     /**
@@ -54,7 +47,7 @@ public final class InvocationContexts {
      */
     public static InvocationContext preDestroy(Object target, List<InterceptorInvocation> chain,
             Set<Annotation> interceptorBindings) {
-        return new LifecycleCallbackInvocationContext(target, null, null, interceptorBindings, chain);
+        return new LifecycleCallbackInvocationContext(target, null, interceptorBindings, chain);
     }
 
     /**
@@ -62,7 +55,7 @@ public final class InvocationContexts {
      * @param target
      * @param chain
      * @param interceptorBindings
-     * @return a new {@link javax.interceptor.AroundConstruct} invocation context
+     * @return a new {@link jakarta.interceptor.AroundConstruct} invocation context
      */
     public static InvocationContext aroundConstruct(Constructor<?> constructor,
             Object[] parameters,

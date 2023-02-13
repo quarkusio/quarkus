@@ -19,7 +19,7 @@ public interface JaxrsClientReactiveEnricher {
      * Class-level alterations
      *
      * Used by MicroProfile Rest Client implementation (quarkus-rest-client-reactive) to support
-     * {@link javax.ws.rs.ext.Provider}, {@code @ClientHeadersFactory}, etc
+     * {@link jakarta.ws.rs.ext.Provider}, {@code @ClientHeadersFactory}, etc
      *
      * Please note that this won't be invoked for sub-resources
      *
@@ -32,13 +32,13 @@ public interface JaxrsClientReactiveEnricher {
             ClassInfo interfaceClass, IndexView index);
 
     /**
-     * Called when a {@link javax.ws.rs.client.WebTarget} has been populated for a normal Client
+     * Called when a {@link jakarta.ws.rs.client.WebTarget} has been populated for a normal Client
      */
     void forWebTarget(MethodCreator methodCreator, IndexView index, ClassInfo interfaceClass, MethodInfo method,
             AssignableResultHandle webTarget, BuildProducer<GeneratedClassBuildItem> generatedClasses);
 
     /**
-     * Called when a {@link javax.ws.rs.client.WebTarget} has been populated for a sub Client
+     * Called when a {@link jakarta.ws.rs.client.WebTarget} has been populated for a sub Client
      */
     void forSubResourceWebTarget(MethodCreator methodCreator, IndexView index, ClassInfo rootInterfaceClass,
             ClassInfo subInterfaceClass,

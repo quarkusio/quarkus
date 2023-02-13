@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.resolution.broken;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 @Dependent
 public class MyOtherBean {

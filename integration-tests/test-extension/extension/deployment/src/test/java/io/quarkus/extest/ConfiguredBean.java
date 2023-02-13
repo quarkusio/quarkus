@@ -1,7 +1,7 @@
 package io.quarkus.extest;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.extest.runtime.config.AnotherPrefixConfig;
 import io.quarkus.extest.runtime.config.FooRuntimeConfig;

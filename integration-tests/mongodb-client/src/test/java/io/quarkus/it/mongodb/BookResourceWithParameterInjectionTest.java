@@ -1,17 +1,14 @@
 package io.quarkus.it.mongodb;
 
-import javax.json.bind.Jsonb;
+import jakarta.json.bind.Jsonb;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@DisabledOnOs(OS.WINDOWS)
 public class BookResourceWithParameterInjectionTest {
 
     private static Jsonb jsonb;

@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.jsonb;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/hello-default")
 public class HelloNoMediaTypeResource {

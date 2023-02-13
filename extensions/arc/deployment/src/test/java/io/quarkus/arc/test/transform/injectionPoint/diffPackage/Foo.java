@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.transform.injectionPoint.diffPackage;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class Foo {

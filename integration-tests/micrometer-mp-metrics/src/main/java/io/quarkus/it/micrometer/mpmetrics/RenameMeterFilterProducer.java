@@ -3,8 +3,8 @@ package io.quarkus.it.micrometer.mpmetrics;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;

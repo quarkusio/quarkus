@@ -3,7 +3,7 @@ package io.quarkus.resteasy.reactive.server.test.multipart;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -74,6 +74,7 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
 
         String body = extractable.asString();
         assertContainsValue(body, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
+        assertContainsValue(body, "part-with-filename", MediaType.TEXT_PLAIN, "filename=\"file.txt\"");
         assertContainsValue(body, "custom-surname", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_SURNAME);
         assertContainsValue(body, "custom-status", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_STATUS);
         assertContainsValue(body, "active", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_ACTIVE);

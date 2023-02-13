@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
-import javax.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
@@ -102,9 +102,11 @@ public class GrpcServerRecorder {
         GrpcBuilderProvider<?> provider = GrpcBuilderProvider.findServerBuilderProvider(configuration);
 
         if (configuration.useSeparateServer) {
-            LOGGER.warn(
-                    "Using legacy gRPC support, with separate new HTTP server instance. " +
-                            "Switch to single HTTP server instance usage with quarkus.grpc.server.use-separate-server=false property");
+            if (provider == null) {
+                LOGGER.warn(
+                        "Using legacy gRPC support, with separate new HTTP server instance. " +
+                                "Switch to single HTTP server instance usage with quarkus.grpc.server.use-separate-server=false property");
+            }
 
             if (launchMode == LaunchMode.DEVELOPMENT) {
                 // start single server, not in a verticle, regardless of the configuration.instances
@@ -190,7 +192,7 @@ public class GrpcServerRecorder {
         CompletableFuture<Void> startResult = new CompletableFuture<>();
 
         vertx.deployVerticle(
-                () -> new GrpcServerVerticle(configuration, grpcContainer, launchMode, blockingMethodsPerService),
+                () -> new GrpcServerVerticle(configuration, grpcContainer, provider, launchMode, blockingMethodsPerService),
                 new DeploymentOptions().setInstances(configuration.instances),
                 result -> {
                     if (result.failed()) {
@@ -216,10 +218,14 @@ public class GrpcServerRecorder {
 
     private void postStartup(GrpcServerConfiguration configuration, GrpcBuilderProvider<?> provider, boolean test) {
         initHealthStorage();
-        LOGGER.infof("gRPC Server started on %s:%d [%s]",
-                configuration.host,
-                test ? configuration.testPort : configuration.port,
-                provider != null ? provider.serverInfo() : "SSL enabled: " + !configuration.plainText);
+        int port = test ? configuration.testPort : configuration.port;
+        String msg = "Started ";
+        if (provider != null)
+            msg += provider.serverInfo(configuration.host, port, configuration);
+        else
+            msg += String.format("gRPC server on %s:%d [%s]",
+                    configuration.host, port, "TLS enabled: " + !configuration.plainText);
+        LOGGER.info(msg);
     }
 
     private void initHealthStorage() {
@@ -239,7 +245,7 @@ public class GrpcServerRecorder {
             GrpcBuilderProvider<?> provider, Map<String, List<String>> blockingMethodsPerService, ShutdownContext shutdown,
             LaunchMode launchMode) {
 
-        Map.Entry<Integer, Server> portToServer = buildServer(vertx, configuration,
+        Map.Entry<Integer, Server> portToServer = buildServer(vertx, configuration, provider,
                 blockingMethodsPerService, grpcContainer, launchMode);
 
         Server server = portToServer.getValue();
@@ -418,13 +424,12 @@ public class GrpcServerRecorder {
 
     @SuppressWarnings("rawtypes")
     private Map.Entry<Integer, Server> buildServer(Vertx vertx, GrpcServerConfiguration configuration,
-            Map<String, List<String>> blockingMethodsPerService, GrpcContainer grpcContainer, LaunchMode launchMode) {
+            GrpcBuilderProvider provider, Map<String, List<String>> blockingMethodsPerService,
+            GrpcContainer grpcContainer, LaunchMode launchMode) {
 
         int port = launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port;
 
         AtomicBoolean usePlainText = new AtomicBoolean();
-
-        GrpcBuilderProvider provider = GrpcBuilderProvider.findServerBuilderProvider(configuration);
 
         ServerBuilder builder;
         if (provider != null) {
@@ -485,9 +490,12 @@ public class GrpcServerRecorder {
             builder.intercept(serverInterceptor);
         }
 
-        LOGGER.debugf("Starting gRPC Server on %s:%d [%s] ...",
-                configuration.host, port,
-                provider != null ? provider.serverInfo() : "SSL enabled: " + !usePlainText.get());
+        String msg = "Starting ";
+        if (provider != null)
+            msg += provider.serverInfo(configuration.host, port, configuration);
+        else
+            msg += String.format("gRPC server on %s:%d [TLS enabled: %s]", configuration.host, port, !usePlainText.get());
+        LOGGER.debug(msg);
 
         return new AbstractMap.SimpleEntry<>(port, builder.build());
     }
@@ -529,15 +537,18 @@ public class GrpcServerRecorder {
     private class GrpcServerVerticle extends AbstractVerticle {
         private final GrpcServerConfiguration configuration;
         private final GrpcContainer grpcContainer;
+        private final GrpcBuilderProvider provider;
         private final LaunchMode launchMode;
         private final Map<String, List<String>> blockingMethodsPerService;
 
         private Server grpcServer;
 
         GrpcServerVerticle(GrpcServerConfiguration configuration, GrpcContainer grpcContainer,
-                LaunchMode launchMode, Map<String, List<String>> blockingMethodsPerService) {
+                GrpcBuilderProvider provider, LaunchMode launchMode,
+                Map<String, List<String>> blockingMethodsPerService) {
             this.configuration = configuration;
             this.grpcContainer = grpcContainer;
+            this.provider = provider;
             this.launchMode = launchMode;
             this.blockingMethodsPerService = blockingMethodsPerService;
         }
@@ -549,7 +560,7 @@ public class GrpcServerRecorder {
                         "Unable to find bean exposing the `BindableService` interface - not starting the gRPC server");
                 return;
             }
-            Map.Entry<Integer, Server> portToServer = buildServer(getVertx(), configuration,
+            Map.Entry<Integer, Server> portToServer = buildServer(getVertx(), configuration, provider,
                     blockingMethodsPerService, grpcContainer, launchMode);
 
             grpcServer = portToServer.getValue();

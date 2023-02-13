@@ -3,11 +3,12 @@ package io.quarkus.jwt.test;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 
 import org.jose4j.jwt.JwtClaims;
 
-import io.quarkus.arc.AlternativePriority;
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
@@ -15,7 +16,8 @@ import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
 import io.smallrye.jwt.auth.principal.ParseException;
 
 @ApplicationScoped
-@AlternativePriority(1)
+@Alternative
+@Priority(1)
 public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
 
     @Override

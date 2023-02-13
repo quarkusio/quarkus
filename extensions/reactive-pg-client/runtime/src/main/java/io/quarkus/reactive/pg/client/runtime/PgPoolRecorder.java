@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
@@ -80,10 +80,7 @@ public class PgPoolRecorder {
         // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
         // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
         pgConnectOptions.setMetricsName("postgresql|" + dataSourceName);
-        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
-            log.warn(
-                    "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
-        }
+
         return createPool(vertx, poolOptions, pgConnectOptions, dataSourceName);
     }
 
@@ -94,9 +91,7 @@ public class PgPoolRecorder {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
-        if (dataSourceReactiveRuntimeConfig.maxSize.isPresent()) {
-            poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize.getAsInt());
-        }
+        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize);
 
         if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
             int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
@@ -159,14 +154,7 @@ public class PgPoolRecorder {
             }
         }
 
-        if (dataSourceReactivePostgreSQLConfig.cachePreparedStatements.isPresent()) {
-            log.warn(
-                    "datasource.reactive.postgresql.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
-            pgConnectOptions
-                    .setCachePreparedStatements(dataSourceReactivePostgreSQLConfig.cachePreparedStatements.get());
-        } else {
-            pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
-        }
+        pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
 
         if (dataSourceReactivePostgreSQLConfig.pipeliningLimit.isPresent()) {
             pgConnectOptions.setPipeliningLimit(dataSourceReactivePostgreSQLConfig.pipeliningLimit.getAsInt());

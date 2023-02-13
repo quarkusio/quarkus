@@ -5,10 +5,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.List;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
@@ -17,6 +17,7 @@ import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
 public class MultipartOutputResource {
 
     public static final String RESPONSE_NAME = "a name";
+    public static final String RESPONSE_FILENAME = "a filename";
     public static final String RESPONSE_SURNAME = "a surname";
     public static final Status RESPONSE_STATUS = Status.WORKING;
     public static final List<String> RESPONSE_VALUES = List.of("one", "two");
@@ -58,6 +59,7 @@ public class MultipartOutputResource {
     public RestResponse<MultipartFormDataOutput> withFormDataOutput() {
         MultipartFormDataOutput form = new MultipartFormDataOutput();
         form.addFormData("name", RESPONSE_NAME, MediaType.TEXT_PLAIN_TYPE);
+        form.addFormData("part-with-filename", RESPONSE_FILENAME, MediaType.TEXT_PLAIN_TYPE, "file.txt");
         form.addFormData("custom-surname", RESPONSE_SURNAME, MediaType.TEXT_PLAIN_TYPE);
         form.addFormData("custom-status", RESPONSE_STATUS, MediaType.TEXT_PLAIN_TYPE)
                 .getHeaders().putSingle("extra-header", "extra-value");

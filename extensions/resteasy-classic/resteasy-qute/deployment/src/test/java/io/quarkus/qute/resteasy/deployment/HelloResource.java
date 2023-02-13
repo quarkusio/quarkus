@@ -2,9 +2,9 @@ package io.quarkus.qute.resteasy.deployment;
 
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
 

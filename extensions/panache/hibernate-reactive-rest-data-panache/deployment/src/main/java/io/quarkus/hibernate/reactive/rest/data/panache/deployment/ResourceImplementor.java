@@ -5,9 +5,9 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Priority;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Alternative;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
@@ -20,7 +20,8 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.deployment.Constants;
@@ -82,6 +83,7 @@ class ResourceImplementor {
 
     private void implementList(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("list", Uni.class, Page.class, Sort.class);
+        methodCreator.addAnnotation(WithSession.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);
         ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
@@ -97,6 +99,7 @@ class ResourceImplementor {
     private void implementListWithQuery(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("list", Uni.class, Page.class, Sort.class,
                 String.class, Map.class);
+        methodCreator.addAnnotation(WithSession.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);
         ResultHandle query = methodCreator.getMethodParam(2);
@@ -118,6 +121,7 @@ class ResourceImplementor {
      */
     private void implementCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("count", Uni.class);
+        methodCreator.addAnnotation(WithSession.class);
         methodCreator.returnValue(dataAccessImplementor.count(methodCreator));
         methodCreator.close();
     }
@@ -129,6 +133,7 @@ class ResourceImplementor {
     private void implementListPageCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list", Uni.class,
                 Page.class);
+        methodCreator.addAnnotation(WithSession.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         methodCreator.returnValue(dataAccessImplementor.pageCount(methodCreator, page));
         methodCreator.close();
@@ -136,6 +141,7 @@ class ResourceImplementor {
 
     private void implementGet(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("get", Uni.class, Object.class);
+        methodCreator.addAnnotation(WithSession.class);
         ResultHandle id = methodCreator.getMethodParam(0);
         methodCreator.returnValue(dataAccessImplementor.findById(methodCreator, id));
         methodCreator.close();
@@ -144,7 +150,7 @@ class ResourceImplementor {
     private void implementAdd(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
             ResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("add", Uni.class, Object.class);
-        methodCreator.addAnnotation(ReactiveTransactional.class);
+        methodCreator.addAnnotation(WithTransaction.class);
         ResultHandle entity = methodCreator.getMethodParam(0);
         resourceMethodListenerImplementor.onBeforeAdd(methodCreator, entity);
         ResultHandle uni = dataAccessImplementor.persist(methodCreator, entity);
@@ -156,7 +162,7 @@ class ResourceImplementor {
     private void implementUpdate(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor, String entityType,
             ResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("update", Uni.class, Object.class, Object.class);
-        methodCreator.addAnnotation(ReactiveTransactional.class);
+        methodCreator.addAnnotation(WithTransaction.class);
         ResultHandle id = methodCreator.getMethodParam(0);
         ResultHandle entity = methodCreator.getMethodParam(1);
         // Set entity ID before executing an update to make sure that a requested object ID matches a given entity ID.
@@ -171,7 +177,7 @@ class ResourceImplementor {
     private void implementDelete(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
             ResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("delete", Uni.class, Object.class);
-        methodCreator.addAnnotation(ReactiveTransactional.class);
+        methodCreator.addAnnotation(WithTransaction.class);
         ResultHandle id = methodCreator.getMethodParam(0);
         resourceMethodListenerImplementor.onBeforeDelete(methodCreator, id);
         ResultHandle uni = dataAccessImplementor.deleteById(methodCreator, id);

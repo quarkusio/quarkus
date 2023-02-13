@@ -2,8 +2,8 @@ package io.quarkus.liquibase.mongodb.runtime;
 
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
@@ -47,18 +47,21 @@ public class LiquibaseMongodbRecorder {
             for (InstanceHandle<LiquibaseMongodbFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
                 try {
                     LiquibaseMongodbFactory liquibaseFactory = liquibaseFactoryHandle.get();
-                    if (liquibaseFactory.getConfiguration().cleanAtStart) {
-                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+
+                    if (!liquibaseFactory.getConfiguration().cleanAtStart
+                            && !liquibaseFactory.getConfiguration().migrateAtStart) {
+                        // Don't initialize if no clean or migration required at start
+                        return;
+                    }
+
+                    try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                        if (liquibaseFactory.getConfiguration().cleanAtStart) {
                             liquibase.dropAll();
                         }
-                    }
-                    if (liquibaseFactory.getConfiguration().migrateAtStart) {
-                        if (liquibaseFactory.getConfiguration().validateOnMigrate) {
-                            try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                        if (liquibaseFactory.getConfiguration().migrateAtStart) {
+                            if (liquibaseFactory.getConfiguration().validateOnMigrate) {
                                 liquibase.validate();
                             }
-                        }
-                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
                             liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
                         }
                     }

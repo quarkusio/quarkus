@@ -96,7 +96,7 @@ public class CertificateConfig {
 
     /**
      * A parameter to specify the password of the key store file. If not given, and if it can not be retrieved from
-     * {@linkplain CredentialsProvider}, then the default ("password") is used.
+     * {@linkplain CredentialsProvider}.
      *
      * @see {@link #credentialsProvider}
      */

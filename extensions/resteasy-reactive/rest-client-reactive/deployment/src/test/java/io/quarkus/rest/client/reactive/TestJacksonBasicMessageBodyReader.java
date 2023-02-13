@@ -1,6 +1,6 @@
 package io.quarkus.rest.client.reactive;
 
-import javax.ws.rs.Consumes;
+import jakarta.ws.rs.Consumes;
 
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 

@@ -4,6 +4,7 @@ import static io.quarkus.arc.processor.BeanProcessor.initAndSort;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Retention;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,9 +26,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.event.Reception;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -602,17 +603,18 @@ public class BeanDeployment {
 
     private static Collection<AnnotationInstance> extractAnnotations(AnnotationInstance annotation,
             Map<DotName, ClassInfo> singulars, Map<DotName, ClassInfo> repeatables) {
+        if (!annotation.runtimeVisible()) {
+            return Collections.emptyList();
+        }
         DotName annotationName = annotation.name();
         if (singulars.get(annotationName) != null) {
             return Collections.singleton(annotation);
+        } else if (repeatables.get(annotationName) != null) {
+            // repeatable, we need to extract actual annotations
+            return Annotations.onlyRuntimeVisible(Arrays.asList(annotation.value().asNestedArray()));
         } else {
-            if (repeatables.get(annotationName) != null) {
-                // repeatable, we need to extract actual annotations
-                return new ArrayList<>(Arrays.asList(annotation.value().asNestedArray()));
-            } else {
-                // neither singular nor repeatable, return empty collection
-                return Collections.emptyList();
-            }
+            // neither singular nor repeatable, return empty collection
+            return Collections.emptyList();
         }
     }
 
@@ -674,16 +676,39 @@ public class BeanDeployment {
         return alternativePriorities != null ? alternativePriorities.compute(target, stereotypes) : null;
     }
 
+    Set<MethodInfo> getObserverAndProducerMethods() {
+        Set<MethodInfo> ret = new HashSet<>();
+        for (ObserverInfo observer : observers) {
+            if (!observer.isSynthetic()) {
+                ret.add(observer.getObserverMethod());
+            }
+        }
+        for (BeanInfo bean : beans) {
+            if (bean.isProducerMethod()) {
+                ret.add(bean.getTarget().get().asMethod());
+            }
+        }
+        return ret;
+    }
+
     private void buildContextPut(String key, Object value) {
         if (buildContext != null) {
             buildContext.putInternal(key, value);
         }
     }
 
+    private boolean isRuntimeAnnotationType(ClassInfo annotationType) {
+        AnnotationInstance retention = annotationType.declaredAnnotation(Retention.class);
+        return retention != null && "RUNTIME".equals(retention.value().asEnum());
+    }
+
     private Map<DotName, ClassInfo> findQualifiers() {
         Map<DotName, ClassInfo> qualifiers = new HashMap<>();
         for (AnnotationInstance qualifier : beanArchiveImmutableIndex.getAnnotations(DotNames.QUALIFIER)) {
             ClassInfo qualifierClass = qualifier.target().asClass();
+            if (!isRuntimeAnnotationType(qualifierClass)) {
+                continue;
+            }
             if (isExcluded(qualifierClass)) {
                 continue;
             }
@@ -710,6 +735,9 @@ public class BeanDeployment {
         // Note: doesn't use AnnotationStore, this will operate on classes without applying annotation transformers
         for (AnnotationInstance binding : beanArchiveImmutableIndex.getAnnotations(DotNames.INTERCEPTOR_BINDING)) {
             ClassInfo bindingClass = binding.target().asClass();
+            if (!isRuntimeAnnotationType(bindingClass)) {
+                continue;
+            }
             if (isExcluded(bindingClass)) {
                 continue;
             }
@@ -772,6 +800,9 @@ public class BeanDeployment {
         for (DotName stereotypeName : stereotypeNames) {
             ClassInfo stereotypeClass = getClassByName(getBeanArchiveIndex(), stereotypeName);
             if (stereotypeClass != null && !isExcluded(stereotypeClass)) {
+                if (!isRuntimeAnnotationType(stereotypeClass)) {
+                    continue;
+                }
 
                 boolean isAlternative = false;
                 Integer alternativePriority = null;
@@ -798,9 +829,6 @@ public class BeanDeployment {
                     } else if (DotNames.PRIORITY.equals(annotation.name())) {
                         alternativePriority = annotation.value().asInt();
                     } else if (DotNames.ARC_PRIORITY.equals(annotation.name()) && alternativePriority == null) {
-                        alternativePriority = annotation.value().asInt();
-                    } else if (DotNames.ALTERNATIVE_PRIORITY.equals(annotation.name())) {
-                        isAlternative = true;
                         alternativePriority = annotation.value().asInt();
                     } else {
                         final ScopeInfo scope = getScope(annotation.name(), customContexts);
@@ -939,7 +967,8 @@ public class BeanDeployment {
                                 beanClass);
                         beanClasses.add(beanClass);
                     }
-                } else if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
+                }
+                if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
                     // Disposers are not inherited
                     disposerMethods.add(method);
                 }

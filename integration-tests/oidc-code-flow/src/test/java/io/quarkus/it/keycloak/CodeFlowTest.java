@@ -55,9 +55,9 @@ public class CodeFlowTest {
                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
             verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"), null, "web-app", false);
 
-            String stateCookieString = webResponse.getResponseHeaderValue("Set-Cookie");
-            assertTrue(stateCookieString.startsWith("q_auth_Default_test="));
-            assertTrue(stateCookieString.contains("SameSite=Strict"));
+            Cookie stateCookie = getStateCookie(webClient, null);
+            assertNotNull(stateCookie);
+            assertNull(stateCookie.getSameSite());
 
             webClient.getCookieManager().clearCookies();
 
@@ -86,15 +86,16 @@ public class CodeFlowTest {
 
             assertEquals(
                     client.getAuthServerUrl(),
-                    page.asText());
+                    page.asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/configMetadataScopes");
 
-            assertTrue(page.asText().contains("openid"));
-            assertTrue(page.asText().contains("profile"));
+            assertTrue(page.asNormalizedText().contains("openid"));
+            assertTrue(page.asNormalizedText().contains("profile"));
 
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);
+            assertEquals("lax", sessionCookie.getSameSite());
 
             webClient.getCookieManager().clearCookies();
         }
@@ -157,7 +158,7 @@ public class CodeFlowTest {
 
             HtmlPage page = webClient.getPage(URI.create(endpointErrorLocation).toURL());
             assertEquals("code: b, error: invalid_scope, error_description: Invalid scopes: unknown",
-                    page.getBody().asText());
+                    page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -176,10 +177,6 @@ public class CodeFlowTest {
             verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "xforwarded%2Ftenant-https",
                     true);
 
-            String stateCookieString = webResponse.getResponseHeaderValue("Set-Cookie");
-            assertTrue(stateCookieString.startsWith("q_auth_tenant-https_test="));
-            assertTrue(stateCookieString.contains("SameSite=Lax"));
-
             HtmlPage page = webClient.getPage(keycloakUrl);
 
             assertEquals("Sign in to quarkus", page.getTitleText());
@@ -195,6 +192,7 @@ public class CodeFlowTest {
             String endpointLocation = webResponse.getResponseHeaderValue("location");
 
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
+            assertNull(stateCookie.getSameSite());
             verifyCodeVerifier(stateCookie, keycloakUrl);
 
             assertTrue(endpointLocation.startsWith("https"));
@@ -219,9 +217,10 @@ public class CodeFlowTest {
             assertNull(endpointLocationWithoutQueryUri.getRawQuery());
 
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
-            assertEquals("tenant-https:reauthenticated", page.getBody().asText());
+            assertEquals("tenant-https:reauthenticated", page.getBody().asNormalizedText());
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
             assertNotNull(sessionCookie);
+            assertEquals("strict", sessionCookie.getSameSite());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -279,7 +278,7 @@ public class CodeFlowTest {
             JsonObject idToken = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
             String expiresAt = idToken.getInteger("exp").toString();
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
-            String response = page.getBody().asText();
+            String response = page.getBody().asNormalizedText();
             assertTrue(
                     response.startsWith("tenant-https:reauthenticated?code=b&expiresAt=" + expiresAt + "&expiresInDuration="));
             Integer duration = Integer.valueOf(response.substring(response.length() - 1));
@@ -430,11 +429,11 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("Tenant Logout, refreshed: false", page.asText());
+            assertEquals("Tenant Logout, refreshed: false", page.asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout/logout");
-            assertTrue(page.asText().contains("You were logged out"));
+            assertTrue(page.asNormalizedText().contains("You were logged out"));
             assertNull(getSessionCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout");
@@ -452,7 +451,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("Tenant Refresh, refreshed: false", page.asText());
+            assertEquals("Tenant Refresh, refreshed: false", page.asNormalizedText());
 
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-refresh");
             assertNotNull(sessionCookie);
@@ -479,7 +478,7 @@ public class CodeFlowTest {
 
             // local session refreshed and still valid
             page = webClient.getPage("http://localhost:8081/tenant-refresh");
-            assertEquals("Tenant Refresh, refreshed: false", page.asText());
+            assertEquals("Tenant Refresh, refreshed: false", page.asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "tenant-refresh"));
 
             //wait now so that we reach the refresh timeout
@@ -526,7 +525,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("Tenant AutoRefresh, refreshed: false", page.asText());
+            assertEquals("Tenant AutoRefresh, refreshed: false", page.asNormalizedText());
 
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
             assertNotNull(sessionCookie);
@@ -535,7 +534,7 @@ public class CodeFlowTest {
             // Auto-refresh-interval is 30 secs so every call auto-refreshes the token
             // Right now the original ID token is still valid but will be auto-refreshed
             page = webClient.getPage("http://localhost:8081/tenant-autorefresh");
-            assertEquals("Tenant AutoRefresh, refreshed: true", page.asText());
+            assertEquals("Tenant AutoRefresh, refreshed: true", page.asNormalizedText());
             sessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
             assertNotNull(sessionCookie);
             String nextIdToken = getIdToken(sessionCookie);
@@ -564,7 +563,7 @@ public class CodeFlowTest {
 
             page = webClient.getPage("http://localhost:8081/web-app");
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -585,7 +584,7 @@ public class CodeFlowTest {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("callback:alice", page.getBody().asText());
+            assertEquals("callback:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -621,7 +620,7 @@ public class CodeFlowTest {
             assertNull(endpointLocationUri2.getRawQuery());
 
             page = webClient.getPage(endpointLocationUri2.toString());
-            assertEquals("callback-jwt:alice", page.getBody().asText());
+            assertEquals("callback-jwt:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -667,11 +666,11 @@ public class CodeFlowTest {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("web-app2:alice", page.getBody().asText());
+            assertEquals("web-app2:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app2/name");
 
-            assertEquals("web-app2:alice", page.getBody().asText());
+            assertEquals("web-app2:alice", page.getBody().asNormalizedText());
 
             assertNull(getStateCookie(webClient, "tenant-2"));
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-2");
@@ -735,7 +734,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
             try {
                 page = loginForm.getInputByName("login").click();
-                fail("401 status error is expected: " + page.getBody().asText());
+                fail("401 status error is expected: " + page.getBody().asNormalizedText());
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());
                 assertEquals("http://localhost:8081/web-app/callback-before-wrong-redirect",
@@ -764,7 +763,7 @@ public class CodeFlowTest {
 
             page = webClient.getPage("http://localhost:8081/web-app/access");
 
-            assertEquals("AT injected", page.getBody().asText());
+            assertEquals("AT injected", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -788,7 +787,7 @@ public class CodeFlowTest {
 
             page = webClient.getPage("http://localhost:8081/web-app/refresh");
 
-            assertEquals("RT injected", page.getBody().asText());
+            assertEquals("RT injected", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -808,7 +807,7 @@ public class CodeFlowTest {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("RT injected", page.getBody().asText());
+            assertEquals("RT injected", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -827,12 +826,12 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-idtoken-only:alice", page.getBody().asText());
+            assertEquals("tenant-idtoken-only:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-idtoken-only");
-            assertEquals("tenant-idtoken-only:no access", page.getBody().asText());
+            assertEquals("tenant-idtoken-only:no access", page.getBody().asNormalizedText());
             page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-idtoken-only");
-            assertEquals("tenant-idtoken-only:no refresh", page.getBody().asText());
+            assertEquals("tenant-idtoken-only:no refresh", page.getBody().asNormalizedText());
 
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-idtoken-only");
             checkSingleTokenCookie(idTokenCookie, "ID");
@@ -858,12 +857,12 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-id-refresh-token:alice", page.getBody().asText());
+            assertEquals("tenant-id-refresh-token:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-id-refresh-token");
-            assertEquals("tenant-id-refresh-token:no access", page.getBody().asText());
+            assertEquals("tenant-id-refresh-token:no access", page.getBody().asNormalizedText());
             page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-id-refresh-token");
-            assertEquals("tenant-id-refresh-token:RT injected", page.getBody().asText());
+            assertEquals("tenant-id-refresh-token:RT injected", page.getBody().asNormalizedText());
 
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-id-refresh-token");
             String[] parts = idTokenCookie.getValue().split("\\|");
@@ -894,12 +893,12 @@ public class CodeFlowTest {
 
             page = loginForm.getInputByName("login").click();
             assertEquals("tenant-split-tokens:alice, id token has 5 parts, access token has 5 parts, refresh token has 5 parts",
-                    page.getBody().asText());
+                    page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-split-tokens");
-            assertEquals("tenant-split-tokens:AT injected", page.getBody().asText());
+            assertEquals("tenant-split-tokens:AT injected", page.getBody().asNormalizedText());
             page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-split-tokens");
-            assertEquals("tenant-split-tokens:RT injected", page.getBody().asText());
+            assertEquals("tenant-split-tokens:RT injected", page.getBody().asNormalizedText());
 
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-split-tokens");
             checkSingleTokenCookie(idTokenCookie, "ID", true);
@@ -949,12 +948,12 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-split-id-refresh-token:alice", page.getBody().asText());
+            assertEquals("tenant-split-id-refresh-token:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-split-id-refresh-token");
-            assertEquals("tenant-split-id-refresh-token:no access", page.getBody().asText());
+            assertEquals("tenant-split-id-refresh-token:no access", page.getBody().asNormalizedText());
             page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-split-id-refresh-token");
-            assertEquals("tenant-split-id-refresh-token:RT injected", page.getBody().asText());
+            assertEquals("tenant-split-id-refresh-token:RT injected", page.getBody().asNormalizedText());
 
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-split-id-refresh-token");
             checkSingleTokenCookie(idTokenCookie, "ID");
@@ -1026,7 +1025,8 @@ public class CodeFlowTest {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("RT injected(event:OIDC_LOGIN,tenantId:tenant-listener,blockingApi:true)", page.getBody().asText());
+            assertEquals("RT injected(event:OIDC_LOGIN,tenantId:tenant-listener,blockingApi:true)",
+                    page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -1046,7 +1046,7 @@ public class CodeFlowTest {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("RT injected:aValue", page.getBody().asText());
+            assertEquals("RT injected:aValue", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -1129,7 +1129,7 @@ public class CodeFlowTest {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
         }
     }
 

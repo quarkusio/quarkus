@@ -29,13 +29,18 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
+        <angus-activation.version>1.0.0</angus-activation.version>
+        <expressly.version>5.0.0</expressly.version>
+        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
+        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0-M8</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <jackson-bom.version>2.14.1</jackson-bom.version>
+        <jackson-bom.version>2.14.2</jackson-bom.version>
         <junit.jupiter.version>5.9.2</junit.jupiter.version>
     </properties>
     <build>
@@ -76,12 +81,6 @@
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-enforcer-rules</artifactId>
                             <version>${project.version}</version>
-                        </dependency>
-                        <!-- This dependency can be removed when MENFORCER-422 is available -->
-                        <dependency>
-                            <groupId>com.github.gastaldi</groupId>
-                            <artifactId>enforcer-rules</artifactId>
-                            <version>0.0.1</version>
                         </dependency>
                     </dependencies>
                     <executions>
@@ -132,7 +131,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.21.0</version>
+                    <version>2.22.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -512,45 +511,6 @@
                                 </goals>
                             </execution>
                         </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>jakarta-rewrite</id>
-            <activation>
-                <property>
-                    <name>jakarta-rewrite</name>
-                </property>
-            </activation>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.openrewrite.maven</groupId>
-                            <artifactId>rewrite-maven-plugin</artifactId>
-                            <version>4.21.0-SNAPSHOT</version>
-                            <configuration>
-                                <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
-                                <activeStyles>
-                                    <style>io.quarkus.style.maven</style>
-                                </activeStyles>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-                <plugins>
-                    <plugin>
-                        <inherited>false</inherited>
-                        <groupId>org.openrewrite.maven</groupId>
-                        <artifactId>rewrite-maven-plugin</artifactId>
-                        <configuration>
-                            <activeRecipes>
-                                <recipe>io.quarkus.jakarta-versions</recipe>
-                                <recipe>io.quarkus.maven.javax.versions</recipe>
-                                <recipe>io.quarkus.smallrye</recipe>
-                            </activeRecipes>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>

@@ -12,12 +12,12 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.EventContext;
-import javax.enterprise.inject.spi.EventMetadata;
-import javax.interceptor.InvocationContext;
+import jakarta.enterprise.context.spi.Context;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -33,6 +33,7 @@ import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.DecoratorDelegateProvider;
 import io.quarkus.arc.impl.FixedValueSupplier;
 import io.quarkus.arc.impl.InjectableReferenceProviders;
+import io.quarkus.arc.impl.InjectionPointImpl;
 import io.quarkus.arc.impl.Instances;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.impl.InterceptorInvocation;
@@ -163,9 +164,7 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_AROUND_INVOKE = MethodDescriptor.ofMethod(
             InvocationContexts.class,
-            "performAroundInvoke",
-            Object.class, Object.class, Method.class, Function.class, Object[].class, List.class,
-            Set.class);
+            "performAroundInvoke", Object.class, Object.class, Object[].class, InterceptedMethodMetadata.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
@@ -230,7 +229,7 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INTERCEPTED_METHOD_METADATA_CONSTRUCTOR = MethodDescriptor.ofConstructor(
             InterceptedMethodMetadata.class,
-            List.class, Method.class, Set.class);
+            List.class, Method.class, Set.class, Function.class);
 
     public static final MethodDescriptor CREATIONAL_CTX_HAS_DEPENDENT_INSTANCES = MethodDescriptor.ofMethod(
             CreationalContextImpl.class,
@@ -266,11 +265,11 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INSTANCES_LIST_OF = MethodDescriptor
             .ofMethod(Instances.class, "listOf", List.class, InjectableBean.class, Type.class, Type.class,
-                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class);
+                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class, boolean.class);
 
     public static final MethodDescriptor INSTANCES_LIST_OF_HANDLES = MethodDescriptor
             .ofMethod(Instances.class, "listOfHandles", List.class, InjectableBean.class, Type.class, Type.class,
-                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class);
+                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class, boolean.class);
 
     public static final MethodDescriptor COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE = MethodDescriptor.ofMethod(
             ComponentsProvider.class, "unableToLoadRemovedBeanType",
@@ -279,6 +278,10 @@ public final class MethodDescriptors {
     public static final MethodDescriptor BEANS_TO_STRING = MethodDescriptor.ofMethod(io.quarkus.arc.impl.Beans.class,
             "toString", String.class,
             InjectableBean.class);
+
+    public static final MethodDescriptor INJECTION_POINT_IMPL_CONSTRUCTOR = MethodDescriptor.ofConstructor(
+            InjectionPointImpl.class,
+            Type.class, Type.class, Set.class, InjectableBean.class, Set.class, Member.class, int.class, boolean.class);
 
     private MethodDescriptors() {
     }

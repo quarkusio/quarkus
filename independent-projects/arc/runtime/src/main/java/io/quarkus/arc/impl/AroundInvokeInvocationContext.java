@@ -1,57 +1,77 @@
 package io.quarkus.arc.impl;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
-import javax.interceptor.InvocationContext;
+import io.quarkus.arc.ArcInvocationContext;
 
 /**
- * Special type of InvocationContext for AroundInvoke interceptors.
+ * An {@link javax.interceptor.InvocationContext} for {@link javax.interceptor.AroundInvoke} interceptors.
  * <p>
- * A new instance of {@link AroundInvokeInvocationContext} is created for each interceptor in the chain. This does not comply
- * with the spec but allows for "asynchronous continuation" of an interceptor chain execution. In other words, it is possible to
- * "cut off" the chain (interceptors executed before dispatch return immediately) and execute all remaining interceptors
- * asynchronously, possibly on a different thread.
+ * A new instance is created for the first interceptor in the chain. Furthermore, subsequent interceptors receive a new instance
+ * of {@link NextAroundInvokeInvocationContext}. This does not comply with the spec but allows for "asynchronous continuation"
+ * of an interceptor chain execution. In other words, it is possible to "cut off" the chain (interceptors executed before
+ * dispatch return immediately) and execute all remaining interceptors asynchronously, possibly on a different thread.
  * <p>
  * Note that context data and method parameters are mutable and are not guarded/synchronized. We expect them to be modified
  * before or after dispatch. If modified before and after dispatch an unpredictable behavior may occur.
+ * <p>
+ * Note that {@link #getParameters()} only reflects modifications of the current interceptor. If an interceptor with higher
+ * priority in the same chain calls {@link #setParameters(Object[])} then the changes are not reflected.
+ *
  */
 class AroundInvokeInvocationContext extends AbstractInvocationContext {
 
-    private final int position;
-    private final Function<InvocationContext, Object> aroundInvokeForward;
+    private final InterceptedMethodMetadata metadata;
 
-    AroundInvokeInvocationContext(Object target, Method method, Object[] parameters,
-            ContextDataMap contextData, Set<Annotation> interceptorBindings, int position,
-            List<InterceptorInvocation> chain, Function<InvocationContext, Object> aroundInvokeForward) {
-        super(target, method, null, parameters, contextData, interceptorBindings, chain);
-        this.position = position;
-        this.aroundInvokeForward = aroundInvokeForward;
+    AroundInvokeInvocationContext(Object target, Object[] args, InterceptedMethodMetadata metadata) {
+        super(target, args, new ContextDataMap(metadata.bindings));
+        this.metadata = metadata;
     }
 
-    static Object perform(Object target, Method method,
-            Function<InvocationContext, Object> aroundInvokeForward, Object[] parameters,
-            List<InterceptorInvocation> chain,
-            Set<Annotation> interceptorBindings) throws Exception {
+    static Object perform(Object target, Object[] args, InterceptedMethodMetadata metadata) throws Exception {
+        return metadata.chain.get(0).invoke(new AroundInvokeInvocationContext(target, args, metadata));
+    }
 
-        return chain.get(0).invoke(new AroundInvokeInvocationContext(target, method,
-                parameters, null, interceptorBindings, 1, chain, aroundInvokeForward));
+    @Override
+    public Set<Annotation> getInterceptorBindings() {
+        return metadata.bindings;
+    }
+
+    public Method getMethod() {
+        return metadata.method;
+    }
+
+    @Override
+    public Object[] getParameters() {
+        return parameters;
+    }
+
+    @Override
+    public void setParameters(Object[] params) {
+        validateParameters(metadata.method, params);
+        this.parameters = params;
     }
 
     @Override
     public Object proceed() throws Exception {
+        return proceed(1);
+    }
+
+    private Object proceed(int currentPosition) throws Exception {
         try {
-            if (position < chain.size()) {
+            if (currentPosition < metadata.chain.size()) {
                 // Invoke the next interceptor in the chain
-                return chain.get(position).invoke(new AroundInvokeInvocationContext(target, method,
-                        parameters, contextData, interceptorBindings, position + 1, chain, aroundInvokeForward));
+                return metadata.chain.get(currentPosition)
+                        .invoke(new NextAroundInvokeInvocationContext(currentPosition + 1, parameters));
             } else {
                 // Invoke the target method
-                return aroundInvokeForward.apply(this);
+                return metadata.aroundInvokeForward.apply(this);
             }
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
@@ -63,6 +83,74 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
             }
             throw new RuntimeException(cause);
         }
+    }
+
+    class NextAroundInvokeInvocationContext implements ArcInvocationContext {
+
+        private final int position;
+        protected Object[] parameters;
+
+        public NextAroundInvokeInvocationContext(int position, Object[] parameters) {
+            this.position = position;
+            this.parameters = parameters;
+        }
+
+        @Override
+        public Object proceed() throws Exception {
+            return AroundInvokeInvocationContext.this.proceed(position);
+        }
+
+        @Override
+        public Object getTarget() {
+            return AroundInvokeInvocationContext.this.getTarget();
+        }
+
+        @Override
+        public Object getTimer() {
+            return AroundInvokeInvocationContext.this.getTimer();
+        }
+
+        @Override
+        public Method getMethod() {
+            return AroundInvokeInvocationContext.this.getMethod();
+        }
+
+        @Override
+        public Constructor<?> getConstructor() {
+            return AroundInvokeInvocationContext.this.getConstructor();
+        }
+
+        @Override
+        public Object[] getParameters() {
+            return parameters;
+        }
+
+        @Override
+        public void setParameters(Object[] params) {
+            validateParameters(metadata.method, params);
+            this.parameters = params;
+        }
+
+        @Override
+        public Map<String, Object> getContextData() {
+            return AroundInvokeInvocationContext.this.getContextData();
+        }
+
+        @Override
+        public Set<Annotation> getInterceptorBindings() {
+            return AroundInvokeInvocationContext.this.getInterceptorBindings();
+        }
+
+        @Override
+        public <T extends Annotation> T findIterceptorBinding(Class<T> annotationType) {
+            return AroundInvokeInvocationContext.this.findIterceptorBinding(annotationType);
+        }
+
+        @Override
+        public <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType) {
+            return AroundInvokeInvocationContext.this.findIterceptorBindings(annotationType);
+        }
+
     }
 
 }

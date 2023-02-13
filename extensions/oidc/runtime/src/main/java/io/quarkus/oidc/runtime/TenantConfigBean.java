@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.oidc.OidcTenantConfig;

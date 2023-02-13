@@ -159,7 +159,7 @@ If you want to have the same visualization of build steps processing when buildi
 For example using `mvn package -Dquarkus.debug.dump-build-metrics=true`, will generate a `build-metrics.json` in your `target` repository that you can process via the quarkus-build-report application available here https://github.com/mkouba/quarkus-build-report. 
 This application will generate a `report.html` that you can open in your browser.
 
-## And what about Windows?
+## What about Windows?
 
 If you are on Windows, you can still get useful performance insights using JFR - Java Flight Recorder.
 
@@ -170,3 +170,8 @@ The following Java options will enable JFR to record profiling data inside a `my
 ```
 
 Here we configure JFR with a deeper stack depth as the default is usually not enough.
+
+## What about native executables?
+
+If you are having performance issues with native builds of your application first make sure that these issues only manifest in native mode.
+If so, please consult the [native reference guide](https://quarkus.io/guides/native-reference) and more specifically the [profiling section](https://quarkus.io/guides/native-reference#profiling).

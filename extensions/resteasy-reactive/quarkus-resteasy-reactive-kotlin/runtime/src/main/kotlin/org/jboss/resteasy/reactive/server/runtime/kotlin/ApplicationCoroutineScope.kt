@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.server.runtime.kotlin
 
 import io.vertx.core.Context
+import jakarta.annotation.PreDestroy
+import jakarta.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Runnable
@@ -9,8 +11,6 @@ import kotlinx.coroutines.cancel
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction
-import javax.annotation.PreDestroy
-import javax.inject.Singleton
 import kotlin.coroutines.CoroutineContext
 
 /**

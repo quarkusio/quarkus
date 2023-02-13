@@ -4,9 +4,9 @@ import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Set;
 
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import io.quarkus.arc.InjectableBean;
 
@@ -32,7 +32,8 @@ public class InstanceBean extends BuiltInBean<Instance<?>> {
         // Obtain current IP to get the required type and qualifiers
         InjectionPoint ip = InjectionPointProvider.get();
         InstanceImpl<Instance<?>> instance = new InstanceImpl<Instance<?>>((InjectableBean<?>) ip.getBean(), ip.getType(),
-                ip.getQualifiers(), (CreationalContextImpl<?>) creationalContext, Collections.EMPTY_SET, ip.getMember(), 0);
+                ip.getQualifiers(), (CreationalContextImpl<?>) creationalContext, Collections.EMPTY_SET, ip.getMember(),
+                0, ip.isTransient());
         CreationalContextImpl.addDependencyToParent((InjectableBean<Instance<?>>) ip.getBean(), instance, creationalContext);
         return instance;
     }

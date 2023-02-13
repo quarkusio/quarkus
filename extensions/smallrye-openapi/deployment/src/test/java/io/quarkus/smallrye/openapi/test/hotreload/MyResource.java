@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.openapi.test.hotreload;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/api")
 public class MyResource {

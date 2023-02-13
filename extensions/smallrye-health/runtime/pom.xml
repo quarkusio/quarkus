@@ -18,7 +18,6 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-health</artifactId>
             <exclusions>
-                <!-- we let quarkus-jsonp bring the appropriate impl -->
                 <exclusion>
                     <groupId>org.glassfish</groupId>
                     <artifactId>jakarta.json</artifactId>

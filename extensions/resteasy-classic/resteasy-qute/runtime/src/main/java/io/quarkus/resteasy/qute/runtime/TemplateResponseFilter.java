@@ -7,11 +7,11 @@ import java.util.Locale;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.core.interception.jaxrs.SuspendableContainerResponseContext;
 
@@ -36,12 +36,12 @@ public class TemplateResponseFilter implements ContainerResponseFilter {
             TemplateInstance instance = (TemplateInstance) entity;
             Object variantsAttr = instance.getAttribute(TemplateInstance.VARIANTS);
             if (variantsAttr != null) {
-                List<javax.ws.rs.core.Variant> variants = new ArrayList<>();
+                List<jakarta.ws.rs.core.Variant> variants = new ArrayList<>();
                 for (Variant variant : (List<Variant>) variantsAttr) {
-                    variants.add(new javax.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()), variant.getLocale(),
+                    variants.add(new jakarta.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()), variant.getLocale(),
                             variant.getEncoding()));
                 }
-                javax.ws.rs.core.Variant selected = requestContext.getRequest()
+                jakarta.ws.rs.core.Variant selected = requestContext.getRequest()
                         .selectVariant(variants);
 
                 if (selected != null) {

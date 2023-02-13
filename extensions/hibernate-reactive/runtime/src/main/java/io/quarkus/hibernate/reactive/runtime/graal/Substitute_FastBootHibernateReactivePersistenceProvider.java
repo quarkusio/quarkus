@@ -3,8 +3,8 @@ package io.quarkus.hibernate.reactive.runtime.graal;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.spi.PersistenceUnitInfo;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.spi.PersistenceUnitInfo;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;

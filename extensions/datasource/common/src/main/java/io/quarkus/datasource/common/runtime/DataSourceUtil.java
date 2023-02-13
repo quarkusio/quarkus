@@ -15,6 +15,14 @@ public final class DataSourceUtil {
         return dataSourceNames.contains(DEFAULT_DATASOURCE_NAME);
     }
 
+    public static String dataSourcePropertyKey(String datasourceName, String radical) {
+        if (datasourceName == null || DataSourceUtil.isDefault(datasourceName)) {
+            return "quarkus.datasource." + radical;
+        } else {
+            return "quarkus.datasource.\"" + datasourceName + "\"." + radical;
+        }
+    }
+
     public static List<String> dataSourcePropertyKeys(String datasourceName, String radical) {
         if (datasourceName == null || DataSourceUtil.isDefault(datasourceName)) {
             return List.of("quarkus.datasource." + radical);

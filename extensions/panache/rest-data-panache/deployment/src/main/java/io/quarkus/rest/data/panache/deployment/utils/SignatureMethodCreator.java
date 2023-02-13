@@ -7,7 +7,7 @@ import static io.quarkus.rest.data.panache.deployment.utils.TypeUtils.toGizmoTyp
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;

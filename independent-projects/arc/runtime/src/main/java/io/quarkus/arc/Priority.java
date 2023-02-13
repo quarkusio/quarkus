@@ -1,18 +1,25 @@
 package io.quarkus.arc;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import java.lang.annotation.RetentionPolicy;
 
 /**
- * This annotation has the same semantics as {@link javax.annotation.Priority} except that the {@link Target} meta-annotation is
- * not present. The main motivation is to support method and field declarations, i.e. this annotation can be used for producer
- * methods and fields. Note that this problem is fixed in Common Annotations 2.1.
+ * This annotation has the same semantics as {@link jakarta.annotation.Priority}.
  * <p>
- * A priority specified by {@link AlternativePriority} and {@link javax.annotation.Priority} takes precedence.
+ * Prior to Common Annotations 2.1, the {@code jakarta.annotation.Priority} annotation
+ * was meta-annotated {@code @Target({TYPE, PARAMETER})} and so was only usable on class
+ * declarations and method parameters. This annotation was introduced to allow annotating
+ * producer methods and fields.
+ * <p>
+ * Since Common Annotations 2.1, the {@code jakarta.annotation.Priority} is no longer
+ * meta-annotated {@code @Target}, so these two annotations are equivalent.
+ * <p>
+ * A priority specified by {@link jakarta.annotation.Priority} takes precedence.
+ *
+ * @deprecated use {@link jakarta.annotation.Priority}; this annotation will be removed at some time after Quarkus 3.6
  */
-@Retention(RUNTIME)
+@Retention(RetentionPolicy.RUNTIME)
+@Deprecated
 public @interface Priority {
 
     int value();

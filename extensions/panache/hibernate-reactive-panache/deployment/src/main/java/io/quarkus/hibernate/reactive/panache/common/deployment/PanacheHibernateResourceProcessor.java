@@ -6,8 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.Id;
-import javax.persistence.Transient;
+import jakarta.persistence.Id;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.jandex.AnnotationInstance;
@@ -53,7 +52,6 @@ public final class PanacheHibernateResourceProcessor {
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
     protected static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
 
-    private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
     private static final DotName DOTNAME_UNI = DotName.createSimple(Uni.class.getName());
     private static final DotName DOTNAME_MULTI = DotName.createSimple(Multi.class.getName());
 

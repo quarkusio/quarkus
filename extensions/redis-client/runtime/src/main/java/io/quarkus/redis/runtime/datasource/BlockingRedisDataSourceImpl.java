@@ -25,6 +25,7 @@ import io.quarkus.redis.datasource.pubsub.PubSubCommands;
 import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
+import io.quarkus.redis.datasource.stream.StreamCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
 import io.quarkus.redis.datasource.timeseries.TimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TopKCommands;
@@ -228,6 +229,11 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K> BitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new BlockingBitmapCommandsImpl<>(this, reactive.bitmap(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K, F, V> StreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> fieldType, Class<V> valueType) {
+        return new BlockingStreamCommandsImpl<>(this, reactive.stream(redisKeyType, fieldType, valueType), timeout);
     }
 
     @Override

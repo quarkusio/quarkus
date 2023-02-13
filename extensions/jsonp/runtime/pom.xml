@@ -18,8 +18,8 @@
             <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>jakarta.json</artifactId>
+            <groupId>org.eclipse.parsson</groupId>
+            <artifactId>parsson</artifactId>
         </dependency>
     </dependencies>
 
@@ -32,9 +32,11 @@
                     <excludedArtifacts>
                         <excludedArtifact>javax.json:javax.json-api</excludedArtifact>
                         <excludedArtifact>org.glassfish:javax.json</excludedArtifact>
+                        <excludedArtifact>org.glassfish:jakarta.json</excludedArtifact>
+                        <excludedArtifact>org.eclipse.parsson:jakarta.json</excludedArtifact>
                     </excludedArtifacts>
                     <parentFirstArtifacts>
-                        <parentFirstArtifact>org.glassfish:jakarta.json</parentFirstArtifact>
+                        <parentFirstArtifact>org.eclipse.parsson:parsson</parentFirstArtifact>
                         <parentFirstArtifact>jakarta.json:jakarta.json-api</parentFirstArtifact>
                     </parentFirstArtifacts>
                 </configuration>
@@ -53,28 +55,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>jakarta-rewrite</id>
-            <activation>
-                <property>
-                    <name>jakarta-rewrite</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.openrewrite.maven</groupId>
-                        <artifactId>rewrite-maven-plugin</artifactId>
-                        <configuration>
-                            <activeRecipes>
-                                <recipe>io.quarkus.jakarta-json-switch</recipe>
-                            </activeRecipes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

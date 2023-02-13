@@ -18,8 +18,6 @@ import io.restassured.response.Response
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.DisabledOnOs
-import org.junit.jupiter.api.condition.OS
 import java.util.Calendar
 import java.util.Collections
 import java.util.Date
@@ -27,7 +25,6 @@ import java.util.GregorianCalendar
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource::class)
-@DisabledOnOs(OS.WINDOWS)
 open class MongodbPanacheResourceTest {
     @Test
     fun testBookEntity() {

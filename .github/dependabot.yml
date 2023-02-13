@@ -21,6 +21,7 @@ updates:
       - dependency-name: org.freemarker:freemarker
       - dependency-name: io.fabric8:*
       - dependency-name: org.apache.httpcomponents:*
+      - dependency-name: org.apache.james:apache-mime4j
       - dependency-name: org.quartz-scheduler:quartz
       - dependency-name: com.cronutils:cron-utils
       - dependency-name: org.eclipse:yasson
@@ -35,13 +36,10 @@ updates:
       - dependency-name: org.glassfish:jakarta-el
       - dependency-name: com.google.cloud.tools:jib-core
       # Quarkus
-      - dependency-name: io.quarkus.gizmo:gizmo
-      - dependency-name: io.quarkus.http:*
-      - dependency-name: io.quarkus:quarkus-fs-util
-      - dependency-name: io.quarkus:quarkus-spring-*-api
+      - dependency-name: io.quarkus.*:*
+      - dependency-name: io.quarkus:*
       # Elytron
-      - dependency-name: org.wildfly.security:wildfly-elytron
-      - dependency-name: org.wildfly.security:wildfly-elytron-*
+      - dependency-name: org.wildfly.security:*
       - dependency-name: org.wildfly.openssl:*
       # JDBC Drivers
       - dependency-name: org.postgresql:postgresql
@@ -58,22 +56,16 @@ updates:
       - dependency-name: org.scala-lang:*
       - dependency-name: net.alchim31.maven:scala-maven-plugin
       # SmallRye
-      - dependency-name: io.smallrye:smallrye-jwt
-      - dependency-name: io.smallrye:smallrye-health
-      - dependency-name: io.smallrye:smallrye-metrics
-      - dependency-name: io.smallrye:smallrye-open-api
-      - dependency-name: io.smallrye:smallrye-opentracing
-      - dependency-name: io.smallrye:smallrye-fault-tolerance
-      - dependency-name: io.smallrye:smallrye-context-propagation
+      - dependency-name: io.smallrye:*
       - dependency-name: io.smallrye.common:*
-      - dependency-name: io.smallrye.config:smallrye-config
-      - dependency-name: io.smallrye.reactive:mutiny
-      - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
+      - dependency-name: io.smallrye.config:*
+      - dependency-name: io.smallrye.reactive:*
       # Swagger-UI
       - dependency-name: org.webjars:swagger-ui
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
       # Test dependencies
+      - dependency-name: net.sourceforge.htmlunit:htmlunit
       - dependency-name: io.rest-assured:*
       - dependency-name: org.junit:junit-bom
       - dependency-name: org.junit.jupiter:*
@@ -93,9 +85,6 @@ updates:
       - dependency-name: org.jboss.narayana.stm:*
       # Agroal
       - dependency-name: io.agroal:*
-      # Jandex
-      - dependency-name: io.smallrye:jandex
-      - dependency-name: io.smallrye:jandex-maven-plugin
       # WireMock
       - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
@@ -157,6 +146,7 @@ updates:
       # Elasticsearch - we do not update the high level client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer
+      - dependency-name: co.elastic.clients:elasticsearch-java
       # Others
       - dependency-name: com.puppycrawl.tools:checkstyle
       - dependency-name: com.google.cloud.functions:*
@@ -179,12 +169,10 @@ updates:
       - dependency-name: com.h2database:h2
       - dependency-name: io.github.crac:org-crac
       # Jakarta 9/10 preparation
-      - dependency-name: jakarta.activation:jakarta.activation-api
-      - dependency-name: org.eclipse.angus:angus-activation
+      - dependency-name: jakarta.*:*
+      - dependency-name: org.eclipse.*:*
       - dependency-name: org.glassfish.expressly:expressly
       - dependency-name: com.sun.xml.bind:jaxb-impl
-      - dependency-name: jakarta.xml.bind:jakarta.xml.bind-api
-      - dependency-name: org.eclipse.parsson:*
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues
@@ -213,10 +201,6 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: org.glassfish:jakarta-el
-        update-types: ["version-update:semver-major"]
-      - dependency-name: org.eclipse:yasson
-        update-types: ["version-update:semver-major"]
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/devtools/gradle"

@@ -4,9 +4,9 @@ import java.lang.reflect.Method;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
-import javax.annotation.Priority;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
 
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.instrument.Counter;

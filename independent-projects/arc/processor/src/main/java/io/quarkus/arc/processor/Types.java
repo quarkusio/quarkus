@@ -16,11 +16,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import javax.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -186,13 +187,23 @@ public final class Types {
             getParameterizedType(variable, creator, tccl, type.asParameterizedType(), cache, typeVariables);
 
         } else if (Kind.ARRAY.equals(type.kind())) {
-            Type componentType = type.asArrayType().component();
-            // E.g. String[] -> new GenericArrayTypeImpl(String.class)
-            AssignableResultHandle componentTypeHandle = creator.createVariable(Object.class);
-            getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache, typeVariables);
-            ResultHandle arrayHandle = creator.newInstance(
-                    MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
-                    componentTypeHandle);
+            ArrayType array = type.asArrayType();
+            Type elementType = getArrayElementType(array);
+
+            ResultHandle arrayHandle;
+            if (elementType.kind() == Kind.PRIMITIVE || elementType.kind() == Kind.CLASS) {
+                // can produce a java.lang.Class representation of the array type
+                // E.g. String[] -> String[].class
+                arrayHandle = doLoadClass(creator, array.name().toString(), tccl);
+            } else {
+                // E.g. List<String>[] -> new GenericArrayTypeImpl(new ParameterizedTypeImpl(List.class, String.class))
+                Type componentType = type.asArrayType().component();
+                AssignableResultHandle componentTypeHandle = creator.createVariable(Object.class);
+                getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache, typeVariables);
+                arrayHandle = creator.newInstance(
+                        MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
+                        componentTypeHandle);
+            }
             if (cache != null) {
                 cache.put(type, arrayHandle, creator);
             }
@@ -337,12 +348,23 @@ public final class Types {
         }
     }
 
+    static Type getArrayElementType(ArrayType array) {
+        Type elementType = array.component();
+        while (elementType.kind() == Kind.ARRAY) {
+            elementType = elementType.asArrayType().component();
+        }
+        return elementType;
+    }
+
     static Set<Type> getProducerMethodTypeClosure(MethodInfo producerMethod, BeanDeployment beanDeployment) {
         Set<Type> types;
         Set<Type> unrestrictedBeanTypes = new HashSet<>();
         Type returnType = producerMethod.returnType();
         if (returnType.kind() == Kind.TYPE_VARIABLE) {
             throw new DefinitionException("A type variable is not a legal bean type: " + producerMethod);
+        }
+        if (returnType.kind() == Kind.ARRAY) {
+            checkArrayType(returnType.asArrayType(), producerMethod);
         }
         if (returnType.kind() == Kind.PRIMITIVE || returnType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
@@ -378,6 +400,9 @@ public final class Types {
         Type fieldType = producerField.type();
         if (fieldType.kind() == Kind.TYPE_VARIABLE) {
             throw new DefinitionException("A type variable is not a legal bean type: " + producerField);
+        }
+        if (fieldType.kind() == Kind.ARRAY) {
+            checkArrayType(fieldType.asArrayType(), producerField);
         }
         if (fieldType.kind() == Kind.PRIMITIVE || fieldType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
@@ -466,6 +491,18 @@ public final class Types {
             }
             return resolved;
         }
+    }
+
+    /**
+     * Throws {@code DefinitionException} if given {@code producerFieldOrMethod},
+     * whose type is given {@code arrayType}, is invalid due to the rules for arrays.
+     */
+    static void checkArrayType(ArrayType arrayType, AnnotationTarget producerFieldOrMethod) {
+        Type elementType = getArrayElementType(arrayType);
+        if (elementType.kind() == Kind.TYPE_VARIABLE) {
+            throw new DefinitionException("A type variable array is not a legal bean type: " + producerFieldOrMethod);
+        }
+        containsWildcard(elementType, producerFieldOrMethod, true);
     }
 
     /**

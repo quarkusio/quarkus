@@ -12,9 +12,13 @@ import java.util.jar.Manifest;
 public interface PathTree {
 
     static PathTree ofDirectoryOrFile(Path p) {
+        return ofDirectoryOrFile(p, null);
+    }
+
+    static PathTree ofDirectoryOrFile(Path p, PathFilter filter) {
         try {
             final BasicFileAttributes fileAttributes = Files.readAttributes(p, BasicFileAttributes.class);
-            return fileAttributes.isDirectory() ? new DirectoryPathTree(p) : new FilePathTree(p);
+            return fileAttributes.isDirectory() ? new DirectoryPathTree(p, filter) : new FilePathTree(p, filter);
         } catch (IOException e) {
             throw new IllegalArgumentException(p + " does not exist", e);
         }

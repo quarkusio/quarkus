@@ -101,8 +101,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.xml.bind</groupId>
-            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -119,6 +119,26 @@
             <groupId>io.dekorate</groupId>
             <artifactId>servicebinding-annotations</artifactId>
             <classifier>noapt</classifier>
+             <exclusions>
+                 <exclusion>
+                     <groupId>io.fabric8</groupId>
+                     <artifactId>kubernetes-client</artifactId>
+                 </exclusion>
+             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-httpclient-okhttp</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-httpclient-vertx</artifactId>
         </dependency>
 
         <!-- needed for the customization of the build chain -->
@@ -214,7 +234,7 @@
             </exclusions>
         </dependency>
     </dependencies>
-    
+
     <profiles>
         <profile>
             <id>basic-test-suite</id>
@@ -227,27 +247,6 @@
                 <maven.test.skip>true</maven.test.skip>
             </properties>
         </profile>
-        <profile>
-            <id>jakarta-rewrite</id>
-            <activation>
-                <property>
-                    <name>jakarta-rewrite</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.openrewrite.maven</groupId>
-                        <artifactId>rewrite-maven-plugin</artifactId>
-                        <configuration>
-                            <activeRecipes>
-                                <recipe>io.quarkus.jakarta-jaxb-switch</recipe>
-                            </activeRecipes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
-    
+
 </project>

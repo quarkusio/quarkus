@@ -799,7 +799,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     public Void apply(String cookieValue) {
                                         String sessionCookie = createCookie(context, configContext.oidcConfig,
                                                 getSessionCookieName(configContext.oidcConfig),
-                                                cookieValue, sessionMaxAge).getValue();
+                                                cookieValue, sessionMaxAge, true).getValue();
                                         if (sessionCookie.length() >= MAX_COOKIE_VALUE_LENGTH) {
                                             LOG.warnf(
                                                     "Session cookie length for the tenant %s is equal or greater than %d bytes."
@@ -914,6 +914,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
             String name, String value, long maxAge) {
+        return createCookie(context, oidcConfig, name, value, maxAge, false);
+    }
+
+    static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
+            String name, String value, long maxAge, boolean sessionCookie) {
         ServerCookie cookie = new CookieImpl(name, value);
         cookie.setHttpOnly(true);
         cookie.setSecure(oidcConfig.authentication.cookieForceSecure || context.request().isSSL());
@@ -924,7 +929,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (auth.cookieDomain.isPresent()) {
             cookie.setDomain(auth.getCookieDomain().get());
         }
-        cookie.setSameSite(CookieSameSite.valueOf(auth.cookieSameSite.name()));
+        if (sessionCookie) {
+            cookie.setSameSite(CookieSameSite.valueOf(auth.cookieSameSite.name()));
+        }
         context.response().addCookie(cookie);
         return cookie;
     }

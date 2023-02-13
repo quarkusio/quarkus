@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableReferenceProvider;

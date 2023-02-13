@@ -49,6 +49,7 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
@@ -80,6 +81,8 @@ import io.smallrye.graphql.api.federation.Requires;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
+import io.smallrye.graphql.cdi.tracing.TracingService;
+import io.smallrye.graphql.cdi.validation.ValidationService;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
@@ -187,12 +190,18 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
-    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) throws IOException {
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider,
+            BuildProducer<ReflectiveClassConditionBuildItem> reflectiveClassCondition) throws IOException {
         // Lookup Service (We use the one from the CDI Module)
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(LookupService.class.getName()));
 
         // Eventing Service (We use the one from the CDI Module)
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(EventingService.class.getName()));
+
+        // Add a condition for the optional eventing services
+        reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(TracingService.class, "io.opentracing.Tracer"));
+        reflectiveClassCondition
+                .produce(new ReflectiveClassConditionBuildItem(ValidationService.class, "jakarta.validation.ValidatorFactory"));
 
         // Use MicroProfile Config (We use the one from the CDI Module)
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(MicroProfileConfig.class.getName()));
@@ -391,7 +400,7 @@ public class SmallRyeGraphQLProcessor {
         adapterClasses.addAll(
                 getAdapterClasses(index, DotName.createSimple("jakarta.json.bind.annotation.JsonbTypeAdapter")));
         adapterClasses.addAll(
-                getAdapterClasses(index, DotName.createSimple("javax.json.bind.annotation.JsonbTypeAdapter")));
+                getAdapterClasses(index, DotName.createSimple("jakarta.json.bind.annotation.JsonbTypeAdapter")));
         return adapterClasses;
     }
 

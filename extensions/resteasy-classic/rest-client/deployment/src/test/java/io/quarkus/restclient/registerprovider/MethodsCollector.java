@@ -3,7 +3,7 @@ package io.quarkus.restclient.registerprovider;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class MethodsCollector {

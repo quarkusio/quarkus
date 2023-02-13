@@ -48,7 +48,6 @@ import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
 import io.smallrye.reactive.messaging.kafka.KafkaConnector;
 import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
-import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
 public class SmallRyeReactiveMessagingKafkaProcessor {
 
@@ -64,14 +63,6 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     @BuildStep
     public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        // Required for the throttled commit strategy
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(KafkaReadStreamImpl.class)
-                        .fields(true)
-                        .methods(true)
-                        .constructors(true)
-                        .finalFieldsWritable(true)
-                        .build());
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ProcessingState.class));
     }
 
@@ -681,9 +672,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             // Kafka types
             Map.entry(DotName.createSimple(org.apache.kafka.common.utils.Bytes.class.getName()), org.apache.kafka.common.serialization.BytesDeserializer.class.getName()),
             // Vert.x types
-            Map.entry(DotName.createSimple(io.vertx.core.buffer.Buffer.class.getName()),   io.vertx.kafka.client.serialization.BufferDeserializer.class.getName()),
-            Map.entry(DotName.createSimple(io.vertx.core.json.JsonObject.class.getName()), io.vertx.kafka.client.serialization.JsonObjectDeserializer.class.getName()),
-            Map.entry(DotName.createSimple(io.vertx.core.json.JsonArray.class.getName()),  io.vertx.kafka.client.serialization.JsonArrayDeserializer.class.getName())
+            Map.entry(DotName.createSimple(io.vertx.core.buffer.Buffer.class.getName()),   io.quarkus.kafka.client.serialization.BufferDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(io.vertx.core.json.JsonObject.class.getName()), io.quarkus.kafka.client.serialization.JsonObjectDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(io.vertx.core.json.JsonArray.class.getName()),  io.quarkus.kafka.client.serialization.JsonArrayDeserializer.class.getName())
     );
 
     private static final Map<DotName, String> KNOWN_SERIALIZERS = Map.ofEntries(
@@ -710,9 +701,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             // Kafka types
             Map.entry(DotName.createSimple(org.apache.kafka.common.utils.Bytes.class.getName()), org.apache.kafka.common.serialization.BytesSerializer.class.getName()),
             // Vert.x types
-            Map.entry(DotName.createSimple(io.vertx.core.buffer.Buffer.class.getName()),   io.vertx.kafka.client.serialization.BufferSerializer.class.getName()),
-            Map.entry(DotName.createSimple(io.vertx.core.json.JsonObject.class.getName()), io.vertx.kafka.client.serialization.JsonObjectSerializer.class.getName()),
-            Map.entry(DotName.createSimple(io.vertx.core.json.JsonArray.class.getName()),  io.vertx.kafka.client.serialization.JsonArraySerializer.class.getName())
+            Map.entry(DotName.createSimple(io.vertx.core.buffer.Buffer.class.getName()),   io.quarkus.kafka.client.serialization.BufferSerializer.class.getName()),
+            Map.entry(DotName.createSimple(io.vertx.core.json.JsonObject.class.getName()), io.quarkus.kafka.client.serialization.JsonObjectSerializer.class.getName()),
+            Map.entry(DotName.createSimple(io.vertx.core.json.JsonArray.class.getName()),  io.quarkus.kafka.client.serialization.JsonArraySerializer.class.getName())
     );
     // @formatter:on
 

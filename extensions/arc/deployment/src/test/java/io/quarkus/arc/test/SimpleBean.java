@@ -3,10 +3,10 @@ package io.quarkus.arc.test;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 

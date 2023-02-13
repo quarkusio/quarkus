@@ -119,7 +119,7 @@
                         <plugin>kotlinx-serialization</plugin>
                     </compilerPlugins>
                     <pluginOptions>
-                        <option>all-open:annotation=javax.ws.rs.Path</option>
+                        <option>all-open:annotation=jakarta.ws.rs.Path</option>
                     </pluginOptions>
                 </configuration>
             </plugin>

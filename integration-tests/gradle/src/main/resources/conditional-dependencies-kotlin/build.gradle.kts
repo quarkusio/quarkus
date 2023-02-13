@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "1.7.22"
-    kotlin("plugin.allopen") version "1.7.22"
+    kotlin("jvm") version "1.8.10"
+    kotlin("plugin.allopen") version "1.8.10"
     id("io.quarkus")
 }
 
@@ -38,8 +38,8 @@ java {
 }
 
 allOpen {
-    annotation("javax.ws.rs.Path")
-    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("jakarta.ws.rs.Path")
+    annotation("jakarta.enterprise.context.ApplicationScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 

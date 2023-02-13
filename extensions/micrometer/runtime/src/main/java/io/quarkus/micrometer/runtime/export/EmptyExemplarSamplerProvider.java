@@ -2,7 +2,7 @@ package io.quarkus.micrometer.runtime.export;
 
 import java.util.Optional;
 
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Produces;
 
 import io.prometheus.client.exemplars.ExemplarSampler;
 

@@ -3,12 +3,12 @@ package io.quarkus.csrf.reactive.runtime;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
@@ -179,16 +179,18 @@ public class CsrfRequestResponseReactiveFilter {
                 byte[] csrfTokenBytes = (byte[]) routing.get(CSRF_TOKEN_BYTES_KEY);
 
                 if (csrfTokenBytes == null) {
-                    throw new IllegalStateException(
-                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                    LOG.debug("CSRF Request Filter did not set the property " + CSRF_TOKEN_BYTES_KEY
+                            + ", no CSRF cookie will be created");
+                    return;
                 }
                 cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey.get());
             } else {
                 String csrfToken = (String) routing.get(CSRF_TOKEN_KEY);
 
                 if (csrfToken == null) {
-                    throw new IllegalStateException(
-                            "CSRF Filter should have set the property " + CSRF_TOKEN_KEY + ", but it is null");
+                    LOG.debug("CSRF Request Filter did not set the property " + CSRF_TOKEN_KEY
+                            + ", no CSRF cookie will be created");
+                    return;
                 }
                 cookieValue = csrfToken;
             }

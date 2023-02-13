@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Azure Functions"
+metadata:
+  keywords:
+  - "azure"
+  categories:
+  - "cloud"
+  guide: "https://quarkus.io/guides/azure-functions"
+  status: "preview"
+  codestart:
+    name: "azure-functions"
+    kind: "example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

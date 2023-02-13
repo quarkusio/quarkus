@@ -1,9 +1,9 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.Feature;
-import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.ext.Provider;
 
 @Provider
 public class TestFeature implements Feature {

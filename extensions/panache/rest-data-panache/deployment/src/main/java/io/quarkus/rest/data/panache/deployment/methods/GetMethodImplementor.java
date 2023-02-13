@@ -5,7 +5,7 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.responseType;
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.uniType;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.BranchResult;

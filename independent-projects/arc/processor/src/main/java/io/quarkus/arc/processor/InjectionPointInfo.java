@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
-import javax.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -67,7 +67,7 @@ public class InjectionPointInfo {
             InjectionPointModifier transformer) {
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
-                transformer.applyTransformers(type, field, new HashSet<>(field.annotations())),
+                transformer.applyTransformers(type, field, new HashSet<>(Annotations.onlyRuntimeVisible(field.annotations()))),
                 InjectionPointKind.RESOURCE, field, -1, false, false);
     }
 

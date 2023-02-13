@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.deployment.tracing.instrumentation;
 
 import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
-import static javax.interceptor.Interceptor.Priority.LIBRARY_AFTER;
+import static jakarta.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -140,7 +140,7 @@ public class InstrumentationProcessor {
 
         boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE);
 
-        if (isResteasyReactiveAvailable) {
+        if (!isResteasyReactiveAvailable) {
             // if RestEasy is not available then no need to continue
             return;
         }

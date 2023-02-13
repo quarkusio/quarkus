@@ -3,13 +3,12 @@ package io.quarkus.hibernate.reactive.panache.kotlin
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
 import io.smallrye.common.annotation.CheckReturnValue
-import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
+import jakarta.persistence.LockModeType
+import jakarta.persistence.NonUniqueResultException
 import org.hibernate.Session
 import org.hibernate.annotations.Filter
 import org.hibernate.annotations.FilterDef
-import javax.persistence.LockModeType
-import javax.persistence.NonUniqueResultException
 
 interface PanacheQuery<Entity : Any> {
 
@@ -208,21 +207,10 @@ interface PanacheQuery<Entity : Any> {
      * Returns the current page of results as a [List].
      *
      * @return the current page of results as a [List].
-     * @see [PanacheQuery.stream]
      * @see [PanacheQuery.page]
      */
     @CheckReturnValue
     fun list(): Uni<List<Entity>>
-
-    /**
-     * Returns the current page of results as a Stream.
-     *
-     * @return the current page of results as a Stream.
-     * @see [PanacheQuery.list]
-     * @see [PanacheQuery.page]
-     */
-    @CheckReturnValue
-    fun stream(): Multi<Entity>
 
     /**
      * Returns the first result of the current page index. This ignores the current page size to fetch

@@ -3,8 +3,7 @@ package io.quarkus.mailer;
 import java.io.File;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
-import org.reactivestreams.Publisher;
+import java.util.concurrent.Flow.Publisher;
 
 import io.smallrye.mutiny.Multi;
 

@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile JWT</name>
 
     <properties>
-        <microprofile-jwt-auth-tck.version>1.2.2</microprofile-jwt-auth-tck.version>
+        <microprofile-jwt-auth-tck.version>2.1</microprofile-jwt-auth-tck.version>
     </properties>
 
     <build>

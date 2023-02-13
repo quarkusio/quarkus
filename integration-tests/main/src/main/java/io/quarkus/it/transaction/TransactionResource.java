@@ -2,12 +2,12 @@ package io.quarkus.it.transaction;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.inject.Inject;
-import javax.transaction.Synchronization;
-import javax.transaction.TransactionSynchronizationRegistry;
-import javax.transaction.UserTransaction;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.TransactionSynchronizationRegistry;
+import jakarta.transaction.UserTransaction;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/txn/txendpoint")
 public class TransactionResource {

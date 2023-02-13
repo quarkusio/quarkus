@@ -2,7 +2,6 @@ package io.quarkus.test.junit.util;
 
 import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST;
 import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_SECONDARY_ORDERER;
-import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer._CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -24,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.quality.Strictness;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -106,23 +106,6 @@ class QuarkusTestProfileAwareClassOrdererTest {
     }
 
     @Test
-    @Deprecated
-    void configuredPrefix_deprecated() {
-        ClassDescriptor quarkusTestDesc = quarkusDescriptorMock(Test01.class, null);
-        ClassDescriptor nonQuarkusTestDesc = descriptorMock(Test03.class);
-        List<ClassDescriptor> input = Arrays.asList(quarkusTestDesc, nonQuarkusTestDesc);
-        doReturn(input).when(contextMock).getClassDescriptors();
-
-        when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty()); // for strict stubbing
-        // prioritize unit tests
-        when(contextMock.getConfigurationParameter(_CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST)).thenReturn(Optional.of("01_"));
-
-        underTest.orderClasses(contextMock);
-
-        assertThat(input).containsExactly(nonQuarkusTestDesc, quarkusTestDesc);
-    }
-
-    @Test
     void secondaryOrderer() {
         ClassDescriptor quarkusTest1Desc = quarkusDescriptorMock(Test01.class, null);
         ClassDescriptor nonQuarkusTest1Desc = descriptorMock(Test09.class);
@@ -169,7 +152,8 @@ class QuarkusTestProfileAwareClassOrdererTest {
     }
 
     private ClassDescriptor descriptorMock(Class<?> testClass) {
-        ClassDescriptor mock = Mockito.mock(ClassDescriptor.class, withSettings().lenient().name(testClass.getSimpleName()));
+        ClassDescriptor mock = Mockito.mock(ClassDescriptor.class,
+                withSettings().strictness(Strictness.LENIENT).name(testClass.getSimpleName()));
         doReturn(testClass).when(mock).getTestClass();
         return mock;
     }
@@ -189,7 +173,8 @@ class QuarkusTestProfileAwareClassOrdererTest {
             Class<? extends QuarkusTestResourceLifecycleManager> managerClass, boolean restrictToAnnotatedClass) {
         ClassDescriptor mock = descriptorMock(testClass);
         when(mock.isAnnotated(QuarkusTest.class)).thenReturn(true);
-        QuarkusTestResource resourceMock = Mockito.mock(QuarkusTestResource.class, withSettings().lenient());
+        QuarkusTestResource resourceMock = Mockito.mock(QuarkusTestResource.class,
+                withSettings().strictness(Strictness.LENIENT));
         doReturn(managerClass).when(resourceMock).value();
         when(resourceMock.restrictToAnnotatedClass()).thenReturn(restrictToAnnotatedClass);
         when(mock.findRepeatableAnnotations(QuarkusTestResource.class)).thenReturn(List.of(resourceMock));

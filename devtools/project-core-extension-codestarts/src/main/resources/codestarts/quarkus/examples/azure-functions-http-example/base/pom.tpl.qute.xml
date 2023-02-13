@@ -1,133 +1,66 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <properties>
-    <azure.functions.maven.plugin.version>1.9.1</azure.functions.maven.plugin.version>
-    <resources-plugin.version>3.1.0</resources-plugin.version>
+    <azure.functions.maven.plugin.version>1.19.0</azure.functions.maven.plugin.version>
     <maven.compiler.release>11</maven.compiler.release>
     <functionAppName>$\{artifactId}-{gen-info.time}</functionAppName>
     <functionAppRegion>{app-region}</functionAppRegion>
     <functionResourceGroup>{resource-group}</functionResourceGroup>
-    <function>{function}</function>
-    <stagingDirectory>$\{project.build.directory}/azure-functions/$\{functionAppName}</stagingDirectory>
   </properties>
   <build>
     <plugins>
-      <!-- we only use azure plugin to deploy to Azure.
-           The directory structure is set up through various plugins in this pom -->
       <plugin>
         <groupId>com.microsoft.azure</groupId>
         <artifactId>azure-functions-maven-plugin</artifactId>
         <version>$\{azure.functions.maven.plugin.version}</version>
         <configuration>
-          <resourceGroup>$\{functionResourceGroup}</resourceGroup>
+          <!-- function app name -->
           <appName>$\{functionAppName}</appName>
+          <!-- function app resource group -->
+          <resourceGroup>$\{functionResourceGroup}</resourceGroup>
+          <!-- function app service plan name -->
+          <appServicePlanName>java-functions-app-service-plan</appServicePlanName>
+          <!-- function app region-->
+          <!-- refers https://github.com/microsoft/azure-maven-plugins/wiki/Azure-Functions:-Configuration-Details#supported-regions for all valid values -->
           <region>$\{functionAppRegion}</region>
+          <!-- function pricingTier, default to be consumption if not specified -->
+          <!-- refers https://github.com/microsoft/azure-maven-plugins/wiki/Azure-Functions:-Configuration-Details#supported-pricing-tiers for all valid values -->
+          <!-- <pricingTier></pricingTier> -->
+          <!-- Whether to disable application insights, default is false -->
+          <!-- refers https://github.com/microsoft/azure-maven-plugins/wiki/Azure-Functions:-Configuration-Details for all valid configurations for application insights-->
+          <!-- <disableAppInsights></disableAppInsights> -->
           <runtime>
             <!-- runtime os, could be windows, linux or docker-->
-            <os>windows</os>
+            <os>{function-os}</os>
             <javaVersion>11</javaVersion>
-            <!-- for docker function, please set the following parameters -->
-            <!-- <image>[hub-user/]repo-name[:tag]</image> -->
-            <!-- <serverId></serverId> -->
-            <!-- <registryUrl></registryUrl>  -->
           </runtime>
           <appSettings>
-            <!-- Run Azure Function from package file by default -->
             <property>
               <name>FUNCTIONS_EXTENSION_VERSION</name>
-              <value>~3</value>
+              <value>~4</value>
             </property>
-           </appSettings>
+          </appSettings>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>$\{resources-plugin.version}</version>
         <executions>
-          <!-- add azure required json files
-               to Azure staging directory -->
           <execution>
-            <id>copy-base-azure-config</id>
-            <phase>package</phase>
+            <id>package-functions</id>
             <goals>
-              <goal>copy-resources</goal>
+              <goal>package</goal>
             </goals>
-            <configuration>
-              <overwrite>true</overwrite>
-              <outputDirectory>$\{stagingDirectory}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>$\{project.basedir}/azure-config</directory>
-                  <includes>
-                    <include>host.json</include>
-                    <include>local.settings.json</include>
-                  </includes>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <!-- copy unpacked function.json into Azure staging directory -->
-          <execution>
-            <id>copy-function-json</id>
-            <phase>install</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <overwrite>true</overwrite>
-              <outputDirectory>$\{stagingDirectory}/$\{function}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>$\{project.basedir}/azure-config</directory>
-                  <filtering>true</filtering>
-                  <includes>
-                    <include>function.json</include>
-                  </includes>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <!-- copy the uber-jar into Azure staging directory -->
-          <execution>
-            <id>copy-uberjar</id>
-            <phase>install</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <overwrite>true</overwrite>
-              <outputDirectory>$\{stagingDirectory}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>$\{project.build.directory}</directory>
-                  <includes>
-                    <include>$\{project.artifactId}-$\{project.version}-runner.jar</include>
-                  </includes>
-                </resource>
-              </resources>
-            </configuration>
           </execution>
         </executions>
       </plugin>
-      <!-- azure plugin wants a specific name for the jar so need to copy runner jar and rename it -->
+      <!--Remove obj folder generated by .NET SDK in maven clean-->
       <plugin>
-        <groupId>com.coderplus.maven.plugins</groupId>
-        <artifactId>copy-rename-maven-plugin</artifactId>
-        <version>1.0.1</version>
-        <executions>
-          <execution>
-            <id>rename-file</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <sourceFile>$\{project.build.directory}/$\{project.artifactId}-$\{project.version}-runner.jar</sourceFile>
-              <destinationFile>$\{stagingDirectory}/$\{project.artifactId}-$\{project.version}.jar</destinationFile>
-            </configuration>
-          </execution>
-        </executions>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>obj</directory>
+            </fileset>
+          </filesets>
+        </configuration>
       </plugin>
     </plugins>
   </build>

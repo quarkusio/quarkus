@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import javax.json.bind.annotation.JsonbTransient;
-import javax.persistence.LockModeType;
-import javax.persistence.Transient;
+import jakarta.json.bind.annotation.JsonbTransient;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Transient;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
@@ -18,7 +18,6 @@ import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.impl.GenerateBridge;
 import io.smallrye.common.annotation.CheckReturnValue;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -419,170 +418,6 @@ public abstract class PanacheEntityBase {
     @CheckReturnValue
     @GenerateBridge
     public static <T extends PanacheEntityBase> Uni<List<T>> listAll(Sort sort) {
-        throw INSTANCE.implementationInjectionMissing();
-    }
-
-    /**
-     * Find entities matching a query, with optional indexed parameters.
-     * This method is a shortcut for <code>find(query, params).stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
-     * @param params optional sequence of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Sort, Object...)
-     * @see #stream(String, Map)
-     * @see #stream(String, Parameters)
-     * @see #find(String, Object...)
-     * @see #list(String, Object...)
-     */
-    @CheckReturnValue
-    @GenerateBridge
-    public static <T extends PanacheEntityBase> Multi<T> stream(String query, Object... params) {
-        throw INSTANCE.implementationInjectionMissing();
-    }
-
-    /**
-     * Find entities matching a query and the given sort options, with optional indexed parameters.
-     * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
-     * @param sort the sort strategy to use
-     * @param params optional sequence of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Object...)
-     * @see #stream(String, Sort, Map)
-     * @see #stream(String, Sort, Parameters)
-     * @see #find(String, Sort, Object...)
-     * @see #list(String, Sort, Object...)
-     */
-    @CheckReturnValue
-    @GenerateBridge
-    public static <T extends PanacheEntityBase> Multi<T> stream(String query, Sort sort, Object... params) {
-        throw INSTANCE.implementationInjectionMissing();
-    }
-
-    /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for <code>find(query, params).stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
-     * @param params {@link Map} of named parameters
-     * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Sort, Map)
-     * @see #stream(String, Object...)
-     * @see #stream(String, Parameters)
-     * @see #find(String, Map)
-     * @see #list(String, Map)
-     */
-    @CheckReturnValue
-    @GenerateBridge
-    public static <T extends PanacheEntityBase> Multi<T> stream(String query, Map<String, Object> params) {
-        throw INSTANCE.implementationInjectionMissing();
-    }
-
-    /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
-     * @param sort the sort strategy to use
-     * @param params {@link Map} of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Map)
-     * @see #stream(String, Sort, Object...)
-     * @see #stream(String, Sort, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #list(String, Sort, Map)
-     */
-    @CheckReturnValue
-    @GenerateBridge
-    public static <T extends PanacheEntityBase> Multi<T> stream(String query, Sort sort, Map<String, Object> params) {
-        throw INSTANCE.implementationInjectionMissing();
-    }
-
-    /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for <code>find(query, params).stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
-     * @param params {@link Parameters} of named parameters
-     * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Sort, Parameters)
-     * @see #stream(String, Object...)
-     * @see #stream(String, Map)
-     * @see #find(String, Parameters)
-     * @see #list(String, Parameters)
-     */
-    @CheckReturnValue
-    @GenerateBridge
-    public static <T extends PanacheEntityBase> Multi<T> stream(String query, Parameters params) {
-        throw INSTANCE.implementationInjectionMissing();
-    }
-
-    /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
-     * @param sort the sort strategy to use
-     * @param params {@link Parameters} of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Parameters)
-     * @see #stream(String, Sort, Object...)
-     * @see #stream(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     */
-    @CheckReturnValue
-    @GenerateBridge
-    public static <T extends PanacheEntityBase> Multi<T> stream(String query, Sort sort, Parameters params) {
-        throw INSTANCE.implementationInjectionMissing();
-    }
-
-    /**
-     * Find all entities of this type.
-     * This method is a shortcut for <code>findAll().stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @return a {@link Stream} containing all results, without paging
-     * @see #streamAll(Sort)
-     * @see #findAll()
-     * @see #listAll()
-     */
-    @CheckReturnValue
-    @GenerateBridge
-    public static <T extends PanacheEntityBase> Multi<T> streamAll() {
-        throw INSTANCE.implementationInjectionMissing();
-    }
-
-    /**
-     * Find all entities of this type, in the given order.
-     * This method is a shortcut for <code>findAll(sort).stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @param sort the sort order to use
-     * @return a {@link Stream} containing all results, without paging
-     * @see #streamAll()
-     * @see #findAll(Sort)
-     * @see #listAll(Sort)
-     */
-    @CheckReturnValue
-    @GenerateBridge
-    public static <T extends PanacheEntityBase> Multi<T> streamAll(Sort sort) {
         throw INSTANCE.implementationInjectionMissing();
     }
 

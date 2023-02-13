@@ -3,8 +3,8 @@ package io.quarkus.funqy.runtime.bindings.http;
 import java.io.InputStream;
 import java.util.concurrent.Executor;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 

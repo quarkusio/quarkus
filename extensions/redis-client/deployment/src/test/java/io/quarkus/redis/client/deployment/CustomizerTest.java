@@ -3,8 +3,8 @@ package io.quarkus.redis.client.deployment;
 import java.util.List;
 import java.util.UUID;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.assertj.core.api.Assertions;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;

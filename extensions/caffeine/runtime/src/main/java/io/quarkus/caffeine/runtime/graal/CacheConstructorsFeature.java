@@ -20,12 +20,14 @@ import org.graalvm.nativeimage.hosted.RuntimeReflection;
  */
 public class CacheConstructorsFeature implements Feature {
 
-    private final AtomicBoolean triggered = new AtomicBoolean(false);
+    public static final String REGISTER_RECORD_STATS_IMPLEMENTATIONS = "io.quarkus.caffeine.graalvm.recordStats";
 
     /**
      * To set this, add `-J-Dio.quarkus.caffeine.graalvm.diagnostics=true` to the native-image parameters
      */
     private static final boolean log = Boolean.getBoolean("io.quarkus.caffeine.graalvm.diagnostics");
+
+    private final AtomicBoolean triggered = new AtomicBoolean(false);
 
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
@@ -49,6 +51,12 @@ public class CacheConstructorsFeature implements Feature {
         for (String className : needsHavingSimpleConstructors) {
             registerForReflection(className, duringAnalysisAccess);
         }
+
+        if (Boolean.getBoolean(REGISTER_RECORD_STATS_IMPLEMENTATIONS)) {
+            for (String className : typesNeedingConstructorsRegisteredWhenRecordingStats()) {
+                registerForReflection(className, duringAnalysisAccess);
+            }
+        }
     }
 
     private void registerForReflection(
@@ -60,15 +68,18 @@ public class CacheConstructorsFeature implements Feature {
         RuntimeReflection.register(z);
     }
 
+    /**
+     * This list is not complete, but a selection of the types we expect being most useful.
+     * unfortunately registering all of them has been shown to have a very significant impact
+     * on executable sizes. See https://github.com/quarkusio/quarkus/issues/12961
+     */
     public static String[] typesNeedingConstructorsRegistered() {
         return new String[] {
-                //N.B. this list is not complete, but a selection of the types we expect being most useful.
-                //unfortunately registering all of them has been shown to have a very significant impact
-                //on executable sizes. See https://github.com/quarkusio/quarkus/issues/12961
                 "com.github.benmanes.caffeine.cache.PDMS",
                 "com.github.benmanes.caffeine.cache.PSA",
                 "com.github.benmanes.caffeine.cache.PSMS",
                 "com.github.benmanes.caffeine.cache.PSW",
+                "com.github.benmanes.caffeine.cache.PSMW",
                 "com.github.benmanes.caffeine.cache.PSWMS",
                 "com.github.benmanes.caffeine.cache.PSWMW",
                 "com.github.benmanes.caffeine.cache.SILMS",
@@ -82,4 +93,16 @@ public class CacheConstructorsFeature implements Feature {
         };
     }
 
+    public static String[] typesNeedingConstructorsRegisteredWhenRecordingStats() {
+        return new String[] {
+                "com.github.benmanes.caffeine.cache.SILSMS",
+                "com.github.benmanes.caffeine.cache.SSSA",
+                "com.github.benmanes.caffeine.cache.SSLSA",
+                "com.github.benmanes.caffeine.cache.SSLSMS",
+                "com.github.benmanes.caffeine.cache.SSSMS",
+                "com.github.benmanes.caffeine.cache.SSSMSA",
+                "com.github.benmanes.caffeine.cache.SSSMSW",
+                "com.github.benmanes.caffeine.cache.SSSW"
+        };
+    }
 }

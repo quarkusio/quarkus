@@ -13,15 +13,15 @@ import java.util.function.Supplier;
 
 import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
-import io.grpc.reflection.v1alpha.ErrorResponse;
-import io.grpc.reflection.v1alpha.ExtensionNumberResponse;
-import io.grpc.reflection.v1alpha.ExtensionRequest;
-import io.grpc.reflection.v1alpha.FileDescriptorResponse;
-import io.grpc.reflection.v1alpha.ListServiceResponse;
-import io.grpc.reflection.v1alpha.MutinyServerReflectionGrpc;
-import io.grpc.reflection.v1alpha.ServerReflectionRequest;
-import io.grpc.reflection.v1alpha.ServerReflectionResponse;
-import io.grpc.reflection.v1alpha.ServiceResponse;
+import io.grpc.reflection.v1.ErrorResponse;
+import io.grpc.reflection.v1.ExtensionNumberResponse;
+import io.grpc.reflection.v1.ExtensionRequest;
+import io.grpc.reflection.v1.FileDescriptorResponse;
+import io.grpc.reflection.v1.ListServiceResponse;
+import io.grpc.reflection.v1.MutinyServerReflectionGrpc;
+import io.grpc.reflection.v1.ServerReflectionRequest;
+import io.grpc.reflection.v1.ServerReflectionResponse;
+import io.grpc.reflection.v1.ServiceResponse;
 import io.smallrye.mutiny.Multi;
 
 public class ReflectionService extends MutinyServerReflectionGrpc.ServerReflectionImplBase {

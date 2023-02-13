@@ -26,8 +26,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.CreationException;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.CreationException;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigValue;
@@ -299,8 +299,17 @@ public class ConfigBuildStep {
             return;
         }
 
-        Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
         Set<ConfigClassBuildItem> configMappings = new HashSet<>();
+
+        // Add beans for all unremovable mappings
+        for (ConfigClassBuildItem configClass : configClasses) {
+            if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
+                configMappings.add(configClass);
+            }
+        }
+
+        // Add beans for all injection points
+        Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
         for (InjectionPointInfo injectionPoint : beanRegistration.getInjectionPoints()) {
             Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
             ConfigClassBuildItem configClass = configMappingTypes.get(type);
@@ -309,6 +318,7 @@ public class ConfigBuildStep {
             }
         }
 
+        // Generate the mappings beans
         for (ConfigClassBuildItem configClass : configMappings) {
             BeanConfigurator<Object> bean = beanRegistration.getContext()
                     .configure(configClass.getConfigClass())

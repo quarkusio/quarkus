@@ -14,13 +14,12 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.enterprise.inject.spi.InterceptionType;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.InterceptionType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -63,10 +62,10 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final DisposerInfo disposer;
 
-    private final Map<MethodInfo, InterceptionInfo> interceptedMethods;
-    private final Map<MethodInfo, DecorationInfo> decoratedMethods;
-
-    private final Map<InterceptionType, InterceptionInfo> lifecycleInterceptors;
+    // These maps are initialized during BeanDeployment.init()
+    private volatile Map<MethodInfo, InterceptionInfo> interceptedMethods;
+    private volatile Map<MethodInfo, DecorationInfo> decoratedMethods;
+    private volatile Map<InterceptionType, InterceptionInfo> lifecycleInterceptors;
 
     private final boolean alternative;
     private final Integer priority;
@@ -144,9 +143,9 @@ public class BeanInfo implements InjectionTargetInfo {
         this.params = params;
         // Identifier must be unique for a specific deployment
         this.identifier = Hashes.sha1(toString());
-        this.interceptedMethods = new ConcurrentHashMap<>();
-        this.decoratedMethods = new ConcurrentHashMap<>();
-        this.lifecycleInterceptors = new ConcurrentHashMap<>();
+        this.interceptedMethods = Collections.emptyMap();
+        this.decoratedMethods = Collections.emptyMap();
+        this.lifecycleInterceptors = Collections.emptyMap();
         this.forceApplicationClass = forceApplicationClass;
         this.targetPackageName = targetPackageName;
     }
@@ -292,6 +291,30 @@ public class BeanInfo implements InjectionTargetInfo {
 
     Map<MethodInfo, DecorationInfo> getDecoratedMethods() {
         return decoratedMethods;
+    }
+
+    /**
+     * @return {@code true} if the bean has an associated interceptor with the given binding, {@code false} otherwise
+     */
+    public boolean hasAroundInvokeInterceptorWithBinding(DotName binding) {
+        if (interceptedMethods.isEmpty()) {
+            return false;
+        }
+        for (InterceptionInfo interception : interceptedMethods.values()) {
+            if (Annotations.contains(interception.bindings, binding)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     *
+     * @return an immutable map of intercepted methods to the set of interceptor bindings
+     */
+    public Map<MethodInfo, Set<AnnotationInstance>> getInterceptedMethodsBindings() {
+        return interceptedMethods.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Entry::getKey, e -> Collections.unmodifiableSet(e.getValue().bindings)));
     }
 
     List<MethodInfo> getInterceptedOrDecoratedMethods() {
@@ -550,10 +573,11 @@ public class BeanInfo implements InjectionTargetInfo {
         if (disposer != null) {
             disposer.init(errors);
         }
-        interceptedMethods.putAll(initInterceptedMethods(errors, bytecodeTransformerConsumer, transformUnproxyableClasses));
-        decoratedMethods.putAll(initDecoratedMethods());
+        interceptedMethods = Map
+                .copyOf(initInterceptedMethods(errors, bytecodeTransformerConsumer, transformUnproxyableClasses));
+        decoratedMethods = Map.copyOf(initDecoratedMethods());
         if (errors.isEmpty()) {
-            lifecycleInterceptors.putAll(initLifecycleInterceptors());
+            lifecycleInterceptors = Map.copyOf(initLifecycleInterceptors());
         }
     }
 
@@ -626,7 +650,7 @@ public class BeanInfo implements InjectionTargetInfo {
         ClassInfo classInfo = target.get().asClass();
         addDecoratedMethods(candidates, classInfo, classInfo, bound,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
-                        beanDeployment.getBeanArchiveIndex()));
+                        beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods()));
 
         Map<MethodInfo, DecorationInfo> decoratedMethods = new HashMap<>(candidates.size());
         for (Entry<MethodKey, DecorationInfo> entry : candidates.entrySet()) {

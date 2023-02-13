@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,10 +20,10 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.AmbiguousResolutionException;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
-import javax.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -681,7 +682,7 @@ public class ArcProcessor {
     @BuildStep
     List<AdditionalApplicationArchiveMarkerBuildItem> marker() {
         return Arrays.asList(new AdditionalApplicationArchiveMarkerBuildItem("META-INF/beans.xml"),
-                new AdditionalApplicationArchiveMarkerBuildItem("META-INF/services/javax.enterprise.inject.spi.Extension"));
+                new AdditionalApplicationArchiveMarkerBuildItem("META-INF/services/jakarta.enterprise.inject.spi.Extension"));
     }
 
     @BuildStep
@@ -949,11 +950,13 @@ public class ArcProcessor {
                         injectionPoint.getTargetBean().isPresent()
                                 ? mc.load(injectionPoint.getTargetBean().get().getIdentifier())
                                 : mc.loadNull());
+                boolean isTransient = injectionPoint.isField()
+                        && Modifier.isTransient(injectionPoint.getTarget().asField().flags());
 
                 ResultHandle ret = mc.invokeStaticMethod(instancesMethod, targetBean,
                         injectionPointType, requiredType, requiredQualifiers, mc.getMethodParam(0),
                         injectionPointAnnotations,
-                        javaMember, mc.load(injectionPoint.getPosition()));
+                        javaMember, mc.load(injectionPoint.getPosition()), mc.load(isTransient));
                 mc.returnValue(ret);
             });
             configurator.done();

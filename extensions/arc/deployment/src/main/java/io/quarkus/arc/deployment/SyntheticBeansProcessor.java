@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.CreationException;
+import jakarta.enterprise.inject.CreationException;
 
 import org.jboss.jandex.DotName;
 

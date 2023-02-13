@@ -2,9 +2,9 @@ package io.quarkus.quartz.test;
 
 import java.util.concurrent.CountDownLatch;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.scheduler.Scheduled;
 

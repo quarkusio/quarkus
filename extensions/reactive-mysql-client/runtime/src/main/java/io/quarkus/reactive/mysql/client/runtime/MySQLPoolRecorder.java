@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
@@ -81,10 +81,6 @@ public class MySQLPoolRecorder {
         // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
         mysqlConnectOptions.setMetricsName("mysql|" + dataSourceName);
 
-        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
-            log.warn(
-                    "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
-        }
         return createPool(vertx, poolOptions, mysqlConnectOptions, dataSourceName);
     }
 
@@ -95,9 +91,7 @@ public class MySQLPoolRecorder {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
-        if (dataSourceReactiveRuntimeConfig.maxSize.isPresent()) {
-            poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize.getAsInt());
-        }
+        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize);
 
         if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
             int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
@@ -164,13 +158,7 @@ public class MySQLPoolRecorder {
             }
         }
 
-        if (dataSourceReactiveMySQLConfig.cachePreparedStatements.isPresent()) {
-            log.warn(
-                    "datasource.reactive.mysql.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
-            mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveMySQLConfig.cachePreparedStatements.get());
-        } else {
-            mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
-        }
+        mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
 
         if (dataSourceReactiveMySQLConfig.charset.isPresent()) {
             mysqlConnectOptions.setCharset(dataSourceReactiveMySQLConfig.charset.get());

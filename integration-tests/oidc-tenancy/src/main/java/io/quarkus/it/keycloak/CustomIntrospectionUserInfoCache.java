@@ -1,9 +1,10 @@
 package io.quarkus.it.keycloak;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
@@ -14,7 +15,8 @@ import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
-@AlternativePriority(1)
+@Alternative
+@Priority(1)
 public class CustomIntrospectionUserInfoCache implements TokenIntrospectionCache, UserInfoCache {
     @Inject
     DefaultTokenIntrospectionUserInfoCache tokenCache;

@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -162,7 +162,7 @@ final class Methods {
         return addInterceptedMethodCandidates(beanDeployment, classInfo, classInfo, candidates, Set.copyOf(classLevelBindings),
                 bytecodeTransformerConsumer, transformUnproxyableClasses,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
-                        beanDeployment.getBeanArchiveIndex()),
+                        beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods()),
                 false, new HashSet<>());
     }
 
@@ -281,16 +281,17 @@ final class Methods {
                     && !Annotations.contains(methodAnnotations, DotNames.OBSERVES_ASYNC)) {
                 String message;
                 if (methodLevelBindings.size() == 1) {
-                    message = String.format("%s will have no effect on method %s.%s() because the method is private",
+                    message = String.format("%s will have no effect on method %s.%s() because the method is private.",
                             methodLevelBindings.iterator().next(), classInfo.name(), method.name());
                 } else {
                     message = String.format(
-                            "Annotations %s will have no effect on method %s.%s() because the method is private",
+                            "Annotations %s will have no effect on method %s.%s() because the method is private.",
                             methodLevelBindings.stream().map(AnnotationInstance::toString).collect(Collectors.joining(",")),
                             classInfo.name(), method.name());
                 }
                 if (beanDeployment.failOnInterceptedPrivateMethod) {
-                    throw new DeploymentException(message);
+                    throw new DeploymentException(message
+                            + " Either remove the annotation from the method, or turn this exception into a simple warning by setting configuration property 'quarkus.arc.fail-on-intercepted-private-method' to 'false'.");
                 } else {
                     LOGGER.warn(message);
                 }
@@ -518,14 +519,17 @@ final class Methods {
 
         private final BiFunction<Type, Type, Boolean> assignableFromFun;
         private final IndexView beanArchiveIndex;
+        private final Set<MethodInfo> producersAndObservers;
         private ClassInfo clazz;
         private ClassInfo originalClazz;
         private List<MethodInfo> regularMethods;
         private Set<MethodInfo> bridgeMethods = new HashSet<>();
 
-        public SubclassSkipPredicate(BiFunction<Type, Type, Boolean> assignableFromFun, IndexView beanArchiveIndex) {
+        public SubclassSkipPredicate(BiFunction<Type, Type, Boolean> assignableFromFun, IndexView beanArchiveIndex,
+                Set<MethodInfo> producersAndObservers) {
             this.assignableFromFun = assignableFromFun;
             this.beanArchiveIndex = beanArchiveIndex;
+            this.producersAndObservers = producersAndObservers;
         }
 
         void startProcessing(ClassInfo clazz, ClassInfo originalClazz) {
@@ -553,6 +557,13 @@ final class Methods {
                 // Skip bridge methods that have a corresponding "implementation method" on the same class
                 // The algorithm we use to detect these methods is best effort, i.e. there might be use cases where the detection fails
                 return hasImplementation(method);
+            } else if (method.isSynthetic()) {
+                // Skip non-bridge synthetic methods
+                return true;
+            }
+            if (Modifier.isPrivate(method.flags()) && !producersAndObservers.contains(method)) {
+                // Skip a private method that is not and observer or producer
+                return true;
             }
             if (method.hasAnnotation(DotNames.POST_CONSTRUCT) || method.hasAnnotation(DotNames.PRE_DESTROY)) {
                 // @PreDestroy and @PostConstruct methods declared on the bean are NOT candidates for around invoke interception

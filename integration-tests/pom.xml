@@ -165,7 +165,6 @@
                 <module>kafka-sasl-elytron</module>
                 <module>kafka-oauth-keycloak</module>
                 <module>kafka-snappy</module>
-                <module>kafka-avro</module>
                 <module>kafka-avro-apicurio2</module>
                 <module>kafka-streams</module>
                 <module>kafka-devservices</module>
@@ -190,7 +189,6 @@
                 <module>hibernate-reactive-postgresql</module>
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-kotlin</module>
-                <module>hibernate-reactive-panache-blocking</module>
                 <module>hibernate-search-orm-elasticsearch</module>
                 <module>hibernate-search-orm-elasticsearch-coordination-outbox-polling</module>
                 <module>hibernate-search-orm-opensearch</module>
@@ -308,6 +306,7 @@
                 <module>ide-launcher</module>
                 <module>elasticsearch-rest-client</module>
                 <module>elasticsearch-rest-high-level-client</module>
+                <module>elasticsearch-java-client</module>
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>opentelemetry</module>
@@ -328,6 +327,7 @@
                 <module>locales</module>
                 <module>redis-devservices</module>
                 <!-- gRPC tests -->
+                <module>grpc-inprocess</module>
                 <module>grpc-vertx</module>
                 <module>grpc-tls</module>
                 <module>grpc-plain-text-gzip</module>

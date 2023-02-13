@@ -2,7 +2,7 @@ package io.quarkus.it.keycloak;
 
 import java.lang.annotation.*;
 
-import javax.interceptor.InterceptorBinding;
+import jakarta.interceptor.InterceptorBinding;
 
 @Inherited
 @InterceptorBinding

@@ -31,8 +31,8 @@ public class DataSourceReactiveRuntimeConfig {
     /**
      * The datasource pool maximum size.
      */
-    @ConfigItem
-    public OptionalInt maxSize = OptionalInt.empty();
+    @ConfigItem(defaultValue = "20")
+    public int maxSize = 20;
 
     /**
      * When a new connection object is created, the pool assigns it an event loop.
@@ -99,15 +99,6 @@ public class DataSourceReactiveRuntimeConfig {
      */
     @ConfigItem
     public PfxConfiguration keyCertificatePfx = new PfxConfiguration();
-
-    /**
-     * Deprecated: this was removed and is no longer available.
-     *
-     * @Deprecated
-     */
-    @ConfigItem
-    @Deprecated
-    public Optional<Boolean> threadLocal = Optional.empty();
 
     /**
      * The number of reconnection attempts when a pooled connection cannot be established on first try.

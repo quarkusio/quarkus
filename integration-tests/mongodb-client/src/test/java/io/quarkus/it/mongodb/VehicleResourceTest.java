@@ -6,8 +6,6 @@ import static org.hamcrest.CoreMatchers.is;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.it.mongodb.discriminator.Car;
 import io.quarkus.it.mongodb.discriminator.Moto;
@@ -16,7 +14,6 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@DisabledOnOs(OS.WINDOWS)
 public class VehicleResourceTest {
     @BeforeEach
     public void clearCollection() {

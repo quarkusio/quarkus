@@ -2,7 +2,7 @@ package io.quarkus.arc.impl;
 
 import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
 import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
-import static javax.transaction.Status.STATUS_COMMITTED;
+import static jakarta.transaction.Status.STATUS_COMMITTED;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
@@ -22,20 +22,20 @@ import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import javax.enterprise.event.Event;
-import javax.enterprise.event.NotificationOptions;
-import javax.enterprise.event.ObserverException;
-import javax.enterprise.event.TransactionPhase;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.EventContext;
-import javax.enterprise.inject.spi.EventMetadata;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.ObserverMethod;
-import javax.enterprise.util.TypeLiteral;
-import javax.transaction.RollbackException;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.NotificationOptions;
+import jakarta.enterprise.event.ObserverException;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.TransactionManager;
 
 import org.jboss.logging.Logger;
 
@@ -59,17 +59,21 @@ class EventImpl<T> implements Event<T> {
     private final Type eventType;
     private final Set<Annotation> qualifiers;
     private final ConcurrentMap<Class<?>, Notifier<? super T>> notifiers;
+    private final InjectionPoint injectionPoint;
 
     private transient volatile Notifier<? super T> lastNotifier;
 
     private static final Logger LOGGER = Logger.getLogger(EventImpl.class);
 
-    EventImpl(Type eventType, Set<Annotation> qualifiers) {
+    EventImpl(Type eventType, Set<Annotation> qualifiers, InjectionPoint injectionPoint) {
         this.eventType = initEventType(eventType);
         this.injectionPointTypeHierarchy = new HierarchyDiscovery(this.eventType);
-        this.qualifiers = qualifiers;
-        this.qualifiers.add(Any.Literal.INSTANCE);
+        Set<Annotation> eventQualifiers = new HashSet<>();
+        eventQualifiers.addAll(qualifiers);
+        eventQualifiers.add(Any.Literal.INSTANCE);
+        this.qualifiers = Set.copyOf(eventQualifiers);
         this.notifiers = new ConcurrentHashMap<>(DEFAULT_CACHE_CAPACITY);
+        this.injectionPoint = injectionPoint;
     }
 
     @Override
@@ -128,15 +132,19 @@ class EventImpl<T> implements Event<T> {
         ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergedQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergedQualifiers, qualifiers);
-        return new EventImpl<T>(eventType, mergedQualifiers);
+        return new EventImpl<T>(eventType, mergedQualifiers, injectionPoint);
     }
 
     @Override
     public <U extends T> Event<U> select(Class<U> subtype, Annotation... qualifiers) {
+        if (Types.containsTypeVariable(subtype)) {
+            throw new IllegalArgumentException(
+                    "Event#select(Class<U>, Annotation...) cannot be used with type variable parameter");
+        }
         ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
-        return new EventImpl<U>(subtype, mergerdQualifiers);
+        return new EventImpl<U>(subtype, mergerdQualifiers, injectionPoint);
     }
 
     @Override
@@ -148,22 +156,22 @@ class EventImpl<T> implements Event<T> {
         }
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
-        return new EventImpl<U>(subtype.getType(), mergerdQualifiers);
+        return new EventImpl<U>(subtype.getType(), mergerdQualifiers, injectionPoint);
     }
 
     private Notifier<? super T> createNotifier(Class<?> runtimeType) {
         Type eventType = getEventType(runtimeType);
-        return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.container()));
+        return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.container()), injectionPoint);
     }
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
-            ArcContainerImpl container) {
-        return createNotifier(runtimeType, eventType, qualifiers, container, true);
+            ArcContainerImpl container, InjectionPoint injectionPoint) {
+        return createNotifier(runtimeType, eventType, qualifiers, container, true, injectionPoint);
     }
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
-            ArcContainerImpl container, boolean activateRequestContext) {
-        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
+            ArcContainerImpl container, boolean activateRequestContext, InjectionPoint injectionPoint) {
+        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType, injectionPoint);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
                 container.resolveObservers(eventType, qualifiers));
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
@@ -200,6 +208,14 @@ class EventImpl<T> implements Event<T> {
                     injectionPointTypeHierarchy.getResolver().getResolvedTypeVariables(),
                     new HierarchyDiscovery(canonicalEventType).getResolver().getResolvedTypeVariables()).build();
             resolvedType = objectTypeResolver.resolveType(canonicalEventType);
+        }
+        /*
+         * If the runtime type of the event object still contains an unresolved type variable,
+         * the container must throw an IllegalArgumentException.
+         */
+        if (Types.containsTypeVariable(resolvedType)) {
+            throw new IllegalArgumentException(
+                    "CDI event payload cannot contain unresolved type variable; found type: " + resolvedType);
         }
         return resolvedType;
     }
@@ -260,7 +276,7 @@ class EventImpl<T> implements Event<T> {
 
                     try {
                         if (transactionManagerInstance.isAvailable() &&
-                                transactionManagerInstance.get().getStatus() == javax.transaction.Status.STATUS_ACTIVE) {
+                                transactionManagerInstance.get().getStatus() == jakarta.transaction.Status.STATUS_ACTIVE) {
                             // we have one or more transactional OM, and TransactionManager is available
                             // we attempt to register a JTA synchronization
                             List<DeferredEventNotification<?>> deferredEvents = new ArrayList<>();
@@ -347,58 +363,6 @@ class EventImpl<T> implements Event<T> {
 
         private boolean isNotTxObserver(ObserverMethod<?> observer) {
             return !isTxObserver(observer);
-        }
-
-    }
-
-    static class EventContextImpl<T> implements EventContext<T> {
-
-        private final T payload;
-
-        private final EventMetadata metadata;
-
-        public EventContextImpl(T payload, EventMetadata metadata) {
-            this.payload = payload;
-            this.metadata = metadata;
-        }
-
-        @Override
-        public T getEvent() {
-            return payload;
-        }
-
-        @Override
-        public EventMetadata getMetadata() {
-            return metadata;
-        }
-
-    }
-
-    static class EventMetadataImpl implements EventMetadata {
-
-        private final Set<Annotation> qualifiers;
-
-        private final Type eventType;
-
-        public EventMetadataImpl(Set<Annotation> qualifiers, Type eventType) {
-            this.qualifiers = qualifiers;
-            this.eventType = eventType;
-        }
-
-        @Override
-        public Set<Annotation> getQualifiers() {
-            return qualifiers;
-        }
-
-        @Override
-        public InjectionPoint getInjectionPoint() {
-            // Currently we do not support injection point of the injected Event instance which fired the event
-            return null;
-        }
-
-        @Override
-        public Type getType() {
-            return eventType;
         }
 
     }

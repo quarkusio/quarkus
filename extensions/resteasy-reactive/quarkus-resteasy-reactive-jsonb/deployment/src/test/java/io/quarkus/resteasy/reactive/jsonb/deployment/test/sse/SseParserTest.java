@@ -9,8 +9,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.sse.InboundSseEvent;
-import javax.ws.rs.sse.SseEvent;
+import jakarta.ws.rs.sse.InboundSseEvent;
+import jakarta.ws.rs.sse.SseEvent;
 
 import org.jboss.resteasy.reactive.client.impl.InboundSseEventImpl;
 import org.jboss.resteasy.reactive.client.impl.SseEventSourceImpl;

@@ -1,7 +1,7 @@
 package io.quarkus.it.panache;
 
-import javax.persistence.Entity;
-import javax.persistence.NamedQuery;
+import jakarta.persistence.Entity;
+import jakarta.persistence.NamedQuery;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 

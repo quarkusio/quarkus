@@ -134,6 +134,13 @@ public class InjectionPointInfo {
         this.position = position;
         this.isTransientReference = isTransientReference;
         this.isDelegate = isDelegate;
+
+        // validation - Event injection point can never be a raw type
+        if (DotNames.EVENT.equals(requiredType.name()) && requiredType.kind() == Type.Kind.CLASS) {
+            throw new DefinitionException(
+                    "Event injection point can never be raw type - please specify the type parameter. Injection point: "
+                            + target);
+        }
     }
 
     void resolve(BeanInfo bean) {

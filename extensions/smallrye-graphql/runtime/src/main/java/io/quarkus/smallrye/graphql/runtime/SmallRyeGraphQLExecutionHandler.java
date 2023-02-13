@@ -339,9 +339,16 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 response.setStatusCode(500)
                         .end();
             } else {
-                response.setStatusCode(200)
-                        .setStatusMessage(OK)
-                        .end(Buffer.buffer(er.getExecutionResultAsString(), requestedCharset));
+                try {
+                    response.setStatusCode(200)
+                            .setStatusMessage(OK)
+                            .end(Buffer.buffer(er.getExecutionResultAsString(), requestedCharset));
+                } catch (IllegalStateException ise) {
+                    // The application already finished the request by itself for some reason
+                    if (log.isDebugEnabled()) {
+                        log.debug("Cannot write response", ise);
+                    }
+                }
             }
         }
 

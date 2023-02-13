@@ -1,5 +1,6 @@
 package io.quarkus.grpc.deployment;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,7 +10,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 
-import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import com.github.javaparser.ast.CompilationUnit;
@@ -36,15 +36,37 @@ public class GrpcPostProcessing {
     public static final String STUB = "Stub";
     public static final String BIND_METHOD = "bindService";
 
-    private final CodeGenContext context;
     private final Path root;
+    private final boolean replaceGeneratedAnnotation;
+    private final boolean removeFinal;
 
     public GrpcPostProcessing(CodeGenContext context, Path root) {
-        this.context = context;
         this.root = root;
+        this.replaceGeneratedAnnotation = isEnabled(context, POST_PROCESS_QUARKUS_GENERATED_ANNOTATION, true);
+        this.removeFinal = isEnabled(context, POST_PROCESS_NO_FINAL, true);
     }
 
-    private boolean isEnabled(String name, boolean def) {
+    public GrpcPostProcessing(Path root) {
+        this.root = root;
+        this.replaceGeneratedAnnotation = true;
+        this.removeFinal = true;
+    }
+
+    /**
+     * Methods used for the quarkus-grpc-stub project post-processing (as it's not a quarkus app)
+     *
+     * @param args expects the path to the source root of the files to post-process.
+     */
+    public static void main(String[] args) {
+        for (String arg : args) {
+            Path path = new File(arg).toPath();
+            var postprocessing = new GrpcPostProcessing(path);
+            postprocessing.postprocess();
+        }
+
+    }
+
+    private boolean isEnabled(CodeGenContext context, String name, boolean def) {
         return Boolean.getBoolean(name) || context.config().getOptionalValue(name, Boolean.class).orElse(def);
     }
 
@@ -61,9 +83,9 @@ public class GrpcPostProcessing {
 
                         if (unit.getPrimaryType().isPresent()) {
                             TypeDeclaration<?> type = unit.getPrimaryType().get();
-                            postprocess(unit, type, context.config());
+                            postprocess(unit, type);
 
-                            // save to a tempory file first, then move all temporary unit files at the same time
+                            // save to a temporary file first, then move all temporary unit files at the same time
                             try {
                                 unit.setStorage(Files.createTempFile(null, null),
                                         sr.getParserConfiguration().getCharacterEncoding())
@@ -87,7 +109,7 @@ public class GrpcPostProcessing {
                 }
             });
 
-            changedFiles.entrySet().stream().forEach(new Consumer<Entry<Path, Path>>() {
+            changedFiles.entrySet().forEach(new Consumer<Entry<Path, Path>>() {
                 @Override
                 public void accept(Entry<Path, Path> entry) {
                     try {
@@ -103,26 +125,27 @@ public class GrpcPostProcessing {
             // read issue, report and exit
             log.error("Unable to parse the classes generated using protoc - skipping gRPC post processing", e);
         } finally {
-            changedFiles.entrySet().stream().forEach(new Consumer<Entry<Path, Path>>() {
+            changedFiles.entrySet().forEach(new Consumer<Entry<Path, Path>>() {
                 @Override
                 public void accept(Entry<Path, Path> e) {
                     try {
                         Files.deleteIfExists(e.getKey());
                     } catch (IOException discard) {
+                        // Ignore it.
                     }
                 }
             });
         }
     }
 
-    private void postprocess(CompilationUnit unit, TypeDeclaration<?> primary, Config config) {
+    private void postprocess(CompilationUnit unit, TypeDeclaration<?> primary) {
         log.debugf("Post-processing %s", primary.getFullyQualifiedName().orElse(primary.getNameAsString()));
 
         unit.accept(new ModifierVisitor<Void>() {
 
             @Override
             public Visitable visit(NormalAnnotationExpr n, Void arg) {
-                if (isEnabled(POST_PROCESS_QUARKUS_GENERATED_ANNOTATION, true)) {
+                if (replaceGeneratedAnnotation) {
                     if (n.getNameAsString().equals(JAVAX_GENERATED)) {
                         n.setName(QUARKUS_GENERATED);
                     }
@@ -132,7 +155,7 @@ public class GrpcPostProcessing {
 
             @Override
             public Visitable visit(ClassOrInterfaceDeclaration n, Void arg) {
-                if (isEnabled(POST_PROCESS_NO_FINAL, true)) {
+                if (removeFinal) {
                     if (n.hasModifier(Modifier.Keyword.FINAL) && n.getNameAsString().endsWith(STUB)) {
                         n.removeModifier(Modifier.Keyword.FINAL);
                     }
@@ -142,7 +165,7 @@ public class GrpcPostProcessing {
 
             @Override
             public Visitable visit(MethodDeclaration n, Void arg) {
-                if (isEnabled(POST_PROCESS_NO_FINAL, true)) {
+                if (removeFinal) {
                     if (n.hasModifier(Modifier.Keyword.FINAL)
                             && n.getNameAsString().equalsIgnoreCase(BIND_METHOD)) {
                         n.removeModifier(Modifier.Keyword.FINAL);

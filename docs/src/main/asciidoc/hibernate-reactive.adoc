@@ -208,13 +208,7 @@ Mutiny.SessionFactory sessionFactory;
 
 This will inject the `Mutiny.SessionFactory` of the default persistence unit.
 
-You can also inject an instance of `Uni<Mutiny.Session>` using the exact same mechanism:
-
-[source,java]
-----
-@Inject
-Uni<Mutiny.Session> session;
-----
+NOTE: Prior to Quarkus 3.0 it was also possible to inject a `@RequestScoped` bean for `Mutiny.Session`. However, the lifecycle of a reactive session does not fit the lifecycle of the CDI request context. Therefore, this bean is removed in Quarkus 3.0.
 
 [[testing]]
 === Testing

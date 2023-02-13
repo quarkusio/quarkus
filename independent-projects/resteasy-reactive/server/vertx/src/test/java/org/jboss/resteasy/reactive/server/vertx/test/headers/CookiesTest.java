@@ -108,7 +108,7 @@ class CookiesTest {
                 .formParam("cookie", "greeting=\"hello\";SameSite=\"Lax\";")
                 .post("/cookies/set-cookie")
                 .then()
-                .cookie("greeting", detailedCookie().value("hello"));
+                .cookie("greeting", detailedCookie().value("hello").sameSite("LAX"));
     }
 
     @Test
@@ -116,10 +116,10 @@ class CookiesTest {
         given()
                 .when()
                 .urlEncodingEnabled(true)
-                .formParam("cookie", "greeting=\"hello\";SameSite=\"Lax\"")
+                .formParam("cookie", "greeting=\"hello\";SameSite=\"None\"")
                 .post("/cookies/set-cookie")
                 .then()
-                .cookie("greeting", detailedCookie().value("hello"));
+                .cookie("greeting", detailedCookie().value("hello").sameSite("NONE"));
     }
 
     @Test
@@ -127,10 +127,10 @@ class CookiesTest {
         given()
                 .when()
                 .urlEncodingEnabled(true)
-                .formParam("cookie", "greeting=\"hello\";samesite=\"Lax\"")
+                .formParam("cookie", "greeting=\"hello\";samesite=\"Strict\"")
                 .post("/cookies/set-cookie")
                 .then()
-                .cookie("greeting", detailedCookie().value("hello"));
+                .cookie("greeting", detailedCookie().value("hello").sameSite("STRICT"));
     }
 
     @Test

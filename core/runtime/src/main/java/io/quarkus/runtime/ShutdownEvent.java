@@ -14,7 +14,7 @@ package io.quarkus.runtime;
  *
  * The annotated method can access other injected beans.
  */
-public class ShutdownEvent {
+public class ShutdownEvent extends jakarta.enterprise.event.Shutdown {
 
     private final ShutdownReason shutdownReason;
 

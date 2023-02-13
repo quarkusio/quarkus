@@ -149,6 +149,11 @@ public class ArcProcessor {
     }
 
     @BuildStep
+    BuildCompatibleExtensionsBuildItem buildCompatibleExtensions() {
+        return new BuildCompatibleExtensionsBuildItem();
+    }
+
+    @BuildStep
     AdditionalBeanBuildItem quarkusApplication(CombinedIndexBuildItem combinedIndex) {
         List<String> quarkusApplications = new ArrayList<>();
         for (ClassInfo quarkusApplication : combinedIndex.getIndex()
@@ -190,6 +195,7 @@ public class ArcProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndex,
             CombinedIndexBuildItem combinedIndex,
             ApplicationIndexBuildItem applicationIndex,
+            BuildCompatibleExtensionsBuildItem buildCompatibleExtensions,
             List<ExcludedTypeBuildItem> excludedTypes,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             List<InjectionPointTransformerBuildItem> injectionPointTransformers,
@@ -420,6 +426,8 @@ public class ArcProcessor {
         for (SuppressConditionGeneratorBuildItem generator : suppressConditionGenerators) {
             builder.addSuppressConditionGenerator(generator.getGenerator());
         }
+
+        builder.setBuildCompatibleExtensions(buildCompatibleExtensions.entrypoint);
 
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();

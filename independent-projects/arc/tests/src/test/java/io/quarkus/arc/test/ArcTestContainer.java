@@ -17,6 +17,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
+
+import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
@@ -43,6 +46,7 @@ import io.quarkus.arc.processor.ObserverTransformer;
 import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.processor.StereotypeRegistrar;
+import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
 
 /**
  * Junit5 extension for Arc bootstrap/shutdown.
@@ -85,6 +89,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private boolean removeUnusedBeans = false;
         private final List<Predicate<BeanInfo>> exclusions;
         private AlternativePriorities alternativePriorities;
+        private final List<BuildCompatibleExtension> buildCompatibleExtensions;
 
         public Builder() {
             resourceReferenceProviders = new ArrayList<>();
@@ -102,6 +107,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             observerTransformers = new ArrayList<>();
             beanDeploymentValidators = new ArrayList<>();
             exclusions = new ArrayList<>();
+            buildCompatibleExtensions = new ArrayList<>();
         }
 
         public Builder resourceReferenceProviders(Class<?>... resourceReferenceProviders) {
@@ -195,6 +201,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        public final Builder buildCompatibleExtensions(BuildCompatibleExtension... extensions) {
+            Collections.addAll(this.buildCompatibleExtensions, extensions);
+            return this;
+        }
+
         public ArcTestContainer build() {
             return new ArcTestContainer(this);
         }
@@ -227,6 +238,8 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
     private final AlternativePriorities alternativePriorities;
 
+    private final List<BuildCompatibleExtension> buildCompatibleExtensions;
+
     public ArcTestContainer(Class<?>... beanClasses) {
         this.resourceReferenceProviders = Collections.emptyList();
         this.beanClasses = Arrays.asList(beanClasses);
@@ -247,6 +260,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.removeUnusedBeans = false;
         this.exclusions = Collections.emptyList();
         this.alternativePriorities = null;
+        this.buildCompatibleExtensions = Collections.emptyList();
     }
 
     public ArcTestContainer(Builder builder) {
@@ -269,6 +283,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.removeUnusedBeans = builder.removeUnusedBeans;
         this.exclusions = builder.exclusions;
         this.alternativePriorities = builder.alternativePriorities;
+        this.buildCompatibleExtensions = builder.buildCompatibleExtensions;
     }
 
     // this is where we start Arc, we operate on a per-method basis
@@ -329,6 +344,27 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             }
         }
 
+        ExtensionsEntryPoint buildCompatibleExtensions = new ExtensionsEntryPoint(this.buildCompatibleExtensions);
+
+        {
+            IndexView overallIndex = applicationIndex != null
+                    ? CompositeIndex.create(immutableBeanArchiveIndex, applicationIndex)
+                    : immutableBeanArchiveIndex;
+            Set<String> additionalClasses = new HashSet<>();
+            buildCompatibleExtensions.runDiscovery(overallIndex, additionalClasses);
+            Index additionalIndex = null;
+            try {
+                Set<Class<?>> additionalClassObjects = new HashSet<>();
+                for (String additionalClass : additionalClasses) {
+                    additionalClassObjects.add(ArcTestContainer.class.getClassLoader().loadClass(additionalClass));
+                }
+                additionalIndex = index(additionalClassObjects);
+            } catch (IOException | ClassNotFoundException e) {
+                throw new IllegalStateException("Failed to create index", e);
+            }
+            immutableBeanArchiveIndex = CompositeIndex.create(immutableBeanArchiveIndex, additionalIndex);
+        }
+
         ClassLoader old = Thread.currentThread().getContextClassLoader();
 
         try {
@@ -357,11 +393,12 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             }
 
             BeanProcessor.Builder builder = BeanProcessor.builder()
-                    .setName(testClass.getSimpleName())
+                    .setName(testClass.getName().replace('.', '_'))
                     .setImmutableBeanArchiveIndex(immutableBeanArchiveIndex)
                     .setComputingBeanArchiveIndex(BeanArchives.buildComputingBeanArchiveIndex(getClass().getClassLoader(),
                             new ConcurrentHashMap<>(), immutableBeanArchiveIndex))
-                    .setApplicationIndex(applicationIndex);
+                    .setApplicationIndex(applicationIndex)
+                    .setBuildCompatibleExtensions(buildCompatibleExtensions);
             if (!resourceAnnotations.isEmpty()) {
                 builder.addResourceAnnotations(resourceAnnotations.stream()
                         .map(c -> DotName.createSimple(c.getName()))

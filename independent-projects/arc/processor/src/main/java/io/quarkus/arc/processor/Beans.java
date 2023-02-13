@@ -11,6 +11,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -313,7 +314,7 @@ public final class Beans {
         }
 
         Set<ScopeInfo> stereotypeScopes = new HashSet<>();
-        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment)) {
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment.getStereotypesMap())) {
             if (stereotype.getDefaultScope() != null) {
                 stereotypeScopes.add(stereotype.getDefaultScope());
             }
@@ -334,7 +335,7 @@ public final class Beans {
             return false;
         }
 
-        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment)) {
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment.getStereotypesMap())) {
             if (stereotype.isAlternative()) {
                 return true;
             }
@@ -352,7 +353,7 @@ public final class Beans {
         }
 
         Set<Integer> priorities = new HashSet<>();
-        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment)) {
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment.getStereotypesMap())) {
             if (stereotype.getAlternativePriority() != null) {
                 priorities.add(stereotype.getAlternativePriority());
             }
@@ -374,7 +375,7 @@ public final class Beans {
             return null;
         }
 
-        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment)) {
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment.getStereotypesMap())) {
             if (stereotype.isNamed()) {
                 switch (target.kind()) {
                     case CLASS:
@@ -392,21 +393,21 @@ public final class Beans {
         return null;
     }
 
-    private static List<StereotypeInfo> stereotypesWithTransitive(List<StereotypeInfo> stereotypes,
-            BeanDeployment beanDeployment) {
+    public static List<StereotypeInfo> stereotypesWithTransitive(List<StereotypeInfo> stereotypes,
+            Map<DotName, StereotypeInfo> allStereotypes) {
         List<StereotypeInfo> result = new ArrayList<>();
         Set<DotName> alreadySeen = new HashSet<>(); // to guard against hypothetical stereotype cycle
         Deque<StereotypeInfo> workQueue = new ArrayDeque<>(stereotypes);
         while (!workQueue.isEmpty()) {
             StereotypeInfo stereotype = workQueue.poll();
+            if (alreadySeen.contains(stereotype.getName())) {
+                continue;
+            }
             result.add(stereotype);
             alreadySeen.add(stereotype.getName());
 
             for (AnnotationInstance parentStereotype : stereotype.getParentStereotypes()) {
-                if (alreadySeen.contains(parentStereotype.name())) {
-                    continue;
-                }
-                StereotypeInfo parent = beanDeployment.getStereotype(parentStereotype.name());
+                StereotypeInfo parent = allStereotypes.get(parentStereotype.name());
                 if (parent != null) {
                     workQueue.add(parent);
                 }

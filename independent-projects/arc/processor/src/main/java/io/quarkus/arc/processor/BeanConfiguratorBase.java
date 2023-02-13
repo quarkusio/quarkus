@@ -201,9 +201,19 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         return self();
     }
 
+    /**
+     * @deprecated use {@link #alternative(boolean)} and {@link #priority(int)};
+     *             this method will be removed at some time after Quarkus 3.6
+     */
+    @Deprecated(forRemoval = true, since = "3.0")
     public THIS alternativePriority(int value) {
         this.alternative = true;
         this.priority = value;
+        return self();
+    }
+
+    public THIS alternative(boolean alternative) {
+        this.alternative = alternative;
         return self();
     }
 

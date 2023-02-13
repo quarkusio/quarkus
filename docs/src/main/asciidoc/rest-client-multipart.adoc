@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using the REST Client with Multipart
+= Using the legacy REST Client with Multipart
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how to use the RESTEasy REST Client to send multipart REST requests, typically to upload documents.

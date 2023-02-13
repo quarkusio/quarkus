@@ -136,9 +136,11 @@ public class HttpAuthenticator {
      */
     public Uni<Boolean> sendChallenge(RoutingContext routingContext) {
         //we want to consume any body content if present
-        //challenges won't read the body, and if we don't consume
-        //things can get stuck
-        routingContext.request().resume();
+        //challenges won't read the body and didn't resume context themselves
+        //as if we don't consume things can get stuck
+        if (!routingContext.request().isEnded()) {
+            routingContext.request().resume();
+        }
         Uni<Boolean> result = null;
 
         // we only require auth mechanism to put itself into routing context when there is more than one mechanism registered

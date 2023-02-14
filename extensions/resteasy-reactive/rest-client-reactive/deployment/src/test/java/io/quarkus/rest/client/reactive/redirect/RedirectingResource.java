@@ -3,6 +3,7 @@ package io.quarkus.rest.client.reactive.redirect;
 import java.net.URI;
 
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
@@ -17,5 +18,12 @@ public class RedirectingResource {
         } else {
             return Response.temporaryRedirect(URI.create("/redirect?redirects=" + (number - 1))).build();
         }
+    }
+
+    @POST
+    @Path("/post")
+    public Response redirectedResponse() {
+        // it redirects to the GET resource
+        return Response.temporaryRedirect(URI.create("/redirect?redirects=0")).build();
     }
 }

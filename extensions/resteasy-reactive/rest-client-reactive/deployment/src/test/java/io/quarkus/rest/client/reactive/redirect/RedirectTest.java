@@ -19,7 +19,8 @@ public class RedirectTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(RedirectingResourceClient.class, RedirectingResource.class));
+                    .addClasses(RedirectingResourceClient.class, RedirectingResourceWithCustomRedirectHandlerClient.class,
+                            EnablePostRedirectHandler.class, RedirectingResource.class));
 
     @TestHTTPResource
     URI uri;
@@ -43,6 +44,37 @@ public class RedirectTest {
                 .property(QuarkusRestClientProperties.MAX_REDIRECTS, 2)
                 .build(RedirectingResourceClient.class);
         assertThat(client.call(3).getStatus()).isEqualTo(307);
+    }
 
+    @Test
+    void shouldNotRedirectOnPostMethodsByDefault() {
+        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+                .baseUri(uri)
+                // this property should be ignored in POST
+                .followRedirects(true)
+                .build(RedirectingResourceClient.class);
+        assertThat(client.post().getStatus()).isEqualTo(307);
+    }
+
+    @Test
+    void shouldRedirectWhenUsingCustomRedirectHandlerOnPostMethods() {
+        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+                .baseUri(uri)
+                // this property should be ignored in POST
+                .followRedirects(true)
+                // use custom redirect to enable redirection
+                .register(EnablePostRedirectHandler.class)
+                .build(RedirectingResourceClient.class);
+        assertThat(client.post().getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void shouldRedirectWhenAnnotatedUsingCustomRedirectHandlerOnPostMethods() {
+        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+                .baseUri(uri)
+                // this property should be ignored in POST
+                .followRedirects(true)
+                .build(RedirectingResourceWithCustomRedirectHandlerClient.class);
+        assertThat(client.post().getStatus()).isEqualTo(200);
     }
 }

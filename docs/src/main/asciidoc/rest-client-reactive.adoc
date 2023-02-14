@@ -466,6 +466,70 @@ public class CustomHttpClientOptions implements ContextResolver<HttpClientOption
 
 <1> the client will use the registered HTTP Client options over the HTTP Client options provided via CDI if any.
 
+[#redirection]
+== Redirection
+
+A HTTP server can redirect a response to another location by sending a response with a status code that starts with "3" and a HTTP header "Location" holding the URL to be redirected to. When the REST Client receives a redirection response from a HTTP server, it won't automatically perform another request to the new location. We can enable the automatic redirection in REST Client by adding the "follow-redirects" property:
+
+- `quarkus.rest-client.follow-redirects` to enable redirection for all REST clients.
+- `quarkus.rest-client.<client-prefix>.follow-redirects` to enable redirection for a specific REST client.
+
+If this property is true, then REST Client will perform a new request that it receives a redirection response from the HTTP server. 
+
+Additionally, we can limit the number of redirections using the property "max-redirects".
+
+One important note is that according to the https://www.rfc-editor.org/rfc/rfc2616#section-10.3.8[RFC2616] specs, by default the redirection will only happen for GET or HEAD methods. However, in REST Client, you can provide your custom redirect handler to enable redirection on POST or PUT methods, or to follow a more complex logic, via either CDI or programmatically when creating your client.
+
+Let's see an example about how to provide your custom redirect handler via CDI:
+
+[source, java]
+----
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.Provider;
+
+import org.jboss.resteasy.reactive.client.handlers.RedirectHandler;
+
+@Provider
+public class AlwaysRedirectHandler implements ContextResolver<RedirectHandler> {
+
+    @Override
+    public RedirectHandler getContext(Class<?> aClass) {
+        return response -> {
+            if (Response.Status.Family.familyOf(response.getStatus()) == Response.Status.Family.REDIRECTION) {
+                return response.getLocation();
+            }
+            // no redirect
+            return null;
+        };
+    }
+}
+----
+
+Now, all the REST Clients will be using your custom redirect handler.
+
+Another approach is to provide it programmatically when creating the client:
+
+[source,java]
+----
+@Path("/extension")
+public class ExtensionsResource {
+
+    private final ExtensionsService extensionsService;
+
+    public ExtensionsResource() {
+        extensionsService = RestClientBuilder.newBuilder()
+            .baseUri(URI.create("https://stage.code.quarkus.io/api"))
+            .register(AlwaysRedirectHandler.class) <1>
+            .build(ExtensionsService.class);
+    }
+
+    // ...
+}
+----
+
+<1> the client will use the registered redirect handler over the redirect handler provided via CDI if any.
+
 == Update the test
 
 Next, we need to update the functional test to reflect the changes made to the endpoint.

@@ -32,6 +32,7 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.handlers.RedirectHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
@@ -172,6 +173,11 @@ public class ClientImpl implements Client {
         }
 
         httpClient = this.vertx.createHttpClient(options);
+
+        RedirectHandler redirectHandler = configuration.getFromContext(RedirectHandler.class);
+        if (redirectHandler != null) {
+            httpClient.redirectHandler(new WrapperVertxRedirectHandlerImpl(redirectHandler));
+        }
 
         if (loggingScope != LoggingScope.NONE) {
             Function<HttpClientResponse, Future<RequestOptions>> defaultRedirectHandler = httpClient.redirectHandler();

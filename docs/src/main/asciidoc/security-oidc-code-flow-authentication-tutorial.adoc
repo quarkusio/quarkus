@@ -1,11 +1,11 @@
 [id="security-oidc-code-flow-authentication-tutorial"]
-= Protect a web application by using OIDC authorization code flow
+= Protect a web application by using OpenID Connect (OIDC) authorization code flow
 include::_attributes.adoc[]
 :categories: security,web
 
 With the Quarkus OpenID Connect (OIDC) extension, you can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism.
 
-To learn more about the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications] or to learn about other authentication mechanisms, see xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[authentication mechanisms]. 
+To learn more about the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications] or to learn about other authentication mechanisms, see xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[authentication mechanisms].
 
 == Prerequisites
 
@@ -82,14 +82,14 @@ import io.quarkus.oidc.RefreshToken;
 
 @Path("/tokens")
 public class TokenResource {
-   
+
    /**
     * Injection point for the ID Token issued by the OpenID Connect Provider
     */
    @Inject
    @IdToken
    JsonWebToken idToken;
-   
+
    /**
     * Injection point for the Access Token issued by the OpenID Connect Provider
     */
@@ -206,7 +206,7 @@ java -jar target/quarkus-app/quarkus-run.jar
 
 === Run the application in Native mode
 
-This same demo can be compiled into native code. 
+This same demo can be compiled into native code.
 No modifications are required.
 
 This implies that you no longer need to install a JVM on your production environment, as the runtime technology is included in

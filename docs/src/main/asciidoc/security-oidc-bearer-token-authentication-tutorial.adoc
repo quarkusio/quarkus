@@ -3,8 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="security-protect-service-application-using-oidc-bearer-authentication-tutorial"]
-= Protect a service application by using OIDC bearer authentication
+[id="security-oidc-bearer-token-authentication-tutorial"]
+= Protect a service application by using OpenID Connect (OIDC) bearer authentication
 include::_attributes.adoc[]
 :categories: security
 

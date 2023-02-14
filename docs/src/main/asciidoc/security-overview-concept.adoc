@@ -86,4 +86,4 @@ For information about security vulnerabilities, see xref:security-vulnerability-
 
 * xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
 * xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
-* xref:security-protect-service-application-using-oidc-bearer-authentication-tutorial.adoc[Protect a service application by using OIDC bearer authentication]
+* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC bearer authentication]

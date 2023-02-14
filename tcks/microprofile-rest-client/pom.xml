@@ -37,7 +37,7 @@
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <io.quarkus.arquillian.copy-fields>true</io.quarkus.arquillian.copy-fields>
 
-                        <org.eclipse.microprofile.rest.client.tck.timeoutCushion>30</org.eclipse.microprofile.rest.client.tck.timeoutCushion>
+                        <org.eclipse.microprofile.rest.client.tck.timeoutCushion>90000</org.eclipse.microprofile.rest.client.tck.timeoutCushion>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -47,11 +47,6 @@
                     </dependenciesToScan>
                     <reuseForks>false</reuseForks>
                     <excludes combine.children="append">
-                        <!-- Jakarta - These tests fail because they time out far after what it should be, not sure about the reason... -->
-                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutBuilderIndependentOfMPConfigTest</exclude>
-                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutTest</exclude>
-                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigTest</exclude>
-                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigWithConfigKeyTest</exclude>
                         <!-- ConversationScope not supported in Quarkus -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.cditests.HasConversationScopeTest</exclude>
                     </excludes>

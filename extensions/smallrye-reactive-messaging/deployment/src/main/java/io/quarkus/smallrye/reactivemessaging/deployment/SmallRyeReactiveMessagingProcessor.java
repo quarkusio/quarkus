@@ -90,6 +90,13 @@ public class SmallRyeReactiveMessagingProcessor {
 
     static final String INVOKER_SUFFIX = "_SmallRyeMessagingInvoker";
 
+    static String channelPropertyFormat = "mp.messaging.%s.%s.%s";
+
+    public static String getChannelPropertyKey(String channelName, String propertyName, boolean incoming) {
+        return String.format(channelPropertyFormat, incoming ? "incoming" : "outgoing",
+                channelName.contains(".") ? "\"" + channelName + "\"" : channelName, propertyName);
+    }
+
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING);

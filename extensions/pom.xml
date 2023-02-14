@@ -68,6 +68,7 @@
         <module>smallrye-reactive-messaging</module>
         <module>smallrye-reactive-messaging-kafka</module>
         <module>smallrye-reactive-messaging-amqp</module>
+        <module>smallrye-reactive-messaging-pulsar</module>
         <module>smallrye-reactive-messaging-mqtt</module>
         <module>smallrye-reactive-messaging-rabbitmq</module>
         <module>smallrye-context-propagation</module>

@@ -132,7 +132,7 @@
         <webjar.bootstrap.version>4.6.2</webjar.bootstrap.version>
         <webjar.bootstrap-multiselect.version>0.9.15</webjar.bootstrap-multiselect.version>
         <webjar.bootstrap-icons.version>1.9.1</webjar.bootstrap-icons.version>
-        <webjar.font-awesome.version>6.2.1</webjar.font-awesome.version>
+        <webjar.font-awesome.version>6.3.0</webjar.font-awesome.version>
         <webjar.jquery.version>3.6.3</webjar.jquery.version>
         <webjar.codemirror.version>5.62.2</webjar.codemirror.version>
         <!-- we don't add mermaid as a dependency as it brings a ton of things we don't use -->

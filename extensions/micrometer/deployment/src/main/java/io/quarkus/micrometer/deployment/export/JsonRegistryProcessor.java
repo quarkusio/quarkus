@@ -37,6 +37,7 @@ public class JsonRegistryProcessor {
             BuildProducer<MicrometerRegistryProviderBuildItem> registryProviders,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<RegistryBuildItem> registries,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             JsonRecorder recorder) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
@@ -53,6 +54,8 @@ public class JsonRegistryProcessor {
 
         log.debug("Initialized a JSON meter registry on path="
                 + nonApplicationRootPathBuildItem.resolvePath(config.export.json.path));
+
+        registries.produce(new RegistryBuildItem("JSON", nonApplicationRootPathBuildItem.resolvePath(config.export.json.path)));
     }
 
 }

@@ -290,12 +290,12 @@ public class FastBootMetadataBuilder {
          */
         cfg.putIfAbsent(AvailableSettings.CONNECTION_HANDLING,
                 PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION);
-
-        if (readBooleanConfigurationValue(cfg, WRAP_RESULT_SETS)) {
+        if (cfg.containsKey(WRAP_RESULT_SETS)) {
             LOG.warn("Wrapping result sets is no longer supported by Hibernate ORM. Setting " + WRAP_RESULT_SETS
+
                     + " is being ignored.");
+            cfg.remove(WRAP_RESULT_SETS);
         }
-        cfg.put(WRAP_RESULT_SETS, "false");
 
         // XML mapping support can be costly, so we only enable it when XML mappings are actually used
         // or when integrations (e.g. Envers) need it.

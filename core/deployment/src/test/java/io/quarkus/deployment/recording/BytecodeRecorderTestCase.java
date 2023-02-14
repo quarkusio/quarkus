@@ -213,11 +213,7 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testLargeCollection() throws Exception {
 
-        List<TestJavaBean> beans = new ArrayList<>();
-        for (int i = 0; i < 100000; ++i) {
-            beans.add(new TestJavaBean("A string", 99));
-        }
-
+        List<TestJavaBean> beans = Collections.nCopies(100000, new TestJavaBean("A string", 99));
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.list(beans);

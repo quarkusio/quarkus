@@ -3,7 +3,6 @@ package io.quarkus.hibernate.orm.runtime.migration;
 import java.util.Locale;
 import java.util.Map;
 
-import org.hibernate.cfg.Environment;
 import org.hibernate.internal.CoreMessageLogger;
 import org.jboss.logging.Logger;
 
@@ -59,7 +58,7 @@ public enum MultiTenancyStrategy {
      * @return The selected strategy. {@link #NONE} is always the default.
      */
     public static MultiTenancyStrategy determineMultiTenancyStrategy(Map properties) {
-        final Object strategy = properties.get(Environment.MULTI_TENANT);
+        final Object strategy = properties.get("hibernate.multiTenancy");//FIXME this property is meaningless in Hibernate ORM 6
         if (strategy == null) {
             return MultiTenancyStrategy.NONE;
         }

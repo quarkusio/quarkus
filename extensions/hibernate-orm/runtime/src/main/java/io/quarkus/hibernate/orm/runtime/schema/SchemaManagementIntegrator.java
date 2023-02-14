@@ -99,7 +99,7 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
         SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
         Object schemaGenerationDatabaseAction = executionOptions.getConfigurationValues()
-                .get("javax.persistence.schema-generation.database.action");
+                .get("jakarta.persistence.schema-generation.database.action");
         if (schemaGenerationDatabaseAction != null && !(schemaGenerationDatabaseAction.toString().equals("none"))) {
             //if this is none we assume another framework is doing this (e.g. flyway)
             SchemaManagementTool schemaManagementTool = serviceRegistry

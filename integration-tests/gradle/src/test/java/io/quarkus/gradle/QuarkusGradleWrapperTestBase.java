@@ -49,6 +49,8 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .redirectError(logOutput)
                 .start();
 
+        Runtime.getRuntime().addShutdownHook(new Thread(p::destroyForcibly));
+
         //long timeout for native tests
         //that may also need to download docker
         boolean done = p.waitFor(10, TimeUnit.MINUTES);

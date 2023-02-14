@@ -55,7 +55,7 @@
         <version.mutiny>2.1.0</version.mutiny>
 
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
-        <version.surefire.plugin>3.0.0-M8</version.surefire.plugin>
+        <version.surefire.plugin>3.0.0-M9</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>
 

@@ -1,5 +1,6 @@
 package io.quarkus.deployment.recording;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -135,6 +136,30 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.bean(new TestJavaBeanSubclass("A string", 99, "PUT"));
         }, new TestJavaBeanSubclass("A string", 99, "PUT"));
+    }
+
+    @Test
+    public void testJobDetails() throws Exception {
+        runTest(generator -> {
+            assertThatCode(() -> {
+                generator.registerNonDefaultConstructor(
+                        JobParameter.class.getDeclaredConstructor(String.class, String.class, Object.class),
+                        jobParameter -> Arrays.asList(
+                                jobParameter.getClassName(),
+                                jobParameter.getActualClassName(),
+                                jobParameter.getObject()));
+                generator.registerNonDefaultConstructor(
+                        JobDetails.class.getDeclaredConstructor(String.class, String.class, String.class, List.class),
+                        jobDetails -> Arrays.asList(
+                                jobDetails.getClassName(),
+                                jobDetails.getStaticFieldName(),
+                                jobDetails.getMethodName(),
+                                jobDetails.getJobParameters()));
+            }).doesNotThrowAnyException();
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(new JobDetails("A string", null, "methodName", List.of(JobParameter.JobContext)));
+        }, new JobDetails("A string", null, "methodName", List.of(JobParameter.JobContext)));
+
     }
 
     @Test

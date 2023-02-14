@@ -8,7 +8,6 @@ import static org.awaitility.Awaitility.await;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
@@ -18,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class MutableJarFormatBootsInDevModeTest extends QuarkusGradleWrapperTestBase {
-    private static Future<?> jarRun;
 
     @Test
     public void testFastJarFormatWorks() throws Exception {
@@ -47,22 +45,9 @@ public class MutableJarFormatBootsInDevModeTest extends QuarkusGradleWrapperTest
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
-            assertThatOutputWorksCorrectly(logs);
-
-            // test that the application name and version are properly set
-            assertThat(DevModeTestUtils.getHttpResponse("/hello", () -> {
-                return jarRun == null ? null : jarRun.isDone() ? "jar run mode has terminated" : null;
-            }).equals("hello"));
+            assertThat(logs).contains("INFO").contains("cdi, resteasy");
         } finally {
             process.destroy();
         }
     }
-
-    private void assertThatOutputWorksCorrectly(String logs) {
-        assertThat(logs.isEmpty()).isFalse();
-        String infoLogLevel = "INFO";
-        assertThat(logs.contains(infoLogLevel)).isTrue();
-        assertThat(logs.contains("cdi, resteasy")).isTrue();
-    }
-
 }

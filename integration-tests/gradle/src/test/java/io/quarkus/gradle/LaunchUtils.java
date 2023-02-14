@@ -30,7 +30,9 @@ public class LaunchUtils {
         if (env != null) {
             processBuilder.environment().putAll(env);
         }
-        return processBuilder.start();
+        Process process = processBuilder.start();
+        Runtime.getRuntime().addShutdownHook(new Thread(process::destroyForcibly));
+        return process;
     }
 
     public static void dumpFileContentOnFailure(final Callable<Void> operation, final File logFile,

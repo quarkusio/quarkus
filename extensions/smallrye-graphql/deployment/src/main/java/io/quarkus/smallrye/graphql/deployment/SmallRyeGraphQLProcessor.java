@@ -70,6 +70,7 @@ import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.smallrye.graphql.api.AdaptWith;
+import io.smallrye.graphql.api.Deprecated;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.api.ErrorExtensionProvider;
 import io.smallrye.graphql.api.federation.Extends;
@@ -255,6 +256,7 @@ public class SmallRyeGraphQLProcessor {
             indexer.indexClass(Key.class);
             indexer.indexClass(Provides.class);
             indexer.indexClass(Requires.class);
+            indexer.indexClass(Deprecated.class);
         } catch (IOException ex) {
             LOG.warn("Failure while creating index", ex);
         }

@@ -108,6 +108,8 @@ public interface Capability {
 
     String OIDC = QUARKUS_PREFIX + ".oidc";
 
+    String KEYCLOAK_AUTHORIZATION = QUARKUS_PREFIX + ".keycloak.authorization";
+
     /**
      * Presence of an io.opentracing tracer (for example, Jaeger).
      */

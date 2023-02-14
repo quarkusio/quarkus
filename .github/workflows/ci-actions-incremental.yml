@@ -207,6 +207,7 @@ jobs:
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
       run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
+      run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
       - uses: actions/checkout@v3
@@ -226,7 +227,7 @@ jobs:
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_tcks=true
+          run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_quickstarts=true; run_tcks=true
           if [ -n "${GIB_IMPACTED_MODULES}" ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
@@ -234,13 +235,15 @@ jobs:
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/devtools'; then run_devtools=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/maven'; then run_maven=false; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv '(docs|integration-tests|tcks)/.*'; then run_quickstarts=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'tcks/.*'; then run_tcks=false; fi
           fi
-          echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_tcks=${run_tcks}"
+          echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
           echo "run_jvm=${run_jvm}" >> $GITHUB_OUTPUT
           echo "run_devtools=${run_devtools}" >> $GITHUB_OUTPUT
           echo "run_gradle=${run_gradle}" >> $GITHUB_OUTPUT
           echo "run_maven=${run_maven}" >> $GITHUB_OUTPUT
+          echo "run_quickstarts=${run_quickstarts}" >> $GITHUB_OUTPUT
           echo "run_tcks=${run_tcks}" >> $GITHUB_OUTPUT
 
   jvm-tests:
@@ -554,9 +557,9 @@ jobs:
   quickstarts-tests:
     name: Quickstarts Compilation - JDK ${{matrix.java.name}}
     runs-on: ${{matrix.java.os-name}}
-    needs: build-jdk11
+    needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
-    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
+    if: "needs.calculate-test-jobs.outputs.run_quickstarts == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 90
     strategy:
       fail-fast: false

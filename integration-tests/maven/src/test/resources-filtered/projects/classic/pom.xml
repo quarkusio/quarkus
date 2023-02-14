@@ -88,5 +88,11 @@
         <quarkus.package.type>native</quarkus.package.type>
       </properties>
     </profile>
+    <profile>
+      <id>customOutputDir</id>
+      <build>
+        <directory>target-other</directory>
+      </build>
+    </profile>
   </profiles>
 </project>

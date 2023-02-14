@@ -71,8 +71,11 @@ public class QuarkusBootstrapProvider implements Closeable {
         }
         final Map<Path, Model> projectModels = new HashMap<>(allProjects.size());
         for (MavenProject mp : allProjects) {
-            mp.getOriginalModel().setPomFile(mp.getFile());
-            projectModels.put(mp.getBasedir().toPath(), mp.getOriginalModel());
+            final Model model = mp.getOriginalModel();
+            model.setPomFile(mp.getFile());
+            // activated profiles or custom extensions may have overridden the build defaults
+            model.setBuild(mp.getModel().getBuild());
+            projectModels.put(mp.getBasedir().toPath(), model);
         }
         return projectModels;
     }

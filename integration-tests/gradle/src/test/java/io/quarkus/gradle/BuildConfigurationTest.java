@@ -1,108 +1,143 @@
 package io.quarkus.gradle;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 
+import org.assertj.core.api.SoftAssertions;
+import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
+import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(SoftAssertionsExtension.class)
 public class BuildConfigurationTest extends QuarkusGradleWrapperTestBase {
-
-    private static final String WITHOUT_CONFIGURATION_PROJECT_NAME = "without-configuration";
+    @InjectSoftAssertions
+    SoftAssertions soft;
 
     private static final String ROOT_PROJECT_NAME = "build-configuration";
 
-    private static final String BUILD_GRADLE_PROJECT_NAME = "with-build-configuration";
+    private static final String WITH_APPLICATION_PROPERTIES_PROJECT_NAME = "with-application-properties";
+    private static final String WITH_BUILD_CONFIGURATION_PROJECT_NAME = "with-build-configuration";
+    private static final String WITHOUT_CONFIGURATION_PROJECT_NAME = "without-configuration";
 
+    private static final String DEFAULT_OUTPUT_DIR = "quarkus-app";
     private static final String BUILD_GRADLE_OUTPUT_DIR = "build-gradle-output-dir";
-
-    private static final String BUILD_GRADLE_UBER_JAR_FILE = "with-build-configuration-1.0.0-SNAPSHOT-runner.jar";
-
-    private static final String APPLICATION_PROPERTIES_PROJECT_NAME = "with-application-properties";
-
     private static final String APPLICATION_PROPERTIES_OUTPUT_DIR = "application-properties-output-dir";
-    private static final String APPLICATION_PROPERTIES_UBER_JAR_FILE = "with-application-properties-1.0.0-SNAPSHOT-runner.jar";
 
-    @Test
-    public void buildUseApplicationPropertiesUberJar() throws IOException, InterruptedException, URISyntaxException {
-        final File projectDir = getProjectDir(ROOT_PROJECT_NAME);
-        runGradleWrapper(projectDir, "clean", "quarkusBuild");
-        final Path projectPath = projectDir.toPath();
-        final Path buildDirPath = projectPath.resolve(APPLICATION_PROPERTIES_PROJECT_NAME).resolve("build");
-        assertThat(buildDirPath.resolve(APPLICATION_PROPERTIES_OUTPUT_DIR)).exists();
-        final Path quarkusAppPath = buildDirPath.resolve(APPLICATION_PROPERTIES_OUTPUT_DIR);
-        final Path jar = quarkusAppPath.resolve(APPLICATION_PROPERTIES_UBER_JAR_FILE);
-        assertThat(jar).exists();
+    private static final String FAST_JAR_FILE = "quarkus-run.jar";
+
+    final class PrjPaths {
+        final Path projectDir;
+        final Path buildDirPath;
+        final Path quarkusAppPath;
+        final Path uberJar;
+        final Path fastJar;
+        final Path libDeploymentDir;
+        final String project;
+
+        PrjPaths(File rootDir, String project, String outputDir) {
+            this.project = project;
+            this.projectDir = rootDir.toPath().resolve(project);
+            this.buildDirPath = projectDir.resolve("build");
+            this.quarkusAppPath = buildDirPath.resolve(outputDir);
+            this.uberJar = (DEFAULT_OUTPUT_DIR.equals(outputDir) ? buildDirPath : quarkusAppPath)
+                    .resolve(project + "-1.0.0-SNAPSHOT-runner.jar");
+            this.fastJar = quarkusAppPath.resolve(FAST_JAR_FILE);
+            this.libDeploymentDir = quarkusAppPath.resolve("lib").resolve("deployment");
+        }
+
+        void verify(String packageType) {
+            soft.assertThat(quarkusAppPath).describedAs("sub project '%s', package type '%s'", project, packageType)
+                    .isDirectory();
+            soft.assertThat(buildDirPath).describedAs("sub project '%s', package type '%s'", project, packageType)
+                    .isDirectory();
+            switch (packageType) {
+                case "uber-jar":
+                    soft.assertThat(uberJar).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .isNotEmptyFile();
+                    soft.assertThat(fastJar).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .doesNotExist();
+                    soft.assertThat(libDeploymentDir).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .doesNotExist();
+                    break;
+                case "fast-jar":
+                    soft.assertThat(uberJar).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .doesNotExist();
+                    soft.assertThat(fastJar).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .isNotEmptyFile();
+                    soft.assertThat(libDeploymentDir).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .doesNotExist();
+                    break;
+                case "mutable-jar":
+                    soft.assertThat(uberJar).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .doesNotExist();
+                    soft.assertThat(fastJar).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .isNotEmptyFile();
+                    soft.assertThat(libDeploymentDir).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .isDirectory();
+                    break;
+                default:
+                    soft.fail("Unknown package type " + packageType);
+                    break;
+            }
+        }
+    }
+
+    private void verifyBuild(String override) throws IOException, InterruptedException, URISyntaxException {
+        File rootDir = getProjectDir(ROOT_PROJECT_NAME);
+        BuildResult buildResult = runGradleWrapper(rootDir, "clean", "quarkusBuild",
+                // Package type is not included in the Gradle cache inputs, see https://github.com/quarkusio/quarkus/issues/30852
+                "--no-build-cache",
+                override != null ? "-Dquarkus.package.type=" + override : "-Dfoo=bar");
+        soft.assertThat(buildResult.unsuccessfulTasks()).isEmpty();
+
+        // Sub project 'with-application-properties
+        PrjPaths withApplicationProperties = new PrjPaths(rootDir, WITH_APPLICATION_PROPERTIES_PROJECT_NAME,
+                APPLICATION_PROPERTIES_OUTPUT_DIR);
+        withApplicationProperties.verify(override != null ? override : "uber-jar");
+
+        // Sub project 'with-build-configuration'
+        PrjPaths withBuildConfiguration = new PrjPaths(rootDir, WITH_BUILD_CONFIGURATION_PROJECT_NAME, BUILD_GRADLE_OUTPUT_DIR);
+        withBuildConfiguration.verify(override != null ? override : "uber-jar");
+
+        // Sub project 'without-configuration'
+        PrjPaths withoutConfiguration = new PrjPaths(rootDir, WITHOUT_CONFIGURATION_PROJECT_NAME, DEFAULT_OUTPUT_DIR);
+        withoutConfiguration.verify(override != null ? override : "fast-jar");
+
+        try {
+            soft.assertAll();
+        } catch (AssertionError ex) {
+            // Be nice and emit as the build result when the test fails
+            System.err.println();
+            System.err.println(buildResult.getOutput());
+            System.err.println();
+            buildResult.getTasks().entrySet().stream()
+                    .map(e -> String.format("Task '%s' result '%s'", e.getKey(), e.getValue())).sorted()
+                    .forEach(System.err::println);
+            System.err.println();
+            throw ex;
+        }
     }
 
     @Test
-    public void applicationPropertiesWithDPropsFastJar()
-            throws IOException, InterruptedException, URISyntaxException {
-        final File projectDir = getProjectDir(ROOT_PROJECT_NAME);
-        runGradleWrapper(projectDir, "clean", "quarkusBuild", "-Dquarkus.package.type=fast-jar");
-        final Path projectPath = projectDir.toPath();
-        final Path buildDirPath = projectPath.resolve(APPLICATION_PROPERTIES_PROJECT_NAME).resolve("build");
-        assertThat(buildDirPath.resolve(APPLICATION_PROPERTIES_OUTPUT_DIR)).exists();
-        final Path quarkusAppPath = buildDirPath.resolve(APPLICATION_PROPERTIES_OUTPUT_DIR);
-        assertThat(quarkusAppPath.resolve("quarkus-run.jar")).exists();
-        assertThat(quarkusAppPath.resolve(APPLICATION_PROPERTIES_UBER_JAR_FILE)).doesNotExist();
-        final Path deploymentDirPath = quarkusAppPath.resolve("lib").resolve("deployment");
-        assertThat(deploymentDirPath).doesNotExist();
+    public void buildNoOverride() throws IOException, InterruptedException, URISyntaxException {
+        verifyBuild(null);
     }
 
     @Test
-    public void applicationPropertiesWithDPropsUnmutableJar()
-            throws IOException, InterruptedException, URISyntaxException {
-        final File projectDir = getProjectDir(ROOT_PROJECT_NAME);
-        runGradleWrapper(projectDir, "clean", "quarkusBuild", "-Dquarkus.package.type=mutable-jar");
-        final Path projectPath = projectDir.toPath();
-        final Path buildDirPath = projectPath.resolve(APPLICATION_PROPERTIES_PROJECT_NAME).resolve("build");
-        assertThat(buildDirPath.resolve(APPLICATION_PROPERTIES_OUTPUT_DIR)).exists();
-        final Path quarkusAppPath = buildDirPath.resolve(APPLICATION_PROPERTIES_OUTPUT_DIR);
-        assertThat(quarkusAppPath.resolve("quarkus-run.jar")).exists();
-        assertThat(quarkusAppPath.resolve(APPLICATION_PROPERTIES_UBER_JAR_FILE)).doesNotExist();
-        final Path deploymentDirPath = quarkusAppPath.resolve("lib").resolve("deployment");
-        assertThat(deploymentDirPath).exists();
+    public void buildFastJarOverride() throws IOException, InterruptedException, URISyntaxException {
+        verifyBuild("fast-jar");
     }
 
     @Test
-    public void buildConfigUberJar() throws IOException, URISyntaxException, InterruptedException {
-        final File projectDir = getProjectDir(ROOT_PROJECT_NAME);
-        runGradleWrapper(projectDir, "clean", "quarkusBuild");
-        final Path projectPath = projectDir.toPath();
-        final Path buildDirPath = projectPath.resolve(BUILD_GRADLE_PROJECT_NAME).resolve("build");
-        assertThat(buildDirPath.resolve(BUILD_GRADLE_OUTPUT_DIR)).exists();
-        final Path quarkusAppPath = buildDirPath.resolve(BUILD_GRADLE_OUTPUT_DIR);
-        final Path jar = quarkusAppPath.resolve(BUILD_GRADLE_UBER_JAR_FILE);
-        assertThat(jar).exists();
+    public void buildUberJarOverride() throws IOException, InterruptedException, URISyntaxException {
+        verifyBuild("uber-jar");
     }
 
     @Test
-    public void buildConfigFastJarOverride() throws IOException, URISyntaxException, InterruptedException {
-        final File projectDir = getProjectDir(ROOT_PROJECT_NAME);
-        runGradleWrapper(projectDir, "clean", "quarkusBuild", "-Dquarkus.package.type=fast-jar");
-        final Path projectPath = projectDir.toPath();
-        final Path buildDirPath = projectPath.resolve(BUILD_GRADLE_PROJECT_NAME).resolve("build");
-        assertThat(buildDirPath.resolve(BUILD_GRADLE_OUTPUT_DIR)).exists();
-        final Path quarkusAppPath = buildDirPath.resolve(BUILD_GRADLE_OUTPUT_DIR);
-        assertThat(quarkusAppPath.resolve("quarkus-run.jar")).exists();
-        assertThat(quarkusAppPath.resolve(BUILD_GRADLE_UBER_JAR_FILE)).doesNotExist();
-        final Path deploymentDirPath = quarkusAppPath.resolve("lib").resolve("deployment");
-        assertThat(deploymentDirPath).doesNotExist();
-    }
-
-    @Test
-    public void withoutConfigurationBuildsDefaults() throws IOException, InterruptedException, URISyntaxException {
-        final File projectDir = getProjectDir(ROOT_PROJECT_NAME);
-        runGradleWrapper(projectDir, "clean", "quarkusBuild");
-        final Path projectPath = projectDir.toPath();
-        final Path buildDirPath = projectPath.resolve(WITHOUT_CONFIGURATION_PROJECT_NAME).resolve("build");
-        assertThat(buildDirPath.resolve("quarkus-app")).exists();
-        final Path quarkusAppPath = buildDirPath.resolve("quarkus-app");
-        final Path jar = quarkusAppPath.resolve("quarkus-run.jar");
-        assertThat(jar).exists();
+    public void buildMutableJarOverride() throws IOException, InterruptedException, URISyntaxException {
+        verifyBuild("mutable-jar");
     }
 }

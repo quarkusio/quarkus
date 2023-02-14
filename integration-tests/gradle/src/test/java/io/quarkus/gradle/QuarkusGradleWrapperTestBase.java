@@ -15,6 +15,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.AfterAll;
+
 public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
@@ -23,8 +25,30 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     private Map<String, String> systemProps;
 
+    private static final List<Process> gradleProcesses = new ArrayList<>();
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(QuarkusGradleWrapperTestBase::killProcesses));
+    }
+
     protected void setupTestCommand() {
 
+    }
+
+    @AfterAll
+    static void killProcesses() {
+        gradleProcesses.forEach(Process::destroy);
+        for (int i = 0; i < 100; i++) {
+            if (gradleProcesses.stream().noneMatch(Process::isAlive)) {
+                return;
+            }
+            try {
+                Thread.sleep(100L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        gradleProcesses.forEach(Process::destroyForcibly);
     }
 
     public BuildResult runGradleWrapper(File projectDir, String... args) throws IOException, InterruptedException {
@@ -48,6 +72,8 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .redirectOutput(logOutput)
                 .redirectError(logOutput)
                 .start();
+
+        gradleProcesses.add(p);
 
         //long timeout for native tests
         //that may also need to download docker

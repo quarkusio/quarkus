@@ -23,14 +23,11 @@ gradlePlugin {
             implementationClass = 'io.quarkus.extension.gradle.QuarkusExtensionPlugin'
             displayName = 'Quarkus Extension Plugin'
             description = 'Builds a Quarkus extension'
+            tags.addAll(['quarkus', 'quarkusio', 'graalvm'])
         }
     }
-}
-
-pluginBundle {
-    website = 'https://quarkus.io/'
-    vcsUrl = 'https://github.com/quarkusio/quarkus'
-    tags = ['quarkus', 'quarkusio', 'graalvm']
+    vcsUrl.set("https://github.com/quarkusio/quarkus")
+    website.set("https://quarkus.io/")
 }
 
 tasks.withType(Test) {

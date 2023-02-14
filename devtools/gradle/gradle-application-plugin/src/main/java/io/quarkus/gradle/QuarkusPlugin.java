@@ -210,23 +210,23 @@ public class QuarkusPlugin implements Plugin<Project> {
                     TaskProvider<Task> testResourcesTask = tasks.named(JavaPlugin.PROCESS_TEST_RESOURCES_TASK_NAME);
 
                     quarkusGenerateCode.configure(task -> {
-                        task.dependsOn(resourcesTask);
-                        task.setCompileClasspath(
-                                project.getConfigurations().getByName(
-                                        ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.NORMAL)));
+                        Configuration config = project.getConfigurations().getByName(
+                                ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.NORMAL));
+                        task.dependsOn(resourcesTask, config);
+                        task.setCompileClasspath(config);
                     });
                     quarkusGenerateCodeDev.configure(task -> {
-                        task.dependsOn(resourcesTask);
-                        task.setCompileClasspath(
-                                project.getConfigurations().getByName(
-                                        ApplicationDeploymentClasspathBuilder
-                                                .getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT)));
+                        Configuration config = project.getConfigurations().getByName(
+                                ApplicationDeploymentClasspathBuilder
+                                        .getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT));
+                        task.dependsOn(resourcesTask, config);
+                        task.setCompileClasspath(config);
                     });
                     quarkusGenerateCodeTests.configure(task -> {
-                        task.dependsOn(resourcesTask);
-                        task.setCompileClasspath(
-                                project.getConfigurations().getByName(
-                                        ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.TEST)));
+                        Configuration config = project.getConfigurations().getByName(
+                                ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.TEST));
+                        task.dependsOn(resourcesTask, config);
+                        task.setCompileClasspath(config);
                     });
 
                     quarkusDev.configure(task -> {

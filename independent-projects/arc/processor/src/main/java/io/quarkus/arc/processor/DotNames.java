@@ -32,6 +32,7 @@ import jakarta.enterprise.inject.Stereotype;
 import jakarta.enterprise.inject.TransientReference;
 import jakarta.enterprise.inject.Typed;
 import jakarta.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.EventMetadata;
@@ -108,6 +109,7 @@ public final class DotNames {
     public static final DotName CLASS = create(Class.class);
     public static final DotName ENUM = create(Enum.class);
     public static final DotName EXTENSION = create(Extension.class);
+    public static final DotName BUILD_COMPATIBLE_EXTENSION = create(BuildCompatibleExtension.class);
     public static final DotName OPTIONAL = create(Optional.class);
     public static final DotName OPTIONAL_INT = create(OptionalInt.class);
     public static final DotName OPTIONAL_LONG = create(OptionalLong.class);

@@ -682,7 +682,9 @@ public class ArcProcessor {
     @BuildStep
     List<AdditionalApplicationArchiveMarkerBuildItem> marker() {
         return Arrays.asList(new AdditionalApplicationArchiveMarkerBuildItem("META-INF/beans.xml"),
-                new AdditionalApplicationArchiveMarkerBuildItem("META-INF/services/jakarta.enterprise.inject.spi.Extension"));
+                new AdditionalApplicationArchiveMarkerBuildItem("META-INF/services/jakarta.enterprise.inject.spi.Extension"),
+                new AdditionalApplicationArchiveMarkerBuildItem(
+                        "META-INF/services/jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension"));
     }
 
     @BuildStep

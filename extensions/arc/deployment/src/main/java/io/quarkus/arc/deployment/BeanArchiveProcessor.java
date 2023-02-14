@@ -1,5 +1,8 @@
 package io.quarkus.arc.deployment;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -17,6 +20,7 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
@@ -36,6 +40,8 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class BeanArchiveProcessor {
+
+    private static final Logger LOGGER = Logger.getLogger(BeanArchiveProcessor.class);
 
     @BuildStep
     public BeanArchiveIndexBuildItem build(ArcConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -127,8 +133,12 @@ public class BeanArchiveProcessor {
             if (isApplicationArchiveExcluded(config, excludeDependencyBuildItems, archive)) {
                 continue;
             }
+            if (!possiblyBeanArchive(archive)) {
+                continue;
+            }
             IndexView index = archive.getIndex();
-            if (isExplicitBeanArchive(archive) || isImplicitBeanArchive(index, beanDefiningAnnotations)
+            if (isExplicitBeanArchive(archive)
+                    || isImplicitBeanArchive(index, beanDefiningAnnotations)
                     || isAdditionalBeanArchive(archive, beanArchivePredicates)) {
                 indexes.add(index);
             }
@@ -144,6 +154,7 @@ public class BeanArchiveProcessor {
     private boolean isImplicitBeanArchive(IndexView index, Set<DotName> beanDefiningAnnotations) {
         // NOTE: Implicit bean archive without beans.xml contains one or more bean classes with a bean defining annotation and no extension
         return index.getAllKnownImplementors(DotNames.EXTENSION).isEmpty()
+                && index.getAllKnownImplementors(DotNames.BUILD_COMPATIBLE_EXTENSION).isEmpty()
                 && containsBeanDefiningAnnotation(index, beanDefiningAnnotations);
     }
 
@@ -155,6 +166,40 @@ public class BeanArchiveProcessor {
             }
         }
         return false;
+    }
+
+    private boolean possiblyBeanArchive(ApplicationArchive archive) {
+        return archive.apply(tree -> {
+            boolean result = true;
+            for (String beansXml : List.of("META-INF/beans.xml", "WEB-INF/beans.xml")) {
+                result &= tree.apply(beansXml, pathVisit -> {
+                    if (pathVisit == null) {
+                        return true;
+                    }
+
+                    // crude but enough
+                    try {
+                        String text = Files.readString(pathVisit.getPath());
+                        if (text.contains("bean-discovery-mode='none'")
+                                || text.contains("bean-discovery-mode=\"none\"")) {
+                            return false;
+                        }
+
+                        if (text.contains("bean-discovery-mode='all'")
+                                || text.contains("bean-discovery-mode=\"all\"")) {
+                            LOGGER.warnf("Detected bean archive with bean discovery mode of 'all', "
+                                    + "this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! "
+                                    + "Path to beans.xml: %s", pathVisit.getPath());
+                        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+
+                    return true;
+                });
+            }
+            return result;
+        });
     }
 
     private boolean isApplicationArchiveExcluded(ArcConfig config, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,

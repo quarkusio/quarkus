@@ -9,11 +9,19 @@ import org.hibernate.bytecode.spi.ProxyFactoryFactory;
 import org.hibernate.bytecode.spi.ReflectionOptimizer;
 import org.hibernate.property.access.spi.PropertyAccess;
 
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactory;
+
 final class RuntimeBytecodeProvider implements BytecodeProvider {
+
+    private final QuarkusRuntimeProxyFactoryFactory statefulProxyFactory;
+
+    public RuntimeBytecodeProvider(QuarkusRuntimeProxyFactoryFactory statefulProxyFactory) {
+        this.statefulProxyFactory = statefulProxyFactory;
+    }
 
     @Override
     public ProxyFactoryFactory getProxyFactoryFactory() {
-        return new NoProxyFactoryFactory();
+        return statefulProxyFactory;
     }
 
     @Override

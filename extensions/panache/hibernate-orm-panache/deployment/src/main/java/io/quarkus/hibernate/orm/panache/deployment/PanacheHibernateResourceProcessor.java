@@ -92,15 +92,14 @@ public final class PanacheHibernateResourceProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
     void build(
-            PanacheHibernateOrmRecorder recorder,
             CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<PanacheEntityClassBuildItem> entityClasses,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems,
+            BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(PanacheMethodCustomizerBuildItem::getMethodCustomizer).collect(Collectors.toList());
@@ -131,7 +130,18 @@ public final class PanacheHibernateResourceProcessor {
 
         panacheEntities.addAll(modelClasses);
 
-        recordPanacheEntityPersistenceUnits(recorder, jpaModelPersistenceUnitMapping, panacheEntities);
+        determinePanacheEntityPersistenceUnits(jpaModelPersistenceUnitMapping, panacheEntities)
+                .forEach((e, pu) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu)));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void recordEntityToPersistenceUnit(List<EntityToPersistenceUnitBuildItem> items, PanacheHibernateOrmRecorder recorder) {
+        Map<String, String> map = new HashMap<>();
+        for (EntityToPersistenceUnitBuildItem item : items) {
+            map.put(item.getEntityClass(), item.getPersistenceUnitName());
+        }
+        recorder.setEntityToPersistenceUnit(map);
     }
 
     @BuildStep
@@ -151,7 +161,7 @@ public final class PanacheHibernateResourceProcessor {
         return null;
     }
 
-    void recordPanacheEntityPersistenceUnits(PanacheHibernateOrmRecorder recorder,
+    Map<String, String> determinePanacheEntityPersistenceUnits(
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             Set<String> panacheEntityClasses) {
         Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
@@ -189,6 +199,6 @@ public final class PanacheHibernateResourceProcessor {
             }
         }
 
-        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit);
+        return panacheEntityToPersistenceUnit;
     }
 }

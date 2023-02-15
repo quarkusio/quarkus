@@ -51,7 +51,6 @@ import io.quarkus.deployment.steps.NativeImageFeatureStep;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
-import io.quarkus.runtime.graal.ResourcesFeature;
 
 public class NativeImageBuildStep {
 
@@ -81,15 +80,8 @@ public class NativeImageBuildStep {
     public static final String APP_SOURCES = "app-sources";
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> exports) {
-        // Needed by io.quarkus.runtime.ResourceHelper.registerResources
-        exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk"));
-    }
-
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> features) {
         features.produce(new NativeImageFeatureBuildItem(NativeImageFeatureStep.GRAAL_FEATURE));
-        features.produce(new NativeImageFeatureBuildItem(ResourcesFeature.class));
         features.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
     }
 

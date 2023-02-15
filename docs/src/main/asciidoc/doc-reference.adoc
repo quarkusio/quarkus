@@ -329,6 +329,7 @@ Quarkus documentation is grouped into the following categories.
 | integration | Support for integration extensions (Camel)
 | messaging | Integrations with messaging systems like Kafka, AMQP, or RabbitMQ.
 | miscellaneous | Miscellaneous
+| native | Everything related to native executables
 | observability | Extensions and integrations for runtime and application observability
 | reactive | Extensions that support reactive technologies and techniques
 | security | Security

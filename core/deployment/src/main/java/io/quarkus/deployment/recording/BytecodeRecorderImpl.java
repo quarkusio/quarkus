@@ -1176,8 +1176,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
             if (nonDefaultConstructorHolder.constructor.getParameterCount() > 0) {
                 Parameter[] parameters = nonDefaultConstructorHolder.constructor.getParameters();
                 for (int i = 0; i < parameters.length; ++i) {
-                    String name = parameters[i].getName();
-                    constructorParamNameMap.put(name, i);
+                    if (parameters[i].isNamePresent()) {
+                        String name = parameters[i].getName();
+                        constructorParamNameMap.put(name, i);
+                    }
                 }
             }
         } else if (classesToUseRecordableConstructor.contains(param.getClass())) {
@@ -1199,8 +1201,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
             if (current.getParameterCount() > 0) {
                 Parameter[] parameters = current.getParameters();
                 for (int i = 0; i < parameters.length; ++i) {
-                    String name = parameters[i].getName();
-                    constructorParamNameMap.put(name, i);
+                    if (parameters[i].isNamePresent()) {
+                        String name = parameters[i].getName();
+                        constructorParamNameMap.put(name, i);
+                    }
                 }
             }
         } else {
@@ -1223,8 +1227,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 if (selectedCtor.getParameterCount() > 0) {
                     Parameter[] ctorParameters = selectedCtor.getParameters();
                     for (int i = 0; i < ctorParameters.length; ++i) {
-                        String name = ctorParameters[i].getName();
-                        constructorParamNameMap.put(name, i);
+                        if (ctorParameters[i].isNamePresent()) {
+                            String name = ctorParameters[i].getName();
+                            constructorParamNameMap.put(name, i);
+                        }
                     }
                 }
             }

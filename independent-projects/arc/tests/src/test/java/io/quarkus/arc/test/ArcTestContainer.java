@@ -5,13 +5,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -61,7 +58,6 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
     // Strings used as keys in ExtensionContext.Store
     private static final String KEY_OLD_TCCL = "arcExtensionOldTccl";
-    private static final String KEY_TEST_CLASSLOADER = "arcExtensionTestClassLoader";
 
     private static final String TARGET_TEST_CLASSES = "target/test-classes";
 
@@ -286,16 +282,6 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     public void afterEach(ExtensionContext extensionContext) throws Exception {
         ClassLoader oldTccl = getRootExtensionStore(extensionContext).get(KEY_OLD_TCCL, ClassLoader.class);
         Thread.currentThread().setContextClassLoader(oldTccl);
-
-        URLClassLoader testClassLoader = getRootExtensionStore(extensionContext).get(KEY_TEST_CLASSLOADER,
-                URLClassLoader.class);
-        if (testClassLoader != null) {
-            try {
-                testClassLoader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
         shutdown();
     }
 
@@ -343,8 +329,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             }
         }
 
-        ClassLoader old = Thread.currentThread()
-                .getContextClassLoader();
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
 
         try {
             String arcContainerAbsolutePath = ArcTestContainer.class.getClassLoader()
@@ -429,26 +414,10 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                 throw new IllegalStateException("Error generating resources", e);
             }
 
-            URLClassLoader testClassLoader = new URLClassLoader(new URL[] {}, old) {
-                @Override
-                public Enumeration<URL> getResources(String name) throws IOException {
-                    if (("META-INF/services/" + ComponentsProvider.class.getName()).equals(name)) {
-                        // return URL that points to the correct test bean provider
-                        return Collections.enumeration(Collections.singleton(componentsProviderFile.toURI()
-                                .toURL()));
-                    } else if (("META-INF/services/" + ResourceReferenceProvider.class.getName()).equals(name)
-                            && !resourceReferenceProviders.isEmpty()) {
-                        return Collections.enumeration(Collections.singleton(resourceReferenceProviderFile.toURI()
-                                .toURL()));
-                    }
-                    return super.getResources(name);
-                }
-            };
+            ArcTestClassLoader testClassLoader = new ArcTestClassLoader(old, componentsProviderFile,
+                    resourceReferenceProviders.isEmpty() ? null : resourceReferenceProviderFile);
             Thread.currentThread()
                     .setContextClassLoader(testClassLoader);
-
-            // store the test class loader into extension store
-            getRootExtensionStore(context).put(KEY_TEST_CLASSLOADER, testClassLoader);
 
             // Now we are ready to initialize Arc
             Arc.initialize();
@@ -491,4 +460,5 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private String nameToPath(String packName) {
         return packName.replace('.', '/');
     }
+
 }

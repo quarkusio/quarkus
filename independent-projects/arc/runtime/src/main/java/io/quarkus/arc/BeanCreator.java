@@ -4,21 +4,36 @@ import java.util.Map;
 
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.CreationException;
 
 /**
- * It can be used by synthetic {@link InjectableBean} definitions to produce a contextual instance.
+ * This interface is used by synthetic beans to produce a contextual instance.
  *
  * @param <T>
+ * @see InjectableBean
  * @see Contextual#create(CreationalContext)
  */
 public interface BeanCreator<T> {
 
     /**
      *
+     * @param context
+     * @return the contextual instance
+     */
+    default T create(SyntheticCreationalContext<T> context) {
+        return create(context, context.getParams());
+    }
+
+    /**
+     *
      * @param creationalContext
      * @param params
      * @return the contextual instance
+     * @deprecated Use {@link #create(SyntheticCreationalContext)} instead
      */
-    T create(CreationalContext<T> creationalContext, Map<String, Object> params);
+    @Deprecated(forRemoval = true)
+    default T create(CreationalContext<T> creationalContext, Map<String, Object> params) {
+        throw new CreationException("Creation logic not implemented");
+    }
 
 }

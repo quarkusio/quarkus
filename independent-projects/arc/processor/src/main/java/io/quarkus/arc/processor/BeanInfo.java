@@ -142,7 +142,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.removable = isRemovable;
         this.params = params;
         // Identifier must be unique for a specific deployment
-        this.identifier = Hashes.sha1(toString());
+        this.identifier = Hashes.sha1(toString() + beanDeployment.toString());
         this.interceptedMethods = Collections.emptyMap();
         this.decoratedMethods = Collections.emptyMap();
         this.lifecycleInterceptors = Collections.emptyMap();

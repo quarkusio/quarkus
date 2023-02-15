@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 
@@ -59,7 +60,7 @@ public final class Instances {
     @SuppressWarnings("unchecked")
     public static <T> List<T> listOf(InjectableBean<?> targetBean, Type injectionPointType, Type requiredType,
             Set<Annotation> requiredQualifiers,
-            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
+            CreationalContext<T> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
             boolean isTransient) {
         List<InjectableBean<?>> beans = resolveAllBeans(requiredType, requiredQualifiers);
         if (beans.isEmpty()) {
@@ -71,7 +72,7 @@ public final class Instances {
                         annotations, javaMember, position, isTransient));
         try {
             for (InjectableBean<?> bean : beans) {
-                list.add(getBeanInstance((CreationalContextImpl<T>) creationalContext, (InjectableBean<T>) bean));
+                list.add(getBeanInstance(CreationalContextImpl.unwrap(creationalContext), (InjectableBean<T>) bean));
             }
         } finally {
             InjectionPointProvider.set(prev);
@@ -82,7 +83,7 @@ public final class Instances {
 
     public static <T> List<InstanceHandle<T>> listOfHandles(InjectableBean<?> targetBean, Type injectionPointType,
             Type requiredType, Set<Annotation> requiredQualifiers,
-            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
+            CreationalContext<T> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
             boolean isTransient) {
         Supplier<InjectionPoint> supplier = new Supplier<InjectionPoint>() {
             @Override
@@ -97,14 +98,14 @@ public final class Instances {
     @SuppressWarnings("unchecked")
     public static <T> List<InstanceHandle<T>> listOfHandles(Supplier<InjectionPoint> injectionPoint, Type requiredType,
             Set<Annotation> requiredQualifiers,
-            CreationalContextImpl<?> creationalContext) {
+            CreationalContext<T> creationalContext) {
         List<InjectableBean<?>> beans = resolveAllBeans(requiredType, requiredQualifiers);
         if (beans.isEmpty()) {
             return Collections.emptyList();
         }
         List<InstanceHandle<T>> list = new ArrayList<>(beans.size());
         for (InjectableBean<?> bean : beans) {
-            list.add(getHandle((CreationalContextImpl<T>) creationalContext, (InjectableBean<T>) bean, injectionPoint));
+            list.add(getHandle(CreationalContextImpl.unwrap(creationalContext), (InjectableBean<T>) bean, injectionPoint));
         }
         return List.copyOf(list);
     }

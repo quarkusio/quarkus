@@ -55,6 +55,7 @@ public class BeanDeployment {
 
     private static final Logger LOGGER = Logger.getLogger(BeanDeployment.class);
 
+    private final String name;
     private final BuildContextImpl buildContext;
 
     private final IndexView beanArchiveComputingIndex;
@@ -118,7 +119,8 @@ public class BeanDeployment {
 
     private final List<Predicate<ClassInfo>> excludeTypes;
 
-    BeanDeployment(BuildContextImpl buildContext, BeanProcessor.Builder builder) {
+    BeanDeployment(String name, BuildContextImpl buildContext, BeanProcessor.Builder builder) {
+        this.name = name;
         this.buildContext = buildContext;
         Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations = new HashMap<>();
         if (builder.additionalBeanDefiningAnnotations != null) {
@@ -1224,6 +1226,7 @@ public class BeanDeployment {
         for (BeanRegistrar registrar : beanRegistrars) {
             registrar.register(context);
         }
+        this.injectionPoints.addAll(context.syntheticInjectionPoints);
         return context;
     }
 
@@ -1389,6 +1392,11 @@ public class BeanDeployment {
         return qualifierNonbindingMembers.getOrDefault(name, Collections.emptySet());
     }
 
+    @Override
+    public String toString() {
+        return "BeanDeployment [name=" + name + "]";
+    }
+
     private static class ValidationContextImpl implements ValidationContext {
 
         private final BuildContext buildContext;
@@ -1432,15 +1440,25 @@ public class BeanDeployment {
 
     }
 
-    private static class BeanRegistrationContextImpl extends RegistrationContextImpl implements RegistrationContext {
+    private static class BeanRegistrationContextImpl extends RegistrationContextImpl
+            implements RegistrationContext, Consumer<BeanInfo> {
+
+        final List<InjectionPointInfo> syntheticInjectionPoints;
 
         BeanRegistrationContextImpl(BuildContext buildContext, BeanDeployment beanDeployment) {
             super(buildContext, beanDeployment);
+            this.syntheticInjectionPoints = new ArrayList<>();
         }
 
         @Override
         public <T> BeanConfigurator<T> configure(DotName beanClassName) {
-            return new BeanConfigurator<T>(beanClassName, beanDeployment, beanDeployment::addSyntheticBean);
+            return new BeanConfigurator<T>(beanClassName, beanDeployment, this);
+        }
+
+        @Override
+        public void accept(BeanInfo bean) {
+            beanDeployment.addSyntheticBean(bean);
+            syntheticInjectionPoints.addAll(bean.getAllInjectionPoints());
         }
 
     }

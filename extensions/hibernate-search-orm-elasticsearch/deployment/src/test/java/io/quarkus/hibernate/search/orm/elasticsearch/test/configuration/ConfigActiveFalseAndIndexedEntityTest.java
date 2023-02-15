@@ -2,7 +2,9 @@ package io.quarkus.hibernate.search.orm.elasticsearch.test.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import jakarta.enterprise.inject.CreationException;
 import jakarta.inject.Inject;
 
 import org.hibernate.Session;
@@ -39,7 +41,8 @@ public class ConfigActiveFalseAndIndexedEntityTest {
         // So the bean cannot be null.
         assertThat(searchMapping).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        assertThatThrownBy(searchMapping::allIndexedEntities)
+        CreationException e = assertThrows(CreationException.class, () -> searchMapping.allIndexedEntities());
+        assertThat(e.getCause())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll(
                         "Cannot retrieve the SearchMapping for persistence unit <default>",
@@ -61,7 +64,8 @@ public class ConfigActiveFalseAndIndexedEntityTest {
         // So the bean cannot be null.
         assertThat(searchSession).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        assertThatThrownBy(() -> searchSession.search(IndexedEntity.class))
+        CreationException e = assertThrows(CreationException.class, () -> searchSession.search(IndexedEntity.class));
+        assertThat(e.getCause())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll(
                         "Cannot retrieve the SearchSession for persistence unit <default>",

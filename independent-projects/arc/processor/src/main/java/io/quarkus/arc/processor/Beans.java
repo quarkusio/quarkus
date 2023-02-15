@@ -486,8 +486,12 @@ public final class Beans {
         message.append(injectionPoint.getType());
         message.append(" and qualifiers ");
         message.append(injectionPoint.getRequiredQualifiers());
-        message.append("\n\t- java member: ");
-        message.append(injectionPoint.getTargetInfo());
+        if (injectionPoint.isSynthetic()) {
+            message.append("\n\t- synthetic injection point");
+        } else {
+            message.append("\n\t- java member: ");
+            message.append(injectionPoint.getTargetInfo());
+        }
         message.append("\n\t- declared on ");
         message.append(target);
     }

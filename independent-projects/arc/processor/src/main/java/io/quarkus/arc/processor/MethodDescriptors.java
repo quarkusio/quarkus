@@ -207,6 +207,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor COLLECTIONS_EMPTY_MAP = MethodDescriptor.ofMethod(Collections.class, "emptyMap",
             Map.class);
 
+    public static final MethodDescriptor COLLECTIONS_EMPTY_SET = MethodDescriptor.ofMethod(Collections.class, "emptySet",
+            Set.class);
+
     public static final MethodDescriptor SETS_OF = MethodDescriptor.ofMethod(Sets.class, "of", Set.class, Object[].class);
 
     public static final MethodDescriptor ARC_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
@@ -265,11 +268,11 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INSTANCES_LIST_OF = MethodDescriptor
             .ofMethod(Instances.class, "listOf", List.class, InjectableBean.class, Type.class, Type.class,
-                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class, boolean.class);
+                    Set.class, CreationalContext.class, Set.class, Member.class, int.class, boolean.class);
 
     public static final MethodDescriptor INSTANCES_LIST_OF_HANDLES = MethodDescriptor
             .ofMethod(Instances.class, "listOfHandles", List.class, InjectableBean.class, Type.class, Type.class,
-                    Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class, boolean.class);
+                    Set.class, CreationalContext.class, Set.class, Member.class, int.class, boolean.class);
 
     public static final MethodDescriptor COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE = MethodDescriptor.ofMethod(
             ComponentsProvider.class, "unableToLoadRemovedBeanType",

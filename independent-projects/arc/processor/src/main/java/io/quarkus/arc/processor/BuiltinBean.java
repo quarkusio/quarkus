@@ -386,8 +386,12 @@ enum BuiltinBean {
     private static void validateInjectionPoint(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
             Consumer<Throwable> errors) {
         if (injectionTarget.kind() != TargetKind.BEAN || !BuiltinScope.DEPENDENT.is(injectionTarget.asBean().getScope())) {
+            String msg = injectionPoint.getTargetInfo();
+            if (msg.isBlank()) {
+                msg = injectionTarget.toString();
+            }
             errors.accept(new DefinitionException("Only @Dependent beans can access metadata about an injection point: "
-                    + injectionPoint.getTargetInfo()));
+                    + msg));
         }
     }
 

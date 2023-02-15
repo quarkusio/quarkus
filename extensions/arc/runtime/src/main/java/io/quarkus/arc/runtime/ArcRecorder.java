@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -17,6 +18,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableBean.Kind;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.impl.ArcContainerImpl;
 import io.quarkus.arc.runtime.test.PreloadedTestApplicationClassPredicate;
 import io.quarkus.runtime.ApplicationLifecycleManager;
@@ -36,7 +38,7 @@ public class ArcRecorder {
     /**
      * Used to hold the Supplier instances used for synthetic bean declarations.
      */
-    public static volatile Map<String, Supplier<?>> supplierMap;
+    public static volatile Map<String, Function<SyntheticCreationalContext<?>, ?>> syntheticBeanProviders;
 
     public ArcContainer initContainer(ShutdownContext shutdown, RuntimeValue<CurrentContextFactory> currentContextFactory)
             throws Exception {
@@ -54,12 +56,12 @@ public class ArcRecorder {
         Arc.setExecutor(executor);
     }
 
-    public void initStaticSupplierBeans(Map<String, Supplier<?>> beans) {
-        supplierMap = new ConcurrentHashMap<>(beans);
+    public void initStaticSupplierBeans(Map<String, Function<SyntheticCreationalContext<?>, ?>> beans) {
+        syntheticBeanProviders = new ConcurrentHashMap<>(beans);
     }
 
-    public void initRuntimeSupplierBeans(Map<String, Supplier<?>> beans) {
-        supplierMap.putAll(beans);
+    public void initRuntimeSupplierBeans(Map<String, Function<SyntheticCreationalContext<?>, ?>> beans) {
+        syntheticBeanProviders.putAll(beans);
     }
 
     public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners)
@@ -107,11 +109,20 @@ public class ArcRecorder {
         });
     }
 
-    public Supplier<Object> createSupplier(RuntimeValue<?> value) {
-        return new Supplier<Object>() {
+    public Function<SyntheticCreationalContext<?>, Object> createFunction(RuntimeValue<?> value) {
+        return new Function<SyntheticCreationalContext<?>, Object>() {
             @Override
-            public Object get() {
+            public Object apply(SyntheticCreationalContext<?> t) {
                 return value.getValue();
+            }
+        };
+    }
+
+    public Function<SyntheticCreationalContext<?>, Object> createFunction(Supplier<?> supplier) {
+        return new Function<SyntheticCreationalContext<?>, Object>() {
+            @Override
+            public Object apply(SyntheticCreationalContext<?> t) {
+                return supplier.get();
             }
         };
     }

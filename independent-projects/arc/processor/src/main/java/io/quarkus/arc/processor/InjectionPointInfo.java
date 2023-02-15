@@ -105,11 +105,15 @@ public class InjectionPointInfo {
         return injectionPoints;
     }
 
+    static InjectionPointInfo fromSyntheticInjectionPoint(TypeAndQualifiers typeAndQualifiers) {
+        return new InjectionPointInfo(typeAndQualifiers, InjectionPointKind.CDI, null, -1, false, false);
+    }
+
     private final TypeAndQualifiers typeAndQualifiers;
     private final AtomicReference<BeanInfo> resolvedBean;
     private final AtomicReference<BeanInfo> targetBean;
     private final InjectionPointKind kind;
-    private final boolean hasDefaultedQualifier;
+    private final boolean hasDefaultQualifier;
     private final AnnotationTarget target;
     private final int position;
     private final boolean isTransientReference;
@@ -122,21 +126,27 @@ public class InjectionPointInfo {
 
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjectionPointKind kind,
             AnnotationTarget target, int position, boolean isTransientReference, boolean isDelegate) {
-        this.typeAndQualifiers = new TypeAndQualifiers(requiredType,
-                requiredQualifiers.isEmpty()
-                        ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
-                        : requiredQualifiers);
+        this(new TypeAndQualifiers(requiredType, requiredQualifiers.isEmpty()
+                ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
+                : requiredQualifiers),
+                kind, target, position, isTransientReference, isDelegate);
+    }
+
+    InjectionPointInfo(TypeAndQualifiers typeAndQualifiers, InjectionPointKind kind,
+            AnnotationTarget target, int position, boolean isTransientReference, boolean isDelegate) {
+        this.typeAndQualifiers = typeAndQualifiers;
         this.resolvedBean = new AtomicReference<BeanInfo>(null);
         this.targetBean = new AtomicReference<BeanInfo>(null);
         this.kind = kind;
-        this.hasDefaultedQualifier = requiredQualifiers.isEmpty();
+        this.hasDefaultQualifier = typeAndQualifiers.qualifiers.size() == 1
+                && typeAndQualifiers.qualifiers.iterator().next().name().equals(DotNames.DEFAULT);
         this.target = target;
         this.position = position;
         this.isTransientReference = isTransientReference;
         this.isDelegate = isDelegate;
 
         // validation - Event injection point can never be a raw type
-        if (DotNames.EVENT.equals(requiredType.name()) && requiredType.kind() == Type.Kind.CLASS) {
+        if (DotNames.EVENT.equals(typeAndQualifiers.type.name()) && typeAndQualifiers.type.kind() == Type.Kind.CLASS) {
             throw new DefinitionException(
                     "Event injection point can never be raw type - please specify the type parameter. Injection point: "
                             + target);
@@ -209,7 +219,7 @@ public class InjectionPointInfo {
     }
 
     public boolean hasDefaultedQualifier() {
-        return hasDefaultedQualifier;
+        return hasDefaultQualifier;
     }
 
     TypeAndQualifiers getTypeAndQualifiers() {
@@ -219,18 +229,18 @@ public class InjectionPointInfo {
     /**
      * For injected params, this method returns the corresponding method and not the param itself.
      *
-     * @return the annotation target
+     * @return the annotation target or {@code null} in case of synthetic injection point
      */
     public AnnotationTarget getTarget() {
         return target;
     }
 
     public boolean isField() {
-        return target.kind() == Kind.FIELD;
+        return target != null && target.kind() == Kind.FIELD;
     }
 
     public boolean isParam() {
-        return target.kind() == Kind.METHOD;
+        return target != null && target.kind() == Kind.METHOD;
     }
 
     /**
@@ -263,6 +273,9 @@ public class InjectionPointInfo {
     }
 
     public String getTargetInfo() {
+        if (target == null) {
+            return "";
+        }
         switch (target.kind()) {
             case FIELD:
                 return target.asField().declaringClass().name() + "#" + target.asField().name();
@@ -281,6 +294,13 @@ public class InjectionPointInfo {
             default:
                 return target.toString();
         }
+    }
+
+    /**
+     * @return {@code true} if it represents a synthetic injection point, {@code false} otherwise
+     */
+    public boolean isSynthetic() {
+        return target == null;
     }
 
     @Override

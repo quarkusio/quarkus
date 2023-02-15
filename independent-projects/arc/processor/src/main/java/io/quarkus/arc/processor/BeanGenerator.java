@@ -7,6 +7,7 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -46,10 +47,13 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.CurrentInjectionPointProvider;
 import io.quarkus.arc.impl.DecoratorDelegateProvider;
 import io.quarkus.arc.impl.InitializedInterceptor;
+import io.quarkus.arc.impl.SyntheticCreationalContextImpl;
+import io.quarkus.arc.impl.SyntheticCreationalContextImpl.TypeAndQualifiers;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;
@@ -267,7 +271,16 @@ public class BeanGenerator extends AbstractGenerator {
             stereotypes = beanCreator.getFieldCreator(FIELD_NAME_STEREOTYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
 
-        MethodCreator constructor = initConstructor(classOutput, beanCreator, bean, Collections.emptyMap(),
+        Map<InjectionPointInfo, String> injectionPointToProviderSupplierField = Collections.emptyMap();
+        if (bean.hasInjectionPoint()) {
+            injectionPointToProviderSupplierField = new HashMap<>();
+            // Synthetic beans are not intercepted
+            initMaps(bean, injectionPointToProviderSupplierField, null, null);
+            createProviderFields(beanCreator, bean, injectionPointToProviderSupplierField, Collections.emptyMap(),
+                    Collections.emptyMap());
+        }
+
+        MethodCreator constructor = initConstructor(classOutput, beanCreator, bean, injectionPointToProviderSupplierField,
                 Collections.emptyMap(), Collections.emptyMap(),
                 annotationLiterals, reflectionRegistration);
 
@@ -283,7 +296,7 @@ public class BeanGenerator extends AbstractGenerator {
                     targetPackage);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
-                Collections.emptyMap(), Collections.emptyMap(),
+                injectionPointToProviderSupplierField, Collections.emptyMap(),
                 Collections.emptyMap(), targetPackage, isApplicationClass);
         implementGet(bean, beanCreator, providerType, baseName);
 
@@ -943,8 +956,7 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     protected void implementCreate(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean, ProviderType providerType,
-            String baseName,
-            Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
+            String baseName, Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
             Map<InterceptorInfo, String> interceptorToProviderSupplierField,
             Map<DecoratorInfo, String> decoratorToProviderSupplierField,
             String targetPackage, boolean isApplicationClass) {
@@ -967,25 +979,7 @@ public class BeanGenerator extends AbstractGenerator {
                     injectionPointToProviderSupplierField, reflectionRegistration,
                     targetPackage, isApplicationClass, doCreate);
         } else if (bean.isSynthetic()) {
-            if (bean.getScope().isNormal()) {
-                // Normal scoped synthetic beans should never return null
-                MethodCreator createSynthetic = beanCreator
-                        .getMethodCreator("createSynthetic", providerType.descriptorName(), CreationalContext.class)
-                        .setModifiers(ACC_PRIVATE);
-                bean.getCreatorConsumer().accept(createSynthetic);
-                ResultHandle ret = doCreate.invokeVirtualMethod(createSynthetic.getMethodDescriptor(), doCreate.getThis(),
-                        doCreate.getMethodParam(0));
-                BytecodeCreator nullBeanInstance = doCreate.ifNull(ret).trueBranch();
-                StringBuilderGenerator message = Gizmo.newStringBuilder(nullBeanInstance);
-                message.append("Null contextual instance was produced by a normal scoped synthetic bean: ");
-                message.append(Gizmo.toString(nullBeanInstance, nullBeanInstance.getThis()));
-                ResultHandle e = nullBeanInstance.newInstance(
-                        MethodDescriptor.ofConstructor(CreationException.class, String.class), message.callToString());
-                nullBeanInstance.throwException(e);
-                doCreate.returnValue(ret);
-            } else {
-                bean.getCreatorConsumer().accept(doCreate);
-            }
+            implementCreateForSyntheticBean(beanCreator, bean, providerType, injectionPointToProviderSupplierField, doCreate);
         }
 
         MethodCreator create = beanCreator.getMethodCreator("create", providerType.descriptorName(), CreationalContext.class)
@@ -1009,6 +1003,113 @@ public class BeanGenerator extends AbstractGenerator {
                 .setModifiers(ACC_PUBLIC | ACC_BRIDGE);
         bridgeCreate.returnValue(bridgeCreate.invokeVirtualMethod(create.getMethodDescriptor(), bridgeCreate.getThis(),
                 bridgeCreate.getMethodParam(0)));
+    }
+
+    private void implementCreateForSyntheticBean(ClassCreator beanCreator, BeanInfo bean, ProviderType providerType,
+            Map<InjectionPointInfo, String> injectionPointToProviderSupplierField, MethodCreator doCreate) {
+
+        MethodCreator createSynthetic = beanCreator
+                .getMethodCreator("createSynthetic", providerType.descriptorName(), SyntheticCreationalContext.class)
+                .setModifiers(ACC_PRIVATE);
+        bean.getCreatorConsumer().accept(createSynthetic);
+
+        ResultHandle injectedReferences;
+        if (injectionPointToProviderSupplierField.isEmpty()) {
+            injectedReferences = doCreate.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_MAP);
+        } else {
+            // Initialize injected references
+            injectedReferences = doCreate.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+            ResultHandle tccl = doCreate.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL,
+                    doCreate.invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD));
+            for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
+                TryBlock tryBlock = doCreate.tryBlock();
+                ResultHandle requiredType;
+                try {
+                    requiredType = Types.getTypeHandle(tryBlock, injectionPoint.getType(), tccl);
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalStateException(
+                            "Unable to construct the type handle for " + injectionPoint.getType() + ": " + e.getMessage());
+                }
+                ResultHandle qualifiersArray;
+                if (injectionPoint.hasDefaultedQualifier()) {
+                    qualifiersArray = tryBlock.loadNull();
+                } else {
+                    qualifiersArray = tryBlock.newArray(Annotation.class, injectionPoint.getRequiredQualifiers().size());
+                    int qualifierIndex = 0;
+                    for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
+                        BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
+                        if (qualifier != null) {
+                            tryBlock.writeArrayValue(qualifiersArray, tryBlock.load(qualifierIndex++),
+                                    qualifier.getLiteralInstance(tryBlock));
+                        } else {
+                            // Create the annotation literal first
+                            ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifierAnnotation.name());
+                            tryBlock.writeArrayValue(qualifiersArray, tryBlock.load(qualifierIndex++),
+                                    annotationLiterals.create(tryBlock, qualifierClass, qualifierAnnotation));
+                        }
+                    }
+                }
+                ResultHandle typeAndQualifiers = tryBlock.newInstance(
+                        MethodDescriptor.ofConstructor(TypeAndQualifiers.class, java.lang.reflect.Type.class,
+                                Annotation[].class),
+                        requiredType, qualifiersArray);
+
+                ResultHandle providerSupplierHandle = tryBlock.readInstanceField(
+                        FieldDescriptor.of(beanCreator.getClassName(),
+                                injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
+                        tryBlock.getThis());
+                ResultHandle providerHandle = tryBlock.invokeInterfaceMethod(
+                        MethodDescriptors.SUPPLIER_GET, providerSupplierHandle);
+                ResultHandle childCtxHandle = tryBlock.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
+                        providerHandle, tryBlock.getMethodParam(0));
+                AssignableResultHandle injectedReference = tryBlock.createVariable(Object.class);
+                tryBlock.assign(injectedReference, tryBlock.invokeInterfaceMethod(
+                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                        providerHandle, childCtxHandle));
+                checkPrimitiveInjection(tryBlock, injectionPoint, injectedReference);
+                tryBlock.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, injectedReferences, typeAndQualifiers,
+                        injectedReference);
+
+                CatchBlockCreator catchBlock = tryBlock.addCatch(RuntimeException.class);
+                catchBlock.throwException(RuntimeException.class,
+                        "Error injecting synthetic injection point of bean: " + bean.getIdentifier(),
+                        catchBlock.getCaughtException());
+            }
+        }
+        ResultHandle paramsHandle = doCreate.readInstanceField(
+                FieldDescriptor.of(doCreate.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
+                doCreate.getThis());
+        ResultHandle syntheticCreationalContext = doCreate.newInstance(
+                MethodDescriptor.ofConstructor(SyntheticCreationalContextImpl.class, CreationalContext.class, Map.class,
+                        Map.class),
+                doCreate.getMethodParam(0), paramsHandle, injectedReferences);
+
+        AssignableResultHandle ret = doCreate.createVariable(providerType.descriptorName());
+        TryBlock tryBlock = doCreate.tryBlock();
+        tryBlock.assign(ret, tryBlock.invokeVirtualMethod(createSynthetic.getMethodDescriptor(), tryBlock.getThis(),
+                syntheticCreationalContext));
+        CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
+        StringBuilderGenerator strBuilder = Gizmo.newStringBuilder(catchBlock);
+        strBuilder.append("Error creating synthetic bean [");
+        strBuilder.append(bean.getIdentifier());
+        strBuilder.append("]: ");
+        strBuilder.append(Gizmo.toString(catchBlock, catchBlock.getCaughtException()));
+        ResultHandle exception = catchBlock.newInstance(
+                MethodDescriptor.ofConstructor(CreationException.class, String.class, Throwable.class),
+                strBuilder.callToString(), catchBlock.getCaughtException());
+        catchBlock.throwException(exception);
+
+        if (bean.getScope().isNormal()) {
+            // Normal scoped synthetic beans should never return null
+            BytecodeCreator nullBeanInstance = doCreate.ifNull(ret).trueBranch();
+            StringBuilderGenerator message = Gizmo.newStringBuilder(nullBeanInstance);
+            message.append("Null contextual instance was produced by a normal scoped synthetic bean: ");
+            message.append(Gizmo.toString(nullBeanInstance, nullBeanInstance.getThis()));
+            ResultHandle e = nullBeanInstance.newInstance(
+                    MethodDescriptor.ofConstructor(CreationException.class, String.class), message.callToString());
+            nullBeanInstance.throwException(e);
+        }
+        doCreate.returnValue(ret);
     }
 
     private void newProviderHandles(BeanInfo bean, ClassCreator beanCreator, MethodCreator createMethod,
@@ -1931,6 +2032,8 @@ public class BeanGenerator extends AbstractGenerator {
         ResultHandle javaMemberHandle = getJavaMemberHandle(constructor, injectionPoint, reflectionRegistration);
         boolean isTransient = injectionPoint.isField() && Modifier.isTransient(injectionPoint.getTarget().asField().flags());
 
+        // TODO empty IP for synthetic injections
+
         return constructor.newInstance(
                 MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
                         Supplier.class, java.lang.reflect.Type.class,
@@ -1967,7 +2070,9 @@ public class BeanGenerator extends AbstractGenerator {
     public static ResultHandle getJavaMemberHandle(MethodCreator constructor,
             InjectionPointInfo injectionPoint, ReflectionRegistration reflectionRegistration) {
         ResultHandle javaMemberHandle;
-        if (Kind.FIELD.equals(injectionPoint.getTarget().kind())) {
+        if (injectionPoint.isSynthetic()) {
+            javaMemberHandle = constructor.loadNull();
+        } else if (injectionPoint.isField()) {
             FieldInfo field = injectionPoint.getTarget().asField();
             javaMemberHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_FIELD,
                     constructor.loadClass(field.declaringClass().name().toString()),
@@ -2008,6 +2113,9 @@ public class BeanGenerator extends AbstractGenerator {
     public static ResultHandle collectInjectionPointAnnotations(ClassOutput classOutput, ClassCreator beanCreator,
             BeanDeployment beanDeployment, MethodCreator constructor, InjectionPointInfo injectionPoint,
             AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> injectionPointAnnotationsPredicate) {
+        if (injectionPoint.isSynthetic()) {
+            return constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
+        }
         ResultHandle annotationsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         Collection<AnnotationInstance> annotations;
         if (Kind.FIELD.equals(injectionPoint.getTarget().kind())) {

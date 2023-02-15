@@ -109,7 +109,7 @@ public class BeanProcessor {
         this.observerRegistrars = initAndSort(builder.observerRegistrars, buildContext);
         this.contextRegistrars = initAndSort(builder.contextRegistrars, buildContext);
         this.beanDeploymentValidators = initAndSort(builder.beanDeploymentValidators, buildContext);
-        this.beanDeployment = new BeanDeployment(buildContext, builder);
+        this.beanDeployment = new BeanDeployment(name, buildContext, builder);
 
         // Make it configurable if we find that the set of annotations needs to grow
         this.injectionPointAnnotationsPredicate = Predicate.not(DotNames.DEPRECATED::equals);

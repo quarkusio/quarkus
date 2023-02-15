@@ -87,6 +87,8 @@ public class ConfigurationTest {
             assertThat(clientConfig.connectionTTL.get()).isEqualTo(30000);
             assertThat(clientConfig.connectionPoolSize).isPresent();
             assertThat(clientConfig.connectionPoolSize.get()).isEqualTo(10);
+            assertThat(clientConfig.keepAliveEnabled).isPresent();
+            assertThat(clientConfig.keepAliveEnabled.get()).isFalse();
             assertThat(clientConfig.maxRedirects).isPresent();
             assertThat(clientConfig.maxRedirects.get()).isEqualTo(5);
         }

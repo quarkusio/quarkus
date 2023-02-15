@@ -36,6 +36,11 @@ public class QuarkusRestClientProperties {
      */
     public static final String CONNECTION_POOL_SIZE = "io.quarkus.rest.client.connection-pool-size";
 
+    /**
+     * A boolean value used to determine whether the keep alive is enabled or disabled.
+     */
+    public static final String KEEP_ALIVE_ENABLED = "io.quarkus.rest.client.keep-alive-enabled";
+
     public static final String STATIC_HEADERS = "io.quarkus.rest.client.static-headers";
 
     /**

@@ -1,7 +1,6 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_S2I_IMAGE_NAME;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
@@ -61,6 +60,7 @@ import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
@@ -179,6 +179,7 @@ public class OpenshiftProcessor {
             Optional<BaseImageInfoBuildItem> baseImage,
             Optional<ContainerImageInfoBuildItem> image,
             Optional<KubernetesCommandBuildItem> command,
+            Optional<KubernetesProbePortNameBuildItem> portName,
             List<KubernetesPortBuildItem> ports,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
@@ -301,8 +302,13 @@ public class OpenshiftProcessor {
         }
 
         // Probe port handling
-        Integer portNumber = port.map(Port::getContainerPort).orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(name, name, portNumber)));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, "livenssProbe", config.livenessProbe,
+                portName,
+                ports));
+        result.add(
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, "readinessProbe", config.readinessProbe,
+                        portName,
+                        ports));
 
         // Handle non-openshift builds
         if (deploymentKind == DeploymentResourceKind.DeploymentConfig

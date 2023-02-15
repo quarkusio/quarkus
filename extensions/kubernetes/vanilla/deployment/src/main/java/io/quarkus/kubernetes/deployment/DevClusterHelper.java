@@ -1,7 +1,6 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_NODE_PORT_VALUE;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_PORT_NUMBER;
@@ -42,6 +41,7 @@ import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
@@ -64,6 +64,7 @@ public class DevClusterHelper {
             Optional<ContainerImageInfoBuildItem> image,
             Optional<KubernetesCommandBuildItem> command,
             List<KubernetesPortBuildItem> ports,
+            Optional<KubernetesProbePortNameBuildItem> portName,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
             List<KubernetesRoleBuildItem> roles,
@@ -118,8 +119,14 @@ public class DevClusterHelper {
         }
 
         //Probe port handling
-        Integer portNumber = port.map(Port::getContainerPort).orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyHttpGetActionPortDecorator(name, name, portNumber)));
+        result.add(
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, "livenessProbe", config.livenessProbe,
+                        portName,
+                        ports));
+        result.add(
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, "readinessProbe", config.readinessProbe,
+                        portName,
+                        ports));
 
         // Handle init Containers
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(clusterKind, name, initContainers, result));

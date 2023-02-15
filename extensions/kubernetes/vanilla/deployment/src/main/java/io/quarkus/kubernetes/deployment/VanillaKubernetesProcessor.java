@@ -1,7 +1,6 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.INGRESS;
@@ -52,6 +51,7 @@ import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
@@ -132,6 +132,7 @@ public class VanillaKubernetesProcessor {
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels, List<KubernetesEnvBuildItem> envs,
             Optional<ContainerImageInfoBuildItem> image, Optional<KubernetesCommandBuildItem> command,
+            Optional<KubernetesProbePortNameBuildItem> portName,
             List<KubernetesPortBuildItem> ports, Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath, List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot,
@@ -241,8 +242,14 @@ public class VanillaKubernetesProcessor {
         }
 
         // Probe port handling
-        Integer portNumber = port.map(Port::getContainerPort).orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyHttpGetActionPortDecorator(name, name, portNumber)));
+        result.add(
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, "livenessProbe", config.livenessProbe,
+                        portName,
+                        ports));
+        result.add(
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, "readinessProbe", config.readinessProbe,
+                        portName,
+                        ports));
 
         // Handle remote debug configuration
         if (config.remoteDebug.enabled) {
@@ -274,5 +281,4 @@ public class VanillaKubernetesProcessor {
                     decorators);
         }
     }
-
 }

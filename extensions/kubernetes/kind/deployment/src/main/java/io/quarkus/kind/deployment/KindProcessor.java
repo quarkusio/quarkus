@@ -41,6 +41,7 @@ import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
@@ -104,6 +105,7 @@ public class KindProcessor {
             Optional<ContainerImageInfoBuildItem> image,
             Optional<KubernetesCommandBuildItem> command,
             List<KubernetesPortBuildItem> ports,
+            Optional<KubernetesProbePortNameBuildItem> portName,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
             List<KubernetesRoleBuildItem> roles,
@@ -112,6 +114,7 @@ public class KindProcessor {
 
         return DevClusterHelper.createDecorators(KIND, applicationInfo, outputTarget, config, packageConfig,
                 metricsConfiguration, initContainers, jobs, annotations, labels, envs, baseImage, image, command, ports,
+                portName,
                 livenessPath,
                 readinessPath,
                 roles, roleBindings, customProjectRoot);

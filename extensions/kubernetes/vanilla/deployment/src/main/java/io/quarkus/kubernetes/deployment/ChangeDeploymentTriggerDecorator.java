@@ -13,4 +13,5 @@ public class ChangeDeploymentTriggerDecorator extends ApplyDeploymentTriggerDeco
     public Class<? extends Decorator>[] after() {
         return new Class[] { ApplyDeploymentTriggerDecorator.class, RemoveDeploymentTriggerDecorator.class };
     }
+
 }

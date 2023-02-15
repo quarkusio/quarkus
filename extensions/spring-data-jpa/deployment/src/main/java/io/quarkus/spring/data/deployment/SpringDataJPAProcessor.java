@@ -1,5 +1,6 @@
 package io.quarkus.spring.data.deployment;
 
+import static io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
 import static java.util.stream.Collectors.toList;
 
 import java.lang.reflect.Modifier;
@@ -8,6 +9,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,6 +45,8 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
+import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
+import io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.panache.deployment.JavaJpaTypeBundle;
 import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
 
@@ -104,9 +108,12 @@ public class SpringDataJPAProcessor {
 
     @BuildStep
     void build(CombinedIndexBuildItem index,
+            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) {
 
         detectAndLogSpecificSpringPropertiesIfExist();
 
@@ -119,8 +126,11 @@ public class SpringDataJPAProcessor {
         addInterfacesExtendingIntermediateRepositories(indexView, interfacesExtendingRepository);
 
         removeNoRepositoryBeanClasses(interfacesExtendingRepository);
-        implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
+        Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
                 interfacesExtendingRepository, indexView);
+        determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, entities, "Spring Data JPA")
+                .forEach((e, pu) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu)));
+
     }
 
     private void addInterfacesExtendingIntermediateRepositories(IndexView indexView,
@@ -255,7 +265,7 @@ public class SpringDataJPAProcessor {
     }
 
     // generate a concrete class that will be used by Arc to resolve injection points
-    private void implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+    private Set<String> implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -275,8 +285,12 @@ public class SpringDataJPAProcessor {
                     reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, className));
                 }), JavaJpaTypeBundle.BUNDLE);
 
+        Set<String> entities = new HashSet<>();
         for (ClassInfo crudRepositoryToImplement : crudRepositoriesToImplement) {
-            repositoryCreator.implementCrudRepository(crudRepositoryToImplement, index);
+            var result = repositoryCreator.implementCrudRepository(crudRepositoryToImplement, index);
+            entities.add(result.getEntityDotName().toString());
         }
+        return entities;
     }
+
 }

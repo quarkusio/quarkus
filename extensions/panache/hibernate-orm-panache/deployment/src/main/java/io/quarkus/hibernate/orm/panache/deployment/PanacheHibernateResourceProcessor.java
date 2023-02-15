@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
+import static io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
 import static io.quarkus.panache.common.deployment.PanacheConstants.META_INF_PANACHE_ARCHIVE_MARKER;
 
 import java.util.Collections;
@@ -7,10 +8,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityManager;
@@ -130,7 +129,7 @@ public final class PanacheHibernateResourceProcessor {
 
         panacheEntities.addAll(modelClasses);
 
-        determinePanacheEntityPersistenceUnits(jpaModelPersistenceUnitMapping, panacheEntities)
+        determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, panacheEntities, "Panache")
                 .forEach((e, pu) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu)));
     }
 
@@ -161,44 +160,4 @@ public final class PanacheHibernateResourceProcessor {
         return null;
     }
 
-    Map<String, String> determinePanacheEntityPersistenceUnits(
-            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            Set<String> panacheEntityClasses) {
-        Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
-        if (jpaModelPersistenceUnitMapping.isPresent()) {
-            Map<String, Set<String>> collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get()
-                    .getEntityToPersistenceUnits();
-
-            Map<String, Set<String>> violatingPanacheEntities = new TreeMap<>();
-
-            for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
-                String entityName = entry.getKey();
-                Set<String> selectedPersistenceUnits = entry.getValue();
-                boolean isPanacheEntity = panacheEntityClasses.contains(entityName);
-
-                if (!isPanacheEntity) {
-                    continue;
-                }
-
-                if (selectedPersistenceUnits.size() == 1) {
-                    panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.iterator().next());
-                } else {
-                    violatingPanacheEntities.put(entityName, selectedPersistenceUnits);
-                }
-            }
-
-            if (violatingPanacheEntities.size() > 0) {
-                StringBuilder message = new StringBuilder(
-                        "Panache entities do not support being attached to several persistence units:\n");
-                for (Entry<String, Set<String>> violatingEntityEntry : violatingPanacheEntities
-                        .entrySet()) {
-                    message.append("\t- ").append(violatingEntityEntry.getKey()).append(" is attached to: ")
-                            .append(String.join(",", violatingEntityEntry.getValue()));
-                    throw new IllegalStateException(message.toString());
-                }
-            }
-        }
-
-        return panacheEntityToPersistenceUnit;
-    }
 }

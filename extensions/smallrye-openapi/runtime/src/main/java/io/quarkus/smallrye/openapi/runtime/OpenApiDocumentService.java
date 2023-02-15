@@ -84,7 +84,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
                         OpenApiDocument document = OpenApiDocument.INSTANCE;
                         document.reset();
                         document.config(openApiConfig);
-                        document.modelFromStaticFile(OpenApiProcessor.modelFromStaticFile(staticFile));
+                        document.modelFromStaticFile(OpenApiProcessor.modelFromStaticFile(openApiConfig, staticFile));
                         if (autoFilter != null) {
                             document.filter(autoFilter);
                         }
@@ -129,10 +129,10 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
             try (InputStream is = cl.getResourceAsStream(OpenApiConstants.BASE_NAME + Format.JSON)) {
                 if (is != null) {
                     try (OpenApiStaticFile staticFile = new OpenApiStaticFile(is, Format.JSON)) {
-                        this.generatedOnBuild = OpenApiProcessor.modelFromStaticFile(staticFile);
                         this.openApiConfig = new OpenApiConfigImpl(config);
                         this.userFilter = OpenApiProcessor.getFilter(openApiConfig, cl);
                         this.autoFilter = autoFilter;
+                        this.generatedOnBuild = OpenApiProcessor.modelFromStaticFile(this.openApiConfig, staticFile);
                     }
                 }
             } catch (IOException ex) {

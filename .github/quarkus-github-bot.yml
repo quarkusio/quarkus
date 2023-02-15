@@ -669,7 +669,7 @@ triage:
         - extensions/smallrye-stork/
     - id: jakarta
       labels: [area/jakarta]
-      notify: [sanne,maxandersen,gsmet,manovotn,radcortez]
+      notify: [gsmet]
       notifyInPullRequest: true
       directories:
         - jakarta/

@@ -6,6 +6,7 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAMS;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_REDIRECT_HANDLER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
@@ -316,81 +317,15 @@ class RestClientReactiveProcessor {
                 }
             }
 
-            Map<String, ClientExceptionMapperHandler.Result> ifaceToGeneratedMapper = new HashMap<>();
-            ClientExceptionMapperHandler clientExceptionMapperHandler = new ClientExceptionMapperHandler(
-                    new GeneratedClassGizmoAdaptor(generatedClasses, true));
-            for (AnnotationInstance instance : index.getAnnotations(CLIENT_EXCEPTION_MAPPER)) {
-                ClientExceptionMapperHandler.Result result = clientExceptionMapperHandler
-                        .generateResponseExceptionMapper(instance);
-                if (result == null) {
-                    continue;
-                }
-                if (ifaceToGeneratedMapper.containsKey(result.interfaceName)) {
-                    throw new IllegalStateException("Only a single instance of '" + CLIENT_EXCEPTION_MAPPER
-                            + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
-                }
-                ifaceToGeneratedMapper.put(result.interfaceName, result);
-                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, false, result.generatedClassName));
-            }
-
-            for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
-                ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-                for (AnnotationInstance value : annotationsForClass.getValue()) {
-                    String className = value.value().asString();
-                    AnnotationValue priorityAnnotationValue = value.value("priority");
-                    int priority;
-                    if (priorityAnnotationValue == null) {
-                        priority = getAnnotatedPriority(index, className, Priorities.USER);
-                    } else {
-                        priority = priorityAnnotationValue.asInt();
-                    }
-
-                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClassFromTCCL(className),
-                            constructor.load(priority));
-                }
-                String ifaceName = annotationsForClass.getKey();
-                if (ifaceToGeneratedMapper.containsKey(ifaceName)) {
-                    // remove the interface from the generated mapper since it's going to be handled now
-                    // the remaining entries will be handled later
-                    ClientExceptionMapperHandler.Result result = ifaceToGeneratedMapper.remove(ifaceName);
-                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(result.generatedClassName),
-                            constructor.load(result.priority));
-                }
-                constructor.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
-                                Map.class),
-                        constructor.getThis(), constructor.load(ifaceName), map);
-            }
-            // add the remaining generated mappers
-            for (Map.Entry<String, ClientExceptionMapperHandler.Result> entry : ifaceToGeneratedMapper.entrySet()) {
-                ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-                constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(entry.getValue().generatedClassName),
-                        constructor.load(entry.getValue().priority));
-                constructor.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
-                                Map.class),
-                        constructor.getThis(), constructor.load(entry.getKey()), map);
-            }
+            Map<String, GeneratedClassResult> generatedProviders = new HashMap<>();
+            populateClientExceptionMapperFromAnnotations(generatedClasses, reflectiveClasses, index, generatedProviders);
+            populateClientRedirectHandlerFromAnnotations(generatedClasses, reflectiveClasses, index, generatedProviders);
+            addGeneratedProviders(index, constructor, annotationsByClassName, generatedProviders);
 
             constructor.returnValue(null);
         }
 
         unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(annotationRegisteredProvidersImpl));
-    }
-
-    private int getAnnotatedPriority(IndexView index, String className, int defaultPriority) {
-        ClassInfo providerClass = index.getClassByName(DotName.createSimple(className));
-        int priority = defaultPriority;
-        if (providerClass == null) {
-            log.warnv("Unindexed provider class {0}. The priority of the provider will be set to {1}. ", className,
-                    defaultPriority);
-        } else {
-            AnnotationInstance priorityAnnoOnProvider = providerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
-            if (priorityAnnoOnProvider != null) {
-                priority = priorityAnnoOnProvider.value().asInt();
-            }
-        }
-        return priority;
     }
 
     @BuildStep
@@ -555,6 +490,108 @@ class RestClientReactiveProcessor {
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);
         }
+    }
+
+    private void populateClientExceptionMapperFromAnnotations(BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index,
+            Map<String, GeneratedClassResult> generatedProviders) {
+
+        ClientExceptionMapperHandler clientExceptionMapperHandler = new ClientExceptionMapperHandler(
+                new GeneratedClassGizmoAdaptor(generatedClasses, true));
+        for (AnnotationInstance instance : index.getAnnotations(CLIENT_EXCEPTION_MAPPER)) {
+            GeneratedClassResult result = clientExceptionMapperHandler.generateResponseExceptionMapper(instance);
+            if (result == null) {
+                continue;
+            }
+            if (generatedProviders.containsKey(result.interfaceName)) {
+                throw new IllegalStateException("Only a single instance of '" + CLIENT_EXCEPTION_MAPPER
+                        + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
+            }
+            generatedProviders.put(result.interfaceName, result);
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, false, result.generatedClassName));
+        }
+    }
+
+    private void populateClientRedirectHandlerFromAnnotations(BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index,
+            Map<String, GeneratedClassResult> generatedProviders) {
+
+        ClientRedirectHandler clientHandler = new ClientRedirectHandler(new GeneratedClassGizmoAdaptor(generatedClasses, true));
+        for (AnnotationInstance instance : index.getAnnotations(CLIENT_REDIRECT_HANDLER)) {
+            GeneratedClassResult result = clientHandler.generateResponseExceptionMapper(instance);
+            if (result == null) {
+                continue;
+            }
+
+            GeneratedClassResult existing = generatedProviders.get(result.interfaceName);
+            if (existing != null && existing.priority == result.priority) {
+                throw new IllegalStateException("Only a single instance of '" + CLIENT_REDIRECT_HANDLER
+                        + "' with the same priority is allowed per REST Client interface. "
+                        + "Offending class is '" + result.interfaceName + "'");
+            } else if (existing == null || existing.priority < result.priority) {
+                generatedProviders.put(result.interfaceName, result);
+                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, false, result.generatedClassName));
+            }
+        }
+    }
+
+    private void addGeneratedProviders(IndexView index, MethodCreator constructor,
+            Map<String, List<AnnotationInstance>> annotationsByClassName,
+            Map<String, GeneratedClassResult> generatedProviders) {
+        for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
+            ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+            for (AnnotationInstance value : annotationsForClass.getValue()) {
+                String className = value.value().asString();
+                AnnotationValue priorityAnnotationValue = value.value("priority");
+                int priority;
+                if (priorityAnnotationValue == null) {
+                    priority = getAnnotatedPriority(index, className, Priorities.USER);
+                } else {
+                    priority = priorityAnnotationValue.asInt();
+                }
+
+                constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClassFromTCCL(className),
+                        constructor.load(priority));
+            }
+            String ifaceName = annotationsForClass.getKey();
+            if (generatedProviders.containsKey(ifaceName)) {
+                // remove the interface from the generated provider since it's going to be handled now
+                // the remaining entries will be handled later
+                GeneratedClassResult result = generatedProviders.remove(ifaceName);
+                constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(result.generatedClassName),
+                        constructor.load(result.priority));
+            }
+            addProviders(constructor, ifaceName, map);
+        }
+
+        for (Map.Entry<String, GeneratedClassResult> entry : generatedProviders.entrySet()) {
+            ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+            constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(entry.getValue().generatedClassName),
+                    constructor.load(entry.getValue().priority));
+            addProviders(constructor, entry.getKey(), map);
+        }
+    }
+
+    private void addProviders(MethodCreator constructor, String providerClass, ResultHandle map) {
+        constructor.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
+                        Map.class),
+                constructor.getThis(), constructor.load(providerClass), map);
+    }
+
+    private int getAnnotatedPriority(IndexView index, String className, int defaultPriority) {
+        ClassInfo providerClass = index.getClassByName(DotName.createSimple(className));
+        int priority = defaultPriority;
+        if (providerClass == null) {
+            log.warnv("Unindexed provider class {0}. The priority of the provider will be set to {1}. ", className,
+                    defaultPriority);
+        } else {
+            AnnotationInstance priorityAnnoOnProvider = providerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+            if (priorityAnnoOnProvider != null) {
+                priority = priorityAnnoOnProvider.value().asInt();
+            }
+        }
+        return priority;
     }
 
     // By default, Kotlin does not use Java interface default methods, but generates a helper class that contains the implementation.

@@ -19,8 +19,12 @@ public class RedirectTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(RedirectingResourceClient.class, RedirectingResourceWithCustomRedirectHandlerClient.class,
-                            EnablePostRedirectHandler.class, RedirectingResource.class));
+                    .addClasses(RedirectingResourceClient.class,
+                            RedirectingResourceWithRegisterProviderRedirectHandlerClient.class,
+                            RedirectingResourceWithRedirectHandlerAnnotationClient.class,
+                            RedirectingResourceWithSeveralRedirectHandlerAnnotationsClient.class,
+                            EnablePostRedirectHandler.class,
+                            RedirectingResource.class));
 
     @TestHTTPResource
     URI uri;
@@ -69,12 +73,32 @@ public class RedirectTest {
     }
 
     @Test
-    void shouldRedirectWhenAnnotatedUsingCustomRedirectHandlerOnPostMethods() {
+    void shouldRedirectWhenRegisterProviderUsingCustomRedirectHandlerOnPostMethods() {
         RedirectingResourceClient client = RestClientBuilder.newBuilder()
                 .baseUri(uri)
                 // this property should be ignored in POST
                 .followRedirects(true)
-                .build(RedirectingResourceWithCustomRedirectHandlerClient.class);
+                .build(RedirectingResourceWithRegisterProviderRedirectHandlerClient.class);
         assertThat(client.post().getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void shouldRedirectWhenAnnotatedClientRedirectHandlerOnPostMethods() {
+        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+                .baseUri(uri)
+                // this property should be ignored in POST
+                .followRedirects(true)
+                .build(RedirectingResourceWithRedirectHandlerAnnotationClient.class);
+        assertThat(client.post().getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void shouldNotRedirectWhenARedirectHandlerWithMorePriorityIsUsed() {
+        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+                .baseUri(uri)
+                // this property should be ignored in POST
+                .followRedirects(true)
+                .build(RedirectingResourceWithSeveralRedirectHandlerAnnotationsClient.class);
+        assertThat(client.post().getStatus()).isEqualTo(307);
     }
 }

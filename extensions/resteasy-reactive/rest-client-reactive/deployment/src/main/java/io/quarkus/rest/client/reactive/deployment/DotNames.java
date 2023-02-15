@@ -15,6 +15,7 @@ import org.jboss.jandex.DotName;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.ClientQueryParam;
 import io.quarkus.rest.client.reactive.ClientQueryParams;
+import io.quarkus.rest.client.reactive.ClientRedirectHandler;
 
 public class DotNames {
 
@@ -29,6 +30,7 @@ public class DotNames {
     public static final DotName CLIENT_REQUEST_FILTER = DotName.createSimple(ClientRequestFilter.class.getName());
     public static final DotName CLIENT_RESPONSE_FILTER = DotName.createSimple(ClientResponseFilter.class.getName());
     public static final DotName CLIENT_EXCEPTION_MAPPER = DotName.createSimple(ClientExceptionMapper.class.getName());
+    public static final DotName CLIENT_REDIRECT_HANDLER = DotName.createSimple(ClientRedirectHandler.class.getName());
 
     static final DotName METHOD = DotName.createSimple(Method.class.getName());
 

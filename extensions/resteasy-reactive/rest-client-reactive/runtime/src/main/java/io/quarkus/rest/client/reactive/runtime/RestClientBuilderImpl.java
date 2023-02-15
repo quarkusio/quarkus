@@ -27,6 +27,7 @@ import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
+import org.jboss.resteasy.reactive.client.handlers.RedirectHandler;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -50,6 +51,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private final ClientBuilderImpl clientBuilder = (ClientBuilderImpl) new ClientBuilderImpl()
             .withConfig(new ConfigurationImpl(RuntimeType.CLIENT));
     private final List<ResponseExceptionMapper<?>> exceptionMappers = new ArrayList<>();
+    private final List<RedirectHandler> redirectHandlers = new ArrayList<>();
     private final List<ParamConverterProvider> paramConverterProviders = new ArrayList<>();
 
     private URI uri;
@@ -307,6 +309,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
 
         exceptionMappers.sort(Comparator.comparingInt(ResponseExceptionMapper::getPriority));
+        redirectHandlers.sort(Comparator.comparingInt(RedirectHandler::getPriority));
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
         clientBuilder.followRedirects(followRedirects);
 

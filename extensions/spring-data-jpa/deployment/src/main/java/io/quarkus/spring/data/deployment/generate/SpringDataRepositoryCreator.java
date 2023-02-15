@@ -54,10 +54,11 @@ public class SpringDataRepositoryCreator {
                 typeBundle);
     }
 
-    public void implementCrudRepository(ClassInfo repositoryToImplement, IndexView indexView) {
+    public Result implementCrudRepository(ClassInfo repositoryToImplement, IndexView indexView) {
         Map.Entry<DotName, DotName> extraTypesResult = extractIdAndEntityTypes(repositoryToImplement, indexView);
 
-        String idTypeStr = extraTypesResult.getKey().toString();
+        DotName idTypeDotName = extraTypesResult.getKey();
+        String idTypeStr = idTypeDotName.toString();
         DotName entityDotName = extraTypesResult.getValue();
         String entityTypeStr = entityDotName.toString();
 
@@ -118,6 +119,8 @@ public class SpringDataRepositoryCreator {
             customQueryMethodsAdder.add(classCreator, entityClassFieldCreator.getFieldDescriptor(),
                     repositoryToImplement, entityClassInfo, idTypeStr);
         }
+
+        return new Result(entityDotName, idTypeDotName, generatedClassName);
     }
 
     private Map.Entry<DotName, DotName> extractIdAndEntityTypes(ClassInfo repositoryToImplement, IndexView indexView) {
@@ -183,6 +186,30 @@ public class SpringDataRepositoryCreator {
             customImplNameToFieldDescriptor.put(customImplClassName,
                     customClassField.getFieldDescriptor());
             i++;
+        }
+    }
+
+    public static final class Result {
+        final DotName entityDotName;
+        final DotName idTypeDotName;
+        final String generatedClassName;
+
+        Result(DotName entityDotName, DotName idTypeDotName, String generatedClassName) {
+            this.entityDotName = entityDotName;
+            this.idTypeDotName = idTypeDotName;
+            this.generatedClassName = generatedClassName;
+        }
+
+        public DotName getEntityDotName() {
+            return entityDotName;
+        }
+
+        public DotName getIdTypeDotName() {
+            return idTypeDotName;
+        }
+
+        public String getGeneratedClassName() {
+            return generatedClassName;
         }
     }
 }

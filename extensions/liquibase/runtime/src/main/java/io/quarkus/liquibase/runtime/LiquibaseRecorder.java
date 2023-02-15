@@ -1,19 +1,18 @@
 package io.quarkus.liquibase.runtime;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import javax.sql.DataSource;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -23,29 +22,27 @@ import liquibase.lockservice.LockServiceFactory;
 @Recorder
 public class LiquibaseRecorder {
 
-    private static final Logger log = Logger.getLogger(LiquibaseRecorder.class);
-
     private final RuntimeValue<LiquibaseRuntimeConfig> config;
 
     public LiquibaseRecorder(RuntimeValue<LiquibaseRuntimeConfig> config) {
         this.config = config;
     }
 
-    public Supplier<LiquibaseFactory> liquibaseSupplier(String dataSourceName) {
+    public Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory> liquibaseFunction(String dataSourceName) {
         DataSource dataSource = DataSources.fromName(dataSourceName);
         if (dataSource instanceof UnconfiguredDataSource) {
-            return new Supplier<LiquibaseFactory>() {
+            return new Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory>() {
                 @Override
-                public LiquibaseFactory get() {
+                public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
                     throw new UnsatisfiedResolutionException("No datasource has been configured");
                 }
             };
         }
-        LiquibaseFactoryProducer liquibaseProducer = Arc.container().instance(LiquibaseFactoryProducer.class).get();
-        LiquibaseFactory liquibaseFactory = liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
-        return new Supplier<LiquibaseFactory>() {
+        return new Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory>() {
             @Override
-            public LiquibaseFactory get() {
+            public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
+                LiquibaseFactoryProducer liquibaseProducer = context.getInjectedReference(LiquibaseFactoryProducer.class);
+                LiquibaseFactory liquibaseFactory = liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
                 return liquibaseFactory;
             }
         };

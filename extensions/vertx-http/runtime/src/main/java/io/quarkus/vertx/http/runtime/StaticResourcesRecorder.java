@@ -10,6 +10,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.impl.MimeMapping;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
@@ -108,6 +109,10 @@ public class StaticResourcesRecorder {
 
             @Override
             public void accept(Route route) {
+                // Restrict the route for static resources to HEAD and GET
+                // No other HTTP methods should be used
+                route.method(HttpMethod.GET);
+                route.method(HttpMethod.HEAD);
                 for (Handler<RoutingContext> i : handlers) {
                     route.handler(i);
                 }

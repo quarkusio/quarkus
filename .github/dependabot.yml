@@ -168,11 +168,9 @@ updates:
       - dependency-name: com.github.javaparser:javaparser-core
       - dependency-name: com.h2database:h2
       - dependency-name: io.github.crac:org-crac
-      # Jakarta 9/10 preparation
       - dependency-name: jakarta.*:*
       - dependency-name: org.eclipse.*:*
-      - dependency-name: org.glassfish.expressly:expressly
-      - dependency-name: com.sun.xml.bind:jaxb-impl
+      - dependency-name: org.glassfish.*:*
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues

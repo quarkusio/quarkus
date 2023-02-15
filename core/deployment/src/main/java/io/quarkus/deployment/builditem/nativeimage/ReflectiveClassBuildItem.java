@@ -19,19 +19,21 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean constructors;
     private final boolean weak;
     private final boolean serialization;
+    private final boolean unsafeAllocated;
 
-    public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... className) {
-        this(true, methods, fields, className);
+    public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... classes) {
+        this(true, methods, fields, classes);
     }
 
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... className) {
-        this(constructors, methods, fields, false, false, className);
+    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
+        this(constructors, methods, fields, false, false, false, classes);
     }
 
     private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization,
-            Class<?>... className) {
+            boolean unsafeAllocated,
+            Class<?>... classes) {
         List<String> names = new ArrayList<>();
-        for (Class<?> i : className) {
+        for (Class<?> i : classes) {
             if (i == null) {
                 throw new NullPointerException();
             }
@@ -43,6 +45,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.constructors = constructors;
         this.weak = weak;
         this.serialization = serialization;
+        this.unsafeAllocated = unsafeAllocated;
         if (weak && serialization) {
             throw new RuntimeException("Weak reflection not supported with serialization");
         }
@@ -53,12 +56,12 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     }
 
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, String... className) {
-        this(constructors, methods, fields, false, false, className);
+        this(constructors, methods, fields, false, false, false, className);
     }
 
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean serialization,
             String... className) {
-        this(constructors, methods, fields, false, serialization, className);
+        this(constructors, methods, fields, false, serialization, false, className);
     }
 
     public static ReflectiveClassBuildItem weakClass(String... className) {
@@ -67,14 +70,19 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     public static ReflectiveClassBuildItem weakClass(boolean constructors, boolean methods, boolean fields,
             String... className) {
-        return new ReflectiveClassBuildItem(constructors, methods, fields, true, false, className);
+        return new ReflectiveClassBuildItem(constructors, methods, fields, true, false, false, className);
     }
 
     public static ReflectiveClassBuildItem serializationClass(String... className) {
-        return new ReflectiveClassBuildItem(false, false, false, false, true, className);
+        return serializationClass(false, className);
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization,
+    public static ReflectiveClassBuildItem serializationClass(boolean unsafeAllocated, String... className) {
+        return new ReflectiveClassBuildItem(false, false, false, false, true, unsafeAllocated, className);
+    }
+
+    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization,
+            boolean unsafeAllocated,
             String... className) {
         for (String i : className) {
             if (i == null) {
@@ -87,6 +95,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.constructors = constructors;
         this.weak = weak;
         this.serialization = serialization;
+        this.unsafeAllocated = unsafeAllocated;
     }
 
     public List<String> getClassNames() {
@@ -122,6 +131,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return serialization;
     }
 
+    public boolean isUnsafeAllocated() {
+        return unsafeAllocated;
+    }
+
     public static Builder builder(Class<?>... className) {
         String[] classNameStrings = stream(className)
                 .map(aClass -> {
@@ -148,6 +161,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         private boolean fields;
         private boolean weak;
         private boolean serialization;
+        private boolean unsafeAllocated;
 
         private Builder() {
         }
@@ -191,8 +205,13 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public Builder unsafeAllocated(boolean unsafeAllocated) {
+            this.unsafeAllocated = unsafeAllocated;
+            return this;
+        }
+
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, methods, fields, weak, serialization, className);
+            return new ReflectiveClassBuildItem(constructors, methods, fields, weak, serialization, unsafeAllocated, className);
         }
     }
 }

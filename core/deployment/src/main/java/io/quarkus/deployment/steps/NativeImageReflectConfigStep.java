@@ -41,7 +41,7 @@ public class NativeImageReflectConfigStep {
         }
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
             addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i.isConstructors(), i.isMethods(), i.isFields(),
-                    i.isWeak(), i.isSerialization(), i.getClassNames().toArray(new String[0]));
+                    i.isWeak(), i.isSerialization(), i.isUnsafeAllocated(), i.getClassNames().toArray(new String[0]));
         }
         for (ReflectiveFieldBuildItem i : reflectiveFields) {
             addReflectiveField(reflectiveClasses, i);
@@ -51,7 +51,7 @@ public class NativeImageReflectConfigStep {
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false,
+            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false, false,
                     i.providers().toArray(new String[] {}));
         }
 
@@ -114,6 +114,9 @@ public class NativeImageReflectConfigStep {
                 }
                 json.put("fields", fieldsArray);
             }
+            if (info.unsafeAllocated) {
+                json.put("unsafeAllocated", true);
+            }
 
             root.add(json);
         }
@@ -142,14 +145,14 @@ public class NativeImageReflectConfigStep {
 
     public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,
             boolean constructors, boolean method,
-            boolean fields, boolean weak, boolean serialization,
+            boolean fields, boolean weak, boolean serialization, boolean unsafeAllocated,
             String... className) {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
                 String typeReachable = (!forcedNonWeakClasses.contains(cl) && weak) ? cl : null;
                 reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields,
-                        typeReachable, serialization));
+                        typeReachable, serialization, unsafeAllocated));
             } else {
                 if (constructors) {
                     existing.constructors = true;
@@ -162,6 +165,9 @@ public class NativeImageReflectConfigStep {
                 }
                 if (serialization) {
                     existing.serialization = true;
+                }
+                if (unsafeAllocated) {
+                    existing.unsafeAllocated = true;
                 }
             }
         }
@@ -181,22 +187,24 @@ public class NativeImageReflectConfigStep {
         boolean methods;
         boolean fields;
         boolean serialization;
+        boolean unsafeAllocated;
         String typeReachable;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
         private ReflectionInfo() {
-            this(false, false, false, null, false);
+            this(false, false, false, null, false, false);
         }
 
         private ReflectionInfo(boolean constructors, boolean methods, boolean fields, String typeReachable,
-                boolean serialization) {
+                boolean serialization, boolean unsafeAllocated) {
             this.methods = methods;
             this.fields = fields;
             this.typeReachable = typeReachable;
             this.constructors = constructors;
             this.serialization = serialization;
+            this.unsafeAllocated = unsafeAllocated;
         }
     }
 

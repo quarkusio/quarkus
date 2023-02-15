@@ -1173,6 +1173,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 nonDefaultConstructorHandles[i] = loadObjectInstance(obj, existing,
                         parameterTypes[count++], relaxedValidation);
             }
+            if (nonDefaultConstructorHolder.constructor.getParameterCount() > 0) {
+                Parameter[] parameters = nonDefaultConstructorHolder.constructor.getParameters();
+                for (int i = 0; i < parameters.length; ++i) {
+                    String name = parameters[i].getName();
+                    constructorParamNameMap.put(name, i);
+                }
+            }
         } else if (classesToUseRecordableConstructor.contains(param.getClass())) {
             Constructor<?> current = null;
             int count = 0;
@@ -1191,25 +1198,34 @@ public class BytecodeRecorderImpl implements RecorderContext {
             nonDefaultConstructorHandles = new DeferredParameter[current.getParameterCount()];
             if (current.getParameterCount() > 0) {
                 Parameter[] parameters = current.getParameters();
-                for (int i = 0; i < current.getParameterCount(); ++i) {
+                for (int i = 0; i < parameters.length; ++i) {
                     String name = parameters[i].getName();
                     constructorParamNameMap.put(name, i);
                 }
             }
         } else {
-            for (Constructor<?> ctor : param.getClass().getConstructors()) {
+            Constructor<?>[] ctors = param.getClass().getConstructors();
+            Constructor<?> selectedCtor = null;
+            if (ctors.length == 1) {
+                // if there is a single constructor we use it regardless of the presence of @RecordableConstructor annotation
+                selectedCtor = ctors[0];
+            }
+            for (Constructor<?> ctor : ctors) {
                 if (RecordingAnnotationsUtil.isRecordableConstructor(ctor)) {
-                    nonDefaultConstructorHolder = new NonDefaultConstructorHolder(ctor, null);
-                    nonDefaultConstructorHandles = new DeferredParameter[ctor.getParameterCount()];
-
-                    if (ctor.getParameterCount() > 0) {
-                        Parameter[] ctorParameters = ctor.getParameters();
-                        for (int i = 0; i < ctor.getParameterCount(); ++i) {
-                            String name = ctorParameters[i].getName();
-                            constructorParamNameMap.put(name, i);
-                        }
-                    }
+                    selectedCtor = ctor;
                     break;
+                }
+            }
+            if (selectedCtor != null) {
+                nonDefaultConstructorHolder = new NonDefaultConstructorHolder(selectedCtor, null);
+                nonDefaultConstructorHandles = new DeferredParameter[selectedCtor.getParameterCount()];
+
+                if (selectedCtor.getParameterCount() > 0) {
+                    Parameter[] ctorParameters = selectedCtor.getParameters();
+                    for (int i = 0; i < ctorParameters.length; ++i) {
+                        String name = ctorParameters[i].getName();
+                        constructorParamNameMap.put(name, i);
+                    }
                 }
             }
         }

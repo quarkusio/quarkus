@@ -339,6 +339,19 @@ public class ExtensionsResourceTest {
 
 The code above uses link:https://rest-assured.io/[REST Assured]'s link:https://github.com/rest-assured/rest-assured/wiki/GettingStarted#jsonpath[json-path] capabilities.
 
+[#redirection]
+== Redirection
+
+A HTTP server can redirect a response to another location by sending a response with a status code that starts with "3" and a HTTP header "Location" holding the URL to be redirected to. When the REST Client receives a redirection response from a HTTP server, it won't automatically perform another request to the new location. However, you can enable the automatic redirection by enabling the "follow-redirects" property:
+
+- `quarkus.rest-client.follow-redirects` to enable redirection for all REST clients.
+- `quarkus.rest-client.<client-prefix>.follow-redirects` to enable redirection for a specific REST client.
+
+If this property is true, then REST Client will perform a new request that it receives a redirection response from the HTTP server. 
+
+Additionally, we can limit the number of redirections using the property "max-redirects".
+
+One important note is that according to the https://www.rfc-editor.org/rfc/rfc2616#section-10.3.8[RFC2616] specs, by default the redirection will only happen for GET or HEAD methods. 
 
 == Async Support
 

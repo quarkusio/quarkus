@@ -104,6 +104,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier1.class));
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_TTL, 10); // value converted to seconds
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 103);
+        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.KEEP_ALIVE_ENABLED, false);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MAX_REDIRECTS, 104);
         Mockito.verify(restClientBuilderMock).followRedirects(true);
         Mockito.verify(restClientBuilderMock).register(MyResponseFilter1.class);
@@ -146,6 +147,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier2.class));
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_TTL, 20);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 203);
+        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.KEEP_ALIVE_ENABLED, true);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MAX_REDIRECTS, 204);
         Mockito.verify(restClientBuilderMock).followRedirects(true);
         Mockito.verify(restClientBuilderMock).register(MyResponseFilter2.class);
@@ -175,6 +177,7 @@ public class RestClientCDIDelegateBuilderTest {
                 .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyHostnameVerifier2");
         configRoot.connectionTTL = Optional.of(20000); // value in ms, will be converted to seconds
         configRoot.connectionPoolSize = Optional.of(203);
+        configRoot.keepAliveEnabled = Optional.of(true);
         configRoot.maxRedirects = Optional.of(204);
         configRoot.followRedirects = Optional.of(true);
         configRoot.providers = Optional
@@ -213,6 +216,7 @@ public class RestClientCDIDelegateBuilderTest {
                 .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyHostnameVerifier1");
         clientConfig.connectionTTL = Optional.of(10000); // value in milliseconds, will be converted to seconds
         clientConfig.connectionPoolSize = Optional.of(103);
+        clientConfig.keepAliveEnabled = Optional.of(false);
         clientConfig.maxRedirects = Optional.of(104);
         clientConfig.followRedirects = Optional.of(true);
         clientConfig.providers = Optional

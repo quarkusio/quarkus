@@ -68,6 +68,7 @@ public class GlobalConfigurationTest {
                 .isEqualTo("io.quarkus.rest.client.reactive.HelloClientWithBaseUri$MyHostnameVerifier");
         assertThat(configRoot.connectionTTL.get()).isEqualTo(20000); // value in ms, will be converted to seconds
         assertThat(configRoot.connectionPoolSize.get()).isEqualTo(2);
+        assertThat(configRoot.keepAliveEnabled.get()).isTrue();
         assertThat(configRoot.maxRedirects.get()).isEqualTo(2);
         assertThat(configRoot.followRedirects.get()).isTrue();
         assertThat(configRoot.providers.get())

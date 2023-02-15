@@ -169,6 +169,14 @@ public class RestClientsConfig {
     public Optional<Integer> connectionPoolSize;
 
     /**
+     * If set to false disables the keep alive completely.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem(defaultValue = "true")
+    public Optional<Boolean> keepAliveEnabled;
+
+    /**
      * The maximum number of redirection a request can follow.
      *
      * Can be overwritten by client-specific settings.

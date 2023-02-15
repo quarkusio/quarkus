@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.client.impl;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_POOL_SIZE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_TTL;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.KEEP_ALIVE_ENABLED;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_HEADER_SIZE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_INITIAL_LINE_LENGTH;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_REDIRECTS;
@@ -153,6 +154,16 @@ public class ClientImpl implements Client {
             log.debugf("Setting connectionPoolSize to %d", connectionPoolSize);
         }
         options.setMaxPoolSize((int) connectionPoolSize);
+
+        Object keepAliveEnabled = configuration.getProperty(KEEP_ALIVE_ENABLED);
+        if (keepAliveEnabled != null) {
+            Boolean enabled = (Boolean) keepAliveEnabled;
+            options.setKeepAlive(enabled);
+
+            if (!enabled) {
+                log.debug("keep alive disabled");
+            }
+        }
 
         if (loggingScope == LoggingScope.ALL) {
             options.setLogActivity(true);

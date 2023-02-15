@@ -2,8 +2,6 @@ package io.quarkus.deployment.steps;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -78,8 +76,6 @@ public class NativeImageFeatureStep {
             "findModule", Module.class, String.class);
     private static final MethodDescriptor INVOKE = ofMethod(
             Method.class, "invoke", Object.class, Object.class, Object[].class);
-    static final String LEGACY_JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
-    static final String JNI_RUNTIME_ACCESS = "org.graalvm.nativeimage.hosted.RuntimeJNIAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
@@ -124,8 +120,7 @@ public class NativeImageFeatureStep {
             List<NativeImageResourcePatternsBuildItem> resourcePatterns,
             List<NativeImageResourceBundleBuildItem> resourceBundles,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
-            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
-            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
+            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields) {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
@@ -436,82 +431,6 @@ public class NativeImageFeatureStep {
 
             registerResourceBundles.returnVoid();
             overallCatch.invokeStaticMethod(registerResourceBundles.getMethodDescriptor());
-        }
-        int count = 0;
-
-        for (JniRuntimeAccessBuildItem jniAccessible : jniRuntimeAccessibleClasses) {
-            for (String className : jniAccessible.getClassNames()) {
-                MethodCreator mv = file.getMethodCreator("registerJniAccessibleClass" + count++, "V");
-                mv.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-                overallCatch.invokeStaticMethod(mv.getMethodDescriptor());
-
-                TryBlock tc = mv.tryBlock();
-
-                ResultHandle clazz = tc.loadClassFromTCCL(className);
-                //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
-                ResultHandle constructors = tc
-                        .invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
-                ResultHandle methods = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class),
-                        clazz);
-                ResultHandle fields = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
-
-                ResultHandle carray = tc.newArray(Class.class, tc.load(1));
-                tc.writeArrayValue(carray, 0, clazz);
-
-                BranchResult graalVm22_3Test = tc.ifGreaterEqualZero(tc.invokeVirtualMethod(VERSION_COMPARE_TO,
-                        tc.invokeStaticMethod(VERSION_CURRENT), tc.marshalAsArray(int.class, tc.load(22), tc.load(3))));
-                /* GraalVM >= 22.3 */
-                try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
-                    greaterThan22_2.invokeStaticMethod(ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
-                            carray);
-
-                    if (jniAccessible.isConstructors()) {
-                        greaterThan22_2.invokeStaticMethod(
-                                ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
-                                constructors);
-                    }
-
-                    if (jniAccessible.isMethods()) {
-                        greaterThan22_2.invokeStaticMethod(
-                                ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
-                                methods);
-                    }
-
-                    if (jniAccessible.isFields()) {
-                        greaterThan22_2.invokeStaticMethod(
-                                ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Field[].class),
-                                fields);
-                    }
-                }
-                /* GraalVM < 22.3 */
-                try (BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch()) {
-                    smallerThan22_3.invokeStaticMethod(
-                            ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
-                            carray);
-
-                    if (jniAccessible.isConstructors()) {
-                        smallerThan22_3.invokeStaticMethod(
-                                ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
-                                constructors);
-                    }
-
-                    if (jniAccessible.isMethods()) {
-                        smallerThan22_3.invokeStaticMethod(
-                                ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
-                                methods);
-                    }
-
-                    if (jniAccessible.isFields()) {
-                        smallerThan22_3.invokeStaticMethod(
-                                ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, boolean.class, Field[].class),
-                                smallerThan22_3.load(jniAccessible.isFinalFieldsWriteable()), fields);
-                    }
-                }
-
-                CatchBlockCreator cc = tc.addCatch(Throwable.class);
-                //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-                mv.returnValue(null);
-            }
         }
 
         CatchBlockCreator print = overallCatch.addCatch(Throwable.class);

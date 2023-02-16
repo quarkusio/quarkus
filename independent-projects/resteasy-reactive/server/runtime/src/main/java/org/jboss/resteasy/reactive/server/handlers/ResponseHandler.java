@@ -76,7 +76,7 @@ public class ResponseHandler implements ServerRestHandler {
                 mediaTypeAlreadyExists = true;
             }
             EncodedMediaType produces = requestContext.getResponseContentType();
-            if (!mediaTypeAlreadyExists && produces != null) {
+            if (!mediaTypeAlreadyExists && (produces != null) && (responseBuilder.getEntity() != null)) {
                 responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
             }
             if ((responseBuilder instanceof ResponseBuilderImpl)) {
@@ -122,7 +122,7 @@ public class ResponseHandler implements ServerRestHandler {
                 mediaTypeAlreadyExists = true;
             }
             EncodedMediaType produces = requestContext.getResponseContentType();
-            if (!mediaTypeAlreadyExists && produces != null) {
+            if (!mediaTypeAlreadyExists && (produces != null) && (responseBuilder.getEntity() != null)) {
                 responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
             }
             if ((responseBuilder instanceof ResponseBuilderImpl)) {
@@ -141,21 +141,23 @@ public class ResponseHandler implements ServerRestHandler {
                 @Override
                 public Response get() {
                     if (response == null) {
-                        Response.ResponseBuilder responseBuilder;
+                        ResponseBuilderImpl responseBuilder;
                         if (result instanceof GenericEntity) {
                             GenericEntity<?> genericEntity = (GenericEntity<?>) result;
                             requestContext.setGenericReturnType(genericEntity.getType());
-                            responseBuilder = ResponseImpl.ok(genericEntity.getEntity());
+                            responseBuilder = (ResponseBuilderImpl) ResponseImpl.ok(genericEntity.getEntity());
                         } else if (result == null) {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = ResponseImpl.noContent();
+                            responseBuilder = (ResponseBuilderImpl) ResponseImpl.noContent();
                         } else {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = ResponseImpl.ok(result);
+                            responseBuilder = (ResponseBuilderImpl) ResponseImpl.ok(result);
                         }
-                        EncodedMediaType produces = requestContext.getResponseContentType();
-                        if (produces != null) {
-                            responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
+                        if (responseBuilder.getEntity() != null) {
+                            EncodedMediaType produces = requestContext.getResponseContentType();
+                            if (produces != null) {
+                                responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
+                            }
                         }
                         if (!responseBuilderCustomizers.isEmpty()) {
                             for (int i = 0; i < responseBuilderCustomizers.size(); i++) {

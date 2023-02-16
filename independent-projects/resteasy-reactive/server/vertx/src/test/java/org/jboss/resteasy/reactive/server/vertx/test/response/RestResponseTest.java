@@ -29,6 +29,14 @@ public class RestResponseTest {
                 .then().statusCode(200)
                 .and().body(Matchers.equalTo("Hello"))
                 .and().contentType("text/plain");
+        RestAssured.get("/rest-response-empty")
+                .then().statusCode(499)
+                .and().body(Matchers.is(Matchers.emptyOrNullString()))
+                .and().contentType(Matchers.is(Matchers.emptyOrNullString()));
+        RestAssured.get("/response-empty")
+                .then().statusCode(499)
+                .and().body(Matchers.is(Matchers.emptyOrNullString()))
+                .and().contentType(Matchers.is(Matchers.emptyOrNullString()));
         RestAssured.get("/rest-response-wildcard")
                 .then().statusCode(200)
                 .and().body(Matchers.equalTo("Hello"))

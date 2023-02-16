@@ -2,7 +2,9 @@ package io.quarkus.hibernate.reactive.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import jakarta.enterprise.inject.CreationException;
 import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.SessionFactory;
@@ -30,7 +32,8 @@ public class ConfigActiveFalseAndEntityTest {
         // So the bean cannot be null.
         assertThat(entityManagerFactory).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        assertThatThrownBy(entityManagerFactory::getMetamodel)
+        CreationException e = assertThrows(CreationException.class, () -> entityManagerFactory.getMetamodel());
+        assertThat(e.getCause())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll(
                         "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit default-reactive",
@@ -46,7 +49,8 @@ public class ConfigActiveFalseAndEntityTest {
         // So the bean cannot be null.
         assertThat(sessionFactory).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        assertThatThrownBy(sessionFactory::getMetamodel)
+        CreationException e = assertThrows(CreationException.class, () -> sessionFactory.getMetamodel());
+        assertThat(e.getCause())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll(
                         "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit default-reactive",

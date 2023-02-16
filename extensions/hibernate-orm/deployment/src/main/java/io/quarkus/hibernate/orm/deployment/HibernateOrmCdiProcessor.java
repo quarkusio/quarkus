@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,6 +13,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Type;
@@ -23,10 +23,13 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -34,7 +37,9 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
+import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 
 @BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public class HibernateOrmCdiProcessor {
@@ -113,6 +118,7 @@ public class HibernateOrmCdiProcessor {
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             ImpliedBlockingPersistenceUnitTypeBuildItem impliedBlockingPersistenceUnitType,
             List<JdbcDataSourceBuildItem> jdbcDataSources, // just make sure the datasources are initialized
+            Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         if (persistenceUnitDescriptors.isEmpty()) {
@@ -127,17 +133,22 @@ public class HibernateOrmCdiProcessor {
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
                             true, true,
-                            SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES,
-                            recorder.sessionFactorySupplier(persistenceUnitName),
-                            true));
+                            SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES, true)
+                            .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
+                            .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
+                            .done());
 
-            syntheticBeanBuildItemBuildProducer
-                    .produce(createSyntheticBean(persistenceUnitName,
-                            true, true,
-                            Session.class, SESSION_EXPOSED_TYPES,
-                            recorder.sessionSupplier(persistenceUnitName),
-                            false));
-
+            if (capabilities.isPresent(Capability.TRANSACTIONS)) {
+                // Do register a Session/EntityManager bean only if JTA is available
+                // Note that the Hibernate Reactive extension excludes JTA intentionally
+                syntheticBeanBuildItemBuildProducer
+                        .produce(createSyntheticBean(persistenceUnitName,
+                                true, true,
+                                Session.class, SESSION_EXPOSED_TYPES, false)
+                                .createWith(recorder.sessionSupplier(persistenceUnitName))
+                                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
+                                .done());
+            }
             return;
         }
 
@@ -153,16 +164,22 @@ public class HibernateOrmCdiProcessor {
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
                             isDefaultPU, isNamedPU,
-                            SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES,
-                            recorder.sessionFactorySupplier(persistenceUnitName),
-                            true));
+                            SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES, true)
+                            .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
+                            .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
+                            .done());
 
-            syntheticBeanBuildItemBuildProducer
-                    .produce(createSyntheticBean(persistenceUnitName,
-                            isDefaultPU, isNamedPU,
-                            Session.class, SESSION_EXPOSED_TYPES,
-                            recorder.sessionSupplier(persistenceUnitName),
-                            false));
+            if (capabilities.isPresent(Capability.TRANSACTIONS)) {
+                // Do register a Session/EntityManager bean only if JTA is available
+                // Note that the Hibernate Reactive extension excludes JTA intentionally
+                syntheticBeanBuildItemBuildProducer
+                        .produce(createSyntheticBean(persistenceUnitName,
+                                isDefaultPU, isNamedPU,
+                                Session.class, SESSION_EXPOSED_TYPES, false)
+                                .createWith(recorder.sessionSupplier(persistenceUnitName))
+                                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
+                                .done());
+            }
         }
     }
 
@@ -200,17 +217,16 @@ public class HibernateOrmCdiProcessor {
         }
     }
 
-    private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName,
+    private static <T> ExtendedBeanConfigurator createSyntheticBean(String persistenceUnitName,
             boolean isDefaultPersistenceUnit, boolean isNamedPersistenceUnit,
-            Class<T> type, List<DotName> allExposedTypes, Supplier<T> supplier, boolean defaultBean) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+            Class<T> type, List<DotName> allExposedTypes, boolean defaultBean) {
+        ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
                 // NOTE: this is using ApplicationScope and not Singleton, by design, in order to be mockable
                 // See https://github.com/quarkusio/quarkus/issues/16437
                 .scope(ApplicationScoped.class)
                 .unremovable()
-                .setRuntimeInit()
-                .supplier(supplier);
+                .setRuntimeInit();
 
         for (DotName exposedType : allExposedTypes) {
             configurator.addType(exposedType);
@@ -228,6 +244,6 @@ public class HibernateOrmCdiProcessor {
             configurator.addQualifier().annotation(PersistenceUnit.class).addValue("value", persistenceUnitName).done();
         }
 
-        return configurator.done();
+        return configurator;
     }
 }

@@ -70,6 +70,8 @@ public class ConfigActiveFalseAndEntityTest {
         assertThat(entityManager).isNotNull();
         // However, any attempt to use it at runtime will fail.
         assertThatThrownBy(() -> entityManager.find(MyEntity.class, 0L))
+                // Note that unlike for EntityManagerFactory/SessionFactory we get an IllegalStateException because
+                // the real Session/EntityManager instance is created lazily through SessionLazyDelegator in HibernateOrmRecorder.sessionSupplier()
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll(
                         "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
@@ -87,6 +89,8 @@ public class ConfigActiveFalseAndEntityTest {
         assertThat(session).isNotNull();
         // However, any attempt to use it at runtime will fail.
         assertThatThrownBy(() -> session.find(MyEntity.class, 0L))
+                // Note that unlike for EntityManagerFactory/SessionFactory we get an IllegalStateException because
+                // the real Session/EntityManager instance is created lazily through SessionLazyDelegator in HibernateOrmRecorder.sessionSupplier()
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll(
                         "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",

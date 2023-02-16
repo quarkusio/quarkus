@@ -41,6 +41,7 @@ public class RestClientConfig {
         EMPTY.hostnameVerifier = Optional.empty();
         EMPTY.connectionTTL = Optional.empty();
         EMPTY.connectionPoolSize = Optional.empty();
+        EMPTY.keepAliveEnabled = Optional.empty();
         EMPTY.maxRedirects = Optional.empty();
         EMPTY.headers = Collections.emptyMap();
         EMPTY.shared = Optional.empty();
@@ -197,6 +198,12 @@ public class RestClientConfig {
     public Optional<Integer> connectionPoolSize;
 
     /**
+     * If set to false disables the keep alive completely.
+     */
+    @ConfigItem(defaultValue = "true")
+    public Optional<Boolean> keepAliveEnabled;
+
+    /**
      * The maximum number of redirection a request can follow.
      *
      * This property is applicable to reactive REST clients only.
@@ -263,6 +270,7 @@ public class RestClientConfig {
         instance.hostnameVerifier = getConfigValue(configKey, "hostname-verifier", String.class);
         instance.connectionTTL = getConfigValue(configKey, "connection-ttl", Integer.class);
         instance.connectionPoolSize = getConfigValue(configKey, "connection-pool-size", Integer.class);
+        instance.keepAliveEnabled = getConfigValue(configKey, "keep-alive-enabled", Boolean.class);
         instance.maxRedirects = getConfigValue(configKey, "max-redirects", Integer.class);
         instance.headers = getConfigValues(configKey, "headers", String.class, String.class);
         instance.shared = getConfigValue(configKey, "shared", Boolean.class);
@@ -297,6 +305,7 @@ public class RestClientConfig {
         instance.hostnameVerifier = getConfigValue(interfaceClass, "hostname-verifier", String.class);
         instance.connectionTTL = getConfigValue(interfaceClass, "connection-ttl", Integer.class);
         instance.connectionPoolSize = getConfigValue(interfaceClass, "connection-pool-size", Integer.class);
+        instance.keepAliveEnabled = getConfigValue(interfaceClass, "keep-alive-enabled", Boolean.class);
         instance.maxRedirects = getConfigValue(interfaceClass, "max-redirects", Integer.class);
         instance.headers = getConfigValues(interfaceClass, "headers", String.class, String.class);
         instance.shared = getConfigValue(interfaceClass, "shared", Boolean.class);

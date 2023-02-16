@@ -98,6 +98,12 @@ public class RestClientCDIDelegateBuilder<T> {
             builder.property(QuarkusRestClientProperties.CONNECTION_TTL, connectionTTLSeconds);
         }
 
+        Optional<Boolean> keepAliveEnabled = oneOf(clientConfigByClassName().keepAliveEnabled,
+                clientConfigByConfigKey().keepAliveEnabled, configRoot.keepAliveEnabled);
+        if (keepAliveEnabled.isPresent()) {
+            builder.property(QuarkusRestClientProperties.KEEP_ALIVE_ENABLED, keepAliveEnabled.get());
+        }
+
         Map<String, String> headers = clientConfigByClassName().headers;
         if (headers == null || headers.isEmpty()) {
             headers = clientConfigByConfigKey().headers;

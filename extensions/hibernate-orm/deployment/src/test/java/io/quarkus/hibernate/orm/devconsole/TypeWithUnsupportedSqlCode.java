@@ -3,7 +3,6 @@ package io.quarkus.hibernate.orm.devconsole;
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Objects;
 
@@ -15,20 +14,14 @@ public class TypeWithUnsupportedSqlCode implements UserType {
     public static final int UNSUPPORTED_SQL_CODE = Types.ARRAY;
 
     @Override
-    public int[] sqlTypes() {
-        return new int[] { UNSUPPORTED_SQL_CODE };
-    }
-
-    @Override
-    public Object nullSafeGet(ResultSet result, String[] names, SharedSessionContractImplementor session, Object owner)
-            throws SQLException {
-        throw new UnsupportedOperationException("Should not be called - this type is not used at runtime");
-    }
-
-    @Override
     public void nullSafeSet(PreparedStatement preparedStatement, Object value, int index,
-            SharedSessionContractImplementor session) throws SQLException {
+            SharedSessionContractImplementor session) {
         throw new UnsupportedOperationException("Should not be called - this type is not used at runtime");
+    }
+
+    @Override
+    public int getSqlType() {
+        return UNSUPPORTED_SQL_CODE;
     }
 
     @Override
@@ -44,6 +37,12 @@ public class TypeWithUnsupportedSqlCode implements UserType {
     @Override
     public int hashCode(Object o) {
         return o.hashCode();
+    }
+
+    @Override
+    public Object nullSafeGet(ResultSet resultSet, int i, SharedSessionContractImplementor sharedSessionContractImplementor,
+            Object o) {
+        throw new UnsupportedOperationException("Should not be called - this type is not used at runtime");
     }
 
     @Override

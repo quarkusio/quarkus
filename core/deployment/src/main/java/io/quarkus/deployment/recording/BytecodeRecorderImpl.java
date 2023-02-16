@@ -1173,6 +1173,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 nonDefaultConstructorHandles[i] = loadObjectInstance(obj, existing,
                         parameterTypes[count++], relaxedValidation);
             }
+            if (nonDefaultConstructorHolder.constructor.getParameterCount() > 0) {
+                Parameter[] parameters = nonDefaultConstructorHolder.constructor.getParameters();
+                for (int i = 0; i < parameters.length; ++i) {
+                    if (parameters[i].isNamePresent()) {
+                        String name = parameters[i].getName();
+                        constructorParamNameMap.put(name, i);
+                    }
+                }
+            }
         } else if (classesToUseRecordableConstructor.contains(param.getClass())) {
             Constructor<?> current = null;
             int count = 0;
@@ -1191,9 +1200,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
             nonDefaultConstructorHandles = new DeferredParameter[current.getParameterCount()];
             if (current.getParameterCount() > 0) {
                 Parameter[] parameters = current.getParameters();
-                for (int i = 0; i < current.getParameterCount(); ++i) {
-                    String name = parameters[i].getName();
-                    constructorParamNameMap.put(name, i);
+                for (int i = 0; i < parameters.length; ++i) {
+                    if (parameters[i].isNamePresent()) {
+                        String name = parameters[i].getName();
+                        constructorParamNameMap.put(name, i);
+                    }
                 }
             }
         } else {
@@ -1215,9 +1226,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                 if (selectedCtor.getParameterCount() > 0) {
                     Parameter[] ctorParameters = selectedCtor.getParameters();
-                    for (int i = 0; i < selectedCtor.getParameterCount(); ++i) {
-                        String name = ctorParameters[i].getName();
-                        constructorParamNameMap.put(name, i);
+                    for (int i = 0; i < ctorParameters.length; ++i) {
+                        if (ctorParameters[i].isNamePresent()) {
+                            String name = ctorParameters[i].getName();
+                            constructorParamNameMap.put(name, i);
+                        }
                     }
                 }
             }

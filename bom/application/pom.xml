@@ -82,7 +82,7 @@
         <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
         <jakarta.websocket-api.version>2.1.0</jakarta.websocket-api.version>
         <jakarta.xml.bind-api.version>4.0.0</jakarta.xml.bind-api.version>
-        <jaxb-runtime.version>4.0.1</jaxb-runtime.version>
+        <jaxb-runtime.version>4.0.2</jaxb-runtime.version>
         <asm.version>9.4</asm.version>
         <commons-io.version>2.11.0</commons-io.version>
         <jboss-metadata-web.version>15.4.0</jboss-metadata-web.version>
@@ -4350,6 +4350,11 @@
             <dependency>
                 <groupId>org.glassfish.jaxb</groupId>
                 <artifactId>jaxb-runtime</artifactId>
+                <version>${jaxb-runtime.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jaxb</groupId>
+                <artifactId>jaxb-core</artifactId>
                 <version>${jaxb-runtime.version}</version>
             </dependency>
             <dependency>

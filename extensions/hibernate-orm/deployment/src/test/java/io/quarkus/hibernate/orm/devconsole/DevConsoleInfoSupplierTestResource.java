@@ -83,14 +83,14 @@ public class DevConsoleInfoSupplierTestResource {
                 .returns(MyEntityWithFailingDDLGeneration.TABLE_NAME,
                         HibernateOrmDevConsoleInfoSupplier.EntityInfo::getTableName);
 
-        // But some DDL scripts are replaced with whatever exception occurred
         assertThat(pu.getCreateDDL())
-                .contains("Could not generate DDL")
-                .contains("org.hibernate.MappingException: No Dialect mapping for JDBC type: "
-                        + TypeWithUnsupportedSqlCode.UNSUPPORTED_SQL_CODE);
+                .contains("Error creating SQL create commands for table : MyEntityTable")
+                .contains("org.hibernate.HibernateException: No type mapping for org.hibernate.type.SqlTypes code: "
+                        + TypeWithUnsupportedSqlCode.UNSUPPORTED_SQL_CODE + " (UNKNOWN("
+                        + TypeWithUnsupportedSqlCode.UNSUPPORTED_SQL_CODE + "))");
         // Drop script generation doesn't involve column types, so it didn't fail
         assertThat(pu.getDropDDL())
-                .contains("drop table if exists MyEntityTable");
+                .contains("drop table MyEntityTable if exists");
 
         return "OK";
     }

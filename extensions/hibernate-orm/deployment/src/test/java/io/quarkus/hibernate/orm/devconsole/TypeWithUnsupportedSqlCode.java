@@ -3,18 +3,17 @@ package io.quarkus.hibernate.orm.devconsole;
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Types;
 import java.util.Objects;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
-public class TypeWithUnsupportedSqlCode implements UserType {
+public class TypeWithUnsupportedSqlCode implements UserType<String> {
 
-    public static final int UNSUPPORTED_SQL_CODE = Types.ARRAY;
+    public static final int UNSUPPORTED_SQL_CODE = Integer.MAX_VALUE;
 
     @Override
-    public void nullSafeSet(PreparedStatement preparedStatement, Object value, int index,
+    public void nullSafeSet(PreparedStatement preparedStatement, String value, int index,
             SharedSessionContractImplementor session) {
         throw new UnsupportedOperationException("Should not be called - this type is not used at runtime");
     }
@@ -30,23 +29,23 @@ public class TypeWithUnsupportedSqlCode implements UserType {
     }
 
     @Override
-    public boolean equals(Object o, Object o1) {
+    public boolean equals(String o, String o1) {
         return Objects.equals(o, o1);
     }
 
     @Override
-    public int hashCode(Object o) {
+    public int hashCode(String o) {
         return o.hashCode();
     }
 
     @Override
-    public Object nullSafeGet(ResultSet resultSet, int i, SharedSessionContractImplementor sharedSessionContractImplementor,
+    public String nullSafeGet(ResultSet resultSet, int i, SharedSessionContractImplementor sharedSessionContractImplementor,
             Object o) {
         throw new UnsupportedOperationException("Should not be called - this type is not used at runtime");
     }
 
     @Override
-    public Object deepCopy(Object o) {
+    public String deepCopy(String o) {
         return o;
     }
 
@@ -56,17 +55,17 @@ public class TypeWithUnsupportedSqlCode implements UserType {
     }
 
     @Override
-    public Serializable disassemble(Object o) {
+    public Serializable disassemble(String o) {
         return (Serializable) o;
     }
 
     @Override
-    public Object assemble(Serializable cached, Object o) {
-        return cached;
+    public String assemble(Serializable cached, Object o) {
+        return (String) cached;
     }
 
     @Override
-    public Object replace(Object o, Object t, Object owner) {
+    public String replace(String o, String t, Object owner) {
         return o;
     }
 }

@@ -14,8 +14,9 @@ public class DevConsolePuInformationFailingDDLGenerationTestCase {
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntityWithFailingDDLGeneration.class,
                             TypeWithUnsupportedSqlCode.class,
+                            H2CustomDialect.class,
                             DevConsoleInfoSupplierTestResource.class)
-                    .addAsResource("application-generation-none.properties", "application.properties")
+                    .addAsResource("application-generation-none-customh2.properties", "application.properties")
                     .addAsResource("import-custom-table-name.sql", "import.sql"));
 
     @Test

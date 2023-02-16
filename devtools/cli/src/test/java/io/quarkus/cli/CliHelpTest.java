@@ -194,8 +194,8 @@ public class CliHelpTest {
         writer.error("error"); // has emoji
         writer.warn("warn"); // has emoji
         writer.info(MessageIcons.NOOP_ICON + " info");
-        writer.info(MessageIcons.OK_ICON + " info");
-        writer.info(MessageIcons.NOK_ICON + " info");
+        writer.info(MessageIcons.SUCCESS_ICON + " info");
+        writer.info(MessageIcons.FAILURE_ICON + " info");
         writer.debug("debug");
     }
 

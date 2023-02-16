@@ -1,5 +1,7 @@
 package io.quarkus.cli;
 
+import static io.quarkus.devtools.messagewriter.MessageIcons.OUT_OF_DATE_ICON;
+import static io.quarkus.devtools.messagewriter.MessageIcons.UP_TO_DATE_ICON;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.BufferedWriter;
@@ -60,19 +62,20 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
         final Path projectDir = workDir().resolve("acme-clean");
         final CliDriver.Result infoResult = run(projectDir, "info");
 
-        assertQuarkusPlatformBoms(infoResult.stdout, "org.acme.quarkus.platform:quarkus-bom:pom:2.0.0 ✔",
-                "org.acme.quarkus.platform:acme-bom:pom:2.0.0 ✔");
+        assertQuarkusPlatformBoms(infoResult.stdout,
+                "org.acme.quarkus.platform:quarkus-bom:pom:2.0.0 " + UP_TO_DATE_ICON.iconOrMessage(),
+                "org.acme.quarkus.platform:acme-bom:pom:2.0.0 " + UP_TO_DATE_ICON.iconOrMessage());
         assertPlatformBomExtensions(infoResult.stdout, ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "2.0.0"),
-                "io.quarkus:quarkus-arc ✔");
+                "io.quarkus:quarkus-arc " + UP_TO_DATE_ICON.iconOrMessage());
         assertPlatformBomExtensions(infoResult.stdout, ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "2.0.0"),
-                "org.acme.quarkus.platform:acme-quarkus-supersonic ✔");
+                "org.acme.quarkus.platform:acme-quarkus-supersonic " + UP_TO_DATE_ICON.iconOrMessage());
         assertRegistryExtensions(infoResult.stdout, "registry.acme.org",
                 "org.acme:acme-quarkiverse-extension:1.0");
 
         final CliDriver.Result updateResult = run(projectDir, "update");
         assertQuarkusPlatformBoms(updateResult.stdout,
-                "org.acme.quarkus.platform:quarkus-bom:pom:2.0.0 ✔",
-                "org.acme.quarkus.platform:acme-bom:pom:2.0.0 ✔");
+                "org.acme.quarkus.platform:quarkus-bom:pom:2.0.0 " + UP_TO_DATE_ICON.iconOrMessage(),
+                "org.acme.quarkus.platform:acme-bom:pom:2.0.0 " + UP_TO_DATE_ICON.iconOrMessage());
     }
 
     @Test
@@ -89,13 +92,13 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
         final CliDriver.Result infoResult = run(projectDir, "info");
 
         assertQuarkusPlatformBoms(infoResult.stdout,
-                "org.acme.quarkus.platform:quarkus-bom:pom:2.0.0 ✔",
-                "org.acme.quarkus.platform:acme-bom:pom:2.0.0 ✔");
+                "org.acme.quarkus.platform:quarkus-bom:pom:2.0.0 " + UP_TO_DATE_ICON.iconOrMessage(),
+                "org.acme.quarkus.platform:acme-bom:pom:2.0.0 " + UP_TO_DATE_ICON.iconOrMessage());
         assertPlatformBomExtensions(infoResult.stdout, ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "2.0.0"),
-                "io.quarkus:quarkus-arc ✔");
+                "io.quarkus:quarkus-arc " + UP_TO_DATE_ICON.iconOrMessage());
         assertPlatformBomExtensions(infoResult.stdout, ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "2.0.0"),
-                "org.acme.quarkus.platform:acme-quarkus-supersonic ✔",
-                "org.acme.quarkus.platform:acme-quarkus-subatomic:1.0.0 ⚠");
+                "org.acme.quarkus.platform:acme-quarkus-supersonic " + UP_TO_DATE_ICON.iconOrMessage(),
+                "org.acme.quarkus.platform:acme-quarkus-subatomic:1.0.0 " + OUT_OF_DATE_ICON.iconOrMessage());
         assertRegistryExtensions(infoResult.stdout, "registry.acme.org",
                 "org.acme:acme-quarkiverse-extension:1.0");
 

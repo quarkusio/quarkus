@@ -1,5 +1,8 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.messagewriter.MessageIcons.OUT_OF_DATE_ICON;
+import static io.quarkus.devtools.messagewriter.MessageIcons.UP_TO_DATE_ICON;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -98,13 +101,13 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                         sb.append(platform.imported.toCompactCoords()).append(" -> ")
                                 .append(platform.getRecommendedVersion());
                     } else {
-                        sb.append(" ⚠");
+                        sb.append(" ").append(OUT_OF_DATE_ICON.iconOrMessage());
                     }
                     recommendationsAvailable = true;
                 } else {
                     sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "",
                             platform.imported.toCompactCoords()))
-                            .append(" ✔");
+                            .append(" ").append(UP_TO_DATE_ICON.iconOrMessage());
                 }
                 log.info(sb.toString());
             }
@@ -190,7 +193,8 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                     }
                     recommendationsAvailable = true;
                 } else {
-                    sb.append(" ✔");
+                    sb.append(" ").append(UP_TO_DATE_ICON.iconOrMessage());
+                    ;
                 }
             } else {
                 sb.append(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "", "")).append(dep.getArtifact().getGroupId())
@@ -201,10 +205,11 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                 }
                 if (dep.isNonRecommendedVersion()) {
                     sb.append(':').append(dep.getArtifact().getVersion());
-                    sb.append(" ⚠");
+                    sb.append(" ").append(OUT_OF_DATE_ICON.iconOrMessage());
                     recommendationsAvailable = true;
                 } else {
-                    sb.append(" ✔");
+                    sb.append(" ").append(UP_TO_DATE_ICON.iconOrMessage());
+                    ;
                 }
             }
         } else {

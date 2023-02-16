@@ -2,7 +2,7 @@ package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.commands.AddExtensions.EXTENSION_MANAGER;
 import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
-import static io.quarkus.devtools.messagewriter.MessageIcons.NOK_ICON;
+import static io.quarkus.devtools.messagewriter.MessageIcons.FAILURE_ICON;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,15 +49,15 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
                 final InstallResult result = extensionManager.install(extensionInstallPlan);
                 result.getInstalledPlatforms()
                         .forEach(a -> invocation.log()
-                                .info(MessageIcons.OK_ICON + " Platform " + a.getGroupId() + ":" + a.getArtifactId()
+                                .info(MessageIcons.SUCCESS_ICON + " Platform " + a.getGroupId() + ":" + a.getArtifactId()
                                         + " has been installed"));
                 result.getInstalledManagedExtensions()
                         .forEach(a -> invocation.log()
-                                .info(MessageIcons.OK_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
+                                .info(MessageIcons.SUCCESS_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
                                         + " has been installed"));
                 result.getInstalledIndependentExtensions()
                         .forEach(a -> invocation.log()
-                                .info(MessageIcons.OK_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId() + ":"
+                                .info(MessageIcons.SUCCESS_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId() + ":"
                                         + a.getVersion()
                                         + " has been installed"));
                 result.getAlreadyInstalled()
@@ -72,7 +72,7 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
                                 + "' were not matched in the catalog.");
             } else {
                 invocation.log()
-                        .info(NOK_ICON + " The provided keyword(s) did not match any extension from the catalog.");
+                        .info(FAILURE_ICON + " The provided keyword(s) did not match any extension from the catalog.");
             }
         } catch (MultipleExtensionsFoundException m) {
             StringBuilder sb = new StringBuilder();

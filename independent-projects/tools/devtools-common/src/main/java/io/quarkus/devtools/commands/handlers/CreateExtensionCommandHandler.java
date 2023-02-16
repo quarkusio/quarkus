@@ -69,19 +69,19 @@ public class CreateExtensionCommandHandler {
             final String extensionDirName = newExtensionDir.getFileName().toString();
             if (extensionsParentDir != null) {
                 updateExtensionsParentPom(extensionDirName, extensionsParentDir);
-                log.info(MessageIcons.OK_ICON + " New extension module '%s' added to %s", extensionDirName,
+                log.info(MessageIcons.SUCCESS_ICON + " New extension module '%s' added to %s", extensionDirName,
                         extensionsParentDir);
             }
 
             if (itTestParentDir != null) {
                 updateITParentPomAndMoveDir(extensionDirName, newExtensionDir, itTestParentDir);
-                log.info(MessageIcons.OK_ICON + " New integration test module '%s' added to %s", extensionDirName,
+                log.info(MessageIcons.SUCCESS_ICON + " New integration test module '%s' added to %s", extensionDirName,
                         itTestParentDir);
             }
 
             if (bomDir != null) {
                 updateBom(groupId, artifactId, bomDir);
-                log.info(MessageIcons.OK_ICON
+                log.info(MessageIcons.SUCCESS_ICON
                         + " The extension runtime and deployment artifacts have been added to the bom dependenciesManagement: %s",
                         bomDir);
             }

@@ -22,17 +22,17 @@ abstract class AbstractDomainDataAccess implements CachedDomainDataAccess {
 
     @Override
     public Object get(SharedSessionContractImplementor session, Object key) {
-        return internal.get(session, key, session.getTransactionStartTimestamp());
+        return internal.get(session, key, session.getCacheTransactionSynchronization().getCachingTimestamp());
     }
 
     @Override
     public boolean putFromLoad(SharedSessionContractImplementor session, Object key, Object value, Object version) {
-        return internal.putFromLoad(session, key, value, session.getTransactionStartTimestamp(), version);
+        return internal.putFromLoad(session, key, value, session.getCacheTransactionSynchronization().getCachingTimestamp(), version);
     }
 
     @Override
     public boolean putFromLoad(SharedSessionContractImplementor session, Object key, Object value, Object version, boolean minimalPutOverride) {
-        return internal.putFromLoad(session, key, value, session.getTransactionStartTimestamp(), version, minimalPutOverride);
+        return internal.putFromLoad(session, key, value, session.getCacheTransactionSynchronization().getCachingTimestamp(), version, minimalPutOverride);
     }
 
     @Override

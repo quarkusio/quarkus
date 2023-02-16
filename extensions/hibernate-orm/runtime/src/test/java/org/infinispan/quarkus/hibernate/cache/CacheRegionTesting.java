@@ -6,6 +6,7 @@ import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.cfg.internal.DomainDataRegionConfigImpl;
 import org.hibernate.cache.cfg.spi.DomainDataCachingConfig;
 import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
+import org.hibernate.cache.spi.CacheTransactionSynchronization;
 import org.hibernate.cache.spi.DomainDataRegion;
 import org.hibernate.cache.spi.ExtendedStatisticsSupport;
 import org.hibernate.cache.spi.access.AccessType;
@@ -14,7 +15,8 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.mapping.Property;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.metamodel.model.domain.NavigableRole;
-import org.hibernate.type.VersionType;
+import org.hibernate.type.BasicType;
+import org.hibernate.type.descriptor.java.IntegerJavaType;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -76,7 +78,9 @@ final class CacheRegionTesting {
         DomainDataRegion region = regionFactory.buildDomainDataRegion(config, null);
 
         SharedSessionContractImplementor session = mock(SharedSessionContractImplementor.class);
-        when(session.getTransactionStartTimestamp()).thenAnswer(x -> regionFactory.nextTimestamp());
+        CacheTransactionSynchronization cacheTransactionSynchronization = mock(CacheTransactionSynchronization.class);
+        when(cacheTransactionSynchronization.getCachingTimestamp()).thenAnswer(x -> regionFactory.nextTimestamp());
+        when(session.getCacheTransactionSynchronization()).thenReturn(cacheTransactionSynchronization);
 
         return new CacheRegionTesting(session, region, config, regionTimeService, cacheTimeService);
     }
@@ -95,8 +99,8 @@ final class CacheRegionTesting {
         when(persistentClass.getRootClass()).thenReturn(persistentClass);
         when(persistentClass.getEntityName()).thenReturn(entityName);
         Property versionMock = mock(Property.class);
-        VersionType typeMock = mock(VersionType.class);
-        when(typeMock.getComparator()).thenReturn(UNIVERSAL_COMPARATOR);
+        BasicType typeMock = mock(BasicType.class);
+        when(typeMock.getJavaTypeDescriptor()).thenReturn( IntegerJavaType.INSTANCE);
         when(versionMock.getType()).thenReturn(typeMock);
         when(persistentClass.getVersion()).thenReturn(versionMock);
         when(persistentClass.isVersioned()).thenReturn(true);

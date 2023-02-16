@@ -1,6 +1,5 @@
 package org.infinispan.quarkus.hibernate.cache;
 
-import org.hibernate.cache.spi.DomainDataRegion;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.cache.spi.access.SoftLock;
@@ -19,12 +18,12 @@ final class ReadWriteNaturalDataAccess extends AbstractDomainDataAccess implemen
     }
 
     @Override
-    public Object generateCacheKey(Object[] naturalIdValues, EntityPersister persister, SharedSessionContractImplementor session) {
+    public Object generateCacheKey(Object naturalIdValues, EntityPersister persister, SharedSessionContractImplementor session) {
         return region.getCacheKeysFactory().createNaturalIdKey(naturalIdValues, persister, session);
     }
 
     @Override
-    public Object[] getNaturalIdValues(Object cacheKey) {
+    public Object getNaturalIdValues(Object cacheKey) {
         return region.getCacheKeysFactory().getNaturalIdValues(cacheKey);
     }
 

@@ -6,8 +6,8 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.resource.transaction.spi.TransactionCoordinator;
 import org.jboss.logging.Logger;
 
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
 
 // TODO temporarily public, for correctness testing checks...
 public final class StrictDataAccess implements InternalDataAccess {

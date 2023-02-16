@@ -18,12 +18,15 @@ final class ReadOnlyNaturalDataAccess extends AbstractDomainDataAccess implement
     }
 
     @Override
-    public Object generateCacheKey(Object[] naturalIdValues, EntityPersister persister, SharedSessionContractImplementor session) {
-        return region.getCacheKeysFactory().createNaturalIdKey(naturalIdValues, persister, session);
+    public Object generateCacheKey(
+            Object naturalId,
+            EntityPersister persister,
+            SharedSessionContractImplementor session) {
+        return region.getCacheKeysFactory().createNaturalIdKey(naturalId, persister, session);
     }
 
     @Override
-    public Object[] getNaturalIdValues(Object cacheKey) {
+    public Object getNaturalIdValues(Object cacheKey) {
         return region.getCacheKeysFactory().getNaturalIdValues(cacheKey);
     }
 

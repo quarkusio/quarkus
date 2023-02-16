@@ -10,8 +10,8 @@ import org.hibernate.resource.transaction.spi.TransactionCoordinator;
 import org.infinispan.quarkus.hibernate.cache.VersionedEntry.ComputeFn;
 import org.jboss.logging.Logger;
 
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
 import java.util.Comparator;
 import java.util.function.Supplier;
 

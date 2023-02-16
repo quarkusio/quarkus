@@ -177,7 +177,7 @@ public class TestConfig {
     Optional<List<String>> argLine;
 
     /**
-     * Used in {@code @QuarkusIntegrationTest} and {@code NativeImageTest} to determine how long the test will wait for the
+     * Used in {@code @QuarkusIntegrationTest} to determine how long the test will wait for the
      * application to launch
      */
     @ConfigItem(defaultValue = "PT1M")

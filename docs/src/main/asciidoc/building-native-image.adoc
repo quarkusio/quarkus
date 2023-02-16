@@ -277,7 +277,7 @@ to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.wait-time=300`.
 
 [WARNING]
 ====
-This procedure was formerly accomplished using the `@NativeImageTest` annotation. `@NativeImageTest` is considered deprecated in favor of `@QuarkusIntegrationTest` which provides a superset of the testing
+This procedure was formerly accomplished using the `@NativeImageTest` annotation. `@NativeImageTest` was replaced by `@QuarkusIntegrationTest` which provides a superset of the testing
 capabilities of `@NativeImageTest`. More information about `@QuarkusIntegrationTest` can be found in the xref:getting-started-testing.adoc#quarkus-integration-test[Testing Guide].
 ====
 

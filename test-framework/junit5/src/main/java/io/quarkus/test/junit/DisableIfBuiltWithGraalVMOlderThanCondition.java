@@ -16,9 +16,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 public class DisableIfBuiltWithGraalVMOlderThanCondition implements ExecutionCondition {
 
     private static final String QUARKUS_INTEGRATION_TEST_NAME = QuarkusIntegrationTest.class.getName();
-    private static final String NATIVE_IMAGE_TEST_NAME = NativeImageTest.class.getName();
-    private static final Set<String> SUPPORTED_INTEGRATION_TESTS = Set.of(QUARKUS_INTEGRATION_TEST_NAME,
-            NATIVE_IMAGE_TEST_NAME);
+    private static final Set<String> SUPPORTED_INTEGRATION_TESTS = Set.of(QUARKUS_INTEGRATION_TEST_NAME);
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {

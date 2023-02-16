@@ -84,7 +84,6 @@ public class JunitTestRunner {
     public static final DotName QUARKUS_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusTest");
     public static final DotName QUARKUS_MAIN_TEST = DotName.createSimple("io.quarkus.test.junit.main.QuarkusMainTest");
     public static final DotName QUARKUS_INTEGRATION_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusIntegrationTest");
-    public static final DotName NATIVE_IMAGE_TEST = DotName.createSimple("io.quarkus.test.junit.NativeImageTest");
     public static final DotName TEST_PROFILE = DotName.createSimple("io.quarkus.test.junit.TestProfile");
     public static final DotName TEST = DotName.createSimple(Test.class.getName());
     public static final DotName REPEATED_TEST = DotName.createSimple(RepeatedTest.class.getName());
@@ -555,13 +554,11 @@ public class JunitTestRunner {
         //we now have all the classes by name
         //these tests we never run
         Set<String> integrationTestClasses = new HashSet<>();
-        for (DotName intAnno : Arrays.asList(QUARKUS_INTEGRATION_TEST, NATIVE_IMAGE_TEST)) {
-            for (AnnotationInstance i : index.getAnnotations(intAnno)) {
-                DotName name = i.target().asClass().name();
-                integrationTestClasses.add(name.toString());
-                for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
-                    integrationTestClasses.add(clazz.name().toString());
-                }
+        for (AnnotationInstance i : index.getAnnotations(QUARKUS_INTEGRATION_TEST)) {
+            DotName name = i.target().asClass().name();
+            integrationTestClasses.add(name.toString());
+            for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
+                integrationTestClasses.add(clazz.name().toString());
             }
         }
         Set<String> quarkusTestClasses = new HashSet<>();

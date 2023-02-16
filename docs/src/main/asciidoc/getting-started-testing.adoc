@@ -1215,7 +1215,7 @@ If instead a native image was built, then the application is launched as `./appl
 Finally, if a container image was created during the build (by including the `quarkus-container-image-jib` or `quarkus-container-image-docker` extensions and having the
 `quarkus.container-image.build=true` property configured), then a container is created and run (this requires the `docker` executable being present).
 
-As is the case with `@NativeImageTest`, this is a black box test that supports the same set features and has the same limitations.
+This is a black box test that supports the same set features and has the same limitations.
 
 [NOTE]
 ====

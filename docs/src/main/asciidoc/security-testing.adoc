@@ -93,7 +93,7 @@ See xref:security-oidc-bearer-authentication-concept.adoc#integration-testing-se
 
 [WARNING]
 ====
-The feature is only available for `@QuarkusTest` and will **not** work on a `@NativeImageTest` or `@QuarkusIntegrationTest`.
+The feature is only available for `@QuarkusTest` and will **not** work on a `@QuarkusIntegrationTest`.
 ====
 
 [TIP]

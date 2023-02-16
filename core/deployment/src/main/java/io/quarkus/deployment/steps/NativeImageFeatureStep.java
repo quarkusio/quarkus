@@ -21,7 +21,6 @@ import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
@@ -81,7 +80,6 @@ public class NativeImageFeatureStep {
     static final String LEGACY_JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String JNI_RUNTIME_ACCESS = "org.graalvm.nativeimage.hosted.RuntimeJNIAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
-    static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
     static final String RUNTIME_RESOURCE_SUPPORT = "org.graalvm.nativeimage.impl.RuntimeResourceSupport";
 
@@ -120,7 +118,6 @@ public class NativeImageFeatureStep {
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
-            List<NativeImageProxyDefinitionBuildItem> proxies,
             List<NativeImageResourcePatternsBuildItem> resourcePatterns,
             List<NativeImageResourceBundleBuildItem> resourceBundles,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
@@ -240,53 +237,6 @@ public class NativeImageFeatureStep {
             runtimeReinitializedClasses.returnVoid();
 
             overallCatch.invokeStaticMethod(runtimeReinitializedClasses.getMethodDescriptor());
-        }
-
-        if (!proxies.isEmpty()) {
-            MethodCreator registerProxies = file
-                    .getMethodCreator("registerProxies", void.class)
-                    .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-
-            // Needed to access DYNAMIC_PROXY_REGISTRY in GraalVM 22.2
-            exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.proxy",
-                    null, GraalVM.Version.VERSION_22_3_0));
-
-            ResultHandle versionCompareto22_3Result = registerProxies.invokeVirtualMethod(VERSION_COMPARE_TO,
-                    registerProxies.invokeStaticMethod(VERSION_CURRENT),
-                    registerProxies.marshalAsArray(int.class, registerProxies.load(22), registerProxies.load(3)));
-
-            for (NativeImageProxyDefinitionBuildItem proxy : proxies) {
-                ResultHandle array = registerProxies.newArray(Class.class, registerProxies.load(proxy.getClasses().size()));
-                int i = 0;
-                for (String p : proxy.getClasses()) {
-                    ResultHandle clazz = registerProxies.invokeStaticMethod(
-                            ofMethod(Class.class, "forName", Class.class, String.class), registerProxies.load(p));
-                    registerProxies.writeArrayValue(array, i++, clazz);
-
-                }
-
-                BranchResult graalVm22_3Test = registerProxies.ifGreaterEqualZero(versionCompareto22_3Result);
-                /* GraalVM >= 22.3 */
-                try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
-                    MethodDescriptor registerMethod = ofMethod("org.graalvm.nativeimage.hosted.RuntimeProxyCreation",
-                            "register", void.class, Class[].class);
-                    greaterThan22_2.invokeStaticMethod(
-                            registerMethod,
-                            array);
-                }
-                /* GraalVM < 22.3 */
-                try (BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch()) {
-                    ResultHandle proxySupportClass = smallerThan22_3.loadClassFromTCCL(DYNAMIC_PROXY_REGISTRY);
-                    ResultHandle proxySupport = smallerThan22_3.invokeStaticMethod(
-                            IMAGE_SINGLETONS_LOOKUP,
-                            proxySupportClass);
-                    smallerThan22_3.invokeInterfaceMethod(ofMethod(DYNAMIC_PROXY_REGISTRY,
-                            "addProxyClass", void.class, Class[].class), proxySupport, array);
-                }
-
-            }
-            registerProxies.returnVoid();
-            overallCatch.invokeStaticMethod(registerProxies.getMethodDescriptor());
         }
 
         /* Resource includes and excludes */

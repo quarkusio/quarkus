@@ -328,6 +328,20 @@ quarkus.http.cors.access-control-max-age=24H
 quarkus.http.cors.access-control-allow-credentials=true
 ----
 
+`/https://([a-z0-9\\-_]+)\\.app\\.mydomain\\.com/` is treated as a regular expression because it is surrounded by forward slash characters.
+
+=== Support all origins in devmode
+
+Having to configure required origins when you start developing a Quarkus application requiring CORS support can be difficult and, in such cases, you may want to allow all origins in dev mode only in order to focus on the actual development first:
+
+[source, properties]
+----
+quarkus.http.cors=true
+%dev.quarkus.http.cors.origins=/.*/
+----
+
+It is important that you enable all origins only for the dev profile, allowing all origins in production is not recommended and could expose your applications to serious security issues.
+
 == HTTP Limits Configuration
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-server-limits-config.adoc[leveloffset=+1, opts=optional]

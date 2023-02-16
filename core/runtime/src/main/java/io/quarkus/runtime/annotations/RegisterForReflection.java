@@ -46,6 +46,8 @@ public @interface RegisterForReflection {
 
     boolean serialization() default false;
 
+    boolean unsafeAllocated() default false;
+
     /**
      * The lambda capturing types performing serialization in the native image
      */

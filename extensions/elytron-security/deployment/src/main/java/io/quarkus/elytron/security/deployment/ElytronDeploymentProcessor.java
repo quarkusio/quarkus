@@ -18,6 +18,8 @@ import io.quarkus.elytron.security.runtime.ElytronRecorder;
 import io.quarkus.elytron.security.runtime.ElytronSecurityDomainManager;
 import io.quarkus.elytron.security.runtime.ElytronTokenIdentityProvider;
 import io.quarkus.elytron.security.runtime.ElytronTrustedIdentityProvider;
+import io.quarkus.elytron.security.runtime.config.ElytronBuildtimeConfig;
+import io.quarkus.elytron.security.runtime.config.ElytronRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
@@ -62,7 +64,8 @@ class ElytronDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    SecurityDomainBuildItem build(ElytronRecorder recorder, List<SecurityRealmBuildItem> realms)
+    SecurityDomainBuildItem build(ElytronRecorder recorder, List<SecurityRealmBuildItem> realms,
+            RoleMapperBuildItem roleMapperBuildItem)
             throws Exception {
         if (realms.size() > 0) {
             // Configure the SecurityDomain.Builder from the main realm
@@ -75,11 +78,26 @@ class ElytronDeploymentProcessor {
                 RuntimeValue<SecurityRealm> realm = realmBuildItem.getRealm();
                 recorder.addRealm(securityDomainBuilder, realmBuildItem.getName(), realm);
             }
+
+            if (roleMapperBuildItem != null) {
+                recorder.setRoleMapper(securityDomainBuilder, roleMapperBuildItem.getRoleMapper());
+            }
+
             // Actually build the runtime value for the SecurityDomain
             RuntimeValue<SecurityDomain> securityDomain = recorder.buildDomain(securityDomainBuilder);
 
             // Return the build item for the SecurityDomain runtime value
             return new SecurityDomainBuildItem(securityDomain);
+        }
+        return null;
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    RoleMapperBuildItem configureRoleMapper(ElytronRecorder elytronRecorder, ElytronBuildtimeConfig elytronBuildtimeConfig,
+            ElytronRuntimeConfig elytronRuntimeConfig) {
+        if (elytronBuildtimeConfig.roleMapperEnabled) {
+            return new RoleMapperBuildItem(elytronRecorder.createRoleMapper(elytronRuntimeConfig));
         }
         return null;
     }

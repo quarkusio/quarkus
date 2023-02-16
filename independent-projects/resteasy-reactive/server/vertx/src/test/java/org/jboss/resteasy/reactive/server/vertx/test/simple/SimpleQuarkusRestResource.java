@@ -56,6 +56,12 @@ public class SimpleQuarkusRestResource {
         return "GET";
     }
 
+    @GET
+    @Path("empty")
+    public String empty() {
+        return null;
+    }
+
     @Path("sub")
     public Object subResource() {
         return new SubResource();

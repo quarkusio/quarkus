@@ -30,6 +30,18 @@ public class RestResponseResource {
     }
 
     @GET
+    @Path("rest-response-empty")
+    public RestResponse<String> empty() {
+        return RestResponse.status(499);
+    }
+
+    @GET
+    @Path("response-empty")
+    public Response emptyResponse() {
+        return Response.status(499).build();
+    }
+
+    @GET
     @Path("rest-response-wildcard")
     public RestResponse<?> wildcard() {
         return RestResponse.ResponseBuilder.ok("Hello").header("content-type", "text/plain").build();

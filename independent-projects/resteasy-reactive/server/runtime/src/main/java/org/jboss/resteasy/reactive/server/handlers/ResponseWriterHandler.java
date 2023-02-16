@@ -34,10 +34,18 @@ public class ResponseWriterHandler implements ServerRestHandler {
                 entityWriter.write(requestContext, entity);
             }
         } else {
-            setContentTypeIfNecessary(requestContext);
+            if (entity != null) {
+                setContentTypeIfNecessary(requestContext);
+            } else {
+                clearContentTypeHeader(requestContext);
+            }
             ServerSerialisers.encodeResponseHeaders(requestContext);
             requestContext.serverResponse().end();
         }
+    }
+
+    private static void clearContentTypeHeader(ResteasyReactiveRequestContext requestContext) {
+        requestContext.serverResponse().setResponseHeader(HttpHeaders.CONTENT_TYPE, (CharSequence) null);
     }
 
     // set the content type header to what the resource method uses as a final fallback

@@ -398,7 +398,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public ServerHttpResponse setResponseHeader(CharSequence name, CharSequence value) {
-        response.setHeader(name.toString(), value.toString());
+        response.setHeader(name.toString(), value != null ? value.toString() : null);
         return this;
     }
 

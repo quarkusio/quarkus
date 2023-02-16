@@ -225,6 +225,12 @@
                         <excludedArtifact>org.jboss.spec.javax.interceptor:jboss-interceptors-api_1.2_spec</excludedArtifact>
                         <excludedArtifact>org.glassfish:javax.el</excludedArtifact>
                         <excludedArtifact>javax.annotation:javax.annotation-api</excludedArtifact>
+                        <excludedArtifact>com.sun.activation:jakarta.activation</excludedArtifact>
+                        <excludedArtifact>com.sun.activation:javax.activation</excludedArtifact>
+                        <excludedArtifact>org.glassfish:jakarta.el</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.transaction:jboss-transaction-api_1.3_spec</excludedArtifact>
                     </excludedArtifacts>
                 </configuration>
             </plugin>

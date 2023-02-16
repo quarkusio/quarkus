@@ -21,17 +21,25 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean serialization;
     private final boolean unsafeAllocated;
 
-    public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... classes) {
-        this(true, methods, fields, classes);
+    public static Builder builder(Class<?>... classes) {
+        String[] classNames = stream(classes)
+                .map(aClass -> {
+                    if (aClass == null) {
+                        throw new NullPointerException();
+                    }
+                    return aClass.getName();
+                })
+                .toArray(String[]::new);
+
+        return new Builder().className(classNames);
     }
 
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
-        this(constructors, methods, fields, false, false, false, classes);
+    public static Builder builder(String... classNames) {
+        return new Builder().className(classNames);
     }
 
     private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization,
-            boolean unsafeAllocated,
-            Class<?>... classes) {
+            boolean unsafeAllocated, Class<?>... classes) {
         List<String> names = new ArrayList<>();
         for (Class<?> i : classes) {
             if (i == null) {
@@ -51,39 +59,72 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
     }
 
-    public ReflectiveClassBuildItem(boolean methods, boolean fields, String... className) {
-        this(true, methods, fields, className);
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
+    public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... classes) {
+        this(true, methods, fields, classes);
     }
 
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, String... className) {
-        this(constructors, methods, fields, false, false, false, className);
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
+    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
+        this(constructors, methods, fields, false, false, false, classes);
     }
 
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
+    public ReflectiveClassBuildItem(boolean methods, boolean fields, String... classNames) {
+        this(true, methods, fields, classNames);
+    }
+
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
+    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, String... classNames) {
+        this(constructors, methods, fields, false, false, false, classNames);
+    }
+
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean serialization,
-            String... className) {
-        this(constructors, methods, fields, false, serialization, false, className);
+            String... classNames) {
+        this(constructors, methods, fields, false, serialization, false, classNames);
     }
 
-    public static ReflectiveClassBuildItem weakClass(String... className) {
-        return weakClass(true, true, true, className);
+    public static ReflectiveClassBuildItem weakClass(String... classNames) {
+        return ReflectiveClassBuildItem.builder(classNames).constructors().methods().fields().weak().build();
     }
 
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
     public static ReflectiveClassBuildItem weakClass(boolean constructors, boolean methods, boolean fields,
-            String... className) {
-        return new ReflectiveClassBuildItem(constructors, methods, fields, true, false, false, className);
+            String... classNames) {
+        return ReflectiveClassBuildItem.builder(classNames).constructors(constructors).methods(methods).fields(fields).weak()
+                .build();
     }
 
-    public static ReflectiveClassBuildItem serializationClass(String... className) {
-        return serializationClass(false, className);
+    public static ReflectiveClassBuildItem serializationClass(String... classNames) {
+        return ReflectiveClassBuildItem.builder(classNames).serialization().build();
     }
 
-    public static ReflectiveClassBuildItem serializationClass(boolean unsafeAllocated, String... className) {
-        return new ReflectiveClassBuildItem(false, false, false, false, true, unsafeAllocated, className);
-    }
-
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization,
-            boolean unsafeAllocated,
-            String... className) {
+    ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean weak, boolean serialization,
+            boolean unsafeAllocated, String... className) {
         for (String i : className) {
             if (i == null) {
                 throw new NullPointerException();
@@ -135,25 +176,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return unsafeAllocated;
     }
 
-    public static Builder builder(Class<?>... className) {
-        String[] classNameStrings = stream(className)
-                .map(aClass -> {
-                    if (aClass == null) {
-                        throw new NullPointerException();
-                    }
-                    return aClass.getName();
-                })
-                .toArray(String[]::new);
-
-        return new Builder()
-                .className(classNameStrings);
-    }
-
-    public static Builder builder(String... className) {
-        return new Builder()
-                .className(className);
-    }
-
     public static class Builder {
         private String[] className;
         private boolean constructors = true;
@@ -176,9 +198,17 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public Builder constructors() {
+            return constructors(true);
+        }
+
         public Builder methods(boolean methods) {
             this.methods = methods;
             return this;
+        }
+
+        public Builder methods() {
+            return methods(true);
         }
 
         public Builder fields(boolean fields) {
@@ -186,11 +216,15 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public Builder fields() {
+            return fields(true);
+        }
+
         /**
          * @deprecated As of GraalVM 21.2 finalFieldsWritable is no longer needed when registering fields for reflection. This
-         *             will be removed in a future verion of Quarkus.
+         *             will be removed in a future version of Quarkus.
          */
-        @Deprecated
+        @Deprecated(forRemoval = true)
         public Builder finalFieldsWritable(boolean finalFieldsWritable) {
             return this;
         }
@@ -200,14 +234,26 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
-        public Builder serialization(boolean serialize) {
-            this.serialization = serialize;
+        public Builder weak() {
+            return weak(true);
+        }
+
+        public Builder serialization(boolean serialization) {
+            this.serialization = serialization;
             return this;
+        }
+
+        public Builder serialization() {
+            return serialization(true);
         }
 
         public Builder unsafeAllocated(boolean unsafeAllocated) {
             this.unsafeAllocated = unsafeAllocated;
             return this;
+        }
+
+        public Builder unsafeAllocated() {
+            return unsafeAllocated(true);
         }
 
         public ReflectiveClassBuildItem build() {

@@ -102,7 +102,7 @@ public class RegisterForReflectionBuildStep {
     }
 
     /**
-     * BFS Recursive Method to register a class and it's inner classes for Reflection.
+     * BFS Recursive Method to register a class and its inner classes for Reflection.
      *
      * @param unsafeAllocated
      * @param reflectiveClassHierarchy
@@ -115,8 +115,10 @@ public class RegisterForReflectionBuildStep {
             final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy, Set<DotName> processedReflectiveHierarchies,
             AnnotationValue registerFullHierarchyValue, Builder builder) {
-        reflectiveClass.produce(serialization ? ReflectiveClassBuildItem.serializationClass(unsafeAllocated, className)
-                : new ReflectiveClassBuildItem(true, methods, fields, false, false, unsafeAllocated, className));
+        reflectiveClass.produce(serialization
+                ? ReflectiveClassBuildItem.builder(className).serialization().unsafeAllocated(unsafeAllocated).build()
+                : ReflectiveClassBuildItem.builder(className).constructors().methods(methods).fields(fields)
+                        .unsafeAllocated(unsafeAllocated).build());
 
         //Search all class hierarchy, fields and methods in order to register its classes for reflection
         if (registerFullHierarchyValue != null && registerFullHierarchyValue.asBoolean()) {

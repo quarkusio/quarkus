@@ -16,9 +16,4 @@ public class GraalVMFeatures {
         return new NativeImageFeatureBuildItem("org.hibernate.graalvm.internal.GraalVMStaticFeature");
     }
 
-    @BuildStep
-    NativeImageFeatureBuildItem queryParsingSupportFeature() {
-        return new NativeImageFeatureBuildItem("org.hibernate.graalvm.internal.QueryParsingSupport");
-    }
-
 }

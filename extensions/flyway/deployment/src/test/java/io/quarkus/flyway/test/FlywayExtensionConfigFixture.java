@@ -140,6 +140,18 @@ public class FlywayExtensionConfigFixture {
         return getBooleanValue("quarkus.flyway.migrate-at-start", datasourceName);
     }
 
+    public String username(String datasourceName) {
+        return getStringValue("quarkus.flyway.%s.username", datasourceName);
+    }
+
+    public String password(String datasourceName) {
+        return getStringValue("quarkus.flyway.%s.password", datasourceName);
+    }
+
+    public String jdbcUrl(String datasourceName) {
+        return getStringValue("quarkus.flyway.%s.jdbc-url", datasourceName);
+    }
+
     private String getStringValue(String parameterName, String datasourceName) {
         return getValue(parameterName, datasourceName, String.class);
     }

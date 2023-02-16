@@ -299,8 +299,17 @@ public class ConfigBuildStep {
             return;
         }
 
-        Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
         Set<ConfigClassBuildItem> configMappings = new HashSet<>();
+
+        // Add beans for all unremovable mappings
+        for (ConfigClassBuildItem configClass : configClasses) {
+            if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
+                configMappings.add(configClass);
+            }
+        }
+
+        // Add beans for all injection points
+        Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
         for (InjectionPointInfo injectionPoint : beanRegistration.getInjectionPoints()) {
             Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
             ConfigClassBuildItem configClass = configMappingTypes.get(type);
@@ -309,6 +318,7 @@ public class ConfigBuildStep {
             }
         }
 
+        // Generate the mappings beans
         for (ConfigClassBuildItem configClass : configMappings) {
             BeanConfigurator<Object> bean = beanRegistration.getContext()
                     .configure(configClass.getConfigClass())

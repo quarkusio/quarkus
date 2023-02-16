@@ -71,8 +71,15 @@ public class FlywayFunctionalityResource {
     @GET
     @Path("init-sql-result")
     public Integer returnInitSqlResult() {
-        return (Integer) entityManager.createNativeQuery("SELECT ONE_HUNDRED")
+        return (Integer) entityManager.createNativeQuery("SELECT f_my_constant()")
                 .getSingleResult();
+    }
+
+    @GET
+    @Path("created-by")
+    public String returnCreatedByUser() {
+        return entityManager.createQuery("select a from AppEntity a where a.id = 1", AppEntity.class)
+                .getSingleResult().getCreatedBy();
     }
 
 }

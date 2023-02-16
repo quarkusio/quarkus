@@ -19,6 +19,7 @@ import org.jboss.resteasy.reactive.RestForm;
 import io.quarkus.csrf.reactive.runtime.CsrfTokenUtils;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
+import io.quarkus.security.Authenticated;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("/service")
@@ -39,6 +40,7 @@ public class TestResource {
     @GET
     @Path("/csrfTokenForm")
     @Produces(MediaType.TEXT_HTML)
+    @Authenticated
     public TemplateInstance getCsrfTokenForm() {
         return csrfTokenForm.instance();
     }

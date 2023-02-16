@@ -53,6 +53,7 @@ public class DB2DevServicesProcessor {
 
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
                 container.start();
 
                 LOG.info("Dev Services for IBM Db2 started.");

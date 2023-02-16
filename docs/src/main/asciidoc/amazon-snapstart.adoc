@@ -22,7 +22,7 @@ However, you can enable/disable it explicitly using:
 
 [source, properties]
 ----
-quarkus.snapstart.enabled=true|false
+quarkus.snapstart.enable=true|false
 ----
 
 IMPORTANT: It does not enable/disable SnapStart for your function, only the Quarkus optimizations.

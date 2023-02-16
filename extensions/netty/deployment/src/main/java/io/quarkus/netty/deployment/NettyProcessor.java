@@ -93,7 +93,8 @@ class NettyProcessor {
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, false);
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
-                //.addNativeImageSystemProperty("io.netty.noUnsafe", "true")
+                // disable unsafe usage to allow io.netty.internal.PlarformDependent0 to be reinitialized without issues
+                .addNativeImageSystemProperty("io.netty.noUnsafe", "true")
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
@@ -109,6 +110,9 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
                 // The default channel id uses the process id, it should not be cached in the native image.
                 .addRuntimeInitializedClass("io.netty.channel.DefaultChannelId")
+                // Make sure to re-initialize platform dependent classes/values at runtime
+                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent")
+                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http.HttpObjectEncoder")) {

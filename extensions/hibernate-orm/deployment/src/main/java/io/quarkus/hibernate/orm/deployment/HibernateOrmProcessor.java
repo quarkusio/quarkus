@@ -29,6 +29,7 @@ import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -47,12 +48,25 @@ import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.graph.internal.parse.SubGraphGenerator;
+import org.hibernate.graph.spi.AttributeNodeImplementor;
+import org.hibernate.graph.spi.GraphImplementor;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
+import org.hibernate.query.hql.spi.DotIdentifierConsumer;
+import org.hibernate.query.hql.spi.SqmCreationProcessingState;
+import org.hibernate.query.sqm.spi.ParameterDeclarationContext;
+import org.hibernate.query.sqm.sql.FromClauseIndex;
+import org.hibernate.sql.ast.Clause;
+import org.hibernate.sql.ast.spi.SqlAstProcessingState;
+import org.hibernate.sql.ast.tree.Statement;
+import org.hibernate.sql.ast.tree.select.QueryPart;
+import org.hibernate.sql.results.graph.FetchParent;
+import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingState;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
@@ -1596,6 +1610,30 @@ public final class HibernateOrmProcessor {
         return TypePool.Default.of(new ClassFileLocator.Compound(
                 new ClassFileLocator.Simple(transformedClasses),
                 ClassFileLocator.ForClassLoader.of(Thread.currentThread().getContextClassLoader())));
+    }
+
+    //TODO cleanup: this should be unneccessary but we generate them to not having to wait for Hibernate ORM 6.2.0.Final,
+    //which is expected to contain the same metadata.
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    public ReflectiveClassBuildItem additionalStaticReflectionNeeds() {
+        return new ReflectiveClassBuildItem(true, false, false,
+                AttributeNodeImplementor[].class,
+                Clause[].class,
+                DotIdentifierConsumer[].class,
+                FetchParent[].class,
+                FromClauseIndex[].class,
+                Function[].class,
+                GraphImplementor[].class,
+                JdbcValuesSourceProcessingState[].class,
+                List[].class,
+                Entry[].class,
+                ParameterDeclarationContext[].class,
+                QueryPart[].class,
+                SqlAstProcessingState[].class,
+                SqmCreationProcessingState[].class,
+                Statement[].class,
+                SubGraphGenerator[].class,
+                Supplier[].class);
     }
 
     private boolean isModified(String entity, Set<String> changedClasses, IndexView index) {

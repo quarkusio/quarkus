@@ -7,7 +7,7 @@ import io.quarkus.it.panache.kotlin.TestEndpoint
 import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
 import jakarta.persistence.EntityManager
-import org.hibernate.internal.SessionImpl
+import org.hibernate.engine.spi.SessionImplementor
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
@@ -26,7 +26,7 @@ class TestEndpointRunner {
 
     @Test
     fun testModel() {
-        val con = (em.delegate as SessionImpl).connection()
+        val con = (em.delegate as SessionImplementor).jdbcCoordinator.logicalConnection.physicalConnection
 
         val schema = mutableMapOf<String, Map<String, String>>()
         val result: ResultSet = con.metaData.getTables(null, "PUBLIC", null, arrayOf("TABLE"))

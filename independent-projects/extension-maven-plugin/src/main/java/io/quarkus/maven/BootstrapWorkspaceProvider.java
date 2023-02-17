@@ -17,6 +17,12 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 @Named
 public class BootstrapWorkspaceProvider {
 
+    // Mostly for use by tests
+    static BootstrapWorkspaceProvider newInstance(String dirName) {
+        // If we get passed in a directory explicitly, don't try and tack the "-f" value onto it
+        return new BootstrapWorkspaceProvider(dirName, false);
+    }
+
     private final Path base;
     private boolean initialized;
     private LocalProject origin;
@@ -24,12 +30,6 @@ public class BootstrapWorkspaceProvider {
 
     public BootstrapWorkspaceProvider() {
         this("", true);
-    }
-
-    // Mostly for use by tests
-    BootstrapWorkspaceProvider(String dirName) {
-        // If we get passed in a directory explicitly, don't try and tack the "-f" value onto it
-        this(dirName, false);
     }
 
     private BootstrapWorkspaceProvider(String dirName, boolean honourAlternatePomFile) {

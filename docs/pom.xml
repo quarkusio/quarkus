@@ -20,6 +20,7 @@
         <graal-sdk.version-for-documentation>22.3</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>22.3</mandrel.version-for-documentation>
 
+        <assembly-maven-plugin.version>3.5.0</assembly-maven-plugin.version>
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>
         <asciidoctor.fail-if>WARN</asciidoctor.fail-if>
@@ -38,7 +39,6 @@
 
     <name>Quarkus - Documentation</name>
     <description>The Quarkus documentation</description>
-
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -3082,12 +3082,19 @@
                         <groupId>${project.groupId}</groupId>
                         <artifactId>${project.artifactId}</artifactId>
                         <version>${project.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
                     </dependency>
                 </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>${assembly-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>assemble</id>
@@ -3174,6 +3181,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
+                        <version>${assembly-maven-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>assemble-pdf</id>

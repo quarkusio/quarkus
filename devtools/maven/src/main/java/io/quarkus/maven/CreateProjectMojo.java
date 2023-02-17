@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -42,6 +41,7 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
@@ -190,6 +190,9 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "data")
     private String data;
 
+    @Component
+    QuarkusWorkspaceProvider workspaceProvider;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -214,6 +217,7 @@ public class CreateProjectMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
+
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
         ExtensionCatalogResolver catalogResolver;
         try {
@@ -345,7 +349,7 @@ public class CreateProjectMojo extends AbstractMojo {
             try {
                 return isBlank(groupId) && isBlank(artifactId) && isBlank(version)
                         ? catalogResolver.resolveExtensionCatalog()
-                        : catalogResolver.resolveExtensionCatalog(Collections.singletonList(
+                        : catalogResolver.resolveExtensionCatalog(List.of(
                                 ArtifactCoords.pom(getPlatformGroupId(mojo, groupId), getPlatformArtifactId(artifactId),
                                         getPlatformVersion(mojo, version))));
             } catch (RegistryResolutionException e) {

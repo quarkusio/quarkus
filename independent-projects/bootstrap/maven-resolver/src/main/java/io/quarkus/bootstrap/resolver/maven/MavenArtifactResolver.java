@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -234,12 +233,12 @@ public class MavenArtifactResolver {
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws BootstrapMavenException {
-        return collectDependencies(artifact, deps, Collections.emptyList());
+        return collectDependencies(artifact, deps, List.of());
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos)
             throws BootstrapMavenException {
-        return collectDependencies(artifact, deps, mainRepos, Collections.emptyList());
+        return collectDependencies(artifact, deps, mainRepos, List.of());
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos,
@@ -253,7 +252,7 @@ public class MavenArtifactResolver {
     }
 
     public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps) throws BootstrapMavenException {
-        return resolveDependencies(artifact, deps, Collections.emptyList());
+        return resolveDependencies(artifact, deps, List.of());
     }
 
     public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos)
@@ -283,7 +282,7 @@ public class MavenArtifactResolver {
     public DependencyResult toDependencyTree(List<Dependency> deps, List<RemoteRepository> mainRepos)
             throws BootstrapMavenException {
         DependencyResult result = new DependencyResult(
-                new DependencyRequest().setCollectRequest(new CollectRequest(deps, Collections.emptyList(), mainRepos)));
+                new DependencyRequest().setCollectRequest(new CollectRequest(deps, List.of(), mainRepos)));
         DefaultDependencyNode root = new DefaultDependencyNode((Dependency) null);
         result.setRoot(root);
         GenericVersionScheme vs = new GenericVersionScheme();
@@ -317,7 +316,6 @@ public class MavenArtifactResolver {
             throws BootstrapMavenException {
         List<RemoteRepository> aggregatedRepos = aggregateRepositories(mainRepos, remoteRepos);
         final ArtifactDescriptorResult descr = resolveDescriptorInternal(artifact, aggregatedRepos);
-
         final List<Dependency> mergedManagedDeps;
         Map<ArtifactKey, String> managedVersions = Map.of();
         if (!managedDeps.isEmpty()) {
@@ -357,7 +355,7 @@ public class MavenArtifactResolver {
     }
 
     public List<RemoteRepository> newResolutionRepositories(List<RemoteRepository> repos) {
-        return repos.isEmpty() ? Collections.emptyList() : repoSystem.newResolutionRepositories(repoSession, repos);
+        return repos.isEmpty() ? List.of() : repoSystem.newResolutionRepositories(repoSession, repos);
     }
 
     public List<RemoteRepository> aggregateRepositories(List<RemoteRepository> dominant, List<RemoteRepository> recessive) {
@@ -374,7 +372,7 @@ public class MavenArtifactResolver {
     }
 
     private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos) {
-        return newCollectRequest(artifact, mainRepos, Collections.emptyList());
+        return newCollectRequest(artifact, mainRepos, List.of());
     }
 
     private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos,

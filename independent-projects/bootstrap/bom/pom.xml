@@ -33,6 +33,11 @@
                 <version>${guava.failureaccess.version}</version>
             </dependency>
             <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang.version}</version>
@@ -366,6 +371,17 @@
                 <version>${httpcore.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
                 <groupId>org.eclipse.sisu</groupId>
                 <artifactId>org.eclipse.sisu.inject</artifactId>
                 <version>${sisu.version}</version>
@@ -380,6 +396,16 @@
                         <artifactId>*</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.sonatype.plexus</groupId>
+                <artifactId>plexus-cipher</artifactId>
+                <version>${plexus-cipher.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-utils</artifactId>
+                <version>${plexus-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
@@ -426,6 +452,11 @@
                 <groupId>io.github.crac</groupId>
                 <artifactId>org-crac</artifactId>
                 <version>${org-crac.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.beanbag</groupId>
+                <artifactId>smallrye-beanbag-maven</artifactId>
+                <version>${smallrye-beanbag.version}</version>
             </dependency>
             <!-- Smallrye Common dependencies, imported as a BOM -->
             <dependency>

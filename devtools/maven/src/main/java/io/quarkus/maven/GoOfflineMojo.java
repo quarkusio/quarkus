@@ -24,12 +24,13 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
@@ -53,6 +54,9 @@ public class GoOfflineMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
     List<RemoteRepository> repos;
+
+    @Component
+    QuarkusWorkspaceProvider workspaceProvider;
 
     /**
      * Target launch mode corresponding to {@link io.quarkus.runtime.LaunchMode} for which the dependencies should be resolved.
@@ -113,16 +117,11 @@ public class GoOfflineMojo extends AbstractMojo {
     }
 
     private MavenArtifactResolver getResolver() throws MojoExecutionException {
-        try {
-            return MavenArtifactResolver.builder()
-                    .setCurrentProject(project.getBasedir().toString())
-                    .setRemoteRepositoryManager(remoteRepositoryManager)
-                    .setRemoteRepositories(repos)
-                    .setPreferPomsFromWorkspace(true)
-                    .build();
-        } catch (BootstrapMavenException e) {
-            throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
-        }
+        return workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
+                .setCurrentProject(project.getBasedir().toString())
+                .setRemoteRepositoryManager(remoteRepositoryManager)
+                .setRemoteRepositories(repos)
+                .setPreferPomsFromWorkspace(true));
     }
 
     private static void ensureResolvableModule(DependencyNode node, LocalWorkspace workspace, List<Path> createdDirs)

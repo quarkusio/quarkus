@@ -58,15 +58,13 @@
         <junit.version>5.9.2</junit.version>
         <commons-compress.version>1.23.0</commons-compress.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
-        <maven-core.version>3.8.8</maven-core.version>
+        <maven-core.version>3.9.1</maven-core.version>
         <mockito.version>5.2.0</mockito.version>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>21</maven-model-helper.version>
-        <commons-io.version>2.11.0</commons-io.version>
-        <smallrye-common.version>2.1.0</smallrye-common.version>
         <jandex.version>3.0.5</jandex.version>
     </properties>
     <modules>
@@ -80,6 +78,14 @@
     </modules>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
@@ -98,13 +104,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <dependency>
-                <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-bom</artifactId>
-                <version>${smallrye-common.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-base-codestarts</artifactId>
@@ -125,16 +124,6 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
                 <version>${commons-compress.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-app-model</artifactId>
-                <version>${quarkus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
-                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus.qute</groupId>
@@ -162,19 +151,9 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>${commons-io.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>maven-model-helper</artifactId>
                 <version>${maven-model-helper.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-plugin-api</artifactId>
-                <version>${maven-core.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.enterprise</groupId>
@@ -192,16 +171,6 @@
                 <version>${javax.inject.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-core</artifactId>
-                <version>${maven-core.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-model</artifactId>
-                <version>${maven-core.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
@@ -216,11 +185,6 @@
                 <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-core</artifactId>
-                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

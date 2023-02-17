@@ -198,7 +198,8 @@ public class BootstrapModelResolver implements ModelResolver {
     public ModelSource resolveModel(final Dependency dependency)
             throws UnresolvableModelException {
         try {
-            final Artifact artifact = new DefaultArtifact(dependency.getGroupId(), dependency.getArtifactId(), "",
+            final Artifact artifact = new DefaultArtifact(dependency.getGroupId(), dependency.getArtifactId(),
+                    ArtifactCoords.DEFAULT_CLASSIFIER,
                     ArtifactCoords.TYPE_POM, dependency.getVersion());
 
             final VersionRangeRequest versionRangeRequest = new VersionRangeRequest(artifact, repositories, context);

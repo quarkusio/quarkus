@@ -31,7 +31,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
         org.eclipse.aether.internal.impl.DefaultRepositoryEventDispatcher.class,
         org.eclipse.aether.internal.impl.DefaultRepositoryLayoutProvider.class,
         org.eclipse.aether.internal.impl.DefaultRepositorySystem.class,
-        org.eclipse.aether.internal.impl.DefaultSyncContextFactory.class,
         org.eclipse.aether.internal.impl.DefaultTransporterProvider.class,
         org.eclipse.aether.internal.impl.DefaultUpdateCheckManager.class,
         org.eclipse.aether.internal.impl.DefaultUpdatePolicyAnalyzer.class,

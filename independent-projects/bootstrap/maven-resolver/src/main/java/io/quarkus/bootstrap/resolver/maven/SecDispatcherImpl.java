@@ -45,7 +45,13 @@ public class SecDispatcherImpl implements SecDispatcher {
     protected String _configurationFile = "~/.m2/settings-security.xml";
 
     public SecDispatcherImpl() {
-        this._cipher = new DefaultPlexusCipher();
+        try {
+            this._cipher = new DefaultPlexusCipher();
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create an instance of " + getClass().getName(), e);
+        }
     }
 
     // ---------------------------------------------------------------

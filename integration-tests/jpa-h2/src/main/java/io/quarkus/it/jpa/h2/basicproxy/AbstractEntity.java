@@ -18,7 +18,6 @@ public abstract class AbstractEntity implements Serializable {
         // nop
     }
 
-    @Id
     @Column(name = "TYPE", insertable = false, updatable = false)
     public String type;
 

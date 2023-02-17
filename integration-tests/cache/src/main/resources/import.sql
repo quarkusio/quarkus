@@ -1,2 +1,2 @@
-INSERT INTO tree(id, name) VALUES (nextval('hibernate_sequence'), 'Oak');
-INSERT INTO tree(id, name) VALUES (nextval('hibernate_sequence'), 'Chestnut');
+INSERT INTO tree(id, name) VALUES (nextval('Tree_SEQ'), 'Oak');
+INSERT INTO tree(id, name) VALUES (nextval('Tree_SEQ'), 'Chestnut');

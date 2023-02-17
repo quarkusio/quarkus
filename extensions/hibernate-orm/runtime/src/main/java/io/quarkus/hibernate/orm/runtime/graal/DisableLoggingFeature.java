@@ -16,7 +16,8 @@ public class DisableLoggingFeature implements Feature {
     private static final String[] CATEGORIES = {
             "org.hibernate.Version",
             "org.hibernate.annotations.common.Version",
-            "org.hibernate.dialect.Dialect"
+            "SQL dialect",
+            "org.hibernate.cfg.Environment"
     };
 
     private final Map<String, Level> categoryMap = new HashMap<>(CATEGORIES.length);

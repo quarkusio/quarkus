@@ -184,11 +184,13 @@
                 <module>hibernate-orm-rest-data-panache</module>
                 <module>hibernate-orm-graphql-panache</module>
                 <module>hibernate-orm-panache-kotlin</module>
+                <!--
                 <module>hibernate-reactive-db2</module>
                 <module>hibernate-reactive-mysql</module>
                 <module>hibernate-reactive-postgresql</module>
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-kotlin</module>
+                -->
                 <module>hibernate-search-orm-elasticsearch</module>
                 <module>hibernate-search-orm-elasticsearch-coordination-outbox-polling</module>
                 <module>hibernate-search-orm-opensearch</module>
@@ -212,7 +214,7 @@
                 <module>elytron-resteasy</module>
                 <module>elytron-resteasy-reactive</module>
                 <module>elytron-undertow</module>
-                <module>security-webauthn</module>
+                <!--<module>security-webauthn</module>-->
                 <module>flyway</module>
                 <module>liquibase</module>
                 <module>liquibase-mongodb</module>
@@ -247,7 +249,7 @@
                 <module>kubernetes-client</module>
                 <module>kubernetes-client-devservices</module>
                 <module>kubernetes-service-binding-jdbc</module>
-                <module>kubernetes-service-binding-reactive</module>
+                <!--<module>kubernetes-service-binding-reactive</module>-->
                 <module>openshift-client</module>
                 <module>mongodb-client</module>
                 <module>mongodb-devservices</module>
@@ -289,7 +291,9 @@
                 <module>reactive-messaging-mqtt</module>
                 <module>reactive-messaging-rabbitmq</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
+                <!--
                 <module>reactive-messaging-hibernate-reactive</module>
+                -->
                 <module>reactive-messaging-hibernate-orm</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
@@ -338,7 +342,9 @@
                 <module>grpc-proto-v2</module>
                 <module>grpc-health</module>
                 <module>grpc-hibernate</module>
+                <!--
                 <module>grpc-hibernate-reactive</module>
+                -->
                 <module>grpc-external-proto</module>
                 <module>grpc-external-proto-test</module>
                 <module>grpc-stork-response-time</module>

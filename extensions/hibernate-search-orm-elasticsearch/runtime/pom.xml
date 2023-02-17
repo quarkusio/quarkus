@@ -31,7 +31,7 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate.search</groupId>
-            <artifactId>hibernate-search-mapper-orm-jakarta</artifactId>
+            <artifactId>hibernate-search-mapper-orm-orm6</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>jakarta.activation</groupId>

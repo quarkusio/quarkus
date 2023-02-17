@@ -105,6 +105,7 @@ public final class CodestartResourceLoadersBuilder {
         final Map<String, Artifact> codestartsArtifacts = new LinkedHashMap<>();
 
         // The latest inserted in the Map will have priority over the previous (in case of codestarts name conflicts)
+        // We have to remove keys to override because 'put' keeps the order in a LinkedHashMap
         if (catalog != null) {
             // Load codestarts from each extensions codestart artifacts
             for (Extension e : catalog.getExtensions()) {

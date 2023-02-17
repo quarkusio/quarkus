@@ -6,7 +6,7 @@ import java.util.List;
 
 import io.quarkus.cli.Version;
 import io.quarkus.cli.common.OutputOptionMixin;
-import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
@@ -49,12 +49,12 @@ public class RegistryClientMixin {
                 : RegistriesConfig.resolveFromFile(Path.of(config));
     }
 
-    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusVersionGroup targetVersion, BuildTool buildTool,
+    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusPlatformGroup targetVersion, BuildTool buildTool,
             OutputOptionMixin log) throws RegistryResolutionException {
         return createQuarkusProject(projectRoot, targetVersion, buildTool, log, List.of());
     }
 
-    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusVersionGroup targetVersion, BuildTool buildTool,
+    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusPlatformGroup targetVersion, BuildTool buildTool,
             OutputOptionMixin log, Collection<String> extensions) throws RegistryResolutionException {
         ExtensionCatalog catalog = getExtensionCatalog(targetVersion, log);
         if (VALIDATE && catalog.getQuarkusCoreVersion().startsWith("1.")) {
@@ -65,7 +65,7 @@ public class RegistryClientMixin {
         return QuarkusProjectHelper.getProject(projectRoot, catalog, buildTool, log);
     }
 
-    ExtensionCatalog getExtensionCatalog(TargetQuarkusVersionGroup targetVersion, OutputOptionMixin log)
+    ExtensionCatalog getExtensionCatalog(TargetQuarkusPlatformGroup targetVersion, OutputOptionMixin log)
             throws RegistryResolutionException {
         log.debug("Resolving Quarkus extension catalog for " + targetVersion);
         QuarkusProjectHelper.setMessageWriter(log);

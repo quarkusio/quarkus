@@ -1,16 +1,12 @@
 package io.quarkus.maven;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 
+import io.quarkus.devtools.commands.ProjectInfo;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
-import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.commands.handlers.InfoCommandHandler;
-import io.quarkus.devtools.commands.handlers.UpdateCommandHandler;
+import io.quarkus.devtools.commands.handlers.ProjectInfoCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
 
 /**
@@ -28,20 +24,19 @@ public class InfoMojo extends QuarkusProjectStateMojoBase {
 
     @Override
     protected void processProjectState(QuarkusProject quarkusProject) throws MojoExecutionException {
+        final ProjectInfo invoker = new ProjectInfo(quarkusProject);
 
-        final Map<String, Object> params = new HashMap<>();
-        params.put(UpdateCommandHandler.APP_MODEL, resolveApplicationModel());
-        params.put(UpdateCommandHandler.LOG_STATE_PER_MODULE, perModule);
+        invoker.perModule(perModule);
+        invoker.appModel(resolveApplicationModel());
 
-        final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(quarkusProject, params);
         QuarkusCommandOutcome outcome;
         try {
-            outcome = new InfoCommandHandler().execute(invocation);
+            outcome = invoker.execute();
         } catch (QuarkusCommandException e) {
             throw new MojoExecutionException("Failed to resolve the available updates", e);
         }
 
-        if (outcome.getValue(InfoCommandHandler.RECOMMENDATIONS_AVAILABLE, false)) {
+        if (outcome.getValue(ProjectInfoCommandHandler.RECOMMENDATIONS_AVAILABLE, false)) {
             getLog().warn(
                     "Non-recommended Quarkus platform BOM and/or extension versions were found. For more details, please, execute 'mvn quarkus:update -Drectify'");
         }

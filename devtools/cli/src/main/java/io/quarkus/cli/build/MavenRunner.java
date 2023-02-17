@@ -130,7 +130,7 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer info(boolean perModule) throws Exception {
+    public Integer projectInfo(boolean perModule) throws Exception {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, true);
         args.add("quarkus:info");
@@ -142,15 +142,16 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer update(boolean rectify, boolean recommendedState, boolean perModule) {
+    public Integer updateProject(String targetPlatformVersion, String targetPlatformStreamId, boolean perModule)
+            throws Exception {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, true);
         args.add("quarkus:update");
-        if (rectify) {
-            args.add("-Drectify");
+        if (targetPlatformVersion != null) {
+            args.add("-DplatformVersion=" + targetPlatformVersion);
         }
-        if (recommendedState) {
-            args.add("-DrecommendedState");
+        if (targetPlatformStreamId != null) {
+            args.add("-DstreamId=" + targetPlatformStreamId);
         }
         if (perModule) {
             args.add("-DperModule");

@@ -8,7 +8,7 @@ import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.RunModeOption;
-import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -28,7 +28,7 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
     CategoryListFormatOptions format = new CategoryListFormatOptions();
 
     @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version:%n")
-    TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
+    TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
     @Override
     public Integer call() {

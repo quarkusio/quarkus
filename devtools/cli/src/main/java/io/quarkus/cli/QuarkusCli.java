@@ -25,7 +25,6 @@ import picocli.CommandLine.UnmatchedArgumentException;
 @CommandLine.Command(name = "quarkus", subcommands = {
         Create.class, Build.class, Dev.class, Test.class, ProjectExtensions.class, Image.class, Registry.class, Info.class,
         Update.class,
-        Version.class,
         Completion.class }, scope = ScopeType.INHERIT, sortOptions = false, showDefaultValues = true, versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = false, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n", headerHeading = "%n", parameterListHeading = "%n")
 public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     static {
@@ -38,7 +37,8 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     @CommandLine.Mixin
     protected HelpOption helpOption;
 
-    @CommandLine.Option(names = { "-v", "--version" }, versionHelp = true, description = "Print version information and exit.")
+    @CommandLine.Option(names = { "-v",
+            "--version" }, versionHelp = true, description = "Print Cli version information and exit.")
     public boolean showVersion;
 
     @CommandLine.Mixin(name = "output")

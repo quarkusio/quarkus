@@ -13,7 +13,7 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.RunModeOption;
-import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.cli.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.devtools.commands.CreateProjectHelper;
@@ -201,7 +201,7 @@ public class BaseCreateCommand implements Callable<Integer> {
      * @return Quarkus command invocation that can be printed (dry-run) or run to create the project
      * @throws RegistryResolutionException
      */
-    public QuarkusCommandInvocation build(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion,
+    public QuarkusCommandInvocation build(BuildTool buildTool, TargetQuarkusPlatformGroup targetVersion,
             Map<String, String> properties, Collection<String> extensions)
             throws RegistryResolutionException {
 
@@ -230,7 +230,7 @@ public class BaseCreateCommand implements Callable<Integer> {
      * @return Resolved QuarkusProject for the given build tool and target quarkus version
      * @throws RegistryResolutionException
      */
-    public QuarkusProject getExtensionVersions(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion)
+    public QuarkusProject getExtensionVersions(BuildTool buildTool, TargetQuarkusPlatformGroup targetVersion)
             throws RegistryResolutionException {
         return registryClient.createQuarkusProject(outputDirectory(), targetVersion, buildTool, output);
     }

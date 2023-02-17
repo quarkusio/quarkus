@@ -4,8 +4,10 @@ import io.smallrye.common.os.OS;
 
 public enum MessageIcons {
 
-    OK_ICON(toEmoji("U+2705"), "[SUCCESS]"),
-    NOK_ICON(toEmoji("U+274C"), "[FAILURE]"),
+    UP_TO_DATE_ICON(toEmoji("U+2714"), "[UP-TO-DATE]"),
+    OUT_OF_DATE_ICON(toEmoji("U+26A0"), "[OUT-OF-DATE]"),
+    SUCCESS_ICON(toEmoji("U+2705"), "[SUCCESS]"),
+    FAILURE_ICON(toEmoji("U+274C"), "[FAILURE]"),
     NOOP_ICON(toEmoji("U+1F44D"), ""),
     WARN_ICON(toEmoji("U+1F525"), "[WARN]"),
     ERROR_ICON(toEmoji("U+2757"), "[ERROR]");
@@ -28,12 +30,15 @@ public enum MessageIcons {
                 stringBuilder.append(character);
             }
         }
-        stringBuilder.append(' ');
         return stringBuilder.toString();
+    }
+
+    public String iconOrMessage() {
+        return OS.WINDOWS.isCurrent() ? messageCode : icon;
     }
 
     @Override
     public String toString() {
-        return OS.WINDOWS.isCurrent() ? messageCode : String.format("%s %s", messageCode, icon);
+        return OS.WINDOWS.isCurrent() ? String.format("%s ", messageCode) : String.format("%s %s ", messageCode, icon);
     }
 }

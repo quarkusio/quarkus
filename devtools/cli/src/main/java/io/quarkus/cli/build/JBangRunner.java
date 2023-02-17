@@ -70,12 +70,13 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer info(boolean perModule) {
+    public Integer projectInfo(boolean perModule) {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }
 
     @Override
-    public Integer update(boolean rectify, boolean recommendedState, boolean perModule) {
+    public Integer updateProject(String targetPlatformVersion, String targetPlatformStreamId, boolean perModule)
+            throws Exception {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }
 

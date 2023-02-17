@@ -22,6 +22,7 @@ import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.registry.config.RegistriesConfigLocator;
+import io.quarkus.runtime.util.StringUtil;
 
 public class GradleRunner implements BuildSystemRunner {
     public static final String[] windowsWrapper = { "gradlew.cmd", "gradlew.bat" };
@@ -125,7 +126,7 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer info(boolean perModule) {
+    public Integer projectInfo(boolean perModule) {
         ArrayDeque<String> args = new ArrayDeque<>();
         args.add("quarkusInfo");
         if (perModule) {
@@ -135,14 +136,17 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer update(boolean rectify, boolean recommendedState, boolean perModule) throws Exception {
+    public Integer updateProject(String targetPlatformVersion, String targetPlatformStreamId, boolean perModule)
+            throws Exception {
         ArrayDeque<String> args = new ArrayDeque<>();
         args.add("quarkusUpdate");
-        if (rectify) {
-            args.add("--rectify");
+        if (!StringUtil.isNullOrEmpty(targetPlatformVersion)) {
+            args.add("--platform-version");
+            args.add(targetPlatformVersion);
         }
-        if (recommendedState) {
-            args.add("--recommended-state");
+        if (!StringUtil.isNullOrEmpty(targetPlatformStreamId)) {
+            args.add("--stream-id");
+            args.add(targetPlatformStreamId);
         }
         if (perModule) {
             args.add("--per-module");

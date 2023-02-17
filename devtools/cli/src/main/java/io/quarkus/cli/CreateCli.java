@@ -5,7 +5,7 @@ import java.util.Set;
 
 import io.quarkus.cli.common.DataOptions;
 import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
 import io.quarkus.cli.create.CodeGenerationGroup;
 import io.quarkus.cli.create.TargetBuildToolGroup;
@@ -40,7 +40,7 @@ public class CreateCli extends BaseCreateCommand {
     String description;
 
     @CommandLine.ArgGroup(order = 4, heading = "%nQuarkus version:%n")
-    TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
+    TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
     @CommandLine.ArgGroup(order = 5, heading = "%nBuild tool (Maven):%n")
     TargetBuildToolGroup targetBuildTool = new TargetBuildToolGroup();

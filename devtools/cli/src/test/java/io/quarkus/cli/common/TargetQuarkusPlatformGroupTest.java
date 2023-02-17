@@ -8,10 +8,10 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 
-public class TargetQuarkusVersionGroupTest {
+public class TargetQuarkusPlatformGroupTest {
     final static String clientVersion = Version.clientVersion();
 
-    TargetQuarkusVersionGroup qvg = new TargetQuarkusVersionGroup();
+    TargetQuarkusPlatformGroup qvg = new TargetQuarkusPlatformGroup();
 
     @Test
     void testPlatformFullyQualified() {

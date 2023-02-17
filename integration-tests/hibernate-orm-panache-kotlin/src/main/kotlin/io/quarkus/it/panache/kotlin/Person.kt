@@ -22,7 +22,7 @@ import org.hibernate.annotations.ParamDef
 @XmlRootElement
 @Entity(name = "Person2")
 @FilterDefs(
-    FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = [ParamDef(name = "name", type = "string")]),
+    FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = [ParamDef(name = "name", type = String::class)]),
     FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'")
 )
 @Filters(Filter(name = "Person.isAlive"), Filter(name = "Person.hasName"))

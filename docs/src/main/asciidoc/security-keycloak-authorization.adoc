@@ -11,15 +11,18 @@ include::_attributes.adoc[]
 This guide demonstrates how your Quarkus application can authorize a bearer token access to protected resources using https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services].
 
 The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak and currently can only be used with the Quarkus xref:security-oidc-bearer-authentication-concept.adoc[OIDC service applications].
+
 It provides a flexible and dynamic authorization capability based on Resource-Based Access Control.
-In other words, instead of explicitly enforcing access based on some specific access control mechanism (e.g.: RBAC), you just check whether a request is allowed to access a resource based on its name, identifier or URI.
+
+Instead of explicitly enforcing access based on some specific access control mechanism such as Role-Based Access Control(RBAC), `quarkus-keycloak-authorization` checks whether a request is allowed to access a resource based on its name, identifier or URI by sending a bearer access token verified by `quarkus-oidc` to Keycloak Authorization Services where an authorization decision is made.
+
+Use `quarkus-keycloak-authorization` only if you work with Keycloak and have Keycloak Authorization Services enabled to make authorization decisions. Use `quarkus-oidc` if you do not work with Keycloak or work with Keycloak but do not have its Keycloak Authorization Services enabled to make authorization decisions.
 
 By externalizing authorization from your application, you are allowed to protect your applications using different access control mechanisms as well as avoid re-deploying your application every time your security requirements change, where Keycloak will be acting as a centralized authorization service from where your protected resources and their associated permissions are managed.
 
 See the xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] guide for more information about `Bearer Token` authentication mechanism. It is important to realize that it is the `Bearer Token` authentication mechanism which does the authentication and creates a security identity - while the `quarkus-keycloak-authorization` extension is responsible for applying a Keycloak Authorization Policy to this identity based on the current request path and other policy settings.
 
-If you are already familiar with Keycloak, you’ll notice that the extension is basically another adapter implementation but specific for Quarkus applications.
-Otherwise, you can find more information in the Keycloak https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[documentation].
+Please see https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[Keycloak Authorization Services documentation] for more information.
 
 == Prerequisites
 

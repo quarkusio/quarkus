@@ -8,10 +8,13 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.hibernate.envers.HibernateEnversBuildTimeConfig;
 import io.quarkus.hibernate.envers.HibernateEnversBuildTimeConfigPersistenceUnit;
 import io.quarkus.hibernate.envers.HibernateEnversRecorder;
+import io.quarkus.hibernate.envers.runtime.graal.DisableLoggingFeature;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
@@ -39,6 +42,11 @@ public final class HibernateEnversProcessor {
             pu.revisionListener.ifPresent(s -> reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, s)));
             pu.auditStrategy.ifPresent(s -> reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, s)));
         }
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageFeatureBuildItem nativeImageFeature() {
+        return new NativeImageFeatureBuildItem(DisableLoggingFeature.class);
     }
 
     @BuildStep

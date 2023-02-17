@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.envers.runtime.graal;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -42,6 +41,6 @@ public class DisableLoggingFeature implements Feature {
 
     @Override
     public String getDescription() {
-        return "Disables INFO logging during the analysis phase for the " + Arrays.toString(CATEGORIES) + " categories";
+        return "Disables INFO logging during the analysis phase";
     }
 }

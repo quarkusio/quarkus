@@ -34,10 +34,6 @@ public final class HibernateEnversProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.hibernate.envers.DefaultRevisionEntity"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
                 "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"));
-        reflectiveClass
-                .produce(new ReflectiveClassBuildItem(false, false, "org.hibernate.tuple.entity.DynamicMapEntityTuplizer"));
-        reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, "org.hibernate.tuple.component.DynamicMapComponentTuplizer"));
 
         for (HibernateEnversBuildTimeConfigPersistenceUnit pu : buildTimeConfig.getAllPersistenceUnitConfigsAsMap().values()) {
             pu.revisionListener.ifPresent(s -> reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, s)));

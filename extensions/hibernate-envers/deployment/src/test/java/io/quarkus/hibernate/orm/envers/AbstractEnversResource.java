@@ -4,11 +4,11 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.UserTransaction;
 
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.envers.boot.internal.EnversService;
-import org.hibernate.envers.configuration.internal.AuditEntitiesConfiguration;
-import org.hibernate.envers.configuration.internal.GlobalConfiguration;
+import org.hibernate.envers.configuration.Configuration;
+import org.hibernate.envers.internal.entities.EntitiesConfigurations;
 import org.hibernate.envers.strategy.AuditStrategy;
-import org.hibernate.internal.SessionImpl;
 import org.hibernate.persister.entity.EntityPersister;
 
 public abstract class AbstractEnversResource {
@@ -23,15 +23,16 @@ public abstract class AbstractEnversResource {
     }
 
     public EntityPersister getEntityPersister(String entityName) {
-        return ((SessionImpl) em.getDelegate()).getSessionFactory().getMetamodel().entityPersister(entityName);
+        return ((SessionImplementor) em.getDelegate()).getSessionFactory().getMappingMetamodel()
+                .findEntityDescriptor(entityName);
     }
 
-    public AuditEntitiesConfiguration getAuditEntitiesConfiguration() {
-        return getEnversService().getAuditEntitiesConfiguration();
+    public EntitiesConfigurations getEntitiesConfiguration() {
+        return getEnversService().getEntitiesConfigurations();
     }
 
-    public GlobalConfiguration getGlobalConfiguration() {
-        return getEnversService().getGlobalConfiguration();
+    public Configuration getConfiguration() {
+        return getEnversService().getConfig();
     }
 
     public AuditStrategy getAuditStrategy() {
@@ -39,7 +40,7 @@ public abstract class AbstractEnversResource {
     }
 
     public EnversService getEnversService() {
-        return ((((SessionImpl) em.getDelegate()).getFactory().getServiceRegistry())
+        return ((((SessionImplementor) em.getDelegate()).getFactory().getServiceRegistry())
                 .getParentServiceRegistry())
                 .getService(EnversService.class);
     }

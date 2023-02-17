@@ -12,7 +12,7 @@ import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 public class EnversTestAllowIdentifierReuseResource extends AbstractEnversResource {
     @GET
     public String getAllowIdentifierReuse() {
-        boolean identifierReuse = getGlobalConfiguration().isAllowIdentifierReuse();
+        boolean identifierReuse = getConfiguration().isAllowIdentifierReuse();
         if (!identifierReuse) {
             return "Expected allow_identifier_reuse to be true but was false";
         }

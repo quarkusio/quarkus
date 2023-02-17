@@ -7,7 +7,7 @@ import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.envers.boot.internal.EnversService;
-import org.hibernate.envers.configuration.internal.AuditEntitiesConfiguration;
+import org.hibernate.envers.configuration.Configuration;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -36,44 +36,44 @@ public class EnversConfigurationPerPUTest {
 
     @Test
     public void testTableName() {
-        String generatedTableName = getAuditConfiguration(emf).getAuditTableName("entity", "table");
+        String generatedTableName = getConfiguration(emf).getAuditTableName("entity", "table");
         assertThat(generatedTableName).isEqualTo("P_table");
 
-        generatedTableName = getAuditConfiguration(emf1).getAuditTableName("entity", "table");
+        generatedTableName = getConfiguration(emf1).getAuditTableName("entity", "table");
         assertThat(generatedTableName).isEqualTo("T_table");
 
-        generatedTableName = getAuditConfiguration(emf2).getAuditTableName("entity", "table");
+        generatedTableName = getConfiguration(emf2).getAuditTableName("entity", "table");
         assertThat(generatedTableName).isEqualTo("R_table");
     }
 
     @Test
     public void testRevisionFieldName() {
-        String configuredRevisionFieldName = getAuditConfiguration(emf).getRevisionFieldName();
+        String configuredRevisionFieldName = getConfiguration(emf).getRevisionFieldName();
         assertThat(configuredRevisionFieldName).isEqualTo("GEN");
 
-        configuredRevisionFieldName = getAuditConfiguration(emf1).getRevisionFieldName();
+        configuredRevisionFieldName = getConfiguration(emf1).getRevisionFieldName();
         assertThat(configuredRevisionFieldName).isEqualTo("REVISION");
 
-        configuredRevisionFieldName = getAuditConfiguration(emf2).getRevisionFieldName();
+        configuredRevisionFieldName = getConfiguration(emf2).getRevisionFieldName();
         assertThat(configuredRevisionFieldName).isEqualTo("REV");
     }
 
     @Test
     public void testRevisionTypeName() {
-        String configuredRevisionTypeName = getAuditConfiguration(emf).getRevisionTypePropName();
+        String configuredRevisionTypeName = getConfiguration(emf).getRevisionTypePropertyName();
         assertThat(configuredRevisionTypeName).isEqualTo("GEN_TYPE");
 
-        configuredRevisionTypeName = getAuditConfiguration(emf1).getRevisionTypePropName();
+        configuredRevisionTypeName = getConfiguration(emf1).getRevisionTypePropertyName();
         assertThat(configuredRevisionTypeName).isEqualTo("REV_TYPE");
 
-        configuredRevisionTypeName = getAuditConfiguration(emf2).getRevisionTypePropName();
+        configuredRevisionTypeName = getConfiguration(emf2).getRevisionTypePropertyName();
         assertThat(configuredRevisionTypeName).isEqualTo("REVTYPE");
     }
 
-    private AuditEntitiesConfiguration getAuditConfiguration(EntityManagerFactory emf) {
+    private Configuration getConfiguration(EntityManagerFactory emf) {
         return ((((SessionFactoryImplementor) emf
                 .unwrap(SessionFactoryImpl.class))
                 .getServiceRegistry()).getParentServiceRegistry())
-                .getService(EnversService.class).getAuditEntitiesConfiguration();
+                .getService(EnversService.class).getConfig();
     }
 }

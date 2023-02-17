@@ -12,14 +12,14 @@ import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 public class EnversTestModifiedFlagsResource extends AbstractEnversResource {
     @GET
     public String getModifiedFlags() {
-        boolean globalWithModifiedFlags = getGlobalConfiguration().isGlobalWithModifiedFlag();
+        boolean globalWithModifiedFlags = getConfiguration().isModifiedFlagsEnabled();
         if (!globalWithModifiedFlags) {
             return "Expected global_with_modified_flag to be true but was false";
         }
 
-        String modifiedFlagSuffix = getGlobalConfiguration().getModifiedFlagSuffix();
-        if (!"_changed".equals(modifiedFlagSuffix)) {
-            return "Expected modified_flag_suffix to be _changed but was: " + modifiedFlagSuffix;
+        String modifiedFlagsSuffix = getConfiguration().getModifiedFlagsSuffix();
+        if (!"_changed".equals(modifiedFlagsSuffix)) {
+            return "Expected modified_flag_suffix to be _changed but was: " + modifiedFlagsSuffix;
         }
 
         return "OK";

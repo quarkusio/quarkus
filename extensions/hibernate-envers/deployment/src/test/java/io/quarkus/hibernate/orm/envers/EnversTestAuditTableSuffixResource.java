@@ -8,7 +8,7 @@ import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hibernate.envers.boot.internal.EnversService;
-import org.hibernate.envers.configuration.internal.AuditEntitiesConfiguration;
+import org.hibernate.envers.configuration.Configuration;
 import org.hibernate.internal.SessionImpl;
 
 @Path("/audit-table-suffix")
@@ -24,9 +24,9 @@ public class EnversTestAuditTableSuffixResource {
 
     @GET
     public String getAuditTableName() {
-        AuditEntitiesConfiguration auditEntitiesConfiguration = ((((SessionImpl) em.getDelegate())
+        Configuration auditEntitiesConfiguration = ((((SessionImpl) em.getDelegate())
                 .getFactory().getServiceRegistry()).getParentServiceRegistry())
-                .getService(EnversService.class).getAuditEntitiesConfiguration();
+                .getService(EnversService.class).getConfig();
 
         String calculatedAuditTableName = auditEntitiesConfiguration.getAuditTableName("entity", "table");
         String expectedAuditTableName = "table" + configuredSuffix;

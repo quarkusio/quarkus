@@ -12,7 +12,7 @@ import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 public class EnversTestTrackEntitiesChangedInRevisionResource extends AbstractEnversResource {
     @GET
     public String getTrackEntitiesChangedInRevision() {
-        boolean trackEntityChangesInRevision = getGlobalConfiguration().isTrackEntitiesChangedInRevision();
+        boolean trackEntityChangesInRevision = getConfiguration().isTrackEntitiesChanged();
         if (!trackEntityChangesInRevision) {
             return "Expected track_entities_changed_in_revision to be true but was false";
         }

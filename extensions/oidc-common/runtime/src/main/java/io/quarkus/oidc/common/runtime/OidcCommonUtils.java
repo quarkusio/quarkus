@@ -417,7 +417,7 @@ public class OidcCommonUtils {
             if (resp.statusCode() == 200) {
                 return resp.bodyAsJsonObject();
             } else {
-                LOG.tracef("Discovery has failed, status code: %d", resp.statusCode());
+                LOG.warnf("Discovery has failed, status code: %d", resp.statusCode());
                 throw new OidcEndpointAccessException(resp.statusCode());
             }
         }).onFailure(oidcEndpointNotAvailable())

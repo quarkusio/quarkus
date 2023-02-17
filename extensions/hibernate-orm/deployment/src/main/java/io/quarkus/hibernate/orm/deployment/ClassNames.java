@@ -39,6 +39,7 @@ public class ClassNames {
     public static final DotName JPA_ENTITY = createConstant("jakarta.persistence.Entity");
     public static final DotName MAPPED_SUPERCLASS = createConstant("jakarta.persistence.MappedSuperclass");
     public static final DotName EMBEDDABLE = createConstant("jakarta.persistence.Embeddable");
+    public static final DotName ID_CLASS = createConstant("jakarta.persistence.IdClass");
     public static final DotName CONVERTER = createConstant("jakarta.persistence.Converter");
     public static final DotName EMBEDDED = createConstant("jakarta.persistence.Embedded");
     public static final DotName ELEMENT_COLLECTION = createConstant("jakarta.persistence.ElementCollection");

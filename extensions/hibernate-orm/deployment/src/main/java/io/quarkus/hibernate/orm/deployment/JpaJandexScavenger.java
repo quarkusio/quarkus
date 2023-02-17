@@ -90,6 +90,7 @@ public final class JpaJandexScavenger {
         enlistJPAModelClasses(collector, ClassNames.JPA_ENTITY);
         enlistJPAModelClasses(collector, ClassNames.EMBEDDABLE);
         enlistJPAModelClasses(collector, ClassNames.MAPPED_SUPERCLASS);
+        enlistJPAModelIdClasses(collector, ClassNames.ID_CLASS);
         enlistEmbeddedsAndElementCollections(collector);
 
         enlistPotentialCdiBeanClasses(collector, ClassNames.CONVERTER);
@@ -372,6 +373,20 @@ public final class JpaJandexScavenger {
             DotName targetDotName = klass.name();
             addClassHierarchyToReflectiveList(collector, targetDotName);
             collectModelType(collector, klass);
+        }
+    }
+
+    private void enlistJPAModelIdClasses(Collector collector, DotName dotName) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            DotName targetDotName = annotation.value().asClass().name();
+            addClassHierarchyToReflectiveList(collector, targetDotName);
+            collector.modelTypes.add(targetDotName.toString());
         }
     }
 

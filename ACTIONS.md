@@ -4,6 +4,7 @@ Quarkus is built using GitHub Actions, with a mix of hosted and self-hosted runn
 
 ## Setting up a new self-hosted runner on Mac M1 
 
+Note: These instructions are being updated. 
 
 ### Non-root user
 

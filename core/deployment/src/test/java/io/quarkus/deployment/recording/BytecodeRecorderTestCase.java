@@ -1,5 +1,6 @@
 package io.quarkus.deployment.recording;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -138,6 +139,30 @@ public class BytecodeRecorderTestCase {
     }
 
     @Test
+    public void testJobDetails() throws Exception {
+        runTest(generator -> {
+            assertThatCode(() -> {
+                generator.registerNonDefaultConstructor(
+                        JobParameter.class.getDeclaredConstructor(String.class, String.class, Object.class),
+                        jobParameter -> Arrays.asList(
+                                jobParameter.getClassName(),
+                                jobParameter.getActualClassName(),
+                                jobParameter.getObject()));
+                generator.registerNonDefaultConstructor(
+                        JobDetails.class.getDeclaredConstructor(String.class, String.class, String.class, List.class),
+                        jobDetails -> Arrays.asList(
+                                jobDetails.getClassName(),
+                                jobDetails.getStaticFieldName(),
+                                jobDetails.getMethodName(),
+                                jobDetails.getJobParameters()));
+            }).doesNotThrowAnyException();
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(new JobDetails("A string", null, "methodName", List.of(JobParameter.JobContext)));
+        }, new JobDetails("A string", null, "methodName", List.of(JobParameter.JobContext)));
+
+    }
+
+    @Test
     public void testValidationFails() throws Exception {
         Assertions.assertThrows(RuntimeException.class, () -> {
             runTest(generator -> {
@@ -190,11 +215,7 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testLargeCollection() throws Exception {
 
-        List<TestJavaBean> beans = new ArrayList<>();
-        for (int i = 0; i < 100000; ++i) {
-            beans.add(new TestJavaBean("A string", 99));
-        }
-
+        List<TestJavaBean> beans = Collections.nCopies(100000, new TestJavaBean("A string", 99));
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.list(beans);

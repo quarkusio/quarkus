@@ -320,7 +320,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
-                    "org.hibernate.cfg.beanvalidation.TypeSafeActivator"));
+                    "org.hibernate.boot.beanvalidation.TypeSafeActivator"));
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, false,
                     BeanValidationIntegrator.BV_CHECK_CLASS));
         }

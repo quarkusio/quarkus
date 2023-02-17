@@ -1,2 +1,3 @@
-insert into record(id, name) values (nextval('hibernate_sequence'), 'first');
-insert into record(id, name) values (nextval('hibernate_sequence'), 'second');
+insert into record(id, name) values (1, 'first');
+insert into record(id, name) values (2, 'second');
+alter sequence Record_SEQ restart with 3;

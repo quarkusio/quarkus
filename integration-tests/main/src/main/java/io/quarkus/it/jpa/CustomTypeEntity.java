@@ -9,14 +9,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 
 @Entity
-@TypeDef(typeClass = LowerCaseCustomEnumType.class, name = "lowerCaseEnumType")
-@TypeDefs({
-        @TypeDef(typeClass = AnimalType.class, name = "animalType")
-})
 public class CustomTypeEntity {
 
     @Id
@@ -24,15 +18,15 @@ public class CustomTypeEntity {
     private Long id;
 
     @Column(name = "big_integer")
-    @Type(type = "io.quarkus.it.jpa.BigIntType")
+    @Type(BigIntType.class)
     private BigInteger bigInteger;
 
     @Column(name = "custom_enum")
-    @Type(type = "lowerCaseEnumType")
+    @Type(LowerCaseCustomEnumType.class)
     private CustomEnum customEnum;
 
     @Column(name = "animal")
-    @Type(type = "animalType")
+    @Type(AnimalType.class)
     private Animal animal;
 
     public Long getId() {

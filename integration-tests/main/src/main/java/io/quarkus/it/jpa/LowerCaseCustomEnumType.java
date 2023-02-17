@@ -14,19 +14,20 @@ public class LowerCaseCustomEnumType extends AbstractCustomUserType<CustomEnum> 
     }
 
     @Override
-    public int[] sqlTypes() {
-        return new int[] { Types.VARCHAR };
+    public int getSqlType() {
+        return Types.VARCHAR;
     }
 
     @Override
-    public CustomEnum get(ResultSet result, String[] names, SharedSessionContractImplementor session, Object owner)
+    public CustomEnum nullSafeGet(ResultSet result, int position, SharedSessionContractImplementor session, Object owner)
             throws SQLException {
-        String val = result.getString(names[0]);
+        String val = result.getString(position);
         return val != null ? CustomEnum.valueOf(val.toUpperCase()) : null;
     }
 
     @Override
-    public void set(PreparedStatement preparedStatement, CustomEnum value, int index, SharedSessionContractImplementor session)
+    public void nullSafeSet(PreparedStatement preparedStatement, CustomEnum value, int index,
+            SharedSessionContractImplementor session)
             throws SQLException {
         if (value == null) {
             preparedStatement.setNull(index, Types.BIGINT);

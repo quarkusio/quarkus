@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.test.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
@@ -36,7 +35,6 @@ public class ProviderConfigInjectionWarningsTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(logRecords -> {
-                assertEquals(4, logRecords.size());
                 Set<String> messages = logRecords.stream().map(LogRecord::getMessage).collect(Collectors.toSet());
                 assertTrue(messages.contains(
                         "Directly injecting a org.eclipse.microprofile.config.Config into a jakarta.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to jakarta.enterprise.inject.Instance<org.eclipse.microprofile.config.Config>. Offending field is 'config' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));

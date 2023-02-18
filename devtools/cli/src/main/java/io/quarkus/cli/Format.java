@@ -42,16 +42,14 @@ public class Format implements Callable<Integer> {
             formatterProperties = reader.getPropertiesFor("Quarkus");
         }
         Path root = Paths.get(".");
-        // Resolve the sources directory
-        Path src = root.resolve("src");
-        Files.walkFileTree(src, new SimpleFileVisitor<>() {
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 if (file.toString().endsWith(".java")) {
                     String source = Files.readString(file);
                     String formattedSource = Roaster.format(formatterProperties, source);
                     if (!formattedSource.equals(source)) {
-                        output.info(root.resolve(file).toString());
+                        output.info(root.relativize(file).toString());
                         Files.writeString(file, formattedSource);
                     }
                 }

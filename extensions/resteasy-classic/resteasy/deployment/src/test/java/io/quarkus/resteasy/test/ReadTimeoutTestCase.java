@@ -36,7 +36,7 @@ public class ReadTimeoutTestCase {
         socket.getOutputStream().write(
                 "POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:9\r\n\r\n12345".getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
-        Thread.sleep(600);
+        Thread.sleep(1200);
         socket.getOutputStream().write(
                 "6789".getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();

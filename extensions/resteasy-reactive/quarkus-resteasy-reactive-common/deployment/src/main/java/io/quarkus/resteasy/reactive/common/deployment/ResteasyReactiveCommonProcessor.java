@@ -87,6 +87,8 @@ public class ResteasyReactiveCommonProcessor {
 
             for (DotName className : resourceClasses) {
                 ClassInfo classInfo = index.getIndex().getClassByName(className);
+                if (classInfo == null)
+                    throw new IllegalStateException("Unable to find class info for " + className);
                 if (!hasSecurityAnnotation(classInfo)) {
                     // collect class endpoints
                     Collection<MethodInfo> classEndpoints = collectClassEndpoints(classInfo, httpAnnotationToMethod,

@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -33,7 +33,7 @@ public class DeploymentInfo {
     private ResteasyReactiveConfig resteasyReactiveConfig;
     private Function<Object, Object> clientProxyUnwrapper;
     private String applicationPath;
-    private List<HandlerChainCustomizer> globalHandlerCustomizers = new ArrayList<>();
+    private List<HandlerChainCustomizer> globalHandlerCustomizers = Collections.emptyList();
     private boolean developmentMode;
     private boolean resumeOn404;
 

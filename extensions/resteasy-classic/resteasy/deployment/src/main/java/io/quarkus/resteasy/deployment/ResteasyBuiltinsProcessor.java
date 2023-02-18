@@ -61,6 +61,8 @@ public class ResteasyBuiltinsProcessor {
             List<String> resourceClasses = resteasyDeployment.getDeployment().getScannedResourceClasses();
             for (String className : resourceClasses) {
                 ClassInfo classInfo = index.getIndex().getClassByName(DotName.createSimple(className));
+                if (classInfo == null)
+                    throw new IllegalStateException("Unable to find class info for " + className);
                 if (!hasSecurityAnnotation(classInfo)) {
                     for (MethodInfo methodInfo : classInfo.methods()) {
                         if (isRestEndpointMethod(index, methodInfo) && !hasSecurityAnnotation(methodInfo)) {

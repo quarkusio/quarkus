@@ -103,10 +103,10 @@
         <hibernate-reactive.version>1.1.9.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
-        <narayana.version>6.0.0.CR1</narayana.version>
+        <narayana.version>6.0.0.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>2.0</agroal.version>
-        <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
+        <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.6.1</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>

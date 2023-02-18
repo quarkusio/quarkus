@@ -12,6 +12,7 @@
 
     <properties>
         <quarkus.package.type>uber-jar</quarkus.package.type>
+        <roaster.version>2.28.0.Final</roaster.version>
     </properties>
 
     <artifactId>quarkus-cli</artifactId>
@@ -41,6 +42,17 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-netty</artifactId>
+        </dependency>
+        <!-- For the "quarkus format" command -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-ide-config</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>${roaster.version}</version>
         </dependency>
         <!--
         Somehow, we need this as otherwise you end up with:

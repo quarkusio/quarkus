@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Default;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -22,6 +23,8 @@ import org.jboss.jandex.Type.Kind;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -48,6 +51,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected boolean forceApplicationClass;
     protected String targetPackageName;
     protected Integer priority;
+    protected final Set<TypeAndQualifiers> injectionPoints;
 
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
@@ -55,6 +59,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         this.qualifiers = new HashSet<>();
         this.stereotypes = new ArrayList<>();
         this.removable = true;
+        this.injectionPoints = new HashSet<>();
     }
 
     /**
@@ -69,21 +74,23 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         types.addAll(base.types);
         qualifiers.clear();
         qualifiers.addAll(base.qualifiers);
-        forceApplicationClass = base.forceApplicationClass;
-        targetPackageName = base.targetPackageName;
-        scope(base.scope);
+        scope = base.scope;
         alternative = base.alternative;
-        priority = base.priority;
         stereotypes.clear();
         stereotypes.addAll(base.stereotypes);
-        name(base.name);
+        name = base.name;
         creator(base.creatorConsumer);
         destroyer(base.destroyerConsumer);
         if (base.defaultBean) {
-            defaultBean();
+            defaultBean = true;
         }
         removable = base.removable;
-        providerType(base.providerType);
+        providerType = base.providerType;
+        forceApplicationClass = base.forceApplicationClass;
+        targetPackageName = base.targetPackageName;
+        priority = base.priority;
+        injectionPoints.clear();
+        injectionPoints.addAll(base.injectionPoints);
         return self();
     }
 
@@ -230,21 +237,45 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         return self();
     }
 
+    /**
+     * Adds a synthetic injeciton point. The injection point is validated at build time and is also considered when removing
+     * unused beans.
+     *
+     * @param requiredType
+     * @param requiredQualifiers
+     * @return self
+     * @see SyntheticCreationalContext
+     */
+    public THIS addInjectionPoint(Type requiredType, AnnotationInstance... requiredQualifiers) {
+        if (requiredQualifiers.length == 0) {
+            requiredQualifiers = new AnnotationInstance[] { AnnotationInstance.builder(Default.class).build() };
+        }
+        this.injectionPoints.add(new TypeAndQualifiers(requiredType, Set.of(requiredQualifiers)));
+        return self();
+    }
+
     public <U extends T> THIS creator(Class<? extends BeanCreator<U>> creatorClazz) {
         return creator(mc -> {
-            // return new FooBeanCreator().create(context, params)
-            ResultHandle paramsHandle = mc.readInstanceField(
-                    FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
-                    mc.getThis());
+            // return new FooBeanCreator().create(syntheticCreationalContext)
             ResultHandle creatorHandle = mc.newInstance(MethodDescriptor.ofConstructor(creatorClazz));
-            ResultHandle[] params = { mc.getMethodParam(0), paramsHandle };
             ResultHandle ret = mc.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(BeanCreator.class, "create", Object.class, CreationalContext.class, Map.class),
-                    creatorHandle, params);
+                    MethodDescriptor.ofMethod(BeanCreator.class, "create", Object.class, SyntheticCreationalContext.class),
+                    creatorHandle, mc.getMethodParam(0));
             mc.returnValue(ret);
         });
     }
 
+    /**
+     * The first method parameter is the synthetic creational context, i.e. the {@code MethodCreator#getMethodParam(0)} returns
+     * a {@link SyntheticCreationalContext} instance that can be used to obtain contextual references for synthetic injection
+     * points and build-time parameters.
+     * <p>
+     * Furthermore, the consumer can also read the instance field of name {@code params} and type {@link Map}. This map holds
+     * all parameters set via one of the {@code BeanConfigurator#param()} methods.
+     *
+     * @param methodCreatorConsumer
+     * @return self
+     */
     public THIS creator(Consumer<MethodCreator> methodCreatorConsumer) {
         this.creatorConsumer = methodCreatorConsumer;
         return cast(this);

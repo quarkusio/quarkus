@@ -20,6 +20,8 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
+
 /**
  * Injection abstraction, basically a collection of injection points plus the annotation target:
  * <ul>
@@ -36,6 +38,14 @@ import org.jboss.logging.Logger;
 public class Injection {
 
     private static final Logger LOGGER = Logger.getLogger(Injection.class);
+
+    static Injection forSyntheticBean(Iterable<TypeAndQualifiers> injectionPoints) {
+        List<InjectionPointInfo> ips = new ArrayList<>();
+        for (TypeAndQualifiers injectionPoint : injectionPoints) {
+            ips.add(InjectionPointInfo.fromSyntheticInjectionPoint(injectionPoint));
+        }
+        return new Injection(null, ips);
+    }
 
     static List<Injection> forBean(AnnotationTarget beanTarget, BeanInfo declaringBean, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
@@ -199,15 +209,6 @@ public class Injection {
 
     }
 
-    private static boolean hasConstructorInjection(List<Injection> injections) {
-        for (Injection injection : injections) {
-            if (injection.isConstructor()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     static Injection forDisposer(MethodInfo disposerMethod, ClassInfo beanClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer, BeanInfo declaringBean) {
         if (beanDeployment.hasAnnotation(disposerMethod, DotNames.INJECT)) {
@@ -260,7 +261,7 @@ public class Injection {
     }
 
     boolean isMethod() {
-        return Kind.METHOD == target.kind();
+        return target != null && Kind.METHOD == target.kind();
     }
 
     boolean isConstructor() {
@@ -268,9 +269,17 @@ public class Injection {
     }
 
     boolean isField() {
-        return Kind.FIELD == target.kind();
+        return target != null && Kind.FIELD == target.kind();
     }
 
+    boolean isSynthetic() {
+        return target == null;
+    }
+
+    /**
+     *
+     * @return the annotation target or {@code null} in case of synthetic injection
+     */
     public AnnotationTarget getTarget() {
         return target;
     }
@@ -279,6 +288,15 @@ public class Injection {
         for (InjectionPointInfo injectionPoint : injectionPoints) {
             injectionPoint.setTargetBean(targetBean);
         }
+    }
+
+    private static boolean hasConstructorInjection(List<Injection> injections) {
+        for (Injection injection : injections) {
+            if (injection.isConstructor()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static List<AnnotationInstance> getAllInjectionPoints(BeanDeployment beanDeployment, ClassInfo beanClass,

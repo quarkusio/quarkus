@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.inject.Inject;
@@ -18,7 +19,7 @@ import org.hibernate.engine.spi.SessionLazyDelegator;
 import org.hibernate.integrator.spi.Integrator;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
@@ -95,11 +96,12 @@ public class HibernateOrmRecorder {
         beanContainer.beanInstance(JPAConfig.class).startAll();
     }
 
-    public Supplier<SessionFactory> sessionFactorySupplier(String persistenceUnitName) {
-        return new Supplier<SessionFactory>() {
+    public Function<SyntheticCreationalContext<SessionFactory>, SessionFactory> sessionFactorySupplier(
+            String persistenceUnitName) {
+        return new Function<SyntheticCreationalContext<SessionFactory>, SessionFactory>() {
             @Override
-            public SessionFactory get() {
-                SessionFactory sessionFactory = Arc.container().instance(JPAConfig.class).get()
+            public SessionFactory apply(SyntheticCreationalContext<SessionFactory> context) {
+                SessionFactory sessionFactory = context.getInjectedReference(JPAConfig.class)
                         .getEntityManagerFactory(persistenceUnitName)
                         .unwrap(SessionFactory.class);
 
@@ -108,12 +110,12 @@ public class HibernateOrmRecorder {
         };
     }
 
-    public Supplier<Session> sessionSupplier(String persistenceUnitName) {
-        return new Supplier<Session>() {
+    public Function<SyntheticCreationalContext<Session>, Session> sessionSupplier(String persistenceUnitName) {
+        return new Function<SyntheticCreationalContext<Session>, Session>() {
+
             @Override
-            public Session get() {
-                TransactionSessions transactionSessions = Arc.container()
-                        .instance(TransactionSessions.class).get();
+            public Session apply(SyntheticCreationalContext<Session> context) {
+                TransactionSessions transactionSessions = context.getInjectedReference(TransactionSessions.class);
                 return new SessionLazyDelegator(new Supplier<Session>() {
                     @Override
                     public Session get() {

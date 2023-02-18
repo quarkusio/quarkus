@@ -23,6 +23,7 @@ import jakarta.enterprise.inject.Default;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
@@ -264,7 +265,8 @@ class LiquibaseProcessor {
                     .scope(ApplicationScoped.class) // this is what the existing code does, but it doesn't seem reasonable
                     .setRuntimeInit()
                     .unremovable()
-                    .supplier(recorder.liquibaseSupplier(dataSourceName));
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(LiquibaseFactoryProducer.class)))
+                    .createWith(recorder.liquibaseFunction(dataSourceName));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {
                 configurator.addQualifier(Default.class);

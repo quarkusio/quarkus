@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -68,7 +69,7 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                 priority = Beans.initStereotypeAlternativePriority(stereotypes, implClass, beanDeployment);
             }
 
-            beanConsumer.accept(new BeanInfo.Builder()
+            BeanInfo.Builder builder = new BeanInfo.Builder()
                     .implClazz(implClass)
                     .providerType(providerType)
                     .beanDeployment(beanDeployment)
@@ -85,8 +86,13 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .defaultBean(defaultBean)
                     .removable(removable)
                     .forceApplicationClass(forceApplicationClass)
-                    .targetPackageName(targetPackageName)
-                    .build());
+                    .targetPackageName(targetPackageName);
+
+            if (!injectionPoints.isEmpty()) {
+                builder.injections(Collections.singletonList(Injection.forSyntheticBean(injectionPoints)));
+            }
+
+            beanConsumer.accept(builder.build());
         }
     }
 

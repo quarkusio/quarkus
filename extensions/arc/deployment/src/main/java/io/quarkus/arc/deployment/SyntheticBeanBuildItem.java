@@ -1,11 +1,14 @@
 package io.quarkus.arc.deployment;
 
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.processor.BeanConfiguratorBase;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.builder.item.MultiBuildItem;
@@ -15,8 +18,8 @@ import io.quarkus.runtime.RuntimeValue;
 /**
  * Makes it possible to register a synthetic bean.
  * <p>
- * Bean instances can be easily produced through a recorder and set via {@link ExtendedBeanConfigurator#supplier(Supplier)} and
- * {@link ExtendedBeanConfigurator#runtimeValue(RuntimeValue)}.
+ * Bean instances can be easily produced through a recorder and set via {@link ExtendedBeanConfigurator#supplier(Supplier)},
+ * {@link ExtendedBeanConfigurator#runtimeValue(RuntimeValue)} and {@link ExtendedBeanConfigurator#createWith(Function)}.
  *
  * @see ExtendedBeanConfigurator
  * @see BeanRegistrar
@@ -58,7 +61,7 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
     }
 
     boolean hasRecorderInstance() {
-        return configurator.supplier != null || configurator.runtimeValue != null;
+        return configurator.supplier != null || configurator.runtimeValue != null || configurator.fun != null;
     }
 
     /**
@@ -68,6 +71,7 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
 
         private Supplier<?> supplier;
         private RuntimeValue<?> runtimeValue;
+        private Function<SyntheticCreationalContext<?>, ?> fun;
         private boolean staticInit;
 
         ExtendedBeanConfigurator(DotName implClazz) {
@@ -81,23 +85,53 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
          * @return a new build item
          */
         public SyntheticBeanBuildItem done() {
-            if (supplier != null && runtimeValue != null) {
-                throw new IllegalStateException("It is not possible to specify both - a supplier and a runtime value");
-            }
-            if (creatorConsumer == null && supplier == null && runtimeValue == null) {
+            if (supplier == null && runtimeValue == null && fun == null && creatorConsumer == null) {
                 throw new IllegalStateException(
-                        "Synthetic bean does not provide a creation method, use ExtendedBeanConfigurator#creator(), ExtendedBeanConfigurator#supplier() or ExtendedBeanConfigurator#runtimeValue()");
+                        "Synthetic bean does not provide a creation method, use ExtendedBeanConfigurator#creator(), ExtendedBeanConfigurator#supplier(), ExtendedBeanConfigurator#createWith()  or ExtendedBeanConfigurator#runtimeValue()");
             }
             return new SyntheticBeanBuildItem(this);
         }
 
+        /**
+         * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection points.
+         *
+         * @param supplier A supplier returned from a recorder
+         * @return self
+         */
         public ExtendedBeanConfigurator supplier(Supplier<?> supplier) {
-            this.supplier = supplier;
+            if (runtimeValue != null || fun != null) {
+                throw multipleCreationMethods();
+            }
+            this.supplier = Objects.requireNonNull(supplier);
             return this;
         }
 
+        /**
+         * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection points.
+         *
+         * @param runtimeValue A runtime value returned from a recorder
+         * @return self
+         */
         public ExtendedBeanConfigurator runtimeValue(RuntimeValue<?> runtimeValue) {
-            this.runtimeValue = runtimeValue;
+            if (supplier != null || fun != null) {
+                throw multipleCreationMethods();
+            }
+            this.runtimeValue = Objects.requireNonNull(runtimeValue);
+            return this;
+        }
+
+        /**
+         * This method is useful if you need to use build-time parameters or synthetic injection points during creation of a
+         * bean instance.
+         *
+         * @param fun A function returned from a recorder
+         * @return self
+         */
+        public <B> ExtendedBeanConfigurator createWith(Function<SyntheticCreationalContext<B>, B> fun) {
+            if (supplier != null || runtimeValue != null) {
+                throw multipleCreationMethods();
+            }
+            this.fun = cast(Objects.requireNonNull(fun));
             return this;
         }
 
@@ -107,8 +141,7 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
          * <p>
          * It is possible to change this behavior and initialize the bean during the {@link ExecutionTime#RUNTIME_INIT}.
          * However, in such case a client that attempts to obtain such bean during {@link ExecutionTime#STATIC_INIT} or before
-         * runtime-init synthetic beans are
-         * initialized will receive an exception.
+         * runtime-init synthetic beans are initialized will receive an exception.
          * <p>
          * {@link ExecutionTime#RUNTIME_INIT} build steps that access a runtime-init synthetic bean should consume the
          * {@link SyntheticBeansRuntimeInitBuildItem}.
@@ -136,5 +169,14 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         RuntimeValue<?> getRuntimeValue() {
             return runtimeValue;
         }
+
+        Function<SyntheticCreationalContext<?>, ?> getFunction() {
+            return fun;
+        }
+
+        private IllegalStateException multipleCreationMethods() {
+            return new IllegalStateException("It is not possible to specify multiple creation methods");
+        }
+
     }
 }

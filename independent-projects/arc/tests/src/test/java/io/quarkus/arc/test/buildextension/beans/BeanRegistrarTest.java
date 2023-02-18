@@ -24,6 +24,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Singleton;
 
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
@@ -39,6 +40,7 @@ import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanRegistrar;
@@ -90,7 +92,7 @@ public class BeanRegistrarTest {
         @SuppressWarnings({ "resource" })
         List<String> list = Arc.container().instance(ListConsumer.class).get().list;
         assertEquals(1, list.size());
-        assertEquals("foo", list.get(0));
+        assertEquals("Hello Frantisek!", list.get(0));
 
         InjectableInstance<Long> instance = Arc.container().select(Long.class);
         // test configurator with higher priority
@@ -102,6 +104,7 @@ public class BeanRegistrarTest {
         assertEquals(64l, val);
     }
 
+    @SuppressWarnings("serial")
     @Test
     public void testSyntheticBeanType() {
         InjectableBean<Integer> integerBean = Arc.container().instance(Integer.class).getBean();
@@ -192,6 +195,8 @@ public class BeanRegistrarTest {
                     .addType(ParameterizedType.create(DotName.createSimple(List.class.getName()),
                             new Type[] { Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS) }, null))
                     .creator(ListCreator.class)
+                    // @Inject String
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(String.class)))
                     .unremovable()
                     .done();
 
@@ -232,8 +237,8 @@ public class BeanRegistrarTest {
     public static class ListCreator implements BeanCreator<List<String>> {
 
         @Override
-        public List<String> create(CreationalContext<List<String>> creationalContext, Map<String, Object> params) {
-            return List.of("foo");
+        public List<String> create(SyntheticCreationalContext<List<String>> context) {
+            return List.of(context.getInjectedReference(String.class));
         }
 
     }

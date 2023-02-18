@@ -105,6 +105,8 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
     public static <T> CreationalContextImpl<T> unwrap(CreationalContext<T> ctx) {
         if (ctx instanceof CreationalContextImpl) {
             return (CreationalContextImpl<T>) ctx;
+        } else if (ctx instanceof SyntheticCreationalContextImpl) {
+            return unwrap(((SyntheticCreationalContextImpl<T>) ctx).creationalContext);
         } else {
             throw new IllegalArgumentException("Failed to unwrap CreationalContextImpl: " + ctx);
         }

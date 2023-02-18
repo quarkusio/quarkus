@@ -95,6 +95,7 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         @Produces(MediaType.TEXT_PLAIN)
+        @SuppressWarnings({ "removal" })
         public String hello(@MultipartForm FormData data) {
             return data.getName();
         }

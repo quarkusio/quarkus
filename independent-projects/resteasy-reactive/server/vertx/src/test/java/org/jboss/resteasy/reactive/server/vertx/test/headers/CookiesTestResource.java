@@ -13,6 +13,7 @@ public class CookiesTestResource {
 
     @POST
     @Path("/set-cookie")
+    @SuppressWarnings("deprecation")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response sameSite(@FormParam("cookie") String cookie) {
         return Response.status(200)

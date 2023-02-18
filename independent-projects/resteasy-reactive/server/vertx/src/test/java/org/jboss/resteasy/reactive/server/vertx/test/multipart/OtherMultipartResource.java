@@ -15,6 +15,7 @@ public class OtherMultipartResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @POST
+    @SuppressWarnings({ "removal" })
     public String simple(@MultipartForm OtherFormData formData) {
         return formData.first + " - " + formData.last + " - " + formData.finalField + " - " + OtherFormData.staticField;
     }

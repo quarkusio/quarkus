@@ -1,0 +1,3 @@
+quarkus:
+  prop:
+    yml: 'yml'

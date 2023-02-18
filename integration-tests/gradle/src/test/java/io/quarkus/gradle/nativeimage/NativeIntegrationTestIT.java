@@ -4,11 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 
+import org.assertj.core.api.SoftAssertions;
+import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
+import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.gradle.BuildResult;
 
+@ExtendWith(SoftAssertionsExtension.class)
 public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
+    @InjectSoftAssertions
+    SoftAssertions soft;
 
     @Test
     public void nativeTestShouldRunIntegrationTest() throws Exception {
@@ -16,7 +23,9 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
 
         BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative");
 
-        assertThat(testResult.getTasks().get(":testNative")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
+        soft.assertThat(projectDir.toPath().resolve("build/code-with-quarkus-1.0.0-SNAPSHOT-runner")).isRegularFile()
+                .isExecutable();
     }
 
     @Test
@@ -25,7 +34,8 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
 
         final BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative",
                 "-Dquarkus.package.output-name=test");
-        assertThat(testResult.getTasks().get(":testNative")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
+        soft.assertThat(projectDir.toPath().resolve("build/test-runner")).isRegularFile().isExecutable();
     }
 
     @Test
@@ -34,7 +44,9 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
 
         final BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative",
                 "-Dquarkus.package.add-runner-suffix=false");
-        assertThat(testResult.getTasks().get(":testNative")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
+        soft.assertThat(projectDir.toPath().resolve("build/code-with-quarkus-1.0.0-SNAPSHOT")).isRegularFile()
+                .isExecutable();
     }
 
 }

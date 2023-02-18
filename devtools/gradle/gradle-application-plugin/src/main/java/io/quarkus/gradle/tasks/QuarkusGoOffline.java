@@ -8,7 +8,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import io.quarkus.runtime.LaunchMode;
 
-public class QuarkusGoOffline extends QuarkusTask {
+public abstract class QuarkusGoOffline extends QuarkusTask {
 
     private Configuration compileClasspath;
     private Configuration testCompileClasspath;

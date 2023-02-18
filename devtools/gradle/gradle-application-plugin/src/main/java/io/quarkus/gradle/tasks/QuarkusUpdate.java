@@ -15,7 +15,7 @@ import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 
-public class QuarkusUpdate extends QuarkusPlatformTask {
+public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     private boolean perModule = false;
     private String targetStreamId;

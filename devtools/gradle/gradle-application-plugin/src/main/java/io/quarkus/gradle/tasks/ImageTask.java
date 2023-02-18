@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.api.tasks.TaskAction;
 
-public abstract class ImageTask extends QuarkusBuildProviderTask {
+public abstract class ImageTask extends QuarkusBuildTask {
 
     static final String QUARKUS_CONTAINER_IMAGE_PREFIX = "quarkus-container-image-";
     static final String QUARKUS_CONTAINER_IMAGE_BUILD = "quarkus.container-image.build";
@@ -33,13 +33,8 @@ public abstract class ImageTask extends QuarkusBuildProviderTask {
         openshift
     }
 
-    public ImageTask(QuarkusBuildConfiguration buildConfiguration, String description) {
-        super(buildConfiguration, description);
-    }
-
-    @Override
-    public Map<String, String> forcedProperties() {
-        return Map.of(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
+    public ImageTask(String description) {
+        super(description);
     }
 
     Optional<Builder> builder() {

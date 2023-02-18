@@ -48,6 +48,7 @@ subprojects {
 
     javadoc {
         options.addStringOption('encoding', 'UTF-8')
+        options.addStringOption("Xdoclint:-reference", "-quiet")
     }
 }
 

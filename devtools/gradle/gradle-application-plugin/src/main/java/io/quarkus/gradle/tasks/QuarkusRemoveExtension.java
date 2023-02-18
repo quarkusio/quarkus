@@ -13,7 +13,7 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.devtools.commands.RemoveExtensions;
 
-public class QuarkusRemoveExtension extends QuarkusPlatformTask {
+public abstract class QuarkusRemoveExtension extends QuarkusPlatformTask {
 
     public QuarkusRemoveExtension() {
         super("Removes Quarkus extensions specified by the user to the project.");

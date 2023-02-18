@@ -16,7 +16,7 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.deployment.util.DeploymentUtil;
 
-public abstract class Deploy extends QuarkusBuildProviderTask {
+public abstract class Deploy extends QuarkusBuildTask {
 
     public enum Deployer {
 
@@ -48,8 +48,8 @@ public abstract class Deploy extends QuarkusBuildProviderTask {
     }
 
     @Inject
-    public Deploy(QuarkusBuildConfiguration buildConfiguration) {
-        super(buildConfiguration, "Deploy");
+    public Deploy() {
+        super("Deploy");
     }
 
     @Input
@@ -73,19 +73,16 @@ public abstract class Deploy extends QuarkusBuildProviderTask {
         this.imageBuild = true;
     }
 
-    public Deploy(QuarkusBuildConfiguration buildConfiguration, String description) {
-        super(buildConfiguration, description);
-    }
-
-    @Override
-    public Map<String, String> forcedProperties() {
-        Map<String, String> props = new HashMap<>();
-        props.put("quarkus." + getDeployer().name() + ".deploy", "true");
-        props.put("quarkus.container-image.build", String.valueOf(imageBuilder.isPresent() || imageBuild));
-        imageBuilder.ifPresent(b -> {
-            props.put("quarkus.container-image.builder", b);
-        });
-        return props;
+    public Deploy(String description) {
+        super(description);
+        extension().forcedPropertiesProperty().convention(
+                getProject().provider(() -> {
+                    Map<String, String> props = new HashMap<>();
+                    props.put("quarkus." + getDeployer().name() + ".deploy", "true");
+                    props.put("quarkus.container-image.build", String.valueOf(imageBuilder.isPresent() || imageBuild));
+                    imageBuilder.ifPresent(b -> props.put("quarkus.container-image.builder", b));
+                    return props;
+                }));
     }
 
     @TaskAction

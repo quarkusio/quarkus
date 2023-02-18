@@ -148,6 +148,7 @@ public class ApplicationDeploymentClasspathBuilder {
                     .computeIfAbsent(this.platformImportName, (ignored) -> new PlatformImportsImpl());
 
             project.getConfigurations().register(this.platformConfigurationName, configuration -> {
+                configuration.setCanBeConsumed(false);
                 // Platform configuration is just implementation, filtered to platform dependencies
                 ListProperty<Dependency> dependencyListProperty = project.getObjects().listProperty(Dependency.class);
                 configuration.getDependencies()
@@ -197,15 +198,19 @@ public class ApplicationDeploymentClasspathBuilder {
 
     private void setUpRuntimeConfiguration() {
         if (!project.getConfigurations().getNames().contains(this.runtimeConfigurationName)) {
-            project.getConfigurations().register(this.runtimeConfigurationName, configuration -> configuration.extendsFrom(
-                    project.getConfigurations()
-                            .getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode))));
+            project.getConfigurations().register(this.runtimeConfigurationName, configuration -> {
+                configuration.setCanBeConsumed(false);
+                configuration.extendsFrom(
+                        project.getConfigurations()
+                                .getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode)));
+            });
         }
     }
 
     private void setUpDeploymentConfiguration() {
         if (!project.getConfigurations().getNames().contains(this.deploymentConfigurationName)) {
             project.getConfigurations().register(this.deploymentConfigurationName, configuration -> {
+                configuration.setCanBeConsumed(false);
                 Configuration enforcedPlatforms = this.getPlatformConfiguration();
                 configuration.extendsFrom(enforcedPlatforms);
                 ListProperty<Dependency> dependencyListProperty = project.getObjects().listProperty(Dependency.class);

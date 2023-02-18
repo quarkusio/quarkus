@@ -3,23 +3,21 @@ package io.quarkus.gradle.tasks;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.TaskAction;
 
 public abstract class ImagePush extends ImageTask {
 
     @Inject
-    public ImagePush(QuarkusBuildConfiguration buildConfiguration) {
-        super(buildConfiguration, "Perfom an image push");
-    }
-
-    @Override
-    public Map<String, String> forcedProperties() {
-        return Map.of(QUARKUS_CONTAINER_IMAGE_PUSH, "true");
+    public ImagePush() {
+        super("Perform an image push");
+        MapProperty<String, String> forcedProperties = extension().forcedPropertiesProperty();
+        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
+        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_PUSH, "true");
     }
 
     @TaskAction

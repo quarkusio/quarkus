@@ -78,6 +78,15 @@ public class PackageConfig {
         public String toString() {
             return name;
         }
+
+        public static BuiltInType fromString(String name) {
+            for (PackageConfig.BuiltInType type : values()) {
+                if (type.toString().equals(name)) {
+                    return type;
+                }
+            }
+            throw new IllegalArgumentException("Unknown Quarkus package type '" + name + "'");
+        }
     }
 
     /**

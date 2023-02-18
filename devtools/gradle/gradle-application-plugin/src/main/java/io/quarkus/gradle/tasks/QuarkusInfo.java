@@ -10,7 +10,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.ProjectInfoCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
 
-public class QuarkusInfo extends QuarkusPlatformTask {
+public abstract class QuarkusInfo extends QuarkusPlatformTask {
 
     private boolean perModule = false;
 

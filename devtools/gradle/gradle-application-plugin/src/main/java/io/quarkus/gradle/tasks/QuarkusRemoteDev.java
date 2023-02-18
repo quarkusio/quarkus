@@ -6,7 +6,7 @@ import org.gradle.api.artifacts.Configuration;
 
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
-public class QuarkusRemoteDev extends QuarkusDev {
+public abstract class QuarkusRemoteDev extends QuarkusDev {
 
     @Inject
     public QuarkusRemoteDev(Configuration quarkusDevConfiguration, QuarkusPluginExtension extension) {

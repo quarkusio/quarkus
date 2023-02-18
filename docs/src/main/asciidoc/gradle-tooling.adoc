@@ -584,3 +584,173 @@ tasks.withType<GenerateModuleMetadata>().configureEach {
 }
 ----
 ****
+
+
+== Configuring Quarkus builds
+
+There are multiple configuration sources that influence Quarkus builds, mentioned in the order of their priority.
+The Quarkus build uses the `prod` configuration profile:
+
+1. System properties (for example `./gradlew -Dquarkus.package.type=fast-jar ...`)
+2. System environment (for example `QUARKUS_PACAKGE_TYPE=fast-jar ./gradlew ...`)
+3. Configuration via the `quarkus` extensions's `quarkusBuildProperties` For example:
+
+   quarkus {
+       properties {
+           set("package.type", "uber-jar")
+       }
+   }
+
+4. Configuration via Gradle project properties (for example `./gradlew -Pquarkus.package.type=fast-jar`)
+5. Configuration from a project's `application.properties`, `application.yaml` and `application.yml` files, as well
+   as a project's `application-prod.properties`, `application-prod.yaml` and `application-prod.yml` files
+
+[WARNING]
+The above priorities have changed in Quarkus plugin starting with 3.0. Older versions of the Quarkus Gradle plugin
+preferred `application.properties` over settings in the Gradle build.
+
+[NOTE]
+The Quarkus Gradle plugin uses the "standard" Quarkus mechanisms to load and parse configurations. Support for
+`application.(yaml|yml)` has been added in Quarkus 3.0 in addition to `application.properties`. Also new in 3.0
+is that all mechanisms available via SmallRye Config, are implicitly also now available for the Quarkus Gradle
+plugin.
+
+
+[TIP]
+Use the `quarkusShowEffectiveConfig` task to show the effective configuration options used for a Quarkus build. If you
+specify the `--save-config-properties` command line option, the configuration properties are also store in the file
+`build/<final-name>.quarkus-build.properties`.
+
+
+== Build workers
+
+Quarkus application builds are ran in isolated processes using Gradle's worker API. This includes the Quarkus
+application build and Quarkus code generation. This is necessary to properly pass the configuration from the
+`quarkus` extension and Gradle project properties to Quarkus' code generator / application builder.
+
+The JVM settings of the processes performing the code generation and/or Quarkus build can be configured as follows.
+See link:https://docs.gradle.org/current/javadoc/org/gradle/process/JavaForkOptions.html[JavaForkOptions]
+for details.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy,subs=attributes+]
+----
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+quarkus {
+    buildForkOptions {
+        maxHeapSize = '2g'
+    }
+    codeGenForkOptions {
+        maxHeapSize = '128m'
+    }
+}
+----
+****
+
+[role="primary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin,subs=attributes+]
+----
+plugins {
+    java
+    id("io.quarkus")
+}
+
+quarkus {
+    buildForkOptions {
+        maxHeapSize = '2g'
+    }
+    codeGenForkOptions {
+        maxHeapSize = '128m'
+    }
+}
+----
+****
+
+
+== Cached build artifacts
+
+link:https://docs.gradle.org/current/userguide/build_cache.html[Gradle's build cache] is a very efficient mechanism to
+improve the overall build runtime, by reusing previously generated outputs (see
+link:https://docs.gradle.org/current/userguide/incremental_build.html[Incremental build] for technical details).
+
+The Quarkus plugin leverages the Gradle mechanisms of up-to-date checks and the build cache. The build cache can be
+local or local _plus_ a remote cache server or, if configured in CI environments, remote in the sense of retrieving
+and storing the whole cache as an artifact, for example using
+link:https://github.com/gradle/gradle-build-action[Gradle's GitHub action] or directly/manually GitHub's
+link:https://github.com/actions/cache[GitHub's cache action].
+
+The Quarkus Gradle plugin cares about _what_ is cached _in which environment_ (CI or local development). Big artifacts
+like uber-jars and native binaries are not cached in CI, but are cached in local development environments.
+
+TIP: The Quarkus Gradle plugin detects a _CI environment_, if the `CI` environment variable is present.
+
+How the various Quarkus package types are cached in non-CI and CI environments is described in the following table.
+Note that even if a task's output is not _cached_, the _up-to-date_ checks still apply.
+
+NOTE: The Quarkus application build is split across three tasks. The `quarkusBuild` taskl is responsible to _provide_
+a built Quarkus application. The tasks `quarkusDependenciesBuild` and `quarkusAppPartsBuild` are considered internal
+tasks (may change at any time w/o prior notice). See below for details.
+
+[cols="2,5,1,1"]
+|===
+|Quarkus package type|Notes|Caching (non-CI)|Caching in CI
+|`fast-jar`, `jar`
+|Dependency jars are stored unmodified as individual files in the `quarkus-app/lib/` directory.
+All other files in the `quarkus-app/` directory are generated.
+
+The `quarkusAppPartsBuild` task builds `fast-jar` package-type applications and allows caching of the _generated_
+pieces, which is everything except the dependencies in the `quarkus-app/lib/` directory. The
+`quarkusDependenciesBuild` task is used to collect the dependencies via Gradle mechanisms. The `quarkusBuild` task
+then assembles the outputs of the `quarkusAppPartsBuild` and `quarkusDependenciesBuild` tasks.
+
+Note: `fast-jar` (or `-jar`) is the default if no package type has been explicitly configured.
+|✅
+|✅
+
+|`mutable-jar`, `uber-jar`, `native`, `native-sources`
+|The `quarkusBuild` task is responsible for building the Quarkus application.
+
+The `quarkusAppPartsBuild` and `quarkusDependenciesBuild` tasks do nothing for `uber-jar`s.
+|✅
+|❌
+
+|`legacy-jar`, `legacy`
+|`legacy-jar` builds work similar to `fast-jar` builds, except that the directory structure is different and the
+`modified-*.jar` files are considered as generated.
+|✅
+|✅
+
+|===
+
+[NOTE]
+In a local development environment, the cost (think: time) of storing (and retrieving) even bigger cache artifacts is
+lower than the cost of re-building a Quarkus application. This means, that The Quarkus Gradle plugin allows caching
+even potentially big artifacts like uber-jars or native binaries in non-CI environments. In CI environments, which run
+builds against varying states of a code base (think: running CI against every commit on a main branch), adding each
+built (and big) artifact to the build cache would let the build cache become unnecessarily big, which becomes a
+problem for example in GitHub, where the total amount of cached artifacts is limited to 10 GB.
+
+
+[NOTE]
+====
+Background information: There are two related mechanisms in Gradle at play to improve build performance:
+
+* Up-to-date checks allow a task's execution to be skipped, if the _inputs_ and _outputs_ of the tasks did not change.
+For example, consider a Java compile tasks: if the library dependencies and the source files (the _inputs_) did not
+change and the compiled class files (the _outputs_) are still available, compilation can be skipped.
+* The build cache can store the outputs of (cacheable) tasks in the local build cache. The _output_ of a task can be
+restored from the cache.
+
+The benefits of up-to-date checks and the interaction of the build cache come with the cost of modeling the _inputs_
+and _outputs_. Inputs are not only files or directories, but also the Java version used during the build, the operating
+system, the working directory, configuration options, and so on. So everything that influences the output of a task
+action must be declared as an input of the task.
+====

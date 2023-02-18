@@ -1,5 +1,7 @@
 package io.quarkus.gradle;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -36,9 +38,11 @@ public class BuildConfigurationTest extends QuarkusGradleWrapperTestBase {
         final Path fastJar;
         final Path libDeploymentDir;
         final String project;
+        final String outputDir;
 
         PrjPaths(File rootDir, String project, String outputDir) {
             this.project = project;
+            this.outputDir = outputDir;
             this.projectDir = rootDir.toPath().resolve(project);
             this.buildDirPath = projectDir.resolve("build");
             this.quarkusAppPath = buildDirPath.resolve(outputDir);
@@ -49,12 +53,17 @@ public class BuildConfigurationTest extends QuarkusGradleWrapperTestBase {
         }
 
         void verify(String packageType) {
-            soft.assertThat(quarkusAppPath).describedAs("sub project '%s', package type '%s'", project, packageType)
-                    .isDirectory();
             soft.assertThat(buildDirPath).describedAs("sub project '%s', package type '%s'", project, packageType)
                     .isDirectory();
             switch (packageType) {
                 case "uber-jar":
+                    if (!DEFAULT_OUTPUT_DIR.equals(outputDir)) {
+                        soft.assertThat(quarkusAppPath).describedAs("sub project '%s', package type '%s'", project, packageType)
+                                .isDirectory();
+                    } else {
+                        soft.assertThat(quarkusAppPath).describedAs("sub project '%s', package type '%s'", project, packageType)
+                                .satisfiesAnyOf(p -> assertThat(p).doesNotExist(), p -> assertThat(p).isEmptyDirectory());
+                    }
                     soft.assertThat(uberJar).describedAs("sub project '%s', package type '%s'", project, packageType)
                             .isNotEmptyFile();
                     soft.assertThat(fastJar).describedAs("sub project '%s', package type '%s'", project, packageType)
@@ -63,6 +72,8 @@ public class BuildConfigurationTest extends QuarkusGradleWrapperTestBase {
                             .doesNotExist();
                     break;
                 case "fast-jar":
+                    soft.assertThat(quarkusAppPath).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .isDirectory();
                     soft.assertThat(uberJar).describedAs("sub project '%s', package type '%s'", project, packageType)
                             .doesNotExist();
                     soft.assertThat(fastJar).describedAs("sub project '%s', package type '%s'", project, packageType)
@@ -71,6 +82,8 @@ public class BuildConfigurationTest extends QuarkusGradleWrapperTestBase {
                             .doesNotExist();
                     break;
                 case "mutable-jar":
+                    soft.assertThat(quarkusAppPath).describedAs("sub project '%s', package type '%s'", project, packageType)
+                            .isDirectory();
                     soft.assertThat(uberJar).describedAs("sub project '%s', package type '%s'", project, packageType)
                             .doesNotExist();
                     soft.assertThat(fastJar).describedAs("sub project '%s', package type '%s'", project, packageType)

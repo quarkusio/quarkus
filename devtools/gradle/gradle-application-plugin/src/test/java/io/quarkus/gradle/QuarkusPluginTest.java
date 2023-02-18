@@ -2,9 +2,7 @@ package io.quarkus.gradle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,9 +28,6 @@ import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
 public class QuarkusPluginTest {
 
-    @TempDir
-    Path testProjectDir;
-
     @Test
     public void shouldCreateTasks() {
         Project project = ProjectBuilder.builder().build();
@@ -41,6 +36,8 @@ public class QuarkusPluginTest {
         assertTrue(project.getPluginManager().hasPlugin(QuarkusPlugin.ID));
 
         TaskContainer tasks = project.getTasks();
+        assertNotNull(tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME));
+        assertNotNull(tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_DEP_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.QUARKUS_DEV_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.BUILD_NATIVE_TASK_NAME));
@@ -71,9 +68,19 @@ public class QuarkusPluginTest {
 
         TaskContainer tasks = project.getTasks();
 
+        Task quarkusAppPartsBuild = tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME);
+        assertThat(getDependantProvidedTaskName(quarkusAppPartsBuild))
+                .contains(JavaPlugin.CLASSES_TASK_NAME)
+                .contains(QuarkusPlugin.QUARKUS_GENERATE_CODE_TASK_NAME);
+
+        Task quarkusDepBuild = tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_DEP_TASK_NAME);
+        assertThat(getDependantProvidedTaskName(quarkusDepBuild))
+                .isEmpty();
+
         Task quarkusBuild = tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME);
         assertThat(getDependantProvidedTaskName(quarkusBuild))
-                .contains(JavaPlugin.CLASSES_TASK_NAME);
+                .contains(QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME)
+                .contains(QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME);
 
         Task quarkusDev = tasks.getByName(QuarkusPlugin.QUARKUS_DEV_TASK_NAME);
         assertThat(getDependantProvidedTaskName(quarkusDev))
@@ -95,11 +102,10 @@ public class QuarkusPluginTest {
                 new File(project.getBuildDir(), "classes/java/test"),
                 new File(project.getBuildDir(), "classes/scala/main"),
                 new File(project.getBuildDir(), "classes/scala/test"));
-
     }
 
     @Test
-    public void shouldNotFailOnProjectDependenciesWithoutMain() throws IOException {
+    public void shouldNotFailOnProjectDependenciesWithoutMain(@TempDir Path testProjectDir) throws IOException {
         var kotlinVersion = System.getProperty("kotlin_version", "1.8.10");
         var settingFile = testProjectDir.resolve("settings.gradle.kts");
         var mppProjectDir = testProjectDir.resolve("mpp");
@@ -159,7 +165,7 @@ public class QuarkusPluginTest {
         assertEquals(SUCCESS, result.task(":quarkus:quarkusGenerateCode").getOutcome());
     }
 
-    private static final List<String> getDependantProvidedTaskName(Task task) {
+    private static List<String> getDependantProvidedTaskName(Task task) {
         List<String> dependantTaskNames = new ArrayList<>();
         for (Object t : task.getDependsOn()) {
             try {
@@ -169,14 +175,5 @@ public class QuarkusPluginTest {
             }
         }
         return dependantTaskNames;
-    }
-
-    private static final String getFinalizedByTaskName(Task task) {
-        try {
-            return ((Provider<Task>) task.getFinalizedBy()).get().getName();
-        } catch (ClassCastException e) {
-            // Nothing to do here
-            return null;
-        }
     }
 }

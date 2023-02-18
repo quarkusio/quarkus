@@ -6,7 +6,6 @@ import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -25,31 +24,44 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.jvm.tasks.Jar;
+import org.gradle.process.JavaForkOptions;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.gradle.AppModelGradleResolver;
+import io.quarkus.gradle.QuarkusPlugin;
+import io.quarkus.gradle.dsl.Manifest;
+import io.quarkus.gradle.tasks.AbstractQuarkusExtension;
+import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
 
-public class QuarkusPluginExtension {
-    private final Project project;
-
-    private final Property<String> finalName;
-
-    private final MapProperty<String, String> quarkusBuildProperties;
+public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     private final SourceSetExtension sourceSetExtension;
 
-    public QuarkusPluginExtension(Project project) {
-        this.project = project;
+    private final Property<Boolean> cacheLargeArtifacts;
+    private final Property<Boolean> cleanupBuildOutput;
 
-        finalName = project.getObjects().property(String.class);
-        finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
+    public QuarkusPluginExtension(Project project) {
+        super(project);
+
+        this.cleanupBuildOutput = project.getObjects().property(Boolean.class)
+                .convention(true);
+        this.cacheLargeArtifacts = project.getObjects().property(Boolean.class)
+                .convention(!System.getenv().containsKey("CI"));
 
         this.sourceSetExtension = new SourceSetExtension();
-        this.quarkusBuildProperties = project.getObjects().mapProperty(String.class, String.class);
+    }
+
+    public Manifest getManifest() {
+        return manifest();
+    }
+
+    @SuppressWarnings("unused")
+    public void manifest(Action<Manifest> action) {
+        action.execute(this.getManifest());
     }
 
     public void beforeTest(Test task) {
@@ -86,42 +98,41 @@ public class QuarkusPluginExtension {
             task.environment(BootstrapConstants.TEST_TO_MAIN_MAPPINGS, fileList);
             project.getLogger().debug("test dir mapping - {}", fileList);
 
-            final String nativeRunner = task.getProject().getBuildDir().toPath()
-                    .resolve(buildNativeRunnerName(props))
-                    .toAbsolutePath()
-                    .toString();
+            QuarkusBuild quarkusBuild = project.getTasks().named(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class)
+                    .get();
+            String nativeRunner = quarkusBuild.getNativeRunner().toPath().toAbsolutePath().toString();
             props.put("native.image.path", nativeRunner);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to resolve deployment classpath", e);
         }
     }
 
-    public String buildNativeRunnerName(final Map<String, Object> taskSystemProps) {
-        Properties properties = new Properties(taskSystemProps.size());
-        properties.putAll(taskSystemProps);
-        quarkusBuildProperties.get().entrySet()
-                .forEach(buildEntry -> properties.putIfAbsent(buildEntry.getKey(), buildEntry.getValue()));
-        System.getProperties().entrySet()
-                .forEach(propEntry -> properties.putIfAbsent(propEntry.getKey(), propEntry.getValue()));
-        System.getenv().entrySet().forEach(
-                envEntry -> properties.putIfAbsent(envEntry.getKey(), envEntry.getValue()));
-        StringBuilder nativeRunnerName = new StringBuilder();
-
-        if (properties.containsKey("quarkus.package.output-name")) {
-            nativeRunnerName.append(properties.get("quarkus.package.output-name"));
-        } else {
-            nativeRunnerName.append(finalName());
-        }
-        if (!properties.containsKey("quarkus.package.add-runner-suffix")
-                || (properties.containsKey("quarkus.package.add-runner-suffix")
-                        && Boolean.parseBoolean((String) properties.get("quarkus.package.add-runner-suffix")))) {
-            nativeRunnerName.append("-runner");
-        }
-        return nativeRunnerName.toString();
-    }
-
     public Property<String> getFinalName() {
         return finalName;
+    }
+
+    /**
+     * Whether the build output, build/*-runner[.jar] and build/quarkus-app, for other package types than the
+     * currently configured one are removed, default is 'true'.
+     */
+    public Property<Boolean> getCleanupBuildOutput() {
+        return cleanupBuildOutput;
+    }
+
+    public void setCleanupBuildOutput(boolean cleanupBuildOutput) {
+        this.cleanupBuildOutput.set(cleanupBuildOutput);
+    }
+
+    /**
+     * Whether large build artifacts, like uber-jar and native runners, are cached. Defaults to 'false' if the 'CI' environment
+     * variable is set, otherwise defaults to 'true'.
+     */
+    public Property<Boolean> getCacheLargeArtifacts() {
+        return cacheLargeArtifacts;
+    }
+
+    public void setCacheLargeArtifacts(boolean cacheLargeArtifacts) {
+        this.cacheLargeArtifacts.set(cacheLargeArtifacts);
     }
 
     public String finalName() {
@@ -165,6 +176,26 @@ public class QuarkusPluginExtension {
 
     public ApplicationModel getApplicationModel(LaunchMode mode) {
         return ToolingUtils.create(project, mode);
+    }
+
+    /**
+     * Adds an action to configure the {@code JavaForkOptions} to build a Quarkus application.
+     *
+     * @param action configuration action
+     */
+    @SuppressWarnings("unused")
+    public void buildForkOptions(Action<? super JavaForkOptions> action) {
+        buildForkOptions.add(action);
+    }
+
+    /**
+     * Adds an action to configure the {@code JavaForkOptions} to generate Quarkus code.
+     *
+     * @param action configuration action
+     */
+    @SuppressWarnings("unused")
+    public void codeGenForkOptions(Action<? super JavaForkOptions> action) {
+        codeGenForkOptions.add(action);
     }
 
     /**
@@ -215,6 +246,7 @@ public class QuarkusPluginExtension {
         return classesDir;
     }
 
+    @SuppressWarnings("unused")
     public MapProperty<String, String> getQuarkusBuildProperties() {
         return quarkusBuildProperties;
     }
@@ -226,5 +258,4 @@ public class QuarkusPluginExtension {
     public void set(String name, Property<String> value) {
         quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
     }
-
 }

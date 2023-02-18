@@ -1,12 +1,11 @@
 
 package io.quarkus.gradle.tasks;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 
 import javax.inject.Inject;
 
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.options.Option;
 
 public abstract class ImageBuild extends ImageTask {
@@ -19,14 +18,11 @@ public abstract class ImageBuild extends ImageTask {
     }
 
     @Inject
-    public ImageBuild(QuarkusBuildConfiguration buildConfiguration) {
-        super(buildConfiguration, "Perform an image build");
-    }
-
-    @Override
-    public Map<String, String> forcedProperties() {
-        return builder().map(b -> Map.of(QUARKUS_CONTAINER_IMAGE_BUILD, "true", QUARKUS_CONTAINER_IMAGE_BUILDER, b.name()))
-                .orElse(Collections.emptyMap());
+    public ImageBuild() {
+        super("Perform an image build");
+        MapProperty<String, String> forcedProperties = extension().forcedPropertiesProperty();
+        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
+        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, getProject().provider(() -> builder().orElseThrow().name()));
     }
 
     public Optional<Builder> builder() {

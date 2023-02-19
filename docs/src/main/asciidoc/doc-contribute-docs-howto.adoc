@@ -54,6 +54,18 @@ include::_attributes.adoc[] <3>
 <2> For information about how to create a good title for each content type, see xref:{doc-guides}/doc-reference.adoc#titles-and-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
 <3> The `_attributes.adoc` include is required to ensure that attributes get resolved, the table of contents is generated, and content renders in the website portal. 
 <4> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:{doc-guides}/doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
++
+[IMPORTANT]
+====
+Ensure there are no line breaks in the header section until after `:categories:` line.
+====
++
+. Add an abstract to describe the purpose of the guide.
+[IMPORTANT]
+====
+The first sentence of the abstract must explain the value and some benefit of the content in less than 27 words because this automatically displays on the link:https://quarkus.io/guides/[Quarkus guides homepage]. 
+There must also be a line break before and after the abstract.
+====
 
 For more information about the minimum header requirements, see xref:{doc-guides}/doc-reference.adoc#document-structure[Document structure] on the "Quarkus style and content guidelines" page.
 
@@ -75,8 +87,8 @@ newUrl: /guides/<new_asciidoc_filename> // <2>
 ---
 +
 Where:
-<1> Is the name of the original AsciiDoc source file that you are retiring.
-<2> Is the name of the AsciiDoc source file that you want to redirect to.
+<1> Is the name of the original AsciiDoc source file that you are retiring, without the `.adoc` file extension.
+<2> Is the name of the AsciiDoc source file that you want to redirect to, without the `.adoc` file extension.
 
 .Example
 

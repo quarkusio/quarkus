@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.apache.commons.io.FileUtils;
@@ -32,24 +33,21 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
         projectDir = getProjectDir();
         beforeQuarkusDev();
         ExecutorService executor = null;
-        final BuildResult[] buildResult = new BuildResult[1];
+        AtomicReference<BuildResult> buildResult = new AtomicReference<>();
         try {
             executor = Executors.newSingleThreadExecutor();
-            quarkusDev = executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        buildResult[0] = build();
-                    } catch (Exception e) {
-                        throw new IllegalStateException("Failed to build the project", e);
-                    }
+            quarkusDev = executor.submit(() -> {
+                try {
+                    buildResult.set(build());
+                } catch (Exception e) {
+                    throw new IllegalStateException("Failed to build the project", e);
                 }
             });
             testDevMode();
         } catch (Exception | AssertionError e) {
-            if (buildResult[0] != null) {
+            if (buildResult.get() != null) {
                 System.err.println("BELOW IS THE CAPTURED LOGGING OF THE FAILED GRADLE TEST PROJECT BUILD");
-                System.err.println(buildResult[0].getOutput());
+                System.err.println(buildResult.get().getOutput());
             } else {
                 File logOutput = new File(projectDir, "command-output.log");
                 if (logOutput.exists()) {

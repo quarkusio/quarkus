@@ -36,6 +36,7 @@ import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
+import io.grpc.netty.NettyServerBuilder;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Subclass;
@@ -299,8 +300,14 @@ public class GrpcServerRecorder {
     private void applyNettySettings(GrpcServerConfiguration configuration, VertxServerBuilder builder) {
         if (configuration.netty != null) {
             GrpcServerNettyConfig config = configuration.netty;
-            config.keepAliveTime.ifPresent(duration -> builder.nettyBuilder()
-                    .keepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
+            NettyServerBuilder nettyServerBuilder = builder.nettyBuilder();
+
+            config.keepAliveTime.ifPresent(
+                    duration -> nettyServerBuilder.keepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
+
+            config.permitKeepAliveTime.ifPresent(
+                    duration -> nettyServerBuilder.permitKeepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
+            config.permitKeepAliveWithoutCalls.ifPresent(nettyServerBuilder::permitKeepAliveWithoutCalls);
         }
     }
 

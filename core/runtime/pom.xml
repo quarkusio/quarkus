@@ -184,7 +184,7 @@
 
                         <!-- RestAssured uses groovy, which seems to do some things with soft references that
                         prevent the ClassLoader from being GC'ed, see https://github.com/quarkusio/quarkus/issues/12498 -->
-                        <parentFirstArtifact>org.codehaus.groovy:groovy</parentFirstArtifact>
+                        <parentFirstArtifact>org.apache.groovy:groovy</parentFirstArtifact>
 
                         <!-- Load the junit engine parent first, so it is shared between the outer dev mode
                         process and the test application-->

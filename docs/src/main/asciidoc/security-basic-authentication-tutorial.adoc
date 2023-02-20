@@ -6,6 +6,8 @@ include::_attributes.adoc[]
 Secure your Quarkus application endpoints by combining the built-in Quarkus xref:security-basic-authentication-concept.adoc[Basic authentication] with the JPA identity provider to enable role-based access control (RBAC).
 The JPA `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.
 
+For more information about JPA, see the xref:security-jpa-concept.adoc[Quarkus Security with JPA].
+
 This tutorial prepares you for implementing more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
 
 == Prerequisites
@@ -41,7 +43,7 @@ You can find the solution in the `security-jpa-quickstart` {quickstarts-tree-url
 
 == Create a Maven project
 
-For Quarkus security to be able to map your security source to JPA entities, ensure that the Maven project that is used in this tutorial includes the `security-jpa` extension.
+For Quarkus Security to be able to map your security source to JPA entities, ensure that the Maven project that is used in this tutorial includes the `security-jpa` extension.
 You can either create a new Maven project with the `security-jpa` extension or you can add the extension to an existing Maven project.
 
 * To create the Maven project, use the following command:
@@ -488,97 +490,6 @@ user
 ----
 
 :sectnums!:
-
-// The following section needs to be moved as SMEs confirmed that it does not really fit in the new content here. In the next phase of refactoring, consider moving this section into a dedicated concept/reference topic.
-
-== Quarkus Security JPA information
-
-Now that you have successfully run and tested the security quick start project, you are ready to explore more security features of Quarkus Security and the JPA identity store.
-
-=== Supported model types
-
-- The `@UserDefinition` class must be a JPA entity (with Panache or not).
-- The `@Username` and `@Password` field types must be of type `String`.
-- The `@Roles` field must either be of type `String` or `Collection<String>` or alternately a `Collection<X>` where `X` is an entity class with one `String` field annotated with the `@RolesValue` annotation.
-- Each `String` role element type will be parsed as a comma-separated list of roles.
-
-=== Storing roles in another entity
-
-Use the following sample to store roles inside another entity:
-
-[source,java]
-----
-@UserDefinition
-@Table(name = "test_user")
-@Entity
-public class User extends PanacheEntity {
-    @Username
-    public String name;
-
-    @Password
-    public String pass;
-
-    @ManyToMany
-    @Roles
-    public List<Role> roles = new ArrayList<>();
-}
-
-@Entity
-public class Role extends PanacheEntity {
-
-    @ManyToMany(mappedBy = "roles")
-    public List<ExternalRolesUserEntity> users;
-
-    @RolesValue
-    public String role;
-}
-----
-
-=== Password storage and hashing
-
-By default, passwords are stored and hashed by using https://en.wikipedia.org/wiki/Bcrypt[bcrypt] under the
-https://en.wikipedia.org/wiki/Crypt_(C)[Modular Crypt Format] (MCF).
-
-When creating a hashed password, you can use the convenient `String BcryptUtil.bcryptHash(String password)` function, which defaults to creating a random salt and hashing in 10 iterations.
-You can also specify the number of iterations and the salt.
-
-NOTE: When you use MCF, you don't need dedicated columns to store the hashing algorithm, the iterations count, or the salt because they are all stored in the hashed value.
-
-You can also store passwords by using a different hashing algorithm, for example, `@Password(value = PasswordType.CUSTOM, provider = CustomPasswordProvider.class)`, as outlined in the following code snippet:
-
-[source,java]
-----
-@UserDefinition
-@Table(name = "test_user")
-@Entity
-public class CustomPasswordUserEntity {
-    @Id
-    @GeneratedValue
-    public Long id;
-
-    @Column(name = "username")
-    @Username
-    public String name;
-
-    @Column(name = "password")
-    @Password(value = PasswordType.CUSTOM, provider = CustomPasswordProvider.class)
-    public String pass;
-
-    @Roles
-    public String role;
-}
-
-public class CustomPasswordProvider implements PasswordProvider {
-    @Override
-    public Password getPassword(String pass) {
-        byte[] digest = DatatypeConverter.parseHexBinary(pass);
-        return SimpleDigestPassword.createRaw(SimpleDigestPassword.ALGORITHM_SIMPLE_DIGEST_SHA_256, digest);
-    }
-}
-----
-
-WARNING: In a test environment, you can also store passwords in plain text by using `@Password(PasswordType.CLEAR)`.
-For applications running in production, do not store passwords in plain text.
 
 == What's next
 

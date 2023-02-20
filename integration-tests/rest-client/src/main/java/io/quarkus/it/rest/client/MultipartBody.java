@@ -1,6 +1,7 @@
 package io.quarkus.it.rest.client;
 
 import java.io.InputStream;
+import java.util.UUID;
 
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.core.MediaType;
@@ -16,4 +17,8 @@ public class MultipartBody {
     @FormParam("fileName")
     @PartType(MediaType.TEXT_PLAIN)
     public String fileName;
+
+    @FormParam("uuid")
+    @PartType(MediaType.TEXT_PLAIN)
+    public UUID uuid;
 }

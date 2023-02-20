@@ -13,6 +13,7 @@ import io.quarkus.runtime.util.ClassPathUtils;
 public class ResourceHelper {
 
     public static void registerResources(String resource) {
+        resource = resource.replace('\\', '/')); // correct Windows paths
         Version currentGraalVmVersion = Version.getCurrent();
         if (currentGraalVmVersion.compareTo(22, 3) >= 0) {
             // Use the public API RuntimeResourceAccess with GraalVM >= 22.3

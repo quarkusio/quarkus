@@ -1,6 +1,5 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.Basics.index;
 import static io.quarkus.arc.processor.Basics.name;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,7 +29,7 @@ public class BeanInfoQualifiersTest {
 
     @Test
     public void testQualifiers() throws IOException {
-        Index index = index(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class,
+        Index index = Index.of(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class,
                 List.class, Collection.class, Object.class, String.class, Iterable.class);
         DotName fooName = name(Foo.class);
         DotName fooQualifierName = name(FooQualifier.class);

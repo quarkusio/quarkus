@@ -1,6 +1,5 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.Basics.index;
 import static io.quarkus.arc.processor.Basics.name;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -13,7 +12,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
@@ -33,11 +31,10 @@ public class BeanInfoInjectionsTest {
     @Test
     public void testInjections() throws IOException {
 
-        Index index = index(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class,
+        Index index = Index.of(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class,
                 Collection.class, List.class,
                 Iterable.class, Object.class, String.class);
-        DotName barName = name(Bar.class);
-        ClassInfo barClass = index.getClassByName(barName);
+        ClassInfo barClass = index.getClassByName(Bar.class);
         Type fooType = Type.create(name(Foo.class), Kind.CLASS);
         Type listStringType = ParameterizedType.create(name(List.class),
                 new Type[] { Type.create(name(String.class), Kind.CLASS) }, null);

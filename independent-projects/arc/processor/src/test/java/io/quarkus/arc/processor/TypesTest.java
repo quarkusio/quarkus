@@ -20,6 +20,7 @@ import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
@@ -30,7 +31,7 @@ public class TypesTest {
 
     @Test
     public void testGetTypeClosure() throws IOException {
-        IndexView index = Basics.index(Foo.class, Baz.class, Producer.class, Object.class, List.class, Collection.class,
+        IndexView index = Index.of(Foo.class, Baz.class, Producer.class, Object.class, List.class, Collection.class,
                 Iterable.class, Set.class, Eagle.class, Bird.class, Animal.class, AnimalHolder.class, MyRawBean.class,
                 MyBean.class, MyInterface.class, MySuperInterface.class);
         DotName bazName = DotName.createSimple(Baz.class.getName());

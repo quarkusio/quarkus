@@ -13,6 +13,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ public class SubclassSkipPredicateTest {
 
     @Test
     public void testPredicate() throws IOException {
-        IndexView index = Basics.index(Base.class, Submarine.class, Long.class, Number.class);
+        IndexView index = Index.of(Base.class, Submarine.class, Long.class, Number.class);
         AssignabilityCheck assignabilityCheck = new AssignabilityCheck(index, null);
         SubclassSkipPredicate predicate = new SubclassSkipPredicate(assignabilityCheck::isAssignableFrom, null,
                 Collections.emptySet());

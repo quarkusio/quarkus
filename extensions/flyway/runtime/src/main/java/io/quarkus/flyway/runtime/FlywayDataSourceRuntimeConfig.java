@@ -141,14 +141,6 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean validateAtStart;
 
     /**
-     * true to quit exit right after the operation.
-     * The option is not meant be used directly by users.
-     *
-     */
-    @ConfigItem
-    public boolean runAndExit;
-
-    /**
      * Enable the creation of the history table if it does not exist already.
      */
     @ConfigItem

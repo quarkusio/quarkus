@@ -7,9 +7,20 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Identifies a message bundle method.
+ * Identifies a message bundle method that represents a single message of the enclosing bundle.
  * <p>
- * Each method of a message bundle interface annotated with {@link MessageBundle} must be annotated with this annotation.
+ * The value of the {@link #key()} can be used to reference a message in a template. It is possible to specify an explicit key
+ * or a strategy to extract the default key. The default strategy is defined by the enclosing
+ * {@link MessageBundle#defaultKey()}.
+ * <p>
+ * The {@link #value()} defines the template of a message. The method parameters can be used in this template. All the message
+ * templates are validated at build time.
+ * <p>
+ * Note that any method declared on a message bundle interface is consireded a message bundle method. If not annotated with this
+ * annotation then the defaulted values are used for the key and template.
+ * <p>
+ * All message bundle methods must return {@link String}. If a message bundle method does not return string then the build
+ * fails.
  *
  * @see MessageBundle
  */
@@ -47,8 +58,9 @@ public @interface Message {
     String UNDERSCORED_ELEMENT_NAME = "<<underscored element name>>";
 
     /**
+     * The key of a message.
      *
-     * @return the key
+     * @return the message key
      */
     String key() default DEFAULT_NAME;
 

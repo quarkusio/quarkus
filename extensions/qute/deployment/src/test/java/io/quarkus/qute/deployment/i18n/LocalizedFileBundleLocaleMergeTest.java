@@ -68,7 +68,6 @@ public class LocalizedFileBundleLocaleMergeTest {
         @Message("Nazdar!")
         String hello();
 
-        @Message
         String goodbye();
 
         @Message("Greetings!")

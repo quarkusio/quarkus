@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static io.quarkus.qute.i18n.MessageBundle.DEFAULT_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -59,7 +60,7 @@ public class LocalizedFileBundleLocaleMergeTest {
         assertEquals("Abschied", deMessages.farewell());
     }
 
-    @MessageBundle
+    @MessageBundle(DEFAULT_NAME)
     public interface Messages {
 
         @Message("Ahoj svete!")

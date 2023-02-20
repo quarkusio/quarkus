@@ -257,7 +257,7 @@ public class NativeImageBuildStep {
 
             NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs, nativeImageName,
                     resultingExecutableName, outputDir,
-                    nativeConfig.debug.enabled,
+                    graalVMVersion, nativeConfig.debug.enabled,
                     processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
             if (buildNativeResult.getExitCode() != 0) {
                 throw imageGenerationFailed(buildNativeResult.getExitCode(), nativeConfig.isContainerBuild());

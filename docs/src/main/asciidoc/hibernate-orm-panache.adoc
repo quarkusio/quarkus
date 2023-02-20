@@ -19,10 +19,22 @@ What we're doing in Panache is to allow you to write your Hibernate ORM entities
 
 [source,java]
 ----
+package org.acme;
+
 public enum Status {
     Alive,
     Deceased
 }
+----
+
+[source,java]
+----
+package org.acme;
+
+import java.time.*;
+import java.util.*;
+import javax.persistence.*;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 @Entity
 public class Person extends PanacheEntity {
@@ -156,6 +168,13 @@ columns as public fields:
 
 [source,java]
 ----
+package org.acme;
+
+import java.time.*;
+import java.util.*;
+import javax.persistence.*;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+
 @Entity
 public class Person extends PanacheEntity {
     public String name;
@@ -169,6 +188,13 @@ You can put all your JPA column annotations on the public fields. If you need a 
 
 [source,java]
 ----
+package org.acme;
+
+import java.time.*;
+import java.util.*;
+import javax.persistence.*;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+
 @Entity
 public class Person extends PanacheEntity {
     public String name;
@@ -272,6 +298,13 @@ Adding them as static methods in your entity class is the Panache Active Record 
 
 [source,java]
 ----
+package org.acme;
+
+import java.time.*;
+import java.util.*;
+import javax.persistence.*;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+
 @Entity
 public class Person extends PanacheEntity {
     public String name;
@@ -301,6 +334,12 @@ When using the repository pattern, you can define your entities as regular JPA e
 
 [source,java]
 ----
+package org.acme;
+
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import java.time.LocalDate;
+
 @Entity
 public class Person {
     @Id @GeneratedValue private Long id;
@@ -345,6 +384,13 @@ by making them implements `PanacheRepository`:
 
 [source,java]
 ----
+package org.acme;
+
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+
+import javax.enterprise.context.ApplicationScoped;
+import java.util.List;
+
 @ApplicationScoped
 public class PersonRepository implements PanacheRepository<Person> {
 
@@ -460,6 +506,14 @@ Then, you can create the following resource to create/read/update/delete your Pe
 
 [source,java]
 ----
+package org.acme;
+
+import java.util.*;
+import java.net.URI;
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.transaction.*;
+
 @Path("/persons")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -525,6 +579,37 @@ public class PersonResource {
 
 NOTE: Be careful to use the `@Transactional` annotation on the operations that modify the database,
 you can add the annotation at the class level for simplicity purpose.
+
+To make it easier to showcase some capabilities of Hibernate ORM with Panache on Quarkus, some test data should be inserted into the database by adding the following content to a new file named src/main/resources/import.sql:
+
+[source,sql]
+----
+INSERT INTO person (id, birth, name, status) VALUES (nextval('hibernate_sequence'), '1995-09-12', 'Emily Brown', 0);
+----
+
+After that, you can see the people list and add new person as followings:
+
+[source,shell]
+----
+$ curl -w "\n" http://localhost:8080/persons
+[{"id":1,"name":"Emily Brown","birth":"1995-09-12","status":"Alive"}]
+
+$ curl -X POST -H "Content-Type: application/json" -d '{"name" : "William Davis" , "birth" : "1988-07-04", "status" : "Alive"}' http://localhost:8080/persons
+
+$ curl -w "\n" http://localhost:8080/persons
+[{"id":1,"name":"Emily Brown","birth":"1995-09-12","status":"Alive"}, {"id":2,"name":"William Davis","birth":"1988-07-04","status":"Alive"}]
+----
+
+NOTE: If you see the Person object as Person<1>, then the object has not been converted. In this case, add the dependency `quarkus-resteasy-reactive-jackson` in `pom.xml`.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+</dependency>
+----
 
 == Advanced Query
 

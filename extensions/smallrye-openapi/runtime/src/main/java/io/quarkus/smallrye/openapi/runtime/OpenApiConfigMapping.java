@@ -55,7 +55,7 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
 
     private static Map<String, String> relocations() {
         Map<String, String> relocations = new HashMap<>();
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.OPEN_API_VERSION, QUARKUS_OPEN_API_VERSION);
+        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.VERSION, QUARKUS_OPEN_API_VERSION);
         mapKey(relocations, org.eclipse.microprofile.openapi.OASConfig.SERVERS, QUARKUS_SERVERS);
         mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_TITLE, QUARKUS_INFO_TITLE);
         mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_VERSION, QUARKUS_INFO_VERSION);

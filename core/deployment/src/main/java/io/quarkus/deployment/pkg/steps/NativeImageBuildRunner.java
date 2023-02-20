@@ -66,7 +66,7 @@ public abstract class NativeImageBuildRunner {
             int exitCode = process.waitFor();
             boolean objcopyExists = objcopyExists();
             if (exitCode != 0) {
-                return new Result(exitCode, objcopyExists);
+                return new Result(exitCode);
             }
 
             if (objcopyExists) {
@@ -80,7 +80,7 @@ public abstract class NativeImageBuildRunner {
                         "objcopy executable not found in PATH. Debug symbols will therefore not be separated from the executable.");
                 log.warn("That also means that resulting native executable is larger as it embeds the debug symbols.");
             }
-            return new Result(0, objcopyExists);
+            return new Result(0);
         } finally {
             postBuild();
         }
@@ -148,19 +148,14 @@ public abstract class NativeImageBuildRunner {
 
     static class Result {
         private final int exitCode;
-        private final boolean objcopyExists;
 
-        public Result(int exitCode, boolean objcopyExists) {
+        public Result(int exitCode) {
             this.exitCode = exitCode;
-            this.objcopyExists = objcopyExists;
         }
 
         public int getExitCode() {
             return exitCode;
         }
 
-        public boolean isObjcopyExists() {
-            return objcopyExists;
-        }
     }
 }

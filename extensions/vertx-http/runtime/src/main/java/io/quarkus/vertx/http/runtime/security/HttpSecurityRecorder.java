@@ -56,7 +56,8 @@ public class HttpSecurityRecorder {
         this.buildTimeConfig = buildTimeConfig;
     }
 
-    public Handler<RoutingContext> authenticationMechanismHandler(boolean proactiveAuthentication) {
+    public Handler<RoutingContext> authenticationMechanismHandler(boolean proactiveAuthentication,
+            boolean inclusiveAuthentication) {
         return new Handler<RoutingContext>() {
 
             volatile HttpAuthenticator authenticator;
@@ -96,7 +97,8 @@ public class HttpSecurityRecorder {
                 }
 
                 if (proactiveAuthentication) {
-                    Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
+                    Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event, inclusiveAuthentication)
+                            .memoize().indefinitely();
                     potentialUser
                             .subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
                                 @Override
@@ -158,7 +160,7 @@ public class HttpSecurityRecorder {
                             .createFrom()
                             .nullItem()
                             // Only attempt to authenticate if required
-                            .flatMap(n -> authenticator.attemptAuthentication(event))
+                            .flatMap(n -> authenticator.attemptAuthentication(event, inclusiveAuthentication))
                             .memoize()
                             .indefinitely()
                             .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {

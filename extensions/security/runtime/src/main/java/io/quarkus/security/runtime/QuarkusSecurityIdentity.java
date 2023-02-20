@@ -3,6 +3,7 @@ package io.quarkus.security.runtime;
 import java.security.Permission;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +29,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         this.principal = builder.principal;
         this.roles = Collections.unmodifiableSet(builder.roles);
         this.credentials = Collections.unmodifiableSet(builder.credentials);
-        this.attributes = Collections.unmodifiableMap(builder.attributes);
+        this.attributes = new AttributesMap(builder.attributes);
         this.permissionCheckers = Collections.unmodifiableList(builder.permissionCheckers);
         this.anonymous = builder.anonymous;
     }
@@ -237,6 +238,93 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
 
             built = true;
             return new QuarkusSecurityIdentity(this);
+        }
+    }
+
+    /**
+     * This map only allows adding new entries
+     */
+    static final class AttributesMap implements Map<String, Object> {
+
+        Map<String, Object> delegate;
+
+        public AttributesMap(Map<String, Object> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public int size() {
+            return delegate.size();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return delegate.isEmpty();
+        }
+
+        @Override
+        public boolean containsKey(Object key) {
+            return delegate.containsKey(key);
+        }
+
+        @Override
+        public boolean containsValue(Object value) {
+            return delegate.containsValue(value);
+        }
+
+        @Override
+        public Object get(Object key) {
+            return delegate.get(key);
+        }
+
+        @Override
+        public Object put(String key, Object value) {
+            if (containsKey(key)) {
+                throw new UnsupportedOperationException();
+            }
+            return delegate.put(key, value);
+        }
+
+        @Override
+        public Object remove(Object key) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void putAll(Map<? extends String, ? extends Object> m) {
+            if (Collections.disjoint(keySet(), m.keySet())) {
+                delegate.putAll(m);
+            }
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Set<String> keySet() {
+            return Collections.unmodifiableSet(delegate.keySet());
+        }
+
+        @Override
+        public Collection<Object> values() {
+            return Collections.unmodifiableCollection(delegate.values());
+        }
+
+        @Override
+        public Set<Entry<String, Object>> entrySet() {
+            return Collections.unmodifiableSet(delegate.entrySet());
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return delegate.equals(obj);
+        }
+
+        @Override
+        public int hashCode() {
+            return delegate.hashCode();
         }
     }
 }

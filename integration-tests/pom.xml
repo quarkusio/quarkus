@@ -222,6 +222,7 @@
                 <module>oidc-client</module>
                 <module>oidc-client-reactive</module>
                 <module>oidc-client-wiremock</module>
+                <module>oidc-mtls</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>smallrye-jwt-oidc-webapp</module>

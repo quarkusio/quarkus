@@ -32,7 +32,7 @@ The following table maps specific authentication requirements to a supported mec
 
 |Single sign-on (SSO) |xref:security-oidc-code-flow-authentication-concept.adoc[OIDC Code Flow], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
 
-|Client certificate |xref:security-authentication-mechanisms-concept.adoc#mutual-tls[Mutual TLS (MTLS)]
+|Client certificate |xref:security-authentication-mechanisms-concept.adoc#mutual-tls[Mutual TLS (mTLS)]
 
 |WebAuthn |xref:security-webauthn-concept.adoc[WebAuthn]
 
@@ -318,6 +318,21 @@ s|JWT as a cookie support ^|No ^|Yes ^|Yes
 
 If the user credentials are provided by different sources, you can combine authentication mechanisms.
 For example, you can combine built-in `Basic` and `quarkus-oidc` `Bearer` authentication mechanisms.
+
+The authentication process completes as soon as the first `SecurityIdentity` is produced by one of the authentication mechanisms.
+
+In some cases it can be required that all registered authentication mechanisms create their `SecurityIdentity`. It can be required when the credentials such as tokens have to be passed over <<mutual-tls, mTLS>>, for example, when users are authenticating via `Virtual Private Network`, or when the current token has to be bound to the client certificate for the token verification to succeed, guaranteeing that the token was issued exactly to the same client which is currently passing this token to Quarkus alongside its client certificate.
+
+In Quarkus such authentication is called `inclusive` and you can enable it like this:
+
+[source,properties]
+----
+quarkus.http.auth.inclusive=true
+----
+
+If the authentication is inclusive then `SecurityIdentity` created by the first authentication mechanism can be injected into the application code. Typically it will be created by the <<mutual-tls, mTLS>> authentication mechanism.
+
+Additional `SecurityIdentity` instances can be accessed as a `quarkus.security.identities` attribute on the first `SecurityIdentity`, however, accessing these extra identities directly may not be necessary, for example, when both <<mutual-tls, mTLS>> and xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] mechanisms have been combined and done their authentications, the authenticated bearer token can be injected as a token credential alongside `SecurityIdentity` created by <<mutual-tls, mTLS>>.
 
 [IMPORTANT]
 ====

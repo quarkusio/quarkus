@@ -10,6 +10,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -34,12 +35,15 @@ import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.mutiny.Uni;
@@ -501,5 +505,35 @@ public final class OidcUtils {
                 context.request().resume();
             }
         });
+    }
+
+    public static TokenCredential getTokenCredential(SecurityIdentity identity, Class<? extends TokenCredential> type) {
+        TokenCredential credential = identity.getCredential(type);
+        if (credential == null) {
+            Map<String, SecurityIdentity> identities = identity.getAttribute(HttpSecurityUtils.SECURITY_IDENTITIES_ATTRIBUTE);
+            if (identities != null) {
+                for (String scheme : identities.keySet()) {
+                    if (scheme.equalsIgnoreCase(OidcConstants.BEARER_SCHEME)) {
+                        return identities.get(scheme).getCredential(type);
+                    }
+                }
+            }
+        }
+        return credential;
+    }
+
+    public static <T> T getAttribute(SecurityIdentity identity, String name) {
+        T attribute = identity.getAttribute(name);
+        if (attribute == null) {
+            Map<String, SecurityIdentity> identities = identity.getAttribute(HttpSecurityUtils.SECURITY_IDENTITIES_ATTRIBUTE);
+            if (identities != null) {
+                for (String scheme : identities.keySet()) {
+                    if (scheme.equalsIgnoreCase(OidcConstants.BEARER_SCHEME)) {
+                        return identities.get(scheme).getAttribute(name);
+                    }
+                }
+            }
+        }
+        return attribute;
     }
 }

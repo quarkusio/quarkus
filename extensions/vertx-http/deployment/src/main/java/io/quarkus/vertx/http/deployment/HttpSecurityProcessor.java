@@ -149,7 +149,8 @@ public class HttpSecurityProcessor {
                             .addBeanClass(HttpAuthorizer.class).build());
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(
-                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive),
+                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive,
+                                    buildTimeConfig.auth.inclusive),
                             FilterBuildItem.AUTHENTICATION));
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));

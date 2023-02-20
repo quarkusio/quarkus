@@ -13,6 +13,7 @@ import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.SecurityIdentity;
 
 @RequestScoped
@@ -29,12 +30,12 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     IdTokenCredential currentIdToken() {
-        IdTokenCredential cred = identity.getCredential(IdTokenCredential.class);
+        TokenCredential cred = OidcUtils.getTokenCredential(identity, IdTokenCredential.class);
         if (cred == null || cred.getToken() == null) {
             LOG.trace("IdToken is null");
             cred = new IdTokenCredential();
         }
-        return cred;
+        return (IdTokenCredential) cred;
     }
 
     @Produces
@@ -42,23 +43,23 @@ public class OidcTokenCredentialProducer {
     @Alternative
     @Priority(1)
     AccessTokenCredential currentAccessToken() {
-        AccessTokenCredential cred = identity.getCredential(AccessTokenCredential.class);
+        TokenCredential cred = OidcUtils.getTokenCredential(identity, AccessTokenCredential.class);
         if (cred == null || cred.getToken() == null) {
             LOG.trace("AccessToken is null");
             cred = new AccessTokenCredential();
         }
-        return cred;
+        return (AccessTokenCredential) cred;
     }
 
     @Produces
     @RequestScoped
     RefreshToken currentRefreshToken() {
-        RefreshToken cred = identity.getCredential(RefreshToken.class);
+        TokenCredential cred = OidcUtils.getTokenCredential(identity, RefreshToken.class);
         if (cred == null) {
             LOG.trace("RefreshToken is null");
             cred = new RefreshToken();
         }
-        return cred;
+        return (RefreshToken) cred;
     }
 
     /**
@@ -69,7 +70,7 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     UserInfo currentUserInfo() {
-        UserInfo userInfo = (UserInfo) identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE);
+        UserInfo userInfo = OidcUtils.getAttribute(identity, OidcUtils.USER_INFO_ATTRIBUTE);
         if (userInfo == null) {
             LOG.trace("UserInfo is null");
             userInfo = new UserInfo();
@@ -85,7 +86,7 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     TokenIntrospection currentTokenIntrospection() {
-        TokenIntrospection introspection = (TokenIntrospection) identity.getAttribute(OidcUtils.INTROSPECTION_ATTRIBUTE);
+        TokenIntrospection introspection = OidcUtils.getAttribute(identity, OidcUtils.INTROSPECTION_ATTRIBUTE);
         if (introspection == null) {
             LOG.trace("TokenIntrospection is null");
             introspection = new TokenIntrospection();

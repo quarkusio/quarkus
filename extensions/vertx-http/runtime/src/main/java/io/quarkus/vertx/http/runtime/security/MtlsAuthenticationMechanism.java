@@ -76,4 +76,9 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
         return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.X509, "X509"));
     }
+
+    @Override
+    public int getPriority() {
+        return 3000;
+    }
 }

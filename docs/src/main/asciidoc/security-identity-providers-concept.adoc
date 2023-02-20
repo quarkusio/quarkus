@@ -10,8 +10,8 @@ include::_attributes.adoc[]
 
 In the Quarkus Security framework, identity providers play a key role in authentication and authorization, providing services for storing and verifying user identities.
 The JPA `IdentityProvider` creates a `SecurityIdentity` instance used during user authentication to verify and authorize access requests, making your Quarkus application secure.
-[[identity-providers]]
 
+[[identity-providers]]
 `IdentityProvider` converts the authentication credentials provided by `HttpAuthenticationMechanism` to a `SecurityIdentity` instance.
 
 Some extensions, for example, `OIDC`, `OAuth2`, and `SmallRye JWT` have inline `IdentityProvider` implementations specific to the supported authentication flow.
@@ -21,8 +21,11 @@ If you use Basic or form-based authentication, you must add an `IdentityProvider
 
 To get started with security in Quarkus, we recommend you combine the Quarkus built-in Basic HTTP authentication with the JPA identity provider to enable role-based access control (RBAC).
 
-* For more information about Basic authentication or form-based authentication, see the following resources:
+For more information about Basic authentication, its mechanisms, and related identity providers, see the following resources:
+
+* xref:security-jpa-concept.adoc[Quarkus Security with JPA]
 ** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
-** xref:security-authentication-mechanisms-concept.adoc#form-auth[Form-based authentication]
-** xref:security-jdbc.adoc[Using security with JDBC]
-** xref:security-ldap.adoc[Using security with an LDAP realm]
+* xref:security-authentication-mechanisms-concept.adoc#form-auth[Form-based authentication]
+* xref:security-jdbc.adoc[Using security with JDBC]
+* xref:security-ldap.adoc[Using security with an LDAP realm]
+* xref:security-overview-concept.adoc[Quarkus Security overview]

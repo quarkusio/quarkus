@@ -24,19 +24,19 @@ The following table maps specific authentication requirements to a supported mec
 [width=80%]
 [source, adoc]
 |===
-|Authentication requirement | Authentication mechanism
+|Authentication requirement |Authentication mechanism
 
 |Username and password |xref:security-basic-authentication-concept.adoc[Basic], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
 
-|Bearer access token  a| xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
+|Bearer access token |xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
 
 |Single sign-on (SSO) |xref:security-oidc-code-flow-authentication-concept.adoc[OIDC Code Flow], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
 
-|Client certificate  |xref:security-authentication-mechanisms-concept.adoc#mutual-tls[Mutual TLS (MTLS)]
+|Client certificate |xref:security-authentication-mechanisms-concept.adoc#mutual-tls[Mutual TLS (MTLS)]
 
 |WebAuthn |xref:security-webauthn-concept.adoc[WebAuthn]
 
-|Kerberos ticket    |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
+|Kerberos ticket |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
 |===
 
 See also the <<table>> table featured later in this section.
@@ -53,10 +53,12 @@ Quarkus Security provides the following built-in authentication support:
 
 You can secure your Quarkus application endpoints with the built-in HTTP Basic authentication mechanism. 
 For more information, see the following documentation:
+
 * xref:security-basic-authentication-concept.adoc[Basic authentication]
+** xref:security-basic-authentication-howto.adoc[Enable Basic authentication]
+* xref:security-jpa-concept.adoc[Quarkus Security with JPA]
+** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
 * xref:security-identity-providers-concept.adoc[Identity providers]
-* xref:security-basic-authentication-howto.adoc[Enable Basic authentication]
-* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
 
 [[form-auth]]
 === Form-based authentication

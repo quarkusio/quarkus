@@ -345,10 +345,10 @@ public class TestEndpoint {
         makeSavedPerson("p2");
 
         // full form
-        int updateByIndexParameter = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
+        int updateByIndexParameter = Person.update("update Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
 
-        int updateByNamedParameter = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+        int updateByNamedParameter = Person.update("update Person2 p set p.name = 'stefNEW' where p.name = :pName",
                 Parameters.with("pName", "stefp2").map());
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
 
@@ -416,11 +416,11 @@ public class TestEndpoint {
         makeSavedPerson("p2");
 
         // full form
-        int updateByIndexParameter = personDao.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
+        int updateByIndexParameter = personDao.update("update Person2 p set p.name = 'stefNEW' where p.name = ?1",
                 "stefp1");
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
 
-        int updateByNamedParameter = personDao.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+        int updateByNamedParameter = personDao.update("update Person2 p set p.name = 'stefNEW' where p.name = :pName",
                 Parameters.with("pName", "stefp2").map());
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
 
@@ -1229,7 +1229,7 @@ public class TestEndpoint {
                         .project(CatProjectionBean.class).firstResult());
         Assertions.assertTrue(exception.getMessage().startsWith("Unable to perform a projection on a 'select new' query"));
 
-        CatProjectionBean constantProjection = Cat.find("select 'fake_cat', 'fake_owner', 12.5 from Cat c")
+        CatProjectionBean constantProjection = Cat.find("select 'fake_cat', 'fake_owner', 12.5D from Cat c")
                 .project(CatProjectionBean.class).firstResult();
         Assertions.assertEquals("fake_cat", constantProjection.getName());
         Assertions.assertEquals("fake_owner", constantProjection.getOwnerName());

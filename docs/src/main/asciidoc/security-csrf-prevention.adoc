@@ -9,7 +9,12 @@ include::_attributes.adoc[]
 
 https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
 
-Quarkus Security provides a CSRF prevention feature which consists of a xref:resteasy-reactive.adoc[RESTEasy Reactive] server filter which creates and verifies CSRF tokens in `application/x-www-form-urlencoded` and `multipart/form-data` forms and a Qute HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
+Quarkus Security provides a CSRF prevention feature which implements a https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie[Double Submit Cookie technique]. This techninque requires that the CSRF token is never directly exposed to scripts executed on the client-side. In this extension, the CSRF token is:
+
+* sent as `HTTPOnly` cookie to the client, and
+* directly embedded in a hidden form input of server-side rendered forms, which are transmitted to and used by the client.
+
+The extension consists of a xref:resteasy-reactive.adoc[RESTEasy Reactive] server filter which creates and verifies CSRF tokens in `application/x-www-form-urlencoded` and `multipart/form-data` forms and a Qute HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
 
 == Creating the Project
 

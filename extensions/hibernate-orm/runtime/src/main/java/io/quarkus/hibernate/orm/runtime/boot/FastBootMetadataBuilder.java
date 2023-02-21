@@ -155,6 +155,13 @@ public class FastBootMetadataBuilder {
             }
             ssrBuilder.applySetting(key, entry.getValue());
         }
+        // We need to initialize the multi tenancy strategy before building the service registry as it is used to
+        // create metadata builder. Adding services afterwards would lead to unpredicted behavior.
+        final MultiTenancyStrategy multiTenancyStrategy = puDefinition.getMultitenancyStrategy();
+        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE) {
+            ssrBuilder.addService(MultiTenantConnectionProvider.class,
+                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
+        }
         this.standardServiceRegistry = ssrBuilder.build();
         registerIdentifierGenerators(standardServiceRegistry);
 
@@ -211,12 +218,6 @@ public class FastBootMetadataBuilder {
         // for the time being we want to revoke access to the temp ClassLoader if one
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
-
-        final MultiTenancyStrategy multiTenancyStrategy = puDefinition.getMultitenancyStrategy();
-        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE) {
-            ssrBuilder.addService(MultiTenantConnectionProvider.class,
-                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
-        }
     }
 
     /**

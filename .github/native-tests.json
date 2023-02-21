@@ -33,19 +33,19 @@
         {
             "category": "Data5",
             "timeout": 65,
-            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-orm-tenancy/schema",
+            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Data6",
             "timeout": 80,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling",
+            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling, hibernate-reactive-panache, hibernate-reactive-panache-kotlin",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Data7",
             "timeout": 65,
-            "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client",
+            "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mysql",
             "os-name": "ubuntu-latest"
         },
         {
@@ -81,7 +81,7 @@
         {
             "category": "Security3",
             "timeout": 50,
-            "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation",
+            "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation, security-webauthn",
             "os-name": "ubuntu-latest"
         },
         {

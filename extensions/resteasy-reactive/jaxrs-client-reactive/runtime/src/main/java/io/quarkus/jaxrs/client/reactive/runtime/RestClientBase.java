@@ -3,6 +3,7 @@ package io.quarkus.jaxrs.client.reactive.runtime;
 import java.io.Closeable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -114,6 +115,19 @@ public abstract class RestClientBase implements Closeable {
             return value == null ? null : value.toString();
         }
     };
+
+    private static final ParamConverter<OffsetDateTime> OFFSET_DATE_TIME_CONVERTER = new ParamConverter<>() {
+        @Override
+        public OffsetDateTime fromString(String value) {
+            return value == null ? null : OffsetDateTime.parse(value);
+        }
+
+        @Override
+        public String toString(OffsetDateTime value) {
+            return value == null ? null : value.toString();
+        }
+    };
+
     private final List<ParamConverterProvider> paramConverterProviders;
     private final Map<Class<?>, ParamConverterProvider> providerForClass = new ConcurrentHashMap<>();
 
@@ -212,6 +226,9 @@ public abstract class RestClientBase implements Closeable {
             }
             if (rawType == UUID.class) {
                 return (ParamConverter<T>) UUID_CONVERTER;
+            }
+            if (rawType == OffsetDateTime.class) {
+                return (ParamConverter<T>) OFFSET_DATE_TIME_CONVERTER;
             }
             return null;
         }

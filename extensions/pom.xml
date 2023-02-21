@@ -90,7 +90,7 @@
         <module>jdbc</module>
         <module>hibernate-orm</module>
         <module>hibernate-envers</module>
-        <!--<module>hibernate-reactive</module>-->
+        <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-orm-elasticsearch</module>

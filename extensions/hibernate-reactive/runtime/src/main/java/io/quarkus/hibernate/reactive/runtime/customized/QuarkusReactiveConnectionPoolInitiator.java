@@ -3,7 +3,6 @@ package io.quarkus.hibernate.reactive.runtime.customized;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
@@ -12,6 +11,7 @@ import org.hibernate.reactive.pool.impl.SqlClientPool;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.vertx.sqlclient.Pool;
 
 public final class QuarkusReactiveConnectionPoolInitiator

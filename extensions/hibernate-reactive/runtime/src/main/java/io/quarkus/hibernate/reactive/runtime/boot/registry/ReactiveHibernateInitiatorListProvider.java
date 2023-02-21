@@ -6,7 +6,7 @@ import java.util.List;
 import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
-import org.hibernate.engine.jdbc.batch.internal.UnmodifiableBatchBuilderInitiator;
+import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
@@ -15,11 +15,10 @@ import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
-import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
+import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
-import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSchemaManagementToolInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
@@ -84,14 +83,10 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         // Custom Quarkus implementation !
         serviceInitiators.add(DialectFactoryInitiator.INSTANCE);
 
-        // Non-default implementation: optimised for lack of JMX management
-        serviceInitiators.add(UnmodifiableBatchBuilderInitiator.INSTANCE);
+        // Default implementation
+        serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
-
-        // Custom for Hibernate Reactive:
-        //serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);
-        serviceInitiators.add(ReactiveQueryTranslatorFactoryInitiator.INSTANCE);
 
         // Custom one! Also, this one has state so can't use the singleton.
         serviceInitiators.add(new QuarkusMutableIdentifierGeneratorFactoryInitiator());// MutableIdentifierGeneratorFactoryInitiator.INSTANCE);

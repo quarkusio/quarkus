@@ -12,7 +12,7 @@ import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
-import org.hibernate.engine.jdbc.batch.internal.UnmodifiableBatchBuilderInitiator;
+import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
@@ -20,11 +20,11 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
-import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
+import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
+import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
-import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSchemaManagementToolInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
@@ -159,6 +159,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         //Use a custom ProxyFactoryFactory which is able to use the class definitions we already created:
         serviceInitiators.add(new QuarkusRuntimeProxyFactoryFactoryInitiator(statefulProxyFactory));
 
+        serviceInitiators.add(ReactiveMutationExecutorServiceInitiator.INSTANCE);
+
         // Replaces org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator :
         // not used
         // (Original disabled)
@@ -197,15 +199,13 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.getDialect(),
                 rs.getBuildTimeSettings().getSource()));
 
-        // Non-default implementation: optimised for lack of JMX management
-        serviceInitiators.add(UnmodifiableBatchBuilderInitiator.INSTANCE);
+        // Default implementation
+        serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 
         // Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSchemaManagementToolInitiator.INSTANCE);
-        //serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);
-        serviceInitiators.add(ReactiveQueryTranslatorFactoryInitiator.INSTANCE);
 
         // Disabled: IdentifierGenerators are no longer initiated after Metadata was generated.
         // serviceInitiators.add(MutableIdentifierGeneratorFactoryInitiator.INSTANCE);

@@ -63,11 +63,11 @@
                 <configuration>
                     <removedResources>
                         <artifact>
-                            <key>org.jboss.narayana.rts:narayana-lra-jakarta</key>
+                            <key>org.jboss.narayana.rts:narayana-lra</key>
                             <resources>META-INF/services/jakarta.ws.rs.client.ClientBuilder</resources>
                         </artifact>
                         <artifact>
-                            <key>org.jboss.narayana.rts:lra-client-jakarta</key>
+                            <key>org.jboss.narayana.rts:lra-client</key>
                             <resources>META-INF/services/jakarta.ws.rs.client.ClientBuilder</resources>
                         </artifact>
                     </removedResources>

@@ -309,7 +309,7 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 
 * `exposed` - whether resource could be exposed. A global resource property that can be overridden for each method. Default is `true`.
 * `path` - resource base path. Default path is a hyphenated lowercase resource name without a suffix of `resource` or `controller`.
-* `rolesAllowed` - List of the security roles permitted to access the resources. It needs a Quarkus security extension to be present, otherwise it will be ignored. Default is empty.
+* `rolesAllowed` - List of the security roles permitted to access the resources. It needs a Quarkus Security extension to be present, otherwise it will be ignored. Default is empty.
 * `paged` - whether collection responses should be paged or not.
 First, last, previous and next page URIs are included in the response headers if they exist.
 Request page index and size are taken from the `page` and `size` query parameters that default to `0` and `20` respectively.
@@ -322,7 +322,7 @@ Default is `false`.
 
 * `exposed` - does not expose a particular HTTP verb when set to `false`. Default is `true`.
 * `path` - operation path (this is appended to the resource base path). Default is an empty string.
-* `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus security extension to be present, otherwise it will be ignored. Default is empty.
+* `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus Security extension to be present, otherwise it will be ignored. Default is empty.
 
 == Adding additional methods to the generated resource
 

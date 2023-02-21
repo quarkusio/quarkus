@@ -334,7 +334,7 @@ public class ClassTransformingBuildStep {
         }
         if (!removed.isEmpty()) {
             log.warn("Could not remove configured resources from the following artifacts as they were not found in the model: "
-                    + removed.keySet());
+                    + removed);
         }
     }
 

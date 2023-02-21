@@ -41,6 +41,10 @@ public class Name implements Comparable<Name> {
         return simpleName != null ? simpleName : name;
     }
 
+    public String getName() {
+        return name;
+    }
+
     static String createSimpleName(Type type) {
         switch (type.kind()) {
             case CLASS:

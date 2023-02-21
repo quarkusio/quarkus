@@ -355,7 +355,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         }
 
         //limit to 1000 to not have to many files to display
-        return knownFiles.stream().filter(this::isHtmlFileName).limit(1000).distinct().sorted(Comparator.naturalOrder())
+        return knownFiles.stream().filter(this::isValidHtmlFileName).limit(1000).distinct().sorted(Comparator.naturalOrder())
                 .collect(Collectors.toList());
     }
 
@@ -377,7 +377,12 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         }
     }
 
-    private boolean isHtmlFileName(String fileName) {
+    private boolean isValidHtmlFileName(String fileName) {
+        // Filter out webjars and mvnpm
+        if (fileName.startsWith("webjars") || fileName.startsWith("_static")) {
+            return false;
+        }
+
         return fileName.endsWith(".html") || fileName.endsWith(".htm");
     }
 

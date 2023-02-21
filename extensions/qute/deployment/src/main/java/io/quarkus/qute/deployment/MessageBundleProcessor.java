@@ -36,6 +36,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassInfo.NestingType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
@@ -102,7 +103,7 @@ import io.quarkus.runtime.util.StringUtil;
 
 public class MessageBundleProcessor {
 
-    private static final Logger LOGGER = Logger.getLogger(MessageBundleProcessor.class);
+    private static final Logger LOG = Logger.getLogger(MessageBundleProcessor.class);
 
     private static final String SUFFIX = "_Bundle";
     private static final String BUNDLE_DEFAULT_KEY = "defaultKey";
@@ -136,7 +137,31 @@ public class MessageBundleProcessor {
                 ClassInfo bundleClass = bundleAnnotation.target().asClass();
                 if (Modifier.isInterface(bundleClass.flags())) {
                     AnnotationValue nameValue = bundleAnnotation.value();
-                    String name = nameValue != null ? nameValue.asString() : MessageBundle.DEFAULT_NAME;
+                    String name = nameValue != null ? nameValue.asString() : MessageBundle.DEFAULTED_NAME;
+                    if (name.equals(MessageBundle.DEFAULTED_NAME)) {
+                        if (bundleClass.nestingType() == NestingType.TOP_LEVEL) {
+                            name = MessageBundle.DEFAULT_NAME;
+                        } else {
+                            // The name starts with the DEFAULT_NAME followed by an underscore, followed by simple names of all
+                            // declaring classes in the hierarchy seperated by underscores
+                            List<String> enclosingNames = new ArrayList<>();
+                            DotName enclosingName = bundleClass.enclosingClass();
+                            while (enclosingName != null) {
+                                ClassInfo enclosingClass = index.getClassByName(enclosingName);
+                                if (enclosingClass != null) {
+                                    enclosingNames.add(DotNames.simpleName(enclosingClass));
+                                    enclosingName = enclosingClass.nestingType() == NestingType.TOP_LEVEL ? null
+                                            : enclosingClass.enclosingClass();
+                                }
+                            }
+                            enclosingNames.add(MessageBundle.DEFAULT_NAME);
+                            // Class Bar declares nested class Foo and bundle Baz is declared as nested interface of Foo
+                            // [Foo, Bar, msg] -> [msg, Bar, Foo]
+                            Collections.reverse(enclosingNames);
+                            name = String.join("_", enclosingNames);
+                        }
+                        LOG.debugf("Message bundle %s: name defaulted to %s", bundleClass, name);
+                    }
                     if (!Namespaces.isValidNamespace(name)) {
                         throw new MessageBundleException(
                                 String.format(
@@ -185,7 +210,10 @@ public class MessageBundleProcessor {
                         String fileName = messageFile.getFileName().toString();
                         if (fileName.startsWith(name)) {
                             // msg_en.txt -> en
-                            String locale = fileName.substring(fileName.indexOf('_') + 1, fileName.indexOf('.'));
+                            // msg_Views_Index_cs.properties -> cs
+                            // msg_Views_Index_cs-CZ.properties -> cs-CZ
+                            // msg_Views_Index_cs_CZ.properties -> cs_CZ
+                            String locale = fileName.substring(name.length() + 1, fileName.indexOf('.'));
                             // Support resource bundle naming convention
                             locale = locale.replace('_', '-');
                             ClassInfo localizedInterface = localeToInterface.get(locale);
@@ -338,7 +366,7 @@ public class MessageBundleProcessor {
                 // Log a warning if a parameter is not used in the template
                 for (String paramName : paramNames) {
                     if (!usedParamNames.contains(paramName)) {
-                        LOGGER.warnf("Unused parameter found [%s] in the message template of: %s", paramName,
+                        LOG.warnf("Unused parameter found [%s] in the message template of: %s", paramName,
                                 messageBundleMethod.getMethod().declaringClass().name() + "#"
                                         + messageBundleMethod.getMethod().name() + "()");
                     }
@@ -432,12 +460,12 @@ public class MessageBundleProcessor {
         HierarchyIndexer hierarchyIndexer = new HierarchyIndexer(index);
 
         // bundle name -> (key -> method)
-        Map<String, Map<String, MethodInfo>> bundleMethodsMap = new HashMap<>();
+        Map<String, Map<String, MethodInfo>> bundleToMethods = new HashMap<>();
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
-            Map<String, MethodInfo> bundleMethods = bundleMethodsMap.get(messageBundleMethod.getBundleName());
+            Map<String, MethodInfo> bundleMethods = bundleToMethods.get(messageBundleMethod.getBundleName());
             if (bundleMethods == null) {
                 bundleMethods = new HashMap<>();
-                bundleMethodsMap.put(messageBundleMethod.getBundleName(), bundleMethods);
+                bundleToMethods.put(messageBundleMethod.getBundleName(), bundleMethods);
             }
             bundleMethods.put(messageBundleMethod.getKey(), messageBundleMethod.getMethod());
         }
@@ -447,7 +475,7 @@ public class MessageBundleProcessor {
             bundlesMap.put(messageBundle.getName(), messageBundle.getDefaultBundleInterface());
         }
 
-        for (Entry<String, Map<String, MethodInfo>> bundleEntry : bundleMethodsMap.entrySet()) {
+        for (Entry<String, Map<String, MethodInfo>> bundleEntry : bundleToMethods.entrySet()) {
 
             Map<TemplateAnalysis, Set<Expression>> expressions = QuteProcessor.collectNamespaceExpressions(analysis,
                     bundleEntry.getKey());
@@ -778,12 +806,11 @@ public class MessageBundleProcessor {
             Map<String, String> messageTemplates, String locale) {
 
         ClassInfo bundleInterface = bundleInterfaceWrapper.getClassInfo();
-        LOGGER.debugf("Generate bundle implementation for %s", bundleInterface);
+        LOG.debugf("Generate bundle implementation for %s", bundleInterface);
         AnnotationInstance bundleAnnotation = defaultBundleInterface != null
                 ? defaultBundleInterface.declaredAnnotation(Names.BUNDLE)
                 : bundleInterface.declaredAnnotation(Names.BUNDLE);
-        AnnotationValue nameValue = bundleAnnotation.value();
-        String bundleName = nameValue != null ? nameValue.asString() : MessageBundle.DEFAULT_NAME;
+        String bundleName = bundle.getName();
         AnnotationValue defaultKeyValue = bundleAnnotation.value(BUNDLE_DEFAULT_KEY);
 
         String baseName;
@@ -820,7 +847,7 @@ public class MessageBundleProcessor {
                         String.format("A message bundle method must return java.lang.String: %s#%s",
                                 bundleInterface, method.name()));
             }
-            LOGGER.debugf("Found message bundle method %s on %s", method, bundleInterface);
+            LOG.debugf("Found message bundle method %s on %s", method, bundleInterface);
 
             MethodCreator bundleMethod = bundleCreator.getMethodCreator(MethodDescriptor.of(method));
 
@@ -838,7 +865,7 @@ public class MessageBundleProcessor {
             }
 
             if (messageAnnotation == null) {
-                LOGGER.debugf("@Message not declared on %s#%s - using the default key/value", bundleInterface, method);
+                LOG.debugf("@Message not declared on %s#%s - using the default key/value", bundleInterface, method);
                 messageAnnotation = AnnotationInstance.builder(Names.MESSAGE).value(Message.DEFAULT_VALUE)
                         .add("name", Message.DEFAULT_NAME).build();
             }

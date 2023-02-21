@@ -2459,21 +2459,6 @@ In the development mode, all files located in `src/main/resources/templates` are
 The basic idea is that every message is potentially a very simple template.
 In order to prevent type errors a message is defined as an annotated method of a *message bundle interface*.
 Quarkus generates the *message bundle implementation* at build time.
-Subsequently, the bundles can be used at runtime:
-
-1. Directly in your code via `io.quarkus.qute.i18n.MessageBundles#get()`; e.g. `MessageBundles.get(AppMessages.class).hello_name("Lucie")`
-2. Injected in your beans via `@Inject`; e.g. `@Inject AppMessages`
-3. Referenced in the templates via the message bundle namespace:
-+
-[source,html]
-----
- {msg:hello_name('Lucie')} <1> <2> <3>
- {msg:message(myKey,'Lu')} <4>
-----
-<1> `msg` is the default namespace.
-<2> `hello_name` is the message key.
-<3> `Lucie` is the parameter of the message bundle interface method.  
-<4> It is also possible to obtain a localized message for a key resolved at runtime using a reserved key `message`. The validation is skipped in this case though.
 
 .Message Bundle Interface Example
 [source,java]
@@ -2492,9 +2477,49 @@ public interface AppMessages {
 <2> Each method must be annotated with `@Message`. The value is a qute template. If no value is provided, then a corresponding value from a localized file is taken. If no such file exists an exception is thrown and the build fails.
 <3> The method parameters can be used in the template.
 
+The message bundles can be used at runtime:
+
+1. Directly in your code via `io.quarkus.qute.i18n.MessageBundles#get()`; e.g. `MessageBundles.get(AppMessages.class).hello_name("Lucie")`
+2. Injected in your beans via `@Inject`; e.g. `@Inject AppMessages`
+3. Referenced in the templates via the message bundle namespace:
++
+[source,html]
+----
+ {msg:hello_name('Lucie')} <1> <2> <3>
+ {msg:message(myKey,'Lu')} <4>
+----
+<1> `msg` is the default namespace.
+<2> `hello_name` is the message key.
+<3> `Lucie` is the parameter of the message bundle interface method.  
+<4> It is also possible to obtain a localized message for a key resolved at runtime using a reserved key `message`. The validation is skipped in this case though.
+
+
+==== Default Bundle Name
+
+The bundle name is defaulted unless it's specified with `@MessageBundle#value()`.
+For a top-level class the `msg` value is used by default.
+For a nested class the name starts with `msg` followed by an underscore, followed by the simple names of all enclosing classes in the hierarchy (top-level class goes first) seperated by underscores.
+
+For example, the name of the following message bundle will be defaulted to `msg_Index`:
+
+[source,java]
+----
+class Index {
+
+    @MessageBundle
+    interface Bundle {
+
+        @Message("Hello {name}!")
+        String hello(String name);
+   }
+}
+----
+
+NOTE: The bundle name is also used as a part of the name of a localized file, e.g. `msg_Index` in the `msg_Index_de.properties`.
+
 ==== Bundle Name and Message Keys
 
-Keys are used directly in templates.
+Message keys are used directly in templates.
 The bundle name is used as a namespace in template expressions. 
 The `@MessageBundle` can be used to define the default strategy used to generate message keys from method names. 
 However, the `@Message` can override this strategy and even define a custom key.

@@ -61,6 +61,7 @@ public @interface Message {
      * The key of a message.
      *
      * @return the message key
+     * @see MessageBundle#defaultKey()
      */
     String key() default DEFAULT_NAME;
 

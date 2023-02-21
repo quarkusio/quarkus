@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.test;
 
-import org.hamcrest.Matchers;
+import static org.hamcrest.Matchers.is;
+
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -19,10 +20,26 @@ public class ClasspathResourceTestCase {
 
     @Test
     public void testRootResource() {
-        RestAssured.when().get("/other/hello.txt").then().body(Matchers.is("hello"));
-        RestAssured.when().get("/stuff.html").then().body(Matchers.is("stuff"));
-        RestAssured.when().get("/index.html").then().body(Matchers.is("index"));
-        RestAssured.when().get("/").then().body(Matchers.is("index"));
+
+        RestAssured.get("/other/hello.txt").then()
+                .log().all()
+                .statusCode(200)
+                .body(is("hello"));
+
+        RestAssured.get("/stuff.html").then()
+                .log().all()
+                .statusCode(200)
+                .body(is("stuff"));
+
+        RestAssured.get("/index.html").then()
+                .log().all()
+                .statusCode(200)
+                .body(is("index"));
+
+        RestAssured.get("/").then()
+                .log().all()
+                .statusCode(200)
+                .body(is("index"));
     }
 
 }

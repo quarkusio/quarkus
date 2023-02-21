@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="shortcut icon" type="image/png" href="{contextRoot}favicon.ico">
+
+        <script type="importmap">
+            {importmap}
+        </script>
+
+        <link rel="stylesheet" href="{contextRoot}font/red-hat-font.min.css">
+        <script type="module" src="{contextRoot}icon/font-awesome.js"></script>
+
+        <script type="module" src="{contextRoot}qwc/qwc-header.js"></script>
+        <script type="module" src="{contextRoot}qwc/qwc-menu.js"></script>
+        <script type="module" src="{contextRoot}qwc/qwc-footer.js"></script>
+
+        <title>Dev UI</title>
+
+        <style>
+            body {
+                {themeVars}
+                
+                margin: 0;
+                width:100vw;
+                height: 100vh;
+                font-family: 'Red Hat Text', sans-serif;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                color: var(--lumo-body-text-color);                        
+                background: var(--lumo-base-color);
+            }
+
+            /*Contains the menu and pages*/
+            .middle {
+                overflow: hidden;
+                display: flex;
+                flex-direction: row;
+                justify-content: flex-start;
+                flex:1;
+            }
+  
+            #page {              
+                overflow-y: auto;
+                overflow-x: hidden;
+                flex: 1;
+                padding-bottom: 10px;
+            }
+            
+            .loading {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+
+            qwc-footer {
+                overflow: hidden;
+                min-height: 38px;
+            }
+        </style>
+    </head>
+
+    <body>
+            
+        <qwc-header></qwc-header>
+            
+        <div class="middle">
+            <qwc-menu></qwc-menu>
+            <div id="page">
+                <img class="loading" src="quarkus-logo.png" alt="Quarkus"></img> 
+            </div>
+        </div>
+            
+        <qwc-footer></qwc-footer>
+            
+    </body>
+
+</html>

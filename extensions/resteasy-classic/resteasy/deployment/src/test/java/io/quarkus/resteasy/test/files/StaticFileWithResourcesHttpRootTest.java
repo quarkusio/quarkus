@@ -29,14 +29,17 @@ public class StaticFileWithResourcesHttpRootTest {
     public void test() {
 
         RestAssured.get("/web/index.html").then()
+                .log().all()
                 .statusCode(200)
                 .body(containsString("<h1>Hello</h1>"));
 
         RestAssured.get("/lorem.txt").then()
+                .log().all()
                 .statusCode(200)
                 .body(containsString("Lorem"));
 
         RestAssured.get("/").then()
+                .log().all()
                 .statusCode(200)
                 .body(containsString("Root Resource"));
     }

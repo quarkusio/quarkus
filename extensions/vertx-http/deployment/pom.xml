@@ -33,6 +33,21 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-spi</artifactId>
         </dependency>
+        
+        <!-- Dev UI -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-resources</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>importmap</artifactId>
+        </dependency>
+        
         <!-- Used for the dev console. Note that there is no corresponding runtime dependency -->
         <dependency>
             <groupId>io.quarkus.qute</groupId>

@@ -1,8 +1,9 @@
-package io.quarkus.arc.runtime.devconsole;
+package io.quarkus.arc.runtime.devmode;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,13 +17,17 @@ import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.EventMetadata;
 import jakarta.inject.Singleton;
 
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
+
 @Singleton
 public class EventsMonitor {
 
     private static final int DEFAULT_LIMIT = 500;
 
     private volatile boolean skipContextEvents = true;
-    private final List<EventInfo> events = Collections.synchronizedList(new ArrayList<EventInfo>(DEFAULT_LIMIT));
+    private final List<EventInfo> events = Collections.synchronizedList(new ArrayList<>(DEFAULT_LIMIT));
+    private final BroadcastProcessor<EventInfo> eventsStream = BroadcastProcessor.create();
 
     void notify(@Observes Object payload, EventMetadata eventMetadata) {
         if (skipContextEvents && isContextEvent(eventMetadata)) {
@@ -36,11 +41,17 @@ public class EventsMonitor {
                 }
             }
         }
-        events.add(EventInfo.from(eventMetadata));
+        EventInfo eventInfo = toEventInfo(payload, eventMetadata);
+        eventsStream.onNext(eventInfo);
+        events.add(eventInfo);
     }
 
     public void clear() {
         events.clear();
+    }
+
+    public Multi<EventInfo> streamEvents() {
+        return eventsStream;
     }
 
     public List<EventInfo> getLastEvents() {
@@ -74,47 +85,40 @@ public class EventsMonitor {
         return true;
     }
 
-    static class EventInfo {
+    private EventInfo toEventInfo(Object payload, EventMetadata eventMetadata) {
+        EventInfo eventInfo = new EventInfo();
 
-        static EventInfo from(EventMetadata eventMetadata) {
-            List<Annotation> qualifiers;
-            if (eventMetadata.getQualifiers().size() == 1) {
-                // Just @Any
-                qualifiers = Collections.emptyList();
-            } else {
-                qualifiers = new ArrayList<>(1);
-                for (Annotation qualifier : eventMetadata.getQualifiers()) {
-                    // Skip @Any and @Default
-                    if (!qualifier.annotationType().equals(Any.class) && !qualifier.annotationType().equals(Default.class)) {
-                        qualifiers.add(qualifier);
-                    }
+        // Timestamp
+        eventInfo.setTimestamp(now());
+
+        // Type
+        eventInfo.setType(eventMetadata.getType().getTypeName());
+
+        // Qualifiers
+        List<String> q = new ArrayList<>();
+        if (eventMetadata.getQualifiers().size() > 1) {
+            for (Annotation qualifier : eventMetadata.getQualifiers()) {
+                // Skip @Any and @Default
+                if (!qualifier.annotationType().equals(Any.class) && !qualifier.annotationType().equals(Default.class)) {
+                    q.add(qualifier.toString());
                 }
             }
-            return new EventInfo(eventMetadata.getType(), qualifiers);
         }
+        eventInfo.setQualifiers(q);
 
-        private final LocalDateTime timestamp;
-        private final Type type;
-        private final List<Annotation> qualifiers;
+        // ContextEvent
+        eventInfo.setIsContextEvent(isContextEvent(eventMetadata));
 
-        EventInfo(Type type, List<Annotation> qualifiers) {
-            this.timestamp = LocalDateTime.now();
-            this.type = type;
-            this.qualifiers = qualifiers;
-        }
+        // Payload
+        eventInfo.setPayload(payload.toString());
 
-        public LocalDateTime getTimestamp() {
-            return timestamp;
-        }
+        return eventInfo;
+    }
 
-        public String getType() {
-            return type.getTypeName();
-        }
-
-        public List<Annotation> getQualifiers() {
-            return qualifiers;
-        }
-
+    private String now() {
+        LocalDateTime time = LocalDateTime.now();
+        String timestamp = time.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME).replace("T", " ");
+        return timestamp.substring(0, timestamp.lastIndexOf("."));
     }
 
 }

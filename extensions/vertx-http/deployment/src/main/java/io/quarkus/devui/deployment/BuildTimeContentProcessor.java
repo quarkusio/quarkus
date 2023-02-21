@@ -45,7 +45,7 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
  * This creates static content that is used in dev UI. For example the index.html and any other data (json) available on build
  * time
  */
-public class BuiltTimeContentProcessor {
+public class BuildTimeContentProcessor {
     private static final String SLASH = "/";
     private static final String DEV_UI = "dev-ui";
     private static final String BUILD_TIME_PATH = "dev-ui-templates" + File.separator + "build-time";

@@ -22,22 +22,18 @@ public class ClasspathResourceTestCase {
     public void testRootResource() {
 
         RestAssured.get("/other/hello.txt").then()
-                .log().all()
                 .statusCode(200)
                 .body(is("hello"));
 
         RestAssured.get("/stuff.html").then()
-                .log().all()
                 .statusCode(200)
                 .body(is("stuff"));
 
         RestAssured.get("/index.html").then()
-                .log().all()
                 .statusCode(200)
                 .body(is("index"));
 
         RestAssured.get("/").then()
-                .log().all()
                 .statusCode(200)
                 .body(is("index"));
     }

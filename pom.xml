@@ -73,7 +73,7 @@
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.53.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
-        <protoc.version>3.21.9</protoc.version>
+        <protoc.version>3.22.0</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
         <proto-google-common-protos.version>2.11.0</proto-google-common-protos.version>
 

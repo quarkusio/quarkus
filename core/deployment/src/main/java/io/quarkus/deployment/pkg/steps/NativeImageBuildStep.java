@@ -249,7 +249,7 @@ public class NativeImageBuildStep {
 
             NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs, nativeImageName,
                     resultingExecutableName, outputDir,
-                    nativeConfig.debug.enabled,
+                    graalVMVersion, nativeConfig.debug.enabled,
                     processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
             if (buildNativeResult.getExitCode() != 0) {
                 throw imageGenerationFailed(buildNativeResult.getExitCode(), nativeConfig.isContainerBuild());
@@ -257,9 +257,9 @@ public class NativeImageBuildStep {
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
             if (nativeConfig.debug.enabled) {
-                if (buildNativeResult.isObjcopyExists()) {
-                    final String symbolsName = String.format("%s.debug", nativeImageName);
-                    Path generatedSymbols = outputDir.resolve(symbolsName);
+                final String symbolsName = String.format("%s.debug", nativeImageName);
+                Path generatedSymbols = outputDir.resolve(symbolsName);
+                if (generatedSymbols.toFile().exists()) {
                     Path finalSymbolsPath = outputTargetBuildItem.getOutputDirectory().resolve(symbolsName);
                     IoUtils.copy(generatedSymbols, finalSymbolsPath);
                     Files.delete(generatedSymbols);

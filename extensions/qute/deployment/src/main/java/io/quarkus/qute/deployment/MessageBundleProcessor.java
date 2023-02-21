@@ -699,6 +699,10 @@ public class MessageBundleProcessor {
                             } else {
                                 messageAnnotation = method.annotation(Names.MESSAGE);
                             }
+                            if (messageAnnotation == null) {
+                                messageAnnotation = AnnotationInstance.builder(Names.MESSAGE).value(Message.DEFAULT_VALUE)
+                                        .add("name", Message.DEFAULT_NAME).build();
+                            }
                             return getMessageAnnotationValue(messageAnnotation) != null;
                         })
                         .map(MethodInfo::name)
@@ -760,7 +764,7 @@ public class MessageBundleProcessor {
 
     private boolean hasMessageBundleMethod(ClassInfo bundleInterface, String name) {
         for (MethodInfo method : bundleInterface.methods()) {
-            if (method.name().equals(name) && method.hasAnnotation(Names.MESSAGE)) {
+            if (method.name().equals(name)) {
                 return true;
             }
         }
@@ -813,8 +817,8 @@ public class MessageBundleProcessor {
         for (MethodInfo method : methods) {
             if (!method.returnType().name().equals(DotNames.STRING)) {
                 throw new MessageBundleException(
-                        String.format("A message bundle interface method must return java.lang.String on %s: %s",
-                                bundleInterface, method));
+                        String.format("A message bundle method must return java.lang.String: %s#%s",
+                                bundleInterface, method.name()));
             }
             LOGGER.debugf("Found message bundle method %s on %s", method, bundleInterface);
 
@@ -834,9 +838,9 @@ public class MessageBundleProcessor {
             }
 
             if (messageAnnotation == null) {
-                throw new MessageBundleException(
-                        "A message bundle interface method must be annotated with @Message: " +
-                                bundleInterface.name() + "#" + method.name());
+                LOGGER.debugf("@Message not declared on %s#%s - using the default key/value", bundleInterface, method);
+                messageAnnotation = AnnotationInstance.builder(Names.MESSAGE).value(Message.DEFAULT_VALUE)
+                        .add("name", Message.DEFAULT_NAME).build();
             }
 
             String key = getKey(method, messageAnnotation, defaultKeyValue);

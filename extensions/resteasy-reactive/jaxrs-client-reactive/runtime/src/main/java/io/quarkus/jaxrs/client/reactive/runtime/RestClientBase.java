@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -98,6 +99,18 @@ public abstract class RestClientBase implements Closeable {
 
         @Override
         public String toString(Boolean value) {
+            return value == null ? null : value.toString();
+        }
+    };
+
+    private static final ParamConverter<UUID> UUID_CONVERTER = new ParamConverter<>() {
+        @Override
+        public UUID fromString(String value) {
+            return value == null ? null : UUID.fromString(value);
+        }
+
+        @Override
+        public String toString(UUID value) {
             return value == null ? null : value.toString();
         }
     };
@@ -196,6 +209,9 @@ public abstract class RestClientBase implements Closeable {
             }
             if (rawType == boolean.class || rawType == Boolean.class) {
                 return (ParamConverter<T>) BOOLEAN_CONVERTER;
+            }
+            if (rawType == UUID.class) {
+                return (ParamConverter<T>) UUID_CONVERTER;
             }
             return null;
         }

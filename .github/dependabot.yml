@@ -125,6 +125,7 @@ updates:
       - dependency-name: org.jetbrains.kotlin:*
       - dependency-name: org.jetbrains.kotlinx:*
       - dependency-name: org.jetbrains.dokka:*
+      - dependency-name: org.jetbrains:*
       # TCKs
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
       - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck

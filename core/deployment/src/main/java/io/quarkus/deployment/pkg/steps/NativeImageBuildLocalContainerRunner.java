@@ -31,7 +31,8 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
                 String gid = getLinuxID("-gr");
                 if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
                     Collections.addAll(containerRuntimeArgs, "--user", uid + ":" + gid);
-                    if (containerRuntime == ContainerRuntimeUtil.ContainerRuntime.PODMAN) {
+                    if (containerRuntime == ContainerRuntimeUtil.ContainerRuntime.PODMAN
+                            && containerRuntime.isRootless()) {
                         // Needed to avoid AccessDeniedExceptions
                         containerRuntimeArgs.add("--userns=keep-id");
                     }

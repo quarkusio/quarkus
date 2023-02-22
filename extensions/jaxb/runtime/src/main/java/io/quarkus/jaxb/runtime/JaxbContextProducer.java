@@ -1,6 +1,7 @@
 package io.quarkus.jaxb.runtime;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -20,29 +21,12 @@ import io.quarkus.arc.DefaultBean;
 
 @ApplicationScoped
 public class JaxbContextProducer {
+
     @DefaultBean
     @Singleton
     @Produces
     public JAXBContext jaxbContext(Instance<JaxbContextCustomizer> customizers) {
-        try {
-            Map<String, Object> properties = new HashMap<>();
-            List<JaxbContextCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
-            for (JaxbContextCustomizer customizer : sortedCustomizers) {
-                customizer.customizeContextProperties(properties);
-            }
-
-            String[] classNamesToBeBounded = JaxbContextConfigRecorder.getClassesToBeBound();
-            List<Class<?>> classes = new ArrayList<>();
-            for (int i = 0; i < classNamesToBeBounded.length; i++) {
-                Class<?> clazz = getClassByName(classNamesToBeBounded[i]);
-                if (!clazz.isPrimitive()) {
-                    classes.add(clazz);
-                }
-            }
-            return JAXBContext.newInstance(classes.toArray(new Class[0]), properties);
-        } catch (JAXBException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        return createJAXBContext(customizers);
     }
 
     @DefaultBean
@@ -79,6 +63,24 @@ public class JaxbContextProducer {
         }
     }
 
+    public JAXBContext createJAXBContext(Instance<JaxbContextCustomizer> customizers, Class... extraClasses) {
+        try {
+            Map<String, Object> properties = new HashMap<>();
+            List<JaxbContextCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
+            for (JaxbContextCustomizer customizer : sortedCustomizers) {
+                customizer.customizeContextProperties(properties);
+            }
+
+            List<Class> classes = new ArrayList<>();
+            classes.addAll(Arrays.asList(extraClasses));
+            classes.addAll(JaxbContextConfigRecorder.getClassesToBeBound());
+
+            return JAXBContext.newInstance(classes.toArray(new Class[0]), properties);
+        } catch (JAXBException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private List<JaxbContextCustomizer> sortCustomizersInDescendingPriorityOrder(Instance<JaxbContextCustomizer> customizers) {
         List<JaxbContextCustomizer> sortedCustomizers = new ArrayList<>();
         for (JaxbContextCustomizer customizer : customizers) {
@@ -86,9 +88,5 @@ public class JaxbContextProducer {
         }
         Collections.sort(sortedCustomizers);
         return sortedCustomizers;
-    }
-
-    private Class<?> getClassByName(String name) throws ClassNotFoundException {
-        return Class.forName(name, false, Thread.currentThread().getContextClassLoader());
     }
 }

@@ -11,9 +11,12 @@ import javax.xml.namespace.QName;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.Providers;
+import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
@@ -22,12 +25,16 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
+import io.quarkus.jaxb.runtime.JaxbContextConfigRecorder;
 import io.vertx.core.MultiMap;
 
 public class ServerJaxbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     @Inject
     Marshaller marshaller;
+
+    @Context
+    Providers providers;
 
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
@@ -55,11 +62,21 @@ public class ServerJaxbMessageBodyWriter extends ServerMessageBodyWriter.AllWrit
                 jaxbObject = new JAXBElement(new QName(Introspector.decapitalize(clazz.getSimpleName())), clazz, o);
             }
 
-            marshaller.marshal(jaxbObject, outputStream);
+            getMarshall(clazz).marshal(jaxbObject, outputStream);
 
         } catch (JAXBException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Marshaller getMarshall(Class<?> type) throws JAXBException {
+        if (JaxbContextConfigRecorder.isClassBound(type)) {
+            return marshaller;
+        }
+
+        return providers.getContextResolver(JAXBContext.class, MediaType.APPLICATION_XML_TYPE)
+                .getContext(type)
+                .createMarshaller();
     }
 
     private void setContentTypeIfNecessary(MultivaluedMap<String, Object> httpHeaders) {

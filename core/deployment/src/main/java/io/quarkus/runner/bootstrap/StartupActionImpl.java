@@ -124,18 +124,22 @@ public class StartupActionImpl implements StartupAction {
             return new RunningQuarkusApplicationImpl(new Closeable() {
                 @Override
                 public void close() throws IOException {
-                    try {
-                        runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
-                    } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException
-                            | ClassNotFoundException e) {
-                        log.error("Failed to stop Quarkus", e);
-                    } finally {
-                        ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
-                        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
-                            //for tests, we just always shut down the curated application, as it is only used once
-                            //dev mode might be about to restart, so we leave it
-                            curatedApplication.close();
+                    if (Quarkus.isMainThread(Thread.currentThread())) {
+                        CountDownLatch latch = new CountDownLatch(1);
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                doClose();
+                                latch.countDown();
+                            }
+                        }).start();
+                        try {
+                            latch.await();
+                        } catch (InterruptedException e) {
+                            throw new IOException(e);
                         }
+                    } else {
+                        doClose();
                     }
                 }
             }, runtimeClassLoader);
@@ -152,6 +156,22 @@ public class StartupActionImpl implements StartupAction {
             throw t;
         } finally {
             Thread.currentThread().setContextClassLoader(old);
+        }
+    }
+
+    private void doClose() {
+        try {
+            runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
+        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException
+                | ClassNotFoundException e) {
+            log.error("Failed to stop Quarkus", e);
+        } finally {
+            ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
+            if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
+                //for tests, we just always shut down the curated application, as it is only used once
+                //dev mode might be about to restart, so we leave it
+                curatedApplication.close();
+            }
         }
     }
 

@@ -14,7 +14,9 @@
 # docker run -i --rm -p 8080:8080 quarkus/{project.artifact-id}-{type}
 #
 # If you want to include the debug port into your docker image
-# you will have to expose the debug port (default 5005) like this :  EXPOSE 8080 5005
+# you will have to expose the debug port (default 5005 being the default) like this :  EXPOSE 8080 5005.
+# Additionally you will have to set -e JAVA_DEBUG=true and -e JAVA_DEBUG_PORT=*:5005
+# when running the container
 #
 # Then run the container using :
 #

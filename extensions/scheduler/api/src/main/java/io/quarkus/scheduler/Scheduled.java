@@ -53,6 +53,11 @@ import io.quarkus.scheduler.Scheduled.Schedules;
 public @interface Scheduled {
 
     /**
+     * Constant value for {@link #timeZone()} indicating that the default timezone should be used.
+     */
+    String DEFAULT_TIMEZONE = "<<default timezone>>";
+
+    /**
      * Optionally defines a unique identifier for this job.
      * <p>
      * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
@@ -169,6 +174,24 @@ public @interface Scheduled {
      * @return the period expression based on the ISO-8601 duration format {@code PnDTnHnMn.nS}
      */
     String overdueGracePeriod() default "";
+
+    /**
+     * The time zone ID for the {@link #cron()}.
+     * <p>
+     * The cron expression is evaluated in the context of the default time zone. However, it is also
+     * possible to associate the cron expression with a specific time zone. The time zone ID is parsed using
+     * {@link java.time.ZoneId#of(String)}.
+     * <p>
+     * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
+     * {@code @Scheduled(timeZone = "${myJob.timeZone}")}. Additionally, the property expression can specify a default value:
+     * {@code @Scheduled(timeZone = "${myJob.timeZone:Europe/Prague}")}.
+     * <p>
+     * The time zone is ignored for interval jobs specified via {@link #every()}.
+     *
+     * @return the time zone ID
+     * @see #cron()
+     */
+    String timeZone() default DEFAULT_TIMEZONE;
 
     @Retention(RUNTIME)
     @Target(METHOD)

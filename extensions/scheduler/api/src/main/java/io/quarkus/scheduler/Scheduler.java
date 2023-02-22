@@ -156,6 +156,14 @@ public interface Scheduler {
         JobDefinition setOverdueGracePeriod(String period);
 
         /**
+         * {@link Scheduled#timeZone()}
+         *
+         * @return self
+         * @see Scheduled#timeZone()
+         */
+        JobDefinition setTimeZone(String timeZone);
+
+        /**
          *
          * @param task
          * @return self

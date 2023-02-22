@@ -3,6 +3,7 @@ package io.quarkus.scheduler.runtime;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -312,7 +313,8 @@ public class SimpleScheduler implements Scheduler {
                 throw new IllegalArgumentException("Cannot parse cron expression: " + cron, e);
             }
             return Optional.of(new CronTrigger(id, start, cronExpr,
-                    SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultGracePeriod)));
+                    SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultGracePeriod),
+                    SchedulerUtils.parseCronTimeZone(scheduled)));
         } else if (!scheduled.every().isEmpty()) {
             final OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
             if (!everyMillis.isPresent()) {
@@ -412,7 +414,7 @@ public class SimpleScheduler implements Scheduler {
         }
 
         /**
-         * @param now
+         * @param now The current date-time in the default time zone
          * @return the scheduled time if fired, {@code null} otherwise
          */
         abstract ZonedDateTime evaluate(ZonedDateTime now);
@@ -420,7 +422,7 @@ public class SimpleScheduler implements Scheduler {
         @Override
         public Instant getPreviousFireTime() {
             ZonedDateTime last = lastFireTime;
-            return last != null ? lastFireTime.toInstant() : null;
+            return last != null ? last.toInstant() : null;
         }
 
         public String getId() {
@@ -502,13 +504,15 @@ public class SimpleScheduler implements Scheduler {
         private final Cron cron;
         private final ExecutionTime executionTime;
         private final Duration gracePeriod;
+        private final ZoneId timeZone;
 
-        CronTrigger(String id, ZonedDateTime start, Cron cron, Duration gracePeriod) {
+        CronTrigger(String id, ZonedDateTime start, Cron cron, Duration gracePeriod, ZoneId timeZone) {
             super(id, start);
             this.cron = cron;
             this.executionTime = ExecutionTime.forCron(cron);
             this.lastFireTime = start;
             this.gracePeriod = gracePeriod;
+            this.timeZone = timeZone;
         }
 
         @Override
@@ -521,12 +525,13 @@ public class SimpleScheduler implements Scheduler {
             if (now.isBefore(start)) {
                 return null;
             }
-            Optional<ZonedDateTime> lastExecution = executionTime.lastExecution(now);
+            ZonedDateTime zonedNow = timeZone == null ? now : now.withZoneSameInstant(timeZone);
+            Optional<ZonedDateTime> lastExecution = executionTime.lastExecution(zonedNow);
             if (lastExecution.isPresent()) {
                 ZonedDateTime lastTruncated = lastExecution.get().truncatedTo(ChronoUnit.SECONDS);
-                if (now.isAfter(lastTruncated) && lastFireTime.isBefore(lastTruncated)) {
+                if (zonedNow.isAfter(lastTruncated) && lastFireTime.isBefore(lastTruncated)) {
                     LOG.tracef("%s fired, last=", this, lastTruncated);
-                    lastFireTime = now;
+                    lastFireTime = zonedNow;
                     return lastTruncated;
                 }
             }
@@ -539,15 +544,14 @@ public class SimpleScheduler implements Scheduler {
             if (now.isBefore(start)) {
                 return false;
             }
+            ZonedDateTime zonedNow = timeZone == null ? now : now.withZoneSameInstant(timeZone);
             Optional<ZonedDateTime> nextFireTime = executionTime.nextExecution(lastFireTime);
-            return nextFireTime.isEmpty() || nextFireTime.get().plus(gracePeriod).isBefore(now);
+            return nextFireTime.isEmpty() || nextFireTime.get().plus(gracePeriod).isBefore(zonedNow);
         }
 
         @Override
         public String toString() {
-            StringBuilder builder = new StringBuilder();
-            builder.append("CronTrigger [id=").append(getId()).append(", cron=").append(cron.asString()).append("]");
-            return builder.toString();
+            return "CronTrigger [cron=" + cron + ", gracePeriod=" + gracePeriod + ", timeZone=" + timeZone + "]";
         }
 
     }
@@ -627,8 +631,7 @@ public class SimpleScheduler implements Scheduler {
                 };
             }
             Scheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
-                    overdueGracePeriod,
-                    concurrentExecution, skipPredicate);
+                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone);
             Optional<SimpleTrigger> trigger = createTrigger(identity, cronParser, scheduled, defaultOverdueGracePeriod);
             if (trigger.isPresent()) {
                 SimpleTrigger simpleTrigger = trigger.get();

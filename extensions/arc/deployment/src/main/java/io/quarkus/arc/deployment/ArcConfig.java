@@ -178,6 +178,22 @@ public class ArcConfig {
     public boolean detectWrongAnnotations;
 
     /**
+     * If set to {@code true}, the container will perform additional validations mandated by the CDI specification.
+     * Some improvements on top of the CDI specification may be disabled. Applications that work as expected
+     * in the strict mode should work without a change in the default, non-strict mode.
+     * <p>
+     * The strict mode is mainly introduced to allow passing the CDI Lite TCK. Applications are recommended
+     * to use the default, non-strict mode, which makes CDI more convenient to use. The "strictness" of
+     * the strict mode (the set of additional validations and the set of disabled improvements on top of
+     * the CDI specification) may change over time.
+     * <p>
+     * Note that {@link #transformUnproxyableClasses} and {@link #removeUnusedBeans} also has effect on specification
+     * compatibility. You may want to disable these features to get behavior closer to the specification.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean strictCompatibility;
+
+    /**
      * Dev mode configuration.
      */
     @ConfigItem

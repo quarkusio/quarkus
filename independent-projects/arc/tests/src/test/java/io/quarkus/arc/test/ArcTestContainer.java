@@ -90,6 +90,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private final List<Predicate<BeanInfo>> exclusions;
         private AlternativePriorities alternativePriorities;
         private final List<BuildCompatibleExtension> buildCompatibleExtensions;
+        private boolean strictCompatibility = false;
 
         public Builder() {
             resourceReferenceProviders = new ArrayList<>();
@@ -206,6 +207,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        public Builder strictCompatibility(boolean strictCompatibility) {
+            this.strictCompatibility = strictCompatibility;
+            return this;
+        }
+
         public ArcTestContainer build() {
             return new ArcTestContainer(this);
         }
@@ -240,6 +246,8 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
     private final List<BuildCompatibleExtension> buildCompatibleExtensions;
 
+    private final boolean strictCompatibility;
+
     public ArcTestContainer(Class<?>... beanClasses) {
         this.resourceReferenceProviders = Collections.emptyList();
         this.beanClasses = Arrays.asList(beanClasses);
@@ -261,6 +269,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.exclusions = Collections.emptyList();
         this.alternativePriorities = null;
         this.buildCompatibleExtensions = Collections.emptyList();
+        this.strictCompatibility = false;
     }
 
     public ArcTestContainer(Builder builder) {
@@ -284,6 +293,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.exclusions = builder.exclusions;
         this.alternativePriorities = builder.alternativePriorities;
         this.buildCompatibleExtensions = builder.buildCompatibleExtensions;
+        this.strictCompatibility = builder.strictCompatibility;
     }
 
     // this is where we start Arc, we operate on a per-method basis
@@ -398,7 +408,8 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                     .setComputingBeanArchiveIndex(BeanArchives.buildComputingBeanArchiveIndex(getClass().getClassLoader(),
                             new ConcurrentHashMap<>(), immutableBeanArchiveIndex))
                     .setApplicationIndex(applicationIndex)
-                    .setBuildCompatibleExtensions(buildCompatibleExtensions);
+                    .setBuildCompatibleExtensions(buildCompatibleExtensions)
+                    .setStrictCompatibility(strictCompatibility);
             if (!resourceAnnotations.isEmpty()) {
                 builder.addResourceAnnotations(resourceAnnotations.stream()
                         .map(c -> DotName.createSimple(c.getName()))

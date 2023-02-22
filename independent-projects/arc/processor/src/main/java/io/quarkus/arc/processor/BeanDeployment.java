@@ -116,6 +116,8 @@ public class BeanDeployment {
 
     private final boolean jtaCapabilities;
 
+    final boolean strictCompatibility;
+
     private final AlternativePriorities alternativePriorities;
 
     private final List<Predicate<ClassInfo>> excludeTypes;
@@ -217,6 +219,7 @@ public class BeanDeployment {
         this.transformPrivateInjectedFields = builder.transformPrivateInjectedFields;
         this.failOnInterceptedPrivateMethod = builder.failOnInterceptedPrivateMethod;
         this.jtaCapabilities = builder.jtaCapabilities;
+        this.strictCompatibility = builder.strictCompatibility;
         this.alternativePriorities = builder.alternativePriorities;
     }
 

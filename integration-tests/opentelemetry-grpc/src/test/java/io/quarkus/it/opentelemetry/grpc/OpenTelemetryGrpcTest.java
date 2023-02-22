@@ -61,7 +61,7 @@ public class OpenTelemetryGrpcTest {
         // First span is the rest server call. It does not have a parent span.
         Map<String, Object> rest = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals(SpanKind.SERVER.toString(), rest.get("kind"));
-        assertEquals("/grpc/{name}", rest.get("name"));
+        assertEquals("GET /grpc/{name}", rest.get("name"));
         assertEquals("/grpc/{name}", getAttributes(rest).get(HTTP_ROUTE.getKey()));
         assertEquals("/grpc/Naruto", getAttributes(rest).get(HTTP_TARGET.getKey()));
         assertEquals(HTTP_OK, getAttributes(rest).get(HTTP_STATUS_CODE.getKey()));

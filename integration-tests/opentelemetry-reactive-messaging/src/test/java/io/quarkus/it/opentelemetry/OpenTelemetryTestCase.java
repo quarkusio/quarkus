@@ -110,7 +110,7 @@ public class OpenTelemetryTestCase {
         Assertions.assertNotNull(spanData.get("spanId"));
         verifyResource(spanData, parentSpanData);
 
-        Assertions.assertEquals("/direct", spanData.get("name"));
+        Assertions.assertEquals("GET /direct", spanData.get("name"));
         Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
         Assertions.assertTrue((Boolean) spanData.get("ended"));
         Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
@@ -137,9 +137,9 @@ public class OpenTelemetryTestCase {
         Assertions.assertTrue((Boolean) spanData.get("ended"));
         Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
 
-        Assertions.assertEquals("topic", spanData.get("attr_messaging.destination_kind"));
+        Assertions.assertEquals("topic", spanData.get("attr_messaging.destination.kind"));
         Assertions.assertEquals("kafka", spanData.get("attr_messaging.system"));
-        Assertions.assertEquals(topic, spanData.get("attr_messaging.destination"));
+        Assertions.assertEquals(topic, spanData.get("attr_messaging.destination.name"));
     }
 
     private static void verifyConsumer(Map<String, Object> spanData,
@@ -155,12 +155,12 @@ public class OpenTelemetryTestCase {
         Assertions.assertTrue((Boolean) spanData.get("ended"));
         Assertions.assertEquals(parentRemote, spanData.get("parent_remote"));
 
-        Assertions.assertEquals("topic", spanData.get("attr_messaging.destination_kind"));
+        Assertions.assertEquals("topic", spanData.get("attr_messaging.destination.kind"));
         Assertions.assertEquals("opentelemetry-integration-test - kafka-consumer-" + channel,
-                spanData.get("attr_messaging.consumer_id"));
+                spanData.get("attr_messaging.consumer.id"));
         Assertions.assertEquals("kafka", spanData.get("attr_messaging.system"));
-        Assertions.assertEquals(topic, spanData.get("attr_messaging.destination"));
-        Assertions.assertEquals("opentelemetry-integration-test", spanData.get("attr_messaging.kafka.consumer_group"));
+        Assertions.assertEquals(topic, spanData.get("attr_messaging.destination.name"));
+        Assertions.assertEquals("opentelemetry-integration-test", spanData.get("attr_messaging.kafka.consumer.group"));
         Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.partition"));
         Assertions.assertEquals("kafka-consumer-" + channel, spanData.get("attr_messaging.kafka.client_id"));
         Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.message.offset"));

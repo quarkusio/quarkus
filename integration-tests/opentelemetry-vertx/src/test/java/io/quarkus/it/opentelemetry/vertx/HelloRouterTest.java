@@ -8,8 +8,8 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSAGING_DESTINATION;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSAGING_DESTINATION_KIND;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSAGING_DESTINATION_NAME;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSAGING_OPERATION;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSAGING_SYSTEM;
 import static io.restassured.RestAssured.get;
@@ -59,7 +59,7 @@ class HelloRouterTest {
         assertEquals(1, spans.size());
 
         assertEquals(SERVER.toString(), spans.get(0).get("kind"));
-        assertEquals("/hello", spans.get(0).get("name"));
+        assertEquals("GET /hello", spans.get(0).get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_STATUS_CODE.toString()));
         assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_METHOD.toString()));
         assertEquals("/hello", ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_ROUTE.toString()));
@@ -78,7 +78,7 @@ class HelloRouterTest {
         assertEquals(1, spans.size());
 
         assertEquals(SERVER.toString(), spans.get(0).get("kind"));
-        assertEquals("/hello/:name", spans.get(0).get("name"));
+        assertEquals("GET /hello/:name", spans.get(0).get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_STATUS_CODE.toString()));
         assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_METHOD.toString()));
         assertEquals("/hello/:name", ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_ROUTE.toString()));
@@ -99,7 +99,7 @@ class HelloRouterTest {
         assertEquals(1, spans.size());
 
         assertEquals(SERVER.toString(), spans.get(0).get("kind"));
-        assertEquals("/hello", spans.get(0).get("name"));
+        assertEquals("POST /hello", spans.get(0).get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_STATUS_CODE.toString()));
         assertEquals(HttpMethod.POST.toString(), ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_METHOD.toString()));
         assertEquals("/hello", ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_ROUTE.toString()));
@@ -136,14 +136,14 @@ class HelloRouterTest {
         assertEquals(PRODUCER.toString(), producer.get("kind"));
         assertEquals("vert.x", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_SYSTEM.toString()));
         assertEquals("topic", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
-        assertEquals("bus", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_DESTINATION.toString()));
+        assertEquals("bus", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_DESTINATION_NAME.toString()));
         assertEquals(producer.get("parentSpanId"), server.get("spanId"));
 
         Map<String, Object> consumer = getSpanByKindAndParentId(spans, CONSUMER, producer.get("spanId"));
         assertEquals(CONSUMER.toString(), consumer.get("kind"));
         assertEquals("vert.x", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_SYSTEM.toString()));
         assertEquals("topic", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
-        assertEquals("bus", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_DESTINATION.toString()));
+        assertEquals("bus", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_DESTINATION_NAME.toString()));
         assertEquals(MessageOperation.RECEIVE.toString().toLowerCase(Locale.ROOT),
                 ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_OPERATION.toString()));
         assertEquals(consumer.get("parentSpanId"), producer.get("spanId"));

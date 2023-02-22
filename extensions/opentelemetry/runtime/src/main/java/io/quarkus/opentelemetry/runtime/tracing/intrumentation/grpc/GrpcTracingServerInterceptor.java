@@ -66,17 +66,17 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
 
     private static class GrpcServerNetServerAttributesGetter extends InetSocketAddressNetServerAttributesGetter<GrpcRequest> {
         @Override
-        public String transport(final GrpcRequest grpcRequest) {
+        public String getTransport(final GrpcRequest grpcRequest) {
             return SemanticAttributes.NetTransportValues.IP_TCP;
         }
 
         @Override
-        public String hostName(GrpcRequest grpcRequest) {
+        public String getHostName(GrpcRequest grpcRequest) {
             return null;
         }
 
         @Override
-        public Integer hostPort(GrpcRequest grpcRequest) {
+        public Integer getHostPort(GrpcRequest grpcRequest) {
             return null;
         }
 

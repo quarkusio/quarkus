@@ -197,7 +197,8 @@ public class DevServicesElasticsearchProcessor {
         // Starting the server
         final Supplier<DevServicesResultBuildItem.RunningDevService> defaultElasticsearchSupplier = () -> {
             ElasticsearchContainer container = new ElasticsearchContainer(
-                    DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("elasticsearch/elasticsearch"));
+                    DockerImageName.parse(config.imageName)
+                            .asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch"));
             ConfigureUtil.configureSharedNetwork(container, "elasticsearch");
             if (config.serviceName != null) {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);

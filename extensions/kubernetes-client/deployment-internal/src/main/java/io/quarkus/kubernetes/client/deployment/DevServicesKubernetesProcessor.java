@@ -163,23 +163,23 @@ public class DevServicesKubernetesProcessor {
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
-            log.debug("Not starting dev services for Kubernetes, as it has been disabled in the config.");
+            log.debug("Not starting Dev Services for Kubernetes, as it has been disabled in the config.");
             return null;
         }
 
         // Check if kubernetes-client.master-url is set
         if (ConfigUtils.isPropertyPresent(KUBERNETES_CLIENT_MASTER_URL)) {
-            log.info("Not starting dev services for Kubernetes, the " + KUBERNETES_CLIENT_MASTER_URL + " is configured.");
+            log.debug("Not starting Dev Services for Kubernetes, the " + KUBERNETES_CLIENT_MASTER_URL + " is configured.");
             return null;
         }
 
         if (!config.overrideKubeconfig) {
             var autoConfigMasterUrl = Config.autoConfigure(null).getMasterUrl();
             if (!DEFAULT_MASTER_URL_ENDING_WITH_SLASH.equals(autoConfigMasterUrl)) {
-                log.info(
-                        "Not starting dev services for Kubernetes, the kubernetes client is auto-configured. Set "
+                log.debug(
+                        "Not starting Dev Services for Kubernetes, the Kubernetes client is auto-configured. Set "
                                 + KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG
-                                + " to true to use dev services for Kubernetes.");
+                                + " to true to use Dev Services for Kubernetes.");
                 return null;
             }
         }
@@ -213,7 +213,7 @@ public class DevServicesKubernetesProcessor {
                                     .orElseGet(() -> latest(KindContainerVersion.class)));
                     break;
                 default:
-                    throw new RuntimeException(KUBERNETES_CLIENT_DEVSERVICES_FLAVOR + "must be a valid Flavor enum value.");
+                    throw new RuntimeException(KUBERNETES_CLIENT_DEVSERVICES_FLAVOR + " must be a valid Flavor enum value.");
             }
 
             if (useSharedNetwork) {
@@ -350,7 +350,7 @@ public class DevServicesKubernetesProcessor {
             // this can happen only if the user manually start
             // a DEV_SERVICE_LABEL labeled container with an invalid image name
             throw new RuntimeException("The container with the label '" + DEV_SERVICE_LABEL
-                    + "' is not compatible with dev service for Kubernetes. Stop it or disable dev services for Kubernetes.");
+                    + "' is not compatible with Dev Services for Kubernetes. Stop it or disable Dev Services for Kubernetes.");
         }
 
         protected KubeConfig getKubeconfigFromApiContainer(final String url) {

@@ -1,19 +1,20 @@
 = README: Quarkus documentation
 include::_attributes.adoc[]
 
-Quarkus documentation uses asciidoc syntax.
+Quarkus documentation uses link:https://asciidoc.org/[AsciiDoc] markup.
 
-A gradual refactoring effort is underway to reshape Quarkus documentation to make it easier to both read and write (see xref:doc-concept.adoc[Quarkus documentation concepts] for more on this transition).
+A gradual refactoring effort is underway to reshape Quarkus documentation to make it easier to both read and write. For more information about this transition, see xref:doc-concept.adoc[Quarkus documentation content types].
 
 For more information on contributing to Quarkus docs, see:
 
-- xref:doc-contribute-docs-howto.adoc[How to contribute documentation]
-- xref:doc-concept.adoc[Quarkus documentation concepts]
-- xref:doc-reference.adoc[Quarkus documentation reference]
+- xref:doc-contribute-docs-howto.adoc[Contribute to Quarkus documentation]
+- xref:doc-concept.adoc[Quarkus documentation content types]
+- xref:doc-reference.adoc[Quarkus style and content guidelines]
+- xref:doc-create-tutorial.adoc[Creating a tutorial]
 
 == Glossary
 
-This is a collection of preferred term in the documentation and website.
+This is a collection of preferred terms in the documentation and website.
 Please stay within these terms for consistency.
 
 * Live coding:: for our `quarkus:dev` capability

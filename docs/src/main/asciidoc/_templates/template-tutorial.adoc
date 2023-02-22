@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 ////
-TODO: See Quarkus documentation reference for details
+TODO: See xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines]for details
 - Finish a sentence like: "Create a ...", "How to ..." 
 - ID should end with '-tutorial' (using the filename works)
 - choose appropriate categories 
@@ -15,8 +15,8 @@ include::_attributes.adoc[]
 :categories: ...
 ////
 :extension-status: preview
-TODO: uncomment the above for for an experimental or tech-preview content. 
-The document header ends at the first blank line.
+TODO: uncomment the above for experimental or tech-preview content. 
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
 Describe what the learner will accomplish (examples: build, create, construct, deploy; not: “you will learn...”).
@@ -43,8 +43,8 @@ This file offers a few different variables that can be used to tweak what is sho
 == Outline steps
 
 - xref:{doc-guides}/doc-create-tutorial.adoc[Tutorial: Create a tutorial]
-- xref:{doc-guides}/doc-concept.adoc#tutorial[Documentation concepts: Tutorials]
-- xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
+- xref:{doc-guides}/doc-concept.adoc#tutorial[Quarkus documentation content types: Tutorials]
+- xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines]
 
 Each step should conclude with a comprehensible/observable result.
 
@@ -61,3 +61,7 @@ Link to more detailed explanation.
 == Summary
 
 In closing, describe (and admire, in a mild way) what your learner has accomplished (not: “you have learned…”).
+
+== References
+
+To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.

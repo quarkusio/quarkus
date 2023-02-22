@@ -39,19 +39,41 @@ public @interface MessageBundle {
     String DEFAULT_NAME = "msg";
 
     /**
-     * The name is used as a namespace in templates expressions.
+     * Constant value for {@link #value()} indicating that the name should be defaulted.
+     * <p>
+     * For a top-level class the {@value #DEFAULT_NAME} is used.
+     * <p>
+     * For a nested class the name starts with the {@value #DEFAULT_NAME} followed by an undercore, followed by the simple names
+     * of all enclosing classes in the hierarchy (top-level class goes first) seperated by underscores.
      *
-     * By default, the namespace {@value #DEFAULT_NAME} is used:
+     * For example, the name of the following message bundle will be defaulted to {@code msg_Index} and it could
+     * be used in a template via <code>{msg_Index:hello(name)}</code>:
      *
      * <pre>
-     * {msg:hello_world}
+     * <code>
+     * class Index {
+     *
+     *    &#64;MessageBundle
+     *    interface Bundle {
+     *
+     *       &#64;Message("Hello {name}!")
+     *       String hello(String name);
+     *    }
+     * }
+     * </code>
      * </pre>
-     *
-     * If multiple bundles declare the same name the build fails.
-     *
-     * @return the name
      */
-    String value() default DEFAULT_NAME;
+    String DEFAULTED_NAME = "<<defaulted name>>";
+
+    /**
+     * The name is used as a namespace in templates expressions - <code>{msg:hello_world}</code>, and as a part of the name of a
+     * message bundle localized file - <code>msg_de.properties</code>.
+     * <p>
+     * If multiple bundles declare the same name then the build fails.
+     *
+     * @return the name of the bundle
+     */
+    String value() default DEFAULTED_NAME;
 
     /**
      * The value may be one of the following: {@link Message#ELEMENT_NAME}, {@link Message#HYPHENATED_ELEMENT_NAME} and

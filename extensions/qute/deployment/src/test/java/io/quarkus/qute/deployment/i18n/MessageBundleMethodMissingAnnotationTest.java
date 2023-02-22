@@ -29,6 +29,7 @@ public class MessageBundleMethodMissingAnnotationTest {
         @Message("Hello {name}")
         String hello(String name);
 
+        // this fails because there is no value specified in a localized file
         String notAllowed();
 
     }

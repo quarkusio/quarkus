@@ -21,6 +21,7 @@ import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.devconsole.DependencyGraph.Link;
+import io.quarkus.arc.deployment.devui.ArcBeanInfoBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
@@ -34,11 +35,11 @@ import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.arc.runtime.ArcContainerSupplier;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanLookupSupplier;
-import io.quarkus.arc.runtime.devconsole.EventsMonitor;
 import io.quarkus.arc.runtime.devconsole.InvocationInterceptor;
 import io.quarkus.arc.runtime.devconsole.InvocationTree;
 import io.quarkus.arc.runtime.devconsole.InvocationsMonitor;
 import io.quarkus.arc.runtime.devconsole.Monitored;
+import io.quarkus.arc.runtime.devmode.EventsMonitor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -108,7 +109,8 @@ public class ArcDevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     public void collectBeanInfo(ValidationPhaseBuildItem validationPhaseBuildItem,
             CompletedApplicationClassPredicateBuildItem predicate, BuildProducer<DevConsoleTemplateInfoBuildItem> templates,
-            BuildProducer<DevConsoleRouteBuildItem> routes) {
+            BuildProducer<DevConsoleRouteBuildItem> routes,
+            BuildProducer<ArcBeanInfoBuildItem> arcBeanInfoProducer) {
         BeanDeploymentValidator.ValidationContext validationContext = validationPhaseBuildItem.getContext();
         DevBeanInfos beanInfos = new DevBeanInfos();
         for (BeanInfo bean : validationContext.beans()) {
@@ -174,6 +176,8 @@ public class ArcDevConsoleProcessor {
 
         beanInfos.sort();
         templates.produce(new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos));
+
+        arcBeanInfoProducer.produce(new ArcBeanInfoBuildItem(beanInfos));
 
         routes.produce(new DevConsoleRouteBuildItem("toggleBeanDescription", "POST", new Handler<RoutingContext>() {
             @Override

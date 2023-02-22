@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static io.quarkus.qute.i18n.MessageBundle.DEFAULT_NAME;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -49,7 +50,7 @@ public class MessageBundleExpressionValidationTest {
         fail();
     }
 
-    @MessageBundle
+    @MessageBundle(DEFAULT_NAME)
     public interface WrongBundle {
 
         // item has no "foo" property, "bar" and "baf" are not parameters, string has no "baz" property

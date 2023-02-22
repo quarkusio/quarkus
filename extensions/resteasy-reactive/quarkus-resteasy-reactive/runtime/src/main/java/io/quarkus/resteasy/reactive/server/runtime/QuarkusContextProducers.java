@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.server.runtime;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.ext.Providers;
@@ -30,4 +31,15 @@ public class QuarkusContextProducers {
     Providers providers() {
         return new ProvidersImpl(ResteasyReactiveRecorder.getCurrentDeployment());
     }
+
+    @RequestScoped
+    @Produces
+    CloserImpl closer() {
+        return new CloserImpl();
+    }
+
+    void closeCloser(@Disposes CloserImpl closer) {
+        closer.close();
+    }
+
 }

@@ -229,6 +229,7 @@ class ApplicationTest {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public Set<Object> getSingletons() {
             return new HashSet<>(
                     Arrays.asList(

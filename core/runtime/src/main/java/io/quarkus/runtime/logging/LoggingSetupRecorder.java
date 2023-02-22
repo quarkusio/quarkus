@@ -78,7 +78,7 @@ public class LoggingSetupRecorder {
         new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(config, buildConfig,
                 DiscoveredLogComponents.ofEmpty(),
                 Collections.emptyMap(),
-                false, null,
+                false, null, null,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -89,7 +89,8 @@ public class LoggingSetupRecorder {
             DiscoveredLogComponents discoveredLogComponents,
             final Map<String, InheritableLevel> categoryDefaultMinLevels,
             final boolean enableWebStream,
-            final RuntimeValue<Optional<Handler>> devUiConsoleHandler,
+            final RuntimeValue<Optional<Handler>> wsDevUiConsoleHandler,
+            final RuntimeValue<Optional<Handler>> streamingDevUiConsoleHandler,
             final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
             final List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
@@ -179,10 +180,26 @@ public class LoggingSetupRecorder {
         }
 
         if ((launchMode.isDevOrTest() || enableWebStream)
-                && devUiConsoleHandler != null
-                && devUiConsoleHandler.getValue().isPresent()) {
+                && wsDevUiConsoleHandler != null
+                && wsDevUiConsoleHandler.getValue().isPresent()) {
 
-            Handler handler = devUiConsoleHandler.getValue().get();
+            Handler handler = wsDevUiConsoleHandler.getValue().get();
+            handler.setErrorManager(errorManager);
+            handler.setFilter(new LogCleanupFilter(filterElements, shutdownNotifier));
+
+            if (possibleBannerSupplier != null && possibleBannerSupplier.getValue().isPresent()) {
+                Supplier<String> bannerSupplier = possibleBannerSupplier.getValue().get();
+                String header = "\n" + bannerSupplier.get();
+                handler.publish(new LogRecord(Level.INFO, header));
+            }
+            handlers.add(handler);
+        }
+
+        if ((launchMode.isDevOrTest())
+                && streamingDevUiConsoleHandler != null
+                && streamingDevUiConsoleHandler.getValue().isPresent()) {
+
+            Handler handler = streamingDevUiConsoleHandler.getValue().get();
             handler.setErrorManager(errorManager);
             handler.setFilter(new LogCleanupFilter(filterElements, shutdownNotifier));
 

@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static io.quarkus.qute.i18n.MessageBundle.DEFAULT_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.inject.Inject;
@@ -42,7 +43,7 @@ public class LocalizedFileResourceBundleNameTest {
         assertEquals("Ahoj!", foo.instance().setAttribute("locale", "cs-CZ").render());
     }
 
-    @MessageBundle
+    @MessageBundle(DEFAULT_NAME)
     public interface Messages1 {
 
         @Message

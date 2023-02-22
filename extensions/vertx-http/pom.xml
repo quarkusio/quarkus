@@ -19,5 +19,7 @@
         <module>dev-console-spi</module>
         <module>dev-console-runtime-spi</module>
         <module>deployment-spi</module>
+        <module>dev-ui-spi</module>
+        <module>dev-ui-resources</module>
     </modules>
 </project>

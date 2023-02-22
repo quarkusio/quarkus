@@ -49,6 +49,7 @@ public class RestResponseResource {
 
     @GET
     @Path("rest-response-full")
+    @SuppressWarnings("deprecation")
     public RestResponse<String> getResponse() throws URISyntaxException {
         CacheControl cc = new CacheControl();
         cc.setMaxAge(42);

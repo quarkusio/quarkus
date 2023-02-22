@@ -17,7 +17,7 @@ import io.quarkus.util.GlobUtil;
  * Globs passed to the {@code includeGlob*()} methods of the {@link Builder} are transformed to regular expressions
  * internally. See {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
  * <p>
- * The patterns are passed to the native image builder using the {@code com.oracle.svm.hosted.ResourcesFeature} API.
+ * The patterns are passed to the native image builder using {@code resource-config.json}.
  * The same mechanism (and regular expression syntax) is used by {@code native-image}'s
  * {@code -H:ResourceConfigurationFiles}, {@code -H:IncludeResources} and {@code -H:ExcludeResources} (since
  * GraalVM 20.3.0) command line options.

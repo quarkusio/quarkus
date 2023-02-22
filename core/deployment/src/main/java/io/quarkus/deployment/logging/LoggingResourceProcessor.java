@@ -68,6 +68,7 @@ import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
+import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
@@ -224,7 +225,8 @@ public final class LoggingResourceProcessor {
             LogBuildTimeConfig buildLog,
             CombinedIndexBuildItem combinedIndexBuildItem,
             LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
-            Optional<WebSocketLogHandlerBuildItem> logStreamHandlerBuildItem,
+            Optional<StreamingLogHandlerBuildItem> streamingLogStreamHandlerBuildItem,
+            Optional<WebSocketLogHandlerBuildItem> wsLogStreamHandlerBuildItem,
             List<LogHandlerBuildItem> handlerBuildItems,
             List<NamedLogHandlersBuildItem> namedHandlerBuildItems,
             List<LogConsoleFormatBuildItem> consoleFormatItems,
@@ -252,11 +254,18 @@ public final class LoggingResourceProcessor {
             if (bannerBuildItem != null) {
                 possibleSupplier = bannerBuildItem.getBannerSupplier();
             }
-            // Dev UI Log Stream
-            RuntimeValue<Optional<Handler>> devUiLogHandler = null;
-            if (logStreamHandlerBuildItem.isPresent()) {
-                devUiLogHandler = logStreamHandlerBuildItem.get().getHandlerValue();
+            // Old Dev UI Log Stream
+            RuntimeValue<Optional<Handler>> wsDevUiLogHandler = null;
+            if (wsLogStreamHandlerBuildItem.isPresent()) {
+                wsDevUiLogHandler = wsLogStreamHandlerBuildItem.get().getHandlerValue();
             }
+
+            // New Dev UI Log Stream
+            RuntimeValue<Optional<Handler>> streamingDevUiLogHandler = null;
+            if (streamingLogStreamHandlerBuildItem.isPresent()) {
+                streamingDevUiLogHandler = streamingLogStreamHandlerBuildItem.get().getHandlerValue();
+            }
+
             boolean alwaysEnableLogStream = false;
             if (!logStreamBuildItems.isEmpty()) {
                 alwaysEnableLogStream = true;
@@ -279,7 +288,7 @@ public final class LoggingResourceProcessor {
             shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
                     recorder.initializeLogging(log, buildLog, discoveredLogComponents,
                             categoryMinLevelDefaults.content, alwaysEnableLogStream,
-                            devUiLogHandler, handlers, namedHandlers,
+                            wsDevUiLogHandler, streamingDevUiLogHandler, handlers, namedHandlers,
                             consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue)
                                     .collect(Collectors.toList()),
                             possibleFileFormatters,

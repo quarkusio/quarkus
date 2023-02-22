@@ -67,7 +67,7 @@ public final class MessageBundles {
         ArcContainer container = Arc.container();
         // For every bundle register a new resolver
         for (Entry<String, Map<String, Class<?>>> entry : context.getBundleInterfaces().entrySet()) {
-            final String bundle = entry.getKey();
+            final String bundleName = entry.getKey();
             final Map<String, Resolver> interfaces = new HashMap<>();
             Resolver resolver = null;
             for (Entry<String, Class<?>> locEntry : entry.getValue().entrySet()) {
@@ -115,7 +115,7 @@ public final class MessageBundles {
 
                 @Override
                 public String getNamespace() {
-                    return bundle;
+                    return bundleName;
                 }
             });
         }

@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -92,6 +93,10 @@ public class StaticResourcesProcessor {
             throws Exception {
         Set<StaticResourcesBuildItem.Entry> knownPaths = new HashSet<>();
 
+        ClassPathUtils.consumeAsPaths(StaticResourcesRecorder.META_INF_RESOURCES, resource -> {
+            collectKnownPaths(resource, knownPaths);
+        });
+
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
             i.accept(tree -> {
                 Path resource = tree.getPath(StaticResourcesRecorder.META_INF_RESOURCES);
@@ -100,10 +105,6 @@ public class StaticResourcesProcessor {
                 }
             });
         }
-
-        ClassPathUtils.consumeAsPaths(StaticResourcesRecorder.META_INF_RESOURCES, resource -> {
-            collectKnownPaths(resource, knownPaths);
-        });
 
         return knownPaths;
     }
@@ -115,12 +116,16 @@ public class StaticResourcesProcessor {
                 public FileVisitResult visitFile(Path p, BasicFileAttributes attrs)
                         throws IOException {
                     String file = resource.relativize(p).toString();
+                    // Windows has a backslash
+                    file = file.replace('\\', '/');
                     if (!file.startsWith("/")) {
                         file = "/" + file;
                     }
-                    // Windows has a backslash
-                    file = file.replace('\\', '/');
-                    knownPaths.add(new StaticResourcesBuildItem.Entry(file, false));
+
+                    if (QuarkusClassLoader
+                            .isResourcePresentAtRuntime(StaticResourcesRecorder.META_INF_RESOURCES + file)) {
+                        knownPaths.add(new StaticResourcesBuildItem.Entry(file, false));
+                    }
                     return FileVisitResult.CONTINUE;
                 }
             });

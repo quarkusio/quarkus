@@ -2,6 +2,7 @@ package io.quarkus.it.rest.client;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -27,6 +28,7 @@ public class MultipartClientResource {
         MultipartBody body = new MultipartBody();
         body.fileName = "greeting.txt";
         body.file = new ByteArrayInputStream("HELLO WORLD".getBytes(StandardCharsets.UTF_8));
+        body.uuid = UUID.randomUUID();
         return service.sendMultipartData(body);
     }
 }

@@ -116,15 +116,6 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<String> serviceAccount;
 
     /**
-     * The host under which the application is going to be exposed
-     *
-     * @deprecated Use the {@code quarkus.kubernetes.ingress.host} instead
-     */
-    @ConfigItem
-    @Deprecated
-    Optional<String> host;
-
-    /**
      * The application ports
      */
     @ConfigItem
@@ -437,10 +428,6 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Optional<String> getServiceAccount() {
         return serviceAccount;
-    }
-
-    public Optional<String> getHost() {
-        return host;
     }
 
     @Override

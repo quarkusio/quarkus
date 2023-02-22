@@ -35,7 +35,8 @@ public class ResteasyReactiveCDIProcessor {
     AutoInjectAnnotationBuildItem contextInjection(
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
         additionalBeanBuildItemBuildProducer
-                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(ContextProducers.class, QuarkusContextProducers.class)
+                .produce(AdditionalBeanBuildItem.builder()
+                        .addBeanClasses(ContextProducers.class, QuarkusContextProducers.class)
                         .build());
         return new AutoInjectAnnotationBuildItem(ResteasyReactiveServerDotNames.CONTEXT,
                 DotName.createSimple(BeanParam.class.getName()));

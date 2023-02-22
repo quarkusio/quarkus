@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static io.quarkus.qute.i18n.MessageBundle.DEFAULT_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Locale;
@@ -38,7 +39,7 @@ public class MessageBundleLogicalLineTest {
                 foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.forLanguageTag("cs")).render());
     }
 
-    @MessageBundle(locale = "en")
+    @MessageBundle(value = DEFAULT_NAME, locale = "en")
     public interface Messages {
 
         @Message("Hello {name}!")

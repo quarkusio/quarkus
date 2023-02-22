@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment.typesafe;
 
+import static io.quarkus.qute.i18n.MessageBundle.DEFAULT_NAME;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -46,7 +47,7 @@ public class DataNamespaceMessageBundleFailureTest {
         fail();
     }
 
-    @MessageBundle
+    @MessageBundle(value = DEFAULT_NAME)
     public interface Hellos {
 
         @Message("Hello {data:item.name}")

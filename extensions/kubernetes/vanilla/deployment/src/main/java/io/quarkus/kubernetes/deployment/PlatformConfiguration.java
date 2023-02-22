@@ -36,8 +36,6 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Optional<String> getServiceAccount();
 
-    Optional<String> getHost();
-
     Optional<String> getContainerName();
 
     Map<String, PortConfig> getPorts();

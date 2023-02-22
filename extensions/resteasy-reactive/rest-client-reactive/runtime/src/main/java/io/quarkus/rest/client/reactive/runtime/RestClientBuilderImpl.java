@@ -6,9 +6,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyStore;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +37,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.restclient.config.RestClientLoggingConfig;
@@ -295,11 +298,14 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         RestClientListeners.get().forEach(listener -> listener.onNewClient(aClass, this));
 
-        AnnotationRegisteredProviders annotationRegisteredProviders = Arc.container()
-                .instance(AnnotationRegisteredProviders.class).get();
-        for (Map.Entry<Class<?>, Integer> mapper : annotationRegisteredProviders.getProviders(aClass).entrySet()) {
-            register(mapper.getKey(), mapper.getValue());
-        }
+        Optional<ArcContainer> maybeArc = Optional.ofNullable(Arc.container());
+        maybeArc.ifPresent(arc -> {
+            AnnotationRegisteredProviders annotationRegisteredProviders = arc.instance(AnnotationRegisteredProviders.class)
+                    .get();
+            for (Map.Entry<Class<?>, Integer> mapper : annotationRegisteredProviders.getProviders(aClass).entrySet()) {
+                register(mapper.getKey(), mapper.getValue());
+            }
+        });
 
         Object defaultMapperDisabled = getConfiguration().getProperty(DEFAULT_MAPPER_DISABLED);
         Boolean globallyDisabledMapper = ConfigProvider.getConfig()
@@ -313,7 +319,9 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
         clientBuilder.followRedirects(followRedirects);
 
-        RestClientsConfig restClientsConfig = Arc.container().instance(RestClientsConfig.class).get();
+        RestClientsConfig restClientsConfig = maybeArc
+                .map(arc -> arc.instance(RestClientsConfig.class).get())
+                .orElseGet(RestClientBuilderImpl::emptyRestClientsConfig);
 
         RestClientLoggingConfig logging = restClientsConfig.logging;
         LoggingScope loggingScope = logging != null ? logging.scope.map(LoggingScope::forName).orElse(LoggingScope.NONE)
@@ -382,5 +390,34 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                 return MultiQueryParamMode.ARRAY_PAIRS;
         }
         return null;
+    }
+
+    private static RestClientsConfig emptyRestClientsConfig() {
+        RestClientsConfig empty = new RestClientsConfig();
+        empty.scope = Optional.empty();
+        empty.providers = Optional.empty();
+        empty.connectTimeout = 15_000L;
+        empty.readTimeout = 30_000L;
+        empty.followRedirects = Optional.empty();
+        empty.proxyAddress = Optional.empty();
+        empty.proxyUser = Optional.empty();
+        empty.proxyPassword = Optional.empty();
+        empty.nonProxyHosts = Optional.empty();
+        empty.queryParamStyle = Optional.empty();
+        empty.verifyHost = Optional.empty();
+        empty.trustStore = Optional.empty();
+        empty.trustStorePassword = Optional.empty();
+        empty.trustStoreType = Optional.empty();
+        empty.keyStore = Optional.empty();
+        empty.keyStorePassword = Optional.empty();
+        empty.keyStoreType = Optional.empty();
+        empty.hostnameVerifier = Optional.empty();
+        empty.connectionTTL = Optional.empty();
+        empty.connectionPoolSize = Optional.empty();
+        empty.keepAliveEnabled = Optional.empty();
+        empty.maxRedirects = Optional.empty();
+        empty.headers = Collections.emptyMap();
+        empty.userAgent = Optional.empty();
+        return empty;
     }
 }

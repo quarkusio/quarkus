@@ -9,12 +9,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.enterprise.inject.spi.InterceptionType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -57,6 +59,12 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                 if (Modifier.isStatic(method.flags())) {
                     continue;
                 }
+                if (method.hasAnnotation(DotNames.PRODUCES) || method.hasAnnotation(DotNames.DISPOSES)) {
+                    // according to spec, finding @Produces or @Disposes on a method is a DefinitionException
+                    throw new DefinitionException(
+                            "An interceptor method cannot be marked @Produces or @Disposes - " + method + " in class: "
+                                    + aClass);
+                }
                 if (method.hasAnnotation(DotNames.AROUND_INVOKE)) {
                     aroundInvokes.add(validateSignature(method));
                 }
@@ -68,6 +76,14 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                 }
                 if (method.hasAnnotation(DotNames.PRE_DESTROY)) {
                     preDestroys.add(validateSignature(method));
+                }
+            }
+
+            for (FieldInfo field : aClass.fields()) {
+                if (field.hasAnnotation(DotNames.PRODUCES)) {
+                    // according to spec, finding @Produces on a field is a DefinitionException
+                    throw new DefinitionException(
+                            "An interceptor field cannot be marked @Produces - " + field + " in class: " + aClass);
                 }
             }
 

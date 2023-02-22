@@ -281,11 +281,6 @@
                     <exclude name="testDeploymentFails"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.clientProxy.unproxyable.finalMethod.PublicFinalMethodNotProxyableTest">
-                <methods>
-                    <exclude name="testClassWithPublicFinalMethodCannotBeProxied"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamFieldTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
@@ -304,11 +299,6 @@
                     <exclude name="testExtensionNotDiscoveredAsSimpleBean"/>
                     <exclude name="testSimpleBeanOnlyIfConstructorIsInitializer"/>
                     <exclude name="testAbstractClassDeclaredInJavaNotDiscovered"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.clientProxy.unproxyable.finalMethod.ProtectedFinalMethodNotProxyableTest">
-                <methods>
-                    <exclude name="testClassWithPublicFinalMethodCannotBeProxied"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.bindings.aroundConstruct.ConstructorInterceptionTest">
@@ -387,11 +377,6 @@
                     <exclude name="testDuplicateBeanNamePrefix"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.clientProxy.unproxyable.finalMethod.NonPrivateNonStaticSuperclassMethodTest">
-                <methods>
-                    <exclude name="testClassWithPublicFinalMethodCannotBeProxied"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.simple.definition.dependentWithPublicField.DependentWithPublicFieldTest">
                 <methods>
                     <exclude name="testNonDependentScopedBeanCanNotHavePublicField"/>
@@ -431,11 +416,6 @@
                     <exclude name="testEventProvidesMethodForFiringEventsWithCombinationOfTypeAndBindings"/>
                     <exclude name="testEventSelectedFiresAndObserversNotified"/>
                     <exclude name="testEventFireThrowsExceptionIfEventObjectTypeContainsUnresovableTypeVariable"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.clientProxy.unproxyable.finalMethod.PackagePrivateFinalMethodNotProxyableTest">
-                <methods>
-                    <exclude name="testClassWithPublicFinalMethodCannotBeProxied"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.InterceptorDefinitionTest">

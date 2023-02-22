@@ -84,7 +84,7 @@ public class DevServicesElasticsearchProcessor {
         }
 
         StartupLogCompressor compressor = new StartupLogCompressor(
-                (launchMode.isTest() ? "(test) " : "") + "Elasticsearch Dev Services Starting:",
+                (launchMode.isTest() ? "(test) " : "") + "Dev Services for Elasticsearch starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
             devService = startElasticsearch(dockerStatusBuildItem, configuration, buildItemsConfig, launchMode,
@@ -153,14 +153,14 @@ public class DevServicesElasticsearchProcessor {
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) throws BuildException {
         if (!config.enabled.orElse(true)) {
             // explicitly disabled
-            log.debug("Not starting dev services for Elasticsearch, as it has been disabled in the config.");
+            log.debug("Not starting Dev Services for Elasticsearch, as it has been disabled in the config.");
             return null;
         }
 
         for (String hostsConfigProperty : buildItemConfig.hostsConfigProperties) {
             // Check if elasticsearch hosts property is set
             if (ConfigUtils.isPropertyPresent(hostsConfigProperty)) {
-                log.debugf("Not starting dev services for Elasticsearch, the %s property is configured.", hostsConfigProperty);
+                log.debugf("Not starting Dev Services for Elasticsearch, the %s property is configured.", hostsConfigProperty);
                 return null;
             }
         }
@@ -173,7 +173,7 @@ public class DevServicesElasticsearchProcessor {
 
         // We only support ELASTIC container for now
         if (buildItemConfig.distribution == DevservicesElasticsearchBuildItem.Distribution.OPENSEARCH) {
-            throw new BuildException("Dev services for Elasticsearch didn't support Opensearch", Collections.emptyList());
+            throw new BuildException("Dev Services for Elasticsearch doesn't support OpenSearch", Collections.emptyList());
         }
 
         // Hibernate Search Elasticsearch have a version configuration property, we need to check that it is coherent
@@ -182,9 +182,9 @@ public class DevServicesElasticsearchProcessor {
             String containerTag = config.imageName.substring(config.imageName.indexOf(':') + 1);
             if (!containerTag.startsWith(buildItemConfig.version)) {
                 throw new BuildException(
-                        "Dev services for Elasticsearch detected a version mismatch, container image is " + config.imageName
+                        "Dev Services for Elasticsearch detected a version mismatch, container image is " + config.imageName
                                 + " but the configured version is " + buildItemConfig.version +
-                                ". Either configure a different image or disable dev services for Elasticsearch.",
+                                ". Either configure a different image or disable Dev Services for Elasticsearch.",
                         Collections.emptyList());
             }
         }
@@ -255,7 +255,8 @@ public class DevServicesElasticsearchProcessor {
                     version = buildItem.getVersion();
                 } else if (!version.equals(buildItem.getVersion())) {
                     // safety guard but should never occur as only Hibernate Search ORM Elasticsearch configure the version
-                    throw new BuildException("Multiple extensions request Elasticsearch Dev Services on different version.",
+                    throw new BuildException(
+                            "Multiple extensions request different versions of Elasticsearch for Dev Services.",
                             Collections.emptyList());
                 }
 
@@ -264,7 +265,7 @@ public class DevServicesElasticsearchProcessor {
                 } else if (!distribution.equals(buildItem.getDistribution())) {
                     // safety guard but should never occur as only Hibernate Search ORM Elasticsearch configure the distribution
                     throw new BuildException(
-                            "Multiple extensions request Elasticsearch Dev Services on different distribution.",
+                            "Multiple extensions request different distributions of Elasticsearch for Dev Services.",
                             Collections.emptyList());
                 }
 

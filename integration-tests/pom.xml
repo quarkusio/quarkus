@@ -297,6 +297,7 @@
                 <module>reactive-messaging-hibernate-orm</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
+                <module>resteasy-rest-client-reactive</module>
                 <module>resteasy-rest-client-classic</module>
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-kotlin-serialization</module>

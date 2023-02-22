@@ -11,6 +11,7 @@ import java.util.Set;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.xml.bind.JAXBContext;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -31,9 +32,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.jaxb.deployment.JaxbClassesToBeBoundBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
+import io.quarkus.resteasy.reactive.jaxb.runtime.JAXBContextContextResolver;
 import io.quarkus.resteasy.reactive.jaxb.runtime.serialisers.ServerJaxbMessageBodyReader;
 import io.quarkus.resteasy.reactive.jaxb.runtime.serialisers.ServerJaxbMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveResourceMethodEntriesBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 
@@ -49,7 +52,8 @@ public class ResteasyReactiveJaxbProcessor {
     @BuildStep
     void additionalProviders(BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
-            BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
+            BuildProducer<MessageBodyWriterBuildItem> additionalWriters,
+            BuildProducer<ContextResolverBuildItem> additionalResolvers) {
         // make these beans to they can get instantiated with the Quarkus CDI
         additionalBean.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(ServerJaxbMessageBodyReader.class.getName())
@@ -62,12 +66,16 @@ public class ResteasyReactiveJaxbProcessor {
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(ServerJaxbMessageBodyWriter.class.getName(), Object.class.getName(),
                         XML_TYPES, RuntimeType.SERVER, true, Priorities.USER));
+
+        additionalResolvers
+                .produce(new ContextResolverBuildItem(JAXBContextContextResolver.class.getName(), XML_TYPES,
+                        JAXBContext.class.getName()));
     }
 
     @BuildStep
     void registerClassesToBeBound(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntries,
             JaxRsResourceIndexBuildItem index,
-            BuildProducer<JaxbClassesToBeBoundBuildItem> classesToBeBoundBuildItemProducer) {
+            BuildProducer<JaxbClassesToBeBoundBuildItem> classesToBeBoundBuildItemBuildProducer) {
         Set<ClassInfo> classesInfo = new HashSet<>();
 
         IndexView indexView = index.getIndexView();
@@ -105,7 +113,7 @@ public class ResteasyReactiveJaxbProcessor {
             }
         }
 
-        classesToBeBoundBuildItemProducer.produce(new JaxbClassesToBeBoundBuildItem(toClasses(classesInfo)));
+        classesToBeBoundBuildItemBuildProducer.produce(new JaxbClassesToBeBoundBuildItem(toClasses(classesInfo)));
     }
 
     @BuildStep

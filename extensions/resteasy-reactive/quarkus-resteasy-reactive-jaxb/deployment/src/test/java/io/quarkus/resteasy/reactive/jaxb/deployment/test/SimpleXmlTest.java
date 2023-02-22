@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.jaxb.deployment.test;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,8 +36,12 @@ public class SimpleXmlTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
+            .withConfigurationResource("exclude-model-from-jaxb.properties")
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Person.class, ModelWithoutAnnotation.class, SimpleXmlResource.class));
+                    .addClasses(Person.class, ModelWithoutAnnotation.class, SimpleXmlResource.class,
+                            io.quarkus.resteasy.reactive.jaxb.deployment.test.one.Model.class,
+                            io.quarkus.resteasy.reactive.jaxb.deployment.test.two.Model.class,
+                            ResourceWithModelSameName.class));
 
     @Test
     public void testXml() {
@@ -150,6 +155,27 @@ public class SimpleXmlTest {
                 .extract().as(ModelWithoutAnnotation.class);
 
         assertEquals(expectedMessage, response.getMessage());
+    }
+
+    @Test
+    public void testResourceUsingModelWithSameName() {
+        var one = new io.quarkus.resteasy.reactive.jaxb.deployment.test.one.Model();
+        one.setName1("aa");
+
+        var two = new io.quarkus.resteasy.reactive.jaxb.deployment.test.two.Model();
+        two.setName2("bb");
+
+        RestAssured.with().contentType(ContentType.XML).accept(ContentType.TEXT)
+                .body(toXml(one))
+                .post("/same-name/model-1")
+                .then()
+                .body(is("aa"));
+
+        RestAssured.with().contentType(ContentType.XML).accept(ContentType.TEXT)
+                .body(toXml(two))
+                .post("/same-name/model-2")
+                .then()
+                .body(is("bb"));
     }
 
     private String toXml(Object person) {
@@ -293,6 +319,28 @@ public class SimpleXmlTest {
             ModelWithoutAnnotation model = new ModelWithoutAnnotation();
             model.setMessage(request.getMessage());
             return model;
+        }
+    }
+
+    /**
+     * Resource to reproduce https://github.com/quarkusio/quarkus/issues/31032.
+     */
+    @Path("/same-name")
+    public static class ResourceWithModelSameName {
+        @POST
+        @Path("/model-1")
+        @Produces(MediaType.TEXT_PLAIN)
+        @Consumes(MediaType.APPLICATION_XML)
+        public String postModel1(io.quarkus.resteasy.reactive.jaxb.deployment.test.one.Model model) {
+            return model.getName1();
+        }
+
+        @POST
+        @Path("/model-2")
+        @Produces(MediaType.TEXT_PLAIN)
+        @Consumes(MediaType.APPLICATION_XML)
+        public String postModel2(io.quarkus.resteasy.reactive.jaxb.deployment.test.two.Model model) {
+            return model.getName2();
         }
     }
 }

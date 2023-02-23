@@ -336,6 +336,19 @@ public class KubernetesConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "true")
     boolean externalizeInit;
 
+    /**
+     * Switch used to control whether non-idempotent fields are included in generated kubernetes resources to improve
+     * git-ops compatibility
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean idempotent;
+
+    /**
+     * Optionally set directory generated kubernetes resources will be written to. Default is `target/kubernetes`.
+     */
+    @ConfigItem
+    Optional<String> outputDirectory;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -534,6 +547,11 @@ public class KubernetesConfig implements PlatformConfiguration {
     @Override
     public SecurityContextConfig getSecurityContext() {
         return securityContext;
+    }
+
+    @Override
+    public boolean isIdempotent() {
+        return idempotent;
     }
 
     public KubernetesConfig.DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {

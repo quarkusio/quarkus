@@ -560,6 +560,13 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "true")
     boolean externalizeInit;
 
+    /**
+     * Switch used to control whether non-idempotent fields are included in generated kubernetes resources to improve
+     * git-ops compatibility
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean idempotent;
+
     public Optional<String> getAppSecret() {
         return this.appSecret;
     }
@@ -571,6 +578,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @Override
     public SecurityContextConfig getSecurityContext() {
         return securityContext;
+    }
+
+    @Override
+    public boolean isIdempotent() {
+        return idempotent;
     }
 
     public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {

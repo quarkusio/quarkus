@@ -59,6 +59,7 @@ import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
+import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
@@ -239,12 +240,17 @@ public class KubernetesCommonHelper {
                     new AddLabelDecorator(name, l.getKey(), l.getValue())));
         });
 
-        if (!config.isAddVersionToLabelSelectors()) {
+        if (!config.isAddVersionToLabelSelectors() || config.isIdempotent()) {
             result.add(new DecoratorBuildItem(target, new RemoveFromSelectorDecorator(name, Labels.VERSION)));
             result.add(new DecoratorBuildItem(target, new RemoveFromMatchingLabelsDecorator(name, Labels.VERSION)));
         }
 
+        if (config.isIdempotent()) {
+            result.add(new DecoratorBuildItem(target, new RemoveLabelDecorator(name, Labels.VERSION)));
+        }
+
         if (!config.isAddNameToLabelSelectors()) {
+            result.add(new DecoratorBuildItem(target, new RemoveLabelDecorator(name, Labels.NAME)));
             result.add(new DecoratorBuildItem(target, new RemoveFromSelectorDecorator(name, Labels.NAME)));
             result.add(new DecoratorBuildItem(target, new RemoveFromMatchingLabelsDecorator(name, Labels.NAME)));
         }
@@ -642,12 +648,12 @@ public class KubernetesCommonHelper {
             String vcsUrl = scm != null ? scm.getRemote().get("origin") : null;
             String commitId = scm != null ? scm.getCommit() : null;
 
-            //Dekorate uses its own annotations. Let's replace them with the quarkus ones.
+            // Dekorate uses its own annotations. Let's replace them with the quarkus ones.
             result.add(new DecoratorBuildItem(target, new RemoveAnnotationDecorator(Annotations.VCS_URL)));
             result.add(new DecoratorBuildItem(target, new RemoveAnnotationDecorator(Annotations.COMMIT_ID)));
 
             //Add quarkus vcs annotations
-            if (commitId != null) {
+            if (commitId != null && !config.isIdempotent()) {
                 result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                         new Annotation(QUARKUS_ANNOTATIONS_COMMIT_ID, commitId, new String[0]))));
             }
@@ -659,7 +665,7 @@ public class KubernetesCommonHelper {
 
         });
 
-        if (config.isAddBuildTimestamp()) {
+        if (config.isAddBuildTimestamp() && !config.isIdempotent()) {
             result.add(new DecoratorBuildItem(target,
                     new AddAnnotationDecorator(name, new Annotation(QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP,
                             now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")), new String[0]))));

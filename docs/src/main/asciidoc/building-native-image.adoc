@@ -311,6 +311,33 @@ executable will contain only the `version.txt` resource, no superfluous test dat
 The executable built with `-Dquarkus-profile=test` is not suitable for production deployment.
 It contains your test resources files and settings. Once the testing is done, the executable would have to be built again,
 using the default, `prod` profile.
+
+Alternatively, if you need to specify specific properties when running tests against the native executable
+built using the `prod` profile, an option is to put those properties in file `src/test/resources/application-nativeit.yaml`, and refer to it from the `failsafe` plugin configuration using the `QUARKUS_CONFIG_LOCATIONS` environment variable. For instance:
+```
+<plugin>
+  <artifactId>maven-failsafe-plugin</artifactId>
+  <version>${surefire-plugin.version}</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>integration-test</goal>
+        <goal>verify</goal>
+      </goals>
+      <configuration>
+        <systemPropertyVariables>
+          <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+          <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+          <maven.home>${maven.home}</maven.home>
+        </systemPropertyVariables>
+        <environmentVariables>
+          <QUARKUS_CONFIG_LOCATIONS>./src/test/resources/application-nativeit.yaml</QUARKUS_CONFIG_LOCATIONS>
+        </environmentVariables>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+```
 ====
 
 === Java preview features

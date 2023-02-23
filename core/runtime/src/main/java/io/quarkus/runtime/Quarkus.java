@@ -181,8 +181,7 @@ public class Quarkus {
      * Must not be called by the main thread, or a deadlock will result.
      */
     public static void blockingExit() {
-        if (Thread.currentThread().getThreadGroup().getName().equals("main") &&
-                Thread.currentThread().getName().toLowerCase(Locale.ROOT).contains("main")) {
+        if (isMainThread(Thread.currentThread())) {
             Logger.getLogger(Quarkus.class).error(
                     "'Quarkus#blockingExit' was called on the main thread. This will result in deadlocking the application!");
         }
@@ -192,6 +191,11 @@ public class Quarkus {
         if (app != null) {
             app.awaitShutdown();
         }
+    }
+
+    public static boolean isMainThread(Thread thread) {
+        return thread.getThreadGroup().getName().equals("main") &&
+                thread.getName().toLowerCase(Locale.ROOT).contains("main");
     }
 
     private static Application manualApp;

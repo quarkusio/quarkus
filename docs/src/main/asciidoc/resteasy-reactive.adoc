@@ -1353,6 +1353,15 @@ Importing this module will allow HTTP message bodies to be read from XML
 and serialised to XML, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
+The JAXB Resteasy Reactive extension will automatically detect the classes that are used in the resources and require JAXB serialization. Then, it will register these classes into the default `JAXBContext` which is internally used by the JAXB message reader and writer. 
+
+However, in some situations, these classes cause the `JAXBContext` to fail: for example, when you're using the same class name in different java packages. In these cases, the application will fail at build time and print the JAXB exception that caused the issue, so you can properly fix it. Alternatively, you can also exclude the classes that cause the issue by using the property `quarkus.jaxb.exclude-classes`. When excluding classes that are required by any resource, the JAXB resteasy reactive extension will create and cache a custom `JAXBContext` that will include the excluded class, causing a minimal performance degradance. 
+
+[NOTE]
+====
+The property `quarkus.jaxb.exclude-classes` accepts a comma separated list of fully qualified class names, for example: `quarkus.jaxb.exclude-classes=org.acme.one.Model,org.acme.two.Model`. 
+====
+
 ==== Advanced JAXB-specific features
 
 When using the `quarkus-resteasy-reactive-jaxb` extension there are some advanced features that RESTEasy Reactive supports.

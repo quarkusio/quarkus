@@ -38,7 +38,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     protected HelpOption helpOption;
 
     @CommandLine.Option(names = { "-v",
-            "--version" }, versionHelp = true, description = "Print Cli version information and exit.")
+            "--version" }, versionHelp = true, description = "Print CLI version information and exit.")
     public boolean showVersion;
 
     @CommandLine.Mixin(name = "output")

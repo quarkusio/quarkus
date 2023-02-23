@@ -20,10 +20,11 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
     private final String overdueGracePeriod;
     private final ConcurrentExecution concurrentExecution;
     private final SkipPredicate skipPredicate;
+    private final String timeZone;
 
     public SyntheticScheduled(String identity, String cron, String every, long delay, TimeUnit delayUnit, String delayed,
             String overdueGracePeriod, ConcurrentExecution concurrentExecution,
-            SkipPredicate skipPredicate) {
+            SkipPredicate skipPredicate, String timeZone) {
         this.identity = Objects.requireNonNull(identity);
         this.cron = Objects.requireNonNull(cron);
         this.every = Objects.requireNonNull(every);
@@ -33,6 +34,7 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
         this.overdueGracePeriod = Objects.requireNonNull(overdueGracePeriod);
         this.concurrentExecution = Objects.requireNonNull(concurrentExecution);
         this.skipPredicate = skipPredicate;
+        this.timeZone = timeZone;
     }
 
     @Override
@@ -78,6 +80,11 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
     @Override
     public String overdueGracePeriod() {
         return overdueGracePeriod;
+    }
+
+    @Override
+    public String timeZone() {
+        return timeZone;
     }
 
 }

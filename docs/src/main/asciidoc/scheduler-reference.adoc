@@ -105,6 +105,29 @@ void myMethod() { }
 
 If the property `myMethod.cron.expr` is undefined or `null`, the default value (`0 0 15 ? * MON *`) will be used.
 
+===== Time Zones
+
+The cron expression is evaluated in the context of the default time zone.
+However, it is also possible to associate the cron expression with a specific time zone.
+
+.Time Zone Example
+[source,java]
+----
+@Scheduled(cron = "0 15 10 * * ?", timeZone = "Europe/Prague") <1>
+void myMethod() { }
+----
+<1> The time zone ID is parsed using `java.time.ZoneId#of(String)`.
+
+The `timeZone` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
+Property Expressions.
+
+.Time Zone Configuration Property Example
+[source,java]
+----
+@Scheduled(cron = "0 15 10 * * ?", timeZone = "{myMethod.timeZone}")
+void myMethod() { }
+----
+
 ==== Intervals
 
 An interval trigger defines a period between invocations.

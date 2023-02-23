@@ -3,6 +3,7 @@ package io.quarkus.scheduler.common.runtime;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.Scheduled.SkipPredicate;
 import io.quarkus.scheduler.ScheduledExecution;
@@ -21,6 +22,7 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     protected Consumer<ScheduledExecution> task;
     protected Function<ScheduledExecution, Uni<Void>> asyncTask;
     protected boolean scheduled = false;
+    protected String timeZone = Scheduled.DEFAULT_TIMEZONE;
 
     public AbstractJobDefinition(String identity) {
         this.identity = identity;
@@ -65,6 +67,13 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     public JobDefinition setOverdueGracePeriod(String period) {
         checkScheduled();
         this.overdueGracePeriod = period;
+        return this;
+    }
+
+    @Override
+    public JobDefinition setTimeZone(String timeZone) {
+        checkScheduled();
+        this.timeZone = timeZone;
         return this;
     }
 

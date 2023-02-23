@@ -4,6 +4,7 @@ import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
 import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 
 import java.time.Duration;
+import java.time.ZoneId;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -18,7 +19,6 @@ import io.smallrye.common.expression.ResolveContext;
 
 /**
  * Utilities class for scheduler extensions.
- *
  */
 public class SchedulerUtils {
 
@@ -91,6 +91,11 @@ public class SchedulerUtils {
 
     public static boolean isConfigValue(String val) {
         return isSimpleConfigValue(val) || isConfigExpression(val);
+    }
+
+    public static ZoneId parseCronTimeZone(Scheduled scheduled) {
+        String timeZone = lookUpPropertyValue(scheduled.timeZone());
+        return timeZone.equals(Scheduled.DEFAULT_TIMEZONE) ? null : ZoneId.of(timeZone);
     }
 
     private static boolean isSimpleConfigValue(String val) {

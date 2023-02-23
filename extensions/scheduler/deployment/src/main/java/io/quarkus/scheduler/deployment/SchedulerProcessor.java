@@ -9,6 +9,7 @@ import static org.jboss.jandex.AnnotationValue.createStringValue;
 
 import java.lang.reflect.Modifier;
 import java.time.Duration;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -545,6 +546,18 @@ public class SchedulerProcessor {
                     LOGGER.warnf(
                             "%s declared on %s#%s() defines both cron() and every() - the cron expression takes precedence",
                             schedule, method.declaringClass().name(), method.name());
+                }
+            }
+            // Validate the time zone ID
+            AnnotationValue timeZoneValue = schedule.value("timeZone");
+            if (timeZoneValue != null) {
+                String timeZone = timeZoneValue.asString();
+                if (!SchedulerUtils.isConfigValue(timeZone) && !timeZone.equals(Scheduled.DEFAULT_TIMEZONE)) {
+                    try {
+                        ZoneId.of(timeZone);
+                    } catch (Exception e) {
+                        return new IllegalStateException("Invalid timeZone() on " + schedule, e);
+                    }
                 }
             }
 

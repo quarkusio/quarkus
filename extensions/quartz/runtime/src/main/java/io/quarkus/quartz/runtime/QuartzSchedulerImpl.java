@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -626,6 +627,10 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                 }
             }
             CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
+            ZoneId timeZone = SchedulerUtils.parseCronTimeZone(scheduled);
+            if (timeZone != null) {
+                cronScheduleBuilder.inTimeZone(TimeZone.getTimeZone(timeZone));
+            }
             QuartzRuntimeConfig.QuartzMisfirePolicyConfig perJobConfig = runtimeConfig.misfirePolicyPerJobs
                     .getOrDefault(identity, runtimeConfig.cronTriggerConfig.misfirePolicyConfig);
             switch (perJobConfig.misfirePolicy) {
@@ -766,8 +771,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                 };
             }
             Scheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
-                    overdueGracePeriod,
-                    concurrentExecution, skipPredicate);
+                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone);
 
             JobDetail jobDetail = createJobDetail(identity, QuartzSchedulerImpl.class.getName());
             Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, cronType, runtimeConfig, jobDetail);

@@ -17,6 +17,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationCompletionException;
+import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
@@ -126,9 +127,7 @@ public class ResteasyStandaloneRecorder {
                         }
                     }
 
-                    if (request.failure() instanceof AuthenticationFailedException
-                            || request.failure() instanceof AuthenticationCompletionException
-                            || request.failure() instanceof AuthenticationRedirectException
+                    if (request.failure() instanceof AuthenticationException
                             || request.failure() instanceof ForbiddenException) {
                         super.handle(request);
                     } else {

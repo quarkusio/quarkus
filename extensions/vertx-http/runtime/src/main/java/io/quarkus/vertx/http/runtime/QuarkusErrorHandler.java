@@ -18,9 +18,7 @@ import org.jboss.logging.Logger;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.TemplateHtmlBuilder;
-import io.quarkus.security.AuthenticationCompletionException;
-import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.AuthenticationRedirectException;
+import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
@@ -82,9 +80,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 return;
             }
 
-            if (event.failure() instanceof AuthenticationFailedException
-                    || event.failure() instanceof AuthenticationCompletionException
-                    || event.failure() instanceof AuthenticationRedirectException) {
+            if (event.failure() instanceof AuthenticationException) {
 
                 if (event.response().getStatusCode() == HttpResponseStatus.OK.code()) {
                     //set 401 if status wasn't set upstream

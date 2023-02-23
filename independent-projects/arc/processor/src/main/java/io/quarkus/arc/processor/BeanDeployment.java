@@ -1381,6 +1381,7 @@ public class BeanDeployment {
 
     private void validateBeans(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
 
+        Set<String> namespaces = new HashSet<>();
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
         Set<DotName> classesReceivingNoArgsCtor = new HashSet<>();
 
@@ -1392,21 +1393,50 @@ public class BeanDeployment {
                     namedBeans.put(bean.getName(), named);
                 }
                 named.add(bean);
+                findNamespaces(bean, namespaces);
             }
             bean.validate(errors, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
         }
 
         if (!namedBeans.isEmpty()) {
             for (Entry<String, List<BeanInfo>> entry : namedBeans.entrySet()) {
-                if (entry.getValue()
-                        .size() > 1) {
+                String name = entry.getKey();
+
+                if (entry.getValue().size() > 1) {
                     if (Beans.resolveAmbiguity(entry.getValue()) == null) {
-                        errors.add(new DeploymentException("Unresolvable ambiguous bean name detected: " + entry.getKey()
+                        errors.add(new DeploymentException("Unresolvable ambiguous bean name detected: " + name
                                 + "\nBeans:\n" + entry.getValue()
                                         .stream()
                                         .map(Object::toString)
                                         .collect(Collectors.joining("\n"))));
                     }
+                }
+
+                if (strictCompatibility && namespaces.contains(name)) {
+                    errors.add(new DeploymentException(
+                            "Bean name '" + name + "' is identical to a bean name prefix used elsewhere"));
+                }
+            }
+        }
+    }
+
+    private void findNamespaces(BeanInfo bean, Set<String> namespaces) {
+        if (!strictCompatibility) {
+            return;
+        }
+
+        if (bean.getName() != null) {
+            String[] parts = bean.getName().split("\\.");
+            if (parts.length > 1) {
+                for (int i = 0; i < parts.length - 1; i++) {
+                    StringBuilder builder = new StringBuilder();
+                    for (int j = 0; j <= i; j++) {
+                        if (j > 0) {
+                            builder.append('.');
+                        }
+                        builder.append(parts[j]);
+                    }
+                    namespaces.add(builder.toString());
                 }
             }
         }

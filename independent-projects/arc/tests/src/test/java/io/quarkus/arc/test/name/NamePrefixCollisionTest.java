@@ -13,11 +13,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class AmbiguousNameTest {
-
+public class NamePrefixCollisionTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
-            .beanClasses(Bravo.class, Alpha.class)
+            .beanClasses(Alpha.class, Bravo.class)
+            .strictCompatibility(true)
             .shouldFail()
             .build();
 
@@ -26,17 +26,16 @@ public class AmbiguousNameTest {
         Throwable error = container.getFailure();
         assertNotNull(error);
         assertTrue(error instanceof DeploymentException);
-        assertTrue(error.getMessage().contains("Unresolvable ambiguous bean name detected"));
+        assertTrue(error.getMessage().contains("identical to a bean name prefix used elsewhere"));
     }
 
-    @Named("A")
+    @Named("x")
     @Singleton
     static class Alpha {
     }
 
-    @Named("A")
+    @Named("x.y")
     @Dependent
     static class Bravo {
     }
-
 }

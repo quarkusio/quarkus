@@ -174,11 +174,6 @@
                     <exclude name="testObjectMethodsAreNotIntercepted"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.byname.broken.prefix.ExpandedNamePrefix2Test">
-                <methods>
-                    <exclude name="testDuplicateBeanNamePrefix"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.bindings.broken.InvalidTransitiveInterceptorBindingAnnotationsTest">
                 <methods>
                     <exclude name="testInterceptorBindingsWithConflictingAnnotationMembersNotOk"/>
@@ -372,11 +367,6 @@
                     <exclude name="testMultipleLifecycleInterceptors"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.byname.broken.prefix.NamePrefixTest">
-                <methods>
-                    <exclude name="testDuplicateBeanNamePrefix"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.simple.definition.dependentWithPublicField.DependentWithPublicFieldTest">
                 <methods>
                     <exclude name="testNonDependentScopedBeanCanNotHavePublicField"/>
@@ -427,11 +417,6 @@
                     <exclude name="testObserver"/>
                     <exclude name="testInjectionPoint"/>
                     <exclude name="testInjectionPointDefinition"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.byname.broken.prefix.ExpandedNamePrefixTest">
-                <methods>
-                    <exclude name="testDuplicateBeanNamePrefix"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.definition.scope.inOtherBda.ScopeDefinedInOtherBDATest">

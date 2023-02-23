@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.hibernate.orm.deployment.HibernateConfigUtil.firstPresent;
-import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_SHARED_CACHE_MODE;
 import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
@@ -29,6 +29,7 @@ import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -45,14 +46,27 @@ import jakarta.xml.bind.JAXBElement;
 
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
+import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
+import org.hibernate.graph.internal.parse.SubGraphGenerator;
+import org.hibernate.graph.spi.AttributeNodeImplementor;
+import org.hibernate.graph.spi.GraphImplementor;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
+import org.hibernate.query.hql.spi.DotIdentifierConsumer;
+import org.hibernate.query.hql.spi.SqmCreationProcessingState;
+import org.hibernate.query.sqm.spi.ParameterDeclarationContext;
+import org.hibernate.query.sqm.sql.FromClauseIndex;
+import org.hibernate.sql.ast.Clause;
+import org.hibernate.sql.ast.spi.SqlAstProcessingState;
+import org.hibernate.sql.ast.tree.Statement;
+import org.hibernate.sql.ast.tree.select.QueryPart;
+import org.hibernate.sql.results.graph.FetchParent;
+import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingState;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
@@ -301,22 +315,12 @@ public final class HibernateOrmProcessor {
         return new AdditionalIndexedClassesBuildItem(ClassNames.QUARKUS_PERSISTENCE_UNIT.toString());
     }
 
-    // We do our own enhancement during the compilation phase, so disable any
-    // automatic entity enhancement by Hibernate ORM
-    // This has to happen before Hibernate ORM classes are initialized: see
-    // org.hibernate.cfg.Environment#BYTECODE_PROVIDER_INSTANCE
-    @BuildStep
-    public SystemPropertyBuildItem enforceDisableRuntimeEnhancer() {
-        return new SystemPropertyBuildItem(AvailableSettings.BYTECODE_PROVIDER,
-                org.hibernate.cfg.Environment.BYTECODE_PROVIDER_NAME_NONE);
-    }
-
     @BuildStep
     public void enrollBeanValidationTypeSafeActivatorForReflection(Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
-                    "org.hibernate.cfg.beanvalidation.TypeSafeActivator"));
+                    "org.hibernate.boot.beanvalidation.TypeSafeActivator"));
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, false,
                     BeanValidationIntegrator.BV_CHECK_CLASS));
         }
@@ -799,7 +803,7 @@ public final class HibernateOrmProcessor {
     public void produceLoggingCategories(HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<LogCategoryBuildItem> categories) {
         if (hibernateOrmConfig.log.bindParam || hibernateOrmConfig.log.bindParameters) {
-            categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE, true));
+            categories.produce(new LogCategoryBuildItem("org.hibernate.orm.jdbc.bind", Level.TRACE, true));
         }
     }
 
@@ -977,7 +981,7 @@ public final class HibernateOrmProcessor {
             // The datasource is optional for the DATABASE multi-tenancy strategy,
             // since the datasource will be resolved separately for each tenant.
             if (explicitDialect.isPresent()) {
-                dialect = explicitDialect.get();
+                dialect = explicitDialectSet(explicitDialect.get());
             } else if (jdbcDataSource.isPresent()) {
                 dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind(),
                         dbKindMetadataBuildItems);
@@ -1001,7 +1005,7 @@ public final class HibernateOrmProcessor {
                                 "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
             }
             if (explicitDialect.isPresent()) {
-                dialect = explicitDialect.get();
+                dialect = explicitDialectSet(explicitDialect.get());
             } else {
                 dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind(),
                         dbKindMetadataBuildItems);
@@ -1167,7 +1171,7 @@ public final class HibernateOrmProcessor {
             p.putIfAbsent(USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.TRUE);
             p.putIfAbsent(USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
             p.putIfAbsent(USE_QUERY_CACHE, Boolean.TRUE);
-            p.putIfAbsent(JPA_SHARED_CACHE_MODE, SharedCacheMode.ENABLE_SELECTIVE);
+            p.putIfAbsent(JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.ENABLE_SELECTIVE);
             Map<String, String> cacheConfigEntries = HibernateConfigUtil.getCacheConfigEntries(persistenceUnitConfig);
             for (Entry<String, String> entry : cacheConfigEntries.entrySet()) {
                 descriptor.getProperties().setProperty(entry.getKey(), entry.getValue());
@@ -1178,16 +1182,17 @@ public final class HibernateOrmProcessor {
             p.put(USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.FALSE);
             p.put(USE_SECOND_LEVEL_CACHE, Boolean.FALSE);
             p.put(USE_QUERY_CACHE, Boolean.FALSE);
-            p.put(JPA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
+            p.put(JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
         }
 
         // Hibernate Validator integration: we force the callback mode to have bootstrap errors reported rather than validation ignored
         // if there is any issue when bootstrapping Hibernate Validator.
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
             if (persistenceUnitConfig.validation.enabled) {
-                descriptor.getProperties().setProperty(AvailableSettings.JPA_VALIDATION_MODE, ValidationMode.CALLBACK.name());
+                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE,
+                        ValidationMode.CALLBACK.name());
             } else {
-                descriptor.getProperties().setProperty(AvailableSettings.JPA_VALIDATION_MODE, ValidationMode.NONE.name());
+                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
             }
         }
 
@@ -1208,6 +1213,15 @@ public final class HibernateOrmProcessor {
                         xmlMappings,
                         persistenceUnitConfig.unsupportedProperties,
                         false, false));
+    }
+
+    private static String explicitDialectSet(String configuredDialectName) {
+        if ("org.hibernate.dialect.H2Dialect".equals(configuredDialectName)) {
+            LOG.warn(
+                    "The dialect property of Hibernate ORM was explicitly set to 'org.hibernate.dialect.H2Dialect'; this won't work in Quarkus - overriding to 'io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect'.");
+            return "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect";
+        }
+        return configuredDialectName;
     }
 
     private static Optional<JdbcDataSourceBuildItem> findJdbcDataSource(String persistenceUnitName,
@@ -1596,6 +1610,30 @@ public final class HibernateOrmProcessor {
         return TypePool.Default.of(new ClassFileLocator.Compound(
                 new ClassFileLocator.Simple(transformedClasses),
                 ClassFileLocator.ForClassLoader.of(Thread.currentThread().getContextClassLoader())));
+    }
+
+    //TODO cleanup: this should be unneccessary but we generate them to not having to wait for Hibernate ORM 6.2.0.Final,
+    //which is expected to contain the same metadata.
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    public ReflectiveClassBuildItem additionalStaticReflectionNeeds() {
+        return new ReflectiveClassBuildItem(true, false, false,
+                AttributeNodeImplementor[].class,
+                Clause[].class,
+                DotIdentifierConsumer[].class,
+                FetchParent[].class,
+                FromClauseIndex[].class,
+                Function[].class,
+                GraphImplementor[].class,
+                JdbcValuesSourceProcessingState[].class,
+                List[].class,
+                Entry[].class,
+                ParameterDeclarationContext[].class,
+                QueryPart[].class,
+                SqlAstProcessingState[].class,
+                SqmCreationProcessingState[].class,
+                Statement[].class,
+                SubGraphGenerator[].class,
+                Supplier[].class);
     }
 
     private boolean isModified(String entity, Set<String> changedClasses, IndexView index) {

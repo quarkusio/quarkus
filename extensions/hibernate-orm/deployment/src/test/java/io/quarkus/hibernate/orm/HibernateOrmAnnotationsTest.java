@@ -74,9 +74,16 @@ public class HibernateOrmAnnotationsTest {
         Set<DotName> hibernateMappingAnnotations = findRuntimeAnnotations(hibernateIndex);
         hibernateMappingAnnotations.removeIf(name -> name.toString().contains(".internal."));
         hibernateMappingAnnotations.removeIf(name -> name.toString().contains(".spi."));
+        ignoreInternalAnnotations(hibernateMappingAnnotations);
 
         assertThat(HibernateOrmAnnotations.HIBERNATE_MAPPING_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(hibernateMappingAnnotations);
+    }
+
+    private static void ignoreInternalAnnotations(Set<DotName> annotationSet) {
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Incubating"));
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Internal"));
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Remove"));
     }
 
     @Test
@@ -84,6 +91,7 @@ public class HibernateOrmAnnotationsTest {
         Set<DotName> packageLevelHibernateAnnotations = findRuntimeAnnotationsByTargetType(jpaIndex, ElementType.PACKAGE);
         packageLevelHibernateAnnotations.addAll(findRuntimeAnnotationsByTargetType(hibernateIndex, ElementType.PACKAGE));
         packageLevelHibernateAnnotations.removeIf(name -> name.toString().contains(".internal."));
+        ignoreInternalAnnotations(packageLevelHibernateAnnotations);
 
         assertThat(HibernateOrmAnnotations.PACKAGE_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(packageLevelHibernateAnnotations);

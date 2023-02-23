@@ -3,10 +3,12 @@ package io.quarkus.hibernate.orm.runtime.customized;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl;
+import org.hibernate.boot.model.relational.ColumnOrderingStrategy;
+import org.hibernate.boot.model.relational.ColumnOrderingStrategyLegacy;
+import org.hibernate.boot.model.relational.ColumnOrderingStrategyStandard;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.selector.StrategyRegistration;
 import org.hibernate.boot.registry.selector.StrategyRegistrationProvider;
-import org.hibernate.boot.registry.selector.internal.DefaultDialectSelector;
 import org.hibernate.boot.registry.selector.internal.DefaultJtaPlatformSelector;
 import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
@@ -15,13 +17,23 @@ import org.hibernate.cache.internal.SimpleCacheKeysFactory;
 import org.hibernate.cache.spi.CacheKeysFactory;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
-import org.hibernate.hql.spi.id.MultiTableBulkIdStrategy;
-import org.hibernate.hql.spi.id.global.GlobalTemporaryTableBulkIdStrategy;
-import org.hibernate.hql.spi.id.local.LocalTemporaryTableBulkIdStrategy;
-import org.hibernate.hql.spi.id.persistent.PersistentTableBulkIdStrategy;
+import org.hibernate.id.enhanced.ImplicitDatabaseObjectNamingStrategy;
+import org.hibernate.id.enhanced.LegacyNamingStrategy;
+import org.hibernate.id.enhanced.SingleNamingStrategy;
+import org.hibernate.id.enhanced.StandardNamingStrategy;
+import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableMutationStrategy;
+import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder;
+import org.hibernate.type.format.FormatMapper;
+import org.hibernate.type.format.jackson.JacksonJsonFormatMapper;
+import org.hibernate.type.format.jackson.JacksonXmlFormatMapper;
+import org.hibernate.type.format.jakartajson.JsonBJsonFormatMapper;
+import org.hibernate.type.format.jaxb.JaxbXmlFormatMapper;
 
 /**
  * Similar to {@link org.hibernate.boot.registry.selector.internal.StrategySelectorBuilder} but
@@ -44,17 +56,22 @@ public final class QuarkusStrategySelectorBuilder {
         final StrategySelectorImpl strategySelector = new StrategySelectorImpl(classLoaderService);
 
         // build the baseline...
-        strategySelector.registerStrategyLazily(Dialect.class, new DefaultDialectSelector());
+        strategySelector.registerStrategyLazily(
+                Dialect.class,
+                new QuarkusDialectSelector());
         strategySelector.registerStrategyLazily(JtaPlatform.class, new DefaultJtaPlatformSelector());
         addTransactionCoordinatorBuilders(strategySelector);
-        addMultiTableBulkIdStrategies(strategySelector);
+        addSqmMultiTableMutationStrategies(strategySelector);
         addImplicitNamingStrategies(strategySelector);
+        addColumnOrderingStrategies(strategySelector);
         addCacheKeysFactories(strategySelector);
+        addJsonFormatMappers(strategySelector);
+        addXmlFormatMappers(strategySelector);
 
         // Required to support well known extensions e.g. Envers
         // TODO: should we introduce a new integrator SPI to limit these to extensions supported by Quarkus?
         for (StrategyRegistrationProvider provider : classLoaderService.loadJavaServices(StrategyRegistrationProvider.class)) {
-            for (StrategyRegistration discoveredStrategyRegistration : provider.getStrategyRegistrations()) {
+            for (StrategyRegistration<?> discoveredStrategyRegistration : provider.getStrategyRegistrations()) {
                 applyFromStrategyRegistration(strategySelector, discoveredStrategyRegistration);
             }
         }
@@ -85,19 +102,23 @@ public final class QuarkusStrategySelectorBuilder {
                 JtaTransactionCoordinatorBuilderImpl.class);
     }
 
-    private static void addMultiTableBulkIdStrategies(StrategySelectorImpl strategySelector) {
+    private static void addSqmMultiTableMutationStrategies(StrategySelectorImpl strategySelector) {
         strategySelector.registerStrategyImplementor(
-                MultiTableBulkIdStrategy.class,
-                PersistentTableBulkIdStrategy.SHORT_NAME,
-                PersistentTableBulkIdStrategy.class);
+                SqmMultiTableMutationStrategy.class,
+                CteMutationStrategy.SHORT_NAME,
+                CteMutationStrategy.class);
         strategySelector.registerStrategyImplementor(
-                MultiTableBulkIdStrategy.class,
-                GlobalTemporaryTableBulkIdStrategy.SHORT_NAME,
-                GlobalTemporaryTableBulkIdStrategy.class);
+                SqmMultiTableMutationStrategy.class,
+                GlobalTemporaryTableMutationStrategy.SHORT_NAME,
+                GlobalTemporaryTableMutationStrategy.class);
         strategySelector.registerStrategyImplementor(
-                MultiTableBulkIdStrategy.class,
-                LocalTemporaryTableBulkIdStrategy.SHORT_NAME,
-                LocalTemporaryTableBulkIdStrategy.class);
+                SqmMultiTableMutationStrategy.class,
+                LocalTemporaryTableMutationStrategy.SHORT_NAME,
+                LocalTemporaryTableMutationStrategy.class);
+        strategySelector.registerStrategyImplementor(
+                SqmMultiTableMutationStrategy.class,
+                PersistentTableMutationStrategy.SHORT_NAME,
+                PersistentTableMutationStrategy.class);
     }
 
     private static void addImplicitNamingStrategies(StrategySelectorImpl strategySelector) {
@@ -113,6 +134,29 @@ public final class QuarkusStrategySelectorBuilder {
                 ImplicitNamingStrategy.class,
                 "component-path",
                 ImplicitNamingStrategyComponentPathImpl.class);
+        strategySelector.registerStrategyImplementor(
+                ImplicitDatabaseObjectNamingStrategy.class,
+                StandardNamingStrategy.STRATEGY_NAME,
+                StandardNamingStrategy.class);
+        strategySelector.registerStrategyImplementor(
+                ImplicitDatabaseObjectNamingStrategy.class,
+                SingleNamingStrategy.STRATEGY_NAME,
+                SingleNamingStrategy.class);
+        strategySelector.registerStrategyImplementor(
+                ImplicitDatabaseObjectNamingStrategy.class,
+                LegacyNamingStrategy.STRATEGY_NAME,
+                LegacyNamingStrategy.class);
+    }
+
+    private static void addColumnOrderingStrategies(StrategySelectorImpl strategySelector) {
+        strategySelector.registerStrategyImplementor(
+                ColumnOrderingStrategy.class,
+                "default",
+                ColumnOrderingStrategyStandard.class);
+        strategySelector.registerStrategyImplementor(
+                ColumnOrderingStrategy.class,
+                "legacy",
+                ColumnOrderingStrategyLegacy.class);
     }
 
     private static void addCacheKeysFactories(StrategySelectorImpl strategySelector) {
@@ -124,6 +168,28 @@ public final class QuarkusStrategySelectorBuilder {
                 CacheKeysFactory.class,
                 SimpleCacheKeysFactory.SHORT_NAME,
                 SimpleCacheKeysFactory.class);
+    }
+
+    private static void addJsonFormatMappers(StrategySelectorImpl strategySelector) {
+        strategySelector.registerStrategyImplementor(
+                FormatMapper.class,
+                JacksonJsonFormatMapper.SHORT_NAME,
+                JacksonJsonFormatMapper.class);
+        strategySelector.registerStrategyImplementor(
+                FormatMapper.class,
+                JsonBJsonFormatMapper.SHORT_NAME,
+                JsonBJsonFormatMapper.class);
+    }
+
+    private static void addXmlFormatMappers(StrategySelectorImpl strategySelector) {
+        strategySelector.registerStrategyImplementor(
+                FormatMapper.class,
+                JacksonXmlFormatMapper.SHORT_NAME,
+                JacksonXmlFormatMapper.class);
+        strategySelector.registerStrategyImplementor(
+                FormatMapper.class,
+                JaxbXmlFormatMapper.SHORT_NAME,
+                JaxbXmlFormatMapper.class);
     }
 
 }

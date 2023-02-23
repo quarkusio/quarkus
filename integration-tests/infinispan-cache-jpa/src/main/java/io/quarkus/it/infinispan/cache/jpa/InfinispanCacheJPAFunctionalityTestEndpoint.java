@@ -112,7 +112,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void storeTestCountries(final EntityManagerFactory emf, Map<String, Counts> counts) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -149,7 +149,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static Statistics verifyFindCountryByNaturalId(EntityManagerFactory emf, String callingCode, String expectedName) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -169,7 +169,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void updateNaturalId(EntityManagerFactory emf, Map<String, Counts> counts) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -193,7 +193,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
 
     private static void verifyFindCitizenByNaturalId(EntityManagerFactory emf, String ssn, String expectedLastName,
             Map<String, Counts> counts) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -213,7 +213,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void storeTestCitizens(final EntityManagerFactory emf, Map<String, Counts> counts) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -252,7 +252,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void storeTestPokemonTrainers(final EntityManagerFactory emf, Map<String, Counts> counts) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -273,7 +273,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void addTestPokemonForTrainer(final EntityManagerFactory emf, Map<String, Counts> counts) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -294,7 +294,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
 
     private static void verifyReadWriteCollection(final EntityManagerFactory emf, int expectedSize,
             Map<String, Counts> counts) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -329,7 +329,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void updateItemDescriptions(final EntityManagerFactory emf, String[] newValues, Counts expected) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -349,7 +349,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void storeTestItems(final EntityManagerFactory emf, Counts expected) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -369,7 +369,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void verifyFindByIdItems(final EntityManagerFactory emf, String[] expectedDesc, Counts expected) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -415,7 +415,9 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
 
         //Load all persons with same query and verify query results
         counts = new TreeMap<>();
-        counts.put(Person.class.getName(), new Counts(0, 4, 0, 4));
+        //(!) There is a semantic difference here between ORM5 and ORM6: see
+        // https://github.com/hibernate/hibernate-orm/blob/6.0/migration-guide.adoc#query-result-cache
+        counts.put(Person.class.getName(), new Counts(0, 0, 0, 4));
         counts.put(RegionFactory.DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME, new Counts(0, 1, 0, 1));
         verifyListOfExistingPersons(entityManagerFactory, counts);
     }
@@ -430,7 +432,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static Statistics verifyFindByIdPersons(final EntityManagerFactory emf) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -460,7 +462,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void verifyListOfExistingPersons(final EntityManagerFactory emf, Map<String, Counts> counts) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -473,7 +475,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void storeTestPersons(final EntityManagerFactory emf, Counts expected) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -510,7 +512,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         transaction.commit();
         em.close();
 
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         em = emf.createEntityManager();
         transaction = em.getTransaction();
@@ -529,7 +531,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void testDeleteViaRemove(final EntityManagerFactory emf) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -542,7 +544,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
 
         assertRegionStats(new Counts(0, 3, 0, 4), Pokemon.class.getName(), stats);
 
-        stats = getStatistics(emf);
+        stats = getStatisticsReferenceAndClear(emf);
 
         em = emf.createEntityManager();
         transaction = em.getTransaction();
@@ -597,7 +599,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void rebalanceCpsForPokemons(final EntityManagerFactory emf, Counts expected) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -617,7 +619,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void verifyFindByIdPokemons(final EntityManagerFactory emf, int[] expectedCps, Counts expected) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -642,7 +644,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     }
 
     private static void storeTestPokemons(final EntityManagerFactory emf, Counts expected) {
-        Statistics stats = getStatistics(emf);
+        Statistics stats = getStatisticsReferenceAndClear(emf);
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
@@ -661,7 +663,11 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         assertRegionStats(expected, Pokemon.class.getName(), stats);
     }
 
-    private static Statistics getStatistics(final EntityManagerFactory emf) {
+    /**
+     * @param emf the current EMF to extract from
+     * @return the reference to the Statistics, but also immediately resets them.
+     */
+    private static Statistics getStatisticsReferenceAndClear(final EntityManagerFactory emf) {
         final Statistics stats = emf.unwrap(SessionFactory.class).getStatistics();
         stats.clear();
         return stats;

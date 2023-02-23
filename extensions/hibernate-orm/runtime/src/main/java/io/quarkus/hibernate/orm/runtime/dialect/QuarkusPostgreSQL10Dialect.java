@@ -3,7 +3,8 @@ package io.quarkus.hibernate.orm.runtime.dialect;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
-import org.hibernate.dialect.PostgreSQL10Dialect;
+import org.hibernate.dialect.DatabaseVersion;
+import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.jdbc.env.spi.IdentifierCaseStrategy;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelperBuilder;
@@ -13,7 +14,12 @@ import org.hibernate.engine.jdbc.env.spi.IdentifierHelperBuilder;
  * This is PostgreSQL's behavior.
  * See https://github.com/quarkusio/quarkus/issues/1886
  */
-public class QuarkusPostgreSQL10Dialect extends PostgreSQL10Dialect {
+public class QuarkusPostgreSQL10Dialect extends PostgreSQLDialect {
+
+    public QuarkusPostgreSQL10Dialect() {
+        super(DatabaseVersion.make(10, 0));
+    }
+
     @Override
     public IdentifierHelper buildIdentifierHelper(IdentifierHelperBuilder builder, DatabaseMetaData dbMetaData)
             throws SQLException {

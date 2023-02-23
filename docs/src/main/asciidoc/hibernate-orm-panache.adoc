@@ -627,9 +627,9 @@ If your select query does not start with `from`, we support the following additi
 
 If your update query does not start with `update`, we support the following additional forms:
 
-- `from EntityName ...` which will expand to `update from EntityName ...`
-- `set? <singleColumnName>` (and single parameter) which will expand to `update from EntityName set <singleColumnName> = ?`
-- `set? <update-query>` will expand to `update from EntityName set <update-query>`
+- `from EntityName ...` which will expand to `update EntityName ...`
+- `set? <singleColumnName>` (and single parameter) which will expand to `update EntityName set <singleColumnName> = ?`
+- `set? <update-query>` will expand to `update EntityName set <update-query>`
 
 If your delete query does not start with `delete`, we support the following additional forms:
 
@@ -643,7 +643,7 @@ link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_Us
 [source,java]
 ----
 Order.find("select distinct o from Order o left join fetch o.lineItems");
-Order.update("update from Person set name = 'Mortal' where status = ?", Status.Alive);
+Order.update("update Person set name = 'Mortal' where status = ?", Status.Alive);
 ----
 
 === Named queries

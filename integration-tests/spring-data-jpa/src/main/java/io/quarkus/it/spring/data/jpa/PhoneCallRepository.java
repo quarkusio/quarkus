@@ -9,8 +9,6 @@ import io.quarkus.it.spring.data.jpa.PhoneCall.CallAgent;
 
 public interface PhoneCallRepository extends JpaRepository<PhoneCall, PhoneCallId> {
 
-    PhoneCall findByIdAreaCode(String areaCode);
-
     @Query("select p.id from PhoneCall p")
     Set<PhoneCallId> findAllIds();
 

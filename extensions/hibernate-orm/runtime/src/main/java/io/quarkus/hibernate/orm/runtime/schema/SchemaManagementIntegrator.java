@@ -17,11 +17,14 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 import org.hibernate.tool.schema.SourceType;
 import org.hibernate.tool.schema.TargetType;
+import org.hibernate.tool.schema.internal.DefaultSchemaFilter;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
+import org.hibernate.tool.schema.spi.ContributableMatcher;
 import org.hibernate.tool.schema.spi.ExceptionHandler;
 import org.hibernate.tool.schema.spi.ExecutionOptions;
 import org.hibernate.tool.schema.spi.SchemaDropper;
+import org.hibernate.tool.schema.spi.SchemaFilter;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.hibernate.tool.schema.spi.SchemaMigrator;
@@ -105,9 +108,11 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
             SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);
             SchemaDropper schemaDropper = schemaManagementTool.getSchemaDropper(executionOptions.getConfigurationValues());
-            schemaDropper.doDrop(holder.metadata, executionOptions, new SimpleSourceDescriptor(), new SimpleTargetDescriptor());
+            schemaDropper.doDrop(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
+                    new SimpleTargetDescriptor());
             schemaManagementTool.getSchemaCreator(executionOptions.getConfigurationValues())
-                    .doCreation(holder.metadata, executionOptions, new SimpleSourceDescriptor(), new SimpleTargetDescriptor());
+                    .doCreation(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
+                            new SimpleTargetDescriptor());
         }
         //we still clear caches though
         holder.sessionFactory.getCache().evictAll();
@@ -132,13 +137,13 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
             SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
             SchemaValidator validator = schemaManagementTool.getSchemaValidator(executionOptions.getConfigurationValues());
             try {
-                validator.doValidation(val.metadata, executionOptions);
+                validator.doValidation(val.metadata, executionOptions, ContributableMatcher.ALL);
             } catch (SchemaManagementException e) {
                 log.error("Failed to validate Schema: " + e.getMessage());
                 SchemaMigrator migrator = schemaManagementTool.getSchemaMigrator(executionOptions.getConfigurationValues());
 
                 StringWriter writer = new StringWriter();
-                migrator.doMigration(val.metadata, executionOptions, new TargetDescriptor() {
+                migrator.doMigration(val.metadata, executionOptions, ContributableMatcher.ALL, new TargetDescriptor() {
                     @Override
                     public EnumSet<TargetType> getTargetTypes() {
                         return EnumSet.of(TargetType.SCRIPT);
@@ -191,14 +196,14 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
     }
 
     private static class SimpleExecutionOptions implements ExecutionOptions {
-        private final Map<?, ?> configurationValues;
+        private final Map<String, Object> configurationValues;
 
         public SimpleExecutionOptions(ServiceRegistry serviceRegistry) {
             configurationValues = serviceRegistry.getService(ConfigurationService.class).getSettings();
         }
 
         @Override
-        public Map<?, ?> getConfigurationValues() {
+        public Map<String, Object> getConfigurationValues() {
             return configurationValues;
         }
 
@@ -215,6 +220,11 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
                     log.error("Failed to recreate schema", exception);
                 }
             };
+        }
+
+        @Override
+        public SchemaFilter getSchemaFilter() {
+            return DefaultSchemaFilter.INSTANCE;
         }
     }
 

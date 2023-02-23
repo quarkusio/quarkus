@@ -15,7 +15,7 @@ import io.quarkus.hibernate.orm.envers.MyAuditedVersionEntity;
 public class EnversTestDoNotAuditOptimisticLockingFieldResource extends AbstractEnversResource {
     @GET
     public String getDoNotAuditOptimisticLockingFieldDisabled() {
-        if (!getGlobalConfiguration().isDoNotAuditOptimisticLockingField()) {
+        if (!getConfiguration().isDoNotAuditOptimisticLockingField()) {
             EntityPersister persister = getEntityPersister(MyAuditedVersionEntity.class.getName() + "_AUD");
             for (String propertyName : persister.getPropertyNames()) {
                 if (propertyName.equals("version")) {
@@ -23,6 +23,6 @@ public class EnversTestDoNotAuditOptimisticLockingFieldResource extends Abstract
                 }
             }
         }
-        return "Expected false is not as expected: " + getGlobalConfiguration().isDoNotAuditOptimisticLockingField();
+        return "Expected false is not as expected: " + getConfiguration().isDoNotAuditOptimisticLockingField();
     }
 }

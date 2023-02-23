@@ -1,5 +1,6 @@
 package io.quarkus.it.jpa.postgresql;
 
+import org.hibernate.type.descriptor.jdbc.UUIDJdbcType;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -18,7 +19,7 @@ public class JPAFunctionalityInGraalITCase extends JPAFunctionalityTest {
         //if not, that would be a sign that this test has become too weak
         //to identify the well working of the exclusions.
         report.assertContains(org.postgresql.jdbc.PgSQLXML.class);
-        report.assertContains(org.hibernate.type.PostgresUUIDType.class);
+        report.assertContains(UUIDJdbcType.class);
 
         //And finally verify we included the JDK XML by triggering
         //io.quarkus.jdbc.postgresql.runtime.graal.SQLXLMFeature

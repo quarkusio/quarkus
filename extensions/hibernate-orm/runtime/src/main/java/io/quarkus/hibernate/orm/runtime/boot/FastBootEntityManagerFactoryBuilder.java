@@ -11,15 +11,15 @@ import jakarta.persistence.PersistenceException;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Interceptor;
-import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
+import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
+import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.bytecode.internal.SessionFactoryObserverForBytecodeEnhancer;
 import org.hibernate.bytecode.spi.BytecodeProvider;
-import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
@@ -34,6 +34,8 @@ import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
+import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForNamedQueryValidation;
+import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForSchemaExport;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierResolver;
 
@@ -73,7 +75,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
             populate(persistenceUnitName, optionsBuilder, standardServiceRegistry);
-            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(), HQLQueryPlan::new);
+            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions());
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }
@@ -157,6 +159,12 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
         options.addSessionFactoryObservers(new ServiceRegistryCloser());
 
+        //New in ORM 6.2:
+        options.addSessionFactoryObservers(new SessionFactoryObserverForNamedQueryValidation(metadata));
+        options.addSessionFactoryObservers(new SessionFactoryObserverForSchemaExport(metadata));
+        //Vanilla ORM registers this one as well; we don't:
+        //options.addSessionFactoryObservers( new SessionFactoryObserverForRegistration() );
+
         options.applyEntityNotFoundDelegate(new JpaEntityNotFoundDelegate());
 
         // This is necessary for Hibernate Reactive, see https://github.com/quarkusio/quarkus/issues/15814
@@ -177,7 +185,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         BytecodeProvider bytecodeProvider = ssr.getService(BytecodeProvider.class);
         options.addSessionFactoryObservers(new SessionFactoryObserverForBytecodeEnhancer(bytecodeProvider));
 
-        if (options.getMultiTenancyStrategy() != MultiTenancyStrategy.NONE) {
+        if (options.isMultiTenancyEnabled()) {
             options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
         }
 
@@ -212,10 +220,19 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
     private static class JpaEntityNotFoundDelegate implements EntityNotFoundDelegate, Serializable {
 
-        @Override
-        public void handleEntityNotFound(String entityName, Serializable id) {
+        public void handleEntityNotFound(String entityName, Object id) {
             throw new EntityNotFoundException("Unable to find " + entityName + " with id " + id);
         }
+    }
+
+    @Override
+    public ManagedResources getManagedResources() {
+        throw new IllegalStateException("This method is not available at runtime in Quarkus");
+    }
+
+    @Override
+    public MetadataImplementor metadata() {
+        return metadata;
     }
 
 }

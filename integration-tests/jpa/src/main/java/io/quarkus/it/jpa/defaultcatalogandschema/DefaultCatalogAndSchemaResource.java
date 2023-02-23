@@ -13,7 +13,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import org.hibernate.Session;
-import org.hibernate.type.LongType;
+import org.hibernate.type.StandardBasicTypes;
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
 
 @Path("/default-catalog-and-schema")
@@ -47,7 +47,7 @@ public class DefaultCatalogAndSchemaResource {
                 .createNativeQuery(
                         "select id from \"" + schema + "\"." + EntityWithDefaultCatalogAndSchema.NAME
                                 + " where basic = :basic")
-                .addScalar("id", LongType.INSTANCE)
+                .addScalar("id", StandardBasicTypes.LONG)
                 .setParameter("basic", value)
                 .getResultList();
     }

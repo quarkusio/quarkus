@@ -12,7 +12,7 @@ import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 public class EnversTestRevisionOnCollectionChangeResource extends AbstractEnversResource {
     @GET
     public String getRevisionOnCollectionChange() {
-        boolean revisionsForCollections = getGlobalConfiguration().isGenerateRevisionsForCollections();
+        boolean revisionsForCollections = getConfiguration().isGenerateRevisionsForCollections();
         if (revisionsForCollections) {
             return "Expected revision_on_collect_change to be false but was true";
         }

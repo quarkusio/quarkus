@@ -42,10 +42,10 @@ import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
         @NamedQuery(name = "Person.deleteById", query = "delete from Person2 p where p.id = :id"),
         @NamedQuery(name = "Person.deleteById.ordinal", query = "delete from Person2 p where p.id = ?1"),
 })
-@FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = "string"))
+@FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = String.class))
 @FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'")
 @FilterDef(name = "Person.name.in", defaultCondition = "name in (:names)", parameters = {
-        @ParamDef(name = "names", type = "string") })
+        @ParamDef(name = "names", type = String.class) })
 @Filter(name = "Person.isAlive")
 @Filter(name = "Person.hasName")
 @Filter(name = "Person.name.in")

@@ -61,6 +61,6 @@ public class SinglePersistenceUnitPackageAnnotationTest {
     public void testExcluded() {
         ExcludedEntity entity = new ExcludedEntity("gsmet");
         assertThatThrownBy(() -> entityManager.persist(entity)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown entity");
+                .hasMessageContaining("Unable to locate persister");
     }
 }

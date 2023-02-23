@@ -25,11 +25,11 @@ class SpringDataRestTest {
 
     private static final String DOSTOEVSKY_DOB = "1821-11-11";
 
-    private static final int CRIME_AND_PUNISHMENT_ID = 2;
+    private static final int CRIME_AND_PUNISHMENT_ID = 1;
 
     private static final String CRIME_AND_PUNISHMENT_TITLE = "Crime and Punishment";
 
-    private static final int IDIOT_ID = 3;
+    private static final int IDIOT_ID = 2;
 
     private static final String IDIOT_TITLE = "Idiot";
 

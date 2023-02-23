@@ -23,13 +23,6 @@ public class PhoneCallResource {
         return repository.findById(new PhoneCallId(areaCode, number)).orElse(null);
     }
 
-    @Path("{areaCode}")
-    @GET
-    @Produces("application/json")
-    public PhoneCall phoneCallByAreaCode(@PathParam("areaCode") String areaCode) {
-        return repository.findByIdAreaCode(areaCode);
-    }
-
     @Path("ids")
     @GET
     @Produces("application/json")

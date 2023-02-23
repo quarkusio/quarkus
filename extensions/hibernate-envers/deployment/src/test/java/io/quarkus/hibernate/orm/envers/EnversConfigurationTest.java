@@ -7,7 +7,7 @@ import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.envers.boot.internal.EnversService;
-import org.hibernate.envers.configuration.internal.AuditEntitiesConfiguration;
+import org.hibernate.envers.configuration.Configuration;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -27,26 +27,26 @@ public class EnversConfigurationTest {
 
     @Test
     public void testTableName() {
-        String generatedTableName = getAuditConfiguration().getAuditTableName("entity", "table");
+        String generatedTableName = getConfiguration().getAuditTableName("entity", "table");
         assertThat(generatedTableName).isEqualTo("P_table");
     }
 
     @Test
     public void testRevisionFieldName() {
-        String configuredRevisionFieldName = getAuditConfiguration().getRevisionFieldName();
+        String configuredRevisionFieldName = getConfiguration().getRevisionFieldName();
         assertThat(configuredRevisionFieldName).isEqualTo("GEN");
     }
 
     @Test
     public void testRevisionTypeName() {
-        String configuredRevisionTypeName = getAuditConfiguration().getRevisionTypePropName();
+        String configuredRevisionTypeName = getConfiguration().getRevisionTypePropertyName();
         assertThat(configuredRevisionTypeName).isEqualTo("GEN_TYPE");
     }
 
-    private AuditEntitiesConfiguration getAuditConfiguration() {
+    private Configuration getConfiguration() {
         return ((((SessionFactoryImplementor) emf
                 .unwrap(SessionFactoryImpl.class))
                 .getServiceRegistry()).getParentServiceRegistry())
-                .getService(EnversService.class).getAuditEntitiesConfiguration();
+                .getService(EnversService.class).getConfig();
     }
 }

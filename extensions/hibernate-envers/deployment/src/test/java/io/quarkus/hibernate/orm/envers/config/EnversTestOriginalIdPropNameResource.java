@@ -15,7 +15,7 @@ import io.quarkus.hibernate.orm.envers.MyAuditedEntity;
 public class EnversTestOriginalIdPropNameResource extends AbstractEnversResource {
     @GET
     public String getOriginalIdPropNameOverride() {
-        String originalIdFieldName = getAuditEntitiesConfiguration().getOriginalIdPropName();
+        String originalIdFieldName = getConfiguration().getOriginalIdPropertyName();
         if (!originalIdFieldName.equals("oid")) {
             return "Expected original_id_prop_name to be oid but was: " + originalIdFieldName;
         }

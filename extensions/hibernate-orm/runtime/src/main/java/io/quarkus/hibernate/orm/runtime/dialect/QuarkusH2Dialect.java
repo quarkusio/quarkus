@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime.dialect;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
+import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.engine.jdbc.env.spi.IdentifierCaseStrategy;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
@@ -16,6 +17,11 @@ import org.hibernate.engine.jdbc.env.spi.IdentifierHelperBuilder;
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
 public class QuarkusH2Dialect extends H2Dialect {
+
+    public QuarkusH2Dialect() {
+        super(DatabaseVersion.make(2, 1, 210));
+    }
+
     @Override
     public IdentifierHelper buildIdentifierHelper(IdentifierHelperBuilder builder, DatabaseMetaData dbMetaData)
             throws SQLException {

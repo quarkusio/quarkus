@@ -1,12 +1,8 @@
 package io.quarkus.hibernate.orm.packages;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-
-import org.hibernate.annotations.Any;
 
 @Entity
 public class ParentEntity {
@@ -16,10 +12,6 @@ public class ParentEntity {
     private long id;
 
     private String name;
-
-    @Any(metaDef = "childrenAnyMetaDef", metaColumn = @Column(name = "child_type"))
-    @JoinColumn(name = "child_id")
-    private Object child;
 
     public ParentEntity() {
     }
@@ -47,13 +39,5 @@ public class ParentEntity {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Object getChild() {
-        return child;
-    }
-
-    public void setChild(Object child) {
-        this.child = child;
     }
 }

@@ -119,19 +119,23 @@ public class PanacheJpaUtil {
         }
 
         String trimmedLc = trimmed.toLowerCase();
+        // backwards compat trying to be helpful, remove the from
+        if (trimmedLc.startsWith("update from")) {
+            return "update " + trimmed.substring(11);
+        }
         if (trimmedLc.startsWith("update ")) {
             return query;
         }
         if (trimmedLc.startsWith("from ")) {
-            return "UPDATE " + query;
+            return "UPDATE " + trimmed.substring(5);
         }
         if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
         if (trimmedLc.startsWith("set ")) {
-            return "UPDATE FROM " + getEntityName(entityClass) + " " + query;
+            return "UPDATE " + getEntityName(entityClass) + " " + query;
         }
-        return "UPDATE FROM " + getEntityName(entityClass) + " SET " + query;
+        return "UPDATE " + getEntityName(entityClass) + " SET " + query;
     }
 
     public static String createDeleteQuery(Class<?> entityClass, String query, int paramCount) {

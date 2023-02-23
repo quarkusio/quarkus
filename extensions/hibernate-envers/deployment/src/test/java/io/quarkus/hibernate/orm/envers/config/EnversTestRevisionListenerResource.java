@@ -23,7 +23,7 @@ public class EnversTestRevisionListenerResource extends AbstractEnversResource {
     @GET
     public String getRevisionListener() {
         Class<?> expectedClass = MyListenerlessRevisionListener.class;
-        Class<?> listenerClass = getGlobalConfiguration().getRevisionListenerClass();
+        Class<?> listenerClass = getConfiguration().getRevisionListenerClass();
         if (listenerClass.equals(expectedClass)) {
             try {
                 transaction.begin();

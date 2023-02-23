@@ -10,8 +10,6 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
-import org.hibernate.engine.query.spi.QueryPlanCache;
-
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -332,7 +330,7 @@ public class HibernateOrmConfigPersistenceUnit {
 
         /**
          * The maximum size of the query plan cache.
-         * see #{@value QueryPlanCache#DEFAULT_QUERY_PLAN_MAX_COUNT}
+         * see #{@value org.hibernate.cfg.AvailableSettings#QUERY_PLAN_CACHE_MAX_SIZE}
          */
         @ConfigItem(defaultValue = "2048")
         public int queryPlanCacheMaxSize;

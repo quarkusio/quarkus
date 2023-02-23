@@ -17,6 +17,6 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
  */
 public interface InitialInitiatorListProvider {
 
-    List<StandardServiceInitiator> initialInitiatorList();
+    List<StandardServiceInitiator<?>> initialInitiatorList();
 
 }

@@ -15,7 +15,7 @@ public class EnversTestModifiedColumnNamingStrategyResource extends AbstractEnve
     @GET
     public String getModifiedNamingStrategy() {
         Class<?> expectedClass = ImprovedModifiedColumnNamingStrategy.class;
-        Class<?> actualClass = getGlobalConfiguration().getModifiedColumnNamingStrategy().getClass();
+        Class<?> actualClass = getConfiguration().getModifiedColumnNamingStrategy().getClass();
         if (actualClass.equals(expectedClass)) {
             return "OK";
         }

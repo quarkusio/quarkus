@@ -54,7 +54,7 @@ public class MultiplePersistenceUnitsResourceInjectionSessionTest {
     public void testUserInInventorySession() {
         User user = new User("gsmet");
         assertThatThrownBy(() -> inventorySession.persist(user)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown entity");
+                .hasMessageContaining("Unable to locate persister");
     }
 
     @Test

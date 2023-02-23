@@ -12,12 +12,12 @@ import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 public class EnversTestDefaultSchemaCatalogResource extends AbstractEnversResource {
     @GET
     public String getDefaultSchemaAndCatalog() {
-        String defaultSchema = getGlobalConfiguration().getDefaultSchemaName();
+        String defaultSchema = getConfiguration().getDefaultSchemaName();
         if (!"public".equals(defaultSchema)) {
             return "Expected default_schema to be public but was: " + defaultSchema;
         }
 
-        String defaultCatalog = getGlobalConfiguration().getDefaultCatalogName();
+        String defaultCatalog = getConfiguration().getDefaultCatalogName();
         if (!"".equals(defaultCatalog)) {
             return "Expected default_catalog to be an empty string but was: " + defaultCatalog;
         }

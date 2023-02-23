@@ -17,7 +17,6 @@ import jakarta.persistence.Query;
 
 import org.hibernate.Filter;
 import org.hibernate.Session;
-import org.hibernate.engine.spi.RowSelection;
 
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
@@ -323,11 +322,7 @@ public class CommonPanacheQueryImpl<Entity> {
             jpaQuery.setFirstResult(page.index * page.size);
             jpaQuery.setMaxResults(page.size);
         } else {
-            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
-            @SuppressWarnings("deprecation")
-            RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
-            options.setFirstRow(null);
-            options.setMaxRows(null);
+            //no-op
         }
 
         return jpaQuery;
@@ -341,10 +336,7 @@ public class CommonPanacheQueryImpl<Entity> {
         } else if (page != null) {
             jpaQuery.setFirstResult(page.index * page.size);
         } else {
-            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
-            @SuppressWarnings("deprecation")
-            RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
-            options.setFirstRow(null);
+            //no-op
         }
         jpaQuery.setMaxResults(maxResults);
 

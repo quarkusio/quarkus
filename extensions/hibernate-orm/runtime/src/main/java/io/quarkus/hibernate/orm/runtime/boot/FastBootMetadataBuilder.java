@@ -36,6 +36,7 @@ import org.hibernate.boot.MetadataBuilder;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.archive.scan.internal.StandardScanOptions;
 import org.hibernate.boot.archive.scan.spi.Scanner;
+import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
@@ -46,11 +47,10 @@ import org.hibernate.boot.spi.MetadataBuilderContributor;
 import org.hibernate.boot.spi.MetadataBuilderImplementor;
 import org.hibernate.cache.internal.CollectionCacheInvalidator;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
-import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
+import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.EntityManagerMessageLogger;
 import org.hibernate.internal.util.StringHelper;
@@ -81,6 +81,7 @@ import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactory;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 
 /**
@@ -98,6 +99,8 @@ public class FastBootMetadataBuilder {
     private static final String JACC_ENABLED = "hibernate.jacc.enabled";
     @Deprecated
     private static final String WRAP_RESULT_SETS = "hibernate.jdbc.wrap_result_sets";
+    @Deprecated
+    private static final String ALLOW_ENHANCEMENT_AS_PROXY = "hibernate.bytecode.allow_enhancement_as_proxy";
 
     private static final EntityManagerMessageLogger LOG = messageLogger(FastBootMetadataBuilder.class);
 
@@ -107,7 +110,7 @@ public class FastBootMetadataBuilder {
     private final ManagedResources managedResources;
     private final MetadataBuilderImplementor metamodelBuilder;
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
-    private final Collection<ProvidedService> providedServices;
+    private final Collection<ProvidedService<?>> providedServices;
     private final PreGeneratedProxies preGeneratedProxies;
     private final Optional<String> dataSource;
     private final boolean isReactive;
@@ -151,6 +154,13 @@ public class FastBootMetadataBuilder {
                 continue;
             }
             ssrBuilder.applySetting(key, entry.getValue());
+        }
+        // We need to initialize the multi tenancy strategy before building the service registry as it is used to
+        // create metadata builder. Adding services afterwards would lead to unpredicted behavior.
+        final MultiTenancyStrategy multiTenancyStrategy = puDefinition.getMultitenancyStrategy();
+        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE) {
+            ssrBuilder.addService(MultiTenantConnectionProvider.class,
+                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
         }
         this.standardServiceRegistry = ssrBuilder.build();
         registerIdentifierGenerators(standardServiceRegistry);
@@ -208,12 +218,6 @@ public class FastBootMetadataBuilder {
         // for the time being we want to revoke access to the temp ClassLoader if one
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
-
-        final MultiTenancyStrategy multiTenancyStrategy = puDefinition.getMultitenancyStrategy();
-        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE) {
-            ssrBuilder.addService(MultiTenantConnectionProvider.class,
-                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
-        }
     }
 
     /**
@@ -265,10 +269,10 @@ public class FastBootMetadataBuilder {
                     Boolean.getBoolean(AvailableSettings.ALLOW_UPDATE_OUTSIDE_TRANSACTION));
         }
 
-        //Enable the new Enhanced Proxies capability (unless it was specifically disabled):
-        final String legacyALLOW_ENHANCEMENT_AS_PROXY = "hibernate.bytecode.allow_enhancement_as_proxy";
-        if (!cfg.containsKey(legacyALLOW_ENHANCEMENT_AS_PROXY)) {
-            cfg.put(legacyALLOW_ENHANCEMENT_AS_PROXY, Boolean.TRUE.toString());
+        if (cfg.containsKey(ALLOW_ENHANCEMENT_AS_PROXY)) {
+            LOG.warn("Setting '" + ALLOW_ENHANCEMENT_AS_PROXY
+                    + "' is being ignored: this property is no longer meaningful since Hibernate ORM 6");
+            cfg.remove(ALLOW_ENHANCEMENT_AS_PROXY);
         }
         //Always Order batch updates as it prevents contention on the data (unless it was disabled)
         if (!cfg.containsKey(AvailableSettings.ORDER_UPDATES)) {
@@ -289,12 +293,12 @@ public class FastBootMetadataBuilder {
          */
         cfg.putIfAbsent(AvailableSettings.CONNECTION_HANDLING,
                 PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION);
-
-        if (readBooleanConfigurationValue(cfg, WRAP_RESULT_SETS)) {
+        if (cfg.containsKey(WRAP_RESULT_SETS)) {
             LOG.warn("Wrapping result sets is no longer supported by Hibernate ORM. Setting " + WRAP_RESULT_SETS
+
                     + " is being ignored.");
+            cfg.remove(WRAP_RESULT_SETS);
         }
-        cfg.put(WRAP_RESULT_SETS, "false");
 
         // XML mapping support can be costly, so we only enable it when XML mappings are actually used
         // or when integrations (e.g. Envers) need it.
@@ -419,8 +423,8 @@ public class FastBootMetadataBuilder {
         MetadataImpl replacement = new MetadataImpl(
                 fullMeta.getUUID(),
                 fullMeta.getMetadataBuildingOptions(), //TODO Replace this
-                fullMeta.getIdentifierGeneratorFactory(),
                 fullMeta.getEntityBindingMap(),
+                fullMeta.getComposites(),
                 fullMeta.getMappedSuperclassMap(),
                 fullMeta.getCollectionBindingMap(),
                 fullMeta.getTypeDefinitionMap(),
@@ -592,14 +596,19 @@ public class FastBootMetadataBuilder {
         if (idGeneratorStrategyProviderSetting != null) {
             final IdentifierGeneratorStrategyProvider idGeneratorStrategyProvider = strategySelector
                     .resolveStrategy(IdentifierGeneratorStrategyProvider.class, idGeneratorStrategyProviderSetting);
-            final MutableIdentifierGeneratorFactory identifierGeneratorFactory = ssr
-                    .getService(MutableIdentifierGeneratorFactory.class);
+            final IdentifierGeneratorFactory identifierGeneratorFactory = ssr
+                    .getService(IdentifierGeneratorFactory.class);
             if (identifierGeneratorFactory == null) {
                 throw persistenceException("Application requested custom identifier generator strategies, "
                         + "but the MutableIdentifierGeneratorFactory could not be found");
             }
+            if (!(identifierGeneratorFactory instanceof QuarkusMutableIdentifierGeneratorFactory)) {
+                throw persistenceException(
+                        "Unexpected implementation of IdentifierGeneratorFactory: do not override core components");
+            }
+            final QuarkusMutableIdentifierGeneratorFactory qIdGenerator = (QuarkusMutableIdentifierGeneratorFactory) identifierGeneratorFactory;
             for (Map.Entry<String, Class<?>> entry : idGeneratorStrategyProvider.getStrategies().entrySet()) {
-                identifierGeneratorFactory.register(entry.getKey(), entry.getValue());
+                qIdGenerator.register(entry.getKey(), entry.getValue());
             }
         }
     }

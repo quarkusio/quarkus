@@ -19,17 +19,17 @@ import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmHibernateMapping;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmJoinedSubclassEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmRootEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmUnionSubclassEntityType;
-import org.hibernate.boot.jaxb.mapping.spi.EntityOrMappedSuperclass;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbConverter;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEmbeddable;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntity;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityListener;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityListeners;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityMappings;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbMappedSuperclass;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbPersistenceUnitDefaults;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbPersistenceUnitMetadata;
-import org.hibernate.boot.jaxb.mapping.spi.ManagedType;
+import org.hibernate.boot.jaxb.mapping.EntityOrMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.JaxbConverter;
+import org.hibernate.boot.jaxb.mapping.JaxbEmbeddable;
+import org.hibernate.boot.jaxb.mapping.JaxbEntity;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityListener;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityListeners;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityMappings;
+import org.hibernate.boot.jaxb.mapping.JaxbMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitDefaults;
+import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitMetadata;
+import org.hibernate.boot.jaxb.mapping.ManagedType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -90,6 +90,7 @@ public final class JpaJandexScavenger {
         enlistJPAModelClasses(collector, ClassNames.JPA_ENTITY);
         enlistJPAModelClasses(collector, ClassNames.EMBEDDABLE);
         enlistJPAModelClasses(collector, ClassNames.MAPPED_SUPERCLASS);
+        enlistJPAModelIdClasses(collector, ClassNames.ID_CLASS);
         enlistEmbeddedsAndElementCollections(collector);
 
         enlistPotentialCdiBeanClasses(collector, ClassNames.CONVERTER);
@@ -198,17 +199,17 @@ public final class JpaJandexScavenger {
             enlistOrmXmlMappingListeners(collector, packagePrefix, defaults.getEntityListeners());
         }
 
-        for (JaxbEntity entity : mapping.getEntity()) {
+        for (JaxbEntity entity : mapping.getEntities()) {
             enlistOrmXmlMappingManagedClass(collector, packagePrefix, entity, "entity");
         }
-        for (JaxbMappedSuperclass mappedSuperclass : mapping.getMappedSuperclass()) {
+        for (JaxbMappedSuperclass mappedSuperclass : mapping.getMappedSuperclasses()) {
             enlistOrmXmlMappingManagedClass(collector, packagePrefix, mappedSuperclass, "mapped-superclass");
         }
-        for (JaxbEmbeddable embeddable : mapping.getEmbeddable()) {
+        for (JaxbEmbeddable embeddable : mapping.getEmbeddables()) {
             String name = safeGetClassName(packagePrefix, embeddable, "embeddable");
             enlistExplicitClass(collector, name);
         }
-        for (JaxbConverter converter : mapping.getConverter()) {
+        for (JaxbConverter converter : mapping.getConverters()) {
             collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, converter.getClazz())));
         }
     }
@@ -372,6 +373,20 @@ public final class JpaJandexScavenger {
             DotName targetDotName = klass.name();
             addClassHierarchyToReflectiveList(collector, targetDotName);
             collectModelType(collector, klass);
+        }
+    }
+
+    private void enlistJPAModelIdClasses(Collector collector, DotName dotName) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            DotName targetDotName = annotation.value().asClass().name();
+            addClassHierarchyToReflectiveList(collector, targetDotName);
+            collector.modelTypes.add(targetDotName.toString());
         }
     }
 

@@ -382,12 +382,6 @@
                     <exclude name="testNonDependentScopedBeanCanNotHavePublicField"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.event.observer.wildcardAndTypeVariable.ObserverMethodWithParametertizedTypeTest">
-                <methods>
-                    <exclude name="testObserverMethodCanObserveArrayWildcard"/>
-                    <exclude name="testObserverMethodCanObserveArrayTypeVariable"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.interceptorOrder.InterceptorOrderTest">
                 <methods>
                     <exclude name="testInterceptorsInvocationOrder"/>

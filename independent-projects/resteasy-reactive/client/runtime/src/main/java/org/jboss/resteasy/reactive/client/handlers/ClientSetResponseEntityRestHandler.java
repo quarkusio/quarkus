@@ -9,6 +9,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.client.api.WebClientApplicationException;
 import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientResponseContextImpl;
@@ -36,6 +37,12 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
         // so we have to write it, but without filters/interceptors
         if (isAbortedWith(requestContext)) {
             propagateAbortedWithEntityToResponse(context);
+        } else {
+            StatusType effectiveResponseStatus = determineEffectiveResponseStatus(context, requestContext);
+            if ((effectiveResponseStatus.getStatusCode() == RestResponse.Status.NO_CONTENT.getStatusCode())
+                    && (requestContext != null && !requestContext.hasEntity())) {
+                context.setResponseEntityStream(null);
+            }
         }
     }
 

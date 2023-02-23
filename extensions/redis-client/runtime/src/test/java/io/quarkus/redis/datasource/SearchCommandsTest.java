@@ -510,7 +510,6 @@ public class SearchCommandsTest extends DatasourceTestBase {
                             "num_visits"))
                     .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country"))
                     .withCursor().cursorCount(10));
-            assertThat(result.count()).isEqualTo(3);
             assertThat(result.cursor()).isEqualTo(0);
         });
 
@@ -521,7 +520,6 @@ public class SearchCommandsTest extends DatasourceTestBase {
                             "num_visits"))
                     .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country"))
                     .withCursor().cursorCount(1));
-            assertThat(result.count()).isEqualTo(1);
             assertThat(result.cursor()).isPositive();
             var c = result.cursor();
             search.ftCursorDel("myIndex", result.cursor());

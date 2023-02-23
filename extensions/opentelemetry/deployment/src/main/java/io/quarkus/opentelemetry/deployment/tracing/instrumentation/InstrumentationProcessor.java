@@ -29,7 +29,7 @@ import io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient.OpenTe
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryClassicServerFilter;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryReactiveServerFilter;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.vertx.core.VertxOptions;
@@ -136,7 +136,7 @@ public class InstrumentationProcessor {
     @BuildStep
     void registerResteasyReactiveProvider(
             Capabilities capabilities,
-            BuildProducer<ContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer) {
+            BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer) {
 
         boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE);
 
@@ -146,8 +146,7 @@ public class InstrumentationProcessor {
         }
 
         containerRequestFilterBuildItemBuildProducer
-                .produce(new ContainerRequestFilterBuildItem.Builder(OpenTelemetryReactiveServerFilter.class.getName())
-                        .build());
+                .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
     }
 
 }

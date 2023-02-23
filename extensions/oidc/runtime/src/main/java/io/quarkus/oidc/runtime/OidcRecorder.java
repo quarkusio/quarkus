@@ -109,8 +109,8 @@ public class OidcRecorder {
                     @Override
                     public TenantConfigContext apply(Throwable t) {
                         if (t instanceof OIDCException) {
-                            // OIDC server is not available yet - try to create the connection when the first request arrives
-                            LOG.debugf("Tenant '%s': '%s'."
+                            LOG.warnf("Tenant '%s': '%s'."
+                                    + " OIDC server is not available yet, an attempt to connect will be made duiring the first request."
                                     + " Access to resources protected by this tenant may fail"
                                     + " if OIDC server will not become available",
                                     tenantId, t.getMessage());
@@ -257,7 +257,7 @@ public class OidcRecorder {
 
     protected static OIDCException toOidcException(Throwable cause, String authServerUrl) {
         final String message = OidcCommonUtils.formatConnectionErrorMessage(authServerUrl);
-        LOG.debug(message);
+        LOG.warn(message);
         return new OIDCException("OIDC Server is not available", cause);
     }
 

@@ -8,15 +8,11 @@ import javax.net.ssl.KeyManager;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.microsoft.sqlserver.jdbc.SQLServerStatement;
+import com.microsoft.sqlserver.jdbc.SqlAuthenticationToken;
 import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-
-@TargetClass(className = "com.microsoft.sqlserver.jdbc.SqlFedAuthToken")
-final class QuarkusSqlFedAuthToken {
-
-}
 
 @TargetClass(className = "com.microsoft.sqlserver.jdbc.SQLServerConnection", innerClass = "SqlFedAuthInfo")
 final class QuarkusSqlFedAuthInfo {
@@ -32,7 +28,7 @@ final class QuarkusSqlParameter {
 final class QuarkusSQLServerConnection {
 
     @Substitute
-    private QuarkusSqlFedAuthToken getFedAuthToken(QuarkusSqlFedAuthInfo fedAuthInfo) {
+    private SqlAuthenticationToken getFedAuthToken(QuarkusSqlFedAuthInfo fedAuthInfo) {
         throw new IllegalStateException("Quarkus does not support Active Directory based authentication");
     }
 

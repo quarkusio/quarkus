@@ -1,6 +1,5 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.Basics.index;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,7 +17,7 @@ public class DotNamesTest {
 
     @Test
     public void testSimpleName() throws IOException {
-        Index index = index(Nested.class, NestedNested.class, DotNamesTest.class);
+        Index index = Index.of(Nested.class, NestedNested.class, DotNamesTest.class);
         Assertions.assertEquals("Nested",
                 DotNames.simpleName(index.getClassByName(DotName.createSimple(Nested.class.getName()))));
         assertEquals("DotNamesTest$Nested",

@@ -1460,16 +1460,6 @@ public class BeanGenerator extends AbstractGenerator {
 
         AssignableResultHandle instanceHandle;
 
-        List<Injection> methodInjections = new ArrayList<>();
-        List<Injection> fieldInjections = new ArrayList<>();
-        for (Injection injection : bean.getInjections()) {
-            if (injection.isField()) {
-                fieldInjections.add(injection);
-            } else if (injection.isMethod() && !injection.isConstructor()) {
-                methodInjections.add(injection);
-            }
-        }
-
         ResultHandle postConstructsHandle = null;
         ResultHandle aroundConstructsHandle = null;
         Map<InterceptorInfo, ResultHandle> interceptorToWrap = new HashMap<>();
@@ -1651,96 +1641,97 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         // Perform field and initializer injections
-        for (Injection fieldInjection : fieldInjections) {
-            TryBlock tryBlock = create.tryBlock();
-            InjectionPointInfo injectionPoint = fieldInjection.injectionPoints.get(0);
-            ResultHandle providerSupplierHandle = tryBlock.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                    injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
-                    tryBlock.getThis());
-            ResultHandle providerHandle = tryBlock.invokeInterfaceMethod(
-                    MethodDescriptors.SUPPLIER_GET, providerSupplierHandle);
-            ResultHandle childCtxHandle = tryBlock.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
-                    providerHandle, tryBlock.getMethodParam(0));
-            AssignableResultHandle referenceHandle = tryBlock.createVariable(Object.class);
-            tryBlock.assign(referenceHandle, tryBlock.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                    providerHandle, childCtxHandle));
-            checkPrimitiveInjection(tryBlock, injectionPoint, referenceHandle);
-
-            FieldInfo injectedField = fieldInjection.target.asField();
-            // only use reflection fallback if we are not performing transformation
-            if (isReflectionFallbackNeeded(injectedField, targetPackage, bean)) {
-                if (Modifier.isPrivate(injectedField.flags())) {
-                    privateMembers.add(isApplicationClass,
-                            String.format("@Inject field %s#%s", fieldInjection.target.asField().declaringClass().name(),
-                                    fieldInjection.target.asField().name()));
-                }
-                reflectionRegistration.registerField(injectedField);
-                tryBlock.invokeStaticMethod(MethodDescriptors.REFLECTIONS_WRITE_FIELD,
-                        tryBlock.loadClass(injectedField.declaringClass().name().toString()),
-                        tryBlock.load(injectedField.name()), instanceHandle, referenceHandle);
-
-            } else {
-                // We cannot use injectionPoint.getRequiredType() because it might be a resolved parameterize type and we could get NoSuchFieldError
-                tryBlock.writeInstanceField(
-                        FieldDescriptor.of(injectedField.declaringClass().name().toString(), injectedField.name(),
-                                DescriptorUtils.typeToString(injectionPoint.getTarget().asField().type())),
-                        instanceHandle, referenceHandle);
-            }
-            CatchBlockCreator catchBlock = tryBlock.addCatch(RuntimeException.class);
-            catchBlock.throwException(RuntimeException.class, "Error injecting " + fieldInjection.target,
-                    catchBlock.getCaughtException());
-        }
-        for (Injection methodInjection : methodInjections) {
-            List<TransientReference> transientReferences = new ArrayList<>();
-            ResultHandle[] referenceHandles = new ResultHandle[methodInjection.injectionPoints.size()];
-            int paramIdx = 0;
-            for (InjectionPointInfo injectionPoint : methodInjection.injectionPoints) {
-                ResultHandle providerSupplierHandle = create.readInstanceField(
-                        FieldDescriptor.of(beanCreator.getClassName(),
-                                injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
-                        create.getThis());
-                ResultHandle providerHandle = create.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
-                        providerSupplierHandle);
-                ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
-                        providerHandle, create.getMethodParam(0));
-                AssignableResultHandle referenceHandle = create.createVariable(Object.class);
-                create.assign(referenceHandle, create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+        for (Injection injection : bean.getInjections()) {
+            if (injection.isField()) {
+                TryBlock tryBlock = create.tryBlock();
+                InjectionPointInfo injectionPoint = injection.injectionPoints.get(0);
+                ResultHandle providerSupplierHandle = tryBlock.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
+                        injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
+                        tryBlock.getThis());
+                ResultHandle providerHandle = tryBlock.invokeInterfaceMethod(
+                        MethodDescriptors.SUPPLIER_GET, providerSupplierHandle);
+                ResultHandle childCtxHandle = tryBlock.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
+                        providerHandle, tryBlock.getMethodParam(0));
+                AssignableResultHandle referenceHandle = tryBlock.createVariable(Object.class);
+                tryBlock.assign(referenceHandle, tryBlock.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
                         providerHandle, childCtxHandle));
-                checkPrimitiveInjection(create, injectionPoint, referenceHandle);
-                referenceHandles[paramIdx++] = referenceHandle;
-                // We need to destroy dependent beans for @TransientReference injection points
-                if (injectionPoint.isDependentTransientReference()) {
-                    transientReferences.add(new TransientReference(providerHandle, referenceHandle, childCtxHandle));
+                checkPrimitiveInjection(tryBlock, injectionPoint, referenceHandle);
+
+                FieldInfo injectedField = injection.target.asField();
+                // only use reflection fallback if we are not performing transformation
+                if (isReflectionFallbackNeeded(injectedField, targetPackage, bean)) {
+                    if (Modifier.isPrivate(injectedField.flags())) {
+                        privateMembers.add(isApplicationClass,
+                                String.format("@Inject field %s#%s", injection.target.asField().declaringClass().name(),
+                                        injection.target.asField().name()));
+                    }
+                    reflectionRegistration.registerField(injectedField);
+                    tryBlock.invokeStaticMethod(MethodDescriptors.REFLECTIONS_WRITE_FIELD,
+                            tryBlock.loadClass(injectedField.declaringClass().name().toString()),
+                            tryBlock.load(injectedField.name()), instanceHandle, referenceHandle);
+
+                } else {
+                    // We cannot use injectionPoint.getRequiredType() because it might be a resolved parameterize type and we could get NoSuchFieldError
+                    tryBlock.writeInstanceField(
+                            FieldDescriptor.of(injectedField.declaringClass().name().toString(), injectedField.name(),
+                                    DescriptorUtils.typeToString(injectionPoint.getTarget().asField().type())),
+                            instanceHandle, referenceHandle);
                 }
+                CatchBlockCreator catchBlock = tryBlock.addCatch(RuntimeException.class);
+                catchBlock.throwException(RuntimeException.class, "Error injecting " + injection.target,
+                        catchBlock.getCaughtException());
+            } else if (injection.isMethod() && !injection.isConstructor()) {
+                List<TransientReference> transientReferences = new ArrayList<>();
+                ResultHandle[] referenceHandles = new ResultHandle[injection.injectionPoints.size()];
+                int paramIdx = 0;
+                for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
+                    ResultHandle providerSupplierHandle = create.readInstanceField(
+                            FieldDescriptor.of(beanCreator.getClassName(),
+                                    injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
+                            create.getThis());
+                    ResultHandle providerHandle = create.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
+                            providerSupplierHandle);
+                    ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
+                            providerHandle, create.getMethodParam(0));
+                    AssignableResultHandle referenceHandle = create.createVariable(Object.class);
+                    create.assign(referenceHandle, create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                            providerHandle, childCtxHandle));
+                    checkPrimitiveInjection(create, injectionPoint, referenceHandle);
+                    referenceHandles[paramIdx++] = referenceHandle;
+                    // We need to destroy dependent beans for @TransientReference injection points
+                    if (injectionPoint.isDependentTransientReference()) {
+                        transientReferences.add(new TransientReference(providerHandle, referenceHandle, childCtxHandle));
+                    }
+                }
+
+                MethodInfo initializerMethod = injection.target.asMethod();
+                if (isReflectionFallbackNeeded(initializerMethod, targetPackage)) {
+                    if (Modifier.isPrivate(initializerMethod.flags())) {
+                        privateMembers.add(isApplicationClass,
+                                String.format("@Inject initializer %s#%s()", initializerMethod.declaringClass().name(),
+                                        initializerMethod.name()));
+                    }
+                    ResultHandle paramTypesArray = create.newArray(Class.class, create.load(referenceHandles.length));
+                    ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
+                    for (int i = 0; i < referenceHandles.length; i++) {
+                        create.writeArrayValue(paramTypesArray, i,
+                                create.loadClass(initializerMethod.parameterType(i).name().toString()));
+                        create.writeArrayValue(argsArray, i, referenceHandles[i]);
+                    }
+                    reflectionRegistration.registerMethod(initializerMethod);
+                    create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                            create.loadClass(initializerMethod.declaringClass().name().toString()),
+                            create.load(injection.target.asMethod().name()),
+                            paramTypesArray, instanceHandle, argsArray);
+
+                } else {
+                    create.invokeVirtualMethod(MethodDescriptor.of(injection.target.asMethod()), instanceHandle,
+                            referenceHandles);
+                }
+
+                // Destroy injected transient references
+                destroyTransientReferences(create, transientReferences);
             }
-
-            MethodInfo initializerMethod = methodInjection.target.asMethod();
-            if (isReflectionFallbackNeeded(initializerMethod, targetPackage)) {
-                if (Modifier.isPrivate(initializerMethod.flags())) {
-                    privateMembers.add(isApplicationClass,
-                            String.format("@Inject initializer %s#%s()", initializerMethod.declaringClass().name(),
-                                    initializerMethod.name()));
-                }
-                ResultHandle paramTypesArray = create.newArray(Class.class, create.load(referenceHandles.length));
-                ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
-                for (int i = 0; i < referenceHandles.length; i++) {
-                    create.writeArrayValue(paramTypesArray, i,
-                            create.loadClass(initializerMethod.parameterType(i).name().toString()));
-                    create.writeArrayValue(argsArray, i, referenceHandles[i]);
-                }
-                reflectionRegistration.registerMethod(initializerMethod);
-                create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                        create.loadClass(initializerMethod.declaringClass().name().toString()),
-                        create.load(methodInjection.target.asMethod().name()),
-                        paramTypesArray, instanceHandle, argsArray);
-
-            } else {
-                create.invokeVirtualMethod(MethodDescriptor.of(methodInjection.target.asMethod()), instanceHandle,
-                        referenceHandles);
-            }
-
-            // Destroy injected transient references
-            destroyTransientReferences(create, transientReferences);
         }
 
         // PostConstruct lifecycle callback interceptors

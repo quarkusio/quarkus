@@ -355,98 +355,30 @@ final class Methods {
         }
 
         @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + name.hashCode();
-            result = prime * result + params.hashCode();
-            result = prime * result + returnType.hashCode();
-            return result;
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof MethodKey))
+                return false;
+            MethodKey methodKey = (MethodKey) o;
+            return Objects.equals(name, methodKey.name)
+                    && Objects.equals(params, methodKey.params)
+                    && Objects.equals(returnType, methodKey.returnType);
         }
 
         @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (!(obj instanceof MethodKey)) {
-                return false;
-            }
-            MethodKey other = (MethodKey) obj;
-            if (!name.equals(other.name)) {
-                return false;
-            }
-            if (!params.equals(other.params)) {
-                return false;
-            }
-            if (!returnType.equals(other.returnType)) {
-                return false;
-            }
-            return true;
+        public int hashCode() {
+            return Objects.hash(name, params, returnType);
         }
-
     }
 
-    static boolean isOverriden(MethodInfo method, Collection<MethodInfo> previousMethods) {
-        for (MethodInfo other : previousMethods) {
-            if (Methods.matchesSignature(method, other)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static boolean isOverriden(Methods.MethodKey method, Collection<Methods.MethodKey> previousMethods) {
+    /**
+     * Note that this in fact <em>does not</em> detect method overrides. It is only useful
+     * to skip processing of a method in case a method with the same name and signature
+     * has already been processed. (Same name and signature does not mean override!)
+     */
+    static boolean isOverriden(Methods.MethodKey method, Set<Methods.MethodKey> previousMethods) {
         return previousMethods.contains(method);
-    }
-
-    static boolean matchesSignature(MethodInfo method, MethodInfo subclassMethod) {
-        if (!method.name().equals(subclassMethod.name())) {
-            return false;
-        }
-        List<Type> parameters = method.parameterTypes();
-        List<Type> subParameters = subclassMethod.parameterTypes();
-
-        int paramCount = parameters.size();
-        if (paramCount != subParameters.size()) {
-            return false;
-        }
-
-        if (paramCount == 0) {
-            return true;
-        }
-
-        for (int i = 0; i < paramCount; i++) {
-            if (!Methods.isTypeEqual(parameters.get(i), subParameters.get(i))) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    static boolean isTypeEqual(Type a, Type b) {
-        return Methods.toRawType(a).equals(Methods.toRawType(b));
-    }
-
-    static DotName toRawType(Type a) {
-        switch (a.kind()) {
-            case CLASS:
-            case PRIMITIVE:
-            case ARRAY:
-                return a.name();
-            case PARAMETERIZED_TYPE:
-                return a.asParameterizedType().name();
-            case TYPE_VARIABLE:
-            case UNRESOLVED_TYPE_VARIABLE:
-            case TYPE_VARIABLE_REFERENCE:
-            case WILDCARD_TYPE:
-            default:
-                return DotNames.OBJECT;
-        }
     }
 
     static void addDelegateTypeMethods(IndexView index, ClassInfo delegateTypeClass, Set<MethodKey> methods) {

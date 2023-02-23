@@ -946,6 +946,11 @@ public class BeanDeployment {
                 continue;
             }
 
+            if (beanClass.interfaceNames().contains(DotNames.BUILD_COMPATIBLE_EXTENSION)) {
+                // Skip build compatible extensions
+                continue;
+            }
+
             boolean hasBeanDefiningAnnotation = false;
             if (annotationStore.hasAnyAnnotation(beanClass, beanDefiningAnnotations)) {
                 hasBeanDefiningAnnotation = true;

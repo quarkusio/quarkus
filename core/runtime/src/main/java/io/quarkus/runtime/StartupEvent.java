@@ -17,5 +17,5 @@ package io.quarkus.runtime;
  * The annotated method can access other injected beans.
  *
  */
-public class StartupEvent {
+public class StartupEvent extends jakarta.enterprise.event.Startup {
 }

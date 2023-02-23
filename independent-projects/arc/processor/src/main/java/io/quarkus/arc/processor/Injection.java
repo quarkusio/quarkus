@@ -5,7 +5,9 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -18,6 +20,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
@@ -50,8 +53,8 @@ public class Injection {
     static List<Injection> forBean(AnnotationTarget beanTarget, BeanInfo declaringBean, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
         if (Kind.CLASS.equals(beanTarget.kind())) {
-            List<Injection> injections = new ArrayList<>();
-            forClassBean(beanTarget.asClass(), beanTarget.asClass(), beanDeployment, injections, transformer, false);
+            List<Injection> injections = forClassBean(beanTarget.asClass(), beanTarget.asClass(), beanDeployment,
+                    transformer, false, new HashSet<>());
 
             Set<AnnotationTarget> injectConstructors = injections.stream().filter(Injection::isConstructor)
                     .map(Injection::getTarget).collect(Collectors.toSet());
@@ -142,11 +145,14 @@ public class Injection {
         throw new IllegalArgumentException("Unsupported annotation target");
     }
 
-    private static void forClassBean(ClassInfo beanClass, ClassInfo classInfo, BeanDeployment beanDeployment,
-            List<Injection> injections, InjectionPointModifier transformer, boolean skipConstructors) {
+    // returns injections in the order they should be performed
+    private static List<Injection> forClassBean(ClassInfo beanClass, ClassInfo classInfo, BeanDeployment beanDeployment,
+            InjectionPointModifier transformer, boolean skipConstructors, Set<MethodOverrideKey> seenMethods) {
+
+        List<Injection> injections = new ArrayList<>();
 
         List<AnnotationInstance> injectAnnotations = getAllInjectionPoints(beanDeployment, classInfo, DotNames.INJECT,
-                skipConstructors);
+                skipConstructors, seenMethods);
 
         for (AnnotationInstance injectAnnotation : injectAnnotations) {
             AnnotationTarget injectTarget = injectAnnotation.target();
@@ -186,7 +192,7 @@ public class Injection {
 
         for (DotName resourceAnnotation : beanDeployment.getResourceAnnotations()) {
             List<AnnotationInstance> resourceAnnotations = getAllInjectionPoints(beanDeployment, classInfo,
-                    resourceAnnotation, true);
+                    resourceAnnotation, true, seenMethods);
             for (AnnotationInstance resourceAnnotationInstance : resourceAnnotations) {
                 if (Kind.FIELD == resourceAnnotationInstance.target().kind()
                         && resourceAnnotationInstance.target().asField().annotations().stream()
@@ -203,10 +209,16 @@ public class Injection {
         if (!classInfo.superName().equals(DotNames.OBJECT)) {
             ClassInfo info = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (info != null) {
-                forClassBean(beanClass, info, beanDeployment, injections, transformer, true);
+                List<Injection> superInjections = forClassBean(beanClass, info, beanDeployment, transformer, true, seenMethods);
+
+                // injections are discovered bottom-up to easily skip overriden methods,
+                // but they need to be performed top-down per the AtInject specification
+                superInjections.addAll(injections);
+                injections = superInjections;
             }
         }
 
+        return injections;
     }
 
     static Injection forDisposer(MethodInfo disposerMethod, ClassInfo beanClass, BeanDeployment beanDeployment,
@@ -300,10 +312,16 @@ public class Injection {
     }
 
     private static List<AnnotationInstance> getAllInjectionPoints(BeanDeployment beanDeployment, ClassInfo beanClass,
-            DotName name, boolean skipConstructors) {
+            DotName annotationName, boolean skipConstructors, Set<MethodOverrideKey> seenMethods) {
+        // order is significant: fields must be injected before methods
         List<AnnotationInstance> injectAnnotations = new ArrayList<>();
+
+        // note that we can't treat static injection as a failure, because
+        // that would prevent us from even processing the AtInject TCK;
+        // hence, we just print a warning
+
         for (FieldInfo field : beanClass.fields()) {
-            AnnotationInstance inject = beanDeployment.getAnnotation(field, name);
+            AnnotationInstance inject = beanDeployment.getAnnotation(field, annotationName);
             if (inject != null) {
                 if (Modifier.isFinal(field.flags()) || Modifier.isStatic(field.flags())) {
                     LOGGER.warn("An injection field must be non-static and non-final - ignoring: "
@@ -314,16 +332,134 @@ public class Injection {
                 }
             }
         }
+
         for (MethodInfo method : beanClass.methods()) {
             if (skipConstructors && method.name().equals(Methods.INIT)) {
                 continue;
             }
-            AnnotationInstance inject = beanDeployment.getAnnotation(method, name);
+
+            MethodOverrideKey key = new MethodOverrideKey(method);
+            if (isOverriden(key, seenMethods)) {
+                continue;
+            }
+            seenMethods.add(key);
+
+            AnnotationInstance inject = beanDeployment.getAnnotation(method, annotationName);
             if (inject != null) {
-                injectAnnotations.add(inject);
+                if (Modifier.isStatic(method.flags())) {
+                    LOGGER.warn("An initializer method must be non-static - ignoring: "
+                            + method.declaringClass().name() + "#"
+                            + method.name() + "()");
+                } else {
+                    injectAnnotations.add(inject);
+                }
             }
         }
+
         return injectAnnotations;
+    }
+
+    // ---
+    // this is close to `Methods.MethodKey` and `Methods.isOverridden()`, but it's actually more precise
+    // the `Methods` code is used on many places to avoid processing methods in case a method with the same
+    // signature has already been processed, and that's _not_ the definition of overriding
+
+    static class MethodOverrideKey {
+        final String name;
+        final List<DotName> params;
+        final DotName returnType;
+        final String visibility;
+        final MethodInfo method; // this is intentionally ignored for equals/hashCode
+
+        public MethodOverrideKey(MethodInfo method) {
+            this.method = Objects.requireNonNull(method, "Method must not be null");
+            this.name = method.name();
+            this.returnType = method.returnType().name();
+            this.params = new ArrayList<>();
+            for (Type i : method.parameterTypes()) {
+                params.add(i.name());
+            }
+            if (Modifier.isPublic(method.flags()) || Modifier.isProtected(method.flags())) {
+                this.visibility = "";
+            } else if (Modifier.isPrivate(method.flags())) {
+                // private methods cannot be overridden
+                this.visibility = method.declaringClass().name().toString();
+            } else {
+                // package-private methods can only be overridden in the same package
+                this.visibility = method.declaringClass().name().packagePrefix();
+            }
+        }
+
+        private MethodOverrideKey(String name, List<DotName> params, DotName returnType, String visibility, MethodInfo method) {
+            this.name = name;
+            this.params = params;
+            this.returnType = returnType;
+            this.visibility = visibility;
+            this.method = method;
+        }
+
+        MethodOverrideKey withoutVisibility() {
+            return new MethodOverrideKey(name, params, returnType, "", method);
+        }
+
+        String packageName() {
+            return method.declaringClass().name().packagePrefix();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof MethodOverrideKey))
+                return false;
+            MethodOverrideKey methodKey = (MethodOverrideKey) o;
+            return Objects.equals(name, methodKey.name)
+                    && Objects.equals(params, methodKey.params)
+                    && Objects.equals(returnType, methodKey.returnType)
+                    && Objects.equals(visibility, methodKey.visibility);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, params, returnType, visibility);
+        }
+    }
+
+    /**
+     * Returns whether given {@code method} is overridden by any of given {@code previousMethods}. This method
+     * only works correctly during a bottom-up traversal of class inheritance hierarchy, during which all seen
+     * methods are recorded into {@code previousMethods}.
+     * <p>
+     * This is not entirely precise according to the JLS rules for method overriding, but seems good enough.
+     */
+    static boolean isOverriden(MethodOverrideKey method, Set<MethodOverrideKey> previousMethods) {
+        short flags = method.method.flags();
+        if (Modifier.isPublic(flags) || Modifier.isProtected(flags)) {
+            // if there's an override, it must be public or perhaps protected,
+            // so it always has the same visibility
+            return previousMethods.contains(method);
+        } else if (Modifier.isPrivate(flags)) {
+            // private methods are never overridden
+            return false;
+        } else { // package-private
+            // if there's an override, it must be in the same package and:
+            // 1. either package-private (so it has the same visibility)
+            if (previousMethods.contains(method)) {
+                return true;
+            }
+
+            // 2. or public/protected (so it has a different visibility: empty string)
+            String packageName = method.packageName();
+            MethodOverrideKey methodWithoutVisibility = method.withoutVisibility();
+            for (MethodOverrideKey previousMethod : previousMethods) {
+                if (methodWithoutVisibility.equals(previousMethod)
+                        && packageName.equals(previousMethod.packageName())) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
 }

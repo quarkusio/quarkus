@@ -97,15 +97,19 @@ public class Timing {
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
         String safeAppName = (name == null || name.trim().isEmpty()) ? UNSET_VALUE : name;
-        String safeAppVersion = (version == null || version.trim().isEmpty()) ? UNSET_VALUE : version;
+        String safeAppVersion = (version == null || version.trim().isEmpty() || "null".equals(version)) ? UNSET_VALUE : version;
         final String nativeOrJvm = ImageInfo.inImageRuntimeCode() ? "native" : "on JVM";
-        if (UNSET_VALUE.equals(safeAppName) || UNSET_VALUE.equals(safeAppVersion)) {
+
+        if (UNSET_VALUE.equals(safeAppName)) {
             logger.infof("Quarkus %s %s started in %ss. %s", quarkusVersion, nativeOrJvm, secondsRepresentation,
                     t.httpServerInfo);
         } else {
-            logger.infof("%s %s %s (powered by Quarkus %s) started in %ss. %s", name, version, nativeOrJvm, quarkusVersion,
+            String appNameAndVersion = UNSET_VALUE.equals(safeAppVersion) ? name : name + " " + version;
+
+            logger.infof("%s %s (powered by Quarkus %s) started in %ss. %s", appNameAndVersion, nativeOrJvm, quarkusVersion,
                     secondsRepresentation, t.httpServerInfo);
         }
+
         logger.infof("Profile%s %s activated. %s", profiles.size() > 1 ? "s" : "", String.join(",", profiles),
                 liveCoding ? "Live Coding activated." : "");
         logger.infof("Installed features: [%s]", features);

@@ -278,10 +278,10 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
         // Database
-        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_DATABASE_ACTION,
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database.generation.generation);
 
-        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_CREATE_SCHEMAS,
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
                 String.valueOf(persistenceUnitConfig.database.generation.createSchemas));
 
         if (persistenceUnitConfig.database.generation.haltOnError) {
@@ -291,16 +291,16 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         //Never append on existing scripts:
         runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_CREATE_APPEND, "false");
 
-        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_ACTION,
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_SCRIPTS_ACTION,
                 persistenceUnitConfig.scripts.generation.generation);
 
         if (persistenceUnitConfig.scripts.generation.createTarget.isPresent()) {
-            runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_CREATE_TARGET,
+            runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_SCRIPTS_CREATE_TARGET,
                     persistenceUnitConfig.scripts.generation.createTarget.get());
         }
 
         if (persistenceUnitConfig.scripts.generation.dropTarget.isPresent()) {
-            runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_DROP_TARGET,
+            runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_SCRIPTS_DROP_TARGET,
                     persistenceUnitConfig.scripts.generation.dropTarget.get());
         }
 

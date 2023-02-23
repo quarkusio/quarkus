@@ -1187,6 +1187,30 @@ public class KubernetesServerTestResource
 }
 ----
 
+If you want to make the annotation repeatable, the containing annotation type must be annotated with `@QuarkusTestResourceRepeatable`.
+For example, this would define a repeatable `@WithRepeatableTestResource` annotation.
+
+[source,java]
+----
+@QuarkusTestResource(KubernetesServerTestResource.class)
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Repeatable(WithRepeatableTestResource.List.class)
+public @interface WithRepeatableTestResource {
+
+    String key() default "";
+
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    @QuarkusTestResourceRepeatable(WithRepeatableTestResource.class)
+    @interface List {
+        WithRepeatableTestResource[] value();
+    }
+}
+----
+
+
+
 == Hang Detection
 
 `@QuarkusTest` has support for hang detection to help diagnose any unexpected hangs. If no progress is made for a specified

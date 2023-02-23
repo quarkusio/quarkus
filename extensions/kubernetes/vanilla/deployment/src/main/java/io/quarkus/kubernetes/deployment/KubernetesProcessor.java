@@ -127,7 +127,7 @@ class KubernetesProcessor {
             throw new RuntimeException("Unable to setup environment for generating Kubernetes resources", e);
         }
 
-        Map<String, Object> config = KubernetesConfigUtil.toMap(kubernetesConfig, openshiftConfig, knativeConfig);
+        Map<String, Object> config = KubernetesConfigUtil.toMap(capabilities, kubernetesConfig, openshiftConfig, knativeConfig);
         Set<String> deploymentTargets = kubernetesDeploymentTargets.getEntriesSortedByPriority().stream()
                 .map(DeploymentTargetEntry::getName)
                 .collect(Collectors.toSet());

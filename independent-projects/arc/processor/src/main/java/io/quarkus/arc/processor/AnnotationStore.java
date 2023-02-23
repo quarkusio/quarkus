@@ -114,7 +114,7 @@ public final class AnnotationStore {
         Collection<AnnotationInstance> annotations;
         switch (target.kind()) {
             case CLASS:
-                annotations = target.asClass().classAnnotations();
+                annotations = target.asClass().declaredAnnotations();
                 break;
             case METHOD:
                 // Note that the returning collection also contains method params annotations

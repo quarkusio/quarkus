@@ -48,6 +48,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                 Sets.singletonHashSet(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
                 null, null, false, Collections.emptyList(), null, false, null, priority);
         this.bindings = bindings;
+        AnnotationStore store = beanDeployment.getAnnotationStore();
         List<MethodInfo> aroundInvokes = new ArrayList<>();
         List<MethodInfo> aroundConstructs = new ArrayList<>();
         List<MethodInfo> postConstructs = new ArrayList<>();
@@ -59,28 +60,28 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                 if (Modifier.isStatic(method.flags())) {
                     continue;
                 }
-                if (method.hasAnnotation(DotNames.PRODUCES) || method.hasAnnotation(DotNames.DISPOSES)) {
+                if (store.hasAnnotation(method, DotNames.PRODUCES) || store.hasAnnotation(method, DotNames.DISPOSES)) {
                     // according to spec, finding @Produces or @Disposes on a method is a DefinitionException
                     throw new DefinitionException(
                             "An interceptor method cannot be marked @Produces or @Disposes - " + method + " in class: "
                                     + aClass);
                 }
-                if (method.hasAnnotation(DotNames.AROUND_INVOKE)) {
+                if (store.hasAnnotation(method, DotNames.AROUND_INVOKE)) {
                     aroundInvokes.add(validateSignature(method));
                 }
-                if (method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
+                if (store.hasAnnotation(method, DotNames.AROUND_CONSTRUCT)) {
                     aroundConstructs.add(validateSignature(method));
                 }
-                if (method.hasAnnotation(DotNames.POST_CONSTRUCT)) {
+                if (store.hasAnnotation(method, DotNames.POST_CONSTRUCT)) {
                     postConstructs.add(validateSignature(method));
                 }
-                if (method.hasAnnotation(DotNames.PRE_DESTROY)) {
+                if (store.hasAnnotation(method, DotNames.PRE_DESTROY)) {
                     preDestroys.add(validateSignature(method));
                 }
             }
 
             for (FieldInfo field : aClass.fields()) {
-                if (field.hasAnnotation(DotNames.PRODUCES)) {
+                if (store.hasAnnotation(field, DotNames.PRODUCES)) {
                     // according to spec, finding @Produces on a field is a DefinitionException
                     throw new DefinitionException(
                             "An interceptor field cannot be marked @Produces - " + field + " in class: " + aClass);

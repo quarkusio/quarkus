@@ -1194,12 +1194,18 @@ public class BeanDeployment {
         }
     }
 
-    private DisposerInfo findDisposer(Set<Type> beanTypes, BeanInfo declaringBean, AnnotationTarget annotationTarget,
+    private DisposerInfo findDisposer(Set<Type> beanTypes, BeanInfo declaringBean, AnnotationTarget producer,
             List<DisposerInfo> disposers) {
-        List<DisposerInfo> found = new ArrayList<>();
+        // we don't have a `BeanInfo` for the producer yet (the outcome of this method is used to build it),
+        // so we need to construct its set of qualifiers manually
         Set<AnnotationInstance> qualifiers = new HashSet<>();
-        Collection<AnnotationInstance> allAnnotations = getAnnotations(annotationTarget);
-        allAnnotations.forEach(a -> extractQualifiers(a).forEach(qualifiers::add));
+        // ignore annotations on producer method parameters -- they may be injection point qualifiers
+        for (AnnotationInstance annotation : Annotations.getAnnotations(producer.kind(), getAnnotations(producer))) {
+            qualifiers.addAll(extractQualifiers(annotation));
+        }
+        Beans.addImplicitQualifiers(qualifiers); // need to consider `@Any` (and possibly `@Default`) too
+
+        List<DisposerInfo> found = new ArrayList<>();
         for (DisposerInfo disposer : disposers) {
             if (disposer.getDeclaringBean().equals(declaringBean)) {
                 boolean hasQualifier = true;
@@ -1220,7 +1226,7 @@ public class BeanDeployment {
             }
         }
         if (found.size() > 1) {
-            throw new DefinitionException("Multiple disposer methods found for " + annotationTarget);
+            throw new DefinitionException("Multiple disposer methods found for " + producer);
         }
         return found.isEmpty() ? null : found.get(0);
     }

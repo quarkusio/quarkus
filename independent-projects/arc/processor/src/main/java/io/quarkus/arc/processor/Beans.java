@@ -617,6 +617,15 @@ public final class Beans {
         return false;
     }
 
+    static void addImplicitQualifiers(Set<AnnotationInstance> qualifiers) {
+        if (qualifiers.isEmpty()
+                || (qualifiers.size() <= 2 && qualifiers.stream()
+                        .allMatch(a -> DotNames.NAMED.equals(a.name()) || DotNames.ANY.equals(a.name())))) {
+            qualifiers.add(BuiltinQualifier.DEFAULT.getInstance());
+        }
+        qualifiers.add(BuiltinQualifier.ANY.getInstance());
+    }
+
     static List<MethodInfo> getCallbacks(ClassInfo beanClass, DotName annotation, IndexView index) {
         List<MethodInfo> callbacks = new ArrayList<>();
         collectCallbacks(beanClass, callbacks, annotation, index, new HashSet<>());

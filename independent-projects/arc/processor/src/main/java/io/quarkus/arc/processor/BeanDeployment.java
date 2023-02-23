@@ -1101,13 +1101,16 @@ public class BeanDeployment {
                 injectionPoints.addAll(injection.injectionPoints);
             }
         }
+        Set<DisposerInfo> unusedDisposers = new HashSet<>(disposers);
 
         for (MethodInfo producerMethod : producerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(producerMethod.declaringClass());
             if (declaringBean != null) {
                 Set<Type> beanTypes = Types.getProducerMethodTypeClosure(producerMethod, this);
+                DisposerInfo disposer = findDisposer(beanTypes, declaringBean, producerMethod, disposers);
+                unusedDisposers.remove(disposer);
                 BeanInfo producerMethodBean = Beans.createProducerMethod(beanTypes, producerMethod, declaringBean, this,
-                        findDisposer(beanTypes, declaringBean, producerMethod, disposers), injectionPointTransformer);
+                        disposer, injectionPointTransformer);
                 if (producerMethodBean != null) {
                     beans.add(producerMethodBean);
                     injectionPoints.addAll(producerMethodBean.getAllInjectionPoints());
@@ -1119,11 +1122,37 @@ public class BeanDeployment {
             BeanInfo declaringBean = beanClassToBean.get(producerField.declaringClass());
             if (declaringBean != null) {
                 Set<Type> beanTypes = Types.getProducerFieldTypeClosure(producerField, this);
+                DisposerInfo disposer = findDisposer(beanTypes, declaringBean, producerField, disposers);
+                unusedDisposers.remove(disposer);
                 BeanInfo producerFieldBean = Beans.createProducerField(producerField, declaringBean, this,
-                        findDisposer(beanTypes, declaringBean, producerField, disposers));
+                        disposer);
                 if (producerFieldBean != null) {
                     beans.add(producerFieldBean);
                 }
+            }
+        }
+
+        // we track unused disposers to make this validation cheaper: no need to validate disposers
+        // that are used, clearly a matching producer bean exists for those
+        for (DisposerInfo unusedDisposer : unusedDisposers) {
+            Type disposedParamType = unusedDisposer.getDisposedParameterType();
+            boolean matchingProducerBeanExists = false;
+            scan: for (BeanInfo bean : beans) {
+                if (bean.isProducerMethod() || bean.isProducerField()) {
+                    if (!bean.getDeclaringBean().equals(unusedDisposer.getDeclaringBean())) {
+                        continue;
+                    }
+                    for (Type beanType : bean.getTypes()) {
+                        if (beanResolver.matches(disposedParamType, beanType)) {
+                            matchingProducerBeanExists = true;
+                            break scan;
+                        }
+                    }
+                }
+            }
+            if (!matchingProducerBeanExists) {
+                throw new DefinitionException("No producer method or field declared by the bean class that is assignable "
+                        + "to the disposed parameter of a disposer method: " + unusedDisposer.getDisposerMethod());
             }
         }
 

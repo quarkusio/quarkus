@@ -61,11 +61,6 @@
                     <exclude name="testPublicLifecycleInterceptorMethod"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.disposal.method.definition.broken.unresolvedMethod.UnresolvedDisposalMethodDefinitionTest">
-                <methods>
-                    <exclude name="testUnresolvedDisposalMethod"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.contract.invocationContext.InvocationContextTest">
                 <methods>
                     <exclude name="testGetTargetMethod"/>

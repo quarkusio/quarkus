@@ -31,6 +31,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
@@ -77,10 +78,11 @@ class NettyProcessor {
         return new SystemPropertyBuildItem("io.netty.machineId", nettyMachineId);
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     NativeImageConfigBuildItem build(
             NettyBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
@@ -114,6 +116,9 @@ class NettyProcessor {
                 .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent")
                 .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
+
+        // Also set io.netty.noUnsafe at runtime
+        systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http.HttpObjectEncoder")) {
             builder
@@ -163,8 +168,7 @@ class NettyProcessor {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }
 
-        return builder //TODO: make configurable
-                .build();
+        return builder.build();
     }
 
     @BuildStep

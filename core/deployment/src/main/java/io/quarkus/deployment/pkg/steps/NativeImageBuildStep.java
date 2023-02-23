@@ -730,9 +730,12 @@ public class NativeImageBuildStep {
 
                 // only available in GraalVM 22.3.0 and better.
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_22_3_0) >= 0) {
-                    // For build time information
-                    nativeImageArgs.add("-H:+CollectImageBuildStatistics");
-                    nativeImageArgs.add("-H:ImageBuildStatisticsFile=" + nativeImageName + "-timing-stats.json");
+                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) < 0) {
+                        // Used to retrieve build time information in 22.3. Starting with 23.0 this info is included in
+                        // the build output json file so there is no need to generate extra files.
+                        nativeImageArgs.add("-H:+CollectImageBuildStatistics");
+                        nativeImageArgs.add("-H:ImageBuildStatisticsFile=" + nativeImageName + "-timing-stats.json");
+                    }
                     // For getting the build output stats as a JSON file
                     nativeImageArgs.add("-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
                 }

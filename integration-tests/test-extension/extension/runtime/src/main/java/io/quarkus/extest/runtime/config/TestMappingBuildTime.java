@@ -46,4 +46,8 @@ public interface TestMappingBuildTime {
          */
         String value();
     }
+
+    default void mustNotRequireDocs() {
+
+    }
 }

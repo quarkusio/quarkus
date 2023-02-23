@@ -19,10 +19,22 @@ What we're doing in Panache is to allow you to write your Hibernate ORM entities
 
 [source,java]
 ----
+package org.acme;
+
 public enum Status {
     Alive,
     Deceased
 }
+----
+
+[source,java]
+----
+package org.acme;
+
+import java.time.LocalDate;
+import java.util.List;
+import jakarta.persistence.Entity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 @Entity
 public class Person extends PanacheEntity {
@@ -156,6 +168,13 @@ columns as public fields:
 
 [source,java]
 ----
+package org.acme;
+
+import java.time.LocalDate;
+import java.util.List;
+import jakarta.persistence.Entity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+
 @Entity
 public class Person extends PanacheEntity {
     public String name;
@@ -169,6 +188,13 @@ You can put all your JPA column annotations on the public fields. If you need a 
 
 [source,java]
 ----
+package org.acme;
+
+import java.time.LocalDate;
+import java.util.List;
+import jakarta.persistence.Entity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+
 @Entity
 public class Person extends PanacheEntity {
     public String name;
@@ -197,6 +223,11 @@ Once you have written your entity, here are the most common operations you will 
 
 [source,java]
 ----
+import java.time.LocalDate;
+import java.time.Month;
+import java.util.List;
+import java.util.Optional;
+
 // creating a person
 Person person = new Person();
 person.name = "Stef";
@@ -252,6 +283,10 @@ All `list` methods have equivalent `stream` versions.
 
 [source,java]
 ----
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 try (Stream<Person> persons = Person.streamAll()) {
     List<String> namesButEmmanuels = persons
         .map(p -> p.name.toLowerCase() )
@@ -272,6 +307,13 @@ Adding them as static methods in your entity class is the Panache Active Record 
 
 [source,java]
 ----
+package org.acme;
+
+import java.time.LocalDate;
+import java.util.List;
+import jakarta.persistence.Entity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+
 @Entity
 public class Person extends PanacheEntity {
     public String name;
@@ -301,6 +343,12 @@ When using the repository pattern, you can define your entities as regular JPA e
 
 [source,java]
 ----
+package org.acme;
+
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import java.time.LocalDate;
+
 @Entity
 public class Person {
     @Id @GeneratedValue private Long id;
@@ -345,6 +393,13 @@ by making them implements `PanacheRepository`:
 
 [source,java]
 ----
+package org.acme;
+
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import java.util.List;
+
 @ApplicationScoped
 public class PersonRepository implements PanacheRepository<Person> {
 
@@ -369,6 +424,8 @@ is exactly the same as using the active record pattern, except you need to injec
 
 [source,java]
 ----
+import jakarta.inject.Inject;
+
 @Inject
 PersonRepository personRepository;
 
@@ -384,6 +441,11 @@ Once you have written your repository, here are the most common operations you w
 
 [source,java]
 ----
+import java.time.LocalDate;
+import java.time.Month;
+import java.util.List;
+import java.util.Optional;
+
 // creating a person
 Person person = new Person();
 person.setName("Stef");
@@ -439,6 +501,10 @@ All `list` methods have equivalent `stream` versions.
 
 [source,java]
 ----
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 Stream<Person> persons = personRepository.streamAll();
 List<String> namesButEmmanuels = persons
     .map(p -> p.name.toLowerCase() )
@@ -460,6 +526,22 @@ Then, you can create the following resource to create/read/update/delete your Pe
 
 [source,java]
 ----
+package org.acme;
+
+import java.net.URI;
+import java.util.List;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 @Path("/persons")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -526,6 +608,39 @@ public class PersonResource {
 NOTE: Be careful to use the `@Transactional` annotation on the operations that modify the database,
 you can add the annotation at the class level for simplicity purpose.
 
+To make it easier to showcase some capabilities of Hibernate ORM with Panache on Quarkus with Dev mode, some test data should be inserted into the database by adding the following content to a new file named src/main/resources/import.sql:
+
+[source,sql]
+----
+INSERT INTO person (id, birth, name, status) VALUES (nextval('hibernate_sequence'), '1995-09-12', 'Emily Brown', 0);
+----
+
+NOTE: If you would like to initialize the DB when you start the Quarkus app in your production environment, add `quarkus.hibernate-orm.database.generation=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
+
+After that, you can see the people list and add new person as followings:
+
+[source,shell]
+----
+$ curl -w "\n" http://localhost:8080/persons
+[{"id":1,"name":"Emily Brown","birth":"1995-09-12","status":"Alive"}]
+
+$ curl -X POST -H "Content-Type: application/json" -d '{"name" : "William Davis" , "birth" : "1988-07-04", "status" : "Alive"}' http://localhost:8080/persons
+
+$ curl -w "\n" http://localhost:8080/persons
+[{"id":1,"name":"Emily Brown","birth":"1995-09-12","status":"Alive"}, {"id":2,"name":"William Davis","birth":"1988-07-04","status":"Alive"}]
+----
+
+NOTE: If you see the Person object as Person<1>, then the object has not been converted. In this case, add the dependency `quarkus-resteasy-reactive-jackson` in `pom.xml`.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+</dependency>
+----
+
 == Advanced Query
 
 === Paging
@@ -535,6 +650,10 @@ sets you can use the `find` method equivalents, which return a `PanacheQuery` on
 
 [source,java]
 ----
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.panache.common.Page;
+import java.util.List;
+
 // create a query for all living persons
 PanacheQuery<Person> livingPersons = Person.find("status", Status.Alive);
 
@@ -571,6 +690,9 @@ The `PanacheQuery` type has many other methods to deal with paging and returning
 
 [source,java]
 ----
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import java.util.List;
+
 // create a query for all living persons
 PanacheQuery<Person> livingPersons = Person.find("status", Status.Alive);
 
@@ -603,6 +725,8 @@ But these methods also accept an optional `Sort` parameter, which allows you to 
 
 [source,java]
 ----
+import io.quarkus.panache.common.Sort;
+
 List<Person> persons = Person.list(Sort.by("name").and("birth"));
 
 // and with more restrictions
@@ -652,6 +776,16 @@ You can reference a named query instead of a (simplified) HQL query by prefixing
 
 [source,java]
 ----
+package org.acme;
+
+import java.time.LocalDate;
+import jakarta.persistence.Entity;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import io.quarkus.panache.common.Parameters;
+
 @Entity
 @NamedQueries({
     @NamedQuery(name = "Person.getByName", query = "from Person where name = ?1"),
@@ -702,6 +836,9 @@ Or by name using a `Map`:
 
 [source,java]
 ----
+import java.util.HashMap;
+import java.util.Map;
+
 Map<String, Object> params = new HashMap<>();
 params.put("name", "stef");
 params.put("status", Status.Alive);
@@ -740,6 +877,7 @@ instantiate the projection DTO instead of using the entity class. This class mus
 [source,java]
 ----
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 
 @RegisterForReflection // <1>
 public class PersonName {
@@ -771,6 +909,9 @@ If in the DTO projection object you have a field from a referenced entity, you c
 
 [source,java]
 ----
+import jakarta.persistence.ManyToOne;
+import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
+
 @Entity
 public class Dog extends PanacheEntity {
     public String name;
@@ -858,6 +999,8 @@ And your transaction still has to be committed.
 Here is an example of the usage of the flush method to allow making a specific action in case of `PersistenceException`:
 [source,java]
 ----
+import jakarta.persistence.PersistenceException;
+
 @Transactional
 public void create(Parameter parameter){
     try {
@@ -882,6 +1025,10 @@ The following examples are for the active record pattern, but the same can be us
 
 [source,java]
 ----
+import jakarta.persistence.LockModeType;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+
 public class PersonEndpoint {
 
     @GET
@@ -899,6 +1046,10 @@ public class PersonEndpoint {
 
 [source,java]
 ----
+import jakarta.persistence.LockModeType;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+
 public class PersonEndpoint {
 
     @GET
@@ -924,6 +1075,13 @@ you just declare whatever ID you want as a public field:
 
 [source,java]
 ----
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+
 @Entity
 public class Person extends PanacheEntityBase {
 
@@ -945,6 +1103,9 @@ and specify your ID type as an extra type parameter:
 
 [source,java]
 ----
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import jakarta.enterprise.context.ApplicationScoped;
+
 @ApplicationScoped
 public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
     //...
@@ -990,6 +1151,14 @@ You can write your mocking test like this:
 
 [source,java]
 ----
+import io.quarkus.panache.mock.PanacheMock;
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import jakarta.ws.rs.WebApplicationException;
+import java.util.Collections;
+
 @QuarkusTest
 public class PanacheFunctionalityTest {
 
@@ -1070,6 +1239,15 @@ If you need to mock entity instance methods, such as `persist()` you can do it b
 
 [source,java]
 ----
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.mockito.InjectMock;
+import org.hibernate.Session;
+import org.hibernate.query.Query;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
 @QuarkusTest
 public class PanacheMockingTest {
 
@@ -1141,6 +1319,14 @@ You can write your mocking test like this:
 
 [source,java]
 ----
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.mockito.InjectMock;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import jakarta.ws.rs.WebApplicationException;
+import java.util.Collections;
+
 @QuarkusTest
 public class PanacheFunctionalityTest {
     @InjectMock

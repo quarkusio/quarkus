@@ -7,15 +7,17 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = OpenID Connect (OIDC) Bearer authentication
 include::_attributes.adoc[]
 :categories: security,web
-:summary: To secure HTTP access to JAX-RS endpoints in your application, you can use Bearer authentication provided by the Quarkus OpenID Connect (OIDC) extension.
+
+Secure HTTP access to JAX-RS endpoints in your application with Bearer authentication by using the Quarkus OpenID Connect (OIDC) extension.
 
 == Overview of the Bearer authentication mechanism in Quarkus
 
-You can use the Quarkus OpenID Connect (OIDC) extension to secure your JAX-RS applications using Bearer authentication.
+Quarkus supports the Bearer authentication mechanism through the Quarkus OpenID Connect (OIDC) extension.
+
 The bearer tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as link:https://www.keycloak.org[Keycloak].
 
 Bearer authentication is the process of authorizing HTTP requests based on the existence and validity of a bearer token.
-The bearer token provides information about the subject of the call which is used to determine whether or not an HTTP resource can be accessed.
+The bearer token provides information about the subject of the call, which is used to determine whether or not an HTTP resource can be accessed.
 
 The following diagrams outline the Bearer authentication mechanism in Quarkus:
 

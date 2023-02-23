@@ -7,7 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = OpenID Connect authorization code flow mechanism for protecting web applications
 include::_attributes.adoc[]
 :categories: security,web
-:summary: To protect your web applications, you can use the authorization code flow mechanism provided by the Quarkus OpenID Connect (OIDC extension.
+
+To protect your web applications, you can use the authorization code flow mechanism provided by the Quarkus OpenID Connect (OIDC) extension.
 
 == Overview of the OIDC authorization code flow mechanism
 
@@ -28,7 +29,7 @@ image::authorization_code_flow.png[alt=Authorization Code Flow, width="60%", ali
 . The OIDC provider authenticates the user credentials entered and, if successful, issues an authorization code then redirects the user back to the Quarkus web-app with the code included as a query parameter.
 . The Quarkus web-app exchanges this authorization code with the OIDC provider for ID, access, and refresh tokens.
 
-The authorization code flow is completed and the Quarkus web-app uses the tokens issued to access information about the user and grant the relevant role-based authorization to that user.
+The authorization code flow is completed and the Quarkus web-app uses the tokens issued to access information about the user and grants the relevant role-based authorization to that user.
 The following tokens are issued:
 
 * ID token: The Quarkus web-app uses the user information in the ID token to enable the authenticated user to log in securely and to provide role-based access to the web-app.

@@ -9,16 +9,17 @@ Before you start building security into your Quarkus applications, learn about t
 
 == Key features of Quarkus Security
 
-The Quarkus Security framework provides built-in security mechanisms for Basic, form-based, and mutual TLS (mTLS) authentication.
-You can also integrate Quarkus with several well-known security xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[authentication mechanisms] and protocols.
+The Quarkus Security framework provides built-in security authentication mechanisms for Basic, Form-based, and mutual TLS (mTLS) authentication. 
+You can also use other well-known xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[authentication mechanisms], such as OpenId Connect (OIDC) and WebAuthn.
 
-{project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations @RolesAllowed, @DenyAll, @PermitAll on REST endpoints and CDI beans. 
+Authentication mechanisms depend on xref:security-identity-providers-concept.adoc[Identity providers] to verify the authentication credentials and map them to a `SecurityIdentity` instance, which has the username, roles, original authentication credentials, and other attributes.
+
+{project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations @RolesAllowed, @DenyAll, @PermitAll on REST endpoints, and CDI beans. 
 For more information, see xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints].
 
 Quarkus Security also supports the following features:
 
 * xref:security-proactive-authentication-concept.adoc[Proactive authentication]
-* xref:security-identity-providers-concept.adoc[Identity providers]
 * xref:http-reference.adoc#ssl[Secure connections with SSL/TLS]
 * <<Cross-origin resource sharing>>
 * <<Cross-site Request Forgery (CSRF) prevention>>

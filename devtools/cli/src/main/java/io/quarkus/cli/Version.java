@@ -14,7 +14,7 @@ import io.smallrye.common.classloader.ClassPathUtils;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 
-@CommandLine.Command(name = "version", header = "Display Cli version information.", hidden = true)
+@CommandLine.Command(name = "version", header = "Display CLI version information.", hidden = true)
 public class Version implements CommandLine.IVersionProvider, Callable<Integer> {
 
     private static String version;

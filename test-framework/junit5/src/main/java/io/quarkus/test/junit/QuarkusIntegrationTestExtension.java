@@ -82,7 +82,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
-            if (!isAfterAllCallbacksEmpty()) {
+            if (!isAfterEachCallbacksEmpty()) {
                 invokeAfterEachCallbacks(createQuarkusTestMethodContext(context));
             }
 

@@ -23,7 +23,7 @@ public class FormParserFactory {
     private final ParserDefinition[] parserDefinitions;
 
     FormParserFactory(final List<ParserDefinition> parserDefinitions) {
-        this.parserDefinitions = parserDefinitions.toArray(new ParserDefinition[parserDefinitions.size()]);
+        this.parserDefinitions = parserDefinitions.toArray(new ParserDefinition[0]);
     }
 
     /**

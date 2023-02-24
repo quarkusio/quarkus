@@ -140,6 +140,7 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
+import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
@@ -674,6 +675,7 @@ public final class HibernateOrmProcessor {
             unremovableClasses.add(TransactionSessions.class);
         }
         unremovableClasses.add(RequestScopedSessionHolder.class);
+        unremovableClasses.add(RequestScopedStatelessSessionHolder.class);
         unremovableClasses.add(QuarkusArcBeanContainer.class);
 
         additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()

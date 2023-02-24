@@ -29,6 +29,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.dekorate.utils.Strings;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 
 public class KubernetesConfigUtil {
 
@@ -36,8 +38,10 @@ public class KubernetesConfigUtil {
     private static final String QUARKUS_PREFIX = "quarkus.";
     private static final Pattern QUARKUS_DEPLOY_PATTERN = Pattern.compile("quarkus\\.([^\\.]+)\\.deploy");
 
-    private static final Set<String> ALLOWED_GENERATORS = new HashSet<>(
-            Arrays.asList(KUBERNETES, OPENSHIFT, KNATIVE, DOCKER, S2I));
+    private static final Set<String> ALLOWED_GENERATORS = Set.of(KUBERNETES, KNATIVE, OPENSHIFT);
+    private static final Map<String, String> ALLOWED_GENERATORS_BY_CAPABILITY = Map.of(
+            DOCKER, Capability.CONTAINER_IMAGE_DOCKER,
+            S2I, Capability.CONTAINER_IMAGE_S2I);
 
     private static final String EXPOSE_PROPERTY_NAME = "expose";
     private static final String[] EXPOSABLE_GENERATORS = { OPENSHIFT, KUBERNETES };
@@ -133,7 +137,7 @@ public class KubernetesConfigUtil {
      *
      * @return A map containing the properties.
      */
-    public static Map<String, Object> toMap(PlatformConfiguration... platformConfigurations) {
+    public static Map<String, Object> toMap(Capabilities capabilities, PlatformConfiguration... platformConfigurations) {
         Config config = ConfigProvider.getConfig();
         Map<String, Object> result = new HashMap<>();
 
@@ -149,12 +153,13 @@ public class KubernetesConfigUtil {
                     .ifPresent(v -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".version", v));
         });
 
+        Set<String> allowedGenerators = allowedGenerators(capabilities);
         Map<String, Object> unPrefixed = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                .filter(k -> ALLOWED_GENERATORS.contains(generatorName(k)))
+                .filter(k -> allowedGenerators.contains(generatorName(k)))
                 .filter(k -> config.getOptionalValue(k, String.class).isPresent())
                 .collect(Collectors.toMap(k -> DEKORATE_PREFIX + k, k -> config.getValue(k, String.class)));
 
-        for (String generator : ALLOWED_GENERATORS) {
+        for (String generator : allowedGenerators) {
             String oldKey = DEKORATE_PREFIX + generator + ".group";
             String newKey = DEKORATE_PREFIX + generator + ".part-of";
             if (unPrefixed.containsKey(oldKey)) {
@@ -204,6 +209,17 @@ public class KubernetesConfigUtil {
                 }
             }
         }
+    }
+
+    private static Set<String> allowedGenerators(Capabilities capabilities) {
+        Set<String> generators = new HashSet<>(ALLOWED_GENERATORS);
+        for (Map.Entry<String, String> generatorByCapability : ALLOWED_GENERATORS_BY_CAPABILITY.entrySet()) {
+            if (capabilities.isPresent(generatorByCapability.getValue())) {
+                generators.add(generatorByCapability.getKey());
+            }
+        }
+
+        return generators;
     }
 
     /**

@@ -15,6 +15,7 @@ import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ResourceWriter {
 
     private BeanFactory<MessageBodyWriter<?>> factory;

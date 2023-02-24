@@ -15,6 +15,7 @@ import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 class RuntimeMappingDeployment {
 
     private final Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> classTemplates;

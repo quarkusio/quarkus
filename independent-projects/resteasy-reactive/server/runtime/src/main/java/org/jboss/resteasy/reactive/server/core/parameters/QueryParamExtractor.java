@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class QueryParamExtractor implements ParameterExtractor {
 
     private final String name;

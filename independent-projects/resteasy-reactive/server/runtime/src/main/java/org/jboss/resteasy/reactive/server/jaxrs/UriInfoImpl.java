@@ -27,6 +27,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 /**
  * UriInfo implementation
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class UriInfoImpl implements UriInfo {
 
     private final ResteasyReactiveRequestContext currentRequest;

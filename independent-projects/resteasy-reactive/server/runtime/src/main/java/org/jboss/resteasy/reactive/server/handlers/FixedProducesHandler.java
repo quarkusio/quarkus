@@ -18,6 +18,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
  * Handler that negotiates the content type for endpoints that
  * only produce a single type.
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class FixedProducesHandler implements ServerRestHandler {
 
     final EncodedMediaType mediaType;

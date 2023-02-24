@@ -49,7 +49,7 @@ public class ResteasyReactiveRuntimeRecorder {
         };
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({ "unchecked", "rawtypes", "ForLoopReplaceableByForEach" })
     public void configureHandlers(RuntimeValue<Deployment> deployment, Map<Class<?>, Supplier<?>> runtimeConfigMap) {
         List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = deployment.getValue()
                 .getRuntimeConfigurableServerRestHandlers();

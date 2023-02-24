@@ -20,6 +20,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 // FIXME: we need to refactor the serialisation of entities to bytes between here and Sse and Serialisers
 // and figure out where interceptors come into play
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class StreamingUtil {
 
     public static CompletionStage<?> send(ResteasyReactiveRequestContext context,

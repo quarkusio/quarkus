@@ -17,6 +17,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
  *
  * @author Stuart Douglas
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class FormParserFactory {
 
     private final ParserDefinition[] parserDefinitions;

@@ -15,7 +15,7 @@ import jakarta.ws.rs.core.Response;
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  */
-@SuppressWarnings(value = "rawtypes")
+@SuppressWarnings({ "ForLoopReplaceableByForEach" })
 public class MediaTypeHelper {
     public static final MediaTypeComparator Q_COMPARATOR = new MediaTypeComparator("q");
     public static final MediaTypeComparator QS_COMPARATOR = new MediaTypeComparator("qs");

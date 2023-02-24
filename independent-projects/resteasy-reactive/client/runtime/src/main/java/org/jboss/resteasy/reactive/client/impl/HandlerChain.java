@@ -20,6 +20,7 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 class HandlerChain {
 
     private static final ClientRestHandler[] EMPTY_REST_HANDLERS = new ClientRestHandler[0];

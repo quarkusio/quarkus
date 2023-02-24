@@ -13,6 +13,7 @@ import jakarta.ws.rs.ext.MessageBodyReader;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ResourceReader {
 
     private BeanFactory<MessageBodyReader<?>> factory;

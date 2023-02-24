@@ -25,6 +25,7 @@ import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ClassRoutingHandler implements ServerRestHandler {
     private static final String INVALID_ACCEPT_HEADER_MESSAGE = "The accept header value did not match the value in @Produces";
 

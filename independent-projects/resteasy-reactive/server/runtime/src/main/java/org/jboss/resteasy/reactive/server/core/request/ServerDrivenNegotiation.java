@@ -14,6 +14,7 @@ import jakarta.ws.rs.core.Variant;
  * @author Pascal S. de Kloe
  * @see "RFC 2296"
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ServerDrivenNegotiation {
 
     private Map<MediaType, QualityValue> requestedMediaTypes = null;

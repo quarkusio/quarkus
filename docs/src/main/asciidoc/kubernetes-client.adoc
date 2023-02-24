@@ -57,10 +57,15 @@ Note that the full list of properties is available in the link:#quarkus-kubernet
 
 In dev mode and when running tests, xref:kubernetes-dev-services.adoc[Dev Services for Kubernetes] automatically starts a Kubernetes API server.
 
-=== Overriding
+=== Customizing and overriding
 
-The extension also allows application code to override either of  `io.fabric8.kubernetes.client.Config` or `io.fabric8.kubernetes.client.KubernetesClient` which are
-normally provided by the extension by simply declaring custom versions of those beans.
+Quarkus provides multiple integration points for influencing the Kubernetes Client provided as a CDI bean.
+
+The first integration point is the use of the `io.quarkus.kubernetes.client.KubernetesConfigCustomizer` interface. When such a bean exists,
+it allows for arbitrary customizations of the `io.fabric8.kubernetes.client.Config` created by Quarkus (which takes into account the `quarkus.kubernetes-client.*` properties).
+
+Alternatively, application code can override the  `io.fabric8.kubernetes.client.Config` or even the `io.fabric8.kubernetes.client.KubernetesClient` bean (which are
+normally provided by the extension) by simply declaring custom versions of those beans.
 
 An example of this can be seen in the following snippet:
 

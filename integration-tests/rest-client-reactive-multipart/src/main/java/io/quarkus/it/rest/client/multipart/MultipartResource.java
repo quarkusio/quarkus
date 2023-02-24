@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
@@ -74,6 +75,7 @@ public class MultipartResource {
         FileWithPojo data = new FileWithPojo();
         data.file = HELLO_WORLD.getBytes(UTF_8);
         data.setFileName(GREETING_TXT);
+        data.setUuid(UUID.randomUUID());
         if (withPojo) {
             Pojo pojo = new Pojo();
             pojo.setName("some-name");
@@ -398,11 +400,12 @@ public class MultipartResource {
     @Path("/echo/with-pojo")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public String consumeBinaryWithPojo(@MultipartForm MultipartBodyWithBinaryFileAndPojo fileWithPojo) {
-        return String.format("fileOk:%s,nameOk:%s,pojoOk:%s",
+        return String.format("fileOk:%s,nameOk:%s,pojoOk:%s,uuidNull:%s",
                 containsHelloWorld(fileWithPojo.file),
                 GREETING_TXT.equals(fileWithPojo.fileName),
                 fileWithPojo.pojo == null ? "null"
-                        : "some-name".equals(fileWithPojo.pojo.getName()) && "some-value".equals(fileWithPojo.pojo.getValue()));
+                        : "some-name".equals(fileWithPojo.pojo.getName()) && "some-value".equals(fileWithPojo.pojo.getValue()),
+                fileWithPojo.uuid == null);
     }
 
     @GET
@@ -494,6 +497,10 @@ public class MultipartResource {
         @FormParam("pojo")
         @PartType(MediaType.APPLICATION_JSON)
         public Pojo pojo;
+
+        @FormParam("uuid")
+        @PartType(MediaType.TEXT_PLAIN)
+        public String uuid;
     }
 
 }

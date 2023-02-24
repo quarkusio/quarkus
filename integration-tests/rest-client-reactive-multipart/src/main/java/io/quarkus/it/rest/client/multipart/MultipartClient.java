@@ -1,6 +1,7 @@
 package io.quarkus.it.rest.client.multipart;
 
 import java.io.File;
+import java.util.UUID;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.FormParam;
@@ -179,6 +180,10 @@ public interface MultipartClient {
         @PartType(MediaType.APPLICATION_JSON)
         private Pojo pojo;
 
+        @FormParam("uuid")
+        @PartType(MediaType.TEXT_PLAIN)
+        private UUID uuid;
+
         public String getFileName() {
             return fileName;
         }
@@ -193,6 +198,14 @@ public interface MultipartClient {
 
         public void setPojo(Pojo pojo) {
             this.pojo = pojo;
+        }
+
+        public UUID getUuid() {
+            return uuid;
+        }
+
+        public void setUuid(UUID uuid) {
+            this.uuid = uuid;
         }
     }
 

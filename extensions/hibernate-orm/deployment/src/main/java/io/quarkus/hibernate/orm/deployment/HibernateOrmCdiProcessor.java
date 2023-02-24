@@ -11,6 +11,7 @@ import jakarta.enterprise.inject.Default;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.StatelessSession;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassType;
@@ -47,6 +48,7 @@ public class HibernateOrmCdiProcessor {
     private static final List<DotName> SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER_FACTORY,
             ClassNames.SESSION_FACTORY);
     private static final List<DotName> SESSION_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER, ClassNames.SESSION);
+    private static final List<DotName> STATELESS_SESSION_EXPOSED_TYPES = List.of(ClassNames.STATELESS_SESSION);
 
     private static final Set<DotName> PERSISTENCE_UNIT_EXTENSION_VALID_TYPES = Set.of(
             ClassNames.TENANT_RESOLVER,
@@ -148,6 +150,15 @@ public class HibernateOrmCdiProcessor {
                                 .createWith(recorder.sessionSupplier(persistenceUnitName))
                                 .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
                                 .done());
+
+                // same for StatelessSession
+                syntheticBeanBuildItemBuildProducer
+                        .produce(createSyntheticBean(persistenceUnitName,
+                                true, true,
+                                StatelessSession.class, STATELESS_SESSION_EXPOSED_TYPES, false)
+                                .createWith(recorder.statelessSessionSupplier(persistenceUnitName))
+                                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
+                                .done());
             }
             return;
         }
@@ -177,6 +188,15 @@ public class HibernateOrmCdiProcessor {
                                 isDefaultPU, isNamedPU,
                                 Session.class, SESSION_EXPOSED_TYPES, false)
                                 .createWith(recorder.sessionSupplier(persistenceUnitName))
+                                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
+                                .done());
+
+                // same for StatelessSession
+                syntheticBeanBuildItemBuildProducer
+                        .produce(createSyntheticBean(persistenceUnitName,
+                                true, true,
+                                StatelessSession.class, STATELESS_SESSION_EXPOSED_TYPES, false)
+                                .createWith(recorder.statelessSessionSupplier(persistenceUnitName))
                                 .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
                                 .done());
             }

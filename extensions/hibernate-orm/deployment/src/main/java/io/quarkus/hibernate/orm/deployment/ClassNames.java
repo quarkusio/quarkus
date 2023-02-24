@@ -51,6 +51,7 @@ public class ClassNames {
     public static final DotName SESSION_FACTORY = createConstant("org.hibernate.SessionFactory");
     public static final DotName ENTITY_MANAGER = createConstant("jakarta.persistence.EntityManager");
     public static final DotName SESSION = createConstant("org.hibernate.Session");
+    public static final DotName STATELESS_SESSION = createConstant("org.hibernate.StatelessSession");
 
     public static final DotName INTERCEPTOR = createConstant("org.hibernate.Interceptor");
     public static final DotName STATEMENT_INSPECTOR = createConstant("org.hibernate.resource.jdbc.spi.StatementInspector");

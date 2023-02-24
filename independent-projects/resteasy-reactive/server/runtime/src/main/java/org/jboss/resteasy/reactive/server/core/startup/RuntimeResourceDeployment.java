@@ -266,6 +266,7 @@ public class RuntimeResourceDeployment {
             for (ResourceRequestFilterHandler handler : containerRequestFilterHandlers) {
                 if (handler.isWithFormRead()) {
                     hasWithFormReadRequestFilters = true;
+                    break;
                 }
             }
         }

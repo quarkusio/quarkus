@@ -80,12 +80,16 @@ public abstract class AbstractTestWithCallbacksExtension {
         invokeAfterEachCallbacks(QuarkusTestMethodContext.class, testMethodContext);
     }
 
-    protected boolean isAfterAllCallbacksEmpty() {
-        return afterAllCallbacks == null || afterAllCallbacks.isEmpty();
+    protected boolean isAfterEachCallbacksEmpty() {
+        return afterEachCallbacks == null || afterEachCallbacks.isEmpty();
     }
 
     protected void invokeAfterEachCallbacks(Class<?> clazz, Object classInstance) throws Exception {
         invokeCallbacks(afterEachCallbacks, "afterEach", clazz, classInstance);
+    }
+
+    protected boolean isAfterAllCallbacksEmpty() {
+        return afterAllCallbacks == null || afterAllCallbacks.isEmpty();
     }
 
     protected void invokeAfterAllCallbacks(QuarkusTestContext testContext) throws Exception {

@@ -238,7 +238,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     }
 
     /**
-     * Adds a synthetic injeciton point. The injection point is validated at build time and is also considered when removing
+     * Adds a synthetic injection point. The injection point is validated at build time and is also considered when removing
      * unused beans.
      *
      * @param requiredType

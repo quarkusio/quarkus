@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.jboss.logging.Logger;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.util.FileUtil;
@@ -17,7 +17,8 @@ import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContainerRunner {
 
-    private static final Logger LOGGER = Logger.getLogger(NativeImageBuildLocalContainerRunner.class.getName());
+    public static final String DOCKER_EXECUTABLE = ConfigProvider.getConfig()
+            .getOptionalValue("quarkus.native.container-runtime", String.class).orElse("docker");
 
     public NativeImageBuildLocalContainerRunner(NativeConfig nativeConfig, Path outputDir) {
         super(nativeConfig, outputDir);

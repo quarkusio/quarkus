@@ -1,5 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
+import static io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner.DOCKER_EXECUTABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
@@ -25,33 +26,36 @@ class NativeImageBuildContainerRunnerTest {
 
         nativeConfig.builderImage = "graalvm";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
-        command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
+        command = localRunner.buildCommand(DOCKER_EXECUTABLE, Collections.emptyList(), Collections.emptyList());
         found = false;
         for (String part : command) {
             if (part.contains("ubi-quarkus-graalvmce-builder-image")) {
                 found = true;
+                break;
             }
         }
         assertThat(found).isTrue();
 
         nativeConfig.builderImage = "mandrel";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
-        command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
+        command = localRunner.buildCommand(DOCKER_EXECUTABLE, Collections.emptyList(), Collections.emptyList());
         found = false;
         for (String part : command) {
             if (part.contains("ubi-quarkus-mandrel-builder-image")) {
                 found = true;
+                break;
             }
         }
         assertThat(found).isTrue();
 
         nativeConfig.builderImage = "RandomString";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
-        command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
+        command = localRunner.buildCommand(DOCKER_EXECUTABLE, Collections.emptyList(), Collections.emptyList());
         found = false;
         for (String part : command) {
             if (part.equals("RandomString")) {
                 found = true;
+                break;
             }
         }
         assertThat(found).isTrue();

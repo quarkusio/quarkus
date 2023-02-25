@@ -5,15 +5,12 @@ import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
-import static java.lang.ProcessBuilder.Redirect.PIPE;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.ServerSocket;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,15 +21,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.TeeInputStream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.smallrye.config.common.utils.StringUtil;
 
 public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
+
+    private static final Logger log = Logger.getLogger(DefaultDockerContainerLauncher.class);
 
     private int httpPort;
     private int httpsPort;
@@ -43,16 +41,11 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private String containerImage;
     private boolean pullRequired;
     private Map<Integer, Integer> additionalExposedPorts;
-
     private final Map<String, String> systemProps = new HashMap<>();
-
     private boolean isSsl;
-
-    private String containerName;
-
+    private final String containerName = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
     private String containerRuntimeBinaryName;
-
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Override
     public void init(DockerContainerArtifactLauncher.DockerInitContext initContext) {
@@ -78,7 +71,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         containerRuntimeBinaryName = determineBinary();
 
         if (pullRequired) {
-            System.out.println("Pulling container image '" + containerImage + "'");
+            log.infof("Pulling container image '%s'", containerImage);
             try {
                 int pullResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
                         .command(containerRuntimeBinaryName, "pull", containerImage).start().waitFor();
@@ -99,21 +92,21 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             httpsPort = getRandomPort();
         }
 
-        List<String> args = new ArrayList<>();
+        final List<String> args = new ArrayList<>();
         args.add(containerRuntimeBinaryName);
         args.add("run");
         if (!argLine.isEmpty()) {
             args.addAll(argLine);
         }
         args.add("--name");
-        containerName = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
         args.add(containerName);
+        args.add("-i"); // Interactive, write logs to stdout
         args.add("--rm");
         args.add("-p");
         args.add(httpPort + ":" + httpPort);
         args.add("-p");
         args.add(httpsPort + ":" + httpsPort);
-        for (var entry : additionalExposedPorts.entrySet()) {
+        for (Map.Entry<Integer, Integer> entry : additionalExposedPorts.entrySet()) {
             args.add("-p");
             args.add(entry.getKey() + ":" + entry.getValue());
         }
@@ -125,7 +118,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         if (DefaultJarLauncher.HTTP_PRESENT) {
             args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
             args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
-            // this won't be correct when using the random port but it's really only used by us for the rest client tests
+            // This won't be correct when using the random port, but it's really only used by us for the rest client tests
             // in the main module, since those tests hit the application itself
             args.addAll(toEnvVar("test.url", TestHTTPResourceManager.getUri()));
         }
@@ -138,31 +131,31 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         }
         args.add(containerImage);
 
-        Path logFile = PropertyTestUtil.getLogFilePath();
-        Files.deleteIfExists(logFile);
-        Files.createDirectories(logFile.getParent());
+        final Path logFile = PropertyTestUtil.getLogFilePath();
+        try {
+            Files.deleteIfExists(logFile);
+            Files.createDirectories(logFile.getParent());
+        } catch (FileSystemException e) {
+            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logFile);
+        }
 
-        Path containerLogFile = Paths.get("target", "container.log");
-        Files.createDirectories(containerLogFile.getParent());
-        FileOutputStream containerLogOutputStream = new FileOutputStream(containerLogFile.toFile(), true);
+        log.infof("Executing \"%s\"", String.join(" ", args));
 
-        System.out.println("Executing \"" + String.join(" ", args) + "\"");
+        final Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
 
-        Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
-
-        // the idea here is to obtain the logs of the application simply by redirecting all its output the a file
-        // this is done in contrast with the JarLauncher and NativeImageLauncher because in the case of the container
-        // the log itself is written inside the container
-        Process quarkusProcess = new ProcessBuilder(args).redirectError(PIPE).redirectOutput(PIPE).start();
-        InputStream tee = new TeeInputStream(quarkusProcess.getInputStream(), new FileOutputStream(logFile.toFile()));
-        executorService.submit(() -> IOUtils.copy(tee, containerLogOutputStream));
+        // We rely on the container writing log to stdout. If it just writes to a logfile inside itself, we would have
+        // to mount /work/ directory to get quarkus.log.
+        final Process containerProcess = new ProcessBuilder(args)
+                .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile.toFile()))
+                .start();
 
         if (startedFunction != null) {
-            IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
+            final IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, containerProcess,
                     waitTimeSeconds, logFile);
             isSsl = result.isSsl();
         } else {
-            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
+            final ListeningAddress result = waitForCapturedListeningData(containerProcess, logFile, waitTimeSeconds);
             updateConfigForPort(result.getPort());
             isSsl = result.isSsl();
         }
@@ -188,10 +181,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
     private List<String> toEnvVar(String property, String value) {
         if ((property != null) && (!property.isEmpty())) {
-            List<String> result = new ArrayList<>(2);
-            result.add("--env");
-            result.add(String.format("%s=%s", convertPropertyToEnvVar(property), value));
-            return result;
+            return List.of("--env", String.format("%s=%s", convertPropertyToEnvVar(property), value));
         }
         return Collections.emptyList();
     }
@@ -203,14 +193,13 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     @Override
     public void close() {
         try {
-            Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "stop", containerName)
+            final Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "stop", containerName)
                     .redirectError(DISCARD)
                     .redirectOutput(DISCARD).start();
             dockerStopProcess.waitFor(10, TimeUnit.SECONDS);
         } catch (IOException | InterruptedException e) {
-            System.out.println("Unable to stop container '" + containerName + "'");
+            log.errorf("Unable to stop container '%s'", containerName);
         }
         executorService.shutdown();
     }
-
 }

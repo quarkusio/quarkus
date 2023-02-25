@@ -61,7 +61,7 @@ public class PanacheJpaUtil {
             return "FROM " + getEntityName(entityClass);
         }
 
-        String trimmed = query.trim();
+        String trimmed = query.replace('\n', ' ').replace('\r', ' ').trim();
         if (trimmed.isEmpty()) {
             return "FROM " + getEntityName(entityClass);
         }

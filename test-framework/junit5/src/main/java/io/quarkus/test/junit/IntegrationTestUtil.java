@@ -34,6 +34,7 @@ import javax.inject.Inject;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -64,7 +65,8 @@ public final class IntegrationTestUtil {
     public static final int DEFAULT_HTTPS_PORT = 8444;
     public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
 
-    private static final String DOCKER_BINARY = "docker";
+    private static final String DOCKER_BINARY = ConfigProvider.getConfig()
+            .getOptionalValue("quarkus.native.container-runtime", String.class).orElse("docker");
 
     private IntegrationTestUtil() {
     }

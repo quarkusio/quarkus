@@ -175,7 +175,7 @@ public class IsDockerWorking implements BooleanSupplier {
 
         private DockerBinaryStrategy(boolean silent) {
             this.silent = silent;
-            this.binary = ConfigProvider.getConfig().getOptionalValue("quarkus.docker.executable-name", String.class)
+            this.binary = ConfigProvider.getConfig().getOptionalValue("quarkus.native.container-runtime", String.class)
                     .orElse("docker");
         }
 
@@ -194,7 +194,7 @@ public class IsDockerWorking implements BooleanSupplier {
             try {
                 OutputFilter filter = new OutputFilter();
                 if (ExecUtil.execWithTimeout(new File("."), filter, Duration.ofMillis(DOCKER_CMD_CHECK_TIMEOUT),
-                        "docker", "version", "--format", "'{{.Server.Version}}'")) {
+                        binary, "version", "--format", "'{{.Server.Version}}'")) {
                     LOGGER.debugf("Docker daemon found. Version: %s", filter.getOutput());
                     return Result.AVAILABLE;
                 } else {

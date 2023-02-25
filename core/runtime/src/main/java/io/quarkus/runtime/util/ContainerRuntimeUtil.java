@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Predicate;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 public final class ContainerRuntimeUtil {
@@ -30,6 +31,20 @@ public final class ContainerRuntimeUtil {
         // podman version 2.1.1
         String podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
         boolean podmanAvailable = podmanVersionOutput.startsWith("podman version");
+
+        final String executable = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.native.container-runtime", String.class).orElse(null);
+        if (executable != null) {
+            if (executable.trim().equalsIgnoreCase("docker") && dockerAvailable) {
+                return ContainerRuntime.DOCKER;
+            } else if (executable.trim().equalsIgnoreCase("podman") && podmanAvailable) {
+                return ContainerRuntime.PODMAN;
+            } else {
+                log.warn("quarkus.native.container-runtime config property must be set to either podman or docker " +
+                        "and the executable must be available. Ignoring it.");
+            }
+        }
+
         if (dockerAvailable) {
             // Check if "docker" is an alias to "podman"
             if (dockerVersionOutput.equals(podmanVersionOutput)) {

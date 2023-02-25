@@ -1,6 +1,7 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
+import static io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner.DOCKER_EXECUTABLE;
 
 import java.io.File;
 import java.io.IOException;
@@ -202,7 +203,7 @@ public class AppCDSBuildStep {
     private List<String> dockerRunCommands(OutputTargetBuildItem outputTarget, String containerImage,
             String containerWorkingDir) {
         List<String> command = new ArrayList<>(10);
-        command.add("docker");
+        command.add(DOCKER_EXECUTABLE);
         command.add("run");
         command.add("-v");
         command.add(outputTarget.getOutputDirectory().toAbsolutePath().toString() + ":" + CONTAINER_IMAGE_BASE_BUILD_DIR

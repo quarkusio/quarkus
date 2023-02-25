@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
@@ -37,6 +38,8 @@ public class AppCDSBuildStep {
     public static final String CLASSES_LIST_FILE_NAME = "classes.lst";
     private static final String CONTAINER_IMAGE_BASE_BUILD_DIR = "/tmp/quarkus";
     private static final String CONTAINER_IMAGE_APPCDS_DIR = CONTAINER_IMAGE_BASE_BUILD_DIR + "/appcds";
+    public static final String DOCKER_EXECUTABLE = ConfigProvider.getConfig()
+            .getOptionalValue("quarkus.native.container-runtime", String.class).orElse("docker");
 
     @BuildStep(onlyIf = AppCDSRequired.class)
     public void requested(OutputTargetBuildItem outputTarget, BuildProducer<AppCDSRequestedBuildItem> producer)
@@ -202,7 +205,7 @@ public class AppCDSBuildStep {
     private List<String> dockerRunCommands(OutputTargetBuildItem outputTarget, String containerImage,
             String containerWorkingDir) {
         List<String> command = new ArrayList<>(10);
-        command.add("docker");
+        command.add(DOCKER_EXECUTABLE);
         command.add("run");
         command.add("-v");
         command.add(outputTarget.getOutputDirectory().toAbsolutePath().toString() + ":" + CONTAINER_IMAGE_BASE_BUILD_DIR

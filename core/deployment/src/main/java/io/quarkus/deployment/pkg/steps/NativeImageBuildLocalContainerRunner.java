@@ -9,15 +9,12 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContainerRunner {
-
-    private static final Logger LOGGER = Logger.getLogger(NativeImageBuildLocalContainerRunner.class.getName());
 
     public NativeImageBuildLocalContainerRunner(NativeConfig nativeConfig, Path outputDir) {
         super(nativeConfig, outputDir);

@@ -1,8 +1,5 @@
 package io.quarkus.security.spi;
 
-import static java.util.Arrays.asList;
-
-import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.annotation.security.DenyAll;
@@ -21,17 +18,10 @@ import io.quarkus.security.Authenticated;
  */
 public class SecurityTransformerUtils {
     public static final DotName DENY_ALL = DotName.createSimple(DenyAll.class.getName());
-    private static final Set<DotName> SECURITY_ANNOTATIONS;
-
-    static {
-        SECURITY_ANNOTATIONS = new HashSet<>();
-        // keep the contents the same as in io.quarkus.security.deployment.SecurityAnnotationsRegistrar
-        SECURITY_ANNOTATIONS.addAll(asList(
-                DotName.createSimple(RolesAllowed.class.getName()),
-                DotName.createSimple(Authenticated.class.getName()),
-                DotName.createSimple(DenyAll.class.getName()),
-                DotName.createSimple(PermitAll.class.getName())));
-    }
+    private static final Set<DotName> SECURITY_ANNOTATIONS = Set.of(DotName.createSimple(RolesAllowed.class.getName()),
+            DotName.createSimple(Authenticated.class.getName()),
+            DotName.createSimple(DenyAll.class.getName()),
+            DotName.createSimple(PermitAll.class.getName()));
 
     public static boolean hasSecurityAnnotation(MethodInfo methodInfo) {
         for (AnnotationInstance annotation : methodInfo.annotations()) {

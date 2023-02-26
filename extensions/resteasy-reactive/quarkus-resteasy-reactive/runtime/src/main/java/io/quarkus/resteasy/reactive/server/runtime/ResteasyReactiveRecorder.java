@@ -53,6 +53,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationCompletionException;
+import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
@@ -255,9 +256,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                     }
                 }
 
-                if (event.failure() instanceof AuthenticationFailedException
-                        || event.failure() instanceof AuthenticationCompletionException
-                        || event.failure() instanceof AuthenticationRedirectException
+                if (event.failure() instanceof AuthenticationException
                         || event.failure() instanceof ForbiddenException) {
                     restInitialHandler.beginProcessing(event, event.failure());
                 } else {

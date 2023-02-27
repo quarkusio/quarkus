@@ -270,13 +270,13 @@ public class MultipartResourceTest {
         .when().get("/client/byte-array-as-binary-file-with-pojo")
         .then()
                 .statusCode(200)
-                .body(equalTo("fileOk:true,nameOk:true,pojoOk:true"));
+                .body(equalTo("fileOk:true,nameOk:true,pojoOk:true,uuidNull:false"));
         given()
         .header("Content-Type", "text/plain")
 .when().get("/client/params/byte-array-as-binary-file-with-pojo")
 .then()
         .statusCode(200)
-        .body(equalTo("fileOk:true,nameOk:true,pojoOk:true"));
+        .body(equalTo("fileOk:true,nameOk:true,pojoOk:true,uuidNull:true"));
         // @formatter:on
     }
 
@@ -289,14 +289,14 @@ public class MultipartResourceTest {
         .when().get("/client/byte-array-as-binary-file-with-pojo")
         .then()
                 .statusCode(200)
-                .body(equalTo("fileOk:true,nameOk:true,pojoOk:null"));
+                .body(equalTo("fileOk:true,nameOk:true,pojoOk:null,uuidNull:false"));
         given()
         .queryParam("withPojo", "false")
         .header("Content-Type", "text/plain")
 .when().get("/client/params/byte-array-as-binary-file-with-pojo")
 .then()
         .statusCode(200)
-        .body(equalTo("fileOk:true,nameOk:true,pojoOk:null"));
+        .body(equalTo("fileOk:true,nameOk:true,pojoOk:null,uuidNull:true"));
         // @formatter:on
     }
 

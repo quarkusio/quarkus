@@ -20,6 +20,7 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.security.AuthenticatedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.CertificateCredentialProducer;
 import io.quarkus.vertx.http.runtime.security.DenySecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
@@ -43,14 +44,19 @@ public class HttpSecurityProcessor {
         producer.produce(new HttpSecurityPolicyBuildItem("permit", new SupplierImpl<>(new PermitSecurityPolicy())));
         producer.produce(
                 new HttpSecurityPolicyBuildItem("authenticated", new SupplierImpl<>(new AuthenticatedHttpSecurityPolicy())));
+
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
         if (!buildTimeConfig.auth.permissions.isEmpty()) {
-            beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(PathMatchingHttpSecurityPolicy.class));
+            builder.addBeanClass(PathMatchingHttpSecurityPolicy.class);
         }
+        builder.addBeanClass(CertificateCredentialProducer.class);
+
+        beanProducer.produce(builder.build());
+
         for (Map.Entry<String, PolicyConfig> e : buildTimeConfig.auth.rolePolicy.entrySet()) {
             producer.produce(new HttpSecurityPolicyBuildItem(e.getKey(),
                     new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed))));
         }
-
     }
 
     @BuildStep

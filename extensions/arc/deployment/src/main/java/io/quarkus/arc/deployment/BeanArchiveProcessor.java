@@ -189,7 +189,9 @@ public class BeanArchiveProcessor {
                                 || text.contains("bean-discovery-mode=\"all\"")) {
                             LOGGER.warnf("Detected bean archive with bean discovery mode of 'all', "
                                     + "this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! "
-                                    + "Path to beans.xml: %s", pathVisit.getPath());
+                                    + "Path to beans.xml: %s",
+                                    archive.getKey() != null ? archive.getKey().toGacString() + ":" + pathVisit.getPath()
+                                            : pathVisit.getPath());
                         }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);

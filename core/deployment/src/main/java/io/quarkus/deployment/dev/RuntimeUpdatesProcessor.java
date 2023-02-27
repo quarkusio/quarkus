@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -107,6 +108,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification;
     private final BiFunction<String, byte[], byte[]> classTransformers;
     private final ReentrantLock scanLock = new ReentrantLock();
+    private final Lock codeGenLock = CodeGenLock.lockForCompilation();
 
     /**
      * The index for the last successful start. Used to determine if the class has changed its structure
@@ -442,6 +444,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             return false;
         }
         scanLock.lock();
+        codeGenLock.lock();
+
         try {
             final long startNanoseconds = System.nanoTime();
             for (Runnable step : preScanSteps) {
@@ -564,6 +568,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
         } finally {
             scanLock.unlock();
+            codeGenLock.unlock();
         }
     }
 

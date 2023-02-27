@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.locks.Lock;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -22,6 +23,7 @@ class CodeGenWatcher {
 
     private final QuarkusClassLoader deploymentClassLoader;
     private final FSWatchUtil fsWatchUtil;
+    private final Lock codeGenLock = CodeGenLock.lockForCodeGen();
 
     CodeGenWatcher(CuratedApplication curatedApplication, DevModeContext context) throws CodeGenException {
         final QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
@@ -39,12 +41,15 @@ class CodeGenWatcher {
             for (CodeGenData codeGen : codeGens) {
                 watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, codeGen.provider.inputExtension(),
                         modifiedPaths -> {
+                            codeGenLock.lock();
                             try {
                                 CodeGenerator.trigger(deploymentClassLoader,
                                         codeGen,
                                         curatedApplication.getApplicationModel(), config, false);
                             } catch (Exception any) {
                                 log.warn("Code generation failed", any);
+                            } finally {
+                                codeGenLock.unlock();
                             }
                         }));
             }

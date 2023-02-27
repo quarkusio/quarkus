@@ -9,7 +9,7 @@ import io.smallrye.mutiny.Uni;
 public class UniExceptionMapper {
 
     @ServerExceptionMapper({ UniException.class, OtherUniException.class })
-    Uni<Response> handleUni(Throwable t) {
+    Uni<Response> handleUni(UniException t) {
         return Uni.createFrom().deferred(() -> Uni.createFrom().item(Response.status(413).build()));
     }
 

@@ -47,7 +47,6 @@ export class QuiBadge extends LitElement {
         }
         [theme~="primary"] {
             color: var(--lumo-success-contrast-color);
-            background-color: var(--lumo-success-color);
         }
         [theme~="pill"] {
             --lumo-border-radius-s: 1em;

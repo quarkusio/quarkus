@@ -85,6 +85,10 @@ public class DevBeanInfos {
         return null;
     }
 
+    public Map<String, DependencyGraph> getDependencyGraphs() {
+        return this.dependencyGraphs;
+    }
+
     public DependencyGraph getDependencyGraph(String beanId) {
         Integer maxLevel = DevConsoleManager.getGlobal(ArcDevConsoleProcessor.MAX_DEPENDENCY_LEVEL);
         if (maxLevel == null) {

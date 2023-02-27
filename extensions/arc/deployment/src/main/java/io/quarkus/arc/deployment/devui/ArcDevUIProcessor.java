@@ -2,7 +2,9 @@ package io.quarkus.arc.deployment.devui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import io.quarkus.arc.deployment.devconsole.DependencyGraph;
 import io.quarkus.arc.deployment.devconsole.DevBeanInfo;
 import io.quarkus.arc.deployment.devconsole.DevBeanInfos;
 import io.quarkus.arc.deployment.devconsole.DevDecoratorInfo;
@@ -26,6 +28,9 @@ public class ArcDevUIProcessor {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem(NAME);
 
         List<DevBeanInfo> beans = beanInfos.getBeans();
+        Map<String, DependencyGraph> dependencyGraphs = beanInfos.getDependencyGraphs();
+        pageBuildItem.addBuildTimeData(DEPENDENCY_GRAPHS, dependencyGraphs);
+
         if (!beans.isEmpty()) {
             pageBuildItem.addPage(Page.webComponentPageBuilder()
                     .icon("font-awesome-solid:egg")
@@ -101,12 +106,12 @@ public class ArcDevUIProcessor {
         return l;
     }
 
+    private static final String DEPENDENCY_GRAPHS = "dependencyGraphs";
     private static final String BEANS = "beans";
     private static final String OBSERVERS = "observers";
     private static final String INTERCEPTORS = "interceptors";
     private static final String DECORATORS = "decorators";
     private static final String REMOVED_BEANS = "removedBeans";
-    private static final String REMOVED_COMPONENTS = "removedComponents";
     private static final String REMOVED_DECORATORS = "removedDecorators";
     private static final String REMOVED_INTERCEPTORS = "removedInterceptors";
 

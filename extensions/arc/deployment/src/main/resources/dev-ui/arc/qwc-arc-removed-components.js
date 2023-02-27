@@ -32,9 +32,9 @@ export class QwcArcRemovedComponents extends LitElement {
     `;
 
     static properties = {
-        _removedBeans: {state: true},
-        _removedDecorators: {state: true},
-        _removedInterceptors: {state: true},
+        _removedBeans: {state: false},
+        _removedDecorators: {state: false},
+        _removedInterceptors: {state: false},
     };
 
     constructor() {

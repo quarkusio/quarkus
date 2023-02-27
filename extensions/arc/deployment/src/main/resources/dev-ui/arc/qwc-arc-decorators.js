@@ -15,7 +15,7 @@ export class QwcArcDecorators extends LitElement {
         }`;
 
     static properties = {
-        _decorators: {attribute: false},
+        _decorators: {state: false},
     };
   
     constructor() {

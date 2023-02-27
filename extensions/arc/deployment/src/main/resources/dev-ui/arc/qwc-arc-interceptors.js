@@ -30,7 +30,7 @@ export class QwcArcInterceptors extends LitElement {
         `;
 
     static properties = {
-        _interceptors: {attribute: false}
+        _interceptors: {state: false}
     };
   
     constructor() {

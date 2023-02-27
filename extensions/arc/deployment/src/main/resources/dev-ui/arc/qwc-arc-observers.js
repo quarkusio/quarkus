@@ -34,7 +34,7 @@ export class QwcArcObservers extends LitElement {
         `;
 
     static properties = {
-        _observers: {attribute: false}
+        _observers: {state: false}
     };
   
     constructor() {

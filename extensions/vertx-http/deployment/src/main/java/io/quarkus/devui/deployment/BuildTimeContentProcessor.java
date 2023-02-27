@@ -69,6 +69,8 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc/", contextRoot + "qwc/");
         internalImportMapBuildItem.add("qui/", contextRoot + "qui/");
         internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
+        internalImportMapBuildItem.add("qui-d3-force", contextRoot + "qui/qui-d3-force.js");
+        internalImportMapBuildItem.add("qui-icon-menu", contextRoot + "qui/qui-icon-menu.js");
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");
         internalImportMapBuildItem.add("font/", contextRoot + "font/");
         internalImportMapBuildItem.add("controller/", contextRoot + "controller/");

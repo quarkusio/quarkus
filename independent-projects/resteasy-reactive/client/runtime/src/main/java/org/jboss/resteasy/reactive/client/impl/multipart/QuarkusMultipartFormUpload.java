@@ -184,6 +184,10 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
         }
     }
 
+    public boolean isChunked() {
+        return encoder.isChunked();
+    }
+
     private void handleError(Throwable e) {
         ended = true;
         request = null;

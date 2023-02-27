@@ -67,4 +67,8 @@ public class ClientResponseImpl extends ResponseImpl {
             throw new ProcessingException(e);
         }
     }
+
+    public String getHttpVersion() {
+        return restClientRequestContext.getVertxClientResponse().version().toString();
+    }
 }

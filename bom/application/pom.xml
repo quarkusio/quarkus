@@ -63,7 +63,7 @@
         <smallrye-opentracing.version>3.0.3</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>6.2.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.2.0</smallrye-jwt.version>
-        <smallrye-context-propagation.version>2.0.0</smallrye-context-propagation.version>
+        <smallrye-context-propagation.version>2.1.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.0</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>3.2.0</smallrye-mutiny-vertx-binding.version>

@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,15 @@ public class AssignabilityWithGenericsTest {
     public void testParameterizedTypeWithTypeVariable() {
         InstanceHandle<StringListConsumer> instance = Arc.container().instance(StringListConsumer.class);
         assertTrue(instance.isAvailable());
-        assertNotNull(instance.get().getList());
+        StringListConsumer obj = instance.get();
+        assertNotNull(obj.getList());
+        assertEquals(2, obj.getList().size());
+        assertEquals("qux", obj.getList().get(0));
+        assertEquals("quux", obj.getList().get(1));
+        assertNotNull(obj.getArray());
+        assertEquals(2, obj.getArray().length);
+        assertEquals("bar", obj.getArray()[0]);
+        assertEquals("baz", obj.getArray()[1]);
     }
 
     @Test
@@ -108,8 +115,15 @@ public class AssignabilityWithGenericsTest {
         @Inject
         List<T> list;
 
+        @Inject
+        T[] array;
+
         public List<T> getList() {
             return list;
+        }
+
+        public T[] getArray() {
+            return array;
         }
     }
 
@@ -120,8 +134,11 @@ public class AssignabilityWithGenericsTest {
         String foo = "foo";
 
         @Produces
+        String[] barBaz = { "bar", "baz" };
+
+        @Produces
         List<String> produceList() {
-            return new ArrayList<>();
+            return List.of("qux", "quux");
         }
 
         @Produces

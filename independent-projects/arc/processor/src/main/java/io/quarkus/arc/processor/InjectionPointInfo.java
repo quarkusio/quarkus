@@ -20,6 +20,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -336,6 +337,14 @@ public class InjectionPointInfo {
                 }
             }
             return ParameterizedType.create(parameterizedType.name(), typeParams, parameterizedType.owner());
+        } else if (type.kind() == org.jboss.jandex.Type.Kind.ARRAY) {
+            ArrayType arrayType = type.asArrayType();
+            Type component = arrayType.component();
+            if (component.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
+                    || component.kind() == org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE) {
+                component = resolveType(component, beanClass, beanDeployment, resolvedTypeVariables);
+            }
+            return ArrayType.create(component, type.asArrayType().dimensions());
         }
         return type;
     }

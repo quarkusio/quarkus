@@ -408,9 +408,6 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.inheritance.generics.MemberLevelInheritanceTest">
                 <methods>
-                    <exclude name="testObserverResolution"/>
-                    <exclude name="testObserver"/>
-                    <exclude name="testInjectionPoint"/>
                     <exclude name="testInjectionPointDefinition"/>
                 </methods>
             </class>

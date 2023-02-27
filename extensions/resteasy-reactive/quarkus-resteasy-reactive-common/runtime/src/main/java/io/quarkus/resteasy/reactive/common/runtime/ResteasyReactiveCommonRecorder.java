@@ -1,7 +1,5 @@
 package io.quarkus.resteasy.reactive.common.runtime;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.jboss.resteasy.reactive.common.core.Serialisers;
@@ -14,19 +12,15 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class ResteasyReactiveCommonRecorder {
-    private static final Map<String, Class<?>> primitiveTypes;
-    static {
-        Map<String, Class<?>> prims = new HashMap<>();
-        prims.put(byte.class.getName(), byte.class);
-        prims.put(boolean.class.getName(), boolean.class);
-        prims.put(char.class.getName(), char.class);
-        prims.put(short.class.getName(), short.class);
-        prims.put(int.class.getName(), int.class);
-        prims.put(float.class.getName(), float.class);
-        prims.put(double.class.getName(), double.class);
-        prims.put(long.class.getName(), long.class);
-        primitiveTypes = Collections.unmodifiableMap(prims);
-    }
+    private static final Map<String, Class<?>> primitiveTypes = Map.of(
+            byte.class.getName(), byte.class,
+            boolean.class.getName(), boolean.class,
+            char.class.getName(), char.class,
+            short.class.getName(), short.class,
+            int.class.getName(), int.class,
+            float.class.getName(), float.class,
+            double.class.getName(), double.class,
+            long.class.getName(), long.class);
 
     public <T> BeanFactory<T> factory(String targetClass, BeanContainer beanContainer) {
         return new ArcBeanFactory<>(loadClass(targetClass),

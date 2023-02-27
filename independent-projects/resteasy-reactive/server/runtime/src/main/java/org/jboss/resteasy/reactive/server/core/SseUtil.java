@@ -22,6 +22,7 @@ import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.OutboundSseEventImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class SseUtil extends CommonSseUtil {
 
     private static final String NL = "\n";

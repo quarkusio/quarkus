@@ -159,18 +159,12 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         SseEventSourceImpl sseSource = new SseEventSourceImpl(invocationBuilder.getTarget(),
                 invocationBuilder, Integer.MAX_VALUE, TimeUnit.SECONDS);
 
-        multiRequest.onCancel(() -> {
-            sseSource.close();
-        });
+        multiRequest.onCancel(sseSource::close);
         sseSource.register(event -> {
             // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
             // the content-type SSE field
             multiRequest.emit(event.readData(responseType));
-        }, error -> {
-            multiRequest.fail(error);
-        }, () -> {
-            multiRequest.complete();
-        });
+        }, multiRequest::fail, multiRequest::complete);
         // watch for user cancelling
         sseSource.registerAfterRequest(vertxResponse);
     }

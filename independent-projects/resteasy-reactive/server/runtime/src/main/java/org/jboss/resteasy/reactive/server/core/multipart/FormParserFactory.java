@@ -17,12 +17,13 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
  *
  * @author Stuart Douglas
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class FormParserFactory {
 
     private final ParserDefinition[] parserDefinitions;
 
     FormParserFactory(final List<ParserDefinition> parserDefinitions) {
-        this.parserDefinitions = parserDefinitions.toArray(new ParserDefinition[parserDefinitions.size()]);
+        this.parserDefinitions = parserDefinitions.toArray(new ParserDefinition[0]);
     }
 
     /**

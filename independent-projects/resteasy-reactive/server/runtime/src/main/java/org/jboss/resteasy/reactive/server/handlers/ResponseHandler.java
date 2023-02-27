@@ -21,6 +21,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 /**
  * Our job is to turn endpoint return types into Response instances
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ResponseHandler implements ServerRestHandler {
 
     public static final ResponseHandler NO_CUSTOMIZER_INSTANCE = new ResponseHandler();
@@ -247,6 +248,7 @@ public class ResponseHandler implements ServerRestHandler {
             }
         }
 
+        @SuppressWarnings("ForLoopReplaceableByForEach")
         class AddHeadersCustomizer implements ResponseBuilderCustomizer {
 
             private Map<String, List<String>> headers;

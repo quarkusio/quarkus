@@ -82,7 +82,6 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -135,22 +134,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     public static final Map<String, String> primitiveTypes;
     private static final Map<DotName, Class<?>> supportedReaderJavaTypes;
+    // spec
     // NOTE: sync with ContextProducer and ContextParamExtractor
-    private static final Set<DotName> DEFAULT_CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            // spec
-            URI_INFO,
-            HTTP_HEADERS,
-            REQUEST,
-            SECURITY_CONTEXT,
-            PROVIDERS,
-            RESOURCE_CONTEXT,
-            CONFIGURATION,
-            SSE,
+    private static final Set<DotName> DEFAULT_CONTEXT_TYPES = Set.of(URI_INFO, HTTP_HEADERS, REQUEST, SECURITY_CONTEXT,
+            PROVIDERS, RESOURCE_CONTEXT, CONFIGURATION, SSE,
             SSE_EVENT_SINK,
             // extras
             SERVER_REQUEST_CONTEXT,
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
-            RESOURCE_INFO)));
+            RESOURCE_INFO);
 
     protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
             OFFSET_TIME,

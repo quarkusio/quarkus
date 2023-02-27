@@ -15,6 +15,7 @@ import java.util.Map;
  * @author <a href="mailto:oleg@ural.ru">Oleg Kalnichevski</a>
  */
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ParameterParser {
     /**
      * String to be parsed.

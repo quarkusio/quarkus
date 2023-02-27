@@ -13,7 +13,7 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
  * then we need to make sure that Arc doesn't create a bean for it automatically (as it will fail validation because
  * there is no way to pass the parameter).
  * For these resources we add {@link jakarta.enterprise.inject.Vetoed}, and we generate custom CDI producers under the hood
- * in {@link CustomResourceProducersGenerator#generate}.
+ * in {@code io.quarkus.resteasy.reactive.server.deployment.CustomResourceProducersGenerator#generate}.
  */
 public class VetoingAnnotationTransformer implements AnnotationsTransformer {
 

@@ -28,6 +28,7 @@ import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedMap;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public abstract class Serialisers {
     public static final Annotation[] NO_ANNOTATION = new Annotation[0];
     public static final ReaderInterceptor[] NO_READER_INTERCEPTOR = new ReaderInterceptor[0];

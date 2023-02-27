@@ -125,7 +125,7 @@ public class KotlinCoroutineIntegrationProcessor {
      * This method generates the same invocation code as for the standard invoker but also passes along the implicit
      * {@code Continuation} argument provided by kotlinc and the coroutines library.
      *
-     * @see io.quarkus.resteasy.reactive.server.deployment.QuarkusInvokerFactory#create(ResourceMethod, ClassInfo, MethodInfo)
+     * See: io.quarkus.resteasy.reactive.server.deployment.QuarkusInvokerFactory#create(ResourceMethod, ClassInfo, MethodInfo)
      */
     private Supplier<EndpointInvoker> createCoroutineInvoker(ClassInfo currentClassInfo,
             MethodInfo info, BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,

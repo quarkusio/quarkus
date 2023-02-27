@@ -15,6 +15,6 @@ public interface ResteasyReactiveResponseRedirectHandler extends ContextResolver
 
     @Override
     default RedirectHandler getContext(Class<?> aClass) {
-        return response -> handle(response);
+        return this::handle;
     }
 }

@@ -5408,6 +5408,11 @@
                 <version>${hibernate-commons-annotations.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-community-dialects</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.hibernate.reactive</groupId>
                 <artifactId>hibernate-reactive-core-jakarta</artifactId>
                 <version>${hibernate-reactive.version}</version>

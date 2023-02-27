@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +50,8 @@ import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -102,6 +105,7 @@ import io.undertow.servlet.spec.ServletContextImpl;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ImmediateAuthenticationMechanismFactory;
 import io.undertow.vertx.VertxHttpExchange;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -348,7 +352,7 @@ public class UndertowDeploymentRecorder {
 
     public Handler<RoutingContext> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
             DeploymentManager manager, List<HandlerWrapper> wrappers,
-            ServletRuntimeConfig servletRuntimeConfig) throws Exception {
+            ServletRuntimeConfig servletRuntimeConfig, HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -382,6 +386,10 @@ public class UndertowDeploymentRecorder {
         undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.maxParameters);
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
 
+        Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression
+                ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get())
+                : Collections.emptySet();
+
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
@@ -395,6 +403,20 @@ public class UndertowDeploymentRecorder {
                 VertxHttpExchange exchange = new VertxHttpExchange(event.request(), allocator, executorService, event,
                         event.getBody());
                 exchange.setPushHandler(VertxHttpRecorder.getRootHandler());
+
+                // Note that we can't add an end handler in a separate HttpCompressionHandler because VertxHttpExchange does set
+                // its own end handler and so the end handlers added previously are just ignored...
+                if (!compressMediaTypes.isEmpty()) {
+                    event.addEndHandler(new Handler<AsyncResult<Void>>() {
+
+                        @Override
+                        public void handle(AsyncResult<Void> result) {
+                            if (result.succeeded()) {
+                                HttpCompressionHandler.compressIfNeeded(event, compressMediaTypes);
+                            }
+                        }
+                    });
+                }
 
                 Optional<MemorySize> maxBodySize = httpConfiguration.getValue().limits.maxBodySize;
                 if (maxBodySize.isPresent()) {

@@ -64,14 +64,12 @@ public class HttpBuildTimeConfig {
     public Duration testTimeout;
 
     /**
-     * If responses should be compressed.
+     * If enabled then the response body is compressed if the {@code Content-Type} header is set and the value is a compressed
+     * media type as configured via {@link #compressMediaTypes}.
      *
-     * Note that this will attempt to compress all responses, to avoid compressing
-     * already compressed content (such as images) you need to set the following header:
-     *
-     * Content-Encoding: identity
-     *
-     * Which will tell vert.x not to compress the response.
+     * Note that the RESTEasy Reactive and Reactive Routes extensions also make it possible to enable/disable compression
+     * declaratively using the annotations {@link io.quarkus.vertx.http.Compressed} and
+     * {@link io.quarkus.vertx.http.Uncompressed}.
      */
     @ConfigItem
     public boolean enableCompression;

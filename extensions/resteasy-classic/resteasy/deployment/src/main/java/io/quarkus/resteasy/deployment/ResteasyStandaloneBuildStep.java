@@ -95,7 +95,8 @@ public class ResteasyStandaloneBuildStep {
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
             ExecutorBuildItem executorBuildItem,
-            ResteasyVertxConfig resteasyVertxConfig) throws Exception {
+            ResteasyVertxConfig resteasyVertxConfig,
+            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         if (standalone == null) {
             return;
@@ -105,7 +106,7 @@ public class ResteasyStandaloneBuildStep {
         // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
         // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
         Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(),
-                executorBuildItem.getExecutorProxy(), resteasyVertxConfig);
+                executorBuildItem.getExecutorProxy(), resteasyVertxConfig, httpBuildTimeConfig);
 
         final boolean noCustomAuthCompletionExMapper;
         final boolean noCustomAuthFailureExMapper;

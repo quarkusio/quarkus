@@ -18,8 +18,8 @@ import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactive
 import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO;
 
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -123,7 +123,7 @@ public final class ServerExceptionMapperGenerator {
         Map<String, String> result = new HashMap<>();
 
         boolean handlesMultipleExceptions = handledExceptionTypes.length > 1;
-        boolean handledContainsThrowable = Arrays.stream(handledExceptionTypes).anyMatch(t -> t.name().equals(THROWABLE));
+        Set<String> commonHierarchyOfExceptions = getCommonHierarchyOfExceptions(handledExceptionTypes);
 
         for (Type handledExceptionType : handledExceptionTypes) {
             String generatedClassName = getGeneratedClassName(targetMethod, handledExceptionType);
@@ -155,7 +155,7 @@ public final class ServerExceptionMapperGenerator {
 
                     // RESTEasy Reactive toResponse(...) method
                     generateRRResponse(targetMethod, targetClass, handledExceptionType, cc, rrToResponseDescriptor,
-                            returnType, handlesMultipleExceptions, handledContainsThrowable,
+                            returnType, handlesMultipleExceptions, commonHierarchyOfExceptions,
                             (method, contextHandle) -> {
                                 ResultHandle endpointInstanceHandle = method.invokeVirtualMethod(
                                         ofMethod(ResteasyReactiveRequestContext.class, "getEndpointInstance", Object.class),
@@ -173,7 +173,7 @@ public final class ServerExceptionMapperGenerator {
 
                     // RESTEasy Reactive asyncResponse(...) method
                     generateRRUniResponse(targetMethod, targetClass, handledExceptionType, cc, rrAsyncResponseDescriptor,
-                            returnType, handlesMultipleExceptions, handledContainsThrowable,
+                            returnType, handlesMultipleExceptions, commonHierarchyOfExceptions,
                             (method, contextHandle) -> {
                                 ResultHandle endpointInstanceHandle = method.invokeVirtualMethod(
                                         ofMethod(ResteasyReactiveRequestContext.class, "getEndpointInstance", Object.class),
@@ -251,7 +251,7 @@ public final class ServerExceptionMapperGenerator {
         Map<String, String> result = new HashMap<>();
 
         boolean handlesMultipleExceptions = handledExceptionTypes.length > 1;
-        boolean handledContainsThrowable = Arrays.stream(handledExceptionTypes).anyMatch(t -> t.name().equals(THROWABLE));
+        Set<String> commonHierarchyOfExceptions = getCommonHierarchyOfExceptions(handledExceptionTypes);
 
         for (Type handledExceptionType : handledExceptionTypes) {
             String generatedClassName = getGeneratedClassName(targetMethod, handledExceptionType);
@@ -311,7 +311,7 @@ public final class ServerExceptionMapperGenerator {
 
                     // RESTEasy Reactive toResponse(...) method
                     generateRRResponse(targetMethod, targetClass, handledExceptionType, cc, rrToResponseDescriptor,
-                            returnType, handlesMultipleExceptions, handledContainsThrowable,
+                            returnType, handlesMultipleExceptions, commonHierarchyOfExceptions,
                             (method, contextHandle) -> method.readInstanceField(delegateField, method.getThis()),
                             unwrappableTypes);
                 } else if (returnType == ReturnType.UNI_RESPONSE || returnType == ReturnType.UNI_REST_RESPONSE) {
@@ -325,7 +325,7 @@ public final class ServerExceptionMapperGenerator {
 
                     // RESTEasy Reactive asyncResponse(...) method
                     generateRRUniResponse(targetMethod, targetClass, handledExceptionType, cc, rrAsyncResponseDescriptor,
-                            returnType, handlesMultipleExceptions, handledContainsThrowable,
+                            returnType, handlesMultipleExceptions, commonHierarchyOfExceptions,
                             (method, contextHandle) -> method.readInstanceField(delegateField, method.getThis()),
                             unwrappableTypes);
                 } else {
@@ -352,20 +352,15 @@ public final class ServerExceptionMapperGenerator {
         List<Type> methodParameters = targetMethod.parameterTypes();
         for (Type methodParameter : methodParameters) {
             if (methodParameter.kind() == Type.Kind.CLASS) {
-                try {
-                    Class<?> methodParameterClass = Class.forName(methodParameter.name().toString(), false,
-                            Thread.currentThread().getContextClassLoader());
-                    if (Throwable.class.isAssignableFrom(methodParameterClass)) {
-                        if (deducedHandledExceptionType != null) {
-                            throw new IllegalArgumentException(
-                                    "Multiple method parameters found that extend 'Throwable'. When using '@ServerExceptionMapper', only one parameter can be of type 'Throwable'. Offending method is '"
-                                            + targetMethod.name() + "' of class '"
-                                            + targetMethod.declaringClass().name().toString() + "'");
-                        }
-                        deducedHandledExceptionType = methodParameter;
+                Class<?> methodParameterClass = getClassByName(methodParameter.name().toString());
+                if (methodParameterClass != null && Throwable.class.isAssignableFrom(methodParameterClass)) {
+                    if (deducedHandledExceptionType != null) {
+                        throw new IllegalArgumentException(
+                                "Multiple method parameters found that extend 'Throwable'. When using '@ServerExceptionMapper', only one parameter can be of type 'Throwable'. Offending method is '"
+                                        + targetMethod.name() + "' of class '"
+                                        + targetMethod.declaringClass().name().toString() + "'");
                     }
-                } catch (ClassNotFoundException ignored) {
-
+                    deducedHandledExceptionType = methodParameter;
                 }
             }
         }
@@ -375,6 +370,36 @@ public final class ServerExceptionMapperGenerator {
                             + targetMethod.name() + "' of class '" + targetMethod.declaringClass().name().toString() + "'");
         }
         return new Type[] { deducedHandledExceptionType };
+    }
+
+    private static Set<String> getCommonHierarchyOfExceptions(Type[] handledExceptions) {
+        Set<String> commonHierarchy = new HashSet<>();
+        boolean first = true;
+        for (Type handledException : handledExceptions) {
+            Class<?> handledExceptionClass = getClassByName(handledException.name().toString());
+            while (handledExceptionClass != null && !handledExceptionClass.equals(Throwable.class)) {
+                String handledExceptionClassName = handledExceptionClass.getName();
+                if (first) {
+                    commonHierarchy.add(handledExceptionClassName);
+                } else if (!commonHierarchy.contains(handledExceptionClassName)) {
+                    commonHierarchy.remove(handledExceptionClassName);
+                }
+
+                handledExceptionClass = handledExceptionClass.getSuperclass();
+            }
+
+            first = false;
+        }
+
+        return commonHierarchy;
+    }
+
+    private static Class<?> getClassByName(String className) {
+        try {
+            return Class.forName(className, false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException ignored) {
+            return null;
+        }
     }
 
     private static MethodDescriptor toResponseDescriptor(Type handledExceptionType, String generatedClassName) {
@@ -432,7 +457,7 @@ public final class ServerExceptionMapperGenerator {
 
     private static void generateRRResponse(MethodInfo targetMethod, ClassInfo targetClass, Type handledExceptionType,
             ClassCreator cc, MethodDescriptor rrToResponseDescriptor,
-            ReturnType returnType, boolean handlesMultipleExceptions, boolean handledContainsThrowable,
+            ReturnType returnType, boolean handlesMultipleExceptions, Set<String> commonHierarchyOfExceptions,
             BiFunction<MethodCreator, ResultHandle, ResultHandle> targetInstanceHandleCreator, Set<DotName> unwrappableTypes) {
         MethodCreator mc = cc.getMethodCreator(rrToResponseDescriptor);
         ResultHandle exceptionHandle = mc.getMethodParam(0);
@@ -452,7 +477,7 @@ public final class ServerExceptionMapperGenerator {
         } else {
             TargetMethodParamsInfo targetMethodParamsInfo = getTargetMethodParamsInfo(targetMethod, targetClass,
                     handledExceptionType, mc, exceptionHandle, contextHandle, handlesMultipleExceptions,
-                    handledContainsThrowable, unwrappableTypes);
+                    commonHierarchyOfExceptions, unwrappableTypes);
             ResultHandle resultHandle = mc.invokeVirtualMethod(
                     ofMethod(targetClass.name().toString(), targetMethod.name(),
                             targetMethod.returnType().name().toString(), targetMethodParamsInfo.getTypes()),
@@ -479,7 +504,7 @@ public final class ServerExceptionMapperGenerator {
 
     private static void generateRRUniResponse(MethodInfo targetMethod, ClassInfo targetClass, Type handledExceptionType,
             ClassCreator cc, MethodDescriptor rrAsyncResponseDescriptor,
-            ReturnType returnType, boolean handlesMultipleExceptions, boolean handledContainsThrowable,
+            ReturnType returnType, boolean handlesMultipleExceptions, Set<String> commonHierarchyOfExceptions,
             BiFunction<MethodCreator, ResultHandle, ResultHandle> targetInstanceHandleCreator, Set<DotName> unwrappableTypes) {
         MethodCreator mc = cc.getMethodCreator(rrAsyncResponseDescriptor);
         ResultHandle exceptionHandle = mc.getMethodParam(0);
@@ -498,7 +523,7 @@ public final class ServerExceptionMapperGenerator {
         } else {
             TargetMethodParamsInfo targetMethodParamsInfo = getTargetMethodParamsInfo(targetMethod, targetClass,
                     handledExceptionType, mc, exceptionHandle, contextHandle, handlesMultipleExceptions,
-                    handledContainsThrowable, unwrappableTypes);
+                    commonHierarchyOfExceptions, unwrappableTypes);
             uniHandle = mc.invokeVirtualMethod(
                     ofMethod(targetClass.name().toString(), targetMethod.name(),
                             Uni.class.getName(), targetMethodParamsInfo.getTypes()),
@@ -512,7 +537,7 @@ public final class ServerExceptionMapperGenerator {
 
     private static TargetMethodParamsInfo getTargetMethodParamsInfo(MethodInfo targetMethod, ClassInfo targetClass,
             Type handledExceptionType, MethodCreator mc, ResultHandle exceptionHandle, ResultHandle contextHandle,
-            boolean handlesMultipleExceptions, boolean handledContainsThrowable, Set<DotName> unwrappableTypes) {
+            boolean handlesMultipleExceptions, Set<String> commonHierarchyOfExceptions, Set<DotName> unwrappableTypes) {
         List<Type> parameters = targetMethod.parameterTypes();
         ResultHandle[] targetMethodParamHandles = new ResultHandle[parameters.size()];
         String[] parameterTypes = new String[parameters.size()];
@@ -522,39 +547,19 @@ public final class ServerExceptionMapperGenerator {
             DotName paramDotName = parameter.name();
             parameterTypes[i] = paramDotName.toString();
             String parameterName = targetMethod.parameterName(i);
-            if (paramDotName.equals(handledExceptionType.name())) {
-                if (handlesMultipleExceptions) {
+            if (paramDotName.equals(THROWABLE)) {
+                targetMethodParamHandles[i] = exceptionHandle;
+            } else if (paramDotName.equals(handledExceptionType.name())) {
+                if (handlesMultipleExceptions && !commonHierarchyOfExceptions.contains(paramDotName.toString())) {
                     throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
                             + " of class '" + targetClass.name() + "' cannot be of type '" + handledExceptionType.name()
                             + "' because the method handles multiple exceptions. You can use '"
-                            + (handledContainsThrowable ? Throwable.class.getName() : Exception.class.getName())
-                            + "' instead.");
+                            + Throwable.class.getName() + "' instead.");
                 } else {
                     targetMethodParamHandles[i] = exceptionHandle;
                 }
-            } else if (paramDotName.equals(THROWABLE)) {
+            } else if (commonHierarchyOfExceptions.contains(paramDotName.toString())) {
                 targetMethodParamHandles[i] = exceptionHandle;
-            } else if (paramDotName.equals(EXCEPTION)) {
-                if (handlesMultipleExceptions) {
-                    if (handledContainsThrowable) {
-                        throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
-                                + " of class '" + targetClass.name()
-                                + "' cannot be of type '" + handledExceptionType.name()
-                                + "' because the method handles multiple exceptions. You can use '" + Exception.class.getName()
-                                + "' instead.");
-                    } else {
-                        targetMethodParamHandles[i] = exceptionHandle;
-                    }
-                } else {
-                    if (handledContainsThrowable) {
-                        throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
-                                + " of class '" + targetClass.name()
-                                + "' cannot be of type '" + handledExceptionType.name() + "'. You can use '"
-                                + Throwable.class.getName() + "' instead.");
-                    } else {
-                        targetMethodParamHandles[i] = exceptionHandle;
-                    }
-                }
             } else if (paramDotName.equals(handledExceptionType.name())) {
                 targetMethodParamHandles[i] = exceptionHandle;
             } else if (CONTAINER_REQUEST_CONTEXT.equals(paramDotName)

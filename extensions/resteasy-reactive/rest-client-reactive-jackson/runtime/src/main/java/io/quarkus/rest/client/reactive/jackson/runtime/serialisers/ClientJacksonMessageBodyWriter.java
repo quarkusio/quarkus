@@ -49,7 +49,7 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
 
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
-        this.context = context;
+        this.context = requestContext;
     }
 
     protected ObjectWriter getEffectiveWriter() {

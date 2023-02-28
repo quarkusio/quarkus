@@ -54,6 +54,20 @@ public class QueryParamNoTemplateTestCase {
         Assertions.assertEquals("%FF,{foo&bar}", data);
     }
 
+    @Test
+    public void testEmptyQueryParam() {
+        Object data = client.target(url.toExternalForm() + "/absoluteURI")
+                // Empty query param should be omitted in the generated URI
+                .queryParam("empty")
+                .queryParam("param", "a")
+                .request()
+                .rx(UniInvoker.class)
+                .get()
+                .await()
+                .indefinitely();
+        Assertions.assertEquals("http://localhost:8081//absoluteURI?param=a", data);
+    }
+
     public static class Endpoint {
 
         public void setup(@Observes Router router) {
@@ -66,6 +80,12 @@ public class QueryParamNoTemplateTestCase {
                                             .stream()
                                             .sorted()
                                             .collect(Collectors.joining(",")));
+                }
+            });
+            router.route("/absoluteURI").handler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext event) {
+                    event.response().end(event.request().absoluteURI());
                 }
             });
         }

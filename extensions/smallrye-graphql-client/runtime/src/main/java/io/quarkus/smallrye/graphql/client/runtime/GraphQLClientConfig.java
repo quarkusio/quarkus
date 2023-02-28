@@ -119,4 +119,12 @@ public class GraphQLClientConfig {
      */
     @ConfigItem(name = "init-payload")
     public Map<String, String> initPayload;
+
+    /**
+     * Allowing unexpected fields in response.
+     * If true, there will be warning log of an unexpected field.
+     * Else it throws an error.
+     */
+    @ConfigItem
+    public Optional<Boolean> allowUnexpectedResponseFields;
 }

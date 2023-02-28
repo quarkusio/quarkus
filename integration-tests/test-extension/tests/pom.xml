@@ -109,6 +109,7 @@
           <systemPropertyVariables>
             <!-- See io.quarkus.extest.runtime.classpath.RecordedClasspathEntries -->
             <classpathEntriesRecordingFile>${project.build.directory}/recorded-classpath-entries-failsafe.txt</classpathEntriesRecordingFile>
+            <quarkus.dymmy>test</quarkus.dymmy>
           </systemPropertyVariables>
         </configuration>
       </plugin>

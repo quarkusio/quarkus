@@ -126,7 +126,18 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 testResourceManager.init(
                         testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
                                 : null);
-                Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
+
+                Map<String, String> additionalProperties = new HashMap<>();
+
+                // propagate Quarkus properties set from the build tool
+                Properties existingSysProps = System.getProperties();
+                for (String name : existingSysProps.stringPropertyNames()) {
+                    if (name.startsWith("quarkus.")) {
+                        additionalProperties.put(name, existingSysProps.getProperty(name));
+                    }
+                }
+
+                additionalProperties.putAll(testProfileAndProperties.properties);
                 Map<String, String> resourceManagerProps = new HashMap<>(testResourceManager.start());
                 //also make the dev services props accessible from the test
                 resourceManagerProps.putAll(QuarkusMainIntegrationTestExtension.devServicesProps);

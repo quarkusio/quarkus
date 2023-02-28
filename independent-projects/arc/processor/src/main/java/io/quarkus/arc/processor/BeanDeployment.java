@@ -972,7 +972,7 @@ public class BeanDeployment {
                 beanClasses.add(beanClass);
             }
 
-            // non-inherited stuff:
+            // non-inherited methods
             for (MethodInfo method : beanClass.methods()) {
                 if (method.isSynthetic()) {
                     continue;
@@ -996,7 +996,7 @@ public class BeanDeployment {
                 }
             }
 
-            // inherited stuff
+            // inherited methods
             ClassInfo aClass = beanClass;
             Set<Methods.MethodKey> methods = new HashSet<>();
             while (aClass != null) {
@@ -1051,6 +1051,8 @@ public class BeanDeployment {
                         ? getClassByName(getBeanArchiveIndex(), superType)
                         : null;
             }
+
+            // non-inherited fields
             for (FieldInfo field : beanClass.fields()) {
                 if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)
                         && !annotationStore.hasAnnotation(field, DotNames.VETOED_PRODUCER)) {
@@ -1087,6 +1089,29 @@ public class BeanDeployment {
                 beans.add(classBean);
                 beanClassToBean.put(beanClass, classBean);
                 injectionPoints.addAll(classBean.getAllInjectionPoints());
+
+                // specification requires to disallow non-static public fields on non-`@Dependent` beans,
+                // but we do what Weld does: only disallow them on normal scoped beans (disallowing them
+                // on `@Singleton` beans would actually prevent passing the AtInject TCK)
+                //
+                // only check this in the strictly compatible mode, as this is pretty invasive,
+                // it even prevents public producer fields
+                if (classBean.getScope().isNormal() && strictCompatibility) {
+                    ClassInfo aClass = beanClass;
+                    while (aClass != null) {
+                        for (FieldInfo field : aClass.fields()) {
+                            if (Modifier.isPublic(field.flags()) && !Modifier.isStatic(field.flags())) {
+                                throw new DefinitionException("Non-static public field " + field
+                                        + " present on normal scoped bean " + beanClass);
+                            }
+                        }
+
+                        DotName superClass = aClass.superName();
+                        aClass = superClass != null && !superClass.equals(DotNames.OBJECT)
+                                ? getClassByName(getBeanArchiveIndex(), superClass)
+                                : null;
+                    }
+                }
             }
         }
 

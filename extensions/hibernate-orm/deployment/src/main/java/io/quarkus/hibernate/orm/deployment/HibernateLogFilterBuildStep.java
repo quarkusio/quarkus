@@ -27,5 +27,12 @@ public final class HibernateLogFilterBuildStep {
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.jpa.internal.util.LogHelper", "HHH000204"));
         filters.produce(new LogCleanupFilterBuildItem("SQL dialect", "HHH000400"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.beans", "HHH10005002", "HHH10005004"));
+        // Disable info logging for Bean Validation implementation not being present:
+        // it is perfectly valid when set to auto. The error is logged in the caller if it has to be logged.
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.boot.beanvalidation.TypeSafeActivator",
+                "Error calling "));
+        // Silence incubating settings warnings as we will use some for compatibility
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.incubating",
+                "HHH90006001"));
     }
 }

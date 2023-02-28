@@ -70,9 +70,14 @@ public class JavaDocConfigDescriptionParserTest {
         String parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
+        javaDoc = "hello <strong>world</strong>";
+        expectedOutput = "hello *world*";
+        parsed = parser.parseConfigDescription(javaDoc);
+        assertEquals(expectedOutput, parsed);
+
         // Emphasized
         javaDoc = "<em>hello world</em>";
-        expectedOutput = "*hello world*";
+        expectedOutput = "_hello world_";
         parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 

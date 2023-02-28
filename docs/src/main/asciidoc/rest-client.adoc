@@ -699,7 +699,6 @@ Let's create an implementation of `QuarkusTestResourceLifecycleManager` called `
 ----
 package org.acme.rest.client;
 
-import java.util.Collections;
 import java.util.Map;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -728,7 +727,7 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
 
         wireMockServer.stubFor(get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://stage.code.quarkus.io/api")));   // <5>
 
-        return Collections.singletonMap("quarkus.rest-client.\"org.acme.rest.client.ExtensionsService\".url", wireMockServer.baseUrl()); // <6>
+        return Map.of("quarkus.rest-client.\"org.acme.rest.client.ExtensionsService\".url", wireMockServer.baseUrl()); // <6>
     }
 
     @Override

@@ -335,6 +335,17 @@ public class TestResourceManager implements Closeable {
                         }
                         hasPerTestResources = true;
                         break;
+                    } else if (ann.annotationType() == QuarkusTestResourceRepeatable.class) {
+                        for (Annotation repeatableMetaAnn : testClassFromTCCL
+                                .getAnnotationsByType(((QuarkusTestResourceRepeatable) ann).value())) {
+                            QuarkusTestResource quarkusTestResource = repeatableMetaAnn.annotationType()
+                                    .getAnnotation(QuarkusTestResource.class);
+                            if (quarkusTestResource != null) {
+                                addTestResourceEntry(quarkusTestResource, repeatableMetaAnn, uniqueEntries);
+                                hasPerTestResources = true;
+                            }
+
+                        }
                     }
                 }
             }

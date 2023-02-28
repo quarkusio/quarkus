@@ -237,14 +237,14 @@ public class WebTargetImpl implements WebTarget {
         UriBuilder copy = uriBuilder.clone();
         if (copy instanceof UriBuilderImpl) {
             var impl = (UriBuilderImpl) copy;
-            if (values == null || (values.length == 1 && values[0] == null)) {
+            if (values == null || values.length == 0 || (values.length == 1 && values[0] == null)) {
                 impl.replaceQueryParam(name, (Object[]) null);
             } else {
                 String[] stringValues = toStringValues(values);
                 impl.clientQueryParam(name, (Object[]) stringValues);
             }
         } else {
-            if (values == null || (values.length == 1 && values[0] == null)) {
+            if (values == null || values.length == 0 || (values.length == 1 && values[0] == null)) {
                 copy.replaceQueryParam(name, (Object[]) null);
             } else {
                 String[] stringValues = toStringValues(values);

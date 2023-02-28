@@ -680,21 +680,41 @@ public class ValueResolverGenerator {
         exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
                 exception.getCaughtException());
 
+        ResultHandle[] realParamsHandle = paramsHandle;
+        if (isVarArgs(method)) {
+            // For varargs the number of results may be higher than the number of method params
+            // First get the regular params
+            realParamsHandle = new ResultHandle[parameterTypes.size()];
+            for (int i = 0; i < parameterTypes.size() - 1; i++) {
+                ResultHandle resultHandle = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                        whenEvaluatedParams, tryCatch.load(i));
+                realParamsHandle[i] = resultHandle;
+            }
+            // Then we need to create an array for the last argument
+            Type varargsParam = parameterTypes.get(parameterTypes.size() - 1);
+            ResultHandle componentType = tryCatch
+                    .loadClass(varargsParam.asArrayType().component().name().toString());
+            ResultHandle varargsResults = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
+                    evaluatedParams, tryCatch.load(parameterTypes.size()), componentType);
+            // E.g. String, String, String -> String, String[]
+            realParamsHandle[parameterTypes.size() - 1] = varargsResults;
+        }
+
         if (Modifier.isStatic(method.flags())) {
             if (Modifier.isInterface(clazz.flags())) {
                 tryCatch.assign(invokeRet,
-                        tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), paramsHandle));
+                        tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), realParamsHandle));
             } else {
                 tryCatch.assign(invokeRet,
-                        tryCatch.invokeStaticMethod(MethodDescriptor.of(method), paramsHandle));
+                        tryCatch.invokeStaticMethod(MethodDescriptor.of(method), realParamsHandle));
             }
         } else {
             if (Modifier.isInterface(clazz.flags())) {
                 tryCatch.assign(invokeRet,
-                        tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                        tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
             } else {
                 tryCatch.assign(invokeRet,
-                        tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                        tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
             }
         }
 

@@ -32,12 +32,18 @@ import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.WithDefault;
 
 public class ProviderConfigInjectionWarningsTest {
+
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(logRecords -> {
-                assertEquals(4, logRecords.size());
                 Set<String> messages = logRecords.stream().map(LogRecord::getMessage).collect(Collectors.toSet());
+
+                for (String message : messages) {
+                    System.out.println("Message from ProviderConfigInjectionWarningsTest: " + message);
+                }
+
+                assertEquals(4, logRecords.size());
                 assertTrue(messages.contains(
                         "Directly injecting a org.eclipse.microprofile.config.Config into a jakarta.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to jakarta.enterprise.inject.Instance<org.eclipse.microprofile.config.Config>. Offending field is 'config' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
                 assertTrue(messages.contains(

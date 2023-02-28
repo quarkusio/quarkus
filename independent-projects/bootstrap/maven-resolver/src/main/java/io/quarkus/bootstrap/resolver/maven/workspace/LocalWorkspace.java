@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +22,6 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
 
 /**
  *
@@ -56,7 +54,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
     }
 
     public LocalProject getProject(String groupId, String artifactId) {
-        return getProject(new GACT(groupId, artifactId));
+        return getProject(ArtifactKey.ga(groupId, artifactId));
     }
 
     public LocalProject getProject(ArtifactKey key) {
@@ -74,7 +72,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
     @Override
     public Model resolveRawModel(String groupId, String artifactId, String versionConstraint)
             throws UnresolvableModelException {
-        if (findArtifact(new DefaultArtifact(groupId, artifactId, null, "pom", versionConstraint)) != null) {
+        if (findArtifact(new DefaultArtifact(groupId, artifactId, null, ArtifactCoords.TYPE_POM, versionConstraint)) != null) {
             return getProject(groupId, artifactId).getRawModel();
         }
         return null;
@@ -217,7 +215,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
             return lastFindVersions;
         }
         if (findArtifact(artifact) == null) {
-            return Collections.emptyList();
+            return List.of();
         }
         lastFindVersionsKey = ArtifactKey.ga(artifact.getGroupId(), artifact.getArtifactId());
         return lastFindVersions = List.of(artifact.getVersion());

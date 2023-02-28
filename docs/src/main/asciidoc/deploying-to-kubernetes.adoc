@@ -169,6 +169,48 @@ quarkus.container-image.tag=1.0       #optional, defaults to the application ver
 
 The image that will be used in the generated manifests will be `quarkus/demo-app:1.0`
 
+=== Generating idempotent resources
+
+When generating the Kubernetes manifests, Quarkus automatically adds some labels and annotations to give extra information about the generation date or versions. For example:
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    app.quarkus.io/commit-id: 0f8b87788bc446a9347a7961bea8a60889fe1494
+    app.quarkus.io/build-timestamp: 2023-02-10 - 13:07:51 +0000
+  labels:
+    app.kubernetes.io/managed-by: quarkus
+    app.kubernetes.io/version: 0.0.1-SNAPSHOT
+    app.kubernetes.io/name: example
+  name: example
+spec:
+  ...
+----
+
+The `app.quarkus.io/commit-id`, `app.quarkus.io/build-timestamp` labels and the `app.kubernetes.io/version` annotation might change every time we re-build the Kubernetes manifests which can be problematic when we want to deploy these resources using a Git-Ops tool (because these tools will detect differences and hence will perform a re-deployment). 
+
+To make the generated resources Git-Ops friendly and only produce idempotent resources (resources that won't change every time we build the sources), we need to add the following property:
+
+[source,properties]
+----
+quarkus.kubernetes.idempotent=true
+----
+
+Moreover, by default the directory where the generated resources are created is `target/kubernetes`, to change it, we need to use:
+
+[source,properties]
+----
+quarkus.kubernetes.output-directory=target/kubernetes-with-idempotent
+----
+
+[NOTE]
+====
+Note that the property `quarkus.kubernetes.output-directory` is relative to the current project location. 
+====
+
 === Changing the generated deployment resource
 
 Besides generating a `Deployment` resource, you can also choose to generate either a `StatefulSet`, or a `Job`, or a `CronJob` resource instead via `application.properties`:

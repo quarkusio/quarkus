@@ -186,6 +186,9 @@ class KubernetesProcessor {
                     }
                 });
 
+                Path targetDirectory = kubernetesConfig.outputDirectory.map(d -> Paths.get("").toAbsolutePath().resolve(d))
+                        .orElse(outputTarget.getOutputDirectory().resolve(KUBERNETES));
+
                 // write the generated resources to the filesystem
                 generatedResourcesMap = session.close();
                 List<String> generatedFiles = new ArrayList<>(generatedResourcesMap.size());
@@ -197,7 +200,7 @@ class KubernetesProcessor {
                         continue;
                     }
                     String fileName = path.toFile().getName();
-                    Path targetPath = outputTarget.getOutputDirectory().resolve(KUBERNETES).resolve(fileName);
+                    Path targetPath = targetDirectory.resolve(fileName);
                     String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
 
                     generatedKubernetesResourceProducer.produce(new GeneratedKubernetesResourceBuildItem(fileName,

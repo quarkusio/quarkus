@@ -39,12 +39,16 @@ public class RuntimeSettings {
         private final Map<String, Object> settings;
 
         public Builder(BuildTimeSettings buildTimeSettings, IntegrationSettings integrationSettings) {
-            this.settings = new HashMap<>(buildTimeSettings.getSettings());
+            this.settings = new HashMap<>(buildTimeSettings.getQuarkusConfigSettings());
             this.settings.putAll(integrationSettings.getSettings());
         }
 
         public void put(String key, Object value) {
             settings.put(key, value);
+        }
+
+        public void putIfAbsent(String key, Object value) {
+            settings.putIfAbsent(key, value);
         }
 
         public Object get(String key) {

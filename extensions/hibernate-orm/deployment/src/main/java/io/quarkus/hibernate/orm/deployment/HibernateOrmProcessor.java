@@ -382,6 +382,9 @@ public final class HibernateOrmProcessor {
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             ParsedPersistenceXmlDescriptor xmlDescriptor = persistenceXmlDescriptorBuildItem.getDescriptor();
+            Optional<JdbcDataSourceBuildItem> jdbcDataSource = jdbcDataSources.stream()
+                    .filter(i -> i.isDefault())
+                    .findFirst();
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(xmlDescriptor,
                             xmlDescriptor.getName(),
@@ -391,8 +394,9 @@ public final class HibernateOrmProcessor {
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             Collections.emptyMap(),
-                            false,
-                            true));
+                            hibernateOrmConfig.databaseOrmCompatibilityVersion
+                                    .settings(jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind).orElse(null)),
+                            false, true));
         }
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
@@ -1200,6 +1204,8 @@ public final class HibernateOrmProcessor {
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
                         persistenceUnitConfig.unsupportedProperties,
+                        hibernateOrmConfig.databaseOrmCompatibilityVersion
+                                .settings(jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind).orElse(null)),
                         false, false));
     }
 

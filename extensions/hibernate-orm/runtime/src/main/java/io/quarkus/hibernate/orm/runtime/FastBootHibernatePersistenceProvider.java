@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -253,8 +254,9 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             runtimeSettingsBuilder.put(entry.getKey(), entry.getValue());
         }
 
-        RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
-        return runtimeSettings;
+        buildTimeSettings.getDatabaseOrmCompatibilitySettings().forEach(runtimeSettingsBuilder::putIfAbsent);
+
+        return runtimeSettingsBuilder.build();
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings, RecordedState rs,

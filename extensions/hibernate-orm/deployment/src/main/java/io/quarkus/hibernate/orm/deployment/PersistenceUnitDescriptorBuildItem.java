@@ -33,16 +33,19 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final String multiTenancySchemaDataSource;
     private final List<RecordableXmlMapping> xmlMappings;
     private final Map<String, String> quarkusConfigUnsupportedProperties;
+    private final Map<String, String> databaseOrmCompatibilitySettings;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
 
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String configurationName,
             List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
+            Map<String, String> databaseOrmCompatibilitySettings,
             boolean isReactive, boolean fromPersistenceXml) {
         this(descriptor, configurationName,
                 Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME), MultiTenancyStrategy.NONE, null,
-                xmlMappings, quarkusConfigUnsupportedProperties, isReactive, fromPersistenceXml);
+                xmlMappings, quarkusConfigUnsupportedProperties, databaseOrmCompatibilitySettings,
+                isReactive, fromPersistenceXml);
     }
 
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String configurationName,
@@ -50,6 +53,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
             MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
+            Map<String, String> databaseOrmCompatibilitySettings,
             boolean isReactive, boolean fromPersistenceXml) {
         this.descriptor = descriptor;
         this.configurationName = configurationName;
@@ -58,6 +62,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
         this.xmlMappings = xmlMappings;
         this.quarkusConfigUnsupportedProperties = quarkusConfigUnsupportedProperties;
+        this.databaseOrmCompatibilitySettings = databaseOrmCompatibilitySettings;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
     }
@@ -102,6 +107,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         return new QuarkusPersistenceUnitDefinition(descriptor, configurationName, dataSource, multiTenancyStrategy,
                 xmlMappings,
-                quarkusConfigUnsupportedProperties, isReactive, fromPersistenceXml, integrationStaticDescriptors);
+                quarkusConfigUnsupportedProperties, databaseOrmCompatibilitySettings,
+                isReactive, fromPersistenceXml, integrationStaticDescriptors);
     }
 }

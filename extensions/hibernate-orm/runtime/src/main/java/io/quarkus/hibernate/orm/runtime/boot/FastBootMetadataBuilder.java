@@ -19,6 +19,7 @@ import static org.hibernate.internal.HEMLogging.messageLogger;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -137,24 +138,11 @@ public class FastBootMetadataBuilder {
         final RecordableBootstrap ssrBuilder = RecordableBootstrapFactory.createRecordableBootstrapBuilder(puDefinition);
 
         final MergedSettings mergedSettings = mergeSettings(puDefinition);
-        this.buildTimeSettings = new BuildTimeSettings(mergedSettings.getConfigurationValues());
+        this.buildTimeSettings = createBuildTimeSettings(puDefinition, mergedSettings.getConfigurationValues());
 
         // Build the "standard" service registry
-        ssrBuilder.applySettings(buildTimeSettings.getSettings());
-        // We don't add unsupported properties to mergedSettings/buildTimeSettings,
-        // so that we can more easily differentiate between
-        // properties coming from Quarkus and "unsupported" properties
-        // on startup (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
-        for (Map.Entry<String, String> entry : puDefinition.getQuarkusConfigUnsupportedProperties().entrySet()) {
-            var key = entry.getKey();
-            if (buildTimeSettings.get(key) != null) {
-                // Ignore properties that were already set by Quarkus;
-                // we'll log a warning about those on startup.
-                // (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
-                continue;
-            }
-            ssrBuilder.applySetting(key, entry.getValue());
-        }
+        ssrBuilder.applySettings(buildTimeSettings.getAllSettings());
+
         // We need to initialize the multi tenancy strategy before building the service registry as it is used to
         // create metadata builder. Adding services afterwards would lead to unpredicted behavior.
         final MultiTenancyStrategy multiTenancyStrategy = puDefinition.getMultitenancyStrategy();
@@ -218,6 +206,26 @@ public class FastBootMetadataBuilder {
         // for the time being we want to revoke access to the temp ClassLoader if one
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
+    }
+
+    private BuildTimeSettings createBuildTimeSettings(QuarkusPersistenceUnitDefinition puDefinition,
+            Map<String, Object> quarkusConfigSettings) {
+        Map<String, String> quarkusConfigUnsupportedProperties = puDefinition.getQuarkusConfigUnsupportedProperties();
+        Map<String, Object> allSettings = new HashMap<>(quarkusConfigSettings);
+
+        // Ignore properties that were already set by Quarkus;
+        // we'll log a warning about those on startup.
+        // (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
+        quarkusConfigUnsupportedProperties.forEach(allSettings::putIfAbsent);
+
+        var databaseOrmCompatibilitySettings = puDefinition.getDatabaseOrmCompatibilitySettings();
+        databaseOrmCompatibilitySettings.forEach(allSettings::putIfAbsent);
+
+        // We keep a separate copy of settings coming from Quarkus config,
+        // so that we can more easily differentiate between
+        // properties coming from Quarkus and "unsupported" properties
+        // on startup (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
+        return new BuildTimeSettings(quarkusConfigSettings, databaseOrmCompatibilitySettings, allSettings);
     }
 
     /**

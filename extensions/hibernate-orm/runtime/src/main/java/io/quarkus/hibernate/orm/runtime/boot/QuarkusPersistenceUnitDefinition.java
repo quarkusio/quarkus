@@ -26,11 +26,13 @@ public final class QuarkusPersistenceUnitDefinition {
     private final boolean fromPersistenceXml;
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
     private final Map<String, String> quarkusConfigUnsupportedProperties;
+    private final Map<String, String> databaseOrmCompatibilitySettings;
 
     public QuarkusPersistenceUnitDefinition(PersistenceUnitDescriptor persistenceUnitDescriptor,
             String configurationName, Optional<String> dataSource,
             MultiTenancyStrategy multitenancyStrategy, List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
+            Map<String, String> databaseOrmCompatibilitySettings,
             boolean isReactive, boolean fromPersistenceXml,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         Objects.requireNonNull(persistenceUnitDescriptor);
@@ -41,6 +43,7 @@ public final class QuarkusPersistenceUnitDefinition {
         this.multitenancyStrategy = multitenancyStrategy;
         this.xmlMappings = xmlMappings;
         this.quarkusConfigUnsupportedProperties = quarkusConfigUnsupportedProperties;
+        this.databaseOrmCompatibilitySettings = databaseOrmCompatibilitySettings;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
         this.integrationStaticDescriptors = integrationStaticDescriptors;
@@ -52,6 +55,7 @@ public final class QuarkusPersistenceUnitDefinition {
             MultiTenancyStrategy multitenancyStrategy,
             List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
+            Map<String, String> databaseOrmCompatibilitySettings,
             boolean reactive,
             boolean fromPersistenceXml,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
@@ -63,6 +67,7 @@ public final class QuarkusPersistenceUnitDefinition {
         this.multitenancyStrategy = multitenancyStrategy;
         this.xmlMappings = xmlMappings;
         this.quarkusConfigUnsupportedProperties = quarkusConfigUnsupportedProperties;
+        this.databaseOrmCompatibilitySettings = databaseOrmCompatibilitySettings;
         this.isReactive = reactive;
         this.fromPersistenceXml = fromPersistenceXml;
         this.integrationStaticDescriptors = integrationStaticDescriptors;
@@ -105,4 +110,7 @@ public final class QuarkusPersistenceUnitDefinition {
         return quarkusConfigUnsupportedProperties;
     }
 
+    public Map<String, String> getDatabaseOrmCompatibilitySettings() {
+        return databaseOrmCompatibilitySettings;
+    }
 }

@@ -4,12 +4,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import io.quarkus.hibernate.orm.deployment.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
 
 @ConfigRoot
 public class HibernateOrmConfig {
@@ -25,6 +27,30 @@ public class HibernateOrmConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean enabled;
+
+    /**
+     * When set, attempts to exchange data with the database
+     * as the given version of Hibernate ORM would have,
+     * *on a best-effort basis*.
+     *
+     * Please note:
+     *
+     * * schema validation may still fail in some cases:
+     * this attempts to make Hibernate ORM 6+ behave correctly at runtime,
+     * but it may still expect a different (but runtime-compatible) schema.
+     * * robust test suites are still useful and recommended:
+     * you should still check that your application behaves as intended with your legacy schema.
+     * * older versions will be dropped as Hibernate ORM changes pile up
+     * and support for those older versions becomes too unreliable:
+     * you should still plan a migration of your schema to a newer version of Hibernate ORM.
+     * To help with migration, have a look at the source code of {@link DatabaseOrmCompatibilityVersion}:
+     * it lists relevant settings and includes links to the relevant sections of migration guides.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem(name = "database.orm-compatibility.version", defaultValue = "LATEST")
+    @ConvertWith(DatabaseOrmCompatibilityVersion.Converter.class)
+    public DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
 
     /**
      * Configuration for the default persistence unit.

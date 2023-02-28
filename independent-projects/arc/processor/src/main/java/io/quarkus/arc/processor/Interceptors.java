@@ -42,6 +42,12 @@ final class Interceptors {
             if (priority == null && annotation.name().equals(DotNames.ARC_PRIORITY)) {
                 priority = annotation.value().asInt();
             }
+
+            // rudimentary, but good enough for now (should also look at inherited annotations and stereotypes)
+            ScopeInfo scope = beanDeployment.getScope(annotation.name());
+            if (scope != null && !BuiltinScope.DEPENDENT.is(scope)) {
+                throw new DefinitionException("Interceptor declares scope other than @Dependent: " + interceptorClass);
+            }
         }
         if (bindings.isEmpty()) {
             throw new DefinitionException("Interceptor has no bindings: " + interceptorClass);

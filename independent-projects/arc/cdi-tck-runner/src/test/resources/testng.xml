@@ -85,11 +85,6 @@
                     <exclude name="testNonDependentScopedProducerMethodWithParameterizedTypeWithTypeVariable"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.interceptors.definition.broken.nonDependent.NonDependentInterceptorTest">
-                <methods>
-                    <exclude name="testDeploymentWithScopedInterceptor"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.contract.lifecycleCallback.exceptions.LifecycleCallbackInterceptorExceptionTest">
                 <methods>
                     <exclude name="testLifecycleCallbackInterceptorCanCatchException"/>

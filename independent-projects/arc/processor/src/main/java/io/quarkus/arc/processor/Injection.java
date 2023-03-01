@@ -162,6 +162,13 @@ public class Injection {
                             InjectionPointInfo.fromField(injectTarget.asField(), beanClass, beanDeployment, transformer))));
                     break;
                 case METHOD:
+                    // the spec doesn't forbid generic bean constructors and Weld is fine with them too
+                    if (!injectTarget.asMethod().isConstructor()
+                            && !injectTarget.asMethod().typeParameters().isEmpty()) {
+                        throw new DefinitionException(
+                                "Initializer method may not be generic (declare type parameters): " + injectTarget);
+                    }
+
                     injections.add(new Injection(injectTarget,
                             InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanClass, beanDeployment, transformer)));
                     break;

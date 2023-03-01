@@ -43,11 +43,6 @@
                     <exclude name="testContextualDestroyCatchesException"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.initializer.broken.generic.GenericInitializerMethodTest">
-                <methods>
-                    <exclude name="testGenericInitializerMethodNotAllowed"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.contract.lifecycleCallback.LifecycleCallbackInterceptorTest">
                 <methods>
                     <exclude name="testPostConstructInterceptor"/>

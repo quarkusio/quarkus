@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.server.test;
 
 import static io.restassured.RestAssured.get;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -58,9 +60,11 @@ public class CloserTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("1"));
-        get("/counter/singleton")
-                .then()
-                .body(equalTo("2"));
+        await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
+            get("/counter/singleton")
+                    .then()
+                    .body(equalTo("2"));
+        });
         get("/counter/uni-singleton")
                 .then()
                 .body(equalTo("0"));
@@ -79,9 +83,11 @@ public class CloserTest {
         get("/counter/singleton")
                 .then()
                 .body(equalTo("2"));
-        get("/counter/uni-singleton")
-                .then()
-                .body(equalTo("2"));
+        await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
+            get("/counter/uni-singleton")
+                    .then()
+                    .body(equalTo("2"));
+        });
         get("/counter/per-request")
                 .then()
                 .body(equalTo("0"));
@@ -100,9 +106,11 @@ public class CloserTest {
         get("/counter/uni-singleton")
                 .then()
                 .body(equalTo("2"));
-        get("/counter/per-request")
-                .then()
-                .body(equalTo("2"));
+        await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
+            get("/counter/per-request")
+                    .then()
+                    .body(equalTo("2"));
+        });
     }
 
     @Path("per-request")

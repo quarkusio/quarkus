@@ -2498,24 +2498,26 @@ The message bundles can be used at runtime:
 
 The bundle name is defaulted unless it's specified with `@MessageBundle#value()`.
 For a top-level class the `msg` value is used by default.
-For a nested class the name starts with `msg` followed by an underscore, followed by the simple names of all enclosing classes in the hierarchy (top-level class goes first) seperated by underscores.
+For a nested class the name consists of the simple names of all enclosing classes in the hierarchy (top-level class goes first), followed by the simple name of the message bundle interface.
+Names are separated by underscores.
 
-For example, the name of the following message bundle will be defaulted to `msg_Index`:
+For example, the name of the following message bundle will be defaulted to `Controller_index`:
 
 [source,java]
 ----
-class Index {
+class Controller {
 
     @MessageBundle
-    interface Bundle {
+    interface index {
 
         @Message("Hello {name}!")
-        String hello(String name);
+        String hello(String name); <1>
    }
 }
 ----
+<1> This message could be used in a template via `{Controller_index:hello(name)}`.
 
-NOTE: The bundle name is also used as a part of the name of a localized file, e.g. `msg_Index` in the `msg_Index_de.properties`.
+NOTE: The bundle name is also used as a part of the name of a localized file, e.g. `Controller_index` in the `Controller_index_de.properties`.
 
 ==== Bundle Name and Message Keys
 

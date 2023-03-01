@@ -23,7 +23,7 @@ public class MessageBundleLocaleTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(Messages.class)
                     .addAsResource(new StringAsset(
-                            "{msg_MessageBundleLocaleTest:helloWorld}"),
+                            "{MessageBundleLocaleTest_Messages:helloWorld}"),
                             "templates/foo.html"));
 
     @Inject

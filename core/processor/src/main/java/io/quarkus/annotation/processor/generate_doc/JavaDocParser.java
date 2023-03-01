@@ -34,16 +34,17 @@ final class JavaDocParser {
     private static final String NEW_LINE = "\n";
     private static final String LINK_NODE = "a";
     private static final String BOLD_NODE = "b";
+    private static final String STRONG_NODE = "strong";
     private static final String BIG_NODE = "big";
     private static final String CODE_NODE = "code";
     private static final String DEL_NODE = "del";
     private static final String ITALICS_NODE = "i";
+    private static final String EMPHASIS_NODE = "em";
     private static final String TEXT_NODE = "#text";
     private static final String UNDERLINE_NODE = "u";
     private static final String NEW_LINE_NODE = "br";
     private static final String PARAGRAPH_NODE = "p";
     private static final String SMALL_NODE = "small";
-    private static final String EMPHASIS_NODE = "em";
     private static final String LIST_ITEM_NODE = "li";
     private static final String HREF_ATTRIBUTE = "href";
     private static final String STRIKE_NODE = "strike";
@@ -220,11 +221,12 @@ final class JavaDocParser {
                     sb.append(BACKTICK);
                     break;
                 case BOLD_NODE:
-                case EMPHASIS_NODE:
+                case STRONG_NODE:
                     sb.append(STAR);
                     appendHtml(sb, childNode);
                     sb.append(STAR);
                     break;
+                case EMPHASIS_NODE:
                 case ITALICS_NODE:
                     sb.append(UNDERSCORE);
                     appendHtml(sb, childNode);

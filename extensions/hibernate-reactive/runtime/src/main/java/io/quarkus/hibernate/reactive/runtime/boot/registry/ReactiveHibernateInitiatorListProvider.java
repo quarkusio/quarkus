@@ -25,6 +25,7 @@ import org.hibernate.reactive.provider.service.ReactiveSqmMultiTableMutationStra
 import org.hibernate.reactive.provider.service.ReactiveValuesMappingProducerProviderInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
+import org.hibernate.sql.ast.internal.JdbcParameterRendererInitiator;
 
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
@@ -115,6 +116,9 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
 
         //Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE);
+
+        // Default implementation - this is expected to change as we customize the rendering for vert.x drivers
+        serviceInitiators.add(JdbcParameterRendererInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

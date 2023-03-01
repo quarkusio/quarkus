@@ -32,6 +32,7 @@ import org.hibernate.reactive.provider.service.ReactiveValuesMappingProducerProv
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
+import org.hibernate.sql.ast.internal.JdbcParameterRendererInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.boot.registry.MirroringIntegratorService;
@@ -235,6 +236,9 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
 
         //Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE);
+
+        // Default implementation - this is expected to change as we customize the rendering for vert.x drivers
+        serviceInitiators.add(JdbcParameterRendererInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

@@ -224,11 +224,6 @@
                     <exclude name="testGetInjectableReferenceOnBeanManager"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.interceptors.definition.broken.observer.async.InterceptorWithAsyncObserverMethodTest">
-                <methods>
-                    <exclude name="testInterceptorWithAsyncObserverMethodNotOk"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.order.aroundInvoke.AroundInvokeOrderTest">
                 <methods>
                     <exclude name="testInvocationOrder"/>
@@ -404,11 +399,6 @@
             <class name="org.jboss.cdi.tck.tests.definition.scope.inOtherBda.ScopeDefinedInOtherBDATest">
                 <methods>
                     <exclude name="testCustomScopeInOtherBDAisBeanDefiningAnnotation"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.interceptors.definition.broken.observer.InterceptorWithObserverMethodTest">
-                <methods>
-                    <exclude name="testInterceptorWithObserverMethodNotOk"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.injection.intercepted.InterceptedBeanFieldInjectionTest">

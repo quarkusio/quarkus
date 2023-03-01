@@ -55,7 +55,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
-
+        
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
@@ -65,6 +65,8 @@
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
+
+        <owasp-dependency-check-plugin.version>8.2.1</owasp-dependency-check-plugin.version>
 
         <!-- Dependency versions -->
         <jacoco.version>0.8.10</jacoco.version>
@@ -148,6 +150,18 @@
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-platform-bom-maven-plugin</artifactId>
                     <version>${quarkus-platform-bom-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${owasp-dependency-check-plugin.version}</version>
+                    <configuration>
+                        <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                        <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+                        <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                        <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+                        <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -356,6 +370,27 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>owasp-check</id>
+            <activation>
+                <property>
+                    <name>owasp-check</name>
+                </property>
+            </activation>
+            <build>
+                <defaultGoal>org.owasp:dependency-check-maven:check</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>owasp-report</id>
+            <activation>
+                <property>
+                    <name>owasp-report</name>
+                </property>
+            </activation>
+            <build>
+                <defaultGoal>org.owasp:dependency-check-maven:aggregate</defaultGoal>
+            </build>
+        </profile>
     </profiles>
-
 </project>

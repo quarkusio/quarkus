@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 ////
-TODO: See Quarkus documentation reference for details
+TODO: See xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines] for details
 - Title should have an implied "About..." in front. 
 - ID should end with '-reference' (using the filename works)
 - choose appropriate categories
@@ -15,8 +15,8 @@ include::_attributes.adoc[]
 :categories: ...
 ////
 :extension-status: preview
-TODO: uncomment the above for for an experimental or tech-preview content. 
-The document header ends at the first blank line.
+TODO: uncomment the above for experimental or tech-preview content. 
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
 A short introduction that describes the content of this reference.
@@ -29,8 +29,8 @@ include::{includes}/extension-status.adoc[]
 
 == Add additional sections
 
-- xref:{doc-guides}/doc-concept.adoc#reference[Documentation concepts: Reference guides]
-- xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
+- xref:{doc-guides}/doc-concept.adoc#reference[Quarkus documentation content types: Reference guides]
+- xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines]
 
 == Guidelines for a good reference
 
@@ -53,3 +53,7 @@ TODO: If this is an extension reference, include the relevant configuration
 
 include::{generated-dir}/config/<<generated-filename>>.adoc[opts=optional, leveloffset=+1]
 ////
+
+== References
+
+To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.

@@ -4,11 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="doc-reference"]
-= About Quarkus documentation
+= Quarkus style and content guidelines
 include::_attributes.adoc[]
 :categories: contributing
 
-A detailed reference for the structure and composition of Quarkus documentation.
+Guidelines are provided to help you to contribute clear and consistent content that is also sourced in the required structure and composition of Quarkus documentation.
 
 == AsciiDoc syntax
 
@@ -139,38 +139,49 @@ Minimally, each document should define and id and a title, and include common at
 [source,asciidoc]
 ----
 [id="doc-reference"] // <1>
-= Quarkus documentation reference // <2>
+= Quarkus style and content guidelines // <2>
 \include::_attributes.adoc[] // <3>
 :categories: contributing // <4>
 ----
 
 <1> Use the filename as the ID for the document.
-<2> Define the document title following guidance in <<Titles and headings>>
-<3> Include common document attributes
-<4> Specify the relevant <<Categories>> (comma separated)
+<2> Define the document title following guidance in <<Titles and headings>>.
+<3> Include common document attributes.
+<4> Specify the relevant <<Categories>> (comma separated).
 
-==== Other common document attributes:
+[[doc-header-optional]]
+==== Other common document header attributes
 
 `:extension-status: preview`:: Use this attribute to flag special types of content. Valid values: `experimental`, `preview`, `stable` (not usually used), and `deprecated`.
 `:summary: <text>`:: Use the summary to provide a concise (26 words or less) description of the document. 
-This attribute will be used in tiles or other descriptions on the website. If not present, the contents of the <<Abstracts (preamble),preamble>> will be used instead.
+The value of this attribute is used in tiles or other descriptions on the website and is not required in newer diataxis-styled docs, as outlined in <<abstracts-preamble>>. 
+If not present, the first sentence of the abstract is automatically used to generate the tile summary. 
 
-NOTE: Take care with whitespace when working with document-scoped attributes. The document header ends with the first blank line. 
+IMPORTANT: Take care with whitespace when working with document-scoped attributes. The document header ends with the first blank line. 
 
+[[abstracts-preamble]]
 === Abstracts (preamble)
 
-Add a short description that helps your audience to quickly find and understand the purpose and intent of the page.
+The first paragraph in the main body is treated as the abstract, also referred to as the preamble.
+Add a short description that helps your audience quickly find and understand the purpose and intent of the page.
+The first sentence of the abstract provides a summary and gets automatically added to the tile on the link:https://quarkus.io/guides/[Quarkus guides homepage].
 
 Try to write the abstract by using the following guidelines:
 
 * *User oriented:* Contains terms and keywords that are familiar to users.
-* *Concise:* Avoids self-referential expressions and filler words, for example, "This document..", "This tutorial..", or "The following.."
+* *Concise:* Avoids self-referential expressions and filler words, for example:
+** "This document.."
+** "This tutorial..."
+** "The following..."
 * *Brief:* Is no more than three sentences long. 
 
 [IMPORTANT]
 ====
-The first sentence of the abstract must explain the value and some benefit of the content in less than 27 words because this automatically displays on the link:https://quarkus.io/guides/[Quarkus guides homepage].
+Ensure that the first sentence explains the value and some benefits of the content in 26 words or less.
 ====
+
+If the first sentence is too long or can not be simplified to fit on the website tile, you can define a ``:summary:`` attribute in the document header attributes to serve that purpose. 
+For more information, see <<doc-header-optional>>.
 
 === Semantic line breaks
 
@@ -198,7 +209,7 @@ If you end up with deeply nested sections, think about the following:
 For example, if this is a reference, should some of this content be moved to a concept doc or how-to guide instead?
 - Can the content be reorganized to make it simpler to consume?
 
-See xref:{doc-guides}/doc-concept.adoc[Quarkus documentation concepts] for more information about content types and organization.
+See xref:{doc-guides}/doc-concept.adoc[Quarkus documentation content types] for more information about content types and organization.
 ====
 
 === Links
@@ -329,6 +340,7 @@ Quarkus documentation is grouped into the following categories.
 | integration | Support for integration extensions (Camel)
 | messaging | Integrations with messaging systems like Kafka, AMQP, or RabbitMQ.
 | miscellaneous | Miscellaneous
+| native | Everything related to native executables
 | observability | Extensions and integrations for runtime and application observability
 | reactive | Extensions that support reactive technologies and techniques
 | security | Security

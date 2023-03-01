@@ -28,6 +28,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -38,7 +39,10 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.Page;
 import io.quarkus.micrometer.deployment.export.PrometheusRegistryProcessor;
+import io.quarkus.micrometer.deployment.export.RegistryBuildItem;
 import io.quarkus.micrometer.runtime.ClockProvider;
 import io.quarkus.micrometer.runtime.CompositeRegistryCreator;
 import io.quarkus.micrometer.runtime.MeterFilterConstraint;
@@ -231,6 +235,25 @@ public class MicrometerProcessor {
         }
 
         return ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).build();
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public CardPageBuildItem createCard(List<RegistryBuildItem> registries) {
+        var card = new CardPageBuildItem("Micrometer metrics");
+
+        var json = registries.stream().filter(r -> "JSON".equals(r.name())).map(RegistryBuildItem::path).findFirst();
+        var prom = registries.stream().filter(r -> "Prometheus".equals(r.name())).map(RegistryBuildItem::path).findFirst();
+
+        prom.ifPresent(s -> card.addPage(Page.externalPageBuilder("Prometheus")
+                .icon("font-awesome-solid:chart-line")
+                .url(s)));
+
+        json.ifPresent(s -> card.addPage(Page.externalPageBuilder("JSON")
+                .icon("font-awesome-solid:chart-line")
+                .url(s)
+                .isJsonContent()));
+
+        return card;
     }
 
 }

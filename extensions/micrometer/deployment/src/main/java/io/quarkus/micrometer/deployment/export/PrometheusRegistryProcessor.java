@@ -86,6 +86,7 @@ public class PrometheusRegistryProcessor {
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
     void createPrometheusRoute(BuildProducer<RouteBuildItem> routes,
+            BuildProducer<RegistryBuildItem> registries,
             MicrometerConfig mConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             PrometheusRecorder recorder) {
@@ -118,5 +119,7 @@ public class PrometheusRegistryProcessor {
                 .routeFunction(pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*"), recorder.fallbackRoute())
                 .handler(recorder.getFallbackHandler())
                 .build());
+
+        registries.produce(new RegistryBuildItem("Prometheus", nonApplicationRootPathBuildItem.resolvePath(pConfig.path)));
     }
 }

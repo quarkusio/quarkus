@@ -50,7 +50,7 @@ import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.AbstractJobDefinition;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
-import io.quarkus.scheduler.common.runtime.ScheduledMethodMetadata;
+import io.quarkus.scheduler.common.runtime.ScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
 import io.quarkus.scheduler.common.runtime.SkipConcurrentExecutionInvoker;
 import io.quarkus.scheduler.common.runtime.SkipPredicateInvoker;
@@ -126,7 +126,7 @@ public class SimpleScheduler implements Scheduler {
         }
 
         // Create triggers and invokers for @Scheduled methods
-        for (ScheduledMethodMetadata method : context.getScheduledMethods()) {
+        for (ScheduledMethod method : context.getScheduledMethods()) {
             int nameSequence = 0;
             for (Scheduled scheduled : method.getSchedules()) {
                 nameSequence++;

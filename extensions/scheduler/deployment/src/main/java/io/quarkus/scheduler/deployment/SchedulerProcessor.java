@@ -83,7 +83,7 @@ import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
-import io.quarkus.scheduler.common.runtime.ScheduledMethodMetadata;
+import io.quarkus.scheduler.common.runtime.MutableScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
@@ -279,7 +279,7 @@ public class SchedulerProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             AnnotationProxyBuildItem annotationProxy) {
 
-        List<ScheduledMethodMetadata> scheduledMetadata = new ArrayList<>();
+        List<MutableScheduledMethod> scheduledMetadata = new ArrayList<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
             @Override
             public String apply(String name) {
@@ -296,9 +296,9 @@ public class SchedulerProcessor {
         });
 
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
-            ScheduledMethodMetadata metadata = new ScheduledMethodMetadata();
+            MutableScheduledMethod metadata = new MutableScheduledMethod();
             String invokerClass = generateInvoker(scheduledMethod, classOutput);
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(invokerClass).constructors().methods().fields().build());
             metadata.setInvokerClassName(invokerClass);
             List<Scheduled> schedules = new ArrayList<>();
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {

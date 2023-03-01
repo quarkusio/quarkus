@@ -4,7 +4,8 @@ import java.util.List;
 
 import io.quarkus.scheduler.Scheduled;
 
-public class ScheduledMethodMetadata {
+// This class is mutable so that it can be serialized in a recorder method
+public class MutableScheduledMethod implements ScheduledMethod {
 
     private String invokerClassName;
     private String declaringClassName;
@@ -17,10 +18,6 @@ public class ScheduledMethodMetadata {
 
     public void setInvokerClassName(String invokerClassName) {
         this.invokerClassName = invokerClassName;
-    }
-
-    public String getMethodDescription() {
-        return declaringClassName + "#" + methodName;
     }
 
     public String getDeclaringClassName() {

@@ -9,7 +9,7 @@ public interface SchedulerContext {
 
     CronType getCronType();
 
-    List<ScheduledMethodMetadata> getScheduledMethods();
+    List<ScheduledMethod> getScheduledMethods();
 
     @SuppressWarnings("unchecked")
     default ScheduledInvoker createInvoker(String invokerClassName) {

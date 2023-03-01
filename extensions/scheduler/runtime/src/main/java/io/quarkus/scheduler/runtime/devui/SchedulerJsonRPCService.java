@@ -15,7 +15,7 @@ import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
-import io.quarkus.scheduler.common.runtime.ScheduledMethodMetadata;
+import io.quarkus.scheduler.common.runtime.ScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
@@ -47,7 +47,7 @@ public class SchedulerJsonRPCService {
     public Multi<JsonObject> streamRunningStatus() {
         SchedulerContext sc = context.get();
         Set<String> identities = new HashSet<>();
-        for (ScheduledMethodMetadata metadata : sc.getScheduledMethods()) {
+        for (ScheduledMethod metadata : sc.getScheduledMethods()) {
             for (Scheduled scheduled : metadata.getSchedules()) {
                 if (!scheduled.identity().isBlank()) {
                     identities.add(scheduled.identity());
@@ -69,7 +69,7 @@ public class SchedulerJsonRPCService {
     public JsonArray getScheduledMethods() {
         JsonArray methodsJson = new JsonArray();
         SchedulerContext c = context.get();
-        for (ScheduledMethodMetadata metadata : c.getScheduledMethods()) {
+        for (ScheduledMethod metadata : c.getScheduledMethods()) {
             JsonObject methodJson = new JsonObject();
             methodJson.put("declaringClassName", metadata.getDeclaringClassName());
             methodJson.put("methodName", metadata.getMethodName());
@@ -150,7 +150,7 @@ public class SchedulerJsonRPCService {
 
     public JsonObject executeJob(String methodDescription) {
         SchedulerContext c = context.get();
-        for (ScheduledMethodMetadata metadata : c.getScheduledMethods()) {
+        for (ScheduledMethod metadata : c.getScheduledMethods()) {
             if (metadata.getMethodDescription().equals(methodDescription)) {
                 Context vdc = VertxContext.getOrCreateDuplicatedContext(vertx.get());
                 VertxContextSafetyToggle.setContextSafe(vdc, true);

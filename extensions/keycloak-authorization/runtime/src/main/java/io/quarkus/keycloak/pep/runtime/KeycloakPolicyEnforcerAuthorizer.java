@@ -43,10 +43,15 @@ public class KeycloakPolicyEnforcerAuthorizer
     @Override
     public CheckResult apply(RoutingContext routingContext, SecurityIdentity identity) {
 
+        final String requestPath = routingContext.request().path();
         if (identity.isAnonymous()) {
-            PathConfig pathConfig = resolver.getPolicyEnforcer(null).getPathMatcher().matches(routingContext.request().path());
-            if (pathConfig != null && pathConfig.getEnforcementMode() == EnforcementMode.ENFORCING) {
-                return CheckResult.DENY;
+            var enforcer = resolver.getPolicyEnforcer(null);
+            // when possible, we check if path enforcement is disabled without remote call
+            if (!enforcer.isPathEnforcementDisabled(requestPath)) {
+                PathConfig pathConfig = enforcer.getPathMatcher().matches(requestPath);
+                if (pathConfig != null && pathConfig.getEnforcementMode() == EnforcementMode.ENFORCING) {
+                    return CheckResult.DENY;
+                }
             }
         }
 
@@ -59,8 +64,12 @@ public class KeycloakPolicyEnforcerAuthorizer
 
         VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, credential.getToken(), resolver.getReadTimeout());
 
-        KeycloakAdapterPolicyEnforcer adapterPolicyEnforcer = new KeycloakAdapterPolicyEnforcer(
-                resolver.getPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE)));
+        var enforcer = resolver.getPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE));
+        // when possible, we check if path enforcement is disabled without remote call
+        if (enforcer.isPathEnforcementDisabled(requestPath)) {
+            return CheckResult.PERMIT;
+        }
+        KeycloakAdapterPolicyEnforcer adapterPolicyEnforcer = new KeycloakAdapterPolicyEnforcer(enforcer);
         AuthorizationContext result = adapterPolicyEnforcer.authorize(httpFacade);
 
         if (result.isGranted()) {

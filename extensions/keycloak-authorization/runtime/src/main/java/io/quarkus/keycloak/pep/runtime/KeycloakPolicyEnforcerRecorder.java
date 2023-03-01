@@ -8,7 +8,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
-import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
@@ -35,8 +34,9 @@ public class KeycloakPolicyEnforcerRecorder {
 
     public Supplier<PolicyEnforcerResolver> setup(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config,
             TlsConfig tlsConfig) {
-        PolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant, tlsConfig);
-        Map<String, PolicyEnforcer> policyEnforcerTenants = new HashMap<String, PolicyEnforcer>();
+        QuarkusPolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant,
+                tlsConfig);
+        Map<String, QuarkusPolicyEnforcer> policyEnforcerTenants = new HashMap<>();
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants.entrySet()) {
             OidcTenantConfig oidcTenantConfig = oidcConfig.namedTenants.get(tenant.getKey());
             if (oidcTenantConfig == null) {
@@ -53,7 +53,7 @@ public class KeycloakPolicyEnforcerRecorder {
         };
     }
 
-    private static PolicyEnforcer createPolicyEnforcer(OidcTenantConfig oidcConfig,
+    private static QuarkusPolicyEnforcer createPolicyEnforcer(OidcTenantConfig oidcConfig,
             KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig,
             TlsConfig tlsConfig) {
 
@@ -103,7 +103,7 @@ public class KeycloakPolicyEnforcerRecorder {
 
         adapterConfig.setPolicyEnforcerConfig(enforcerConfig);
 
-        return new PolicyEnforcer(KeycloakDeploymentBuilder.build(adapterConfig), adapterConfig);
+        return new QuarkusPolicyEnforcer(KeycloakDeploymentBuilder.build(adapterConfig), adapterConfig);
     }
 
     private static Map<String, Object> getCredentials(OidcTenantConfig oidcConfig) {

@@ -27,6 +27,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.devui.deployment.extension.Extension;
@@ -281,7 +282,8 @@ public class BuildTimeContentProcessor {
     void createBuildTimeData(BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
             BuildProducer<ThemeVarsBuildItem> themeVarsProducer,
             ExtensionsBuildItem extensionsBuildItem,
-            List<MenuPageBuildItem> menuPageBuildItems) {
+            List<MenuPageBuildItem> menuPageBuildItems,
+            List<DevServiceDescriptionBuildItem> DevServiceDescriptions) {
 
         BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
 
@@ -415,7 +417,7 @@ public class BuildTimeContentProcessor {
                 .icon("font-awesome-solid:wand-magic-sparkles")
                 .componentLink("qwc-dev-services.js").build();
 
-        internalBuildTimeData.addBuildTimeData("devServices", "TODO: Dev Services");
+        internalBuildTimeData.addBuildTimeData("devServices", DevServiceDescriptions);
 
         Page buildSteps = Page.webComponentPageBuilder().internal()
                 .title("Build steps")

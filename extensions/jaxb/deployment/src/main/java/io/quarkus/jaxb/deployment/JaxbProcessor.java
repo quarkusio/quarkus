@@ -313,8 +313,11 @@ public class JaxbProcessor {
 
         // parse class names to class
         Set<Class<?>> classes = getAllClassesFromClassNames(classNamesToBeBound);
-        // validate the context to fail at build time if it's not valid
-        validateContext(classes);
+        if (config.validateJaxbContext) {
+            // validate the context to fail at build time if it's not valid
+            validateContext(classes);
+        }
+
         // register the classes to be used at runtime
         jaxbContextConfig.addClassesToBeBound(classes);
     }

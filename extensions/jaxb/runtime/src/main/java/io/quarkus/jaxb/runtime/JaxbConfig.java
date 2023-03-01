@@ -9,6 +9,13 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED, name = "jaxb")
 public class JaxbConfig {
+
+    /**
+     * If enabled, it will validate the default JAXB context at build time.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean validateJaxbContext;
+
     /**
      * Exclude classes to automatically be bound to the default JAXB context.
      */

@@ -75,11 +75,6 @@
                     <exclude name="testTooManyScopesSpecifiedInJava"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.producer.method.broken.parameterizedTypeWithTypeParameter.ParameterizedReturnTypeWithTypeVariableTest">
-                <methods>
-                    <exclude name="testNonDependentScopedProducerMethodWithParameterizedTypeWithTypeVariable"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.contract.lifecycleCallback.exceptions.LifecycleCallbackInterceptorExceptionTest">
                 <methods>
                     <exclude name="testLifecycleCallbackInterceptorCanCatchException"/>
@@ -192,11 +187,6 @@
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptedBeanTypeParamInitializerTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.producer.method.broken.parameterizedTypeWithTypeParameter.ParametrizedReturnTypeWithTypeVariable02Test">
-                <methods>
-                    <exclude name="testNonDependentScopedProducerMethodWithParameterizedTypeWithTypeVariable"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.definition.scope.ScopeDefinitionTest">
@@ -432,11 +422,6 @@
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptorTypeParamInitializerTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.producer.field.definition.broken.typeVariable2.RequestScopedProducerFieldWithTypeVariableTest">
-                <methods>
-                    <exclude name="testRequestScopedProducerFieldParameterizedWithTypeVariableNotAllowed"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.event.observer.ObserverNotificationTest">

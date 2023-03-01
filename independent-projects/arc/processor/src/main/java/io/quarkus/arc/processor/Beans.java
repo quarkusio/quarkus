@@ -181,6 +181,14 @@ public final class Beans {
             }
         }
 
+        if (scope != null // `null` is just like `@Dependent`
+                && !BuiltinScope.DEPENDENT.is(scope)
+                && producerMethod.returnType().kind() == Kind.PARAMETERIZED_TYPE
+                && Types.containsTypeVariable(producerMethod.returnType())) {
+            throw new DefinitionException("Producer method return type is a parameterized type with a type variable, "
+                    + "its scope must be @Dependent: " + producerMethod);
+        }
+
         List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer);
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, beanTypes, qualifiers, injections, declaringBean,
                 disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority);
@@ -288,6 +296,14 @@ public final class Beans {
                         producerField);
                 return null;
             }
+        }
+
+        if (scope != null // `null` is just like `@Dependent`
+                && !BuiltinScope.DEPENDENT.is(scope)
+                && producerField.type().kind() == Kind.PARAMETERIZED_TYPE
+                && Types.containsTypeVariable(producerField.type())) {
+            throw new DefinitionException("Producer field type is a parameterized type with a type variable, "
+                    + "its scope must be @Dependent: " + producerField);
         }
 
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(),

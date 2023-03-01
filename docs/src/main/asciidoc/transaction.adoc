@@ -189,7 +189,7 @@ public class TransactionExample {
                     if (throwable instanceof SomeException) {
                         return RunOptions.ExceptionResult.COMMIT;
                     }
-                    return RunOptions.ExceptionResult.ROLLBACK;
+                    return TransactionExceptionResult.ROLLBACK;
                 })
                 .call(() -> {
                     //do work

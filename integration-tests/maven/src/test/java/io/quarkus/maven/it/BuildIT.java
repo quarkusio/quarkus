@@ -226,7 +226,12 @@ class BuildIT extends MojoTestBase {
             }
         }
         MavenProcessInvocationResult result = running.execute(args, Collections.emptyMap());
-        assertThat(result.getProcess().waitFor()).isZero();
+        int exitCode = result.getProcess().waitFor();
+        if (exitCode != 0) {
+            System.err.println(running.log()); //dump the log in order to make it easier find error in CI
+            assertThat(exitCode).isZero(); // make sure the build fails
+        }
+
     }
 
     private void ensureManifestOfJarIsReadableByJarInputStream(File jar) throws IOException {

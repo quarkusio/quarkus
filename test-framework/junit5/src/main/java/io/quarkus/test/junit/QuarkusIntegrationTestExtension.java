@@ -82,7 +82,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
-            if (!isAfterAllCallbacksEmpty()) {
+            if (!isAfterEachCallbacksEmpty()) {
                 invokeAfterEachCallbacks(createQuarkusTestMethodContext(context));
             }
 
@@ -213,7 +213,17 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 populateCallbacks(requiredTestClass.getClassLoader());
             }
 
-            Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
+            Map<String, String> additionalProperties = new HashMap<>();
+
+            // propagate Quarkus properties set from the build tool
+            Properties existingSysProps = System.getProperties();
+            for (String name : existingSysProps.stringPropertyNames()) {
+                if (name.startsWith("quarkus.")) {
+                    additionalProperties.put(name, existingSysProps.getProperty(name));
+                }
+            }
+
+            additionalProperties.putAll(testProfileAndProperties.properties);
             Map<String, String> resourceManagerProps = new HashMap<>(testResourceManager.start());
             //we also make the dev services config accessible from the test itself
             resourceManagerProps.putAll(QuarkusIntegrationTestExtension.devServicesProps);

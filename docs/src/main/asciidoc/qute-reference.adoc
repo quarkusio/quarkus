@@ -665,7 +665,7 @@ And must be used in a form of `{item_hasNext}` inside a `{#for}` section with th
 {#for item in items}
   {item_count}. {item.name} <1>
   {#if item_hasNext}<br>{/if} <2>
-{/each}
+{/for}
 ----
 <1> `item_count` represents one-based index. 
 <2> `<br>` is only rendered if the iteration has more elements.

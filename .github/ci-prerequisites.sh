@@ -32,8 +32,14 @@
 # alpine           3.14        dd53f409bf0b   4 months ago   5.6MB
 # alpine           3.15        c4fc93816858   4 months ago   5.58MB
 
-time docker rmi node:14 node:16 node:18 buildpack-deps:buster buildpack-deps:bullseye
+time docker rmi node:14 node:16 node:18 node:14-alpine node:16-alpine node:18-alpine buildpack-deps:buster buildpack-deps:bullseye
 # That is 979M
 time sudo rm -rf /usr/share/dotnet
 # That is 1.7G
 time sudo rm -rf /usr/share/swift
+# Remove Android
+time sudo rm -rf /usr/local/lib/android
+# Remove Haskell
+time sudo rm -rf /opt/ghc
+# Remove pipx
+time sudo rm -rf /opt/pipx

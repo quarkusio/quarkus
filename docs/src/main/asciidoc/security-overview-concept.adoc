@@ -238,7 +238,7 @@ If you use `Basic` or `Form` HTTP-based authentication then you must add an `Ide
 == Authorization
 
 Quarkus also supports role-based access control (RBAC).
-For more information about RBAC and other authorization options in Quarkus, see xref:security-authorization-of-web-endpoints-reference.adoc[Security authorization].
+For more information about RBAC and other authorization options in Quarkus, see xref:security-authorize-web-endpoints-reference.adoc[Security authorization].
 
 == Quarkus Security customization
 

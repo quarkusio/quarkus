@@ -10,6 +10,7 @@ on:
       - 'docs/src/main/asciidoc/**'
       - '.github/workflows/doc-build.yml'
   pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - 'docs/src/main/asciidoc/**'
       - '.github/workflows/doc-build.yml'
@@ -58,3 +59,16 @@ jobs:
       - name: Build Docs
         run: |
           ./mvnw -e -B --settings .github/mvn-settings.xml clean package -pl docs
+
+      - name: Store PR id
+        run: echo ${{ github.event.number }} > pr-id.txt
+
+      - name: Persist documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: |
+            pr-id.txt
+            docs/
+            target/asciidoc/generated/config/
+          retention-days: 1

@@ -7,6 +7,8 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
@@ -23,6 +25,10 @@ public class ResteasyReactiveLocaleResolver extends AbstractLocaleResolver {
 
     @Override
     protected Map<String, List<String>> getHeaders() {
+        final ManagedContext requestContext = Arc.container().requestContext();
+        if (!requestContext.isActive()) {
+            return null;
+        }
         RoutingContext current = currentVertxRequest.getCurrent();
         if (current != null) {
             Map<String, List<String>> result = new HashMap<>();

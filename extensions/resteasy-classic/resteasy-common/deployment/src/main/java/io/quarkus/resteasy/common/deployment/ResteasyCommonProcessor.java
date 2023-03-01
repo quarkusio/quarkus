@@ -56,6 +56,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
@@ -341,6 +342,16 @@ public class ResteasyCommonProcessor {
     void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         serviceProvider.produce(ServiceProviderBuildItem
                 .allProvidersFromClassPath(org.jboss.resteasy.spi.config.ConfigurationFactory.class.getName()));
+    }
+
+    /**
+     * ResourceCleaner contains java.lang.ref.Cleaner references which need to get
+     * runtime initialized.
+     */
+    @BuildStep
+    public RuntimeInitializedClassBuildItem runtimeInitResourceCleaner() {
+        return new RuntimeInitializedClassBuildItem(
+                "org.jboss.resteasy.spi.ResourceCleaner");
     }
 
     private void registerJsonContextResolver(

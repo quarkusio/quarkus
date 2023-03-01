@@ -17,7 +17,7 @@ The application is configured automatically.
 Dev Services for Kubernetes is automatically enabled unless:
 
 - `quarkus.kubernetes-client.devservices.enabled` is set to `false`
-- the `master-url` is configured
+- the `api-server-url` is configured
 - a valid Kube config file is found and `quarkus.kubernetes-client.devservices.override-kubeconfig` is not set to `true`
 - you include the `quarkus-test-kubernetes-client` dependency 
 

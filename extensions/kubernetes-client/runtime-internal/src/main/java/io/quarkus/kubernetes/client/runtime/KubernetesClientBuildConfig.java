@@ -21,6 +21,13 @@ public class KubernetesClientBuildConfig {
      * URL of the Kubernetes API server
      */
     @ConfigItem
+    public Optional<String> apiServerUrl;
+
+    /**
+     * Use api-server-url instead.
+     */
+    @Deprecated(forRemoval = true)
+    @ConfigItem
     public Optional<String> masterUrl;
 
     /**

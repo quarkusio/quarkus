@@ -123,11 +123,9 @@ public class KindProcessor {
     @BuildStep
     public void postBuild(ContainerImageInfoBuildItem image, List<ContainerImageBuilderBuildItem> builders,
             @SuppressWarnings("unused") BuildProducer<ArtifactResultBuildItem> artifactResults) {
-        boolean isLoadSupported = builders.stream().anyMatch(b -> b.getBuilder().equals("docker")
-                || b.getBuilder().equals("jib")
-                || b.getBuilder().equals("buildpack"));
-        if (isLoadSupported) {
-            ExecUtil.exec("kind", "load", "docker-image", image.getImage());
-        }
+        //We used to only perform the action below when using known builders that play nicely with kind (e.g. docker)
+        //However, this excluded users that are just using external tools for building including the cli (e.g. quarkus image build docker).
+        //So, we now always perform this step
+        ExecUtil.exec("kind", "load", "docker-image", image.getImage());
     }
 }

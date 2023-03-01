@@ -285,10 +285,54 @@ public class CliHelpTest {
     }
 
     @Test
-    @Order(99)
+    @Order(100)
     public void testImagePushBuildpackHelp() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "buildpack", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
     }
+
+    @Test
+    @Order(101)
+    public void testDeployHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "deploy", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
+    @Test
+    @Order(102)
+    public void testDeployKubernetesHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "deploy", "kubernetes", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+        assertThat(result.stdout).contains("--api-server-url");
+        assertThat(result.stdout).contains("--token");
+        assertThat(result.stdout).contains("--namespace");
+        assertThat(result.stdout).contains("--deployment-kind");
+    }
+
+    @Test
+    @Order(103)
+    public void testDeployOpenshiftHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "deploy", "openshift", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+        assertThat(result.stdout).contains("--api-server-url");
+        assertThat(result.stdout).contains("--token");
+        assertThat(result.stdout).contains("--namespace");
+        assertThat(result.stdout).contains("--deployment-kind");
+    }
+
+    @Test
+    @Order(104)
+    public void testDeployKnativeHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "deploy", "knative", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+        assertThat(result.stdout).contains("--api-server-url");
+        assertThat(result.stdout).contains("--token");
+        assertThat(result.stdout).contains("--namespace");
+    }
+
 }

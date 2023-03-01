@@ -68,7 +68,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 public class DevServicesKubernetesProcessor {
     private static final String KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG = "quarkus.kubernetes-client.devservices.override-kubeconfig";
     private static final Logger log = Logger.getLogger(DevServicesKubernetesProcessor.class);
-    private static final String KUBERNETES_CLIENT_MASTER_URL = "quarkus.kubernetes-client.master-url";
+    private static final String KUBERNETES_CLIENT_MASTER_URL = "quarkus.kubernetes-client.api-server-url";
     private static final String KUBERNETES_CLIENT_DEVSERVICES_FLAVOR = "quarkus.kubernetes-client.devservices.flavor";
     private static final String DEFAULT_MASTER_URL_ENDING_WITH_SLASH = Config.DEFAULT_MASTER_URL + "/";
 
@@ -167,7 +167,7 @@ public class DevServicesKubernetesProcessor {
             return null;
         }
 
-        // Check if kubernetes-client.master-url is set
+        // Check if kubernetes-client.api-server-url is set
         if (ConfigUtils.isPropertyPresent(KUBERNETES_CLIENT_MASTER_URL)) {
             log.debug("Not starting Dev Services for Kubernetes, the " + KUBERNETES_CLIENT_MASTER_URL + " is configured.");
             return null;

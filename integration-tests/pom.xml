@@ -180,6 +180,8 @@
                 <module>jpa-mssql</module>
                 <module>jpa-mysql</module>
                 <module>jpa-oracle</module>
+                <module>hibernate-orm-compatibility-5.6/mariadb</module>
+                <module>hibernate-orm-compatibility-5.6/postgresql</module>
                 <module>hibernate-orm-panache</module>
                 <module>hibernate-orm-rest-data-panache</module>
                 <module>hibernate-orm-graphql-panache</module>

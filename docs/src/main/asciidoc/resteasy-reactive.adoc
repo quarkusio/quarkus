@@ -383,13 +383,14 @@ public class Endpoint {
     }
 
     @POST
-    public String allParams(Parameters parameters) {
+    public String allParams(@BeanParam Parameters parameters) { <1>
         return parameters.type + "/" + parameters.variant + "/" + parameters.age 
             + "/" + parameters.level + "/" + parameters.secretHandshake
             + "/" + parameters.smell;
     }
 }
 ----
+<1>  `BeanParam` is required to comply with the JAX-RS specification so that libraries like OpenAPI can introspect the parameters.
 
 === Declaring URI parameters
 

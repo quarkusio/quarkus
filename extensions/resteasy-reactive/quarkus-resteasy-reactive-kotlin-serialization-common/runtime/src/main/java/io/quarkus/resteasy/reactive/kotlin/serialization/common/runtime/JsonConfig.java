@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.kotlin.serialization.common.runtime;
 
+import java.util.Optional;
 import java.util.StringJoiner;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -99,6 +100,28 @@ public class JsonConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean useArrayPolymorphism = false;
+
+    /**
+     * Specifies the {@code JsonNamingStrategy} that should be used for all properties in classes for serialization and
+     * deserialization.
+     * This strategy is applied for all entities that have {@code StructureKind.CLASS}.
+     * <p>
+     * <p>
+     * {@code null} by default.
+     * <p>
+     * <p>
+     * This element can be one of two things:
+     * <ol>
+     * <li>the fully qualified class name of a type implements the {@code NamingStrategy} interface and has a no-arg
+     * constructor</li>
+     * <li>a value in the form {@code NamingStrategy.SnakeCase} which refers to built-in values provided by the kotlin
+     * serialization
+     * library itself.
+     * </li>
+     * </ol>
+     */
+    @ConfigItem(name = "naming-strategy")
+    public Optional<String> namingStrategy;
 
     @Override
     public String toString() {

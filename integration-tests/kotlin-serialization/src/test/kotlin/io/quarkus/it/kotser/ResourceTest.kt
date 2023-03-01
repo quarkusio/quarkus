@@ -9,16 +9,36 @@ import jakarta.ws.rs.core.MediaType
 import org.hamcrest.CoreMatchers
 import org.hamcrest.CoreMatchers.`is`
 import org.junit.jupiter.api.Test
+import java.util.Properties
 
 @QuarkusTest
 open class ResourceTest {
+
+    val nameField: String
+    var defaulted = "defaulted"
+
+    init {
+        val properties = Properties()
+        properties.load(javaClass.getResourceAsStream("/application.properties"))
+        val strategy: String? = properties.get("quarkus.kotlin-serialization.json.naming-strategy") as String?
+        when (strategy) {
+            "JsonNamingStrategy.SnakeCase" -> nameField = "full_name"
+            TitleCase::class.qualifiedName -> {
+                nameField = "FullName"
+                defaulted = "Defaulted"
+            }
+            null -> nameField = "fullName"
+            else -> throw IllegalArgumentException("unknown strategy: $strategy")
+        }
+    }
+
     @Test
     fun testGetFlow() {
         When {
             get("/flow")
         } Then {
             statusCode(200)
-            body(`is`("""[{"name":"Jim Halpert","defaulted":"hi there!"}]"""))
+            body(`is`("""[{"$nameField":"Jim Halpert","$defaulted":"hi there!"}]"""))
         }
     }
 
@@ -28,7 +48,7 @@ open class ResourceTest {
             get("/")
         } Then {
             statusCode(200)
-            body(`is`("""{"name":"Jim Halpert","defaulted":"hi there!"}"""))
+            body(`is`("""{"$nameField":"Jim Halpert","$defaulted":"hi there!"}"""))
         }
     }
 
@@ -38,7 +58,7 @@ open class ResourceTest {
             get("/restResponse")
         } Then {
             statusCode(200)
-            body(`is`("""{"name":"Jim Halpert","defaulted":"hi there!"}"""))
+            body(`is`("""{"$nameField":"Jim Halpert","$defaulted":"hi there!"}"""))
         }
     }
 
@@ -48,7 +68,7 @@ open class ResourceTest {
             get("/restResponseList")
         } Then {
             statusCode(200)
-            body(`is`("""[{"name":"Jim Halpert","defaulted":"hi there!"}]"""))
+            body(`is`("""[{"$nameField":"Jim Halpert","$defaulted":"hi there!"}]"""))
         }
     }
 
@@ -58,7 +78,7 @@ open class ResourceTest {
             get("/unknownType")
         } Then {
             statusCode(200)
-            body(`is`("""{"name":"Foo Bar","defaulted":"hey"}"""))
+            body(`is`("""{"$nameField":"Foo Bar","$defaulted":"hey"}"""))
         }
     }
 
@@ -68,7 +88,7 @@ open class ResourceTest {
             get("/suspend")
         } Then {
             statusCode(200)
-            body(`is`("""{"name":"Jim Halpert","defaulted":"hi there!"}"""))
+            body(`is`("""{"$nameField":"Jim Halpert","$defaulted":"hi there!"}"""))
         }
     }
 
@@ -78,20 +98,20 @@ open class ResourceTest {
             get("/suspendList")
         } Then {
             statusCode(200)
-            body(`is`("""[{"name":"Jim Halpert","defaulted":"hi there!"}]"""))
+            body(`is`("""[{"$nameField":"Jim Halpert","$defaulted":"hi there!"}]"""))
         }
     }
 
     @Test
     fun testPost() {
         Given {
-            body("""{ "name": "Pam Beasley" }""")
+            body("""{ "$nameField": "Pam Beasley" }""")
             contentType(JSON)
         } When {
             post("/")
         } Then {
             statusCode(200)
-            body(`is`("""{"name":"Pam Halpert","defaulted":"hi there!"}"""))
+            body(`is`("""{"$nameField":"Pam Halpert","$defaulted":"hi there!"}"""))
         }
     }
 

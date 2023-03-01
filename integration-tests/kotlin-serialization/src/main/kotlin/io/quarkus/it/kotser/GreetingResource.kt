@@ -62,7 +62,7 @@ class GreetingResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     fun marry(person: Person): Person {
-        return Person(person.name.substringBefore(" ") + " Halpert")
+        return Person(person.fullName.substringBefore(" ") + " Halpert")
     }
 
     @GET

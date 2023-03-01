@@ -27,6 +27,7 @@ public class Db2LifecycleManager implements QuarkusTestResourceLifecycleManager 
         properties.put("quarkus.datasource.db2.password", QUARKUS);
         properties.put("quarkus.datasource.db2.username", QUARKUS);
         properties.put("quarkus.hibernate-orm.db2.database.generation", "drop-and-create");
+        properties.put("quarkus.hibernate-orm.db2.active", "true");
         properties.put("quarkus.hibernate-orm.oracle.active", "false");
         properties.put("quarkus.hibernate-orm.postgresql.active", "false");
         properties.put("quarkus.hibernate-orm.mariadb.active", "false");

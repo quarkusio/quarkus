@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -22,6 +23,7 @@ public class ResteasyReactiveLocaleResolver extends AbstractLocaleResolver {
     CurrentVertxRequest currentVertxRequest;
 
     @Override
+    @ActivateRequestContext
     protected Map<String, List<String>> getHeaders() {
         RoutingContext current = currentVertxRequest.getCurrent();
         if (current != null) {

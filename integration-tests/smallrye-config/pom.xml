@@ -48,6 +48,21 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-testkit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5-internal</artifactId>
       <scope>test</scope>
@@ -172,7 +187,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
   </dependencies>
 
   <build>
@@ -185,6 +199,35 @@
             <goals>
               <goal>build</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <excludes>
+                <exclude>io.quarkus.it.smallrye.config.MappingValidationTest</exclude>
+                <exclude>io.quarkus.it.smallrye.config.MappingValidationTest$ValidationTest</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>fails</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>io.quarkus.it.smallrye.config.MappingValidationTest</include>
+              </includes>
+            </configuration>
           </execution>
         </executions>
       </plugin>

@@ -356,6 +356,18 @@ public class BuildTimeContentProcessor {
         light.put("--lumo-error-contrast-color", Color.from(0, 100, 100).toString());
         dark.put("--lumo-error-contrast-color", Color.from(0, 100, 100).toString());
 
+        // Warning
+        light.put("--lumo-warning-color-10pct", Color.from(30, 100, 50, 0.1).toString());
+        dark.put("--lumo-warning-color-10pct", Color.from(30, 100, 50, 0.1).toString());
+        light.put("--lumo-warning-color-50pct", Color.from(30, 100, 50, 0.5).toString());
+        dark.put("--lumo-warning-color-50pct", Color.from(30, 100, 50, 0.5).toString());
+        light.put("--lumo-warning-color", Color.from(30, 100, 50).toString());
+        dark.put("--lumo-warning-color", Color.from(30, 100, 50).toString());
+        light.put("--lumo-warning-text-color", Color.from(30, 89, 42).toString());
+        dark.put("--lumo-warning-text-color", Color.from(30, 100, 67).toString());
+        light.put("--lumo-warning-contrast-color", Color.from(0, 100, 100).toString());
+        dark.put("--lumo-warning-contrast-color", Color.from(0, 100, 100).toString());
+
         // Success
         light.put("--lumo-success-color-10pct", Color.from(145, 72, 31, 0.1).toString());
         dark.put("--lumo-success-color-10pct", Color.from(145, 65, 42, 0.1).toString());

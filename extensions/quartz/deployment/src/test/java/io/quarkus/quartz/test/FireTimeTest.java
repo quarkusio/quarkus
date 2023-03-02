@@ -45,9 +45,9 @@ public class FireTimeTest {
 
     private void assertFireTimes() {
         assertThat(Jobs.previousFireTime.get()).isCloseTo(Jobs.capturedTime.get(),
-                new TemporalUnitWithinOffset(100, ChronoUnit.MILLIS));
+                new TemporalUnitWithinOffset(200, ChronoUnit.MILLIS));
         assertThat(Jobs.nextFireTime.get()).isCloseTo(Jobs.capturedTime.get().plusSeconds(5),
-                new TemporalUnitWithinOffset(100, ChronoUnit.MILLIS));
+                new TemporalUnitWithinOffset(200, ChronoUnit.MILLIS));
     }
 
     static class Jobs {

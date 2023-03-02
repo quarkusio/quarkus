@@ -37,13 +37,14 @@ public class HttpCompressionHandler implements Handler<RoutingContext> {
                                 break;
                             case UNDEFINED:
                                 String contentType = headers.get(HttpHeaders.CONTENT_TYPE);
-                                int paramIndex = contentType.indexOf(';');
-                                if (paramIndex > -1) {
-                                    contentType = contentType.substring(0, paramIndex);
-                                }
-                                if (contentType != null
-                                        && compressedMediaTypes.contains(contentType)) {
-                                    headers.remove(HttpHeaders.CONTENT_ENCODING);
+                                if (contentType != null) {
+                                    int paramIndex = contentType.indexOf(';');
+                                    if (paramIndex > -1) {
+                                        contentType = contentType.substring(0, paramIndex);
+                                    }
+                                    if (compressedMediaTypes.contains(contentType)) {
+                                        headers.remove(HttpHeaders.CONTENT_ENCODING);
+                                    }
                                 }
                                 break;
                             default:

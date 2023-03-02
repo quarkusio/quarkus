@@ -186,7 +186,8 @@ public class UndertowBuildStep {
             ExecutorBuildItem executorBuildItem,
             ServletRuntimeConfig servletRuntimeConfig,
             ServletContextPathBuildItem servletContextPathBuildItem,
-            Capabilities capabilities) throws Exception {
+            Capabilities capabilities,
+            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         if (capabilities.isPresent(Capability.SECURITY)) {
             recorder.setupSecurity(servletDeploymentManagerBuildItem.getDeploymentManager());
@@ -194,7 +195,7 @@ public class UndertowBuildStep {
         Handler<RoutingContext> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
                 wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
-                servletRuntimeConfig);
+                servletRuntimeConfig, httpBuildTimeConfig);
 
         if (servletContextPathBuildItem.getServletContextPath().equals("/")) {
             undertowProducer.accept(new DefaultRouteBuildItem(ut));

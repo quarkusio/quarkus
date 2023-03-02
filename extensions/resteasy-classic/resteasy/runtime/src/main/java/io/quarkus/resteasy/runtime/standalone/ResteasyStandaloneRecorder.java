@@ -2,6 +2,7 @@ package io.quarkus.resteasy.runtime.standalone;
 
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.extractRootCause;
 
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -21,6 +22,8 @@ import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -70,11 +73,18 @@ public class ResteasyStandaloneRecorder {
     }
 
     public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx, Executor executor,
-            ResteasyVertxConfig config) {
+            ResteasyVertxConfig config, HttpBuildTimeConfig httpBuildTimeConfig) {
         if (deployment != null) {
-            return new VertxRequestHandler(vertx.get(), deployment, contextPath,
+            Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), deployment, contextPath,
                     new ResteasyVertxAllocator(config.responseBufferSize), executor,
                     readTimeout.getValue().readTimeout.toMillis());
+
+            Set<String> compressMediaTypes = httpBuildTimeConfig.compressMediaTypes.map(Set::copyOf).orElse(Set.of());
+            if (httpBuildTimeConfig.enableCompression && !compressMediaTypes.isEmpty()) {
+                // If compression is enabled and the set of compressed media types is not empty then wrap the standalone handler
+                handler = new HttpCompressionHandler(handler, compressMediaTypes);
+            }
+            return handler;
         }
         return null;
     }

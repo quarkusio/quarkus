@@ -83,7 +83,7 @@ public class VertxConfiguration {
 
     /**
      * Prefill thread pool when creating a new Executor.
-     * When {@see io.vertx.core.spi.ExecutorServiceFactory.createExecutor} is called,
+     * When {@link io.vertx.core.spi.ExecutorServiceFactory#createExecutor} is called,
      * initialise with the number of defined threads at startup
      */
     @ConfigItem(defaultValue = "false")

@@ -36,6 +36,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.ProxyOptions;
 
@@ -54,6 +55,8 @@ public class ClientBuilderImpl extends ClientBuilder {
     private SSLContext sslContext;
     private KeyStore trustStore;
     private char[] trustStorePassword;
+    private boolean http2;
+    private boolean alpn;
 
     private String proxyHost;
     private int proxyPort;
@@ -134,6 +137,16 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder http2(boolean http2) {
+        this.http2 = http2;
+        return this;
+    }
+
+    public ClientBuilder alpn(boolean alpn) {
+        this.alpn = alpn;
+        return this;
+    }
+
     public ClientBuilder proxy(String proxyHost, int proxyPort) {
         this.proxyPort = proxyPort;
         this.proxyHost = proxyHost;
@@ -182,6 +195,14 @@ public class ClientBuilderImpl extends ClientBuilder {
 
         HttpClientOptions options = Optional.ofNullable(configuration.getFromContext(HttpClientOptions.class))
                 .orElseGet(HttpClientOptions::new);
+        if (http2) {
+            options.setProtocolVersion(HttpVersion.HTTP_2);
+        }
+
+        if (http2 || alpn) {
+            options.setUseAlpn(true);
+            options.setAlpnVersions(List.of(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
+        }
 
         options.setVerifyHost(verifyHost);
         if (trustAll) {

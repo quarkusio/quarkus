@@ -298,6 +298,7 @@
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
+                <module>rest-client-reactive-http2</module>
                 <module>rest-client-reactive-kotlin-serialization</module>
                 <module>rest-client-reactive-multipart</module>
                 <module>rest-client-reactive-stork</module>

@@ -147,6 +147,7 @@ public class ClientImpl implements Client {
         Object connectionTTL = configuration.getProperty(CONNECTION_TTL);
         if (connectionTTL != null) {
             options.setKeepAliveTimeout((int) connectionTTL);
+            options.setHttp2KeepAliveTimeout((int) connectionTTL);
         }
 
         Object connectionPoolSize = configuration.getProperty(CONNECTION_POOL_SIZE);
@@ -156,6 +157,7 @@ public class ClientImpl implements Client {
             log.debugf("Setting connectionPoolSize to %d", connectionPoolSize);
         }
         options.setMaxPoolSize((int) connectionPoolSize);
+        options.setHttp2MaxPoolSize((int) connectionPoolSize);
 
         Object keepAliveEnabled = configuration.getProperty(KEEP_ALIVE_ENABLED);
         if (keepAliveEnabled != null) {

@@ -63,4 +63,14 @@ public class QuarkusRestClientProperties {
 
     public static final String USER_AGENT = "io.quarkus.rest.client.user-agent";
 
+    /**
+     * Set to true to explicitly use the HTTP/2 version.
+     */
+    public static final String HTTP2 = "io.quarkus.rest.client.http2";
+
+    /**
+     * Set to true to explicitly use the Application-Layer Protocol Negotiation extension.
+     */
+    public static final String ALPN = "io.quarkus.rest.client.alpn";
+
 }

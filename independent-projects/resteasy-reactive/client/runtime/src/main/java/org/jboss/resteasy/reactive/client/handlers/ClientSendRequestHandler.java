@@ -58,6 +58,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
 import io.vertx.core.streams.Pump;
@@ -114,6 +115,9 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         future.subscribe().with(new Consumer<>() {
             @Override
             public void accept(HttpClientRequest httpClientRequest) {
+                // adapt headers to HTTP/2 depending on the underlying HTTP connection
+                ClientSendRequestHandler.this.adaptRequest(httpClientRequest);
+
                 if (requestContext.isMultipart()) {
                     Promise<HttpClientRequest> requestPromise = Promise.promise();
                     QuarkusMultipartFormUpload actualEntity;
@@ -458,6 +462,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             throw new IllegalArgumentException(
                     "Multipart form upload expects an entity of type MultipartForm, got: " + state.getEntity().getEntity());
         }
+
         MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
         updateRequestHeadersFromConfig(state, headerMap);
         QuarkusMultipartForm multipartForm = (QuarkusMultipartForm) state.getEntity().getEntity();
@@ -470,6 +475,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         }
         QuarkusMultipartFormUpload multipartFormUpload = new QuarkusMultipartFormUpload(Vertx.currentContext(), multipartForm,
                 true, mode);
+        httpClientRequest.setChunked(multipartFormUpload.isChunked());
         setEntityRelatedHeaders(headerMap, state.getEntity());
 
         // multipart has its own headers:
@@ -505,6 +511,25 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         // set the Vertx headers after we've run the interceptors because they can modify them
         setVertxHeaders(httpClientRequest, headerMap);
         return actualEntity;
+    }
+
+    private void adaptRequest(HttpClientRequest request) {
+        if (request.version() == HttpVersion.HTTP_2) {
+            // When using the protocol HTTP/2, Netty which is internally used by Vert.x will validate the headers and reject
+            // the requests with invalid metadata.
+            // When we start a new connection, the Vert.x client will automatically upgrade the first request we make to be
+            // valid in HTTP/2.
+            // The problem is that in next requests, the Vert.x client reuses the same connection within the same window time
+            // and hence does not upgrade the following requests. Therefore, even though the first request works fine, the
+            // next requests won't work.
+            // This has been reported in https://github.com/eclipse-vertx/vert.x/issues/4618.
+            // To workaround this issue, we need to "upgrade" the next requests by ourselves when the version is already set
+            // to HTTP/2:
+            if (request.path() == null || request.path().length() == 0) {
+                // HTTP/2 does not allow empty paths
+                request.setURI(request.getURI() + "/");
+            }
+        }
     }
 
     private void updateRequestHeadersFromConfig(RestClientRequestContext state, MultivaluedMap<String, String> headerMap) {

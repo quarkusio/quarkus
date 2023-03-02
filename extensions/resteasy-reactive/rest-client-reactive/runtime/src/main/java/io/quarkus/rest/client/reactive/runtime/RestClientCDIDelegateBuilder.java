@@ -123,6 +123,16 @@ public class RestClientCDIDelegateBuilder<T> {
         if (userAgent.isPresent()) {
             builder.property(QuarkusRestClientProperties.USER_AGENT, userAgent.get());
         }
+
+        Boolean http2 = oneOf(clientConfigByClassName().http2,
+                clientConfigByConfigKey().http2).orElse(configRoot.http2);
+        builder.property(QuarkusRestClientProperties.HTTP2, http2);
+
+        Optional<Boolean> alpn = oneOf(clientConfigByClassName().alpn,
+                clientConfigByConfigKey().alpn, configRoot.alpn);
+        if (alpn.isPresent()) {
+            builder.property(QuarkusRestClientProperties.ALPN, alpn.get());
+        }
     }
 
     private void configureProxy(RestClientBuilderImpl builder) {

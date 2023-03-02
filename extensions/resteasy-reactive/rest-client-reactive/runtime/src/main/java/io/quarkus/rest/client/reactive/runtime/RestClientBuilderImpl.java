@@ -337,6 +337,10 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             clientBuilder.setUserAgent(restClientsConfig.userAgent.get());
         }
 
+        if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2)) {
+            clientBuilder.http2((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP2));
+        }
+
         if (proxyHost != null) {
             configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts);
         } else if (restClientsConfig.proxyAddress.isPresent()) {

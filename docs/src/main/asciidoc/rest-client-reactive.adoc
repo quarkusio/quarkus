@@ -296,6 +296,27 @@ quarkus.rest-client.extensions-api.verify-host=false
 This setting should not be used in production as it will disable the SSL hostname verification.
 ====
 
+=== HTTP/2 Support
+
+HTTP/2 is disabled by default in REST Client. If you want to enable it, you can set:
+
+[source, properties]
+----
+// for all REST Clients:
+quarkus.rest-client.http2=true
+// or for a single REST Client:
+quarkus.rest-client.extensions-api.http2=true
+----
+
+Alternatively, you can enable the Application-Layer Protocol Negotiation (alpn) TLS extension and the client will negotiate which HTTP version to use over the ones compatible by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will use HTTP/1.1. If you want to enable it, you can set:
+
+[source, properties]
+----
+quarkus.rest-client.alpn=true
+// or for a single REST Client:
+quarkus.rest-client.extensions-api.alpn=true
+----
+
 == Create the JAX-RS resource
 
 Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:

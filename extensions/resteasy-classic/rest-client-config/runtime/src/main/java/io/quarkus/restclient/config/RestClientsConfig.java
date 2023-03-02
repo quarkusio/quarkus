@@ -282,6 +282,21 @@ public class RestClientsConfig {
     @ConfigItem
     public Optional<String> keyStoreType;
 
+    /**
+     * If this is true then HTTP/2 will be enabled.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean http2;
+
+    /**
+     * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
+     * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
+     * use HTTP/1.1.
+     * When the property `http2` is enabled, this flag will be automatically enabled.
+     */
+    @ConfigItem
+    public Optional<Boolean> alpn;
+
     public RestClientConfig getClientConfig(String configKey) {
         if (configKey == null) {
             return RestClientConfig.EMPTY;

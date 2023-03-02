@@ -344,6 +344,11 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
     }
 
     @Override
+    public long length() {
+        return buffer.readableBytes() + super.length();
+    }
+
+    @Override
     public String toString() {
         return HttpHeaderNames.CONTENT_DISPOSITION + ": " +
                 HttpHeaderValues.FORM_DATA + "; " + HttpHeaderValues.NAME + "=\"" + getName() +

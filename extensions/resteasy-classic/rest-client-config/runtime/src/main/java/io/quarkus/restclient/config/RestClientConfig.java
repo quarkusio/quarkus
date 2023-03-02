@@ -47,6 +47,8 @@ public class RestClientConfig {
         EMPTY.shared = Optional.empty();
         EMPTY.name = Optional.empty();
         EMPTY.userAgent = Optional.empty();
+        EMPTY.http2 = Optional.empty();
+        EMPTY.alpn = Optional.empty();
     }
 
     /**
@@ -245,6 +247,21 @@ public class RestClientConfig {
     @ConfigItem
     public Optional<String> userAgent;
 
+    /**
+     * If this is true then HTTP/2 will be enabled.
+     */
+    @ConfigItem
+    public Optional<Boolean> http2;
+
+    /**
+     * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
+     * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
+     * use HTTP/1.1.
+     * When the property `http2` is enabled, this flag will be automatically enabled.
+     */
+    @ConfigItem
+    public Optional<Boolean> alpn;
+
     public static RestClientConfig load(String configKey) {
         final RestClientConfig instance = new RestClientConfig();
 
@@ -276,6 +293,7 @@ public class RestClientConfig {
         instance.shared = getConfigValue(configKey, "shared", Boolean.class);
         instance.name = getConfigValue(configKey, "name", String.class);
         instance.userAgent = getConfigValue(configKey, "user-agent", String.class);
+        instance.http2 = getConfigValue(configKey, "http2", Boolean.class);
 
         return instance;
     }
@@ -311,6 +329,8 @@ public class RestClientConfig {
         instance.shared = getConfigValue(interfaceClass, "shared", Boolean.class);
         instance.name = getConfigValue(interfaceClass, "name", String.class);
         instance.userAgent = getConfigValue(interfaceClass, "user-agent", String.class);
+        instance.http2 = getConfigValue(interfaceClass, "http2", Boolean.class);
+        instance.alpn = getConfigValue(interfaceClass, "alpn", Boolean.class);
 
         return instance;
     }

@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -69,6 +70,7 @@ public class SubclassGenerator extends AbstractGenerator {
     private static final DotName JAVA_LANG_RUNTIME_EXCEPTION = DotNames.create(RuntimeException.class.getName());
 
     static final String SUBCLASS_SUFFIX = "_Subclass";
+    static final String MARK_CONSTRUCTED_METHOD_NAME = "arc$markConstructed";
     static final String DESTROY_METHOD_NAME = "arc$destroy";
 
     protected static final String FIELD_NAME_PREDESTROYS = "arc$preDestroys";
@@ -179,10 +181,9 @@ public class SubclassGenerator extends AbstractGenerator {
 
         Map<MethodDescriptor, MethodDescriptor> forwardingMethods = new HashMap<>();
         List<MethodInfo> interceptedOrDecoratedMethods = bean.getInterceptedOrDecoratedMethods();
-        int methodIdx = 1;
         for (MethodInfo method : interceptedOrDecoratedMethods) {
             forwardingMethods.put(MethodDescriptor.of(method),
-                    createForwardingMethod(subclass, providerTypeName, method, methodIdx));
+                    createForwardingMethod(subclass, providerTypeName, method));
         }
 
         // If a decorator is associated:
@@ -225,8 +226,15 @@ public class SubclassGenerator extends AbstractGenerator {
             }
         }
 
+        // `volatile` is perhaps not best, this field is monotonic (once `true`, it never becomes `false` again),
+        // so maybe making the `markConstructed` method `synchronized` would be enough (?)
         FieldCreator constructedField = subclass.getFieldCreator(FIELD_NAME_CONSTRUCTED, boolean.class)
-                .setModifiers(ACC_PRIVATE | ACC_FINAL);
+                .setModifiers(ACC_PRIVATE | ACC_VOLATILE);
+
+        MethodCreator markConstructed = subclass.getMethodCreator(MARK_CONSTRUCTED_METHOD_NAME, void.class);
+        markConstructed.writeInstanceField(constructedField.getFieldDescriptor(), markConstructed.getThis(),
+                markConstructed.load(true));
+        markConstructed.returnVoid();
 
         // Initialize maps of shared interceptor chains and interceptor bindings
         IntegerHolder chainIdx = new IntegerHolder();
@@ -302,7 +310,7 @@ public class SubclassGenerator extends AbstractGenerator {
             }
         };
 
-        methodIdx = 1;
+        int methodIdx = 1;
         for (MethodInfo method : interceptedOrDecoratedMethods) {
             InterceptionInfo interception = bean.getInterceptedMethods().get(method);
             if (interception != null) {
@@ -497,8 +505,6 @@ public class SubclassGenerator extends AbstractGenerator {
             constructor.invokeVirtualMethod(initMetadataMethod.getMethodDescriptor(), constructor.getThis(),
                     interceptorChainMap, bindingsMap);
         }
-
-        constructor.writeInstanceField(constructedField.getFieldDescriptor(), constructor.getThis(), constructor.load(true));
 
         constructor.returnValue(null);
         return preDestroysField != null ? preDestroysField.getFieldDescriptor() : null;
@@ -758,10 +764,9 @@ public class SubclassGenerator extends AbstractGenerator {
         return false;
     }
 
-    private MethodDescriptor createForwardingMethod(ClassCreator subclass, String providerTypeName, MethodInfo method,
-            int index) {
+    private MethodDescriptor createForwardingMethod(ClassCreator subclass, String providerTypeName, MethodInfo method) {
         MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
-        String forwardMethodName = method.name() + "$$superforward" + index;
+        String forwardMethodName = method.name() + "$$superforward";
         MethodDescriptor forwardDescriptor = MethodDescriptor.ofMethod(subclass.getClassName(), forwardMethodName,
                 methodDescriptor.getReturnType(),
                 methodDescriptor.getParameterTypes());

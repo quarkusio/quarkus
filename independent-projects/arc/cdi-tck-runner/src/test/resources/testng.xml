@@ -145,15 +145,6 @@
                     <exclude name="testExceptions"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.interceptors.invocation.InterceptorInvocationTest">
-                <methods>
-                    <exclude name="testDisposerMethodsAreIntercepted"/>
-                    <exclude name="testInitializerMethodsNotIntercepted"/>
-                    <exclude name="testProducerMethodsAreIntercepted"/>
-                    <exclude name="testLifecycleCallbacksAreIntercepted"/>
-                    <exclude name="testObjectMethodsAreNotIntercepted"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.bindings.broken.InvalidTransitiveInterceptorBindingAnnotationsTest">
                 <methods>
                     <exclude name="testInterceptorBindingsWithConflictingAnnotationMembersNotOk"/>

@@ -1,9 +1,7 @@
-name: azure-functions-example
+name: azure-functions-codestarts
 ref: azure-functions
 type: code
-tags:
-  - example
-  - maven-only
+tags: extension-codestart
 metadata:
   title: Azure Functions Integration example
   description: This example contains a HttpTrigger function ready for Azure.
@@ -23,4 +21,5 @@ language:
       - io.quarkus:quarkus-azure-functions
       - com.microsoft.azure.functions:azure-functions-java-library
     test-dependencies:
+      - io.rest-assured:rest-assured
       - org.mockito:mockito-core

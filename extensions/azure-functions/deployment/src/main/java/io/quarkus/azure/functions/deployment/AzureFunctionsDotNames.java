@@ -11,6 +11,7 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.annotation.KafkaTrigger;
 import com.microsoft.azure.functions.annotation.QueueTrigger;
 import com.microsoft.azure.functions.annotation.ServiceBusQueueTrigger;
+import com.microsoft.azure.functions.annotation.ServiceBusTopicTrigger;
 import com.microsoft.azure.functions.annotation.TimerTrigger;
 import com.microsoft.azure.functions.annotation.WarmupTrigger;
 
@@ -24,7 +25,7 @@ public final class AzureFunctionsDotNames {
     public static final DotName KAFKA_TRIGGER = DotName.createSimple(KafkaTrigger.class.getName());
     public static final DotName QUEUE_TRIGGER = DotName.createSimple(QueueTrigger.class.getName());
     public static final DotName SERVICE_BUS_QUEUE_TRIGGER = DotName.createSimple(ServiceBusQueueTrigger.class.getName());
-    public static final DotName SERVICE_BUS_TOPIC_TRIGGER = DotName.createSimple(ServiceBusQueueTrigger.class.getName());
+    public static final DotName SERVICE_BUS_TOPIC_TRIGGER = DotName.createSimple(ServiceBusTopicTrigger.class.getName());
     public static final DotName TIMER_TRIGGER = DotName.createSimple(TimerTrigger.class.getName());
     public static final DotName WARMUP_TRIGGER = DotName.createSimple(WarmupTrigger.class.getName());
 

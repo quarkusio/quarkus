@@ -53,6 +53,7 @@ import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusListPlatforms;
 import io.quarkus.gradle.tasks.QuarkusRemoteDev;
 import io.quarkus.gradle.tasks.QuarkusRemoveExtension;
+import io.quarkus.gradle.tasks.QuarkusRun;
 import io.quarkus.gradle.tasks.QuarkusShowEffectiveConfig;
 import io.quarkus.gradle.tasks.QuarkusTest;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
@@ -80,6 +81,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME = "quarkusShowEffectiveConfig";
     public static final String QUARKUS_BUILD_TASK_NAME = "quarkusBuild";
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
+    public static final String QUARKUS_RUN_TASK_NAME = "quarkusRun";
     public static final String QUARKUS_REMOTE_DEV_TASK_NAME = "quarkusRemoteDev";
     public static final String QUARKUS_TEST_TASK_NAME = "quarkusTest";
     public static final String QUARKUS_GO_OFFLINE_TASK_NAME = "quarkusGoOffline";
@@ -225,6 +227,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         TaskProvider<QuarkusDev> quarkusDev = tasks.register(QUARKUS_DEV_TASK_NAME, QuarkusDev.class, devRuntimeDependencies,
                 quarkusExt);
+        TaskProvider<QuarkusRun> quarkusRun = tasks.register(QUARKUS_RUN_TASK_NAME, QuarkusRun.class);
         TaskProvider<QuarkusRemoteDev> quarkusRemoteDev = tasks.register(QUARKUS_REMOTE_DEV_TASK_NAME, QuarkusRemoteDev.class,
                 devRuntimeDependencies, quarkusExt);
         TaskProvider<QuarkusTest> quarkusTest = tasks.register(QUARKUS_TEST_TASK_NAME, QuarkusTest.class,

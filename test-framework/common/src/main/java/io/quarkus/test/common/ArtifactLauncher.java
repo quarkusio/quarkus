@@ -6,6 +6,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.bootstrap.app.CuratedApplication;
+
 public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extends Closeable {
 
     void init(T t);
@@ -39,6 +41,8 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
             String networkId();
 
             boolean manageNetwork();
+
+            CuratedApplication getCuratedApplication();
 
             void close();
         }

@@ -1,6 +1,7 @@
 package io.quarkus.test.common;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +12,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,6 +59,16 @@ public final class LauncherUtil {
      */
     static Process launchProcess(List<String> args) throws IOException {
         Process process = Runtime.getRuntime().exec(args.toArray(new String[0]));
+        new Thread(new ProcessReader(process.getInputStream())).start();
+        new Thread(new ProcessReader(process.getErrorStream())).start();
+        return process;
+    }
+
+    /**
+     * Launches a process using the supplied arguments and makes sure the process's output is drained to standard out
+     */
+    static Process launchProcess(List<String> args, File dir) throws IOException {
+        Process process = Runtime.getRuntime().exec(args.toArray(new String[0]), null, dir);
         new Thread(new ProcessReader(process.getInputStream())).start();
         new Thread(new ProcessReader(process.getErrorStream())).start();
         return process;
@@ -130,6 +142,30 @@ public final class LauncherUtil {
         if (quarkusProcess.isAlive()) {
             quarkusProcess.destroyForcibly();
         }
+    }
+
+    static void destroyProcess(ProcessHandle quarkusProcess) {
+        try {
+            CompletableFuture<ProcessHandle> exit = quarkusProcess.onExit();
+            if (!quarkusProcess.destroy()) {
+                quarkusProcess.destroyForcibly();
+                return;
+            }
+            exit.get(LOG_CHECK_INTERVAL * 10, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+        }
+        if (quarkusProcess.isAlive()) {
+            quarkusProcess.destroyForcibly();
+        }
+    }
+
+    static void destroyProcess(Process process, boolean children) {
+        if (!children) {
+            destroyProcess(process);
+            return;
+        }
+        process.descendants().forEach((p) -> destroyProcess(p));
+        destroyProcess(process);
     }
 
     static Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> createStartedFunction() {

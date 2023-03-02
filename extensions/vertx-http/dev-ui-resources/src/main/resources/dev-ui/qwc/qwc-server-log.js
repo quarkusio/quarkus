@@ -8,6 +8,7 @@ import '@vaadin/dialog';
 import '@vaadin/checkbox';
 import '@vaadin/checkbox-group';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import 'qui-badge';
 
 /**
  * This component represent the Server Log
@@ -37,25 +38,8 @@ export class QwcServerLog extends LitElement {
             color: transparent;
         }
     
-        .badge {
-            display: inline-block;
-            padding: .25em .4em;
-            font-size: 75%;
-            font-weight: 700;
-            line-height: 1;
-            text-align: center;
-            white-space: nowrap;
-            vertical-align: baseline;
-            border-radius: .25rem;
-            transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-        }
-        .badge-info {
-            color: #fff;
-            background-color: #17a2b8;
-        }
-    
         .text-warn {
-            color: var(--lumo-error-color-50pct);
+            color: var(--lumo-warning-color-50pct);
         }
         .text-error{
             color: var(--lumo-error-text-color);
@@ -255,7 +239,7 @@ export class QwcServerLog extends LitElement {
     
     _renderSequenceNumber(sequenceNumber){
         if(this._selectedColumns.includes('1')){
-            return html`<span title='Sequence number' class="badge badge-info">${sequenceNumber}</span>`;
+            return html`<qui-badge small><span title='Sequence number'>${sequenceNumber}</span></qui-badge>`;
         }
     }
     

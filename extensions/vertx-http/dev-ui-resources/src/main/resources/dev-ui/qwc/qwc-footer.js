@@ -257,9 +257,10 @@ export class QwcFooter extends observeState(LitElement) {
         const height = this._originalHeight - (e.y - this._originalMouseY);
         this._height = height;
         
+        // Snap close
         if(this._height<=70){
             this._height = this._originalHeight;
-            this._doubleClicked(e);
+            this._close();
             this._mouseup();
         }
     }

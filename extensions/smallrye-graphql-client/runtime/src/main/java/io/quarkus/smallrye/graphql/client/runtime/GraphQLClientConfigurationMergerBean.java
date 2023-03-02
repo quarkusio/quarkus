@@ -114,6 +114,7 @@ public class GraphQLClientConfigurationMergerBean {
         quarkusConfig.executeSingleResultOperationsOverWebsocket
                 .ifPresent(transformed::setExecuteSingleOperationsOverWebsocket);
         quarkusConfig.websocketInitializationTimeout.ifPresent(transformed::setWebsocketInitializationTimeout);
+        quarkusConfig.allowUnexpectedResponseFields.ifPresent(transformed::setAllowUnexpectedResponseFields);
         return transformed;
     }
 

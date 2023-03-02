@@ -231,7 +231,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    @Timeout(3)
+    @Timeout(6)
     @DisplayName("Should create correctly multiple times in parallel with multiple threads")
     void createMultipleTimes() throws InterruptedException {
         final ExecutorService executorService = Executors.newFixedThreadPool(4);

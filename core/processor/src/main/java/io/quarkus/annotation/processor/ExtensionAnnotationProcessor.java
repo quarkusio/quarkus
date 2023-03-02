@@ -512,7 +512,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         final String docComment = getRequiredJavadoc(ctor);
         final StringBuilder buf = new StringBuilder();
         appendParamTypes(ctor, buf);
-        javadocProps.put(className + Constants.DOT + buf.toString(), docComment);
+        javadocProps.put(className + Constants.DOT + buf, docComment);
     }
 
     private void processMethodConfigItem(ExecutableElement method, Properties javadocProps, String className) {
@@ -520,12 +520,14 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         final StringBuilder buf = new StringBuilder();
         buf.append(method.getSimpleName().toString());
         appendParamTypes(method, buf);
-        javadocProps.put(className + Constants.DOT + buf.toString(), docComment);
+        javadocProps.put(className + Constants.DOT + buf, docComment);
     }
 
     private void processMethodConfigMapping(ExecutableElement method, Properties javadocProps, String className) {
-        final String docComment = getRequiredJavadoc(method);
-        javadocProps.put(className + Constants.DOT + method.getSimpleName().toString(), docComment);
+        if (method.getModifiers().contains(Modifier.ABSTRACT)) {
+            final String docComment = getRequiredJavadoc(method);
+            javadocProps.put(className + Constants.DOT + method.getSimpleName().toString(), docComment);
+        }
     }
 
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {

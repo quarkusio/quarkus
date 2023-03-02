@@ -257,7 +257,8 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                                         }
                                     }, invoker,
                                     SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultOverdueGracePeriod),
-                                    quartzSupport.getRuntimeConfig().runBlockingScheduledMethodOnQuartzThread, false));
+                                    quartzSupport.getRuntimeConfig().runBlockingScheduledMethodOnQuartzThread, false,
+                                    method.getMethodDescription()));
                         }
                     }
                 }
@@ -818,7 +819,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                             }
                         }, invoker,
                         SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultOverdueGracePeriod),
-                        runtimeConfig.runBlockingScheduledMethodOnQuartzThread, true));
+                        runtimeConfig.runBlockingScheduledMethodOnQuartzThread, true, null));
 
                 if (existing != null) {
                     throw new IllegalStateException("A job with this identity is already scheduled: " + identity);
@@ -907,18 +908,20 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         final ScheduledInvoker invoker;
         final Duration gracePeriod;
         final boolean isProgrammatic;
+        final String methodDescription;
 
         final boolean runBlockingMethodOnQuartzThread;
 
         QuartzTrigger(org.quartz.TriggerKey triggerKey, Function<TriggerKey, org.quartz.Trigger> triggerFunction,
                 ScheduledInvoker invoker, Duration gracePeriod, boolean runBlockingMethodOnQuartzThread,
-                boolean isProgrammatic) {
+                boolean isProgrammatic, String methodDescription) {
             this.triggerKey = triggerKey;
             this.triggerFunction = triggerFunction;
             this.invoker = invoker;
             this.gracePeriod = gracePeriod;
             this.runBlockingMethodOnQuartzThread = runBlockingMethodOnQuartzThread;
             this.isProgrammatic = isProgrammatic;
+            this.methodDescription = methodDescription;
         }
 
         @Override
@@ -950,6 +953,11 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
 
         private org.quartz.Trigger getTrigger() {
             return triggerFunction.apply(triggerKey);
+        }
+
+        @Override
+        public String getMethodDescription() {
+            return methodDescription;
         }
 
     }

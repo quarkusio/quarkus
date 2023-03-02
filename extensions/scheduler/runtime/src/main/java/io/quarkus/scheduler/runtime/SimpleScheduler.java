@@ -147,9 +147,10 @@ public class SimpleScheduler implements Scheduler {
                 nameSequence++;
                 String id = SchedulerUtils.lookUpPropertyValue(scheduled.identity());
                 if (id.isEmpty()) {
-                    id = nameSequence + "_" + method.getInvokerClassName();
+                    id = nameSequence + "_" + method.getMethodDescription();
                 }
-                Optional<SimpleTrigger> trigger = createTrigger(id, cronParser, scheduled, defaultOverdueGracePeriod);
+                Optional<SimpleTrigger> trigger = createTrigger(id, method.getMethodDescription(), cronParser, scheduled,
+                        defaultOverdueGracePeriod);
                 if (trigger.isPresent()) {
                     ScheduledInvoker invoker = initInvoker(context.createInvoker(method.getInvokerClassName()),
                             skippedExecutionEvent, successExecutionEvent, failedExecutionEvent,
@@ -308,7 +309,8 @@ public class SimpleScheduler implements Scheduler {
         return null;
     }
 
-    Optional<SimpleTrigger> createTrigger(String id, CronParser parser, Scheduled scheduled, Duration defaultGracePeriod) {
+    Optional<SimpleTrigger> createTrigger(String id, String methodDescription, CronParser parser, Scheduled scheduled,
+            Duration defaultGracePeriod) {
         ZonedDateTime start = ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         Long millisToAdd = null;
         if (scheduled.delay() > 0) {
@@ -333,14 +335,14 @@ public class SimpleScheduler implements Scheduler {
             }
             return Optional.of(new CronTrigger(id, start, cronExpr,
                     SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultGracePeriod),
-                    SchedulerUtils.parseCronTimeZone(scheduled)));
+                    SchedulerUtils.parseCronTimeZone(scheduled), methodDescription));
         } else if (!scheduled.every().isEmpty()) {
             final OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
             if (!everyMillis.isPresent()) {
                 return Optional.empty();
             }
             return Optional.of(new IntervalTrigger(id, start, everyMillis.getAsLong(),
-                    SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultGracePeriod)));
+                    SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultGracePeriod), methodDescription));
         } else {
             throw new IllegalArgumentException("Either the 'cron' expression or the 'every' period must be set: " + scheduled);
         }
@@ -421,15 +423,17 @@ public class SimpleScheduler implements Scheduler {
 
     static abstract class SimpleTrigger implements Trigger {
 
-        private final String id;
+        protected final String id;
+        protected final String methodDescription;
         private volatile boolean running;
         protected final ZonedDateTime start;
         protected volatile ZonedDateTime lastFireTime;
 
-        SimpleTrigger(String id, ZonedDateTime start) {
+        SimpleTrigger(String id, ZonedDateTime start, String description) {
             this.id = id;
             this.start = start;
             this.running = true;
+            this.methodDescription = description;
         }
 
         /**
@@ -456,6 +460,10 @@ public class SimpleScheduler implements Scheduler {
             this.running = running;
         }
 
+        public String getMethodDescription() {
+            return methodDescription;
+        }
+
     }
 
     static class IntervalTrigger extends SimpleTrigger {
@@ -464,8 +472,8 @@ public class SimpleScheduler implements Scheduler {
         private final long interval;
         private final Duration gracePeriod;
 
-        IntervalTrigger(String id, ZonedDateTime start, long interval, Duration gracePeriod) {
-            super(id, start);
+        IntervalTrigger(String id, ZonedDateTime start, long interval, Duration gracePeriod, String description) {
+            super(id, start, description);
             this.interval = interval;
             this.gracePeriod = gracePeriod;
         }
@@ -525,8 +533,8 @@ public class SimpleScheduler implements Scheduler {
         private final Duration gracePeriod;
         private final ZoneId timeZone;
 
-        CronTrigger(String id, ZonedDateTime start, Cron cron, Duration gracePeriod, ZoneId timeZone) {
-            super(id, start);
+        CronTrigger(String id, ZonedDateTime start, Cron cron, Duration gracePeriod, ZoneId timeZone, String description) {
+            super(id, start, description);
             this.cron = cron;
             this.executionTime = ExecutionTime.forCron(cron);
             this.lastFireTime = start;
@@ -570,7 +578,8 @@ public class SimpleScheduler implements Scheduler {
 
         @Override
         public String toString() {
-            return "CronTrigger [cron=" + cron + ", gracePeriod=" + gracePeriod + ", timeZone=" + timeZone + "]";
+            return "CronTrigger [id=" + id + ", cron=" + cron.asString() + ", gracePeriod=" + gracePeriod + ", timeZone="
+                    + timeZone + "]";
         }
 
     }
@@ -651,7 +660,8 @@ public class SimpleScheduler implements Scheduler {
             }
             Scheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
                     overdueGracePeriod, concurrentExecution, skipPredicate, timeZone);
-            Optional<SimpleTrigger> trigger = createTrigger(identity, cronParser, scheduled, defaultOverdueGracePeriod);
+            Optional<SimpleTrigger> trigger = createTrigger(identity, null, cronParser, scheduled,
+                    defaultOverdueGracePeriod);
             if (trigger.isPresent()) {
                 SimpleTrigger simpleTrigger = trigger.get();
                 invoker = initInvoker(invoker, skippedExecutionEvent, successExecutionEvent,

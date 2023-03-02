@@ -43,18 +43,18 @@ public @interface MessageBundle {
      * <p>
      * For a top-level class the {@value #DEFAULT_NAME} is used.
      * <p>
-     * For a nested class the name starts with the {@value #DEFAULT_NAME} followed by an undercore, followed by the simple names
-     * of all enclosing classes in the hierarchy (top-level class goes first) seperated by underscores.
+     * For a nested class the name consists of the simple names of all enclosing classes in the hierarchy (top-level class goes
+     * first), followed by the simple name of the message bundle interface. Names are separated by underscores.
      *
-     * For example, the name of the following message bundle will be defaulted to {@code msg_Index} and it could
-     * be used in a template via <code>{msg_Index:hello(name)}</code>:
+     * For example, the name of the following message bundle will be defaulted to {@code Controller_index} and it could
+     * be used in a template via <code>{Controller_index:hello(name)}</code>:
      *
      * <pre>
      * <code>
-     * class Index {
+     * class Controller {
      *
      *    &#64;MessageBundle
-     *    interface Bundle {
+     *    interface index {
      *
      *       &#64;Message("Hello {name}!")
      *       String hello(String name);

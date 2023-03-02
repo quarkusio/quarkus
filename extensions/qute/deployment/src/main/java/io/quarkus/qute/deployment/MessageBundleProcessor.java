@@ -144,21 +144,19 @@ public class MessageBundleProcessor {
                         } else {
                             // The name starts with the DEFAULT_NAME followed by an underscore, followed by simple names of all
                             // declaring classes in the hierarchy seperated by underscores
-                            List<String> enclosingNames = new ArrayList<>();
+                            List<String> names = new ArrayList<>();
+                            names.add(DotNames.simpleName(bundleClass));
                             DotName enclosingName = bundleClass.enclosingClass();
                             while (enclosingName != null) {
                                 ClassInfo enclosingClass = index.getClassByName(enclosingName);
                                 if (enclosingClass != null) {
-                                    enclosingNames.add(DotNames.simpleName(enclosingClass));
+                                    names.add(DotNames.simpleName(enclosingClass));
                                     enclosingName = enclosingClass.nestingType() == NestingType.TOP_LEVEL ? null
                                             : enclosingClass.enclosingClass();
                                 }
                             }
-                            enclosingNames.add(MessageBundle.DEFAULT_NAME);
-                            // Class Bar declares nested class Foo and bundle Baz is declared as nested interface of Foo
-                            // [Foo, Bar, msg] -> [msg, Bar, Foo]
-                            Collections.reverse(enclosingNames);
-                            name = String.join("_", enclosingNames);
+                            Collections.reverse(names);
+                            name = String.join("_", names);
                         }
                         LOG.debugf("Message bundle %s: name defaulted to %s", bundleClass, name);
                     }

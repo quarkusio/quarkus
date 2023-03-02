@@ -5,6 +5,8 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 /**
  * Configures the credentials and authentication mechanism to connect to the MongoDB server.
@@ -48,4 +50,23 @@ public class CredentialConfig {
      */
     @ConfigItem
     public Map<String, String> authMechanismProperties;
+
+    /**
+     * The credentials provider name
+     */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> credentialsProvider = Optional.empty();
+
+    /**
+     * The credentials provider bean name.
+     * <p>
+     * It is the {@code &#64;Named} value of the credentials provider bean. It is used to discriminate if multiple
+     * CredentialsProvider beans are available.
+     * <p>
+     * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
+     */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> credentialsProviderName = Optional.empty();
 }

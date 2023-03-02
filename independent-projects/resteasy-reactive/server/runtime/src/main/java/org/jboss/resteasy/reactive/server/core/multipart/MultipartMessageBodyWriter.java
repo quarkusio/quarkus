@@ -24,6 +24,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.multipart.FileDownload;
 import org.jboss.resteasy.reactive.server.NoopCloseAndFlushOutputStream;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
@@ -189,7 +190,7 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
                 try (NoopCloseAndFlushOutputStream writerOutput = new NoopCloseAndFlushOutputStream(os)) {
                     // FIXME: spec doesn't really say what headers we should use here
                     writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
-                            Serialisers.EMPTY_MULTI_MAP, writerOutput);
+                            new QuarkusMultivaluedHashMap<>(), writerOutput);
                     wrote = true;
                 }
 

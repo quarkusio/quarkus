@@ -5,7 +5,6 @@ import java.io.IOException;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 
@@ -17,6 +16,7 @@ import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
 import io.vertx.core.buffer.Buffer;
 
@@ -88,7 +88,7 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
             entity = Entity.entity(untypedEntity, mediaType);
         }
         // FIXME: pass headers?
-        Buffer buffer = context.writeEntity(entity, (MultivaluedMap) Serialisers.EMPTY_MULTI_MAP,
+        Buffer buffer = context.writeEntity(entity, new QuarkusMultivaluedHashMap<>(),
                 Serialisers.NO_WRITER_INTERCEPTOR);
         return new ByteArrayInputStream(buffer.getBytes());
     }

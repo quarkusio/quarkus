@@ -202,7 +202,7 @@ public class RestClientConfig {
     /**
      * If set to false disables the keep alive completely.
      */
-    @ConfigItem(defaultValue = "true")
+    @ConfigItem
     public Optional<Boolean> keepAliveEnabled;
 
     /**

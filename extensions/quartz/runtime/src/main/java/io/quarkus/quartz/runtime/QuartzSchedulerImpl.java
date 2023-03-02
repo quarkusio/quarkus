@@ -67,12 +67,17 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.ScheduledJobPaused;
+import io.quarkus.scheduler.ScheduledJobResumed;
 import io.quarkus.scheduler.Scheduler;
+import io.quarkus.scheduler.SchedulerPaused;
+import io.quarkus.scheduler.SchedulerResumed;
 import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.AbstractJobDefinition;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
+import io.quarkus.scheduler.common.runtime.Events;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
@@ -111,17 +116,28 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     private final Event<SkippedExecution> skippedExecutionEvent;
     private final Event<SuccessfulExecution> successExecutionEvent;
     private final Event<FailedExecution> failedExecutionEvent;
+    private final Event<SchedulerPaused> schedulerPausedEvent;
+    private final Event<SchedulerResumed> schedulerResumedEvent;
+    private final Event<ScheduledJobPaused> scheduledJobPausedEvent;
+    private final Event<ScheduledJobResumed> scheduledJobResumedEvent;
     private final QuartzRuntimeConfig runtimeConfig;
 
     public QuartzSchedulerImpl(SchedulerContext context, QuartzSupport quartzSupport,
             SchedulerRuntimeConfig schedulerRuntimeConfig,
             Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successExecutionEvent,
-            Event<FailedExecution> failedExecutionEvent, Instance<Job> jobs, Instance<UserTransaction> userTransaction,
+            Event<FailedExecution> failedExecutionEvent, Event<SchedulerPaused> schedulerPausedEvent,
+            Event<SchedulerResumed> schedulerResumedEvent, Event<ScheduledJobPaused> scheduledJobPausedEvent,
+            Event<ScheduledJobResumed> scheduledJobResumedEvent,
+            Instance<Job> jobs, Instance<UserTransaction> userTransaction,
             Vertx vertx) {
         this.shutdownWaitTime = quartzSupport.getRuntimeConfig().shutdownWaitTime;
         this.skippedExecutionEvent = skippedExecutionEvent;
         this.successExecutionEvent = successExecutionEvent;
         this.failedExecutionEvent = failedExecutionEvent;
+        this.schedulerPausedEvent = schedulerPausedEvent;
+        this.schedulerResumedEvent = schedulerResumedEvent;
+        this.scheduledJobPausedEvent = scheduledJobPausedEvent;
+        this.scheduledJobResumedEvent = scheduledJobResumedEvent;
         this.runtimeConfig = quartzSupport.getRuntimeConfig();
         this.enabled = schedulerRuntimeConfig.enabled;
         this.defaultOverdueGracePeriod = schedulerRuntimeConfig.overdueGracePeriod;
@@ -284,6 +300,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             try {
                 if (scheduler != null) {
                     scheduler.standby();
+                    Events.fire(schedulerPausedEvent, SchedulerPaused.INSTANCE);
                 }
             } catch (SchedulerException e) {
                 throw new RuntimeException("Unable to pause scheduler", e);
@@ -299,7 +316,12 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             return;
         }
         try {
-            scheduler.pauseJob(new JobKey(SchedulerUtils.lookUpPropertyValue(identity), Scheduler.class.getName()));
+            String parsedIdentity = SchedulerUtils.lookUpPropertyValue(identity);
+            QuartzTrigger trigger = scheduledTasks.get(parsedIdentity);
+            if (trigger != null) {
+                scheduler.pauseJob(new JobKey(parsedIdentity, Scheduler.class.getName()));
+                Events.fire(scheduledJobPausedEvent, new ScheduledJobPaused(trigger));
+            }
         } catch (SchedulerException e) {
             throw new RuntimeException("Unable to pause job", e);
         }
@@ -342,6 +364,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             try {
                 if (scheduler != null) {
                     scheduler.start();
+                    Events.fire(schedulerResumedEvent, SchedulerResumed.INSTANCE);
                 }
             } catch (SchedulerException e) {
                 throw new RuntimeException("Unable to resume scheduler", e);
@@ -357,7 +380,12 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             return;
         }
         try {
-            scheduler.resumeJob(new JobKey(SchedulerUtils.lookUpPropertyValue(identity), Scheduler.class.getName()));
+            String parsedIdentity = SchedulerUtils.lookUpPropertyValue(identity);
+            QuartzTrigger trigger = scheduledTasks.get(parsedIdentity);
+            if (trigger != null) {
+                scheduler.resumeJob(new JobKey(SchedulerUtils.lookUpPropertyValue(parsedIdentity), Scheduler.class.getName()));
+                Events.fire(scheduledJobResumedEvent, new ScheduledJobResumed(trigger));
+            }
         } catch (SchedulerException e) {
             throw new RuntimeException("Unable to resume job", e);
         }

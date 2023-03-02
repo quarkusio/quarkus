@@ -35,13 +35,9 @@ public final class StatusEmitterInvoker extends DelegateInvoker {
         return delegate.invoke(execution).whenComplete((v, t) -> {
             if (t != null) {
                 LOG.errorf(t, "Error occurred while executing task for trigger %s", execution.getTrigger());
-                FailedExecution failed = new FailedExecution(execution, t);
-                failedEvent.fireAsync(failed);
-                failedEvent.fire(failed);
+                Events.fire(failedEvent, new FailedExecution(execution, t));
             } else {
-                SuccessfulExecution success = new SuccessfulExecution(execution);
-                successfulEvent.fireAsync(success);
-                successfulEvent.fire(success);
+                Events.fire(successfulEvent, new SuccessfulExecution(execution));
             }
         });
     }

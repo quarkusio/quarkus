@@ -48,4 +48,8 @@ public final class ScheduledBusinessMethodItem extends MultiBuildItem {
         return nonBlocking;
     }
 
+    public String getMethodDescription() {
+        return method.declaringClass().name() + "#" + method.name() + "()";
+    }
+
 }

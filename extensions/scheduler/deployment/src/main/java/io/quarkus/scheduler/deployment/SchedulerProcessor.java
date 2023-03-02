@@ -11,9 +11,11 @@ import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -191,17 +193,23 @@ public class SchedulerProcessor {
             ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors) {
         List<Throwable> errors = new ArrayList<>();
         Map<String, AnnotationInstance> encounteredIdentities = new HashMap<>();
+        Set<String> methodDescriptions = new HashSet<>();
 
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
+            if (!methodDescriptions.add(scheduledMethod.getMethodDescription())) {
+                errors.add(new IllegalStateException("Multiple @Scheduled methods of the same name declared on the same class: "
+                        + scheduledMethod.getMethodDescription()));
+                continue;
+            }
             MethodInfo method = scheduledMethod.getMethod();
             if (Modifier.isAbstract(method.flags())) {
                 errors.add(new IllegalStateException("@Scheduled method must not be abstract: "
-                        + method.declaringClass().name() + "#" + method.name() + "()"));
+                        + scheduledMethod.getMethodDescription()));
                 continue;
             }
             if (Modifier.isPrivate(method.flags())) {
                 errors.add(new IllegalStateException("@Scheduled method must not be private: "
-                        + method.declaringClass().name() + "#" + method.name() + "()"));
+                        + scheduledMethod.getMethodDescription()));
                 continue;
             }
 

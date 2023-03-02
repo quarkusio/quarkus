@@ -166,7 +166,6 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
-            {#if generate-native}
             <!-- Run the tests with the executable produced by the build (could be native, jvm, or container image) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -180,7 +179,9 @@
                         </goals>
                         <configuration>
                             <systemPropertyVariables>
+                                {#if generate-native}
                                 <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
+                                {/if}
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                 <maven.home>$\{maven.home}</maven.home>
                             </systemPropertyVariables>
@@ -188,7 +189,6 @@
                     </execution>
                 </executions>
             </plugin>
-            {/if}
         </plugins>
     </build>
     {#if generate-native}

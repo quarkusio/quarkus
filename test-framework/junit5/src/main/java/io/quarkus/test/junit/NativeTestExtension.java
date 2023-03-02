@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.TestAbortedException;
 
+import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultNativeImageLauncher;
@@ -211,6 +212,11 @@ public class NativeTestExtension extends AbstractQuarkusTestWithContextExtension
                     @Override
                     public void close() {
 
+                    }
+
+                    @Override
+                    public CuratedApplication getCuratedApplication() {
+                        return null;
                     }
                 },
                 System.getProperty("native.image.path"),

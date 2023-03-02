@@ -37,6 +37,7 @@ import io.quarkus.runtime.util.StringUtil;
 public abstract class QuarkusBuild extends QuarkusBuildTask {
 
     private static final String NATIVE_PROPERTY_NAMESPACE = "quarkus.native";
+    public static final String QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD = "quarkus.ignore.legacy.deploy.build";
 
     @Inject
     public QuarkusBuild() {
@@ -201,6 +202,10 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
 
     @TaskAction
     public void finalizeQuarkusBuild() {
+        if (extension().forcedPropertiesProperty().get().containsKey(QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD)) {
+            getLogger().info("SKIPPING finalizedBy deploy build");
+            return;
+        }
         // This 'cleanup' removes all result artifacts (runners, fast-jar-directory), depending on the configured
         // Quarkus package type.
         getLogger().info("Removing output files and directories (provide a clean state).");

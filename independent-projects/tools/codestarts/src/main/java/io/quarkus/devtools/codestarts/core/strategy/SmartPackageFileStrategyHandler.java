@@ -46,6 +46,13 @@ final class SmartPackageFileStrategyHandler implements CodestartFileStrategyHand
             }
         }
 
+        if (modifiedRelativePath.contains("/integrationTest/")) {
+            final boolean isMaven = CodestartData.getBuildtool(data).filter(b -> Objects.equals(b, "maven")).isPresent();
+            if (isMaven) {
+                modifiedRelativePath = modifiedRelativePath.replace("/integrationTest/", "/test/");
+            }
+        }
+
         final Path targetPath = targetDirectory.resolve(modifiedRelativePath);
 
         if (Files.exists(targetPath)) {

@@ -26,6 +26,8 @@ public class AbstractDeploymentMojo extends BuildMojo {
     @Parameter(property = "quarkus.container-image.builder")
     String imageBuilder;
 
+    boolean forceDependencies = true;
+
     @Override
     protected void doExecute() throws MojoExecutionException {
         if (dryRun) {
@@ -41,16 +43,18 @@ public class AbstractDeploymentMojo extends BuildMojo {
     }
 
     public Deployer getDeployer() {
-        return Deployer.getDeployer(mavenProject())
-                .orElse(Deployer.kubernetes);
+        return getDeployer(Deployer.kubernetes);
     }
 
-    public Optional<String> getImageBuilder() {
-        return Optional.ofNullable(imageBuilder);
+    public Deployer getDeployer(Deployer defaultDeployer) {
+        return Deployer.getDeployer(mavenProject())
+                .orElse(defaultDeployer);
     }
 
     @Override
     protected List<Dependency> forcedDependencies(LaunchMode mode) {
+        if (!forceDependencies)
+            return super.forcedDependencies(mode);
         List<Dependency> dependencies = new ArrayList<>();
         MavenProject project = mavenProject();
         Deployer deployer = getDeployer();

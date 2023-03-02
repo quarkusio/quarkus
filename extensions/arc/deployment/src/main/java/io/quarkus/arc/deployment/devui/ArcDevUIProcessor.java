@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment.devui;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.quarkus.arc.deployment.ArcConfig;
 import io.quarkus.arc.deployment.devconsole.DevBeanInfo;
 import io.quarkus.arc.deployment.devconsole.DevBeanInfos;
 import io.quarkus.arc.deployment.devconsole.DevDecoratorInfo;
@@ -20,7 +21,7 @@ public class ArcDevUIProcessor {
     private static final String NAME = "ArC";
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public CardPageBuildItem pages(ArcBeanInfoBuildItem arcBeanInfoBuildItem) {
+    public CardPageBuildItem pages(ArcBeanInfoBuildItem arcBeanInfoBuildItem, ArcConfig config) {
         DevBeanInfos beanInfos = arcBeanInfoBuildItem.getBeanInfos();
 
         CardPageBuildItem pageBuildItem = new CardPageBuildItem(NAME);
@@ -65,13 +66,15 @@ public class ArcDevUIProcessor {
             pageBuildItem.addBuildTimeData(DECORATORS, decorators);
         }
 
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .icon("font-awesome-solid:fire")
-                .componentLink("qwc-arc-fired-events.js"));
+        if (config.devMode.monitoringEnabled) {
+            pageBuildItem.addPage(Page.webComponentPageBuilder()
+                    .icon("font-awesome-solid:fire")
+                    .componentLink("qwc-arc-fired-events.js"));
 
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .icon("font-awesome-solid:diagram-project")
-                .componentLink("qwc-arc-invocation-trees.js"));
+            pageBuildItem.addPage(Page.webComponentPageBuilder()
+                    .icon("font-awesome-solid:diagram-project")
+                    .componentLink("qwc-arc-invocation-trees.js"));
+        }
 
         int removedComponents = beanInfos.getRemovedComponents();
         if (removedComponents > 0) {
@@ -106,7 +109,6 @@ public class ArcDevUIProcessor {
     private static final String INTERCEPTORS = "interceptors";
     private static final String DECORATORS = "decorators";
     private static final String REMOVED_BEANS = "removedBeans";
-    private static final String REMOVED_COMPONENTS = "removedComponents";
     private static final String REMOVED_DECORATORS = "removedDecorators";
     private static final String REMOVED_INTERCEPTORS = "removedInterceptors";
 

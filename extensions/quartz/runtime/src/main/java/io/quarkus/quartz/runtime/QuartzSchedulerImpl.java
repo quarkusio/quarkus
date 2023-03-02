@@ -74,7 +74,7 @@ import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.AbstractJobDefinition;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
-import io.quarkus.scheduler.common.runtime.ScheduledMethodMetadata;
+import io.quarkus.scheduler.common.runtime.ScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
 import io.quarkus.scheduler.common.runtime.SyntheticScheduled;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
@@ -183,7 +183,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                 if (transaction != null) {
                     transaction.begin();
                 }
-                for (ScheduledMethodMetadata method : context.getScheduledMethods()) {
+                for (ScheduledMethod method : context.getScheduledMethods()) {
                     int nameSequence = 0;
 
                     for (Scheduled scheduled : method.getSchedules()) {

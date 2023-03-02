@@ -64,22 +64,14 @@ public class Filters {
         }
 
         public SimpleFilter(Handler<RoutingContext> handler, int priority) {
-            checkPriority(priority);
             this.handler = handler;
             this.priority = priority;
         }
 
         public SimpleFilter(Handler<RoutingContext> handler, int priority, boolean isFailureHandler) {
-            checkPriority(priority);
             this.handler = handler;
             this.priority = priority;
             this.isFailureHandler = isFailureHandler;
-        }
-
-        private void checkPriority(int priority) {
-            if (priority < 0) {
-                throw new IllegalArgumentException("`priority` cannot be negative");
-            }
         }
 
         public void setHandler(Handler<RoutingContext> handler) {

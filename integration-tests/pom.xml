@@ -358,6 +358,7 @@
                 <module>google-cloud-functions</module>
                 <module>istio</module>
                 <module>management-interface</module>
+                <module>management-interface-auth</module>
             </modules>
         </profile>
 

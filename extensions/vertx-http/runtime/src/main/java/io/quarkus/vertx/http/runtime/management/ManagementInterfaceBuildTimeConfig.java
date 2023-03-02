@@ -22,6 +22,11 @@ public class ManagementInterfaceBuildTimeConfig {
     public boolean enabled;
 
     /**
+     * Authentication configuration
+     */
+    public ManagementAuthConfig auth;
+
+    /**
      * Configures the engine to require/request client authentication.
      * NONE, REQUEST, REQUIRED
      */

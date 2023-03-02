@@ -18,6 +18,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AuthenticatedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.DenySecurityPolicy;
@@ -37,7 +38,8 @@ import io.vertx.core.http.ClientAuth;
 public class HttpSecurityProcessor {
 
     @BuildStep
-    public void builtins(BuildProducer<HttpSecurityPolicyBuildItem> producer, HttpBuildTimeConfig buildTimeConfig,
+    public void builtins(BuildProducer<HttpSecurityPolicyBuildItem> producer,
+            HttpBuildTimeConfig buildTimeConfig,
             BuildProducer<AdditionalBeanBuildItem> beanProducer) {
         producer.produce(new HttpSecurityPolicyBuildItem("deny", new SupplierImpl<>(new DenySecurityPolicy())));
         producer.produce(new HttpSecurityPolicyBuildItem("permit", new SupplierImpl<>(new PermitSecurityPolicy())));
@@ -93,17 +95,12 @@ public class HttpSecurityProcessor {
     SyntheticBeanBuildItem initBasicAuth(
             HttpSecurityRecorder recorder,
             HttpBuildTimeConfig buildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
-        //basic auth explicitly disabled
-        if (buildTimeConfig.auth.basic.isPresent() && !buildTimeConfig.auth.basic.get()) {
+        if (!applicationBasicAuthRequired(buildTimeConfig, managementInterfaceBuildTimeConfig)) {
             return null;
         }
-        boolean basicExplicitlyEnabled = buildTimeConfig.auth.basic.orElse(false);
-        if ((buildTimeConfig.auth.form.enabled || isMtlsClientAuthenticationEnabled(buildTimeConfig))
-                && !basicExplicitlyEnabled) {
-            //if form auth is enabled and we are not then we don't install
-            return null;
-        }
+
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(BasicAuthenticationMechanism.class)
                 .types(HttpAuthenticationMechanism.class)
@@ -111,13 +108,30 @@ public class HttpSecurityProcessor {
                 .scope(Singleton.class)
                 .supplier(recorder.setupBasicAuth(buildTimeConfig));
         if (!buildTimeConfig.auth.form.enabled && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
-                && !basicExplicitlyEnabled) {
+                && !buildTimeConfig.auth.basic.orElse(false)) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
             configurator.defaultBean();
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
         }
 
         return configurator.done();
+    }
+
+    public static boolean applicationBasicAuthRequired(HttpBuildTimeConfig buildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
+        //basic auth explicitly disabled
+        if (buildTimeConfig.auth.basic.isPresent() && !buildTimeConfig.auth.basic.get()) {
+            return false;
+        }
+        if (!buildTimeConfig.auth.basic.orElse(false)) {
+            if ((buildTimeConfig.auth.form.enabled || isMtlsClientAuthenticationEnabled(buildTimeConfig))
+                    || managementInterfaceBuildTimeConfig.auth.basic.orElse(false)) {
+                //if form auth is enabled and we are not then we don't install
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @BuildStep
@@ -165,7 +179,7 @@ public class HttpSecurityProcessor {
         }
     }
 
-    private boolean isMtlsClientAuthenticationEnabled(HttpBuildTimeConfig buildTimeConfig) {
+    private static boolean isMtlsClientAuthenticationEnabled(HttpBuildTimeConfig buildTimeConfig) {
         return !ClientAuth.NONE.equals(buildTimeConfig.tlsClientAuth);
     }
 }

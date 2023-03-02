@@ -357,6 +357,8 @@ class MyService {
 <6> Get Trigger metadata for a specific scheduled job by its identity.
 <7> You can configure the grace period for isOverdue() with quarkus.scheduler.overdue-grace-period
 
+NOTE: A CDI event is fired synchronously and asynchronously when the scheduler or a scheduled job is paused/resumed. The payload is `io.quarkus.scheduler.SchedulerPaused`, `io.quarkus.scheduler.SchedulerResumed`, `io.quarkus.scheduler.ScheduledJobPaused` and `io.quarkus.scheduler.ScheduledJobResumed` respectively.
+
 [[programmatic_scheduling]]
 == Programmatic Scheduling
 

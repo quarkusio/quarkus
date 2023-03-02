@@ -43,12 +43,17 @@ import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.Scheduled.SkipPredicate;
 import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.ScheduledJobPaused;
+import io.quarkus.scheduler.ScheduledJobResumed;
 import io.quarkus.scheduler.Scheduler;
+import io.quarkus.scheduler.SchedulerPaused;
+import io.quarkus.scheduler.SchedulerResumed;
 import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.AbstractJobDefinition;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
+import io.quarkus.scheduler.common.runtime.Events;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
@@ -84,10 +89,16 @@ public class SimpleScheduler implements Scheduler {
     private final Event<SkippedExecution> skippedExecutionEvent;
     private final Event<SuccessfulExecution> successExecutionEvent;
     private final Event<FailedExecution> failedExecutionEvent;
+    private final Event<SchedulerPaused> schedulerPausedEvent;
+    private final Event<SchedulerResumed> schedulerResumedEvent;
+    private final Event<ScheduledJobPaused> scheduledJobPausedEvent;
+    private final Event<ScheduledJobResumed> scheduledJobResumedEvent;
 
     public SimpleScheduler(SchedulerContext context, SchedulerRuntimeConfig schedulerRuntimeConfig,
             Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successExecutionEvent,
-            Event<FailedExecution> failedExecutionEvent, Vertx vertx) {
+            Event<FailedExecution> failedExecutionEvent, Event<SchedulerPaused> schedulerPausedEvent,
+            Event<SchedulerResumed> schedulerResumedEvent, Event<ScheduledJobPaused> scheduledJobPausedEvent,
+            Event<ScheduledJobResumed> scheduledJobResumedEvent, Vertx vertx) {
         this.running = true;
         this.enabled = schedulerRuntimeConfig.enabled;
         this.scheduledTasks = new ConcurrentHashMap<>();
@@ -95,6 +106,10 @@ public class SimpleScheduler implements Scheduler {
         this.skippedExecutionEvent = skippedExecutionEvent;
         this.successExecutionEvent = successExecutionEvent;
         this.failedExecutionEvent = failedExecutionEvent;
+        this.schedulerPausedEvent = schedulerPausedEvent;
+        this.schedulerResumedEvent = schedulerResumedEvent;
+        this.scheduledJobPausedEvent = scheduledJobPausedEvent;
+        this.scheduledJobResumedEvent = scheduledJobResumedEvent;
 
         CronDefinition definition = CronDefinitionBuilder.instanceDefinitionFor(context.getCronType());
         this.cronParser = new CronParser(definition);
@@ -211,6 +226,7 @@ public class SimpleScheduler implements Scheduler {
             LOG.warn("Scheduler is disabled and cannot be paused");
         } else {
             running = false;
+            Events.fire(schedulerPausedEvent, SchedulerPaused.INSTANCE);
         }
     }
 
@@ -225,6 +241,7 @@ public class SimpleScheduler implements Scheduler {
         ScheduledTask task = scheduledTasks.get(parsedIdentity);
         if (task != null) {
             task.trigger.setRunning(false);
+            Events.fire(scheduledJobPausedEvent, new ScheduledJobPaused(task.trigger));
         }
     }
 
@@ -248,6 +265,7 @@ public class SimpleScheduler implements Scheduler {
             LOG.warn("Scheduler is disabled and cannot be resumed");
         } else {
             running = true;
+            Events.fire(schedulerResumedEvent, SchedulerResumed.INSTANCE);
         }
     }
 
@@ -262,6 +280,7 @@ public class SimpleScheduler implements Scheduler {
         ScheduledTask task = scheduledTasks.get(parsedIdentity);
         if (task != null) {
             task.trigger.setRunning(true);
+            Events.fire(scheduledJobResumedEvent, new ScheduledJobResumed(task.trigger));
         }
     }
 

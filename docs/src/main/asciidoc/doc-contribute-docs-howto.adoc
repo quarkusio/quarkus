@@ -92,7 +92,6 @@ Where:
 
 .Example
 
-[Attributes]
 |===
 |Name of original AsciiDoc source file |Name of target file to redirect to| Redirection file| Example pull request
 

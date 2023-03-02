@@ -22,7 +22,6 @@ The following table maps specific authentication requirements to a supported mec
 
 .Authentication requirements and mechanisms
 [width=80%]
-[source, adoc]
 |===
 |Authentication requirement |Authentication mechanism
 

@@ -389,13 +389,13 @@ public final class HibernateOrmProcessor {
                     .produce(new PersistenceUnitDescriptorBuildItem(xmlDescriptor,
                             xmlDescriptor.getName(),
                             Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                            jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
                             getMultiTenancyStrategy(Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             Collections.emptyMap(),
-                            hibernateOrmConfig.databaseOrmCompatibilityVersion
-                                    .settings(jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind).orElse(null)),
+                            hibernateOrmConfig.databaseOrmCompatibilityVersion,
                             false, true));
         }
 
@@ -1200,12 +1200,12 @@ public final class HibernateOrmProcessor {
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor, descriptor.getName(),
                         jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
+                        jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
                         multiTenancyStrategy,
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
                         persistenceUnitConfig.unsupportedProperties,
-                        hibernateOrmConfig.databaseOrmCompatibilityVersion
-                                .settings(jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind).orElse(null)),
+                        hibernateOrmConfig.databaseOrmCompatibilityVersion,
                         false, false));
     }
 

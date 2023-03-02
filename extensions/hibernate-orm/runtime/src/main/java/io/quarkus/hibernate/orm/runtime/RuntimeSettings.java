@@ -47,10 +47,6 @@ public class RuntimeSettings {
             settings.put(key, value);
         }
 
-        public void putIfAbsent(String key, Object value) {
-            settings.putIfAbsent(key, value);
-        }
-
         public Object get(String key) {
             return settings.get(key);
         }

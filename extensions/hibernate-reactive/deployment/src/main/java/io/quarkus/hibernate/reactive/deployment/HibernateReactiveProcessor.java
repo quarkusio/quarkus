@@ -163,10 +163,10 @@ public final class HibernateReactiveProcessor {
             // - we don't support starting Hibernate Reactive from a persistence.xml
             // - we don't support Hibernate Envers with Hibernate Reactive
             persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
-                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, dbKindOptional,
                     jpaModel.getXmlMappings(reactivePU.getName()),
                     persistenceUnitConfig.unsupportedProperties,
-                    hibernateOrmConfig.databaseOrmCompatibilityVersion.settings(dbKind),
+                    hibernateOrmConfig.databaseOrmCompatibilityVersion,
                     true, false));
         }
 

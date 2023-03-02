@@ -218,14 +218,22 @@ public class FastBootMetadataBuilder {
         // (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
         quarkusConfigUnsupportedProperties.forEach(allSettings::putIfAbsent);
 
-        var databaseOrmCompatibilitySettings = puDefinition.getDatabaseOrmCompatibilitySettings();
-        databaseOrmCompatibilitySettings.forEach(allSettings::putIfAbsent);
+        var databaseOrmCompatibilityVersion = puDefinition.getDatabaseOrmCompatibilityVersion();
+        Map<String, String> appliedDatabaseOrmCompatibilitySettings = new HashMap<>();
+        for (Map.Entry<String, String> entry : databaseOrmCompatibilityVersion.settings(puDefinition.getDbKind()).entrySet()) {
+            // Not using putIfAbsent() because that would be ambiguous in case of null values
+            if (!allSettings.containsKey(entry.getKey())) {
+                appliedDatabaseOrmCompatibilitySettings.put(entry.getKey(), entry.getValue());
+            }
+        }
+        allSettings.putAll(appliedDatabaseOrmCompatibilitySettings);
 
         // We keep a separate copy of settings coming from Quarkus config,
         // so that we can more easily differentiate between
         // properties coming from Quarkus and "unsupported" properties
         // on startup (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
-        return new BuildTimeSettings(quarkusConfigSettings, databaseOrmCompatibilitySettings, allSettings);
+        return new BuildTimeSettings(quarkusConfigSettings, databaseOrmCompatibilityVersion,
+                appliedDatabaseOrmCompatibilitySettings, allSettings);
     }
 
     /**

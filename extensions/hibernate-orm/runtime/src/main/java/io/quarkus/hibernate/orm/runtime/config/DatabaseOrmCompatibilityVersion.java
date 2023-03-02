@@ -1,9 +1,10 @@
-package io.quarkus.hibernate.orm.deployment.config;
+package io.quarkus.hibernate.orm.runtime.config;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.hibernate.cfg.AvailableSettings;
@@ -13,7 +14,7 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 public enum DatabaseOrmCompatibilityVersion {
     V5_6("5.6") {
         @Override
-        public Map<String, String> settings(String dbKind) {
+        public Map<String, String> settings(Optional<String> dbKind) {
             Map<String, String> result = new HashMap<>(Map.of(
                     // https://github.com/hibernate/hibernate-orm/blob/6.0/migration-guide.adoc#implicit-identifier-sequence-and-table-name
                     // https://github.com/hibernate/hibernate-orm/blob/6.0/migration-guide.adoc#id-sequence-defaults
@@ -32,7 +33,7 @@ public enum DatabaseOrmCompatibilityVersion {
                     // https://github.com/hibernate/hibernate-orm/blob/6.2/migration-guide.adoc#timezone-and-offset-storage
                     AvailableSettings.TIMEZONE_DEFAULT_STORAGE, "NORMALIZE"));
 
-            if (!usedToSupportUuid(dbKind)) {
+            if (dbKind.isPresent() && !usedToSupportUuid(dbKind.get())) {
                 // https://github.com/hibernate/hibernate-orm/blob/6.0/migration-guide.adoc#uuid-mapping-changes
                 // https://github.com/hibernate/hibernate-orm/blob/6.2/migration-guide.adoc#uuid-mapping-changes-on-mariadb
                 // https://github.com/hibernate/hibernate-orm/blob/6.2/migration-guide.adoc#uuid-mapping-changes-on-sql-server
@@ -44,7 +45,7 @@ public enum DatabaseOrmCompatibilityVersion {
     },
     LATEST("latest") {
         @Override
-        public Map<String, String> settings(String dbKind) {
+        public Map<String, String> settings(Optional<String> dbKind) {
             // Nothing to add
             return Map.of();
         }
@@ -55,13 +56,13 @@ public enum DatabaseOrmCompatibilityVersion {
         return DatabaseKind.isPostgreSQL(dbKind);
     }
 
-    private final String externalRepresentation;
+    public final String externalRepresentation;
 
     DatabaseOrmCompatibilityVersion(String externalRepresentation) {
         this.externalRepresentation = externalRepresentation;
     }
 
-    public abstract Map<String, String> settings(String dbKind);
+    public abstract Map<String, String> settings(Optional<String> dbKind);
 
     public static class Converter
             implements org.eclipse.microprofile.config.spi.Converter<DatabaseOrmCompatibilityVersion> {

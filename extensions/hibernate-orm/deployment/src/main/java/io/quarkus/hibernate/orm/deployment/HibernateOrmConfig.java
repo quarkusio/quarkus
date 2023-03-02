@@ -4,8 +4,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
-import io.quarkus.hibernate.orm.deployment.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -40,11 +40,14 @@ public class HibernateOrmConfig {
      * but it may still expect a different (but runtime-compatible) schema.
      * * robust test suites are still useful and recommended:
      * you should still check that your application behaves as intended with your legacy schema.
-     * * older versions will be dropped as Hibernate ORM changes pile up
-     * and support for those older versions becomes too unreliable:
-     * you should still plan a migration of your schema to a newer version of Hibernate ORM.
-     * To help with migration, have a look at the source code of {@link DatabaseOrmCompatibilityVersion}:
-     * it lists relevant settings and includes links to the relevant sections of migration guides.
+     * * this feature is inherently unstable:
+     * some aspects of it may stop working in future versions of Quarkus,
+     * and older versions will be dropped as Hibernate ORM changes pile up
+     * and support for those older versions becomes too unreliable.
+     * * you should still plan a migration of your schema to a newer version of Hibernate ORM.
+     * For help with migration, refer to
+     * link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[the Quarkus 3
+     * migration guide from Hibernate ORM 5 to 6].
      *
      * @asciidoclet
      */

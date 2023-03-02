@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.config.unsupportedproperties;
+package io.quarkus.hibernate.orm.config;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ import org.hibernate.type.Type;
  * Feel free to use some other solution if you find one.
  */
 public class SettingsSpyingIdentifierGenerator implements IdentifierGenerator {
-    static final List<Map<String, Object>> collectedSettings = new ArrayList<>();
+    public static final List<Map<String, Object>> collectedSettings = new ArrayList<>();
 
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })

@@ -53,7 +53,7 @@ import io.quarkus.redis.datasource.RedisDataSource;
 @Inject RedisDataSource highLevelApi;
 ----
 
-More details about the various APIs offered by the quarkus-redis extension are available in the <<apis>> section.
+More details about the various APIs offered by the quarkus-redis extension are available in the xref:apis[] section.
 
 [[apis]]
 == One extension, multiple APIs

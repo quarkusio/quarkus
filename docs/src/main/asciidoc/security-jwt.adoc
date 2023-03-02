@@ -288,7 +288,7 @@ mp.jwt.verify.issuer=https://example.com/issuer #<2>
 
 quarkus.native.resources.includes=publicKey.pem #<3>
 ----
-<1> We are setting public key location to point to a classpath publicKey.pem location. We will add this key in part B, <<Adding a Public Key>>.
+<1> We are setting public key location to point to a classpath publicKey.pem location. We will add this key in part B, xref:Adding a Public Key[].
 <2> We are setting the issuer to the URL string `https://example.com/issuer`.
 <3> We are including the public key as a resource in the native executable.
 
@@ -642,6 +642,7 @@ Note you can also use the injected `JsonWebToken` to access the individual claim
 
 Please see link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-1.2/microprofile-jwt-auth-spec-1.2.html#_cdi_injection_requirements[MP JWT CDI Injection Requirements] for more details.
 
+[[supported-public-key-formats]]
 === Supported Public Key Formats
 
 Public Keys may be formatted in any of the following formats, specified in order of
@@ -732,16 +733,15 @@ public class SecuredResource {
 }
 ----
 
-Please also see the <<add-smallrye-jwt, How to Add SmallRye JWT directly>> section about using `JWTParser` without the `HTTP` support provided by `quarkus-smallrye-jwt`.
+Please also see the xref:add-smallrye-jwt[How to Add SmallRye JWT directly] section about using `JWTParser` without the `HTTP` support provided by `quarkus-smallrye-jwt`.
 
 === Token Decryption
 
-If your application needs to accept the tokens with the encrypted claims or with the encrypted inner signed claims then all you have to do is to set
+If your application needs to accept the tokens with the encrypted claims or the encrypted inner-signed claims, all you have to do is set
 `smallrye.jwt.decrypt.key.location` pointing to the decryption key.
 
-If this is the only key property which is set then the incoming token is expected to contain the encrypted claims only.
-If either `mp.jwt.verify.publickey` or `mp.jwt.verify.publickey.location` verification properties are also set then the incoming token is expected to contain
-the encrypted inner-signed token.
+If this is the only key property that is set, the incoming token is expected to contain the encrypted claims only.
+If either `mp.jwt.verify.publickey` or `mp.jwt.verify.publickey.location` verification properties are also set then the incoming token is expected to contain the encrypted inner-signed token.
 
 See xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
 
@@ -975,9 +975,12 @@ Note that you can't access the injected `JsonWebToken` in the public methods if 
 [[add-smallrye-jwt]]
 === How to Add SmallRye JWT directly
 
-If you work with Quarkus extensions which do not support `HTTP` (for example, `Quarkus GRPC`) or provide their own extension specific `HTTP` support conflicting with the one offered by `quarkus-smallrye-jwt` and `Vert.x HTTP` (example, `Quarkus Amazon Lambda`) and you would like to <<jwt-parser, Parse and Verify JsonWebToken with JWTParser>> then please use `smallrye-jwt` directly instead of `quarkus-smallrye-jwt`.
+To xref:jwt-parser[parse and verify JsonWebToken with JWTParser], use `smallrye-jwt` instead of `quarkus-smallrye-jwt` directly for the following situations:
 
-Add this dependency:
+* You work with Quarkus extensions that do not support `HTTP`, such as `Quarkus GRPC`.
+* You provide an extension-specific `HTTP`, the support of which conflicts with the support of those offered by `quarkus-smallrye-jwt` and `Vert.x HTTP`, such as `Quarkus Amazon Lambda`.
+
+Start with adding the `smallrye-jwt` dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -1014,7 +1017,7 @@ include::{generated-dir}/config/quarkus-smallrye-jwt.adoc[opts=optional, levelof
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
+|mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section xref:supported-public-key-formats[].
 |mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see xref:native-and-ssl.adoc[Using SSL With Native Executables] for more details.
 |mp.jwt.verify.publickey.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |mp.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.

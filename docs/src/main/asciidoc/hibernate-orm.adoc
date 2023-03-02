@@ -98,11 +98,11 @@ They will often map to Hibernate ORM configuration properties but could have dif
 
 Also, Quarkus will set many Hibernate ORM configuration settings automatically, and will often use more modern defaults.
 
-Please see below section <<hibernate-configuration-properties, Hibernate ORM configuration properties>> for the list of properties you can set in `{config-file}`.
+For a list of the items that you can set in `{config-file}`, see xref:hibernate-configuration-properties[Hibernate ORM configuration properties].
 
 An `EntityManagerFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
 
-The dialect will be selected based on the JDBC driver - unless you set one explicitly.
+Unless you set one explicitly, the dialect will be selected based on the JDBC driver.
 
 You can then happily inject your `EntityManager`:
 
@@ -181,7 +181,7 @@ include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, levelo
 
 [NOTE]
 ====
-Do not mix <<persistence-xml,`persistence.xml`>> and `quarkus.hibernate-orm.*` properties in `{config-file}`.
+Do not mix xref:persistence-xml[`persistence.xml`] and `quarkus.hibernate-orm.*` properties in `{config-file}`.
 Quarkus will raise an exception.
 Make up your mind on which approach you want to use.
 
@@ -450,7 +450,7 @@ the https://jakarta.ee/specifications/persistence/3.0/jakarta-persistence-spec-3
 or the http://hibernate.org/dtd/hibernate-mapping-3.0.dtd[`hbm.xml` format (specific to Hibernate ORM, deprecated)]:
 
 * in `application.properties` through the (build-time) link:#quarkus-hibernate-orm_quarkus.hibernate-orm.mapping-files[`quarkus.hibernate-orm.mapping-files`] property.
-* in <<persistence-xml,`persistence.xml`>> through the `<mapping-file>` element.
+* in xref:persistence-xml[`persistence.xml`] through the `<mapping-file>` element.
 
 XML mapping files are parsed at build time.
 
@@ -769,22 +769,22 @@ configure your datasource as in the above examples and it will set up Hibernate 
 More details about this connection pool can be found in xref:datasource.adoc[Quarkus - Datasources].
 
 Second Level Cache::
-as explained above in section <<caching,Caching>>, you don't need to pick an implementation.
+As explained earlier in the xref:caching[Caching] section, you don't need to pick an implementation.
 A suitable implementation based on technologies from link:https://infinispan.org/[Infinispan] and link:https://github.com/ben-manes/caffeine[Caffeine] is included as a transitive dependency of the Hibernate ORM extension, and automatically integrated during the build.
 
 === Limitations
 
 XML mapping with duplicate files in the classpath::
-<<xml-mapping,XML mapping>> files are expected to have a unique path.
-+
+xref:xml-mapping[XML mapping] files are expected to have a unique path.
+
 In practice, it's only possible to have duplicate XML mapping files in the classpath in very specific scenarios.
-For example, if two JARs include a `META-INF/orm.xml` file (with the exact same path, but in different JARs),
+For example, if two JARs include a `META-INF/orm.xml` file (with the same path but in different JARs),
 then the mapping file path `META-INF/orm.xml` can only be referenced from a `persistence.xml`
 **in the same JAR as the `META-INF/orm.xml` file**.
 
 JMX::
 Management beans are not working in GraalVM native images;
-therefore Hibernate's capability to register statistics and management operations with the JMX bean is disabled when compiling into a native image.
+therefore, Hibernate's capability to register statistics and management operations with the JMX bean is disabled when compiling into a native image.
 This limitation is likely permanent, as it's not a goal for native images
 to implement support for JMX. All such metrics can be accessed in other ways.
 
@@ -793,18 +793,17 @@ Hibernate ORM's capability to integrate with JACC is disabled when building Graa
 as JACC is not available - nor useful - in native mode.
 
 Binding the Session to ThreadLocal context::
-It is not possible to use the `ThreadLocalSessionContext` helper of Hibernate ORM as support for it is not implemented.
-Since Quarkus provides out of the box support for CDI, we believe using injection or programmatic CDI lookup to be a better approach.
+It is impossible to use the `ThreadLocalSessionContext` helper of Hibernate ORM as support for it is not implemented.
+Since Quarkus provides out-of-the-box CDI support, injection or programmatic CDI lookup is a better approach.
 This feature also didn't integrate well with reactive components and more modern context propagation techniques, making us believe this legacy feature has no future.
-If you badly need to bind it to a ThreadLocal it should be trivial to implement in your own code.
+If you badly need to bind it to a ThreadLocal, it should be trivial to implement in your own code.
 
 JNDI::
 The JNDI technology is commonly used in other runtimes to integrate different components.
-A common use case is Java Enterprise servers to bind the TransactionManager and the Datasource components to a name, and then have Hibernate ORM
-configured to look these components up by name.
-But in Quarkus this use case doesn't apply as components are injected directly, making JNDI support an unnecessary legacy.
-As a precaution, to avoid unexpected use of JNDI, the whole support for JNDI has been disabled in the Hibernate ORM extension for Quarkus.
-This is both a security precaution and an optimisation.
+A common use case is Java Enterprise servers to bind the TransactionManager and the Datasource components to a name and then have Hibernate ORM configured to look these components up by name.
+But in Quarkus, this use case doesn't apply as components are injected directly, making JNDI support an unnecessary legacy.
+To avoid unexpected use of JNDI, full support for JNDI has been disabled in the Hibernate ORM extension for Quarkus.
+This is both a security precaution and an optimization.
 
 === Other notable differences
 
@@ -901,7 +900,7 @@ public class CustomTenantResolver implements TenantResolver {
 <1> Annotate the TenantResolver implementation with the `@PersistenceUnitExtension` qualifier
 to tell Quarkus it should be used in the default persistence unit.
 +
-For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`.
+For xref:multiple-persistence-units[named persistence units], use `@PersistenceUnitExtension("nameOfYourPU")`.
 <2> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
 
 From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, the default tenant identifier is returned.
@@ -1065,7 +1064,7 @@ INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
 If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple entries in your configuration file,
 you can use the `io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver` interface to implement your own logic for retrieving a connection.
 Creating an application-scoped bean that implements this interface
-and annotating it with `@PersistenceUnitExtension` (or `@PersistenceUnitExtension("nameOfYourPU")` for a <<multiple-persistence-units,named persistence unit>>)
+and annotating it with `@PersistenceUnitExtension` (or `@PersistenceUnitExtension("nameOfYourPU")` for a xref:multiple-persistence-units[named persistence unit])
 will replace the current Quarkus default implementation `io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver`.
 Your custom connection resolver would allow for example to read tenant information from a database and create a connection per tenant at runtime based on it.
 
@@ -1090,7 +1089,7 @@ public static class MyInterceptor extends EmptyInterceptor { // <2>
 <1> Annotate the interceptor implementation with the `@PersistenceUnitExtension` qualifier
 to tell Quarkus it should be used in the default persistence unit.
 +
-For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+For xref:multiple-persistence-units[named persistence units], use `@PersistenceUnitExtension("nameOfYourPU")`
 <2> Either extend `org.hibernate.EmptyInterceptor` or implement `org.hibernate.Interceptor` directly.
 <3> Implement methods as necessary.
 
@@ -1132,5 +1131,5 @@ public class MyStatementInspector implements StatementInspector { // <2>
 <1> Annotate the statement inspector implementation with the `@PersistenceUnitExtension` qualifier
 to tell Quarkus it should be used in the default persistence unit.
 +
-For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+For xref:multiple-persistence-units[named persistence units], use `@PersistenceUnitExtension("nameOfYourPU")`
 <2> Implement `org.hibernate.engine.jdbc.spi.StatementInspector`.

@@ -9,28 +9,29 @@ include::_attributes.adoc[]
 :summary: Hibernate ORM REST Data with Panache simplifies the creation of CRUD applications based on JAX-RS and Hibernate ORM.
 
 A lot of web applications are monotonous CRUD applications with REST APIs that are tedious to write.
-To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
+To streamline this task, REST Data with the Panache extension can generate the basic CRUD endpoints for your entities and repositories.
 
 While this extension is still experimental and provides a limited feature set, we hope to get an early feedback for it.
 Currently, this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
 
 == Setting up REST Data with Panache
 
-Quarkus provides the following extensions to set up REST Data with Panache. Please, check out the next compatibility table to use the right one according to the technology you're using:
+Quarkus provides the following extensions to set up REST Data with Panache.
+Please, check out the next compatibility table to use the right one according to the technology you're using:
 
 .Compatibility Table
 |===
 |Extension |Hibernate | RESTEasy
 
-|<<hr-hibernate-orm, quarkus-hibernate-orm-rest-data-panache>>
+|xref:hr-hibernate-orm[quarkus-hibernate-orm-rest-data-panache]
 |`ORM`
 |`Classic and Reactive`
 
-|<<hr-hibernate-reactive, quarkus-hibernate-reactive-rest-data-panache>>
+|xref:hr-hibernate-reactive[quarkus-hibernate-reactive-rest-data-panache]
 |`Reactive`
 |`Reactive`
 
-|<<hr-mongodb, quarkus-mongodb-rest-data-panache>>
+|xref:hr-mongodb[quarkus-mongodb-rest-data-panache]
 |`ORM`
 |`Classic and Reactive`
 |===
@@ -83,8 +84,8 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 // implementation("io.quarkus:quarkus-resteasy-jackson")
 ----
 
-* Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache guide].
-* Define the interfaces for generation as explained in <<hr-generating-resources, the resource generation section>>.
+* Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] guide.
+* Define the interfaces for generation as explained in the xref:hr-generating-resources[] section.
 
 To see the Hibernate ORM REST Data with Panache in action, you can check out the {quickstarts-tree-url}/hibernate-orm-rest-data-panache-quickstart[hibernate-orm-rest-data-panache-quickstart] quickstart.
 
@@ -115,8 +116,8 @@ To see the Hibernate ORM REST Data with Panache in action, you can check out the
 </dependencies>
 ----
 
-* Implement the Panache entities and/or repositories as explained in the xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache guide].
-* Define the interfaces for generation as explained in <<hr-generating-resources, the resource generation section>>.
+* Implement the Panache entities and/or repositories as explained in the xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] guide.
+* Define the interfaces for generation as explained in the xref:hr-generating-resources[] section.
 
 [[hr-mongodb]]
 === MongoDB
@@ -160,8 +161,8 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 // implementation("io.quarkus:quarkus-resteasy-jackson")
 ----
 
-* Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache guide].
-* Define the interfaces for generation as explained in <<hr-generating-resources, the resource generation section>>.
+* Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache] guide.
+* Define the interfaces for generation as explained in the xref:hr-generating-resources[] section.
 
 [[hr-generating-resources]]
 == Generating resources

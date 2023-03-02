@@ -428,7 +428,7 @@ The behavior of `quarkus ext ls` will vary depending on context.
 
 If you invoke the Quarkus CLI from outside of a project, Quarkus will list all the extensions available for the Quarkus release used by the CLI itself.
 
-You can also list extensions for a specific release of Quarkus using `-P` or `-S`, as described in <<specifying-quarkus-version,Specifying the Quarkus version>>.
+You can also list extensions for a specific release of Quarkus using `-P` or `-S`, as described in xref:specifying-quarkus-version[Specifying the Quarkus version].
 
 This mode uses the `--origins` format by default.
 

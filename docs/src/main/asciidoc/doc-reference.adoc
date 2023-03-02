@@ -254,7 +254,45 @@ When cross-referencing content, always use the inter-document `xref:` syntax and
 ----
 xref:{doc-guides}/doc-concept.adoc[Quarkus Documentation concepts] <1>
 ----
-<1> The cross reference starts with `xref:`, uses a cross-reference source attribute(`\{doc-guides}`), and provides a readable description: `[Quarkus Documentation concepts]`.
+<1> The cross-reference starts with `xref:`, uses a cross-reference source attribute(`\{doc-guides}`), and provides a readable description: `[Quarkus Documentation concepts]`.
+
+=== Anchors
+
+Quarkus documentation provides several ways a contributor can create and call anchors.
+To reach consistency and a better single-sourcing experience with Quarkus documentation, we ask contributors to use the `xref` approach for documenting and calling anchors.
+
+.Example
+* An anchor to a chapter inside the same `.adoc` file
+** Create an ID anchor:
++
+[source,asciidoc]
+--
+ [[<anchor-ID>]]
+--
+
+** Call the anchor
++
+[source,asciidoc]
+--
+xref:<anchor-ID>[]
+--
+
+* A cross-file anchor
+** Create an ID anchor:
++
+[source,asciidoc]
+--
+[[<anchor-ID>]]
+--
+
+** Call the anchor
++
+[source,asciidoc]
+--
+xref:<target-file>.adoc#<anchord-ID>[]
+--
+
+NOTE: The `[]` part of your `xref` anchors sets up a desired anchor label in cases where the default label does not fit the content.
 
 === Reference source code 
 

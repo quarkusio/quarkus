@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.core.parameters;
 
-import java.util.List;
-
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -63,14 +61,12 @@ public class MultipartFormParamExtractor implements ParameterExtractor {
                 }
             case PartType:
                 if (single) {
-                    String param = (String) context.getFormParameter(name, true, false);
-                    return MultipartSupport.convertFormAttribute(param, typeClass, genericType, MediaType.valueOf(mimeType),
-                            context,
-                            name);
+                    return MultipartSupport.getConvertedFormAttribute(name, typeClass, genericType, MediaType.valueOf(mimeType),
+                            context);
                 } else {
-                    List<String> params = (List<String>) context.getFormParameter(name, false, false);
-                    return MultipartSupport.convertFormAttributes(params, typeClass, genericType, MediaType.valueOf(mimeType),
-                            context, name);
+                    return MultipartSupport.getConvertedFormAttributes(name, typeClass, genericType,
+                            MediaType.valueOf(mimeType),
+                            context);
                 }
             case FileUpload:
                 // special case

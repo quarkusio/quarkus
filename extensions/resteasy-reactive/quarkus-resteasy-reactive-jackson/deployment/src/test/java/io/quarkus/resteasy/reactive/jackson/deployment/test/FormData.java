@@ -17,6 +17,10 @@ public class FormData {
     @PartType(MediaType.APPLICATION_JSON)
     public Map<String, Object> map;
 
+    @RestForm
+    @PartType(MediaType.APPLICATION_JSON)
+    public Map<String, Object> map2;
+
     @FormParam("names")
     @PartType(MediaType.TEXT_PLAIN)
     public List<String> names;
@@ -36,11 +40,24 @@ public class FormData {
 
     @RestForm
     @PartType(MediaType.APPLICATION_JSON)
+    @Valid
+    public Person person2;
+
+    @RestForm
+    @PartType(MediaType.APPLICATION_JSON)
     public Person[] persons;
 
     @RestForm
     @PartType(MediaType.APPLICATION_JSON)
     public List<Person> persons2;
+
+    @RestForm
+    @PartType(MediaType.APPLICATION_JSON)
+    public Person[] persons3;
+
+    @RestForm
+    @PartType(MediaType.APPLICATION_JSON)
+    public List<Person> persons4;
 
     @RestForm("htmlFile")
     private FileUpload htmlPart;

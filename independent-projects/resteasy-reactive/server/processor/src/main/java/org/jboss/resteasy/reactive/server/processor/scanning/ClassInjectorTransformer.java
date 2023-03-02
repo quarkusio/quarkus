@@ -769,52 +769,38 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 case PartType:
                     /*
                      * if (single) {
-                     * String param = (String) context.getFormParameter(name, true, false);
-                     * return MultipartSupport.convertFormAttribute(param, typeClass, genericType, MediaType.valueOf(mimeType),
-                     * context,
-                     * name);
+                     * return MultipartSupport.getConvertedFormAttribute(name, typeClass, genericType,
+                     * MediaType.valueOf(mimeType),
+                     * context);
                      * } else {
-                     * List<String> params = (List<String>) context.getFormParameter(name, false, false);
-                     * return MultipartSupport.convertFormAttributes(params, typeClass, genericType,
-                     * MediaType.valueOf(mimeType), context, name);
+                     * return MultipartSupport.getConvertedFormAttributes(name, typeClass, genericType,
+                     * MediaType.valueOf(mimeType),
+                     * context);
                      * }
                      */
-                    // ctx param
-                    injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
                     // name
                     injectMethod.visitLdcInsn(param.getName());
-                    // single
-                    injectMethod.visitLdcInsn(param.isSingle());
-                    // encoded
-                    injectMethod.visitLdcInsn(false);
-                    injectMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, QUARKUS_REST_INJECTION_CONTEXT_BINARY_NAME,
-                            "getFormParameter",
-                            "(Ljava/lang/String;ZZ)Ljava/lang/Object;", true);
-                    injectMethod.visitTypeInsn(Opcodes.CHECKCAST, param.isSingle() ? STRING_BINARY_NAME : LIST_BINARY_NAME);
-                    // class, generic type, media type, context, name
+                    // class, generic type, media type
                     injectMethod.visitFieldInsn(Opcodes.GETSTATIC, this.thisName, fieldInfo.name() + "_type", CLASS_DESCRIPTOR);
                     injectMethod.visitFieldInsn(Opcodes.GETSTATIC, this.thisName, fieldInfo.name() + "_genericType",
                             TYPE_DESCRIPTOR);
                     injectMethod.visitFieldInsn(Opcodes.GETSTATIC, this.thisName, fieldInfo.name() + "_mediaType",
                             MEDIA_TYPE_DESCRIPTOR);
+                    // ctx param
                     injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
                     injectMethod.visitTypeInsn(Opcodes.CHECKCAST, RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME);
-                    injectMethod.visitLdcInsn(param.getName());
-                    String firstParamDescriptor;
                     String returnDescriptor;
                     String methodName;
                     if (param.isSingle()) {
-                        firstParamDescriptor = STRING_DESCRIPTOR;
                         returnDescriptor = OBJECT_DESCRIPTOR;
-                        methodName = "convertFormAttribute";
+                        methodName = "getConvertedFormAttribute";
                     } else {
-                        firstParamDescriptor = LIST_DESCRIPTOR;
                         returnDescriptor = LIST_DESCRIPTOR;
-                        methodName = "convertFormAttributes";
+                        methodName = "getConvertedFormAttributes";
                     }
                     injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, MULTIPART_SUPPORT_BINARY_NAME, methodName,
-                            "(" + firstParamDescriptor + CLASS_DESCRIPTOR + TYPE_DESCRIPTOR + MEDIA_TYPE_DESCRIPTOR
-                                    + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + STRING_DESCRIPTOR + ")" + returnDescriptor,
+                            "(" + STRING_DESCRIPTOR + CLASS_DESCRIPTOR + TYPE_DESCRIPTOR + MEDIA_TYPE_DESCRIPTOR
+                                    + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + ")" + returnDescriptor,
                             false);
                     break;
                 default:

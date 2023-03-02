@@ -12,9 +12,9 @@ Quarkus supports a feature called Dev Services that allows you to create various
 If you have docker running and have not configured `quarkus.infinispan-client.hosts`,
 Quarkus will automatically start an Infinispan container when running tests or dev mode, and automatically configure the connection.
 
-Available properties to customize the Infinispan DevService.
+The following properties are available to customize the Infinispan Dev Services:
 
-include::{generated-dir}/config/quarkus-infinispan-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-infinispan-client-config-group-devservices-infinispan-dev-services-config.adoc[opts=optional, leveloffset=+1]
 
 When running the production version of the application, the Infinispan connection need to be configured as normal,
 so if you want to include a production database config in your `application.properties` and continue to use Dev Services
@@ -70,7 +70,7 @@ quarkus.infinispan-client.devservices.mcast-port=46666 <2>
 <1> Provides a site name for your Infinispan cluster
 <2> Eventually configure a mcastPort if you want to avoid creating a cluster with another container
 
-[INFO]
+[NOTE]
 ====
 Learn more about Cross Site Replication in the Infinispan Cross Site Replication link:https://infinispan.org/docs/stable/titles/xsite/xsite.html[documentation guide]
 and in the Infinispan Cross Site Replication

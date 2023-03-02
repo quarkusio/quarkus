@@ -240,7 +240,7 @@ To authenticate to the application, type the following credentials when at the K
 
 After clicking the `Login` button, you are redirected back to the application.
 
-For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the <<integration-testing-keycloak-devservices, Dev Services for Keycloak>> section.
+For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the <<security-oidc-code-flow-authentication-concept.adoc#integration-testing-keycloak-devservices, Dev Services for Keycloak>> section.
 
 == Summary
 

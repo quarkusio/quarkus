@@ -37,13 +37,13 @@ public class ProviderConfigInjectionWarningsTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(logRecords -> {
-                Set<String> messages = logRecords.stream().map(LogRecord::getMessage).collect(Collectors.toSet());
+                Set<String> messages = logRecords.stream()
+                        .map(LogRecord::getMessage)
+                        // filter out noise coming from RESTEasy
+                        .filter(m -> !m.contains("RESTEASY004687"))
+                        .collect(Collectors.toSet());
 
-                for (String message : messages) {
-                    System.out.println("Message from ProviderConfigInjectionWarningsTest: " + message);
-                }
-
-                assertEquals(4, logRecords.size());
+                assertEquals(4, messages.size());
                 assertTrue(messages.contains(
                         "Directly injecting a org.eclipse.microprofile.config.Config into a jakarta.ws.rs.ext.Provider may lead to unexpected results. To ensure proper results, please change the type of the field to jakarta.enterprise.inject.Instance<org.eclipse.microprofile.config.Config>. Offending field is 'config' of class 'io.quarkus.resteasy.test.config.ProviderConfigInjectionWarningsTest$FooProvider'"));
                 assertTrue(messages.contains(

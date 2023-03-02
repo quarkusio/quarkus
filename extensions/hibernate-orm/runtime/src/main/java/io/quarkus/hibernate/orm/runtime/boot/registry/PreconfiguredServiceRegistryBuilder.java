@@ -22,9 +22,12 @@ import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
+import org.hibernate.query.sqm.mutation.internal.SqmMultiTableMutationStrategyProviderInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
+import org.hibernate.sql.ast.internal.JdbcParameterRendererInitiator;
+import org.hibernate.sql.results.jdbc.internal.JdbcValuesMappingProducerProviderInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
@@ -218,6 +221,15 @@ public class PreconfiguredServiceRegistryBuilder {
         serviceInitiators.add(QuarkusManagedBeanRegistryInitiator.INSTANCE);
 
         serviceInitiators.add(EntityCopyObserverFactoryInitiator.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(JdbcValuesMappingProducerProviderInitiator.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(SqmMultiTableMutationStrategyProviderInitiator.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(JdbcParameterRendererInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

@@ -15,6 +15,8 @@ trap '$MVN docker:stop -Dstart-containers -Ddocker.containerNamePattern=$DB_CONT
 
 # Generate database
 $MVN -f ../database-generator clean install -Ddb-kind=mariadb
+# We use features in Hibernate ORM that are timezone-sensitive, e.g. ZoneOffsetDateTime normalization
+TZ=Europe/Paris
 QUARKUS_DATASOURCE_JDBC_URL="jdbc:mariadb://localhost:$DB_PORT/$DB_NAME" \
 QUARKUS_DATASOURCE_USERNAME="$DB_USER" \
 QUARKUS_DATASOURCE_PASSWORD="$DB_PASSWORD" \

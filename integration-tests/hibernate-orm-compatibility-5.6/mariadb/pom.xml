@@ -15,6 +15,8 @@
 
     <properties>
         <mariadb.url>jdbc:mariadb://localhost:3306/hibernate_orm_test</mariadb.url>
+        <!-- We test features in Hibernate ORM that are timezone-sensitive, e.g. ZoneOffsetDateTime normalization -->
+        <surefire.argLine.additional>-Duser.timezone=Europe/Paris</surefire.argLine.additional>
     </properties>
 
     <dependencies>

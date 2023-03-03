@@ -13,6 +13,11 @@
     <artifactId>quarkus-integration-test-hibernate-orm-compatibility-5.6-postgresql</artifactId>
     <name>Quarkus - Integration Tests - Hibernate ORM - Compatibility with databases meant for ORM 5.6 - PostgreSQL</name>
 
+    <properties>
+        <!-- We test features in Hibernate ORM that are timezone-sensitive, e.g. ZoneOffsetDateTime normalization -->
+        <surefire.argLine.additional>-Duser.timezone=Europe/Paris</surefire.argLine.additional>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

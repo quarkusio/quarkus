@@ -60,11 +60,7 @@
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.inheritance.InterceptorBindingInheritanceTest">
                 <methods>
                     <exclude name="testInterceptorBindingDirectlyInheritedFromManagedBean"/>
-                    <exclude name="testMethodInterceptorBindingDirectlyInheritedFromManagedBean"/>
-                    <exclude name="testMethodInterceptorBindingDirectlyNotInheritedFromManagedBean"/>
-                    <exclude name="testMethodInterceptorBindingIndirectlyInheritedFromManagedBean"/>
                     <exclude name="testInterceptorBindingIndirectlyInheritedFromManagedBean"/>
-                    <exclude name="testMethodInterceptorBindingIndirectlyNotInheritedFromManagedBean"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.lookup.injectionpoint.InjectionPointTest">

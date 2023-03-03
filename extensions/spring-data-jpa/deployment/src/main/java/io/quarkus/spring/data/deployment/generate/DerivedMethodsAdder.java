@@ -6,8 +6,10 @@ import static io.quarkus.spring.data.deployment.generate.GenerationUtil.getNamed
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import jakarta.transaction.Transactional;
@@ -56,7 +58,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
     public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
             String generatedClassName, ClassInfo repositoryClassInfo, ClassInfo entityClassInfo) {
         MethodNameParser methodNameParser = new MethodNameParser(entityClassInfo, index);
-        List<MethodInfo> repoMethods = new ArrayList<>(repositoryClassInfo.methods());
+        LinkedHashSet<MethodInfo> repoMethods = new LinkedHashSet<>(repositoryClassInfo.methods());
 
         // Remember custom return type methods: {resultType:[methodName]}
         Map<DotName, List<String>> customResultTypes = new HashMap<>(3);
@@ -64,10 +66,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
         //As intermediate interfaces are supported for spring data repositories, we need to search the methods declared in such interfaced and add them to the methods to implement list
         for (DotName extendedInterface : repositoryClassInfo.interfaceNames()) {
-            if (GenerationUtil.isIntermediateRepository(extendedInterface, index)) {
-                List<MethodInfo> methods = index.getClassByName(extendedInterface).methods();
-                repoMethods.addAll(methods);
-            }
+            addAllMethodOfIntermediateRepository(extendedInterface, repoMethods);
         }
         for (MethodInfo method : repoMethods) {
             if (method.annotation(DotNames.SPRING_DATA_QUERY) != null) { // handled by CustomQueryMethodsAdder
@@ -285,6 +284,17 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
             DotName implName = mapping.getValue();
             generateCustomResultTypes(interfaceName, implName, entityClassInfo, customResultTypes.get(implName));
             projectionClassCreatedCallback.accept(implName.toString());
+        }
+    }
+
+    private void addAllMethodOfIntermediateRepository(DotName interfaceDotName, Set<MethodInfo> result) {
+        if (GenerationUtil.isIntermediateRepository(interfaceDotName, index)) {
+            ClassInfo classInfo = index.getClassByName(interfaceDotName);
+            List<MethodInfo> methods = classInfo.methods();
+            result.addAll(methods);
+            for (DotName superInterface : classInfo.interfaceNames()) {
+                addAllMethodOfIntermediateRepository(superInterface, result);
+            }
         }
     }
 

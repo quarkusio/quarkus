@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
-public interface IntermediateRepository<T, ID extends Serializable> extends JpaRepository<T, ID> {
+public interface BypassHolderRepository<T extends ByPassHolder, ID extends Serializable> extends JpaRepository<T, ID> {
 
     default public void doNothing() {
     }
@@ -15,4 +15,5 @@ public interface IntermediateRepository<T, ID extends Serializable> extends JpaR
         return findById(id).orElseThrow(() -> new IllegalStateException("not found: " + id));
     }
 
+    Post findFirstByBypassTrue();
 }

@@ -18,7 +18,7 @@ import jakarta.persistence.Table;
 
 @Entity(name = "Post")
 @Table(name = "post")
-public class Post {
+public class Post implements ByPassHolder {
 
     @Id
     @SequenceGenerator(name = "postSeqGen", sequenceName = "postSeq", initialValue = 100, allocationSize = 1)

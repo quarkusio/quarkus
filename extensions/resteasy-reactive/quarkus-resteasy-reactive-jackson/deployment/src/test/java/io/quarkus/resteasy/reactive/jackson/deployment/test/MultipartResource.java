@@ -29,7 +29,9 @@ public class MultipartResource {
     @Path("/json")
     public Map<String, Object> greeting(@Valid @BeanParam FormData formData) {
         Map<String, Object> result = new HashMap<>(formData.map);
+        result.putAll(formData.map2);
         result.put("person", formData.person);
+        result.put("person2", formData.person2);
         result.put("htmlFileSize", formData.getHtmlPart().size());
         result.put("htmlFilePath", formData.getHtmlPart().uploadedFile().toAbsolutePath().toString());
         result.put("htmlFileContentType", formData.getHtmlPart().contentType());
@@ -38,6 +40,8 @@ public class MultipartResource {
         result.put("numbers2", formData.numbers2);
         result.put("persons", formData.persons);
         result.put("persons2", formData.persons2);
+        result.put("persons3", formData.persons3);
+        result.put("persons4", formData.persons4);
         return result;
     }
 
@@ -48,6 +52,7 @@ public class MultipartResource {
     @Path("/param/json")
     public Map<String, Object> greeting(
             @RestForm @PartType(MediaType.APPLICATION_JSON) Map<String, Object> map,
+            @RestForm @PartType(MediaType.APPLICATION_JSON) Map<String, Object> map2,
 
             @FormParam("names") @PartType(MediaType.TEXT_PLAIN) List<String> names,
 
@@ -56,14 +61,20 @@ public class MultipartResource {
             @RestForm @PartType(MediaType.TEXT_PLAIN) List<Integer> numbers2,
 
             @RestForm @PartType(MediaType.APPLICATION_JSON) @Valid Person person,
+            @RestForm @PartType(MediaType.APPLICATION_JSON) @Valid Person person2,
 
             @RestForm @PartType(MediaType.APPLICATION_JSON) Person[] persons,
 
             @RestForm @PartType(MediaType.APPLICATION_JSON) List<Person> persons2,
 
+            @RestForm @PartType(MediaType.APPLICATION_JSON) Person[] persons3,
+
+            @RestForm @PartType(MediaType.APPLICATION_JSON) List<Person> persons4,
             @RestForm("htmlFile") FileUpload htmlPart) {
         Map<String, Object> result = new HashMap<>(map);
+        result.putAll(map2);
         result.put("person", person);
+        result.put("person2", person2);
         result.put("htmlFileSize", htmlPart.size());
         result.put("htmlFilePath", htmlPart.uploadedFile().toAbsolutePath().toString());
         result.put("htmlFileContentType", htmlPart.contentType());
@@ -72,6 +83,8 @@ public class MultipartResource {
         result.put("numbers2", numbers2);
         result.put("persons", persons);
         result.put("persons2", persons2);
+        result.put("persons3", persons3);
+        result.put("persons4", persons4);
         return result;
     }
 }

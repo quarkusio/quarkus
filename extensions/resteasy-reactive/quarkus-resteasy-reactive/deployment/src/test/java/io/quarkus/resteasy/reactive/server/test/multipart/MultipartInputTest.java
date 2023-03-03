@@ -83,6 +83,22 @@ public class MultipartInputTest extends AbstractMultipartTest {
 
         // ensure that the 3 uploaded files where created on disk
         Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);
+
+        // same with text as file
+        RestAssured.given()
+                .multiPart("name", "something.txt", "Alice".getBytes())
+                .multiPart("active", "true")
+                .multiPart("num", "25")
+                .multiPart("status", "WORKING")
+                .multiPart("htmlFile", HTML, "text/html")
+                .multiPart("xmlFile", XML, "text/xml")
+                .multiPart("txtFile", TXT, "text/plain")
+                .accept("text/plain")
+                .when()
+                .post("/multipart/simple/2")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
     }
 
     @Test
@@ -125,6 +141,22 @@ public class MultipartInputTest extends AbstractMultipartTest {
 
         // ensure that the 3 uploaded files where created on disk
         Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);
+
+        // same with text as file
+        RestAssured.given()
+                .multiPart("name", "something.txt", "Alice".getBytes())
+                .multiPart("active", "true")
+                .multiPart("num", "25")
+                .multiPart("status", "WORKING")
+                .multiPart("htmlFile", HTML, "text/html")
+                .multiPart("xmlFile", XML, "text/xml")
+                .multiPart("txtFile", TXT, "text/plain")
+                .accept("text/plain")
+                .when()
+                .post("/multipart/param/simple/2")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
     }
 
     @Test

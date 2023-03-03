@@ -30,19 +30,47 @@ public class CompatibilityTest {
     // https://github.com/hibernate/hibernate-orm/blob/6.0/migration-guide.adoc#implicit-identifier-sequence-and-table-name
     @Test
     @Order(1)
-    public void sequence() {
+    public void sequence_defaultGenerator() {
         var entity = new MyEntity();
         MyEntity createdEntity = given()
                 .body(entity).contentType("application/json")
                 .when().post("/compatibility/").then()
                 .assertThat().statusCode(is(Status.OK.getStatusCode()))
                 .extract().as(MyEntity.class);
-        assertThat(createdEntity.id).isEqualTo(2L);
+        assertThat(createdEntity.id).isEqualTo(3);
+    }
+
+    // https://github.com/hibernate/hibernate-orm/blob/6.0/migration-guide.adoc#id-sequence-defaults
+    @Test
+    @Order(2)
+    public void sequence_genericGenerator_defaultAllocation() {
+        var entity = new MyEntityWithGenericGeneratorAndDefaultAllocationSize();
+        MyEntityWithGenericGeneratorAndDefaultAllocationSize createdEntity = given()
+                .body(entity).contentType("application/json")
+                .when().post("/compatibility/genericgenerator").then()
+                .assertThat().statusCode(is(Status.OK.getStatusCode()))
+                .extract().as(MyEntityWithGenericGeneratorAndDefaultAllocationSize.class);
+        assertThat(createdEntity.id).isEqualTo(3);
+    }
+
+    // https://github.com/hibernate/hibernate-orm/blob/6.0/migration-guide.adoc#id-sequence-defaults
+    @Test
+    @Order(3)
+    public void sequence_sequenceGenerator_defaultAllocation() {
+        var entity = new MyEntityWithSequenceGeneratorAndDefaultAllocationSize();
+        MyEntityWithSequenceGeneratorAndDefaultAllocationSize createdEntity = given()
+                .body(entity).contentType("application/json")
+                .when().post("/compatibility/sequencegenerator").then()
+                .assertThat().statusCode(is(Status.OK.getStatusCode()))
+                .extract().as(MyEntityWithSequenceGeneratorAndDefaultAllocationSize.class);
+        // Sequence generators defined through @SequenceGenerator have always defaulted to an allocation size of 50.
+        // Since we've created 2 entities in Hibernate 5, we should be starting the second pool here, starting at 52.
+        assertThat(createdEntity.id).isEqualTo(52L);
     }
 
     // Just check that persisting with the old schema and new application does not throw any exception
     @Test
-    @Order(2) // So that we can assert the generated ID in sequence()
+    @Order(4) // So that we can assert the generated ID in sequence*()
     public void persistUsingOldSchema() {
         var entity = new MyEntity();
         entity.duration = Duration.of(59, ChronoUnit.SECONDS);

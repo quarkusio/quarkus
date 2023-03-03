@@ -32,4 +32,20 @@ public class CompatibilityTestResource {
         em.persist(entity);
         return entity;
     }
+
+    @POST
+    @Path("/genericgenerator")
+    public MyEntityWithGenericGeneratorAndDefaultAllocationSize create(
+            MyEntityWithGenericGeneratorAndDefaultAllocationSize entity) {
+        em.persist(entity);
+        return entity;
+    }
+
+    @POST
+    @Path("/sequencegenerator")
+    public MyEntityWithSequenceGeneratorAndDefaultAllocationSize create(
+            MyEntityWithSequenceGeneratorAndDefaultAllocationSize entity) {
+        em.persist(entity);
+        return entity;
+    }
 }

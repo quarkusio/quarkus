@@ -47,6 +47,16 @@ public class Main {
                 entity.stringList = new ArrayList<>(List.of("one", "two"));
                 entity.myEnum = MyEnum.VALUE2;
                 em.persist(entity);
+
+                // Create more than one entity of each type,
+                // so that we avoid the (uninteresting) edge case in sequence optimizers
+                // where only 1 entity was created and the optimizer is just about to start another pool.
+                em.persist(new MyEntity());
+                em.persist(new MyEntityWithGenericGeneratorAndDefaultAllocationSize());
+                em.persist(new MyEntityWithGenericGeneratorAndDefaultAllocationSize());
+                em.persist(new MyEntityWithSequenceGeneratorAndDefaultAllocationSize());
+                em.persist(new MyEntityWithSequenceGeneratorAndDefaultAllocationSize());
+
                 return entity;
             });
 

@@ -7,7 +7,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -136,13 +135,7 @@ public class SpringDataJPAProcessor {
     private void addInterfacesExtendingIntermediateRepositories(IndexView indexView,
             List<ClassInfo> interfacesExtendingRepository) {
         Collection<DotName> noRepositoryBeanRepos = getAllNoRepositoryBeanInterfaces(indexView);
-        Iterator<DotName> iterator = noRepositoryBeanRepos.iterator();
-        while (iterator.hasNext()) {
-            DotName interfaceName = iterator.next();
-            if (DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)) {
-                iterator.remove();
-            }
-        }
+        noRepositoryBeanRepos.removeIf(DotNames.SUPPORTED_REPOSITORIES::contains);
         List<ClassInfo> interfacesExtending = getAllInterfacesExtending(noRepositoryBeanRepos, indexView);
         interfacesExtendingRepository.addAll(interfacesExtending);
     }
@@ -224,13 +217,8 @@ public class SpringDataJPAProcessor {
     }
 
     private void removeNoRepositoryBeanClasses(List<ClassInfo> interfacesExtendingRepository) {
-        Iterator<ClassInfo> iterator = interfacesExtendingRepository.iterator();
-        while (iterator.hasNext()) {
-            ClassInfo next = iterator.next();
-            if (next.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null) {
-                iterator.remove();
-            }
-        }
+        interfacesExtendingRepository.removeIf(
+                next -> next.declaredAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null);
     }
 
     // inefficient implementation, see: https://github.com/wildfly/jandex/issues/65

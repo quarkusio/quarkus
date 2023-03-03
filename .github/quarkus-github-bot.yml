@@ -21,6 +21,11 @@ projectsClassic:
       status: To do
 projects:
   rules:
+    - labels: [area/jakarta]
+      project: 13
+      issues: true
+      pullRequests: true
+      status: Todo
     - labels: [triage/quarkus-3]
       project: 13
       issues: true

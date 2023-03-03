@@ -69,14 +69,14 @@ public class VertxClientOpenTelemetryTest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
         SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
-        assertEquals("HTTP GET", client.getName());
+        assertEquals("GET", client.getName());
         assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
         assertEquals(uri.toString() + "hello", client.getAttributes().get(HTTP_URL));
 
         SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
         assertEquals(SERVER, server.getKind());
-        assertEquals("/hello", server.getName());
+        assertEquals("GET /hello", server.getName());
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
         assertEquals("/hello", server.getAttributes().get(HTTP_ROUTE));
@@ -101,14 +101,14 @@ public class VertxClientOpenTelemetryTest {
 
         SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(CLIENT, client.getKind());
-        assertEquals("HTTP GET", client.getName());
+        assertEquals("GET", client.getName());
         assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
         assertEquals(uri.toString() + "hello/naruto", client.getAttributes().get(HTTP_URL));
 
         SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
         assertEquals(SERVER, server.getKind());
-        assertEquals("/hello/:name", server.getName());
+        assertEquals("GET /hello/:name", server.getName());
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
         assertEquals("/hello/:name", server.getAttributes().get(HTTP_ROUTE));

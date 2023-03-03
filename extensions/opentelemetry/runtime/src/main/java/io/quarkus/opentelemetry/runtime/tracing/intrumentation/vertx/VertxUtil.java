@@ -86,7 +86,7 @@ public final class VertxUtil {
             }
         }
         if (httpRequest.remoteAddress() != null) {
-            Integer.toUnsignedLong(httpRequest.remoteAddress().port());
+            return Integer.toUnsignedLong(httpRequest.remoteAddress().port());
         }
         return null;
     }

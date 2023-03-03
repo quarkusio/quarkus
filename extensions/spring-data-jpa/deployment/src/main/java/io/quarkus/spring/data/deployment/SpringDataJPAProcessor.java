@@ -7,7 +7,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -95,7 +95,7 @@ public class SpringDataJPAProcessor {
 
     @BuildStep
     void registerReflection(BuildProducer<ReflectiveClassBuildItem> producer) {
-        producer.produce(new ReflectiveClassBuildItem(true, false,
+        producer.produce(ReflectiveClassBuildItem.builder(
                 "org.springframework.data.domain.Page",
                 "org.springframework.data.domain.Slice",
                 "org.springframework.data.domain.PageImpl",
@@ -103,7 +103,7 @@ public class SpringDataJPAProcessor {
                 "org.springframework.data.domain.Sort",
                 "org.springframework.data.domain.Chunk",
                 "org.springframework.data.domain.PageRequest",
-                "org.springframework.data.domain.AbstractPageRequest"));
+                "org.springframework.data.domain.AbstractPageRequest").methods(true).fields(false).build());
     }
 
     @BuildStep
@@ -118,7 +118,7 @@ public class SpringDataJPAProcessor {
         detectAndLogSpecificSpringPropertiesIfExist();
 
         IndexView indexView = index.getIndex();
-        List<ClassInfo> interfacesExtendingRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
+        LinkedHashSet<ClassInfo> interfacesExtendingRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
                 indexView);
 
         addRepositoryDefinitionInstances(indexView, interfacesExtendingRepository);
@@ -134,21 +134,15 @@ public class SpringDataJPAProcessor {
     }
 
     private void addInterfacesExtendingIntermediateRepositories(IndexView indexView,
-            List<ClassInfo> interfacesExtendingRepository) {
+            Set<ClassInfo> interfacesExtendingRepository) {
         Collection<DotName> noRepositoryBeanRepos = getAllNoRepositoryBeanInterfaces(indexView);
-        Iterator<DotName> iterator = noRepositoryBeanRepos.iterator();
-        while (iterator.hasNext()) {
-            DotName interfaceName = iterator.next();
-            if (DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)) {
-                iterator.remove();
-            }
-        }
-        List<ClassInfo> interfacesExtending = getAllInterfacesExtending(noRepositoryBeanRepos, indexView);
+        noRepositoryBeanRepos.removeIf(DotNames.SUPPORTED_REPOSITORIES::contains);
+        Set<ClassInfo> interfacesExtending = getAllInterfacesExtending(noRepositoryBeanRepos, indexView);
         interfacesExtendingRepository.addAll(interfacesExtending);
     }
 
     // classes annotated with @RepositoryDefinition behave exactly as if they extended Repository
-    private void addRepositoryDefinitionInstances(IndexView indexView, List<ClassInfo> interfacesExtendingRepository) {
+    private void addRepositoryDefinitionInstances(IndexView indexView, Set<ClassInfo> interfacesExtendingRepository) {
         Collection<AnnotationInstance> repositoryDefinitions = indexView
                 .getAnnotations(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
         for (AnnotationInstance repositoryDefinition : repositoryDefinitions) {
@@ -223,35 +217,15 @@ public class SpringDataJPAProcessor {
         }
     }
 
-    private void removeNoRepositoryBeanClasses(List<ClassInfo> interfacesExtendingRepository) {
-        Iterator<ClassInfo> iterator = interfacesExtendingRepository.iterator();
-        while (iterator.hasNext()) {
-            ClassInfo next = iterator.next();
-            if (next.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null) {
-                iterator.remove();
-            }
-        }
+    private void removeNoRepositoryBeanClasses(Set<ClassInfo> interfacesExtendingRepository) {
+        interfacesExtendingRepository.removeIf(
+                next -> next.declaredAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null);
     }
 
-    // inefficient implementation, see: https://github.com/wildfly/jandex/issues/65
-    private List<ClassInfo> getAllInterfacesExtending(Collection<DotName> targets, IndexView index) {
-        List<ClassInfo> result = new ArrayList<>();
-        Collection<ClassInfo> knownClasses = index.getKnownClasses();
-        for (ClassInfo clazz : knownClasses) {
-            if (!Modifier.isInterface(clazz.flags())) {
-                continue;
-            }
-            List<DotName> interfaceNames = clazz.interfaceNames();
-            boolean found = false;
-            for (DotName interfaceName : interfaceNames) {
-                if (targets.contains(interfaceName)) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                result.add(clazz);
-            }
+    private LinkedHashSet<ClassInfo> getAllInterfacesExtending(Collection<DotName> targets, IndexView index) {
+        LinkedHashSet<ClassInfo> result = new LinkedHashSet<>();
+        for (DotName target : targets) {
+            result.addAll(index.getAllKnownSubinterfaces(target));
         }
         return result;
     }
@@ -269,7 +243,7 @@ public class SpringDataJPAProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            List<ClassInfo> crudRepositoriesToImplement, IndexView index) {
+            Set<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
         ClassOutput beansClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
         ClassOutput otherClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
@@ -282,7 +256,7 @@ public class SpringDataJPAProcessor {
                 (className -> {
                     // the generated classes that implement interfaces for holding custom query results need
                     // to be registered for reflection here since this is the only point where the generated class is known
-                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, className));
+                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(className).methods(true).fields(false).build());
                 }), JavaJpaTypeBundle.BUNDLE);
 
         Set<String> entities = new HashSet<>();

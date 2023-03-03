@@ -1,5 +1,8 @@
 package io.quarkus.devui.deployment;
 
+import static io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor.cleanUpAsciiDocIfNecessary;
+import static io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor.isSetByDevServices;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,7 +16,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -27,6 +33,8 @@ import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.IoUtil;
@@ -41,6 +49,7 @@ import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 
 /**
  * This creates static content that is used in dev UI. For example the index.html and any other data (json) available on build
@@ -283,7 +292,9 @@ public class BuildTimeContentProcessor {
             BuildProducer<ThemeVarsBuildItem> themeVarsProducer,
             ExtensionsBuildItem extensionsBuildItem,
             List<MenuPageBuildItem> menuPageBuildItems,
-            List<DevServiceDescriptionBuildItem> DevServiceDescriptions) {
+            List<DevServiceDescriptionBuildItem> devServiceDescriptions,
+            List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
 
         BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
 
@@ -292,6 +303,101 @@ public class BuildTimeContentProcessor {
         Map<String, String> dark = new HashMap<>();
         Map<String, String> light = new HashMap<>();
 
+        computeColors(themes, dark, light);
+
+        internalBuildTimeData.addBuildTimeData("themes", themes);
+
+        // Extensions
+        Map<ExtensionGroup, List<Extension>> response = Map.of(
+                ExtensionGroup.active, extensionsBuildItem.getActiveExtensions(),
+                ExtensionGroup.inactive, extensionsBuildItem.getInactiveExtensions());
+
+        internalBuildTimeData.addBuildTimeData("extensions", response);
+
+        // Sections Menu
+        Page extensions = Page.webComponentPageBuilder().internal()
+                .title("Extensions")
+                .icon("font-awesome-solid:puzzle-piece")
+                .componentLink("qwc-extensions.js").build();
+
+        Page configuration = Page.webComponentPageBuilder().internal()
+                .title("Configuration")
+                .icon("font-awesome-solid:sliders")
+                .componentLink("qwc-configuration.js").build();
+
+        internalBuildTimeData.addBuildTimeData("allConfiguration",
+                getAllConfig(configDescriptionBuildItems, devServicesLauncherConfig));
+
+        Page continuousTesting = Page.webComponentPageBuilder().internal()
+                .title("Continuous Testing")
+                .icon("font-awesome-solid:flask-vial")
+                .componentLink("qwc-continuous-testing.js").build();
+
+        internalBuildTimeData.addBuildTimeData("continuousTesting", "TODO: Continuous Testing");
+
+        Page devServices = Page.webComponentPageBuilder().internal()
+                .title("Dev services")
+                .icon("font-awesome-solid:wand-magic-sparkles")
+                .componentLink("qwc-dev-services.js").build();
+
+        internalBuildTimeData.addBuildTimeData("devServices", devServiceDescriptions);
+
+        Page buildSteps = Page.webComponentPageBuilder().internal()
+                .title("Build steps")
+                .icon("font-awesome-solid:hammer")
+                .componentLink("qwc-build-steps.js").build();
+
+        internalBuildTimeData.addBuildTimeData("buildSteps", "TODO: Build Steps");
+
+        // Add default menu items
+        @SuppressWarnings("unchecked")
+        List<Page> sectionMenu = new ArrayList(List.of(extensions, configuration, continuousTesting, devServices, buildSteps));
+
+        // Add any Menus from extensions
+        for (Extension e : extensionsBuildItem.getSectionMenuExtensions()) {
+            List<Page> pagesFromExtension = e.getMenuPages();
+            sectionMenu.addAll(pagesFromExtension);
+        }
+
+        internalBuildTimeData.addBuildTimeData("menuItems", sectionMenu);
+
+        // Add the Footer tabs
+        Page serverLog = Page.webComponentPageBuilder().internal()
+                .title("Server")
+                .icon("font-awesome-solid:server")
+                .componentLink("qwc-server-log.js").build();
+
+        Page devUiLog = Page.webComponentPageBuilder().internal()
+                .title("Dev UI")
+                .icon("font-awesome-solid:satellite-dish")
+                .componentLink("qwc-jsonrpc-messages.js").build();
+
+        @SuppressWarnings("unchecked")
+        List<Page> footerTabs = new ArrayList(List.of(serverLog, devUiLog));
+
+        // Add any Footer tabs from extensions
+        for (Extension e : extensionsBuildItem.getFooterTabsExtensions()) {
+            List<Page> tabsFromExtension = e.getFooterPages();
+            footerTabs.addAll(tabsFromExtension);
+        }
+
+        internalBuildTimeData.addBuildTimeData("footerTabs", footerTabs);
+
+        // Add version info
+        Map<String, String> applicationInfo = new HashMap<>();
+        applicationInfo.put("quarkusVersion", Version.getVersion());
+        applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
+        applicationInfo.put("applicationVersion",
+                config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
+        internalBuildTimeData.addBuildTimeData("applicationInfo", applicationInfo);
+
+        buildTimeConstProducer.produce(internalBuildTimeData);
+
+        themeVarsProducer.produce(new ThemeVarsBuildItem(light.keySet(), QUARKUS_BLUE.toString()));
+    }
+
+    private static void computeColors(Map<String, Map<String, String>> themes, Map<String, String> dark,
+            Map<String, String> light) {
         // Quarkus logo colors
         light.put("--quarkus-blue", QUARKUS_BLUE.toString());
         dark.put("--quarkus-blue", QUARKUS_BLUE.toString());
@@ -382,95 +488,22 @@ public class BuildTimeContentProcessor {
 
         themes.put("dark", dark);
         themes.put("light", light);
+    }
 
-        internalBuildTimeData.addBuildTimeData("themes", themes);
-
-        // Extensions
-        Map<ExtensionGroup, List<Extension>> response = Map.of(
-                ExtensionGroup.active, extensionsBuildItem.getActiveExtensions(),
-                ExtensionGroup.inactive, extensionsBuildItem.getInactiveExtensions());
-
-        internalBuildTimeData.addBuildTimeData("extensions", response);
-
-        // Sections Menu
-        Page extensions = Page.webComponentPageBuilder().internal()
-                .title("Extensions")
-                .icon("font-awesome-solid:puzzle-piece")
-                .componentLink("qwc-extensions.js").build();
-
-        Page configuration = Page.webComponentPageBuilder().internal()
-                .title("Configuration")
-                .icon("font-awesome-solid:sliders")
-                .componentLink("qwc-configuration.js").build();
-
-        internalBuildTimeData.addBuildTimeData("allConfiguration", "TODO: Configuration");
-
-        Page continuousTesting = Page.webComponentPageBuilder().internal()
-                .title("Continuous Testing")
-                .icon("font-awesome-solid:flask-vial")
-                .componentLink("qwc-continuous-testing.js").build();
-
-        internalBuildTimeData.addBuildTimeData("continuousTesting", "TODO: Continuous Testing");
-
-        Page devServices = Page.webComponentPageBuilder().internal()
-                .title("Dev services")
-                .icon("font-awesome-solid:wand-magic-sparkles")
-                .componentLink("qwc-dev-services.js").build();
-
-        internalBuildTimeData.addBuildTimeData("devServices", DevServiceDescriptions);
-
-        Page buildSteps = Page.webComponentPageBuilder().internal()
-                .title("Build steps")
-                .icon("font-awesome-solid:hammer")
-                .componentLink("qwc-build-steps.js").build();
-
-        internalBuildTimeData.addBuildTimeData("buildSteps", "TODO: Build Steps");
-
-        // Add default menu items
-        @SuppressWarnings("unchecked")
-        List<Page> sectionMenu = new ArrayList(List.of(extensions, configuration, continuousTesting, devServices, buildSteps));
-
-        // Add any Menus from extensions
-        for (Extension e : extensionsBuildItem.getSectionMenuExtensions()) {
-            List<Page> pagesFromExtension = e.getMenuPages();
-            sectionMenu.addAll(pagesFromExtension);
+    private List<ConfigDescription> getAllConfig(List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
+        List<ConfigDescription> configDescriptions = new ArrayList<>();
+        for (ConfigDescriptionBuildItem item : configDescriptionBuildItems) {
+            configDescriptions.add(
+                    new ConfigDescription(item.getPropertyName(),
+                            formatJavadoc(cleanUpAsciiDocIfNecessary(item.getDocs())),
+                            item.getDefaultValue(),
+                            isSetByDevServices(devServicesLauncherConfig, item.getPropertyName()),
+                            item.getValueTypeName(),
+                            item.getAllowedValues(),
+                            item.getConfigPhase().name()));
         }
-
-        internalBuildTimeData.addBuildTimeData("menuItems", sectionMenu);
-
-        // Add the Footer tabs
-        Page serverLog = Page.webComponentPageBuilder().internal()
-                .title("Server")
-                .icon("font-awesome-solid:server")
-                .componentLink("qwc-server-log.js").build();
-
-        Page devUiLog = Page.webComponentPageBuilder().internal()
-                .title("Dev UI")
-                .icon("font-awesome-solid:satellite-dish")
-                .componentLink("qwc-jsonrpc-messages.js").build();
-
-        @SuppressWarnings("unchecked")
-        List<Page> footerTabs = new ArrayList(List.of(serverLog, devUiLog));
-
-        // Add any Footer tabs from extensions
-        for (Extension e : extensionsBuildItem.getFooterTabsExtensions()) {
-            List<Page> tabsFromExtension = e.getFooterPages();
-            footerTabs.addAll(tabsFromExtension);
-        }
-
-        internalBuildTimeData.addBuildTimeData("footerTabs", footerTabs);
-
-        // Add version info
-        Map<String, String> applicationInfo = new HashMap<>();
-        applicationInfo.put("quarkusVersion", Version.getVersion());
-        applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
-        applicationInfo.put("applicationVersion",
-                config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
-        internalBuildTimeData.addBuildTimeData("applicationInfo", applicationInfo);
-
-        buildTimeConstProducer.produce(internalBuildTimeData);
-
-        themeVarsProducer.produce(new ThemeVarsBuildItem(light.keySet(), QUARKUS_BLUE.toString()));
+        return configDescriptions;
     }
 
     private static final Color QUARKUS_BLUE = Color.from(211, 63, 54);
@@ -530,5 +563,21 @@ public class BuildTimeContentProcessor {
         static Color from(int hue, int saturation, int lightness, double alpha) {
             return new Color(hue, saturation, lightness, alpha);
         }
+    }
+
+    private static final Pattern codePattern = Pattern.compile("(\\{@code )([^}]+)(\\})");
+    private static final Pattern linkPattern = Pattern.compile("(\\{@link )([^}]+)(\\})");
+
+    static String formatJavadoc(String val) {
+        if (val == null) {
+            return val;
+        }
+        // Replace {@code} and {@link}
+        val = codePattern.matcher(val).replaceAll("<code>$2</code>");
+        val = linkPattern.matcher(val).replaceAll("<code>$2</code>");
+        // Add br before @see and @deprecated
+        val = val.lines().filter(s -> !s.startsWith("@see")).collect(Collectors.joining("\n"));
+        val = val.replace("@deprecated", "<br><strong>Deprecated</strong>");
+        return val;
     }
 }

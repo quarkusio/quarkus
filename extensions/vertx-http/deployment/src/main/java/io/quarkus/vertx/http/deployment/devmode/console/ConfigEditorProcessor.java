@@ -44,6 +44,8 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
+import io.quarkus.devui.runtime.ConfigJsonRpcService;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsRecorder;
@@ -127,7 +129,7 @@ public class ConfigEditorProcessor {
 
     }
 
-    private String cleanUpAsciiDocIfNecessary(String docs) {
+    public static String cleanUpAsciiDocIfNecessary(String docs) {
         if (docs == null || !docs.toLowerCase(Locale.ROOT).contains("@asciidoclet")) {
             return docs;
         }
@@ -150,6 +152,16 @@ public class ConfigEditorProcessor {
         devConsoleRouteProducer.produce(new DevConsoleRouteBuildItem("config/all", "GET", (e) -> {
             e.end(Buffer.buffer(getConfig()));
         }));
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    JsonRPCProvidersBuildItem registerJsonRpcService() {
+        DevConsoleManager.register("config-update-property", map -> {
+            Map<String, String> values = Collections.singletonMap(map.get("name"), map.get("value"));
+            updateConfig(values);
+            return null;
+        });
+        return new JsonRPCProvidersBuildItem("ConfigJsonRpcService", ConfigJsonRpcService.class);
     }
 
     private Map<String, String> filterAndApplyProfile(Map<String, String> autoconfig, List<String> configFilter,
@@ -208,7 +220,7 @@ public class ConfigEditorProcessor {
         }
     }
 
-    static void updateConfig(Map<String, String> values) {
+    public static void updateConfig(Map<String, String> values) {
         if (values != null && !values.isEmpty()) {
             try {
                 Path configPath = getConfigPath();
@@ -292,7 +304,7 @@ public class ConfigEditorProcessor {
         return configPath;
     }
 
-    private boolean isSetByDevServices(Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
+    public static boolean isSetByDevServices(Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             String propertyName) {
         if (devServicesLauncherConfig.isPresent()) {
             return devServicesLauncherConfig.get().getConfig().containsKey(propertyName);

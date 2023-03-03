@@ -3333,6 +3333,12 @@
             </dependency>
             <dependency>
                 <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>integer-field</artifactId>
+                <version>${vaadin.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
                 <artifactId>field-base</artifactId>
                 <version>${vaadin.version}</version>
                 <scope>runtime</scope>

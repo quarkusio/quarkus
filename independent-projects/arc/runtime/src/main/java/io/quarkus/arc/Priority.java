@@ -19,7 +19,7 @@ import java.lang.annotation.RetentionPolicy;
  * @deprecated use {@link jakarta.annotation.Priority}; this annotation will be removed at some time after Quarkus 3.6
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Deprecated
+@Deprecated(forRemoval = true, since = "3.0")
 public @interface Priority {
 
     int value();

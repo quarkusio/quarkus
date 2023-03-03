@@ -13,7 +13,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
-final class AssignabilityCheck {
+public final class AssignabilityCheck {
 
     private final ConcurrentMap<DotName, Set<DotName>> cache;
     private final IndexView index;
@@ -23,7 +23,7 @@ final class AssignabilityCheck {
         this.index = applicationIndex != null ? CompositeIndex.create(beanArchiveIndex, applicationIndex) : beanArchiveIndex;
     }
 
-    boolean isAssignableFrom(Type type1, Type type2) {
+    public boolean isAssignableFrom(Type type1, Type type2) {
         // java.lang.Object is assignable from any type
         if (type1.name().equals(DotNames.OBJECT)) {
             return true;

@@ -25,6 +25,10 @@ public final class SyntheticCreationalContextImpl<T> implements SyntheticCreatio
         this.injectedReferences = Objects.requireNonNull(injectedReferences);
     }
 
+    public CreationalContext<T> getDelegateCreationalContext() {
+        return creationalContext;
+    }
+
     @Override
     public void push(T incompleteInstance) {
         creationalContext.push(incompleteInstance);

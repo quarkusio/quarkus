@@ -49,7 +49,8 @@ public class BeanArchiveProcessor {
             List<AdditionalBeanBuildItem> additionalBeans, List<GeneratedBeanBuildItem> generatedBeans,
             LiveReloadBuildItem liveReloadBuildItem, BuildProducer<GeneratedClassBuildItem> generatedClass,
             CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
-            List<BeanArchivePredicateBuildItem> beanArchivePredicates)
+            List<BeanArchivePredicateBuildItem> beanArchivePredicates,
+            BuildCompatibleExtensionsBuildItem buildCompatibleExtensions)
             throws Exception {
 
         // First build an index from application archives
@@ -62,6 +63,10 @@ public class BeanArchiveProcessor {
         for (AdditionalBeanBuildItem i : additionalBeans) {
             additionalBeanClasses.addAll(i.getBeanClasses());
         }
+
+        Set<String> additionalBeansFromExtensions = new HashSet<>();
+        buildCompatibleExtensions.entrypoint.runDiscovery(applicationIndex, additionalBeansFromExtensions);
+        additionalBeanClasses.addAll(additionalBeansFromExtensions);
 
         // Build the index for additional beans and generated bean classes
         Set<DotName> additionalIndex = new HashSet<>();

@@ -44,6 +44,11 @@ public final class ObserverConfigurator extends ConfiguratorBase<ObserverConfigu
         this.transactionPhase = TransactionPhase.IN_PROGRESS;
     }
 
+    @Override
+    protected ObserverConfigurator self() {
+        return this;
+    }
+
     /**
      * A unique identifier should be used for multiple synthetic observer methods with the same
      * attributes (including the bean class).

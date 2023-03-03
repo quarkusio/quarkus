@@ -27,6 +27,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -208,6 +209,7 @@ public class DevUIProcessor {
 
             additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                     .addBeanClass(c)
+                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
                     .setUnremovable().build());
         }
     }

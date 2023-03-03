@@ -66,8 +66,8 @@ public class GACT implements ArtifactKey, Serializable {
     public static String[] split(String str, String[] parts, int fromIndex) {
         int i = str.lastIndexOf(':', fromIndex - 1);
         if (i <= 0) {
-            throw new IllegalArgumentException("GroupId and artifactId separating ':' is absent or not in the right place in '"
-                    + str.substring(0, fromIndex) + "'");
+            throw new IllegalArgumentException("For " + str + " groupId and artifactId separating ':' is absent or not in the right place in '"
+                    + str.substring(0, fromIndex) + "' at index " + fromIndex);
         }
         parts[3] = str.substring(i + 1, fromIndex);
         fromIndex = i;

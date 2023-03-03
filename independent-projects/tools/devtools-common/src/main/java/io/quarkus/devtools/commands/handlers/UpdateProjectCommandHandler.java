@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -70,6 +71,14 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             logUpdates(currentState, latestCatalog, false, perModule, invocation.getQuarkusProject().log());
 
             if (generateRewriteConfig) {
+                Set<String> additionalSourceFiles = Set.of("**/META-INF/services/**",
+                        "**/*.txt",
+                        "**/*.adoc",
+                        "**/*.md",
+                        "**/src/main/codestarts/**/*.java",
+                        "**/src/test/resources/__snapshots__/**/*.java",
+                        "**/*.kt");
+
                 QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
                         projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
                 try {
@@ -78,11 +87,15 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                             QuarkusProjectHelper.artifactResolver(), request);
                     invocation.log().info("Project update recipe has been created:\n%s", tempFile.toString());
 
-                    invocation.log().info("The command to update this project: \n" +
-                            "mvn org.openrewrite.maven:rewrite-maven-plugin:4.39.0:run \\\n" +
-                            "  -Drewrite.configLocation=%s \\\n" +
-                            "  -DactiveRecipes=%s -e",
-                            tempFile.toString(), RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS);
+                    invocation.log().info("The commands to update this project: \n" +
+                            "./mvnw -e org.openrewrite.maven:rewrite-maven-plugin:4.39.0:run \\\n" +
+                            "    -D\"rewrite.configLocation=%s\" \\\n" +
+                            "    -D\"activeRecipes=%s\" \\\n" +
+                            "    -D\"plainTextMasks=%s\" \\\n" +
+                            "    -D\"rewrite.pomCacheEnabled=false\" \n" +
+                            "./mvnw process-sources",
+                            tempFile.toString(), RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS,
+                            String.join(",", additionalSourceFiles));
 
                 } catch (IOException e) {
                     throw new QuarkusCommandException("Failed to create project update recipe", e);

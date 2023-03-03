@@ -95,7 +95,7 @@ public class SpringDataJPAProcessor {
 
     @BuildStep
     void registerReflection(BuildProducer<ReflectiveClassBuildItem> producer) {
-        producer.produce(new ReflectiveClassBuildItem(true, false,
+        producer.produce(ReflectiveClassBuildItem.builder(
                 "org.springframework.data.domain.Page",
                 "org.springframework.data.domain.Slice",
                 "org.springframework.data.domain.PageImpl",
@@ -103,7 +103,7 @@ public class SpringDataJPAProcessor {
                 "org.springframework.data.domain.Sort",
                 "org.springframework.data.domain.Chunk",
                 "org.springframework.data.domain.PageRequest",
-                "org.springframework.data.domain.AbstractPageRequest"));
+                "org.springframework.data.domain.AbstractPageRequest").methods(true).fields(false).build());
     }
 
     @BuildStep
@@ -256,7 +256,7 @@ public class SpringDataJPAProcessor {
                 (className -> {
                     // the generated classes that implement interfaces for holding custom query results need
                     // to be registered for reflection here since this is the only point where the generated class is known
-                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, className));
+                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(className).methods(true).fields(false).build());
                 }), JavaJpaTypeBundle.BUNDLE);
 
         Set<String> entities = new HashSet<>();

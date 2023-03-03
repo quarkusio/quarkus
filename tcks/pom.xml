@@ -83,7 +83,7 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>jquery</artifactId>
                 <!-- /!\ this version should not be upgraded, TestNG requires this particular version -->
-                <version>3.5.1</version>
+                <version>3.6.3</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

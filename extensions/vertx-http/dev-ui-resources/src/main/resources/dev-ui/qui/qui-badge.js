@@ -32,6 +32,10 @@ export class QuiBadge extends LitElement {
             color: var(--lumo-error-text-color);
             background-color: var(--lumo-error-color-10pct);
         }
+        [theme~="warning"] {
+            color: var(--lumo-warning-text-color);
+            background-color: var(--lumo-warning-color-10pct);
+        }
         [theme~="contrast"] {
             color: var(--lumo-contrast-80pct);
             background-color: var(--lumo-contrast-5pct);
@@ -46,8 +50,24 @@ export class QuiBadge extends LitElement {
             padding: 0.2em calc(0.2em + var(--lumo-border-radius-s) / 4);
         }
         [theme~="primary"] {
+            color: var(--lumo-primary-contrast-color);
+            background-color: var(--lumo-primary-color);
+        }
+        [theme~="successprimary"] {
             color: var(--lumo-success-contrast-color);
             background-color: var(--lumo-success-color);
+        }
+        [theme~="warningprimary"] {
+            color: var(--lumo-warning-contrast-color);
+            background-color: var(--lumo-warning-color);
+        }
+        [theme~="errorprimary"] {
+            color: var(--lumo-error-contrast-color);
+            background-color: var(--lumo-error-color);
+        }
+        [theme~="contrastprimary"] {
+            color: var(--lumo-base-color);
+            background-color: var(--lumo-contrast);
         }
         [theme~="pill"] {
             --lumo-border-radius-s: 1em;
@@ -63,6 +83,7 @@ export class QuiBadge extends LitElement {
         tiny: {type: Boolean},
         primary: {type: Boolean},
         pill: {type: Boolean},
+        clickable: {type: Boolean},
         _theme: {attribute: false},
         _style: {attribute: false},
     };
@@ -77,6 +98,7 @@ export class QuiBadge extends LitElement {
         this.small = false;
         this.primary = false;
         this.pill = false;
+        this.clickable = false;
         
         this._theme = "badge";
         this._style = "";
@@ -88,15 +110,21 @@ export class QuiBadge extends LitElement {
         if(this.level){
             this._theme = this._theme + " " + this.level;
         }
+        if(this.primary){
+            if(this.level){
+                this._theme = this._theme + "primary";
+            }else{
+                this._theme = this._theme + " primary";
+            }
+        }
+        
         if(this.small && !this.tiny){
             this._theme = this._theme + " small";
         }
         if(this.tiny){
             this._theme = this._theme + " tiny";
         }
-        if(this.primary){
-            this._theme = this._theme + " primary";
-        }
+        
         if(this.pill){
             this._theme = this._theme + " pill";
         }
@@ -107,8 +135,11 @@ export class QuiBadge extends LitElement {
         if(this.color){
             this._style = this._style + "color: " + this.color + ";";
         }
+        if(this.clickable){
+            this._style = this._style + "cursor: pointer";
+        }
       }
-
+      
     render() {
         return html`<span theme='${this._theme}' style='${this._style}'>
                 ${this._renderIcon()}

@@ -9,30 +9,65 @@ import '@vaadin/horizontal-layout';
  */
 class Notifier {
 
-    showInfoMessage(message, position = "bottom-start", duration = 5) {
-        this.showMessage("font-awesome-solid:circle-info", "primary", message, position, duration);
+    showPrimaryInfoMessage(message, position, duration = 5) {
+        if(position === null)position = "bottom-start";
+        let color = "var(--lumo-primary-contrast-color)";
+        this.showMessage("font-awesome-solid:circle-info", "primary", message, color, duration, position);
     }
 
-    showSuccessMessage(message, position = "bottom-start", duration = 5) {
-        this.showMessage("font-awesome-solid:circle-check", "success", message, position, duration);
+    showInfoMessage(message, position, duration = 5) {
+        if(position === null)position = "bottom-start";
+        let color = "var(--lumo-primary-text-color)";
+        this.showMessage("font-awesome-solid:circle-info", "contrast", message, color, duration, position);
     }
 
-    showWarningMessage(message, position = "bottom-start", duration = 5) {
-        this.showMessage("font-awesome-solid:triangle-exclamation", "contrast", message, position, duration);
+    showPrimarySuccessMessage(message, position, duration = 5) {
+        if(position === null)position = "bottom-start";
+        let color = "var(--lumo-primary-contrast-color)";
+        this.showMessage("font-awesome-solid:circle-check", "success", message, color, duration, position);
+    }
+    
+    showSuccessMessage(message, position, duration = 5) {
+        if(position === null)position = "bottom-start";
+        let color = "var(--lumo-success-text-color)";
+        this.showMessage("font-awesome-solid:circle-check", "contrast", message, color, duration, position);
     }
 
-    showErrorMessage(message, position = "bottom-start", duration = 5) {
-        this.showMessage("font-awesome-solid:circle-exclamation", "error", message, position, duration);
+    showPrimaryWarningMessage(message, position, duration = 5) {
+        if(position === null)position = "bottom-start";
+        let color = "var(--lumo-primary-contrast-color)";
+        this.showMessage("font-awesome-solid:triangle-exclamation", "contrast", message, color, duration, position);
+    }
+    
+    showWarningMessage(message, position, duration = 5) {
+        if(position === null)position = "bottom-start";
+        let color = "var(--lumo-warning-text-color)";
+        this.showMessage("font-awesome-solid:triangle-exclamation", "contrast", message, color, duration, position);
     }
 
-    showMessage(icon, theme, message, position = "bottom-start") {
+    showPrimaryErrorMessage(message, position, duration = 5) {
+        if(position === null)position = "bottom-start";
+        let color = "var(--lumo-primary-contrast-color)";
+        this.showMessage("font-awesome-solid:circle-exclamation", "error", message, color, duration, position);
+    }
 
-        const notification = Notification.show(html`<vaadin-horizontal-layout theme="spacing" style="align-items: center;">
-                                                        <vaadin-icon icon="${icon}"></vaadin-icon> <span>${message}</span></vaadin-horizontal-layout>`, {
+    showErrorMessage(message, position, duration = 5) {
+        if(position === null)position = "bottom-start";
+        let color = "var(--lumo-error-text-color)";
+        this.showMessage("font-awesome-solid:circle-exclamation", "contrast", message, color, duration, position);
+    }
+
+    showMessage(icon, theme, message, color, duration, position = "bottom-start") {
+
+        let d = duration * 1000;
+
+        const notification = Notification.show(html`<vaadin-horizontal-layout theme="spacing" style="align-items: center;color:${color};">
+                                                        <vaadin-icon icon="${icon}"></vaadin-icon> <span>${message}</span>
+                                                    </vaadin-horizontal-layout>`, {
             position: position,
+            duration: d,
+            theme: theme,
         });
-
-        notification.setAttribute('theme', theme);
     }
 }
 

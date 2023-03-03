@@ -79,6 +79,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc/", contextRoot + "qwc/");
         internalImportMapBuildItem.add("qui/", contextRoot + "qui/");
         internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
+        internalImportMapBuildItem.add("qui-alert", contextRoot + "qui/qui-alert.js");
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");
         internalImportMapBuildItem.add("font/", contextRoot + "font/");
         internalImportMapBuildItem.add("controller/", contextRoot + "controller/");
@@ -461,6 +462,18 @@ public class BuildTimeContentProcessor {
         dark.put("--lumo-error-text-color", Color.from(3, 100, 67).toString());
         light.put("--lumo-error-contrast-color", Color.from(0, 100, 100).toString());
         dark.put("--lumo-error-contrast-color", Color.from(0, 100, 100).toString());
+
+        // Warning
+        light.put("--lumo-warning-color-10pct", Color.from(30, 100, 50, 0.1).toString());
+        dark.put("--lumo-warning-color-10pct", Color.from(30, 100, 50, 0.1).toString());
+        light.put("--lumo-warning-color-50pct", Color.from(30, 100, 50, 0.5).toString());
+        dark.put("--lumo-warning-color-50pct", Color.from(30, 100, 50, 0.5).toString());
+        light.put("--lumo-warning-color", Color.from(30, 100, 50).toString());
+        dark.put("--lumo-warning-color", Color.from(30, 100, 50).toString());
+        light.put("--lumo-warning-text-color", Color.from(30, 89, 42).toString());
+        dark.put("--lumo-warning-text-color", Color.from(30, 100, 67).toString());
+        light.put("--lumo-warning-contrast-color", Color.from(0, 100, 100).toString());
+        dark.put("--lumo-warning-contrast-color", Color.from(0, 100, 100).toString());
 
         // Success
         light.put("--lumo-success-color-10pct", Color.from(145, 72, 31, 0.1).toString());

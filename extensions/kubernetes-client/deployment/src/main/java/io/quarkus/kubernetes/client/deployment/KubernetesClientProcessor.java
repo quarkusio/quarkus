@@ -43,6 +43,7 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
@@ -53,6 +54,7 @@ import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public class KubernetesClientProcessor {
 
@@ -86,6 +88,13 @@ public class KubernetesClientProcessor {
     public void nativeImageSupport(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeInitializedClassProducer) {
         runtimeInitializedClassProducer
                 .produce(new RuntimeReinitializedClassBuildItem(io.fabric8.kubernetes.client.utils.Utils.class.getName()));
+    }
+
+    @BuildStep
+    RemovedResourceBuildItem unregisterVertHttpClient() {
+        // Exclude VertxHttpClientFactory in favour of QuarkusHttpClientFactory
+        return new RemovedResourceBuildItem(ArtifactKey.fromString("io.fabric8:kubernetes-httpclient-vertx"),
+                Collections.singleton("META-INF/services/io.fabric8.kubernetes.client.http.HttpClient$Factory"));
     }
 
     @BuildStep

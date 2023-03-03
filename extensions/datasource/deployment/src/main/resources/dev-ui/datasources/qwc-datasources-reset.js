@@ -9,7 +9,7 @@ import '@vaadin/progress-bar';
 import '@vaadin/checkbox';
 import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
-import 'qui/qui-alert.js';
+import 'qui-alert';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 
@@ -90,7 +90,9 @@ export class QwcDatasourcesReset extends LitElement {
             if (ds === "<default>") {
                 ds = "default"
             }
-            this._message = html`<qui-alert theme="success" content="The datasource <code>${ds}</code> has been cleared." dismissible icon></qui-alert>`
+            this._message = html`<qui-alert level="success" showIcon>
+                                    <span>The datasource <code>${ds}</code> has been cleared.</span>
+                                 </qui-alert>`
         });
     }
 

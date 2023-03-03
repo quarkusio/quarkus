@@ -1,177 +1,166 @@
 import {LitElement, html, css} from 'lit';
-import {unsafeHTML} from 'lit-html/directives/unsafe-html.js';
-
+import '@vaadin/icon';
 
 export class QuiAlert extends LitElement {
 
     static styles = css`
-      .alert {
-        background-color: transparent;
-        padding: 1rem 1rem;
-        margin: 1rem;
-        color: inherit;
-        border: 1px solid transparent;
-        border-radius: 0.375rem;
-        position: relative;
-      }
+        .alert {
+            padding: 1rem 1rem;
+            margin: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+        }
 
-      a {
-        font-weight: 700;
-      }
-
-      .icon {
-        width: 1em;
-        height: 1em;
-        vertical-align: -0.125em;
-        fill: currentColor;
-        margin-right: .5rem !important;
-        flex-shrink: 0 !important;
-      }
-
-      .alert-header {
-        font-size: calc(1.275rem + .3vw);
-      }
-
-
-      .alert-primary {
-        color: var(--lumo-primary-contrast-color);
-        background-color: var(--lumo-primary-color);
-      }
-
-      .alert-primary a {
-        color: #6ea8fe;
-      }
-
-      .alert-success {
-        color: var(--lumo-success-contrast-color);
-        background-color: var(--lumo-success-color);
-      }
-
-
-      .alert-success a {
-        color: #75b798;
-      }
-
-      .alert-danger {
-        color: var(--lumo-error-contrast-color);
-        background-color: var(--lumo-error-color);
-
-      }
-
-      .alert-danger a {
-        color: #ea868f;
-      }
-
-      .alert-warning {
-        color: var(--lumo-warning-contrast-color);
-        background-color: var(--lumo-warning-color);
-        border-color: #664d03;
-      }
-
-      .alert-warning a {
-        color: #ffda6a;
-      }
-
-      .alert-info {
-        color: var(--lumo-info-contrast-color);
-        background-color: var(--lumo-info-color);
-      }
-
-      .alert-info a {
-        color: #6edff6;
-      }
-
-      .close {
-        cursor: pointer;
-      }
+        .info {
+            background-color: var(--lumo-primary-color-10pct);
+            color: var(--lumo-primary-text-color);
+        }
+        .success {
+            background-color: var(--lumo-success-color-10pct);
+            color: var(--lumo-success-text-color);
+        }
+        .warning {
+            background-color: var(--lumo-warning-color-10pct);
+            color: var(--lumo-warning-text-color);
+        }  
+        .error {
+            background-color: var(--lumo-error-color-10pct);
+            color: var(--lumo-error-text-color);
+        }  
       
-      .alert-dismissible .close {
-        position: absolute;
-        top: 0;
-        right: 0;
-        padding: .75rem 1.25rem;
-        color: inherit;
-        font-size: x-large;
-      }
+        .infoprimary {
+            background-color: var(--lumo-primary-color);
+            color: var(--lumo-primary-contrast-color);
+        }
+        .successprimary {
+            background-color: var(--lumo-success-color);
+            color: var(--lumo-success-contrast-color);
+        }
+        .warningprimary {
+            background-color: var(--lumo-warning-color);
+            color: var(--lumo-warning-contrast-color);
+        }  
+        .errorprimary {
+            background-color: var(--lumo-error-color);
+            color: var(--lumo-error-contrast-color);
+        }
       
-      button.close {
-        padding: 0;
-        background-color: transparent;
-        border: 0;
-        -webkit-appearance: none;
-      }
-    `
-
+        .layout {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+       
+       .content {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+        }
+    
+        .center {
+            justify-content: center;
+        }
+    
+        .close {
+            cursor: pointer;
+        }
+    
+        .title {
+            font-size: 1.4em;
+            padding-bottom: 10px;
+        }
+    `;
 
     static properties = {
         // Tag attributes
-        title: {type: String},
-        content: {type: String},
-        theme: {type: String},
-        icon: {type: Boolean},
-        dismissible: {type: Boolean},
+        title: {type: String}, // Optional title
+        level: {type: String}, // Level (info, success, warning, error) - default info
+        icon: {type: String}, // Icon
+        size: {type: String}, // Font size - default large
+        showIcon: {type: Boolean}, // Use default icon if none is supplied - default false
+        permanent: {type: Boolean}, // disallow dismissing - default false
+        primary: {type: Boolean}, // Primary - default false
+        center: {type: Boolean}, // Center - default false
         // Internal state
         _dismissed: {type: Boolean, state: true}
     };
 
+    constructor() {
+        super();
+        this.title = null;
+        this.level = "info";
+        this.icon = null;
+        this.size = "large";
+        this.showIcon = false;
+        this.permanent = false;
+        this.primary = false;
+        this.center = false;
+        this._dismissed - false;
+    }
     render() {
-        if (this._dismissed) {
-            return '';
+        if (!this._dismissed) {
+            let theme = this.level;    
+            if(this.primary){
+                theme = theme + "primary";
+            }
+            
+            let contentClass="content";
+            if(this.center){
+                contentClass = contentClass + " center";
+            }
+            return html`
+                <div class="alert ${theme}" style="font-size:${this.size};" role="alert">
+                    <div class="layout">
+                        ${this._renderTitle()}
+                        <div class="${contentClass}">
+                            ${this._renderIcon()}    
+                            <slot></slot>
+                        </div>
+                    </div>
+                    ${this._renderClose()}
+                </div>`;
         }
+    }
 
-        let title = '';
-        let close = '';
-        let classes = '';
-        if (this.title) {
-            title = html`<h4 class="alert-heading alert-heading-${this.theme}">${title}</h4>`
+    _renderIcon(){
+        if(this.icon){
+            // User provided icon
+            return html`<vaadin-icon icon="${this.icon}"></vaadin-icon>`;
+        }else if (this.showIcon){
+            // Default icon
+            if(this.level === "info"){
+                return html`<vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>`;
+            }else if(this.level === "success"){
+                return html`<vaadin-icon icon="font-awesome-solid:check"></vaadin-icon>`;
+            }else if(this.level === "warning"){
+                return html`<vaadin-icon icon="font-awesome-solid:triangle-exclamation"></vaadin-icon>`;
+            }else if(this.level === "error"){
+                return html`<vaadin-icon icon="font-awesome-solid:circle-exclamation"></vaadin-icon>`;
+            }
         }
-        if (this.dismissible) {
-            classes = "alert-dismissible";
-            close = html`
-                <button type="button" @click="${this._dismiss}" class="close" aria-label="Close">
-                    <span>&times;</span>
-                </button>`
+    }
+
+    _renderTitle(){
+        if(this.title){
+            return html`<div class="title">${this.title}</div>`;
         }
-        let icon = this._getIcon();
-        return html`
-            <div class="alert alert-${this.theme} ${classes}" role="alert">
-                ${icon}
-                ${title}
-                ${unsafeHTML(this.content)}
-                ${close}
-            </div>`;
+    }
+
+    _renderClose(){
+        if (!this.permanent) {
+            return html`<vaadin-icon class="close" icon='font-awesome-solid:xmark' @click="${this._dismiss}"></vaadin-icon>`;
+        }
     }
 
     _dismiss() {
         this._dismissed = true;
     }
 
-    _getIcon() {
-        if (this.icon) {
-            switch (this.type) {
-                case "warning":
-                case "danger":
-                    return html`
-                        <svg class="icon" role="img" aria-label="Danger:">
-                            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"></path>
-                        </svg>`
-                case "info":
-                    return html`
-                        <svg class="icon" role="img" aria-label="Info:">
-                            <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"></path>
-                        </svg>`
-                case "success":
-                    return html`
-                        <svg class="icon" role="img" aria-label="Success:">
-                            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"></path>
-                        </svg>`
-                default:
-                    return '';
-            }
-        } else {
-            return '';
-        }
-    }
+    
 
 }
 

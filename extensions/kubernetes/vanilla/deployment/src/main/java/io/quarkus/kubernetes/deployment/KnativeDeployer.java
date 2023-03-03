@@ -17,13 +17,14 @@ public class KnativeDeployer {
     @BuildStep
     public void checkEnvironment(Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             List<GeneratedKubernetesResourceBuildItem> resources,
-            KubernetesClientBuildItem clientSupplier, BuildProducer<KubernetesDeploymentClusterBuildItem> deploymentCluster) {
+            KubernetesClientBuildItem kubernetesClientBuilder,
+            BuildProducer<KubernetesDeploymentClusterBuildItem> deploymentCluster) {
         selectedDeploymentTarget.ifPresent(target -> {
-            if (!KubernetesDeploy.INSTANCE.checkSilently()) {
+            if (!KubernetesDeploy.INSTANCE.checkSilently(kubernetesClientBuilder)) {
                 return;
             }
             if (target.getEntry().getName().equals(KNATIVE)) {
-                try (DefaultKnativeClient client = clientSupplier.getClient().get().adapt(DefaultKnativeClient.class)) {
+                try (DefaultKnativeClient client = kubernetesClientBuilder.buildClient().adapt(DefaultKnativeClient.class)) {
                     if (client.isSupported()) {
                         deploymentCluster.produce(new KubernetesDeploymentClusterBuildItem(KNATIVE));
                     } else {

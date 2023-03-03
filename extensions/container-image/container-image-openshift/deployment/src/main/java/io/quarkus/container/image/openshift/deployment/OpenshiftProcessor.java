@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
-import io.dekorate.utils.Clients;
 import io.dekorate.utils.Packaging;
 import io.dekorate.utils.Serialization;
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -36,8 +35,10 @@ import io.fabric8.kubernetes.api.model.KubernetesList;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.LogWatch;
+import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.openshift.api.model.Build;
 import io.fabric8.openshift.api.model.BuildConfig;
 import io.fabric8.openshift.api.model.ImageStream;
@@ -231,7 +232,7 @@ public class OpenshiftProcessor {
     public void openshiftBuildFromJar(OpenshiftConfig openshiftConfig,
             S2iConfig s2iConfig,
             ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClientSupplier,
+            KubernetesClientBuildItem kubernetesClientBuilder,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
@@ -263,7 +264,7 @@ public class OpenshiftProcessor {
             return;
         }
 
-        try (KubernetesClient kubernetesClient = kubernetesClientSupplier.getClient().get()) {
+        try (KubernetesClient kubernetesClient = kubernetesClientBuilder.buildClient()) {
             String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
             LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
                     + kubernetesClient.getMasterUrl() + " in namespace:" + namespace + ".");
@@ -272,14 +273,16 @@ public class OpenshiftProcessor {
             //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
             String outputDirName = out.getOutputDirectory().getFileName().toString();
             String contextRoot = getContextRoot(outputDirName, packageConfig.isFastJar(), config.buildStrategy);
+            KubernetesClientBuilder clientBuilder = newClientBuilderWithoutHttp2(kubernetesClient.getConfiguration(),
+                    kubernetesClientBuilder.getHttpClientFactory());
             if (packageConfig.isFastJar()) {
-                createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
+                createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                         jar.getPath().getParent());
             } else if (jar.getLibraryDir() != null) { //When using uber-jar the libraryDir is going to be null, potentially causing NPE.
-                createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
+                createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                         jar.getPath(), jar.getLibraryDir());
             } else {
-                createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
+                createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                         jar.getPath());
             }
             artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
@@ -300,7 +303,7 @@ public class OpenshiftProcessor {
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class, NativeBuild.class })
     public void openshiftBuildFromNative(OpenshiftConfig openshiftConfig, S2iConfig s2iConfig,
             ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClientSupplier,
+            KubernetesClientBuildItem kubernetesClientBuilder,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
@@ -321,7 +324,7 @@ public class OpenshiftProcessor {
             return;
         }
 
-        try (KubernetesClient kubernetesClient = kubernetesClientSupplier.getClient().get()) {
+        try (KubernetesClient kubernetesClient = kubernetesClientBuilder.buildClient()) {
             String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
 
             LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
@@ -340,14 +343,16 @@ public class OpenshiftProcessor {
             //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
             //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
             String contextRoot = config.buildStrategy == BuildStrategy.DOCKER ? "target" : null;
-            createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, out.getOutputDirectory(),
-                    nativeImage.getPath());
+            createContainerImage(
+                    newClientBuilderWithoutHttp2(kubernetesClient.getConfiguration(),
+                            kubernetesClientBuilder.getHttpClientFactory()),
+                    openshiftYml.get(), config, contextRoot, out.getOutputDirectory(), nativeImage.getPath());
             artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
         }
     }
 
-    public static void createContainerImage(KubernetesClient kubernetesClient,
+    public static void createContainerImage(KubernetesClientBuilder kubernetesClientBuilder,
             GeneratedFileSystemResourceBuildItem openshiftManifests,
             OpenshiftConfig openshiftConfig,
             String base,
@@ -364,10 +369,7 @@ public class OpenshiftProcessor {
             throw new RuntimeException("Error creating the openshift binary build archive.", e);
         }
 
-        Config config = kubernetesClient.getConfiguration();
-        //Let's disable http2 as it causes issues with duplicate build triggers.
-        config.setHttp2Disable(true);
-        try (KubernetesClient client = Clients.fromConfig(config)) {
+        try (KubernetesClient client = kubernetesClientBuilder.build()) {
             OpenShiftClient openShiftClient = toOpenshiftClient(client);
             KubernetesList kubernetesList = Serialization
                     .unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
@@ -531,6 +533,14 @@ public class OpenshiftProcessor {
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
             LOG.log(level, line);
         }
+    }
+
+    private static KubernetesClientBuilder newClientBuilderWithoutHttp2(Config configuration,
+            HttpClient.Factory httpClientFactory) {
+        //Let's disable http2 as it causes issues with duplicate build triggers.
+        configuration.setHttp2Disable(true);
+
+        return new KubernetesClientBuilder().withConfig(configuration).withHttpClientFactory(httpClientFactory);
     }
 
     // visible for test

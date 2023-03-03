@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
-import io.dekorate.utils.Clients;
 import io.dekorate.utils.Serialization;
 import io.fabric8.kubernetes.api.model.APIResourceList;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
@@ -90,11 +89,11 @@ public class KubernetesDeployer {
 
     @BuildStep
     public void checkEnvironment(Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
-            KubernetesClientBuildItem client,
+            KubernetesClientBuildItem kubernetesClientBuilder,
             List<GeneratedKubernetesResourceBuildItem> resources,
             BuildProducer<KubernetesDeploymentClusterBuildItem> deploymentCluster) {
 
-        if (!KubernetesDeploy.INSTANCE.checkSilently()) {
+        if (!KubernetesDeploy.INSTANCE.checkSilently(kubernetesClientBuilder)) {
             return;
         }
         String target = selectedDeploymentTarget.map(s -> s.getEntry().getName()).orElse(KUBERNETES);
@@ -104,7 +103,7 @@ public class KubernetesDeployer {
     }
 
     @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
-    public void deploy(KubernetesClientBuildItem kubernetesClientSupplier,
+    public void deploy(KubernetesClientBuildItem kubernetesClientBuilder,
             Capabilities capabilities,
             List<KubernetesDeploymentClusterBuildItem> deploymentClusters,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
@@ -117,7 +116,7 @@ public class KubernetesDeployer {
             // needed to ensure that this step runs after the container image has been built
             @SuppressWarnings("unused") List<ArtifactResultBuildItem> artifactResults) {
 
-        if (!KubernetesDeploy.INSTANCE.check()) {
+        if (!KubernetesDeploy.INSTANCE.check(kubernetesClientBuilder)) {
             return;
         }
 
@@ -134,7 +133,7 @@ public class KubernetesDeployer {
             return;
         }
 
-        try (final KubernetesClient client = Clients.fromConfig(kubernetesClientSupplier.getConfig())) {
+        try (final KubernetesClient client = kubernetesClientBuilder.buildClient()) {
             deploymentResult
                     .produce(deploy(selectedDeploymentTarget.get().getEntry(), client, outputTarget.getOutputDirectory(),
                             openshiftConfig, applicationInfo, optionalResourceDefinitions));

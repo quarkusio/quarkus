@@ -15,6 +15,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
@@ -139,6 +140,17 @@ public class MultiByteFileTest {
         assertThat(result).isEqualTo("myFile");
     }
 
+    @Test
+    public void shouldPropertySetContentType() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+
+        ClientForm form = new ClientForm();
+        form.file = Multi.createBy().repeating().supplier(() -> (byte) 4).atMost(100);
+
+        assertThat(client.postMultipartToType(form)).startsWith("multipart/form-data");
+        assertThat(client.postMultipartMixedToType(form)).startsWith("multipart/mixed");
+    }
+
     private void delayedEmit(AtomicLong i, MultiEmitter<? super Byte> em) {
         vertx.setTimer(100, id -> {
             long index = i.getAndIncrement();
@@ -188,6 +200,12 @@ public class MultiByteFileTest {
         public String uploadEmpty(@MultipartForm FormWithTwoFiles form) {
             return verifyFile(form.file1, 100, position -> (byte) 4)
                     + verifyFile(form.file2, 100, position -> (byte) 7);
+        }
+
+        @Path("type")
+        @POST
+        public String contentType(@HeaderParam("Content-Type") String contentType) {
+            return contentType;
         }
 
         private String verifyFile(FileUpload upload, int expectedSize, Function<Integer, Byte> expectedByte) {
@@ -270,6 +288,16 @@ public class MultiByteFileTest {
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         String postEmpty(@MultipartForm ClientForm form);
+
+        @Path("/type")
+        @POST
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String postMultipartToType(@MultipartForm ClientForm clientForm);
+
+        @Path("/type")
+        @POST
+        @Consumes("multipart/mixed")
+        String postMultipartMixedToType(@MultipartForm ClientForm clientForm);
     }
 
     public static class ClientForm {

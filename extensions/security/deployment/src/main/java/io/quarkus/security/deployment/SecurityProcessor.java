@@ -211,6 +211,8 @@ public class SecurityProcessor {
             runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.spec.ECUtil"));
         }
 
+        // Reinitialize class because it embeds a java.lang.ref.Cleaner instance in the image heap
+        runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("sun.security.pkcs11.P11Util"));
     }
 
     @BuildStep

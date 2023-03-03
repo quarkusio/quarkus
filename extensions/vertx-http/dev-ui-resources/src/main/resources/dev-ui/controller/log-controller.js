@@ -8,9 +8,9 @@ export class LogController {
     tab;
     items = [];
     
-    constructor(host, tab) {
+    constructor(host) {
         (this.host = host).addController(this);
-        this.tab = tab;
+        this.tab = host.tagName.toLowerCase();
     }
 
     hostConnected() {

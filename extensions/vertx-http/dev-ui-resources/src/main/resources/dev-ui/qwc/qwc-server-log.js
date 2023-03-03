@@ -15,7 +15,7 @@ import 'qui-badge';
  */
 export class QwcServerLog extends LitElement {
     
-    logControl = new LogController(this, "qwc-server-log");
+    logControl = new LogController(this);
     jsonRpc = new JsonRpc("DevUI", false);
     
     static styles = css`

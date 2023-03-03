@@ -24,7 +24,12 @@ projects:
     - labels: [area/jakarta]
       project: 13
       issues: true
-      pullRequests: false
+      pullRequests: true
+      status: Todo
+    - labels: [triage/quarkus-3]
+      project: 13
+      issues: true
+      pullRequests: true
       status: Todo
 triage:
   discussions:

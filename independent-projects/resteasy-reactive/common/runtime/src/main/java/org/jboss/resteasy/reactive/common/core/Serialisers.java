@@ -14,7 +14,6 @@ import java.util.Set;
 
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.MessageBodyWriter;
@@ -32,7 +31,6 @@ import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedMap;
 public abstract class Serialisers {
     public static final Annotation[] NO_ANNOTATION = new Annotation[0];
     public static final ReaderInterceptor[] NO_READER_INTERCEPTOR = new ReaderInterceptor[0];
-    public static final MultivaluedMap<String, Object> EMPTY_MULTI_MAP = new QuarkusMultivaluedHashMap<>();
     public static final WriterInterceptor[] NO_WRITER_INTERCEPTOR = new WriterInterceptor[0];
     protected static final Map<Class<?>, Class<?>> primitivesToWrappers = new HashMap<>();
     // FIXME: spec says we should use generic type, but not sure how to pass that type from Jandex to reflection

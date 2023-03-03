@@ -1,18 +1,23 @@
 package io.quarkus.scheduler.runtime.devui;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.LocalDateTime;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.ScheduledJobPaused;
+import io.quarkus.scheduler.ScheduledJobResumed;
 import io.quarkus.scheduler.Scheduler;
+import io.quarkus.scheduler.SchedulerPaused;
+import io.quarkus.scheduler.SchedulerResumed;
+import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledMethod;
@@ -27,48 +32,69 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+@ApplicationScoped
 public class SchedulerJsonRPCService {
 
     private static final Logger LOG = Logger.getLogger(SchedulerJsonRPCService.class);
+    private static final String SCHEDULER_ID = "quarkus_scheduler";
 
-    private static final Duration UPDATE_INTERVAL = Duration.ofSeconds(10);
+    private final BroadcastProcessor<JsonObject> runningStatus;
+    private final BroadcastProcessor<JsonObject> log;
+    private final Instance<SchedulerContext> context;
+    private final Instance<Scheduler> scheduler;
+    private final Instance<Vertx> vertx;
 
-    private final BroadcastProcessor<JsonObject> runningStatus = BroadcastProcessor.create();
+    public SchedulerJsonRPCService(Instance<SchedulerContext> context, Instance<Scheduler> scheduler, Instance<Vertx> vertx) {
+        runningStatus = BroadcastProcessor.create();
+        log = BroadcastProcessor.create();
+        this.context = context;
+        this.scheduler = scheduler;
+        this.vertx = vertx;
+    }
 
-    @Inject
-    Instance<SchedulerContext> context;
+    void onPause(@Observes SchedulerPaused e) {
+        runningStatus.onNext(newRunningStatus(SCHEDULER_ID, false));
+    }
 
-    @Inject
-    Instance<Scheduler> scheduler;
+    void onResume(@Observes SchedulerResumed e) {
+        runningStatus.onNext(newRunningStatus(SCHEDULER_ID, true));
+    }
 
-    @Inject
-    Instance<Vertx> vertx;
+    void onPause(@Observes ScheduledJobPaused e) {
+        runningStatus.onNext(newRunningStatus(e.getTrigger().getId(), false));
+    }
+
+    void onResume(@Observes ScheduledJobResumed e) {
+        runningStatus.onNext(newRunningStatus(e.getTrigger().getId(), true));
+    }
+
+    void onJobSuccess(@Observes SuccessfulExecution e) {
+        log.onNext(newExecutionLog(e.getExecution().getTrigger(), true, null,
+                isUserDefinedIdentity(e.getExecution().getTrigger().getId())));
+    }
+
+    void onJobFailure(@Observes FailedExecution e) {
+        log.onNext(newExecutionLog(e.getExecution().getTrigger(), false, e.getException().getMessage(),
+                isUserDefinedIdentity(e.getExecution().getTrigger().getId())));
+    }
+
+    public Multi<JsonObject> streamLog() {
+        return log;
+    }
 
     public Multi<JsonObject> streamRunningStatus() {
-        SchedulerContext sc = context.get();
-        Set<String> identities = new HashSet<>();
-        for (ScheduledMethod metadata : sc.getScheduledMethods()) {
-            for (Scheduled scheduled : metadata.getSchedules()) {
-                if (!scheduled.identity().isBlank()) {
-                    identities.add(scheduled.identity());
-                }
-            }
-        }
-        Multi.createFrom().ticks().every(UPDATE_INTERVAL).subscribe().with(tick -> {
-            Scheduler s = scheduler.get();
-            JsonObject result = new JsonObject();
-            result.put("q_scheduler", s.isRunning());
-            for (String identity : identities) {
-                result.put(identity, !s.isPaused(identity));
-            }
-            runningStatus.onNext(result);
-        });
         return runningStatus;
     }
 
-    public JsonArray getScheduledMethods() {
-        JsonArray methodsJson = new JsonArray();
+    public JsonObject getData() {
         SchedulerContext c = context.get();
+        Scheduler s = scheduler.get();
+
+        JsonObject ret = new JsonObject();
+        ret.put("schedulerRunning", s.isRunning());
+
+        JsonArray methodsJson = new JsonArray();
+        ret.put("methods", methodsJson);
         for (ScheduledMethod metadata : c.getScheduledMethods()) {
             JsonObject methodJson = new JsonObject();
             methodJson.put("declaringClassName", metadata.getDeclaringClassName());
@@ -79,6 +105,7 @@ public class SchedulerJsonRPCService {
                 JsonObject scheduleJson = new JsonObject();
                 if (!schedule.identity().isBlank()) {
                     putConfigLookup("identity", schedule.identity(), scheduleJson);
+                    scheduleJson.put("running", !s.isPaused(schedule.identity()));
                 }
                 String cron = schedule.cron();
                 if (!cron.isBlank()) {
@@ -97,55 +124,47 @@ public class SchedulerJsonRPCService {
             methodJson.put("schedules", schedulesJson);
             methodsJson.add(methodJson);
         }
-        return methodsJson;
+        return ret;
     }
 
     public JsonObject pauseScheduler() {
         Scheduler s = scheduler.get();
         if (!s.isRunning()) {
-            return new JsonObject().put("success", false).put("message",
-                    "Scheduler is already paused");
+            return newFailure("Scheduler is already paused");
         }
         s.pause();
         LOG.info("Scheduler paused via Dev UI");
-        return new JsonObject().put("success", true).put("message",
-                "Scheduler was paused");
+        return newSuccess("Scheduler was paused");
     }
 
     public JsonObject resumeScheduler() {
         Scheduler s = scheduler.get();
         if (s.isRunning()) {
-            return new JsonObject().put("success", false).put("message",
-                    "Scheduler is already running");
+            return newFailure("Scheduler is already running");
         }
         s.resume();
         LOG.info("Scheduler resumed via Dev UI");
-        return new JsonObject().put("success", true).put("message",
-                "Scheduler was resumed");
+        return newSuccess("Scheduler was resumed");
     }
 
     public JsonObject pauseJob(String identity) {
         Scheduler s = scheduler.get();
         if (s.isPaused(identity)) {
-            return new JsonObject().put("success", false).put("message",
-                    "Job with identity " + identity + " is already paused");
+            return newFailure("Job with identity " + identity + " is already paused");
         }
         s.pause(identity);
         LOG.infof("Paused job with identity '%s' via Dev UI", identity);
-        return new JsonObject().put("success", true).put("message",
-                "Job with identity " + identity + " was paused");
+        return newSuccess("Job with identity " + identity + " was paused");
     }
 
     public JsonObject resumeJob(String identity) {
         Scheduler s = scheduler.get();
         if (!s.isPaused(identity)) {
-            return new JsonObject().put("success", false).put("message",
-                    "Job with identity " + identity + " is not paused");
+            return newFailure("Job with identity " + identity + " is not paused");
         }
         s.resume(identity);
         LOG.infof("Resumed job with identity '%s' via Dev UI", identity);
-        return new JsonObject().put("success", true).put("message",
-                "Job with identity " + identity + " was resumed");
+        return newSuccess("Job with identity " + identity + " was resumed");
     }
 
     public JsonObject executeJob(String methodDescription) {
@@ -181,11 +200,56 @@ public class SchedulerJsonRPCService {
                                     + metadata.getMethodDescription(),
                             e);
                 }
-                return new JsonObject().put("success", true).put("message",
-                        "Invoked scheduled method " + methodDescription + " via Dev UI");
+                return newSuccess("Invoked scheduled method " + methodDescription + " via Dev UI");
             }
         }
-        return new JsonObject().put("success", false).put("message", "Scheduled method not found " + methodDescription);
+        return newFailure("Scheduled method not found " + methodDescription);
+    }
+
+    private JsonObject newSuccess(String message) {
+        return new JsonObject()
+                .put("success", true)
+                .put("message", message);
+    }
+
+    private JsonObject newFailure(String message) {
+        return new JsonObject()
+                .put("success", false)
+                .put("message", message);
+    }
+
+    private JsonObject newRunningStatus(String id, boolean running) {
+        return new JsonObject()
+                .put("id", id)
+                .put("running", running);
+    }
+
+    private JsonObject newExecutionLog(Trigger trigger, boolean success, String message, boolean userDefinedIdentity) {
+        JsonObject log = new JsonObject()
+                .put("timestamp", LocalDateTime.now().toString())
+                .put("success", success);
+        if (userDefinedIdentity) {
+            log.put("triggerIdentity", trigger.getId());
+        }
+        String description = trigger.getMethodDescription();
+        if (description != null) {
+            log.put("triggerMethodDescription", description);
+        }
+        if (message != null) {
+            log.put("message", message);
+        }
+        return log;
+    }
+
+    private boolean isUserDefinedIdentity(String identity) {
+        for (ScheduledMethod metadata : context.get().getScheduledMethods()) {
+            for (Scheduled schedule : metadata.getSchedules()) {
+                if (identity.equals(schedule.identity())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void putConfigLookup(String key, String value, JsonObject scheduleJson) {

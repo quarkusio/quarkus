@@ -58,23 +58,28 @@ export class QwcSchedulerScheduledMethods extends LitElement {
     
     connectedCallback() {
         super.connectedCallback();
-        this.jsonRpc.getScheduledMethods()
+        this.jsonRpc.getData()
             .then(jsonResponse => {
-                this._scheduledMethods = jsonResponse.result;
+                this._scheduledMethods = jsonResponse.result.methods;
+                this._schedulerRunning = jsonResponse.result.schedulerRunning;
                 this._filteredScheduledMethods = this._scheduledMethods;
             })
             .then(() => {
                 this._runningStatusStream = this.jsonRpc.streamRunningStatus().onNext(jsonResponse => {
-                    this._schedulerRunning = jsonResponse.result["q_scheduler"];
-                    this._scheduledMethods =  this._scheduledMethods.map(scheduledMethod => {
-                    scheduledMethod.schedules.forEach(schedule => {
-                        if (schedule.identity) {
-                            schedule.running = jsonResponse.result[schedule.identity];
-                        }
-                        }); 
-                    return scheduledMethod; 
-                    });
-                    this._filteredScheduledMethods = this._scheduledMethods;
+                    const identity = jsonResponse.result.id;
+                    if (identity === "quarkus_scheduler") {
+                        this._schedulerRunning = jsonResponse.result["running"];
+                    } else {
+                        this._scheduledMethods =  this._scheduledMethods.map(sm => {
+                            sm.schedules.forEach(schedule => {
+                                if (schedule.identity === identity) {
+                                    schedule.running = jsonResponse.result["running"];
+                                }
+                                }); 
+                            return sm; 
+                            });
+                        this._filteredScheduledMethods = this._scheduledMethods;
+                    }
             }
         )}); 
     }
@@ -188,7 +193,6 @@ export class QwcSchedulerScheduledMethods extends LitElement {
     _pauseJob(identity) {
         this.jsonRpc.pauseJob({"identity": identity}).then(jsonResponse => {
             if (jsonResponse.result.success) {
-                this._updateIdentityStatus(identity, false);
                 notifier.showSuccessMessage(jsonResponse.result.message);
             } else {
                 notifier.showErrorMessage(jsonResponse.result.message);
@@ -199,7 +203,6 @@ export class QwcSchedulerScheduledMethods extends LitElement {
     _resumeJob(identity) {
         this.jsonRpc.resumeJob({"identity": identity}).then(jsonResponse => {
             if (jsonResponse.result.success) {
-                this._updateIdentityStatus(identity, true);
                 notifier.showSuccessMessage(jsonResponse.result.message);
             } else {
                 notifier.showErrorMessage(jsonResponse.result.message, "bottom-stretch");
@@ -210,7 +213,6 @@ export class QwcSchedulerScheduledMethods extends LitElement {
      _pauseScheduler() {
         this.jsonRpc.pauseScheduler().then(jsonResponse => {
             if (jsonResponse.result.success) {
-                this._schedulerRunning = false;
                 notifier.showSuccessMessage(jsonResponse.result.message);
             } else {
                 notifier.showErrorMessage(jsonResponse.result.message);
@@ -221,7 +223,6 @@ export class QwcSchedulerScheduledMethods extends LitElement {
     _resumeScheduler() {
         this.jsonRpc.resumeScheduler().then(jsonResponse => {
             if (jsonResponse.result.success) {
-                this._schedulerRunning = true;
                 notifier.showSuccessMessage(jsonResponse.result.message);
             } else {
                 notifier.showErrorMessage(jsonResponse.result.message);
@@ -237,17 +238,6 @@ export class QwcSchedulerScheduledMethods extends LitElement {
                 notifier.showErrorMessage(jsonResponse.result.message);
             }
         });
-    }
-    
-    _updateIdentityStatus(identity, running) {
-        this._filteredScheduledMethods =  this._filteredScheduledMethods.map(scheduledMethod => {
-               scheduledMethod.schedules.forEach(schedule => {
-                   if (schedule.identity === identity) {
-                       schedule.running = running;
-                   }
-               }); 
-               return scheduledMethod; 
-            });
     }
     
     _matchesTerm(scheduledMethod, searchTerm) {

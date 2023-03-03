@@ -39,4 +39,12 @@ public interface Trigger {
      */
     boolean isOverdue();
 
+    /**
+     *
+     * @return the method description or {@code null} for a trigger of a programmatically added job
+     */
+    default String getMethodDescription() {
+        return null;
+    }
+
 }

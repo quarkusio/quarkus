@@ -171,7 +171,7 @@ public class S2iProcessor {
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
     public void s2iBuildFromJar(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClientSupplier,
+            KubernetesClientBuildItem kubernetesClientBuilder,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
@@ -201,7 +201,7 @@ public class S2iProcessor {
                     "No Openshift manifests were generated so no s2i process will be taking place");
             return;
         }
-        try (KubernetesClient kubernetesClient = kubernetesClientSupplier.getClient().get()) {
+        try (KubernetesClient kubernetesClient = kubernetesClientBuilder.buildClient()) {
             String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
             LOG.info("Performing s2i binary build with jar on server: " + kubernetesClient.getMasterUrl()
                     + " in namespace:" + namespace + ".");
@@ -215,7 +215,7 @@ public class S2iProcessor {
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class, NativeBuild.class })
     public void s2iBuildFromNative(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClientSupplier,
+            KubernetesClientBuildItem kubernetesClientBuilder,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
@@ -234,7 +234,7 @@ public class S2iProcessor {
             return;
         }
 
-        try (KubernetesClient kubernetesClient = kubernetesClientSupplier.getClient().get()) {
+        try (KubernetesClient kubernetesClient = kubernetesClientBuilder.buildClient()) {
             String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
             LOG.info("Performing s2i binary build with native image on server: " + kubernetesClient.getMasterUrl()
                     + " in namespace:" + namespace + ".");

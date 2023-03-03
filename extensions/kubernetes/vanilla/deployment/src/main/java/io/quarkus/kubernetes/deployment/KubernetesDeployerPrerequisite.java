@@ -10,11 +10,13 @@ import io.quarkus.container.spi.FallbackContainerImageRegistryBuildItem;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 
 public class KubernetesDeployerPrerequisite {
 
     @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
     public void prepare(ContainerImageInfoBuildItem containerImage,
+            KubernetesClientBuildItem kubernetesClientBuilder,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             Optional<FallbackContainerImageRegistryBuildItem> fallbackRegistry,
             List<PreventImplicitContainerImagePushBuildItem> preventImplicitContainerImagePush,
@@ -23,7 +25,7 @@ public class KubernetesDeployerPrerequisite {
 
         // we don't want to throw an exception at this step and fail the build because it could prevent
         // the Kubernetes resources from being generated
-        if (!KubernetesDeploy.INSTANCE.checkSilently() || !selectedDeploymentTarget.isPresent()) {
+        if (!KubernetesDeploy.INSTANCE.checkSilently(kubernetesClientBuilder) || !selectedDeploymentTarget.isPresent()) {
             return;
         }
 

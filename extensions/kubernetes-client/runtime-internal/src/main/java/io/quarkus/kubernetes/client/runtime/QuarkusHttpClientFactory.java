@@ -2,6 +2,8 @@ package io.quarkus.kubernetes.client.runtime;
 
 import static io.vertx.core.spi.resolver.ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME;
 
+import java.io.Closeable;
+
 import jakarta.enterprise.inject.spi.CDI;
 
 import io.fabric8.kubernetes.client.Config;
@@ -10,17 +12,20 @@ import io.fabric8.kubernetes.client.vertx.VertxHttpClientBuilder;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 
-public class QuarkusHttpClientFactory implements HttpClient.Factory {
+public class QuarkusHttpClientFactory implements HttpClient.Factory, Closeable {
 
     private Vertx vertx;
+    private boolean closeVertxOnExit;
 
     public QuarkusHttpClientFactory() {
         // The client might get initialized outside a Quarkus context that can provide the Vert.x instance
         // This is the case for the MockServer / @KubernetesTestServer where the server provides the KubernetesClient instance
         try {
             this.vertx = CDI.current().select(Vertx.class).get();
+            this.closeVertxOnExit = false;
         } catch (Exception e) {
             this.vertx = createVertxInstance();
+            this.closeVertxOnExit = true;
         }
     }
 
@@ -58,5 +63,12 @@ public class QuarkusHttpClientFactory implements HttpClient.Factory {
     @Override
     public int priority() {
         return 1;
+    }
+
+    @Override
+    public void close() {
+        if (closeVertxOnExit) {
+            vertx.close();
+        }
     }
 }

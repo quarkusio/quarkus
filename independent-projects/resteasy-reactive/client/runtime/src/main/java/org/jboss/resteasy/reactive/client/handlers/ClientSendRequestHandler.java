@@ -39,6 +39,7 @@ import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.smallrye.mutiny.Multi;
@@ -482,6 +483,19 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         MultiMap multipartHeaders = multipartFormUpload.headers();
         for (String multipartHeader : multipartHeaders.names()) {
             headerMap.put(multipartHeader, multipartHeaders.getAll(multipartHeader));
+        }
+
+        if (state.getEntity().getVariant() != null) {
+            Variant v = state.getEntity().getVariant();
+            String variantContentType = v.getMediaType().toString();
+            String multipartContentType = headerMap.getFirst(HttpHeaders.CONTENT_TYPE);
+            if (multipartContentType.startsWith(HttpHeaderValues.MULTIPART_FORM_DATA.toString())
+                    && !variantContentType.startsWith(HttpHeaderValues.MULTIPART_FORM_DATA.toString())) {
+                // this is a total hack whose purpose is to allow the @Consumes annotation to override the media type
+                int semicolonIndex = multipartContentType.indexOf(';');
+                headerMap.put(HttpHeaders.CONTENT_TYPE,
+                        List.of(variantContentType + multipartContentType.substring(semicolonIndex)));
+            }
         }
 
         setVertxHeaders(httpClientRequest, headerMap);

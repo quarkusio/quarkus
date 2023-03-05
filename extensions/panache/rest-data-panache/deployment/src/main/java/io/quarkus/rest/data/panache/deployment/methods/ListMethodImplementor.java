@@ -11,7 +11,9 @@ import static io.quarkus.arc.processor.DotNames.SHORT;
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.gizmo.Type.classType;
 import static io.quarkus.gizmo.Type.intType;
+import static io.quarkus.gizmo.Type.parameterizedType;
 import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_INDEX;
 import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_SIZE;
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.param;
@@ -86,11 +88,11 @@ public class ListMethodImplementor extends StandardMethodImplementor {
      *         rel = "list",
      *         entityClassName = "com.example.Entity"
      *     )
-     *     public Response list(@QueryParam("page") @DefaultValue("0") int pageIndex,
-     *             &#64;QueryParam("size") @DefaultValue("20") int pageSize,
-     *             &#64;QueryParam("sort") String sortQuery) {
+     *     public Response list(&#64;QueryParam("page") &#64;DefaultValue("0") int pageIndex,
+     *             &#64;QueryParam("size") &#64;DefaultValue("20") int pageSize,
+     *             &#64;QueryParam("sort") List<String> sortQuery) {
      *         Page page = Page.of(pageIndex, pageSize);
-     *         Sort sort = ...; // Build a sort instance by parsing a query param
+     *         Sort sort = ...; // Build a sort instance from String entries of sortQuery
      *         try {
      *             List<Entity> entities = resource.getAll(page, sort);
      *             // Get the page count, and build first, last, next, previous page instances
@@ -117,11 +119,11 @@ public class ListMethodImplementor extends StandardMethodImplementor {
      *         rel = "list",
      *         entityClassName = "com.example.Entity"
      *     )
-     *     public Uni<Response> list(@QueryParam("page") @DefaultValue("0") int pageIndex,
-     *             &#64;QueryParam("size") @DefaultValue("20") int pageSize,
-     *             &#64;QueryParam("sort") String sortQuery) {
+     *     public Uni<Response> list(&#64;QueryParam("page") &#64;DefaultValue("0") int pageIndex,
+     *             &#64;QueryParam("size") &#64;DefaultValue("20") int pageSize,
+     *             &#64;QueryParam("sort") List<String> sortQuery) {
      *         Page page = Page.of(pageIndex, pageSize);
-     *         Sort sort = ...; // Build a sort instance by parsing a query param
+     *         Sort sort = ...; // Build a sort instance from String entries of sortQuery
      *         try {
      *             return resource.getAll(page, sort).map(entities -> {
      *                // Get the page count, and build first, last, next, previous page instances
@@ -177,7 +179,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         // Method parameters: sort strings, page index, page size, uri info
         Collection<SignatureMethodCreator.Parameter> compatibleFieldsForQuery = getFieldsToQuery(resourceMetadata);
         List<SignatureMethodCreator.Parameter> parameters = new ArrayList<>();
-        parameters.add(param("sort", List.class));
+        parameters.add(param("sort", List.class, parameterizedType(classType(List.class), classType(String.class))));
         parameters.add(param("page", int.class, intType()));
         parameters.add(param("size", int.class, intType()));
         parameters.add(param("uriInfo", UriInfo.class));
@@ -267,7 +269,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
             ResourceProperties resourceProperties, FieldDescriptor resourceFieldDescriptor) {
         Collection<SignatureMethodCreator.Parameter> compatibleFieldsForQuery = getFieldsToQuery(resourceMetadata);
         List<SignatureMethodCreator.Parameter> parameters = new ArrayList<>();
-        parameters.add(param("sort", List.class));
+        parameters.add(param("sort", List.class, parameterizedType(classType(List.class), classType(String.class))));
         parameters.add(param("namedQuery", String.class));
         parameters.addAll(compatibleFieldsForQuery);
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,

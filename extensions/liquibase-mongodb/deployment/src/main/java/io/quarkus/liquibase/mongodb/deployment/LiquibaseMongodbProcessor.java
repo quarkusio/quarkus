@@ -188,6 +188,11 @@ class LiquibaseMongodbProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.12.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.13.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.14.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.16.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.17.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.18.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.19.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "liquibase.build.properties"));

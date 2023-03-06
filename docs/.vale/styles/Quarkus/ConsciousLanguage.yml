@@ -10,5 +10,5 @@ action:
 swap:
   blacklist: blocklist
   whitelist: allowlist
-  master: primary|source|initiator|requester|controller|host|director
-  slave: secondary|replica|responder|device|worker|proxy|performer
+  master(?! broker): primary|source|initiator|requester|controller|host|director|supplier
+  slave(?! broker): secondary|replica|responder|device|worker|proxy|performer|consumer

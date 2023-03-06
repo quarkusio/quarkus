@@ -33,6 +33,7 @@ import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
+import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -253,8 +254,37 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             runtimeSettingsBuilder.put(entry.getKey(), entry.getValue());
         }
 
-        RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
-        return runtimeSettings;
+        var databaseOrmCompatibilityVersion = buildTimeSettings.getDatabaseOrmCompatibilityVersion();
+        var databaseOrmCompatibilitySettings = buildTimeSettings.getDatabaseOrmCompatibilitySettings();
+        if (databaseOrmCompatibilityVersion != DatabaseOrmCompatibilityVersion.LATEST) {
+            log.warnf("Persistence-unit [%1$s]: enabling best-effort backwards compatibility with '%2$s=%3$s'."
+                    + " Quarkus will attempt to change the behavior and expected schema of Hibernate ORM"
+                    + " to match those of Hibernate ORM %3$s."
+                    + " This is an inherently best-effort feature that cannot address all "
+                    + " backwards-incompatible changes of Hibernate ORM 6."
+                    + " It is also inherently unstable and may stop working in future versions of Quarkus."
+                    + " Consider migrating your application to native Hibernate ORM 6 behavior;"
+                    + " see https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration for more information.",
+                    persistenceUnitName,
+                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "database.orm-compatibility.version"),
+                    databaseOrmCompatibilityVersion.externalRepresentation,
+                    persistenceUnitConfig.unsupportedProperties.keySet());
+        }
+        for (Map.Entry<String, String> entry : databaseOrmCompatibilitySettings.entrySet()) {
+            var key = entry.getKey();
+            var value = entry.getValue();
+            if (!runtimeSettingsBuilder.isConfigured(key)) {
+                log.warnf("Persistence-unit [%1$s] - %2$s compatibility: setting '%3$s=%4$s'."
+                        + " This affects Hibernate ORM's behavior and schema compatibility"
+                        + " and may stop working in future versions of Quarkus.",
+                        persistenceUnitName,
+                        databaseOrmCompatibilityVersion.externalRepresentation,
+                        key, value);
+                runtimeSettingsBuilder.put(key, value);
+            }
+        }
+
+        return runtimeSettingsBuilder.build();
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings, RecordedState rs,

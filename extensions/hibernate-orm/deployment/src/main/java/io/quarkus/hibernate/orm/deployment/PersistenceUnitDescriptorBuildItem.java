@@ -11,6 +11,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
+import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 
@@ -29,35 +30,43 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     // use the name "<default>", so we need to convert between those.
     private final String configurationName;
     private final Optional<String> dataSource;
+    private final Optional<String> dbKind;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final String multiTenancySchemaDataSource;
     private final List<RecordableXmlMapping> xmlMappings;
     private final Map<String, String> quarkusConfigUnsupportedProperties;
+    private final DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
 
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String configurationName,
+            Optional<String> dbKind,
             List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
+            DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
             boolean isReactive, boolean fromPersistenceXml) {
         this(descriptor, configurationName,
-                Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME), MultiTenancyStrategy.NONE, null,
-                xmlMappings, quarkusConfigUnsupportedProperties, isReactive, fromPersistenceXml);
+                Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME), dbKind, MultiTenancyStrategy.NONE, null,
+                xmlMappings, quarkusConfigUnsupportedProperties, databaseOrmCompatibilityVersion,
+                isReactive, fromPersistenceXml);
     }
 
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String configurationName,
-            Optional<String> dataSource,
+            Optional<String> dataSource, Optional<String> dbKind,
             MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
+            DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
             boolean isReactive, boolean fromPersistenceXml) {
         this.descriptor = descriptor;
         this.configurationName = configurationName;
         this.dataSource = dataSource;
+        this.dbKind = dbKind;
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
         this.xmlMappings = xmlMappings;
         this.quarkusConfigUnsupportedProperties = quarkusConfigUnsupportedProperties;
+        this.databaseOrmCompatibilityVersion = databaseOrmCompatibilityVersion;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
     }
@@ -100,8 +109,9 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
-        return new QuarkusPersistenceUnitDefinition(descriptor, configurationName, dataSource, multiTenancyStrategy,
-                xmlMappings,
-                quarkusConfigUnsupportedProperties, isReactive, fromPersistenceXml, integrationStaticDescriptors);
+        return new QuarkusPersistenceUnitDefinition(descriptor, configurationName, dataSource, dbKind,
+                multiTenancyStrategy, xmlMappings,
+                quarkusConfigUnsupportedProperties, databaseOrmCompatibilityVersion,
+                isReactive, fromPersistenceXml, integrationStaticDescriptors);
     }
 }

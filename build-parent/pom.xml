@@ -170,6 +170,7 @@
         <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
 
         <surefire.argLine.additional></surefire.argLine.additional>
+        <failsafe.argLine.additional>${surefire.argLine.additional}</failsafe.argLine.additional>
         <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
 
         <!-- google cloud functions invoker-->
@@ -460,7 +461,7 @@
                             <project.groupId>${project.groupId}</project.groupId>
                         </systemPropertyVariables>
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
-                        <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
+                        <argLine>-Djava.io.tmpdir="${project.build.directory}" ${failsafe.argLine.additional}</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>

@@ -382,17 +382,21 @@ public final class HibernateOrmProcessor {
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             ParsedPersistenceXmlDescriptor xmlDescriptor = persistenceXmlDescriptorBuildItem.getDescriptor();
+            Optional<JdbcDataSourceBuildItem> jdbcDataSource = jdbcDataSources.stream()
+                    .filter(i -> i.isDefault())
+                    .findFirst();
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(xmlDescriptor,
                             xmlDescriptor.getName(),
                             Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                            jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
                             getMultiTenancyStrategy(Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             Collections.emptyMap(),
-                            false,
-                            true));
+                            hibernateOrmConfig.databaseOrmCompatibilityVersion,
+                            false, true));
         }
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
@@ -1196,10 +1200,12 @@ public final class HibernateOrmProcessor {
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor, descriptor.getName(),
                         jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
+                        jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
                         multiTenancyStrategy,
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
                         persistenceUnitConfig.unsupportedProperties,
+                        hibernateOrmConfig.databaseOrmCompatibilityVersion,
                         false, false));
     }
 

@@ -27,6 +27,7 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.orm.config.SettingsSpyingIdentifierGenerator;
 import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.QuarkusUnitTest;
@@ -211,7 +212,7 @@ public class UnsupportedPropertiesTest {
     public static class SpyingIdentifierGeneratorEntity {
         @Id
         @GeneratedValue(generator = "spying-generator")
-        @GenericGenerator(name = "spying-generator", strategy = "io.quarkus.hibernate.orm.config.unsupportedproperties.SettingsSpyingIdentifierGenerator")
+        @GenericGenerator(name = "spying-generator", strategy = "io.quarkus.hibernate.orm.config.SettingsSpyingIdentifierGenerator")
         private Long id;
 
         public SpyingIdentifierGeneratorEntity() {

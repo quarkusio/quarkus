@@ -57,6 +57,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         command.add(getGradleWrapperCommand());
         command.addAll(getSytemProperties());
         command.add("-Dorg.gradle.console=plain");
+        command.add("-Dorg.gradle.daemon=false");
         command.add("--stacktrace");
         command.add("--info");
         command.addAll(Arrays.asList(args));

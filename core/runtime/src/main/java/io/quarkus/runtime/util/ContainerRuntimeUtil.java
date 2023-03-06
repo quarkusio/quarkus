@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -80,31 +81,37 @@ public final class ContainerRuntimeUtil {
 
     private static boolean getRootlessStateFor(ContainerRuntime containerRuntime) {
         Process rootlessProcess = null;
+        ProcessBuilder pb = null;
         try {
-            ProcessBuilder pb = new ProcessBuilder(containerRuntime.getExecutableName(), "info")
-                    .redirectErrorStream(true);
+            pb = new ProcessBuilder(containerRuntime.getExecutableName(), "info").redirectErrorStream(true);
             rootlessProcess = pb.start();
             int exitCode = rootlessProcess.waitFor();
             if (exitCode != 0) {
                 log.warnf("Command \"%s\" exited with error code %d. " +
-                        "Rootless container runtime detection might not be reliable.",
-                        containerRuntime.getExecutableName(), exitCode);
+                        "Rootless container runtime detection might not be reliable or the container service is not running at all.",
+                        String.join(" ", pb.command()), exitCode);
             }
             try (InputStream inputStream = rootlessProcess.getInputStream();
                     InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                     BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
-                Predicate<String> stringPredicate;
-                // Docker includes just "rootless" under SecurityOptions, while podman includes "rootless: <boolean>"
-                if (containerRuntime == ContainerRuntime.DOCKER) {
-                    stringPredicate = line -> line.trim().equals("rootless");
+                if (exitCode != 0) {
+                    log.debugf("Command \"%s\" output: %s", String.join(" ", pb.command()),
+                            bufferedReader.lines().collect(Collectors.joining(System.lineSeparator())));
+                    return false;
                 } else {
-                    stringPredicate = line -> line.trim().equals("rootless: true");
+                    Predicate<String> stringPredicate;
+                    // Docker includes just "rootless" under SecurityOptions, while podman includes "rootless: <boolean>"
+                    if (containerRuntime == ContainerRuntime.DOCKER) {
+                        stringPredicate = line -> line.trim().equals("rootless");
+                    } else {
+                        stringPredicate = line -> line.trim().equals("rootless: true");
+                    }
+                    return bufferedReader.lines().anyMatch(stringPredicate);
                 }
-                return bufferedReader.lines().anyMatch(stringPredicate);
             }
         } catch (IOException | InterruptedException e) {
             // If an exception is thrown in the process, assume we are not running rootless (default docker installation)
-            log.debugf(e, "Failure to read info output from %s", containerRuntime.getExecutableName());
+            log.debugf(e, "Failure to read info output from %s", String.join(" ", pb.command()));
             return false;
         } finally {
             if (rootlessProcess != null) {

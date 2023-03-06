@@ -10,8 +10,17 @@ import java.util.stream.Collectors;
 import org.hibernate.cfg.AvailableSettings;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.runtime.annotations.ConfigDocEnumValue;
 
 public enum DatabaseOrmCompatibilityVersion {
+    /**
+     * **Best-effort** compatibility with a database schema and data
+     * meant for Hibernate ORM 5.6,
+     * even though the version of Hibernate ORM shipped with Quarkus is different.
+     *
+     * @asciidoclet
+     */
+    @ConfigDocEnumValue("5.6")
     V5_6("5.6") {
         @Override
         public Map<String, String> settings(Optional<String> dbKind) {
@@ -43,6 +52,15 @@ public enum DatabaseOrmCompatibilityVersion {
             return result;
         }
     },
+    /**
+     * No particular effort on compatibility:
+     * just assume the database schema and data are compatible
+     * with the "latest" version of Hibernate ORM,
+     * i.e. the version shipped with Quarkus.
+     *
+     * @asciidoclet
+     */
+    @ConfigDocEnumValue("latest")
     LATEST("latest") {
         @Override
         public Map<String, String> settings(Optional<String> dbKind) {
@@ -60,6 +78,12 @@ public enum DatabaseOrmCompatibilityVersion {
 
     DatabaseOrmCompatibilityVersion(String externalRepresentation) {
         this.externalRepresentation = externalRepresentation;
+    }
+
+    @Override
+    public String toString() {
+        // Necessary for proper rendering in the documentation
+        return externalRepresentation;
     }
 
     public abstract Map<String, String> settings(Optional<String> dbKind);

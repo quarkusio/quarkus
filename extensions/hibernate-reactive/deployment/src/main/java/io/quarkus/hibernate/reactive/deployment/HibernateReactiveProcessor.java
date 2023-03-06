@@ -166,7 +166,7 @@ public final class HibernateReactiveProcessor {
                     PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, dbKindOptional,
                     jpaModel.getXmlMappings(reactivePU.getName()),
                     persistenceUnitConfig.unsupportedProperties,
-                    hibernateOrmConfig.databaseOrmCompatibilityVersion,
+                    hibernateOrmConfig.database.ormCompatibilityVersion,
                     true, false));
         }
 

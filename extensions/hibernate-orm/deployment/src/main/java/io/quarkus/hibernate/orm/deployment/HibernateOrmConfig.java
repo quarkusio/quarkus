@@ -29,31 +29,11 @@ public class HibernateOrmConfig {
     public boolean enabled;
 
     /**
-     * When set, attempts to exchange data with the database
-     * as the given version of Hibernate ORM would have,
-     * *on a best-effort basis*.
-     *
-     * Please note:
-     *
-     * * schema validation may still fail in some cases:
-     * this attempts to make Hibernate ORM 6+ behave correctly at runtime,
-     * but it may still expect a different (but runtime-compatible) schema.
-     * * robust test suites are still useful and recommended:
-     * you should still check that your application behaves as intended with your legacy schema.
-     * * this feature is inherently unstable:
-     * some aspects of it may stop working in future versions of Quarkus,
-     * and older versions will be dropped as Hibernate ORM changes pile up
-     * and support for those older versions becomes too unreliable.
-     * * you should still plan a migration of your schema to a newer version of Hibernate ORM.
-     * For help with migration, refer to
-     * link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[the Quarkus 3
-     * migration guide from Hibernate ORM 5 to 6].
-     *
-     * @asciidoclet
+     * Database related configuration.
      */
-    @ConfigItem(name = "database.orm-compatibility.version", defaultValue = "LATEST")
-    @ConvertWith(DatabaseOrmCompatibilityVersion.Converter.class)
-    public DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
+    @ConfigItem
+    @ConfigDocSection
+    public HibernateOrmConfigDatabase database;
 
     /**
      * Configuration for the default persistence unit.
@@ -159,4 +139,35 @@ public class HibernateOrmConfig {
             return bindParam || bindParameters;
         }
     }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigDatabase {
+        /**
+         * When set, attempts to exchange data with the database
+         * as the given version of Hibernate ORM would have,
+         * *on a best-effort basis*.
+         *
+         * Please note:
+         *
+         * * schema validation may still fail in some cases:
+         * this attempts to make Hibernate ORM 6+ behave correctly at runtime,
+         * but it may still expect a different (but runtime-compatible) schema.
+         * * robust test suites are still useful and recommended:
+         * you should still check that your application behaves as intended with your legacy schema.
+         * * this feature is inherently unstable:
+         * some aspects of it may stop working in future versions of Quarkus,
+         * and older versions will be dropped as Hibernate ORM changes pile up
+         * and support for those older versions becomes too unreliable.
+         * * you should still plan a migration of your schema to a newer version of Hibernate ORM.
+         * For help with migration, refer to
+         * link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[the Quarkus 3
+         * migration guide from Hibernate ORM 5 to 6].
+         *
+         * @asciidoclet
+         */
+        @ConfigItem(name = "orm-compatibility.version", defaultValue = "latest")
+        @ConvertWith(DatabaseOrmCompatibilityVersion.Converter.class)
+        public DatabaseOrmCompatibilityVersion ormCompatibilityVersion;
+    }
+
 }

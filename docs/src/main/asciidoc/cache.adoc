@@ -687,21 +687,21 @@ public class CacheConfigManager {
     public void setExpireAfterAccess(String cacheName, Duration duration) {
         Optional<Cache> cache = cacheManager.getCache(cacheName);
         if (cache.isPresent()) {
-            cache.as(CaffeineCache.class).setExpireAfterAccess(duration); <1>
+            cache.get().as(CaffeineCache.class).setExpireAfterAccess(duration); <1>
         }
     }
 
     public void setExpireAfterWrite(String cacheName, Duration duration) {
         Optional<Cache> cache = cacheManager.getCache(cacheName);
         if (cache.isPresent()) {
-            cache.as(CaffeineCache.class).setExpireAfterWrite(duration); <2>
+            cache.get().as(CaffeineCache.class).setExpireAfterWrite(duration); <2>
         }
     }
 
     public void setMaximumSize(String cacheName, long maximumSize) {
         Optional<Cache> cache = cacheManager.getCache(cacheName);
         if (cache.isPresent()) {
-            cache.as(CaffeineCache.class).setMaximumSize(maximumSize); <3>
+            cache.get().as(CaffeineCache.class).setMaximumSize(maximumSize); <3>
         }
     }
 }

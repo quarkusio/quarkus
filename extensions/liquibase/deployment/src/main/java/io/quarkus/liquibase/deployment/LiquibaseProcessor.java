@@ -123,7 +123,8 @@ class LiquibaseProcessor {
                 .build());
 
         reflective.produce(ReflectiveClassBuildItem
-                .builder("liquibase.command.LiquibaseCommandFactory", liquibase.command.CommandFactory.class.getName())
+                .builder("liquibase.command.LiquibaseCommandFactory",
+                        liquibase.command.CommandFactory.class.getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
@@ -143,7 +144,8 @@ class LiquibaseProcessor {
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
                 liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName(),
-                liquibase.resource.PathHandlerFactory.class.getName())
+                liquibase.resource.PathHandlerFactory.class.getName(),
+                liquibase.logging.mdc.MdcManagerFactory.class.getName())
                 .constructors().methods().fields().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
@@ -162,7 +164,7 @@ class LiquibaseProcessor {
         }
         reflective.produce(
                 ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty.toArray(new String[0]))
-                .constructors().methods().fields().build());
+                        .constructors().methods().fields().build());
 
         Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
                 .map(JdbcDataSourceBuildItem::getName)
@@ -193,7 +195,8 @@ class LiquibaseProcessor {
                 liquibase.snapshot.SnapshotGenerator.class,
                 liquibase.sqlgenerator.SqlGenerator.class,
                 liquibase.structure.DatabaseObject.class,
-                liquibase.hub.HubService.class)
+                liquibase.hub.HubService.class,
+                liquibase.logging.mdc.MdcManager.class)
                 .forEach(t -> consumeService(t, (serviceClass, implementations) -> {
                     services.produce(
                             new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));

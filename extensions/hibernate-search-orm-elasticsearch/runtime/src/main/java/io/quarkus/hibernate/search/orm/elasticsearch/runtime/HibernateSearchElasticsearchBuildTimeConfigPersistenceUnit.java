@@ -29,7 +29,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     ElasticsearchNamedBackendsBuildTimeConfig namedBackends;
 
     /**
-     * A <<bean-reference-note-anchor,bean reference>> to a component
+     * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to a component
      * that should be notified of any failure occurring in a background process
      * (mainly index operations).
      *
@@ -174,12 +174,13 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     @ConfigGroup
     public static class AnalysisConfig {
         /**
-         * A <<bean-reference-note-anchor,bean reference>> to the component
+         * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
          * used to configure full text analysis (e.g. analyzers, normalizers).
          *
          * The referenced bean must implement `ElasticsearchAnalysisConfigurer`.
          *
-         * See <<analysis-configurer>> for more information.
+         * See xref:hibernate-search-orm-elasticsearch.adoc#analysis-configurer[Setting up the analyzers] for more
+         * information.
          *
          * [NOTE]
          * ====
@@ -198,7 +199,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     @ConfigGroup
     public static class LayoutConfig {
         /**
-         * A <<bean-reference-note-anchor,bean reference>> to the component
+         * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
          * used to configure layout (e.g. index names, index aliases).
          *
          * The referenced bean must implement `IndexLayoutStrategy`.
@@ -239,7 +240,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * The strategy to use for coordinating between threads or even separate instances of the application,
          * in particular in automatic indexing.
          *
-         * See <<coordination>> for more information.
+         * See xref:hibernate-search-orm-elasticsearch.adoc#coordination[coordination] for more information.
          *
          * @asciidoclet
          */

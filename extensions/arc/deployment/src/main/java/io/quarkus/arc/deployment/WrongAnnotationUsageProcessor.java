@@ -13,7 +13,9 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassInfo.NestingType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.Annotations;
@@ -72,34 +74,65 @@ public class WrongAnnotationUsageProcessor {
             NestingType nestingType = clazz.nestingType();
             if (NestingType.ANONYMOUS == nestingType || NestingType.LOCAL == nestingType
                     || (NestingType.INNER == nestingType && !Modifier.isStatic(clazz.flags()))) {
-                // Annotations declared on the class, incl. the annotations added via transformers
-                Collection<AnnotationInstance> classAnnotations = transformedAnnotations.getAnnotations(clazz);
-                if (classAnnotations.isEmpty() && clazz.annotationsMap().isEmpty()) {
-                    continue;
-                }
-                if (scopeAnnotations.isScopeIn(classAnnotations)) {
+                // Annotations declared on the class level, incl. the annotations added via transformers
+                Collection<AnnotationInstance> classLevelAnnotations = transformedAnnotations.getAnnotations(clazz);
+                if (scopeAnnotations.isScopeIn(classLevelAnnotations)) {
                     validationErrors.produce(new ValidationErrorBuildItem(
                             new IllegalStateException(String.format(
                                     "The %s class %s has a scope annotation but it must be ignored per the CDI rules",
                                     clazz.nestingType().toString(), clazz.name().toString()))));
-                } else if (clazz.annotationsMap().containsKey(DotNames.OBSERVES)) {
-                    validationErrors.produce(new ValidationErrorBuildItem(
-                            new IllegalStateException(String.format(
-                                    "The %s class %s declares an observer method but it must be ignored per the CDI rules",
-                                    clazz.nestingType().toString(), clazz.name().toString()))));
-                } else if (clazz.annotationsMap().containsKey(DotNames.PRODUCES)) {
-                    validationErrors.produce(new ValidationErrorBuildItem(
-                            new IllegalStateException(String.format(
-                                    "The %s class %s declares a producer but it must be ignored per the CDI rules",
-                                    clazz.nestingType().toString(), clazz.name().toString()))));
-                } else if (Annotations.containsAny(classAnnotations, interceptorResolverBuildItem.getInterceptorBindings())
-                        || Annotations.containsAny(clazz.annotations(),
-                                interceptorResolverBuildItem.getInterceptorBindings())) {
-                    // detect interceptor bindings on nested classes
+                } else if (Annotations.containsAny(classLevelAnnotations,
+                        interceptorResolverBuildItem.getInterceptorBindings())) {
+                    // detect interceptor bindings declared at nested class level
                     validationErrors.produce(new ValidationErrorBuildItem(
                             new IllegalStateException(String.format(
                                     "The %s class %s declares an interceptor binding but it must be ignored per CDI rules",
                                     clazz.nestingType().toString(), clazz.name().toString()))));
+                }
+
+                // iterate over methods and verify those
+                // note that since JDK 16, you can have static method inside inner non-static class
+                for (MethodInfo methodInfo : clazz.methods()) {
+                    // annotations declared on method level, incl. the annotations added via transformers
+                    Collection<AnnotationInstance> methodAnnotations = transformedAnnotations.getAnnotations(methodInfo);
+                    if (methodAnnotations.isEmpty()) {
+                        continue;
+                    }
+                    if (Annotations.contains(methodAnnotations, DotNames.OBSERVES)
+                            || Annotations.contains(methodAnnotations, DotNames.OBSERVES_ASYNC)) {
+                        validationErrors.produce(new ValidationErrorBuildItem(
+                                new IllegalStateException(String.format(
+                                        "The method %s in the %s class %s declares an observer method but it must be ignored per the CDI rules",
+                                        methodInfo.name(), clazz.nestingType().toString(), clazz.name().toString()))));
+                    } else if (Annotations.contains(methodAnnotations, DotNames.PRODUCES)) {
+                        validationErrors.produce(new ValidationErrorBuildItem(
+                                new IllegalStateException(String.format(
+                                        "The method %s in the %s class %s declares a producer but it must be ignored per the CDI rules",
+                                        methodInfo.name(), clazz.nestingType().toString(), clazz.name().toString()))));
+                    } else if (!Modifier.isStatic(methodInfo.flags()) && Annotations.containsAny(methodAnnotations,
+                            interceptorResolverBuildItem.getInterceptorBindings())) {
+                        // detect interceptor bindings declared at nested class methods
+                        validationErrors.produce(new ValidationErrorBuildItem(
+                                new IllegalStateException(String.format(
+                                        "The method %s in the %s class %s declares an interceptor binding but it must be ignored per CDI rules",
+                                        methodInfo.name(), clazz.nestingType().toString(), clazz.name().toString()))));
+                    }
+
+                }
+
+                // iterate over all fields, check for incorrect producer declarations
+                for (FieldInfo fieldInfo : clazz.fields()) {
+                    // annotations declared on field level, incl. the annotations added via transformers
+                    Collection<AnnotationInstance> fieldAnnotations = transformedAnnotations.getAnnotations(fieldInfo);
+                    if (fieldAnnotations.isEmpty()) {
+                        continue;
+                    }
+                    if (Annotations.contains(fieldAnnotations, DotNames.PRODUCES)) {
+                        validationErrors.produce(new ValidationErrorBuildItem(
+                                new IllegalStateException(String.format(
+                                        "The field %s in the %s class %s declares a producer but it must be ignored per the CDI rules",
+                                        fieldInfo.name(), clazz.nestingType().toString(), clazz.name().toString()))));
+                    }
                 }
             }
         }

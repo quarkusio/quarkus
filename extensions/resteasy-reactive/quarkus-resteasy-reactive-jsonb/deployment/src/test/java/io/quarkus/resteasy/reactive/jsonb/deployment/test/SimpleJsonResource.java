@@ -104,8 +104,8 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Consumes(MediaType.APPLICATION_JSON)
     public Person personTest(Person person) {
         //large requests should get bumped from the IO thread
-        if (!BlockingOperationControl.isBlockingAllowed()) {
-            throw new RuntimeException("should have dispatched");
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should have dispatched back to event loop");
         }
         return person;
     }

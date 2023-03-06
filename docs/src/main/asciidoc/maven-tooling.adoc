@@ -102,10 +102,10 @@ include::{includes}/devtools/extension-add.adoc[]
 
 Extensions are passed using a comma-separated list.
 
-The extension name is the GAV name of the extension: e.g. `io.quarkus:quarkus-agroal`.
-But you can pass a partial name and Quarkus will do its best to find the right extension.
-For example, `agroal`, `Agroal` or `agro`  will expand to `io.quarkus:quarkus-agroal`.
-If no extension is found or if more than one extension matches, you will see a red check mark  ❌ in the command result.
+The extension name is the GAV name of the extension: e.g., `io.quarkus:quarkus-agroal`.
+However, you can pass a partial name, and Quarkus will do its best to find the right extension.
+For example, `agroal`, `Agroal`, or `agro` will expand to `io.quarkus:quarkus-agroal`.
+If no extension is found or more than one extension matches, you will see a red check mark ❌ in the command result.
 
 [source,shell]
 ----
@@ -133,12 +133,9 @@ The Quarkus Maven plugin makes use of `javac`,
 and by default it picks up compiler flags to pass to
 `javac` from `maven-compiler-plugin`.
 
-If you need to customize the compiler flags used by the plugin (for instance in <<dev-mode,development mode>>),
-add a `configuration` section to the `plugin` block and set the
-`compilerArgs` property just as you would when configuring
-`maven-compiler-plugin`.  You can also set `source`, `target`, and
-`jvmArgs`.  For example, to pass `--enable-preview` to both the JVM
-and `javac`:
+If you need to customize the compiler flags used by the plugin, like in xref:dev-mode[development mode], add a `configuration` section to the `plugin` block and set the `compilerArgs` property just as you would when configuring `maven-compiler-plugin`.
+You can also set `source`, `target`, and `jvmArgs`.
+For example, to pass `--enable-preview` to both the JVM and `javac`:
 
 [source,xml]
 ----
@@ -298,7 +295,7 @@ Then, attach your debugger to `localhost:5005`.
 
 == Import in your IDE
 
-Once you have a <<project-creation, project generated>>, you can import it in your favorite IDE.
+Once you have a xref:project-creation[project generated], you can import it in your favorite IDE.
 The only requirement is the ability to import a Maven project.
 
 **Eclipse**
@@ -395,7 +392,7 @@ This goal will resolve all the runtime, build time, test and dev mode dependenci
 Native executables make Quarkus applications ideal for containers and serverless workloads.
 
 Make sure to have `GRAALVM_HOME` configured and pointing to the latest release of GraalVM version {graalvm-version}.
-Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
+Verify that your `pom.xml` has the proper `native` profile as shown in xref:build-tool-maven[].
 
 Create a native executable using:
 
@@ -403,7 +400,7 @@ include::{includes}/devtools/build-native.adoc[]
 
 A native executable will be present in `target/`.
 
-To run Integration Tests on the native executable, make sure to have the proper Maven plugin configured (see <<build-tool-maven>>) and launch the `verify` goal.
+To run Integration Tests on the native executable, make sure to have the proper xref:build-tool-maven[Maven plugin configured] and launch the `verify` goal.
 
 [source,shell]
 ----
@@ -445,7 +442,7 @@ To create an executable that will run in a container, use the following:
 include::{includes}/devtools/build-native.adoc[]
 :!build-additional-parameters:
 
-The produced executable will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
+The produced executable will be a 64-bit Linux executable, so depending on your operating system, it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
 Note that in this case the build itself runs in a Docker container too, so you don't need to have GraalVM installed locally.
 
@@ -465,7 +462,7 @@ You can follow the xref:building-native-image.adoc[Build a native executable gui
 [[build-tool-maven]]
 == Maven configuration
 
-If you have not used <<project-creation,project scaffolding>>, add the following elements in your `pom.xml`
+If you have not used xref:project-creation[project scaffolding], add the following elements in your `pom.xml`:
 
 [source,xml,subs=attributes+]
 ----

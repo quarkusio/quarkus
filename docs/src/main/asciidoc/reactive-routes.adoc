@@ -876,9 +876,9 @@ paths:
 === Using Swagger UI
 
 Swagger UI is included by default when running in `dev` or `test` mode, and can optionally be added to `prod` mode.
-See <<openapi-swaggerui.adoc#dev-mode,the Swagger UI>> Guide for more details.
+For more information, see the xref:openapi-swaggerui.adoc#dev-mode[Swagger UI] guide.
 
-Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:
+Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and observe the Swagger UI screen:
 
 image:reactive-routes-guide-screenshot01.png[alt=Swagger UI]
 

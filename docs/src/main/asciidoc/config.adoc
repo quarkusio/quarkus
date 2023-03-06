@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :summary: Hardcoded values in your code is a no go (even if we all did it at some point ;-)). In this guide, we learn how to configure your application.
 
 IMPORTANT: The content of this guide and been revised and split into additional topics. Please check the
-<<additional-information,Additional Information>> section.
+xref:additional-information[Additional Information] section.
 
 
 Hardcoded values in your code are a _no-go_ (even if we all did it at some point ;-)).
@@ -48,8 +48,9 @@ It generates:
 A Quarkus application uses the https://github.com/smallrye/smallrye-config[SmallRye Config] API to provide all
 mechanisms related with configuration.
 
-By default, Quarkus reads configuration properties from <<config-reference.adoc#configuration-sources,several sources>>.
+By default, Quarkus reads configuration properties from xref:config-reference.adoc#configuration-sources[several sources].
 For the purpose of this guide, we will use an application configuration file located in `src/main/resources/application.properties`.
+
 Edit the file with the following content:
 
 .application.properties

@@ -17,9 +17,9 @@ The API combines both the imperative and the non-blocking reactive style of codi
 In the development mode, all files located in the `src/main/resources/templates` folder are watched for changes and modifications are immediately visible in your application.
 Furthermore, Qute attempts to detect most of the template problems at build time and fail fast.
 
-In this guide, you will find an <<hello_world_example,introductory example>>, the description of the <<core_features,core features>> and <<quarkus_integration,Quarkus integration>> details.
+In this guide, you will find an xref:hello_world_example[introductory example], the description of the xref:core_features[core features] and xref:quarkus_integration[Quarkus integration] details.
 
-NOTE: Qute is primarily designed as a Quarkus extension. It is possible to use it as a "standalone" library too. However, in such case some features are not available. In general, any feature mentioned under the <<quarkus_integration>> section is missing. You can find more information about the limitations and possibilities in the <<standalone>> section.
+NOTE: Qute is primarily designed as a Quarkus extension. It is possible to use it as a "standalone" library too. However, in such case some features are not available. In general, any feature mentioned under the xref:quarkus_integration[] section is missing. You can find more information about the limitations and possibilities in the xref:standalone[] section.
 
 [[the_simplest_example]]
 == The Simplest Example
@@ -46,9 +46,10 @@ Qute.fmt("I am {#if ok}happy{#else}sad{/if}!", Map.of("ok", true)); <5>
 <2> You can provide a data map instead.
 <3> A builder-like API is available for more complex formatting requirements.
 <4> Note that for a "text/html" template the special chars are replaced with html entities by default.
-<5> You can use any <<basic-building-blocks,building block>> in the template. In this case, the <<if_section>> is used to render the appropriate part of the message based on the input data.
+<5> You can use any xref:basic-building-blocks[building block] in the template.
+In this case, the xref:if_section[] is used to render the appropriate part of the message based on the input data.
 
-TIP: In <<quarkus_integration,Quarkus>>, the engine used to format the messages is the same as the one injected by `@Inject Engine`. Therefore, you can make use of any Quarkus-specific integration feature such as <<template_extension_methods>>, <<injecting-beans-directly-in-templates>> or even <<type-safe-message-bundles>>.
+TIP: Based on xref:quarkus_integration[Quarkus integration], the engine used to format the messages is the same as the one injected by `@Inject Engine`. Therefore, you can make use of any Quarkus-specific integration feature such as xref:template_extension_methods[], xref:injecting-beans-directly-in-templates[] or even xref:type-safe-message-bundles[].
 
 
 The format object returned by the `Qute.fmt(String)` method can be evaluated lazily and used e.g. as a log message:
@@ -89,7 +90,7 @@ Let's use the convenient builder:
 Engine engine = Engine.builder().addDefaults().build();
 ----
 
-TIP: In Quarkus, there is a preconfigured `Engine` available for injection - see <<quarkus_integration>>.
+TIP: In Quarkus, there is a preconfigured `Engine` available for injection - see xref:quarkus_integration[].
 
 Once we have an `Engine` instance we could parse the template contents:
 
@@ -98,7 +99,7 @@ Once we have an `Engine` instance we could parse the template contents:
 Template hello = engine.parse(helloHtmlContent);
 ----
 
-TIP: In Quarkus, you can simply inject the template definition. The template is automatically parsed and cached - see <<quarkus_integration>>.
+TIP: In Quarkus, you can simply inject the template definition. The template is automatically parsed and cached - see xref:quarkus_integration[].
 
 Finally, create a *template instance*, set the data and render the output:
 
@@ -108,7 +109,7 @@ Finally, create a *template instance*, set the data and render the output:
 hello.data("name", "Jim").render(); <1> <2>
 ----
 <1> `Template.data(String, Object)` is a convenient method that creates a template instance and sets the data in one step.
-<2> `TemplateInstance.render()` triggers a synchronous rendering, i.e. the current thread is blocked until the rendering is finished. However, there are also asynchronous ways to trigger the rendering and consume the results. For example there is the `TemplateInstance.renderAsync()` method that returns `CompletionStage<String>` or `TemplateInstance.createMulti()` that returns Mutiny's `Multi<String>`.
+<2> `TemplateInstance.render()` triggers a synchronous rendering, i.e. the current thread is blocked until the rendering is finished. However, there are also asynchronous ways to trigger the rendering and consume the results. For example, there is the `TemplateInstance.renderAsync()` method that returns `CompletionStage<String>` or `TemplateInstance.createMulti()` that returns Mutiny's `Multi<String>`.
 
 So the workflow is simple: 
 
@@ -133,13 +134,13 @@ Can be multiline and may contain expressions and sections: `{! {#if true} !}`.
 The content of a comment is completely ignored when rendering the output.
 
 Expressions::
-An <<expressions,expression>> outputs an evaluated value. 
+An xref:expressions[expression] outputs an evaluated value.
 It consists of one or more parts.
 A part may represent simple properties: `{foo}`, `{item.name}`, and virtual methods: `{item.get(name)}`, `{name ?: 'John'}`.
 An expression may also start with a namespace: `{inject:colors}`.
 
 Sections::
-A <<sections,section>> may contain static text, expressions and nested sections: `{#if foo.active}{foo.name}{/if}`.
+A xref:sections[section] may contain static text, expressions and nested sections: `{#if foo.active}{foo.name}{/if}`.
 The name in the closing tag is optional: `{#if active}ACTIVE!{/}`.
 A section can be empty: `{#myTag image=true /}`.
 A section may also declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
@@ -257,13 +258,13 @@ In this case, all whitespace characters from a standalone line will be printed t
 An expression is evaluated and outputs the value.
 It has one or more parts, where each part represents either a property accessor (aka Field Access Expression) or a virtual method invocation (aka Method Invocation Expression).
 
-When accessing the properties you can either use the dot notation or bracket notation.
-In the `object.property` (dot notation) syntax, the `property` must be a <<identifiers,valid identifier>>.
-In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null <<literals, literal>> value.
+When accessing the properties, you can either use the dot notation or bracket notation.
+In the `object.property` (dot notation) syntax, the `property` must be a xref:identifiers[valid identifier].
+In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null xref:literals[literal] value.
 
 An expression can start with an optional namespace followed by a colon (`:`).
 A valid namespace consist of alphanumeric characters and underscores.
-Namespace expressions are resolved differently - see also <<expression_resolution>>.
+Namespace expressions are resolved differently - see also xref:expression_resolution[].
 
 .Property Accessor Examples
 [source]
@@ -279,9 +280,9 @@ Namespace expressions are resolved differently - see also <<expression_resolutio
 <4> namespace `global`, one part: `colors`
 
 A part of an expression can be a _virtual method_ in which case the name can be followed by a list of comma-separated parameters in parentheses. 
-A parameter of a virtual method can be either a nested expression or a <<literals, literal>> value.
+A parameter of a virtual method can be either a nested expression or a xref:literals[literal] value.
 We call these methods _"virtual"_ because they do not have to be backed by a real Java method.
-You can learn more about virtual methods in the <<virtual_methods,following section>>.
+You can learn more about virtual methods in the xref:virtual_methods[following section].
 
 .Virtual Method Example
 [source]
@@ -324,7 +325,7 @@ You can learn more about virtual methods in the <<virtual_methods,following sect
 [[expression_resolution]]
 ==== Resolution
 
-The first part of the expression is always resolved against the <<current_context_object, current context object>>.
+The first part of the expression is always resolved against the xref:current_context_object[current context object].
 If no result is found for the first part it's resolved against the parent context object (if available).
 For an expression that starts with a namespace the current context object is found using all the available ``NamespaceResolver``s.
 For an expression that does not start with a namespace the current context object is *derived from the position* of the tag.
@@ -366,10 +367,10 @@ This could be useful to access data for which the key is overridden:
 [[current_context_object]]
 ==== Current Context
 
-If an expression does not specify a namespace the _current context object_ is derived from the position of the tag.
+If an expression does not specify a namespace, the _current context object_ is derived from the position of the tag.
 By default, the current context object represents the data passed to the template instance.
 However, sections may change the current context object.
-A typical example is the <<let_section,`let`>> section that can be used to define named local variables:
+A typical example is the xref:let_section[`let`] section that can be used to define named local variables:
 
 [source,html]
 ----
@@ -396,26 +397,26 @@ NOTE: The current context can be accessed via the implicit binding `this`.
 |`{pets.orEmpty.size}` outputs `0` if `pets` is not resolvable or `null`
 
 |Ternary Operator
-|Shorthand for if-then-else statement. Unlike in <<if_section>> nested operators are not supported.
+|Shorthand for if-then-else statement. Unlike in xref:if_section[] nested operators are not supported.
 |`{item.isActive ? item.name : 'Inactive item'}` outputs the value of `item.name` if `item.isActive` resolves to `true`.
 
 |Logical AND Operator
-|Outputs `true` if both parts are not `falsy` as described in the <<if_section>>. The parameter is only evaluated if needed.
+|Outputs `true` if both parts are not `falsy` as described in the xref:if_section[]. The parameter is only evaluated if needed.
 |`{person.isActive && person.hasStyle}`
 
 |Logical OR Operator
-|Outputs `true` if any of the parts is not `falsy` as described in the <<if_section>>. The parameter is only evaluated if needed.
+|Outputs `true` if any of the parts is not `falsy` as described in the xref:if_section[]. The parameter is only evaluated if needed.
 |`{person.isActive \|\| person.hasStyle}`
 
 |===
 
-TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in the <<if_section>>.
+TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in the xref:if_section[].
 
 NOTE: In fact, the operators are implemented as "virtual methods" that consume one parameter and can be used with infix notation. For example `{person.name or 'John'}` is translated to `{person.name.or('John')}` and `{item.isActive ? item.name : 'Inactive item'}` is translated to `{item.isActive.ifTruthy(item.name).or('Inactive item')}`
 
 ==== Arrays
 
-You can iterate over elements of an array with the <<loop_section>>. 
+You can iterate over elements of an array with the xref:loop_section[].
 Moreover, it's also possible to get the length of the specified array and access the elements directly via an index value.
 Additionally, you can access the first/last `n` elements via the `take(n)/takeLast(n)` methods.
 
@@ -490,7 +491,8 @@ class Item {
 }
 ----
 
-NOTE: Virtual methods are usually evaluated by value resolvers generated for <<template_extension_methods,@TemplateExtension methods>>, <<template_data,@TemplateData>> or classes used in <<typesafe_expressions,parameter declarations>>. However, a custom value resolver that is not backed by any Java class/method can be registered as well.
+NOTE: Virtual methods are usually evaluated by value resolvers generated for xref:template_extension_methods[@TemplateExtension methods], xref:template_data[@TemplateData] or classes used in xref:typesafe_expressions[parameter declarations].
+However, a custom value resolver that is not backed by any Java class/method can be registered as well.
 
 A virtual method with single parameter can be called using the infix notation:
 
@@ -556,16 +558,16 @@ If a `completed` log message is missing then you have a good candidate to explor
 
 It can happen that an expression may not be evaluated at runtime.
 For example, if there is an expression `{person.age}` and there is no property `age` declared on the `Person` class.
-The behavior differs based on whether the <<strict_rendering>> is enabled or not.
+The behavior differs based on whether the xref:strict_rendering[] is enabled or not.
 
 If enabled then a missing property will always result in a `TemplateException` and the rendering is aborted.
 You can use _default values_ and _safe expressions_ in order to suppress the error.
 
 If disabled then the special constant `NOT_FOUND` is written to the output by default.
 
-TIP: In Quarkus, it's possible to change the default strategy via the `quarkus.qute.property-not-found-strategy` as described in the <<configuration-reference>>.
+TIP: In Quarkus, it's possible to change the default strategy via the `quarkus.qute.property-not-found-strategy` as described in xref:configuration-reference[].
 
-NOTE: Similar errors are detected at build time if <<typesafe_expressions>> and <<typesafe_templates>> are used.
+NOTE: Similar errors are detected at build time if xref:typesafe_expressions[type-safe expressions] and xref:typesafe_templates[type-safe templates] are used.
 
 [[sections]]
 === Sections
@@ -581,7 +583,7 @@ Names are separated from the values by the equals sign.
 Names and values can be prefixed and suffixed with any number of spaces, e.g. `{#let id='Foo'}` and `{#let id  = 'Foo'}` are equivalents where the name of the parameter is `id` and the value is `Foo`.
 Values can be grouped using parentheses, e.g. `{#let id=(item.id ?: 42)}` where the name is `id` and the value is `item.id ?: 42`. 
 Sections can interpret parameter values in any way, e.g. take the value as is.
-However, in most cases the parameter value is registered as an <<expressions,expression>> and evaluated before use.
+However, in most cases, the parameter value is registered as an xref:expressions[expression] and evaluated before use.
 
 A section may contain several content *blocks*. 
 The "main" block is always present.
@@ -830,7 +832,8 @@ All other blocks are ignored (this behavior differs to the Java `switch` where a
 {/when}
 ----
 <1> If there is exactly one parameter it's tested for equality.
-<2> It's possible to use <<when_operators,an operator>> to specify the matching logic. Unlike in the <<if_section>> nested operators are not supported.
+<2> It's possible to use xref:when_operators[an operator] to specify the matching logic.
+Unlike in the xref:if_section[if section], nested operators are not supported.
 <3> `else` is block is executed if no other block matches the value.
 
 .Example using the `switch`/`case` name aliases
@@ -912,11 +915,11 @@ This section allows you to define named local variables:
   Age: {age}
 {/let} <3>
 ----
-<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>, i.e. `isActive=false` and `age=10`.
-<2> The infix notation is only supported if parentheses are used for grouping, e.g. `price=(order.price + 10)` is equivalent to `price=order.price.plus(10)`.
-<3> Keep in mind that the variable is not available outside the `let` section that defines it.
+<1> The local variable is initialized with an expression that can also represent a xref:literals[literal], i.e., `isActive=false` and `age=10`.
+<2> The infix notation is only supported if parentheses are used for grouping, e.g., `price=(order.price + 10)` is equivalent to `price=order.price.plus(10)`.
+<3> Keep in mind that the variable is unavailable outside the `let` section that defines it.
 
-If a key of a section parameter (aka the name of the local variable) ends with a `?` then the local variable is only set if the key without the `?` suffix resolves to `null` or _"not found"_:
+If a key of a section parameter, such as the name of the local variable, ends with a `?`, then the local variable is only set if the key without the `?` suffix resolves to `null` or _"not found"_:
 
 [source,html]
 ----
@@ -955,9 +958,9 @@ This could be useful to simplify the template structure:
 
 [IMPORTANT]
 ====
-Note that the `with` section should not be used in <<typesafe_templates>> or templates that define <<typesafe_expressions>>.
+Note that the `with` section should not be used in xref:typesafe_templates[] or templates that define xref:typesafe_expressions[].
 The reason is that it prevents Qute from validating the nested expressions.
-If possible it should be replaced with the `{#let}` section which declares an explicit binding:
+If possible replace it with the `{#let}` section which declares an explicit binding:
 
 [source,html]
 ----
@@ -1168,7 +1171,7 @@ The snippet above should render something like:
 </ol>
 ----
 
-TIP: In Quarkus, it is also possible to define a <<type_safe_fragments,type-safe fragment>>.
+TIP: In Quarkus, it is also possible to define a xref:type_safe_fragments[type-safe fragment].
 
 You can also include a fragment with an `{#include}` section inside another template or the template that defines the fragment.
 
@@ -1208,8 +1211,11 @@ a lot of
 {#include [strong] val='information' /} <3>
 !</p>
 ----
-<1> Defines a hidden fragment with identifier `strong`. In this particular case, we use the `false` boolean literal as the value of the `rendered` parameter. However, it's possible to use any expression there.
-<2> Include the fragment `strong` and pass the value. Note the syntax `[strong]` which is translated to include the fragment `strong` from the current template.
+<1> Defines a hidden fragment with identifier `strong`.
+In this particular case, we use the `false` boolean literal as the value of the `rendered` parameter.
+However, it's possible to use any expression there.
+<2> Include the fragment `strong` and pass the value.
+Note the syntax `[strong]` which is translated to include the fragment `strong` from the current template.
 <3> Include the fragment `strong` and pass the value.
 
 The snippet above renders something like:
@@ -1227,20 +1233,22 @@ a lot of
 ==== Eval Section
 
 This section can be used to parse and evaluate a template dynamically.
-The behavior is very similar to the <<include_helper>> but:
+The behavior is very similar to the xref:include_helper[] but:
 
-1. The template content is passed directly, i.e. not obtained via an `io.quarkus.qute.TemplateLocator`,
+1. The template content is passed directly, i.e., not obtained via an `io.quarkus.qute.TemplateLocator`,
 2. It's not possible to override parts of the evaluated template.
 
 [source,html]
 ----
 {#eval myData.template name='Mia' /} <1><2><3>
 ----
-<1> The result of `myData.template` will be used as the template. The template is executed with the <<current_context_object>>, i.e. can reference data from the template it's included into.
+<1> The `myData.template` result will be used as the template.
+The template is executed with the xref:current_context_object[], i.e., it can reference data from the template it's included.
 <2> It's also possible to define optional parameters that can be used in the evaluated template.
-<3> The content of the section is always ignored. 
+<3> The content of the section is always ignored.
 
-NOTE: The evaluated template is parsed and evaluated every time the section is executed. In other words, it's not possible to cache the parsed value to conserve resources and optimize the performance.
+NOTE: The evaluated template is parsed and evaluated every time the section is executed.
+In other words, it's not possible to cache the parsed value to conserve resources and optimize performance.
 
 ==== Cached Section
 
@@ -1261,9 +1269,9 @@ engineBuilder
      })).build();
 ----
 
-TIP: If the `quarkus-cache` extension is present in a Quarkus application then the `CacheSectionHelper` is registered and configured _automatically_. The name of the cache is `qute-cache`. It can be configured <<cache#configuring-the-underlying-caching-provider,in a standard way>> and even managed programmatically via `@Inject @CacheName("qute-cache") Cache`.
+TIP: If the `quarkus-cache` extension is present in a Quarkus application, then the `CacheSectionHelper` is registered and configured _automatically_. The name of the cache is `qute-cache`. It can be configured xref:cache#configuring-the-underlying-caching-provider[in a standard way] and even managed programmatically via `@Inject @CacheName("qute-cache") Cache`.
 
-Then the `{#cached}` section can be used in a template:
+Then, the `{#cached}` section can be used in a template:
 
 [source,html]
 ----
@@ -1349,10 +1357,12 @@ engineBuilder.addValueResolver(ValueResolver.builder()
 [[template-locator]]
 ==== Template Locator
 
-A template can be either registered manually or automatically via a template locator. The locators are used whenever the `Engine.getTemplate()` method is called and the engine has no template for a given id stored in the cache.
-The locator is responsible to use the correct character encoding when reading the contents of a template.
+A template can be either registered manually or automatically via a template locator.
+The locators are used whenever the `Engine.getTemplate()` method is called, and the engine has no template for a given id stored in the cache.
+The locator is responsible for using the correct character encoding when reading the contents of a template.
 
-NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically and the encoding set via `quarkus.qute.default-charset` (UTF-8 by default) is used. Custom locators can be <<template-locator-registration,registered>> via the `@Locate` annotation.
+NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically and the encoding set via `quarkus.qute.default-charset` (UTF-8 by default) is used.
+Custom locators can be xref:template-locator-registration[registered] by using the `@Locate` annotation.
 
 ==== Content Filters
 
@@ -1377,7 +1387,7 @@ The strict rendering enables the developers to catch insidious errors caused by 
 If enabled then any expression that cannot be resolved, i.e. is evaluated to an instance of `io.quarkus.qute.Results.NotFound`, will always result in a `TemplateException` and the rendering is aborted.
 A `NotFound` value is considered an error because it basically means that no value resolver was able to resolve the expression correctly.
 
-NOTE: `null` is a valid value though. It is considered `falsy` as described in the <<if_section>> and does not produce any output.
+NOTE: `null` is a valid value though. It is considered `falsy` as described in the xref:if_section[] and does not produce any output.
 
 Strict rendering is enabled by default.
 However, you can disable this functionality via `io.quarkus.qute.EngineBuilder.strictRendering(boolean)`.
@@ -1498,7 +1508,7 @@ The `@EngineConfiguration` annotation can be also used to register ``ValueResolv
 [[template-locator-registration]]
 ==== Template Locator Registration
 
-The easiest way to register <<template-locator,template locators>> is to make them CDI beans.
+The easiest way to register xref:template-locator[template locators] is to make them CDI beans.
 As the custom locator is not available during the build time when a template validation is done, you need to disable the validation via the `@Locate` annotation.
 
 .Custom Locator Example
@@ -1544,7 +1554,8 @@ class MyService {
 }
 ----
 
-NOTE: When using `quarkus-resteasy-qute` the content negotiation is performed automatically. See <<resteasy_integration>>.
+NOTE: When using `quarkus-resteasy-qute` the content negotiation is performed automatically.
+For more information, see the xref:resteasy_integration[] section.
 
 [[injecting-beans-directly-in-templates]]
 === Injecting Beans Directly In Templates
@@ -1561,9 +1572,10 @@ A CDI bean annotated with `@Named` can be referenced in any template through `cd
 
 NOTE: `@Named @Dependent` beans are shared across all expressions in a template for a single rendering operation, and destroyed after the rendering finished.
 
-All expressions with `cdi` and `inject` namespaces are validated during build.
-For the expression `cdi:personService.findPerson(10).name` the implementation class of the injected bean must either declare the `findPerson` method or a matching <<template_extension_methods,template extension method>> must exist.
-For the expression `inject:foo.price` the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist.
+All expressions with `cdi` and `inject` namespaces are validated during the build.
+For the expression `cdi:personService.findPerson(10).name`, the implementation class of the injected bean must either declare the `findPerson` method or a matching xref:template_extension_methods[template extension method] must exist.
+
+For the expression `inject:foo.price`, the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching xref:template_extension_methods[template extension method] must exist.
 
 NOTE: A `ValueResolver` is also generated for all beans annotated with `@Named` so that it's possible to access its properties without reflection.
 
@@ -1609,7 +1621,7 @@ Type variables are not handled in a special way and should never be used.
 
 IMPORTANT: A value resolver is automatically generated for all types used in parameter declarations so that it's possible to access its properties without reflection.
 
-TIP: Method parameters of <<typesafe_templates,type-safe templates>> are automatically turned into parameter declarations.
+TIP: Method parameters of xref:typesafe_templates[type-safe templates] are automatically turned into parameter declarations.
 
 Note that sections can override names that would otherwise match a parameter declaration:
 
@@ -1640,11 +1652,12 @@ The default value is used in the template if the parameter key resolves to `null
 For example, if there's a parameter declaration `{@String foo="Ping"}` and `foo` is not found then you can use `{foo}` and the output will be `Ping`.
 On the other hand, if the value is set (e.g. via `TemplateInstance.data("foo", "Pong")`) then the output of `{foo}` will be `Pong`.
 
-The type of a default value must be assignable to the type of the parameter declaration, i.e. the following parameter declaration is incorrect and results in a build failure: `{@org.acme.Foo foo=1}`.
+The type of a default value must be assignable to the type of the parameter declaration. For example, see the incorrect parameter declaration that results in a build failure: `{@org.acme.Foo foo=1}`.
 
-TIP: The default value is actually an <<expressions,expression>>. So the default value does not have to be a literal (such as `42` or `true`). For example, you can leverage the `@TemplateEnum` and specify an enum constant as a default value of a parameter declaration: `{@org.acme.MyEnum myEnum=MyEnum:FOO}`. However, the infix notation is not supported in default values unless the parentheses are used for grouping, e.g. `{@org.acme.Foo foo=(foo1 ?: foo2)}``.
+TIP: The default value is an xref:expressions[expression]. So the default value does not have to be a literal (such as `42` or `true`). For example, you can leverage the `@TemplateEnum` and specify an enum constant as a default value of a parameter declaration: `{@org.acme.MyEnum myEnum=MyEnum:FOO}`.
+However, the infix notation is not supported in default values unless the parentheses are used for grouping, e.g., `{@org.acme.Foo foo=(foo1 ?: foo2)}``.
 
-IMPORTANT: The type of a default value is not validated in <<standalone, Qute standalone>>.
+IMPORTANT: The type of a default value is not validated in xref:standalone[Qute standalone].
 
 .More Parameter Declarations Examples 
 [source]
@@ -1664,7 +1677,7 @@ IMPORTANT: The type of a default value is not validated in <<standalone, Qute st
 [[typesafe_templates]]
 === Type-safe Templates
 You can also define type-safe templates in your Java code.
-If using <<resteasy_integration,templates in JAX-RS resources>>, you can rely on the following convention:
+If using xref:resteasy_integration[templates in JAX-RS resources], you can rely on the following convention:
 
 - Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
   your `ItemResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/ItemResource/hello.txt`
@@ -1705,7 +1718,7 @@ public class ItemResource {
 }
 ----
 <1> Declare a method that gives us a `TemplateInstance` for `templates/ItemResource/item.html` and declare its `Item item` parameter so we can validate the template.
-<2> The `item` parameter is automatically turned into a <<typesafe_expressions,parameter declaration>> and so all expressions that reference this name will be validated.
+<2> The `item` parameter is automatically turned into a xref:typesafe_expressions[parameter declaration] and so all expressions that reference this name will be validated.
 <3> Make the `Item` object accessible in the template.
 
 TIP: By default, the templates defined in a class annotated with `@CheckedTemplate` can only contain type-safe expressions, i.e. expressions that can be validated at build time. You can use `@CheckedTemplate(requireTypeSafeExpressions = false)` to relax this requirement.
@@ -1728,7 +1741,7 @@ public class Templates {
     public static native TemplateInstance hello(String name); <1>
 }
 ----
-<1> This declares a template with path `templates/hello.txt`. The `name` parameter is automatically turned into a  <<typesafe_expressions,parameter declaration>> and so all expressions that reference this name will be validated.
+<1> This declares a template with path `templates/hello.txt`. The `name` parameter is automatically turned into a  xref:typesafe_expressions[parameter declaration], so that all expressions referencing this name will be validated.
 
 Then declare one `public static native TemplateInstance method();` per template file.
 Use those static methods to build your template instances:
@@ -1787,7 +1800,7 @@ public class ItemResource {
 [[type_safe_fragments]]
 ==== Type-safe Fragments
 
-You can also define a type-safe <<fragments,fragment>> in your Java code.
+You can also define a type-safe xref:fragments[fragment] in your Java code.
 A _native static_ method with the name that contains a dollar sign `$` denotes a method that represents a fragment of a type-safe template.
 The name of the fragment is derived from the annotated method name. 
 The part before the last occurence of a dollar sign `$` is the method name of the related type-safe template.
@@ -1844,7 +1857,7 @@ NOTE: You can specify `@CheckedTemplate#ignoreFragments=true` in order to disabl
 [[template_extension_methods]]
 === Template Extension Methods
 
-Extension methods can be used to extend the data classes with new functionality (to extend the set of accessible properties and methods) or to resolve expressions for a specific <<namespace_extension_methods,namespace>>.
+Extension methods can be used to extend the data classes with new functionality (to extend the set of accessible properties and methods) or to resolve expressions for a specific xref:namespace_extension_methods[namespace].
 For example, it is possible to add _computed properties_ and _virtual methods_.
 
 A value resolver is automatically generated for a method annotated with `@TemplateExtension`.
@@ -1955,7 +1968,7 @@ NOTE: Superfluous matching conditions are ignored. The conditions sorted by prio
 
 An extension method may declare parameters.
 If no namespace is specified then the first parameter that is not annotated with `@TemplateAttribute` is used to pass the base object, i.e. `org.acme.Item` in the first example.
-If matching any name or using a regular expression then a string method parameter needs to be used to pass the property name.
+If matching any name or using a regular expression, then a string method parameter needs to be used to pass the property name.
 Parameters annotated with `@TemplateAttribute` are obtained via `TemplateInstance#getAttribute()`.
 All other parameters are resolved when rendering the template and passed to the extension method.
 
@@ -1981,7 +1994,7 @@ class BigDecimalExtensions {
 [[namespace_extension_methods]]
 ==== Namespace Extension Methods
 
-If `TemplateExtension#namespace()` is specified then the extension method is used to resolve expressions with the given <<expressions,namespace>>.
+If `TemplateExtension#namespace()` is specified then the extension method is used to resolve expressions with the given xref:expressions[namespace].
 Template extension methods that share the same namespace are grouped in one resolver ordered by `TemplateExtension#priority()`.
 The first matching extension method is used to resolve an expression.
 
@@ -2283,7 +2296,7 @@ Colors: {#each myColors}{it}{#if it_hasNext}, {/if}{/each} <3>
 <2> `age` resolves to `Globals#age`.
 <3> `myColors` resolves to `Globals#myColors()`.
 
-NOTE: Note that global variables implicitly add <<typesafe_expressions, parameter declarations>> to all templates and so any expression that references a global variable is validated during build.
+NOTE: Note that global variables implicitly add xref:typesafe_expressions[parameter declarations] to all templates and so any expression that references a global variable is validated during build.
 
 .The Output
 [source,html]
@@ -2296,7 +2309,7 @@ Colors: RED, BLUE
 ==== Resolving Conflicts
 
 Global variables may conflict with regular data objects.
-<<typesafe_templates,Type-safe templates>> override the global variables automatically.
+xref:typesafe_templates[Type-safe templates] override the global variables automatically.
 For example, the following definition overrides the global variable supplied by the `Globals#user()` method:
 
 .Type-safe Template Definition
@@ -2340,10 +2353,10 @@ As a result, you may encounter template exceptions like `Property "name" not fou
 
 There are several ways to solve this problem:
 
-* Make use of <<typesafe_templates,type-safe templates>> or <<typesafe_expressions,type-safe expressions>>
+* Make use of xref:typesafe_templates[type-safe templates] or xref:typesafe_expressions[type-safe expressions]
 ** In this case, an optimized value resolver is generated automatically and used at runtime
 ** This is the preferred solution
-* Annotate the model class with <<template_data,`@TemplateData`>> - a specialized value resolver is generated and used at runtime
+* Annotate the model class with xref:template_data[`@TemplateData`] - a specialized value resolver is generated and used at runtime
 * Annotate the model class with `@io.quarkus.runtime.annotations.RegisterForReflection` to make the reflection-based value resolver work
 
 
@@ -2401,11 +2414,13 @@ public class HelloResource {
     }
 }
 ----
-<1> If there is no `@Location` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
-<2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
+<1> If there is no `@Location` qualifier provided, the field name is used to locate the template.
+In this particular case, we're injecting a template with path `templates/hello.txt`.
+<2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`.
+The data map is accessible during rendering.
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
-TIP: Users are encouraged to use <<typesafe_templates,Type-safe templates>> that help to organize the templates for a specific JAX-RS resource and enable <<typesafe_expressions,type-safe expressions>> automatically.
+TIP: Users are encouraged to use xref:typesafe_templates[type-safe templates] that help to organize the templates for a specific JAX-RS resource and enable xref:typesafe_expressions[type-safe expressions] automatically.
 
 The content negotiation is performed automatically.
 The resulting output depends on the `Accept` header received from the client.
@@ -2621,7 +2636,7 @@ public class MyBean {
 <1> You can set a `Locale` instance or a locale tag string (IETF).
 
 
-NOTE: When using <<resteasy_integration,quarkus-resteasy-qute>> the `locale` attribute is derived from the `Accept-Language` header if not set by a user.
+NOTE: When using xref:resteasy_integration[quarkus-resteasy-qute], the `locale` attribute is derived from the `Accept-Language` header if not set by a user.
 
 The `@Localized` qualifier can be used to inject a localized message bundle interface.
 
@@ -2690,11 +2705,12 @@ Qute is primarily designed as a Quarkus extension.
 However. it is possible to use it as a "standalone" library.
 In this case, some features are not available and some additional configuration is needed.
 
-Engine:: First, no managed `Engine` instance is available out of the box.
+Engine::
+* First, no managed `Engine` instance is available out of the box.
 You'll need to configure a new instance via `Engine.builder()`.
 
-Templates:: 
-* By default, no <<template-locator,template locators>> are registered, i.e. `Engine.getTemplate(String)` will not work. 
+Templates::
+* By default, no xref:template-locator[template locators] are registered, i.e. `Engine.getTemplate(String)` will not work.
 * You can register a custom template locator using `EngineBuilder.addLocator()` or parse a template manually and put the result in the cache via `Engine.putTemplate(String, Template)`.
 
 Sections::
@@ -2702,9 +2718,9 @@ Sections::
 * The default set of value resolvers can be registered via the convenient `EngineBuilder.addDefaultSectionHelpers()` method and the `EngineBuilder.addDefaults()` method respectively.
 
 Value resolvers:: 
-* No <<value-resolvers,``ValueResolver``s>> are generated automatically.
-** <<template_extension_methods,`@TemplateExtension` methods>> will not work. 
-** <<template_data,`@TemplateData`>> and <<convenient-annotation-for-enums,`@TemplateEnum`>> annotations are ignored.
+* No xref:value-resolvers[`ValueResolvers`] are generated automatically.
+** xref:template_extension_methods[`@TemplateExtension` methods] will not work.
+** xref:template_data[`@TemplateData`] and xref:convenient-annotation-for-enums[`@TemplateEnum`] annotations are ignored.
 * The default set of value resolvers can be registered via the convenient `EngineBuilder.addDefaultValueResolvers()` method and the `EngineBuilder.addDefaults()` method respectively.
 +
 NOTE: Not all functionality provided by the built-in extension methods is covered by the default value resolvers. However, a custom value resolver can be easily built via the `ValueResolver.builder()`.
@@ -2717,7 +2733,7 @@ User-defined Tags::
 * A tag can be registered manually via `Engine.builder().addSectionHelper(new UserTagSectionHelper.Factory("tagName","tagTemplate.html")).build()`
 
 Type-safety::
-* <<typesafe_expressions>> are not validated.
-* <<type-safe-message-bundles,Type-safe message bundles>> are not supported.
+* xref:typesafe_expressions[Type-safe expressions] are not validated.
+* xref:type-safe-message-bundles[Type-safe message bundles] are not supported.
 
 Injection:: It is not possible to inject a `Template` instance and vice versa - a template cannot inject a `@Named` CDI bean via the `inject:` and `cdi:` namespace.

@@ -315,7 +315,7 @@ Then, attach your debugger to `localhost:5005`.
 
 == Import in your IDE
 
-Once you have a <<project-creation, project generated>>, you can import it in your favorite IDE.
+Once you have a xref:project-creation[project generated], you can import it in your favorite IDE.
 The only requirement is the ability to import a Gradle project.
 
 **Eclipse**

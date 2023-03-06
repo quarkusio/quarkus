@@ -327,7 +327,7 @@ The static file to serve must be a valid document conforming to the https://swag
 An OpenAPI document that conforms to the  OpenAPI Specification is itself a valid JSON object, that can be represented in `yaml` or `json` formats.
 
 To see this in action, we'll put OpenAPI documentation under `META-INF/openapi.yaml` for our `/fruits` endpoints.
-Quarkus also supports alternative <<open-document-paths, OpenAPI document paths>> if you prefer.
+Quarkus also supports alternative xref:open-document-paths[OpenAPI document paths] if you prefer.
 
 [source,yaml]
 ----

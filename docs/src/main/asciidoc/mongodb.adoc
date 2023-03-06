@@ -307,7 +307,7 @@ docker run -ti --rm -p 27017:27017 mongo:4.4
 
 [NOTE]
 ====
-If you use <<dev-services,Dev Services>>, launching the container manually is not necessary!
+If you use xref:dev-services[Dev Services], launching the container manually is not necessary!
 ====
 
 

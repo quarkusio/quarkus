@@ -118,7 +118,7 @@ public class Endpoint {
 }
 ----
 
-See <<uri-parameters,URI parameters>> for more information about URI mapping.
+See xref:uri-parameters[URI parameters] for more information about URI mapping.
 
 You can set the root path for all rest endpoints using the `@ApplicationPath` annotation, as shown below.
 
@@ -207,7 +207,7 @@ link:{httpspec}#section-3.1.1.1[MIME (Media Type)] values, such as the following
 
 - `text/plain` which is the default for any endpoint returning a `String`.
 - `text/html` for HTML (such as with xref:qute.adoc[Qute templating])
-- `application/json` for a <<json,JSON REST endpoint>>
+- `application/json` for a xref:json[JSON REST endpoint]
 - `text/*` which is a sub-type wildcard for any text media type
 - `\*/*` which is a wildcard for any media type
 
@@ -223,7 +223,7 @@ case they override any eventual class annotation.
 The link:{jaxrsapi}/jakarta/ws/rs/core/MediaType.html[`MediaType`] class has many constants you
 can use to point to specific pre-defined media types.
 
-See <<negotiation>> for more information.
+See the xref:negotiation[] section for more information.
 
 === Accessing request parameters
 
@@ -241,7 +241,7 @@ The following HTTP request elements may be obtained by your endpoint method:
 |[[path-parameter]]Path parameter
 |link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`] (or nothing)
 |URI template parameter (simplified version of the https://tools.ietf.org/html/rfc6570[URI Template specification]),
-see <<uri-parameters,URI parameters>> for more information.
+see xref:uri-parameters[URI parameters] for more information.
 
 |Query parameter
 |link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestQuery.html[`@RestQuery`]
@@ -325,7 +325,7 @@ link:{jaxrsapi}/jakarta/ws/rs/FormParam.html[`@FormParam`] or
 link:{jaxrsapi}/jakarta/ws/rs/MatrixParam.html[`@MatrixParam`] for this,
 but they require you to specify the parameter name.
 
-See <<parameter-mapping>> for more advanced use-cases.
+See xref:parameter-mapping[] for more advanced use-cases.
 
 [NOTE]
 ====
@@ -390,7 +390,7 @@ public class Endpoint {
     }
 }
 ----
-<1>  `BeanParam` is required to comply with the JAX-RS specification so that libraries like OpenAPI can introspect the parameters.
+<1> `BeanParam` is required to comply with the JAX-RS specification so that libraries like OpenAPI can introspect the parameters.
 
 === Declaring URI parameters
 
@@ -427,7 +427,7 @@ public class Endpoint {
 === Accessing the request body
 
 Any method parameter with no annotation will receive the method body.footnote:[Unless it is a
-<<path-parameter,URI template parameter>> or a <<context-objects,context object>>.], after it has been mapped from
+xref:path-parameter[URI template parameter] or a xref:context-objects[context object].], after it has been mapped from
 its HTTP representation to the Java type of the parameter.
 
 The following parameter types will be supported out of the box:
@@ -470,11 +470,11 @@ link:{jsonpapi}/jakarta/json/JsonStructure.html[`JsonStructure`], link:{jsonpapi
 |Vert.x Buffer
 
 |any other type
-|Will be <<json,mapped from JSON to that type>>
+|Will be xref:json[mapped from JSON to that type]
 
 |===
 
-NOTE: You can add support for more <<readers-writers,body parameter types>>.
+NOTE: You can add support for more xref:readers-writers[body parameter types].
 
 [[multipart]]
 === Handling Multipart Form data
@@ -516,10 +516,10 @@ public class MultipartResource {
 The `description` parameter will contain the data contained in the part of HTTP request called `description` (because
 link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`] does not define a value, the field name is used),
 while the `file` parameter will contain data about the uploaded file in the `image` part of HTTP request, and
-the `person` parameter will read the `Person` entity using the `JSON` <<json,body reader>>.
+the `person` parameter will read the `Person` entity using the `JSON` xref:json[body reader].
 
 The size of every part in a multipart request must conform to the value of `quarkus.http.limits.max-form-attribute-size`, for which the default is 2048 bytes.
-Any request with a part size exceeding this configuration will result in HTTP status code 413.
+Any request with a part-size exceeding this configuration will result in HTTP status code 413.
 
 NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/multipart/FileUpload.html[`FileUpload`]
 provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.
@@ -528,9 +528,9 @@ If you need access to all uploaded files for all parts regardless of their names
 
 NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/PartType.html[`@PartType`] is used to aid
 in deserialization of the corresponding part of the request into the desired Java type. It is only required if
-you need to use <<readers-writers,a special body parameter type>> for that particular parameter.
+you need to use a xref:readers-writers[special body parameter type] for that particular parameter.
 
-NOTE: Just like for any other request parameter type, you can also group them into a <<parameter-grouping,container class>>.
+NOTE: Just like for any other request parameter type, you can also group them into a xref:parameter-grouping[container class].
 
 WARNING: When handling file uploads, it is very important to move the file to permanent storage (like a database, a dedicated file system or a cloud storage) in your code that handles the POJO.
 Otherwise, the file will no longer be accessible when the request terminates.
@@ -597,7 +597,7 @@ public static class Resource {
 
 As part of reading the multipart body, RESTEasy Reactive invokes the proper MessageBodyReaderlink:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
 If an `IOException` occurs for one of these parts (for example if Jackson was unable to deserialize a JSON part), then a `org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException` is thrown.
-If this exception is not handled by the application as mentioned in <<exception-mapping>>, an HTTP 400 response is returned by default.
+If this exception is not handled by the application as mentioned in xref:exception-mapping[], an HTTP 400 response is returned by default.
 
 ==== Multipart output
 
@@ -678,10 +678,10 @@ WARNING: For the time being, returning Multipart data is limited to be blocking 
 
 In order to return an HTTP response, simply return the resource you want from your method. The method
 return type and its optional content type will be used to decide how to serialise it to the HTTP
-response (see <<negotiation>> for more advanced information).
+response. See the xref:negotiation[] section for more advanced information.
 
-You can return any of the pre-defined types that you can read from the <<resource-types,HTTP response>>,
-and any other type will be mapped <<json,from that type to JSON>>.
+You can return any of the pre-defined types that you can read from the xref:resource-types[HTTP response],
+and any other type will be mapped xref:json[from that type to JSON].
 
 In addition, the following return types are also supported:
 
@@ -703,7 +703,7 @@ In addition, the following return types are also supported:
 
 |===
 
-Alternately, you can also return a <<reactive,reactive type>> such as link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni`],
+Alternately, you can also return a xref:reactive[reactive type], such as link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni`],
 link:{mutinyapi}/io/smallrye/mutiny/Multi.html[`Multi`] or
 link:{jdkapi}/java/util/concurrent/CompletionStage.html[`CompletionStage`]
 that resolve to one of the mentioned return types.
@@ -887,8 +887,7 @@ public class Endpoint {
 
 This allows you to not block the event-loop thread while the book is being fetched from the
 database, and allows Quarkus to serve more requests until your book is ready to
-be sent to the client and terminate this request. Check out our
-<<execution-model,Execution Model documentation>> for more information.
+be sent to the client and terminate this request.See xref:execution-model[Execution Model documentation] for more information.
 
 The link:{jdkapi}/java/util/concurrent/CompletionStage.html[`CompletionStage`] return
 type is also supported.
@@ -930,7 +929,8 @@ public class Endpoint {
 
 NOTE: Response filters are **not** invoked on streamed responses, because they would give a false
 impression that you can set headers or HTTP status codes, which is not true after the initial
-response. Exception mappers are also not invoked because part of the response may already have been written.
+response.
+Exception mappers are also not invoked because part of the response may already have been written.
 
 === Server-Sent Event (SSE) support
 
@@ -938,7 +938,7 @@ If you want to stream JSON objects in your response, you can use
 https://html.spec.whatwg.org/multipage/server-sent-events.html[Server-Sent Events]
 by just annotating your endpoint method with
 link:{jaxrsapi}/jakarta/ws/rs/Produces.html[`@Produces(MediaType.SERVER_SENT_EVENTS)`]
-and specifying that each element should be <<json,serialised to JSON>> with
+and specifying that each element should be xref:json[serialised to JSON] with
 `@RestStreamElementType(MediaType.APPLICATION_JSON)`.
 
 [source,java]
@@ -1027,7 +1027,7 @@ method takes parameters of the following type:
 |Advanced: Runtime access to JAX-RS providers
 
 |link:{jaxrsapi}/jakarta/ws/rs/core/Request.html[`Request`]
-|Advanced: Access to the current HTTP method and <<preconditions>>
+|Advanced: Access to the current HTTP method and xref:preconditions[precondition]
 
 |link:{jaxrsapi}/jakarta/ws/rs/core/ResourceContext.html[`ResourceContext`]
 |Advanced: access to instances of endpoints
@@ -1148,8 +1148,8 @@ Instead of importing `io.quarkus:quarkus-resteasy-reactive`, you can import eith
 |===
 
 In both cases, importing those modules will allow HTTP message bodies to be read from JSON
-and serialised to JSON, for <<resource-types,all the types not already registered with a more specific
-serialisation>>.
+and serialised to JSON, for xref:resource-types[all the types not already registered with a more specific
+serialisation].
 
 ==== Advanced Jackson-specific features
 
@@ -1278,8 +1278,9 @@ public class User {
 }
 ----
 
-Depending on the JAX-RS method that returns this user, we might want to exclude the `id` field from serialization - for example you might want an insecure method
-to not expose this field. The way we can achieve that in RESTEasy Reactive is shown in the following example:
+Depending on the JAX-RS method that returns this user, we might want to exclude the `id` field from serialization.
+For example, you might want an insecure method to not expose this field.
+The way we can achieve that in RESTEasy Reactive is shown in the following example:
 
 [source,java]
 ----
@@ -1351,8 +1352,8 @@ To enable XML support, add the `quarkus-resteasy-reactive-jaxb` extension to you
 |===
 
 Importing this module will allow HTTP message bodies to be read from XML
-and serialised to XML, for <<resource-types,all the types not already registered with a more specific
-serialisation>>.
+and serialised to XML, for xref:resource-types[all the types not already registered with a more specific
+serialisation].
 
 The JAXB Resteasy Reactive extension will automatically detect the classes that are used in the resources and require JAXB serialization. Then, it will register these classes into the default `JAXBContext` which is internally used by the JAXB message reader and writer. 
 
@@ -1746,10 +1747,9 @@ by default:
 - `org.reactivestreams.Publisher`
 - Kotlin `suspended` methods
 
-This 'best guess' approach means that the majority of operations will run on the correct thread by default. If you are
-writing reactive code then your method will generally return one of these types, and will be executed on the IO thread.
-If you are writing blocking code your methods will usually return the result directly, and these will be run on a worker
-thread.
+This 'best guess' approach means most operations will run on the correct thread by default.
+If you are writing reactive code, your method will generally return one of these types and will be executed on the IO thread.
+If you are writing blocking code, your methods will usually return the result directly, and these will be run on a worker thread.
 
 You can override this behaviour using the
 https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/1.5.0/io/smallrye/common/annotation/Blocking.html[`@Blocking`]
@@ -1814,11 +1814,11 @@ Hibernate and JDBC. An explicit `@Blocking` or `@NonBlocking` on the class will 
 
 ==== Overriding the default behaviour
 
-If you want to override the default behaviour you can annotate a `jakarta.ws.rs.core.Application` subclass in your application
-with `@Blocking` or `@NonBlocking`, and this will set the default for every method that does not have an explicit annotation.
+If you want to override the default behavior, you can annotate a `jakarta.ws.rs.core.Application` subclass in your application with `@Blocking` or `@NonBlocking`,
+and this will set the default for every method that does not have an explicit annotation.
 
-Behaviour can still be overridden on a class or method level by annotating them directly, however all endpoints without
-an annotation will now follow the default, no matter their method signature.
+Behavior can still be overridden on a class or method level by annotating them directly, however,
+all endpoints without an annotation will now follow the default, no matter their method signature.
 
 [[exception-mapping]]
 === Exception mapping
@@ -1949,7 +1949,7 @@ Your exception mapper may declare any of the following parameter types:
 |An exception type
 |Defines the exception type you want to handle
 
-|Any of the <<context-objects,Context objects>>
+|Any of the xref:context-objects[context objects]
 |
 
 |link:{jaxrsapi}/jakarta/ws/rs/container/ContainerRequestContext.html[`ContainerRequestContext`]
@@ -2063,7 +2063,7 @@ Your filters may declare any of the following parameter types:
 |===
 |Type|Usage
 
-|Any of the <<context-objects,Context objects>>
+|Any of the xref:context-objects[context objects]
 |
 
 |link:{jaxrsapi}/jakarta/ws/rs/container/ContainerRequestContext.html[`ContainerRequestContext`]
@@ -2400,8 +2400,8 @@ However, you can change this default behavior and constrain a provider to:
 
 === Parameter mapping
 
-All <<request-parameters,Request Parameters>> can be declared as link:{jdkapi}/java/lang/String.html[`String`], but also
-any of the following types:
+All xref:request-parameters[Request Parameters] can be declared as link:{jdkapi}/java/lang/String.html[`String`],
+but also any of the following types:
 
 - Types for which a link:{jaxrsapi}/jakarta/ws/rs/ext/ParamConverter.html[`ParamConverter`] is available via a registered
 link:{jaxrsapi}/jakarta/ws/rs/ext/ParamConverterProvider.html[`ParamConverterProvider`].
@@ -2504,8 +2504,8 @@ public class Endpoint {
 
 ==== Handling dates
 
-RESTEasy Reactive supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path or form params. Furthermore, it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation which can be used to
-set a custom expected pattern (otherwise the JDK's default format for each type is used implicitly).
+RESTEasy Reactive supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path, or form params.
+Furthermore, it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation, which can be used to set a custom expected pattern. Otherwise, the JDK's default format for each type is used implicitly.
 
 === Preconditions
 
@@ -2606,10 +2606,9 @@ And we would get the following response:
 HTTP/1.1 304 Not Modified
 ----
 
-Because the resource has not been modified since that date. This saves on sending the resource,
-but can also help your users detect concurrent modification, for example, let's suppose that one
-client wants to update the resource, but another user has modified it since. You can follow the
-previous `GET` request with this update:
+Because the resource has not been modified since that date, this saves on sending the resource but can also help your users detect the concurrent modification.
+For example, one client wants to update the resource, but another user has modified it since.
+You can follow the previous `GET` request with this update:
 
 [source]
 ----

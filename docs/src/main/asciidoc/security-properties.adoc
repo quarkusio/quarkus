@@ -53,7 +53,7 @@ quarkus.security.users.file.plain-text=true
 
 ==== Users.properties
 
-The `quarkus.security.users.file.users` configuration property specifies a classpath resource which is a properties file with a user to password mapping, one per line. The following <<test-users-example>> illustrates the format:
+The `quarkus.security.users.file.users` configuration property specifies a classpath resource which is a properties file with a user to password mapping, one per line. The following xref:test-users-example[] illustrates the format:
 
 [#test-users-example]
 .example test-users.properties file
@@ -113,7 +113,7 @@ be generated for the first example above by running the command `echo -n scott:M
 
 ==== Embedded Users
 
-The user to password mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.users.<user>=<password>`. The following <<password-example>> illustrates the syntax with 4 user to password mappings:
+The user to password mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.users.<user>=<password>`. The following xref:password-example[] illustrates the syntax with 4 user to password mappings:
 
 [#password-example]
 .Example Passwords
@@ -129,7 +129,7 @@ quarkus.security.users.embedded.users.noadmin=n0Adm1n
 
 ==== Embedded Roles
 
-The user to role mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<roles-example>> illustrates the syntax with 4 user to role mappings:
+The user to role mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following xref:roles-example[] illustrates the syntax with 4 user to role mappings:
 
 [#roles-example]
 .Example Roles

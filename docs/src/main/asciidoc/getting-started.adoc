@@ -45,7 +45,7 @@ This guide also covers the testing of the endpoint.
 
 == Solution
 
-We recommend that you follow the instructions from <<bootstrapping-the-project,Bootstrapping project>> and onwards to create the application step by step.
+We recommend that you follow the instructions from xref:bootstrapping-the-project[Bootstrapping project] and onwards to create the application step by step.
 
 However, you can go right to the completed example.
 
@@ -69,12 +69,12 @@ For Linux & MacOS users
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
 
-For Windows users
+For Windows users:
 
 - If using cmd , (don't use backward slash `\` and put everything on the same line)
 - If using Powershell , wrap `-D` parameters in double quotes e.g. `"-DprojectArtifactId=getting-started"`
 
-It generates the following in  `./getting-started`:
+It generates the following in `./getting-started`:
 
 * the Maven structure
 * an `org.acme.GreetingResource` resource exposed on `/hello`

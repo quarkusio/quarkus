@@ -54,18 +54,18 @@ mvn archetype:generate \
 If you prefer to use Gradle, you can quickly and easily generate a Gradle project via https://code.quarkus.io/[code.quarkus.io]
 adding the `quarkus-amazon-lambda` extension as a dependency.
 
-Copy the build.gradle, gradle.properties and settings.gradle into the above generated Maven archetype project, to follow along with this guide.
+Copy the build.gradle, gradle.properties and settings.gradle into the above-generated Maven archetype project, to follow along with this guide.
 
 Execute: gradle wrapper to set up the gradle wrapper (recommended).
 
-For full Gradle details <<gradle, see below>>.
+For full Gradle details, see the xref:gradle[Gradle build] section below.
 ====
 
 [[choose]]
 == Choose Your Lambda
 
 The `quarkus-amazon-lambda` extension scans your project for a class that directly implements the Amazon `RequestHandler<?, ?>` or `RequestStreamHandler` interface.
-It must find a class in your project that implements this interface or it will throw a build time failure.
+It must find a class in your project that implements this interface, or it will throw a build time failure.
 If it finds more than one handler class, a build time exception will also be thrown.
 
 Sometimes, though, you might have a few related lambdas that share code and creating multiple maven modules is just
@@ -273,7 +273,7 @@ call must set a specific environment variable:
 There is nothing special about the POM other than the inclusion of the `quarkus-amazon-lambda` extension
 as a dependency.  The extension automatically generates everything you might need for your lambda deployment.
 
-NOTE: In previous versions of this extension you had to set up your pom or gradle
+NOTE: In previous versions of this extension, you had to set up your pom or gradle
 to zip up your executable for native deployments, but this is not the case anymore.
 
 [[gradle]]
@@ -452,13 +452,13 @@ Please check link:{amazon-services-guide}[those guides] on how to use the variou
 With minimal integration, it is possible to leverage the AWS Java SDK v2,
 which can be used to invoke services such as SQS, SNS, S3 and DynamoDB.
 
-For native image, however the URL Connection client must be preferred over the Apache HTTP Client
+For native image, however, the URL Connection client must be preferred over the Apache HTTP Client
 when using synchronous mode, due to issues in the GraalVM compilation (at present).
 
 Add `quarkus-jaxb` as a dependency in your Maven `pom.xml`, or Gradle `build.gradle` file.
 
 You must also force your AWS service client for SQS, SNS, S3 et al., to use the URL Connection client,
-which connects to AWS services over HTTPS, hence the inclusion of the SSL enabled property, as described in the <<https>> section above.
+which connects to AWS services over HTTPS, hence the inclusion of the SSL enabled property, as described in the xref:https[] section above.
 
 [source,java]
 ----

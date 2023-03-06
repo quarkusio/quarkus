@@ -136,9 +136,9 @@ quarkus.oauth2.introspection-url=http://oauth-server/introspect
 ----
 
 You need to specify the introspection URL of your authentication server and the `client-id` / `client-secret` that your application will use to authenticate itself to the authentication server. +
-The extension will then use this information to validate the token and recover the information associate with it.
+The extension will then use this information to validate the token and recover the information associated with it.
 
-For all configuration properties, see the <<config-reference,Configuration reference>> section at the end of this guide.
+For all configuration properties, see the xref:config-reference[Configuration reference] section at the end of this guide.
 
 == Run the application
 
@@ -353,7 +353,7 @@ values that Quarkus will use.
 
 [NOTE]
 ====
-For more details about `@QuarkusTestResource` refer to  xref:getting-started-testing.adoc#quarkus-test-resource[this part of the documentation].
+For more details about `@QuarkusTestResource` refer to xref:getting-started-testing.adoc#quarkus-test-resource[this part of the documentation].
 ====
 
 Let's create an implementation of `QuarkusTestResourceLifecycleManager` called `MockAuthorizationServerTestResource` like so:

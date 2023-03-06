@@ -174,7 +174,7 @@ MongoDB with Panache uses the link:{mongodb-doc-root-url}/fundamentals/data-form
 
 You will be allowed to use the following annotations to customize this mapping:
 
-- `@BsonId`: allows you to customize the ID field, see <<custom-ids,Custom IDs>>.
+- `@BsonId`: allows you to customize the ID field, see xref:custom-ids[Custom IDs].
 - `@BsonProperty`: customize the serialized name of the field.
 - `@BsonIgnore`: ignore a field during the serialization.
 
@@ -324,7 +324,7 @@ MongoDB with Panache uses the link:{mongodb-doc-root-url}/fundamentals/data-form
 
 You will be allowed to use the following annotations to customize this mapping:
 
-- `@BsonId`: allows you to customize the ID field, see <<custom-ids,Custom IDs>>.
+- `@BsonId`: allows you to customize the ID field, see xref:custom-ids[Custom IDs].
 - `@BsonProperty`: customize the serialized name of the field.
 - `@BsonIgnore`: ignore a field during the serialization.
 

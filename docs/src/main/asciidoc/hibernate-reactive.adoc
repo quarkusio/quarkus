@@ -102,7 +102,7 @@ Also, Quarkus will set many Hibernate Reactive configuration settings automatica
 
 WARNING: Configuring Hibernate Reactive using the standard `persistence.xml` configuration file is not supported.
 
-Please, see section <<hr-configuration-properties, Hibernate Reactive configuration properties>> for the list of properties you can set in `{config-file}`.
+See section xref:hr-configuration-properties[Hibernate Reactive configuration properties] for the list of properties you can set in `{config-file}`.
 
 A `Mutiny.SessionFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate Reactive extension is listed among your project dependencies.
 

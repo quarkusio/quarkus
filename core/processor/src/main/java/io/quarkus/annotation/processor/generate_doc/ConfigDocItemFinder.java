@@ -53,7 +53,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.annotation.processor.Constants;
 import io.quarkus.annotation.processor.generate_doc.JavaDocParser.SectionHolder;
 
-class ConfigDoItemFinder {
+class ConfigDocItemFinder {
 
     private static final String COMMA = ",";
     private static final String BACK_TICK = "`";
@@ -71,7 +71,7 @@ class ConfigDoItemFinder {
     private final FsMap allConfigurationGroups;
     private final FsMap allConfigurationRoots;
 
-    public ConfigDoItemFinder(Set<ConfigRootInfo> configRoots,
+    public ConfigDocItemFinder(Set<ConfigRootInfo> configRoots,
             Map<String, TypeElement> configGroupQualifiedNameToTypeElementMap,
             Properties javaDocProperties, FsMap allConfigurationGroups, FsMap allConfigurationRoots) {
         this.configRoots = configRoots;

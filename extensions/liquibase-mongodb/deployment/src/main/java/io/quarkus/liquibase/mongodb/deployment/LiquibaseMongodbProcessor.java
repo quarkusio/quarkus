@@ -97,11 +97,12 @@ class LiquibaseMongodbProcessor {
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(
                 liquibase.sqlgenerator.core.LockDatabaseChangeLogGenerator.class.getName()));
 
-        reflective.produce(new ReflectiveClassBuildItem(false, true, false,
+        reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.change.AbstractSQLChange.class.getName(),
-                liquibase.database.jvm.JdbcConnection.class.getName()));
+                liquibase.database.jvm.JdbcConnection.class.getName())
+                .methods().build());
 
-        reflective.produce(new ReflectiveClassBuildItem(true, true, true,
+        reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.parser.ChangeLogParserConfiguration.class.getName(),
                 liquibase.hub.HubServiceFactory.class.getName(),
                 liquibase.logging.core.DefaultLoggerConfiguration.class.getName(),
@@ -121,10 +122,12 @@ class LiquibaseMongodbProcessor {
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
                 liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName(),
                 liquibase.ext.mongodb.database.MongoClientDriver.class.getName(),
-                liquibase.resource.PathHandlerFactory.class.getName()));
+                liquibase.resource.PathHandlerFactory.class.getName())
+                .constructors().methods().fields().build());
 
-        reflective.produce(new ReflectiveClassBuildItem(false, false, true,
-                liquibase.change.ConstraintsConfig.class.getName()));
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.change.ConstraintsConfig.class.getName())
+                .fields().build());
 
         // register classes marked with @DatabaseChangeProperty for reflection
         Set<String> classesMarkedWithDatabaseChangeProperty = new HashSet<>();
@@ -137,7 +140,8 @@ class LiquibaseMongodbProcessor {
             }
         }
         reflective.produce(
-                new ReflectiveClassBuildItem(true, true, true, classesMarkedWithDatabaseChangeProperty.toArray(new String[0])));
+                ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty.toArray(new String[0]))
+                .constructors().methods().fields().build());
 
         resource.produce(
                 new NativeImageResourceBuildItem(getChangeLogs(liquibaseBuildConfig).toArray(new String[0])));
@@ -205,8 +209,9 @@ class LiquibaseMongodbProcessor {
             }
             services.produce(new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
 
-            reflective.produce(new ReflectiveClassBuildItem(true, true, shouldRegisterFieldForReflection,
-                    implementations.toArray(new String[0])));
+            reflective.produce(ReflectiveClassBuildItem.builder(
+                    implementations.toArray(new String[0]))
+                    .constructors().methods().fields(shouldRegisterFieldForReflection).build());
         } catch (IOException ex) {
             throw new IllegalStateException(ex);
         }

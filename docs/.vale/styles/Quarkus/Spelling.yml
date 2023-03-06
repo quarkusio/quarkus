@@ -31,6 +31,8 @@ filters:
   - "[dD]eclaratively"
   - "[dD]ecompiler"
   - "[dD]eserialization"
+  - "[dD]esynchronize"
+  - "[dD]esynchronized"
   - "[dD]ev"
   - "[dD]ev[wW]orkspace"
   - "[dD]evfile"
@@ -48,6 +50,8 @@ filters:
   - "[gG]etter"
   - "[gG]it"
   - "[gG]radle"
+  
+
   - "[gG]rafana"
   - "[hH]ardcoding"
   - "[hH]eatmap"
@@ -163,8 +167,7 @@ filters:
   - "[uU]psell"
   - "[uU]pselling"
   - "[vV]alidator"
-  - "[yY]aml"
-  - "Let\'s Encrypt"
+  - "Let\\'s Encrypt"
   - adoc
   - Agroal
   - Annobin
@@ -227,6 +230,8 @@ filters:
   - Fabrice
   - Failsafe
   - Fernflower
+  - Flathub
+  - Flatpak
   - Flyway
   - Fortran
   - Funqy
@@ -287,6 +292,7 @@ filters:
   - Minishift
   - Mirantis
   - Mockito
+  - MongoDB
   - MySQL
   - Nagios
   - Narayana

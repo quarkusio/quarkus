@@ -2,7 +2,7 @@
 extends: substitution
 ignorecase: false
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/termssuggestions/
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
 message: "Depending on the context, consider using '%s' rather than '%s'."
 source: Quarkus contributor guide
 action:

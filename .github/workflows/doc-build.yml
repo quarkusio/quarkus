@@ -55,7 +55,7 @@ jobs:
 
       - name: Build Docs
         run: |
-          ./mvnw -e -B --settings .github/mvn-settings.xml clean package -pl docs
+          ./mvnw -e -B --settings .github/mvn-settings.xml clean package -pl docs -Dasciidoctor.fail-if=INFO
 
       - name: Store PR id
         run: echo ${{ github.event.number }} > pr-id.txt

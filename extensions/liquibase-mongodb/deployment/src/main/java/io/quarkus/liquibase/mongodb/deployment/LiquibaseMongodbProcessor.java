@@ -122,7 +122,8 @@ class LiquibaseMongodbProcessor {
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
                 liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName(),
                 liquibase.ext.mongodb.database.MongoClientDriver.class.getName(),
-                liquibase.resource.PathHandlerFactory.class.getName())
+                liquibase.resource.PathHandlerFactory.class.getName(),
+                liquibase.logging.mdc.MdcManagerFactory.class.getName())
                 .constructors().methods().fields().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
@@ -141,7 +142,7 @@ class LiquibaseMongodbProcessor {
         }
         reflective.produce(
                 ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty.toArray(new String[0]))
-                .constructors().methods().fields().build());
+                        .constructors().methods().fields().build());
 
         resource.produce(
                 new NativeImageResourceBuildItem(getChangeLogs(liquibaseBuildConfig).toArray(new String[0])));
@@ -168,7 +169,8 @@ class LiquibaseMongodbProcessor {
                 liquibase.snapshot.SnapshotGenerator.class,
                 liquibase.sqlgenerator.SqlGenerator.class,
                 liquibase.structure.DatabaseObject.class,
-                liquibase.hub.HubService.class)
+                liquibase.hub.HubService.class,
+                liquibase.logging.mdc.MdcManager.class)
                 .forEach(t -> addService(services, reflective, t, false));
 
         // Register Precondition services, and the implementation class for reflection while also registering fields for reflection

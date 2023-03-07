@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.PersistenceUnit;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -28,7 +28,7 @@ import org.wildfly.common.Assert;
 @WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa-h2/testfunctionality")
 public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
-    @PersistenceUnit(unitName = "templatePU")
+    @Inject
     EntityManagerFactory entityManagerFactory;
 
     @Override

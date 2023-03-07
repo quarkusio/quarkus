@@ -6,14 +6,13 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Connecting to an Elasticsearch cluster
 include::_attributes.adoc[]
 :categories: data
-:summary: This guide covers how to use an Elasticsearch cluster using the low level or high level REST clients.
+:summary: This guide covers how to use an Elasticsearch cluster using the low level REST client or the Java API client.
 
 Elasticsearch is a well known full text search engine and NoSQL datastore.
 
 In this guide, we will see how you can get your REST services to use an Elasticsearch cluster.
 
-Quarkus provides two ways of accessing Elasticsearch: via the lower level `RestClient` or via the `RestHighLevelClient` we will call them
-the low level and the high level clients.
+Quarkus provides three ways of accessing Elasticsearch: via the lower level `RestClient`, via the high level `RestHighLevelClient`, or via the Java API client.
 
 == Prerequisites
 
@@ -39,7 +38,7 @@ include::{includes}/devtools/create-app.adoc[]
 This command generates a Maven structure importing the RESTEasy Reactive/JAX-RS, Jackson, and the Elasticsearch low level client extensions.
 After this, the `quarkus-elasticsearch-rest-client` extension has been added to your build file.
 
-If you want to use the high level client instead, replace the `elasticsearch-rest-client` extension by the `elasticsearch-rest-high-level-client` extension.
+If you want to use the Java API client instead, replace the `elasticsearch-rest-client` extension by the `elasticsearch-java-client` extension.
 
 [NOTE]
 ====
@@ -66,21 +65,21 @@ For the Elasticsearch low level client, add:
 implementation("io.quarkus:quarkus-elasticsearch-rest-client")
 ----
 
-For the Elasticsearch high level client, add:
+For the Elasticsearch Java API client, add:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-elasticsearch-rest-high-level-client</artifactId>
+    <artifactId>quarkus-elasticsearch-java-client</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-elasticsearch-rest-high-level-client")
+implementation("io.quarkus:quarkus-elasticsearch-java-client")
 ----
 
 == Creating your first JSON REST service
@@ -103,7 +102,7 @@ public class Fruit {
 Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer.
 
 Now create a `org.acme.elasticsearch.FruitService` that will be the business layer of our application and store/load the fruits from the Elasticsearch instance.
-Here we use the low level client, if you want to use the high level client instead follow the instructions in the <<using-the-high-level-rest-client,Using the High Level REST Client>> paragraph instead.
+Here we use the low level client, if you want to use the Java API client instead follow the instructions in the <<using-the-java-api-client,Using the Java API Client>> paragraph instead.
 
 [source,java]
 ----
@@ -346,10 +345,7 @@ docker run --name elasticsearch  -e "discovery.type=single-node" -e "ES_JAVA_OPT
 
 Now let's run our application via Quarkus dev mode:
 
-:devtools-wrapped:
-+
 include::{includes}/devtools/dev.adoc[]
-:!devtools-wrapped:
 
 You can add new fruits to the list via the following curl command:
 
@@ -364,6 +360,76 @@ And search for fruits by name or color via the flowing curl command:
 ----
 curl localhost:8080/fruits/search?color=yellow
 ----
+
+== Using the Java API Client
+
+Here is a version of the `FruitService` using the Java API client instead of the low level one:
+
+[source,java]
+----
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.*;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.acme.elasticsearch.Fruit;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@ApplicationScoped
+public class FruitService {
+    @Inject
+    ElasticsearchClient client; // <1>
+
+    public void index(Fruit fruit) throws IOException {
+        IndexRequest<Fruit> request = IndexRequest.of(  // <2>
+            b -> b.index("fruits")
+                .id(fruit.id)
+                .document(fruit)); // <3>
+        client.index(request);  // <4>
+    }
+
+    public Fruit get(String id) throws IOException {
+        GetRequest getRequest = GetRequest.of(
+            b -> b.index("fruits")
+                .id(id));
+        GetResponse<Fruit> getResponse = client.get(getRequest, Fruit.class);
+        if (getResponse.found()) {
+            return getResponse.source();
+        }
+        return null;
+    }
+
+    public List<Fruit> searchByColor(String color) throws IOException {
+        return search("color", color);
+    }
+
+    public List<Fruit> searchByName(String name) throws IOException {
+        return search("name", name);
+    }
+
+    private List<Fruit> search(String term, String match) throws IOException {
+        SearchRequest searchRequest = SearchRequest.of(
+            b -> b.index("fruits")
+                .query(QueryBuilders.match().field(term).query(FieldValue.of(match)).build()._toQuery()));
+
+        SearchResponse<Fruit> searchResponse = client.search(searchRequest, Fruit.class);
+        HitsMetadata<Fruit> hits = searchResponse.hits();
+        return hits.hits().stream().map(hit -> hit.source()).collect(Collectors.toList());
+    }
+}
+----
+
+In this example you can note the following:
+
+1. We inject an `ElasticsearchClient` inside the service.
+2. We create an Elasticsearch index request using a builder.
+3. We directly pass the object to the request as the Java API client has a serialization layer.
+4. We send the request to Elasticsearch.
 
 == Using the High Level REST Client
 
@@ -387,8 +453,8 @@ Feel free to override the versions of the clients in your applications depending
 but be aware of https://www.elastic.co/blog/elastic-license-v2[the new licence of the High Level REST Client] for versions 7.11+:
 it is not Open Source and has several usage restrictions.
 
-We will eventually provide an extension for the new Open Source Java client, but it will require changes in your applications
-as it is an entirely new client.
+We provide an extension for the new Open Source Java API client that is a replacement for the High Level REST CLient,
+but it will require changes in your applications as it is an entirely new client.
 ====
 
 Here is a version of the `FruitService` using the high level client instead of the low level one:

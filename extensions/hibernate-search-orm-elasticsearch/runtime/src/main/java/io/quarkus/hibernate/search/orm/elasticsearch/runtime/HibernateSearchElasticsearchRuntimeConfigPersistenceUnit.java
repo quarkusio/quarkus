@@ -297,7 +297,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * ====
          * Indexing synchronization is only relevant when coordination is disabled (which is the default).
          *
-         * With the <<coordination,`outbox-polling` coordination strategy>>,
+         * With the xref:hibernate-search-orm-elasticsearch.adoc#coordination[`outbox-polling` coordination strategy],
          * indexing happens in background threads and is always asynchronous;
          * the behavior is equivalent to the `write-sync` synchronization strategy.
          * ====
@@ -339,7 +339,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * ^!icon:check[role=lime]
          * !===
          *
-         * This property also accepts a <<bean-reference-note-anchor,bean reference>>
+         * This property also accepts a xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference]
          * to a custom implementations of `AutomaticIndexingSynchronizationStrategy`.
          *
          * See

@@ -22,6 +22,7 @@
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>
+        <asciidoctor.fail-if>WARN</asciidoctor.fail-if>
         <roaster-jdt.version>2.26.0.Final</roaster-jdt.version>
         <maven-model-helper.version>21</maven-model-helper.version>
         <eclipse-collections.version>11.1.0</eclipse-collections.version>
@@ -2911,7 +2912,7 @@
                     <enableVerbose>true</enableVerbose>
                     <logHandler>
                         <failIf>
-                          <severity>WARN</severity>
+                          <severity>${asciidoctor.fail-if}</severity>
                         </failIf>
                     </logHandler>
                     <sourceDirectory>target/asciidoc/sources</sourceDirectory>

@@ -470,6 +470,12 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
 
     @Test
     @RequiresRedis6OrHigher
+    void zrevrangeWithScoreEmpty() {
+        assertThat(ds.sortedSet(String.class).zrangeWithScores("top-products", 0, 2, new ZRangeArgs().rev())).isEmpty();
+    }
+
+    @Test
+    @RequiresRedis6OrHigher
     void zrevrangeWithScores() {
         populate();
         assertThat(setOfPlaces.zrangeWithScores(key, 0, -1, new ZRangeArgs().rev()))

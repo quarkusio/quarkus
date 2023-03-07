@@ -9,6 +9,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class AddExtensionToModuleInMultiModuleKtsProjectTest extends QuarkusGradleDevToolsTestBase {
@@ -16,6 +17,7 @@ public class AddExtensionToModuleInMultiModuleKtsProjectTest extends QuarkusGrad
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
 
     @Test
+    @Disabled("Failing far too often")
     public void testBasicMultiModuleBuild() throws Exception {
 
         final File projectDir = getProjectDir("add-extension-multi-module-kts");

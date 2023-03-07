@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { RouterController } from 'router-controller';
+import { StorageController } from 'storage-controller';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import { devuiState } from 'devui-state';
@@ -10,6 +11,8 @@ import '@vaadin/tabs';
  * This component represent the Dev UI Header
  */
 export class QwcHeader extends observeState(LitElement) {
+    
+    storageControl = new StorageController(this);
     
     static styles = css`
         
@@ -122,7 +125,7 @@ export class QwcHeader extends observeState(LitElement) {
     }
 
     _restoreThemePreference() {
-        const storedValue = localStorage.getItem("qwc-header-theme-preference");
+        const storedValue = this.storageControl.get("theme-preference");
         if(storedValue){
             this._selectedTheme = storedValue;
         }else {
@@ -160,7 +163,7 @@ export class QwcHeader extends observeState(LitElement) {
         this._selectedTheme = e.detail.value.name;
         this._createThemeOptions();
         this._changeToSelectedTheme();
-        localStorage.setItem('qwc-header-theme-preference', this._selectedTheme);
+        this.storageControl.set('theme-preference', this._selectedTheme);
     }
 
     _changeToSelectedTheme(){

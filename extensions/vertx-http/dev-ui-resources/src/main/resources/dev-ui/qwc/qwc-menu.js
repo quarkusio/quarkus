@@ -2,6 +2,7 @@ import { LitElement, html, css} from 'lit';
 import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
 import { RouterController } from 'router-controller';
+import { StorageController } from 'storage-controller';
 import '@vaadin/icon';
 
 /**
@@ -9,6 +10,8 @@ import '@vaadin/icon';
  * It creates the menuItems during build and dynamically add the routes and import the relevant components
  */
 export class QwcMenu extends observeState(LitElement) {
+    
+    storageControl = new StorageController(this);
     
     static styles = css`
             .left {
@@ -103,7 +106,7 @@ export class QwcMenu extends observeState(LitElement) {
     }
     
     _restoreState(){
-        const storedState = localStorage.getItem("qwc-menu-state");
+        const storedState = this.storageControl.get("state");
         if(storedState && storedState === "small"){
             this._smaller();
         }else{
@@ -198,13 +201,13 @@ export class QwcMenu extends observeState(LitElement) {
     _smaller() {
         this._show = false;
         this._width = 50;
-        localStorage.setItem('qwc-menu-state', "small");
+        this.storageControl.set('state', "small");
     }
 
     _larger() {
         this._show = true;
         this._width = 250;
-        localStorage.setItem('qwc-menu-state', "large");
+        this.storageControl.set('state', "large");
     }
     
     _quarkus(e) {

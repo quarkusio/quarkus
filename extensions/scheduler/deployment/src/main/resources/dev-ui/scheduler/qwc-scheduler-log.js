@@ -7,8 +7,8 @@ import { LogController } from 'log-controller';
  */
 export class QwcSchedulerLog extends LitElement {
     
-    jsonRpc = new JsonRpc("Scheduler");
-    logControl = new LogController(this, "qwc-scheduler-log");
+    jsonRpc = new JsonRpc("Scheduler", false);
+    logControl = new LogController(this);
 
     static styles = css`
         .text-error {

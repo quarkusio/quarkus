@@ -84,6 +84,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("font/", contextRoot + "font/");
         internalImportMapBuildItem.add("controller/", contextRoot + "controller/");
         internalImportMapBuildItem.add("log-controller", contextRoot + "controller/log-controller.js");
+        internalImportMapBuildItem.add("storage-controller", contextRoot + "controller/storage-controller.js");
         internalImportMapBuildItem.add("router-controller", contextRoot + "controller/router-controller.js");
         internalImportMapBuildItem.add("notifier", contextRoot + "controller/notifier.js");
         internalImportMapBuildItem.add("jsonrpc", contextRoot + "controller/jsonrpc.js");

@@ -1,13 +1,15 @@
 import { LitElement, html, css} from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { LogController } from 'log-controller';
+import { StorageController } from 'storage-controller';
 
 /**
  * This component represent the Dev UI Json RPC Message log
  */
 export class QwcJsonrpcMessages extends LitElement {
     
-    logControl = new LogController(this, "qwc-jsonrpc-messages");
+    logControl = new LogController(this);
+    storageControl = new StorageController(this);
     
     static styles = css`
         .log {
@@ -42,12 +44,20 @@ export class QwcJsonrpcMessages extends LitElement {
         _zoom: {state:true},
         _increment: {state: false},
         _followLog: {state: false},
+        _isOn: {state: false},
     };
     
     constructor() {
         super();
+        const stored = this.storageControl.get("onOffSwitch");
+        if(stored && stored === "on"){
+            this._isOn = true;
+        }else {
+            this._isOn = false;
+        }
+        
         this.logControl
-                .addToggle("On/off switch", true, (e) => {
+                .addToggle("On/off switch", this._isOn, (e) => {
                     this._toggleOnOffClicked(e);
                 }).addItem("Zoom out", "font-awesome-solid:magnifying-glass-minus", "grey", (e) => {
                     this._zoomOut();
@@ -69,7 +79,7 @@ export class QwcJsonrpcMessages extends LitElement {
     
     connectedCallback() {
         super.connectedCallback();
-        this._toggleOnOff(true);
+        this._toggleOnOff(this._isOn);
     }
     
     disconnectedCallback() {
@@ -132,6 +142,11 @@ export class QwcJsonrpcMessages extends LitElement {
             stopEntry.id = Math.floor(Math.random() * 999999);
             stopEntry.isLine = true;
             this._addLogEntry(stopEntry);
+            this.storageControl.remove("onOffSwitch");
+            this._isOn = false;
+        }else{
+            this.storageControl.set("onOffSwitch", "on");
+            this._isOn = true;
         }
     }
     

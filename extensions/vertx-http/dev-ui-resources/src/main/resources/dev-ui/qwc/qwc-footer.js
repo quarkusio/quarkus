@@ -1,6 +1,7 @@
 import { LitElement, html, css} from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { LogController } from 'log-controller';
+import { StorageController } from 'storage-controller';
 import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
 import '@vaadin/tabsheet';
@@ -15,6 +16,8 @@ import 'qwc/qwc-ws-status.js';
  */
 export class QwcFooter extends observeState(LitElement) {
         
+    storageControl = new StorageController(this);
+    
     static styles = css`
     
         vaadin-menu-bar {
@@ -148,7 +151,7 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _restoreHeight(){
-        const storedHeight = localStorage.getItem("qwc-footer-height");
+        const storedHeight = this.storageControl.get("height");
         if(storedHeight){
             this._height = storedHeight;
         }else {
@@ -158,7 +161,7 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _restoreState(){
-        const storedState = localStorage.getItem("qwc-footer-state");
+        const storedState = this.storageControl.get("state");
         if(storedState && storedState === "open"){
             this._open();
         }else {
@@ -167,7 +170,7 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _restoreSelectedTab(){
-        const storedTab = localStorage.getItem("qwc-footer-selected-tab");
+        const storedTab = this.storageControl.get("selected-tab");
         if(storedTab){
             this._tabSelected(storedTab);
         }else {
@@ -243,7 +246,7 @@ export class QwcFooter extends observeState(LitElement) {
             this._controlButtons = LogController.getItemsForTab(devuiState.footer[0].componentName);
             this._selectedTab = 0;
         }
-        localStorage.setItem('qwc-footer-selected-tab', this._selectedTab);
+        this.storageControl.set('selected-tab', this._selectedTab);
     }
 
     _mousedown(e){
@@ -270,7 +273,7 @@ export class QwcFooter extends observeState(LitElement) {
         document.removeEventListener('mouseup', this._mouseup, true);
         
         if(this._height){
-            localStorage.setItem('qwc-footer-height', this._height);
+            this.storageControl.set('height', this._height);
         }
     }
 
@@ -311,7 +314,7 @@ export class QwcFooter extends observeState(LitElement) {
         this._dragClass = "dragOpen";
         this._controlsClass = "controlsOpen";
         this._isOpen=true;
-        localStorage.setItem('qwc-footer-state', "open");
+        this.storageControl.set('state', "open");
     }
     
     _close(){
@@ -324,7 +327,7 @@ export class QwcFooter extends observeState(LitElement) {
         this._dragClass = "dragClose";
         this._controlsClass = "controlsClose";
         this._isOpen=false;
-        localStorage.setItem('qwc-footer-state', "close");
+        this.storageControl.set('state', "close");
     }
     
     _controlButtonClicked(e){

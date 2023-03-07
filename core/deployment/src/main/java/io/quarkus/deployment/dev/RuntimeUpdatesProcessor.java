@@ -88,6 +88,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final DevModeType devModeType;
     volatile Throwable compileProblem;
     volatile Throwable testCompileProblem;
+    volatile Throwable hotReloadProblem;
 
     private volatile Predicate<ClassInfo> disableInstrumentationForClassPredicate = new AlwaysFalsePredicate<>();
     private volatile Predicate<Index> disableInstrumentationForIndexPredicate = new AlwaysFalsePredicate<>();
@@ -388,7 +389,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     public Throwable getDeploymentProblem() {
         //we differentiate between these internally, however for the error reporting they are the same
         return compileProblem != null ? compileProblem
-                : IsolatedDevModeMain.deploymentProblem;
+                : IsolatedDevModeMain.deploymentProblem != null ? IsolatedDevModeMain.deploymentProblem
+                        : hotReloadProblem;
     }
 
     @Override
@@ -551,13 +553,17 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
                 return true;
             } else if (!filesChanged.isEmpty()) {
-                for (Consumer<Set<String>> consumer : noRestartChangesConsumers) {
-                    try {
+                try {
+                    for (Consumer<Set<String>> consumer : noRestartChangesConsumers) {
                         consumer.accept(filesChanged);
-                    } catch (Throwable t) {
-                        log.error("Changed files consumer failed", t);
                     }
+                    hotReloadProblem = null;
+                    getCompileOutput().setMessage(null);
+                } catch (Throwable t) {
+                    hotReloadProblem = t;
+                    getCompileOutput().setMessage(t.getMessage());
                 }
+
                 log.infof("Files changed but restart not needed - notified extensions in: %ss ",
                         Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
             } else if (instrumentationChange) {

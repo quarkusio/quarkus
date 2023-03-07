@@ -30,6 +30,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5-internal</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
@@ -96,6 +101,30 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
+        <executions>
+            <execution>
+                <id>default-test</id>
+                <goals>
+                    <goal>test</goal>
+                </goals>
+                <configuration>
+                    <excludes>
+                    	<exclude>io/quarkus/it/extension/HotReplacementSetupDevModeTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </execution>
+            <execution>
+                <id>quarkus-test</id>
+                <goals>
+                    <goal>test</goal>
+                </goals>
+                <configuration>
+                    <includes>
+                    	<include>io/quarkus/it/extension/HotReplacementSetupDevModeTest.java</include>
+                    </includes>
+                </configuration>
+            </execution>
+        </executions>
         <configuration>
           <systemPropertyVariables>
             <!-- See io.quarkus.extest.runtime.classpath.RecordedClasspathEntries -->

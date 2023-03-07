@@ -7,11 +7,11 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
-public class QuarkusStaticDialectFactoryInitiator implements StandardServiceInitiator<DialectFactory> {
+public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServiceInitiator<DialectFactory> {
 
     private final Dialect dialect;
 
-    public QuarkusStaticDialectFactoryInitiator(Dialect dialect) {
+    public QuarkusRuntimeInitDialectFactoryInitiator(Dialect dialect) {
         this.dialect = dialect;
     }
 
@@ -21,7 +21,7 @@ public class QuarkusStaticDialectFactoryInitiator implements StandardServiceInit
     }
 
     @Override
-    public DialectFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        return new QuarkusStaticDialectFactory(dialect);
+    public DialectFactory initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
+        return new QuarkusRuntimeInitDialectFactory(dialect);
     }
 }

@@ -6,15 +6,13 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
-import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
-
 /**
  * Copied from
  * org.hibernate.engine.jdbc.dialect.internal.DialectFactoryInitiator
  */
-public class DialectFactoryInitiator implements StandardServiceInitiator<DialectFactory> {
+public class QuarkusStaticInitDialectFactoryInitiator implements StandardServiceInitiator<DialectFactory> {
 
-    public static final DialectFactoryInitiator INSTANCE = new DialectFactoryInitiator();
+    public static final QuarkusStaticInitDialectFactoryInitiator INSTANCE = new QuarkusStaticInitDialectFactoryInitiator();
 
     @Override
     public Class<DialectFactory> getServiceInitiated() {
@@ -23,6 +21,6 @@ public class DialectFactoryInitiator implements StandardServiceInitiator<Dialect
 
     @Override
     public DialectFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        return new RecordingDialectFactory();
+        return new QuarkusStaticInitDialectFactory();
     }
 }

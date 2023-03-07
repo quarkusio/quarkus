@@ -31,6 +31,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -60,6 +61,7 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRu
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactive;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
@@ -163,10 +165,14 @@ public final class HibernateReactiveProcessor {
             // - we don't support starting Hibernate Reactive from a persistence.xml
             // - we don't support Hibernate Envers with Hibernate Reactive
             persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
-                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, dbKindOptional,
+                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                    new RecordedConfig(Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                            dbKindOptional,
+                            io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
+                            hibernateOrmConfig.database.ormCompatibilityVersion,
+                            persistenceUnitConfig.unsupportedProperties),
+                    null,
                     jpaModel.getXmlMappings(reactivePU.getName()),
-                    persistenceUnitConfig.unsupportedProperties,
-                    hibernateOrmConfig.database.ormCompatibilityVersion,
                     true, false));
         }
 

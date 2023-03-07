@@ -2,21 +2,21 @@ package io.quarkus.hibernate.orm.runtime;
 
 import java.util.Map;
 
-import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
+import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 
 public class BuildTimeSettings {
 
+    private RecordedConfig source;
     private Map<String, Object> quarkusConfigSettings;
-    private DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
     private Map<String, String> databaseOrmCompatibilitySettings;
     private Map<String, Object> allSettings;
 
-    public BuildTimeSettings(Map<String, Object> quarkusConfigSettings,
-            DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
+    public BuildTimeSettings(RecordedConfig source,
+            Map<String, Object> quarkusConfigSettings,
             Map<String, String> databaseOrmCompatibilitySettings,
             Map<String, Object> allSettings) {
+        this.source = source;
         this.quarkusConfigSettings = Map.copyOf(quarkusConfigSettings);
-        this.databaseOrmCompatibilityVersion = databaseOrmCompatibilityVersion;
         this.databaseOrmCompatibilitySettings = Map.copyOf(databaseOrmCompatibilitySettings);
         this.allSettings = Map.copyOf(allSettings);
     }
@@ -34,12 +34,12 @@ public class BuildTimeSettings {
         return allSettings.containsKey(key);
     }
 
-    public Map<String, Object> getQuarkusConfigSettings() {
-        return quarkusConfigSettings;
+    public RecordedConfig getSource() {
+        return source;
     }
 
-    public DatabaseOrmCompatibilityVersion getDatabaseOrmCompatibilityVersion() {
-        return databaseOrmCompatibilityVersion;
+    public Map<String, Object> getQuarkusConfigSettings() {
+        return quarkusConfigSettings;
     }
 
     public Map<String, String> getDatabaseOrmCompatibilitySettings() {

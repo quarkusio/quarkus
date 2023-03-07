@@ -24,9 +24,9 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `qute-quickstart` {quickstarts-tree-url}/qute-quickstart[directory].
 
-== Hello World with JAX-RS
+== Hello World with Jakarta REST
 
-If you want to use Qute in your JAX-RS application, you need to add an extension first:
+If you want to use Qute in your Jakarta REST application, you need to add an extension first:
 
 * either `quarkus-resteasy-reactive-qute` if you are using RESTEasy Reactive:
 +

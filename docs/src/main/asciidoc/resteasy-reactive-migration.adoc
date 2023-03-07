@@ -13,7 +13,7 @@ NOTE: The reference documentation of RESTEasy Reactive can be found xref:resteas
 
 == Server
 
-The server part of RESTEasy Reactive (`quarkus-resteasy-reactive` and its dependencies) provide an implementation of the JAX-RS specification, but leverage Quarkus' build time processing
+The server part of RESTEasy Reactive (`quarkus-resteasy-reactive` and its dependencies) provide an implementation of the Jakarta REST specification, but leverage Quarkus' build time processing
 and the unified I/O model provided by Vert.x.
 
 === Dependencies
@@ -94,9 +94,9 @@ The following table matches the legacy RESTEasy annotations with the new RESTEas
 |===
 
 NOTE: The previous table does not include the `org.jboss.resteasy.annotations.Form` annotation because there is no RESTEasy Reactive specific replacement for it.
-Users are instead encouraged to use the JAX-RS standard `jakarta.ws.rs.BeanParam` annotation which is supported on both the server and the client.
+Users are instead encouraged to use the Jakarta REST standard `jakarta.ws.rs.BeanParam` annotation which is supported on both the server and the client.
 
-=== JAX-RS providers
+=== Jakarta REST providers
 
 Although RESTEasy Reactive provides the same spec compliant behavior as RESTEasy Classic does, it does not include the same exact provider implementations at runtime.
 
@@ -116,7 +116,7 @@ Any request with a part size exceeding this configuration value will result in H
 
 === Default media types
 
-Quarkus uses smart defaults when determining the media type of JAX-RS methods in order to simplify common use cases.
+Quarkus uses smart defaults when determining the media type of Jakarta REST methods in order to simplify common use cases.
 The difference between `quarkus-resteasy-reactive` and `quarkus-resteasy` is the use of `text/plain` as the default media type instead of `text/html`
 when the method returns a `String`.
 
@@ -166,7 +166,7 @@ When using `quarkus-rest-client-reactive` however, users must use `quarkus-oidc-
 
 === Custom extensions
 
-This is an advanced section that only needs to be read by users who have developed custom extensions that depend on JAX-RS and / or REST Client functionality.
+This is an advanced section that only needs to be read by users who have developed custom extensions that depend on Jakarta REST and / or REST Client functionality.
 
 ==== Dependencies
 
@@ -183,7 +183,7 @@ In general, it should not be needed to have two different versions of the custom
 
 ==== Resource and Provider discovery
 
-Custom extensions that contain JAX-RS Resources, Providers or REST Client interfaces in their runtime modules and depend on Jandex indexing for
+Custom extensions that contain Jakarta REST Resources, Providers or REST Client interfaces in their runtime modules and depend on Jandex indexing for
 their discovery (for example because they have an empty `META-INF/beans.xml` file) don't have to perform any additional setup to make
 these discoverable by RESTEasy Reactive.
 

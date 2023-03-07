@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-spring-data-rest</artifactId>
     <name>Quarkus - Spring Data - REST - Runtime</name>
-    <description>Generate JAX-RS resources for a Spring Data application</description>
+    <description>Generate Jakarta REST resources for a Spring Data application</description>
 
     <dependencies>
         <dependency>

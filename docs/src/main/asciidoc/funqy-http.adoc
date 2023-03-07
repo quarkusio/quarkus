@@ -16,7 +16,7 @@ WARNING: The Funqy HTTP binding is not a replacement for REST over HTTP.  Becaus
 needs to be portable across a lot of different protocols and function providers its HTTP binding
 is very minimalistic and you will lose REST features like linking and the ability to leverage
 HTTP features like cache-control and conditional GETs.  You may want to consider using Quarkus's
-JAX-RS, Spring MVC, or Vert.x Web Reactive Routes support instead, although Funqy will have less overhead
+Jakarta REST, Spring MVC, or Vert.x Web Reactive Routes support instead, although Funqy will have less overhead
 than these alternatives (except Vert.x which is still super fast).
 
 == Prerequisites

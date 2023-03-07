@@ -102,7 +102,7 @@ implementation("io.quarkus:quarkus-keycloak-authorization")
 ----
 
 Let's start by implementing the `/api/users/me` endpoint.
-As you can see from the source code below it is just a regular JAX-RS resource:
+As you can see from the source code below it is just a regular Jakarta REST resource:
 
 [source,java]
 ----
@@ -391,7 +391,7 @@ Note that, depending on how many resources you have in Keycloak the time taken t
 
 In the default configuration, Keycloak is responsible for managing the roles and deciding who can access which routes.
 
-To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the xref:security-oidc-bearer-authentication-concept.adoc[Using OpenID Connect Adapter to Protect JAX-RS Applications] and xref:security-authorize-web-endpoints-reference.adoc[Security Authorization] guides. For more details, check the xref:security-overview-concept.adoc[Security guide].
+To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the xref:security-oidc-bearer-authentication-concept.adoc[Using OpenID Connect Adapter to Protect Jakarta REST Applications] and xref:security-authorize-web-endpoints-reference.adoc[Security Authorization] guides. For more details, check the xref:security-overview-concept.adoc[Security guide].
 
 == Access to Public Resources
 

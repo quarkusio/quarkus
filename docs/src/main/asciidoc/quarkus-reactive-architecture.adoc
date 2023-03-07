@@ -161,7 +161,7 @@ Quarkus adds new features in every release, and the https://github.com/quarkiver
 
 === HTTP
 
-* RESTEasy Reactive: an implementation of JAX-RS tailored for the Quarkus architecture.
+* RESTEasy Reactive: an implementation of Jakarta REST tailored for the Quarkus architecture.
 It follows a reactive-first approach but allows imperative code using the `@Blocking` annotation.
 * Reactive Routes: a declarative way to register HTTP routes directly on the Vert.x router used by Quarkus to route HTTP requests to methods.
 * Reactive Rest Client: allows consuming HTTP endpoints.

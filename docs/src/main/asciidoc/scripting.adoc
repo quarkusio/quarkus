@@ -158,7 +158,7 @@ the IDE project using `jbang edit --live=<idecommand> quarkusapp.java`.
 ====
 
 
-=== The JAX-RS resources
+=== The Jakarta REST resources
 
 Now let us replace the class with one that uses Quarkus features:
 

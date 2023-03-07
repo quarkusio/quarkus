@@ -19,7 +19,7 @@ include::_attributes.adoc[]
 This document explains various HTTP features that you can use in Quarkus.
 
 HTTP is provided using Eclipse Vert.x as the base HTTP layer. Servlet's are supported using a modified version of Undertow that
-runs on top of Vert.x, and RESTEasy is used to provide JAX-RS support. If Undertow is present RESTEasy will run as a
+runs on top of Vert.x, and RESTEasy is used to provide Jakarta REST support. If Undertow is present RESTEasy will run as a
 Servlet filter, otherwise it will run directly on top of Vert.x with no Servlet involvement.
 
 == Serving Static Resources
@@ -310,7 +310,7 @@ quarkus.http.cors=true
 ----
 
 If the filter is enabled and an HTTP request is identified as cross-origin, the CORS policy and headers defined using the
-following properties will be applied before passing the request on to its actual target (servlet, JAX-RS resource, etc.):
+following properties will be applied before passing the request on to its actual target (servlet, Jakarta REST resource, etc.):
 
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-cors-cors-config.adoc[leveloffset=+1, opts=optional]

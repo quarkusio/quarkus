@@ -10,6 +10,7 @@ metadata:
     - "jaxrs"
     - "json"
     - "jsonb"
+    - "jakarta-rest"
   categories:
   - "web"
   - "reactive"

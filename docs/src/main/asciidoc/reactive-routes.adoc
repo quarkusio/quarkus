@@ -11,12 +11,12 @@ include::_attributes.adoc[]
 Reactive routes propose an alternative approach to implement HTTP endpoints where you declare and chain _routes_.
 This approach became very popular in the JavaScript world, with frameworks like Express.Js or Hapi.
 Quarkus also offers the possibility to use reactive routes.
-You can implement REST API with routes only or combine them with JAX-RS resources and servlets.
+You can implement REST API with routes only or combine them with Jakarta REST resources and servlets.
 
 The code presented in this guide is available in this {quickstarts-base-url}[GitHub repository] under the {quickstarts-tree-url}/reactive-routes-quickstart[`reactive-routes-quickstart` directory]
 
 NOTE: Reactive Routes were initially introduced to provide a reactive execution model for HTTP APIs on top of the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture].
-With the introduction of xref:resteasy-reactive.adoc[RESTEasy Reactive], you can now implement reactive HTTP APIs and still use JAX-RS annotations.
+With the introduction of xref:resteasy-reactive.adoc[RESTEasy Reactive], you can now implement reactive HTTP APIs and still use Jakarta REST annotations.
 Reactive Routes are still supported, especially if you want a more _route-based_ approach, and something closer to the underlying reactive engine.
 
 == Quarkus HTTP
@@ -670,7 +670,7 @@ public void init(@Observes io.vertx.mutiny.ext.web.Router router) {
 == Intercepting HTTP requests
 
 You can also register filters that would intercept incoming HTTP requests.
-Note that these filters are also applied for servlets, JAX-RS resources, and reactive routes.
+Note that these filters are also applied for servlets, Jakarta REST resources, and reactive routes.
 
 For example, the following code snippet registers a filter adding an HTTP header:
 

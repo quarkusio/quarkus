@@ -84,7 +84,7 @@ implementation("io.quarkus:quarkus-security-jpa")
 == Write the application
 
 * Let's start by implementing the `/api/public` endpoint to allow all users access to access the application.
-Add a regular JAX-RS resource to your Java source code, as outlined in the following code snippet:
+Add a regular Jakarta REST resource to your Java source code, as outlined in the following code snippet:
 +
 [source,java]
 ----
@@ -108,7 +108,7 @@ public class PublicResource {
 }
 ----
 * The source code for the `/api/admin` endpoint is similar, but instead, you use a `@RolesAllowed` annotation to ensure that only users granted the `admin` role can access the endpoint.
-Add a JAX-RS resource with the following `@RolesAllowed` annotation:
+Add a Jakarta REST resource with the following `@RolesAllowed` annotation:
 +
 [source,java]
 ----

@@ -44,7 +44,7 @@ gcloud auth login
 Quarkus supports deploying your application to Google Cloud Functions via the following extensions:
 
 - xref:gcp-functions.adoc[Google Cloud Functions]: Build functions using the Google Cloud Functions API.
-- xref:gcp-functions-http.adoc[Google Cloud Functions HTTP binding]: Build functions using Quarkus HTTP APIs: RESTEasy (JAX-RS),
+- xref:gcp-functions-http.adoc[Google Cloud Functions HTTP binding]: Build functions using Quarkus HTTP APIs: RESTEasy Reactive (Jakarta REST),
 Undertow (Servlet), Vert.x Web, or xref:funqy-http.adoc[Funqy HTTP].
 - xref:funqy-gcp-functions.adoc[Funky Google Cloud Functions]: Build functions using Funqy.
 

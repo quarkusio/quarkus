@@ -64,7 +64,7 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-opentelemetry")
 ----
 
-=== Examine the JAX-RS resource
+=== Examine the Jakarta REST resource
 
 Create a `src/main/java/org/acme/opentelemetry/TracedResource.java` file with the following content:
 

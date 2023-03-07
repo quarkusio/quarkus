@@ -75,7 +75,7 @@ implementation("io.quarkus:quarkus-elytron-security-ldap")
 
 == Writing the application
 
-Let's start by implementing the `/api/public` endpoint. As you can see from the source code below, it is just a regular JAX-RS resource:
+Let's start by implementing the `/api/public` endpoint. As you can see from the source code below, it is just a regular Jakarta REST resource:
 
 [source,java]
 ----

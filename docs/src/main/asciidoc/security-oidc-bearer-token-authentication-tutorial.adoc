@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 
-Here, you use the Quarkus OpenID Connect (OIDC) extension to secure a JAX-RS application using Bearer authentication.
+Here, you use the Quarkus OpenID Connect (OIDC) extension to secure a Jakarta REST application using Bearer authentication.
 The bearer tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as link:https://www.keycloak.org[Keycloak].
 
 To better understand OIDC Bearer authentication, see xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication].
@@ -82,7 +82,7 @@ implementation("io.quarkus:quarkus-oidc")
 
 === Write the application
 
-Let's start by implementing the `/api/users/me` endpoint. As you can see from the source code below it is just a regular JAX-RS resource:
+Let's start by implementing the `/api/users/me` endpoint. As you can see from the source code below it is just a regular Jakarta REST resource:
 
 [source,java]
 ----

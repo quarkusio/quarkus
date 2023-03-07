@@ -240,7 +240,7 @@ public class FruitResource {
 }
 ----
 
-The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations and use the `FruitService` to list/add new fruits.
+The implementation is pretty straightforward and you just need to define your endpoints using the Jakarta REST annotations and use the `FruitService` to list/add new fruits.
 
 == Configuring Elasticsearch
 The main property to configure is the URL to connect to the Elasticsearch cluster.

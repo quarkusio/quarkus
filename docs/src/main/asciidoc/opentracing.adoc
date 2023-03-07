@@ -73,7 +73,7 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-smallrye-opentracing")
 ----
 
-=== Examine the JAX-RS resource
+=== Examine the Jakarta REST resource
 
 Create the `src/main/java/org/acme/opentracing/TracedResource.java` file with the following content:
 

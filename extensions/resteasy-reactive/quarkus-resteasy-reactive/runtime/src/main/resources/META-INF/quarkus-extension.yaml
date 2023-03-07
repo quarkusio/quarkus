@@ -6,6 +6,7 @@ metadata:
   - "jaxrs"
   - "web"
   - "rest"
+  - "jakarta-rest"
   categories:
   - "web"
   - "reactive"

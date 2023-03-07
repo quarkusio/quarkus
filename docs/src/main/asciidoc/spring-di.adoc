@@ -193,7 +193,7 @@ In the code above, we see that both field injection and constructor injection ar
 Furthermore, the `@Value` annotation on `suffix` has also a default value defined, which in this case will be used since we have not defined `greeting.suffix` in `application.properties`.
 
 
-=== Create the JAX-RS resource
+=== Create the Jakarta REST resource
 
 Create the `src/main/java/org/acme/spring/di/GreeterResource.java` file with the following content:
 

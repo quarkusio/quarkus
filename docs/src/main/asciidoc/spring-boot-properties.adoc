@@ -62,7 +62,7 @@ implementation("io.quarkus:quarkus-spring-boot-properties")
 
 == GreetingController
 
-First, create a `GreetingResource` JAX-RS resource in the
+First, create a `GreetingResource` Jakarta REST resource in the
 `src/main/java/org/acme/spring/boot/properties/GreetingResource.java` file that looks like:
 
 [source,java]

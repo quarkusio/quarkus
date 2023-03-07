@@ -288,7 +288,7 @@ String response = bus.<String>requestAndAwait("greeting", name).body();
 
 Let's revisit a greeting HTTP endpoint and use asynchronous message passing to delegate the call to a separated bean.
 It uses the request/reply dispatching mechanism.
-Instead of implementing the business logic inside the JAX-RS endpoint, we are sending a message.
+Instead of implementing the business logic inside the Jakarta REST endpoint, we are sending a message.
 This message is consumed by another bean and the response is sent using the _reply_ mechanism.
 
 First create a new project using:
@@ -301,7 +301,7 @@ You can already start the application in _dev mode_ using:
 
 include::{includes}/devtools/dev.adoc[]
 
-Then, creates a new JAX-RS resource with the following content:
+Then, creates a new Jakarta REST resource with the following content:
 
 [source,java]
 .src/main/java/org/acme/vertx/EventResource.java

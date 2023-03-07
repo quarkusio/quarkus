@@ -183,9 +183,9 @@ The `FruitRepository` above extends Spring Data's `org.springframework.data.repo
 available to `FruitRepository`.
 Additionally `findByColor` is defined whose purpose is to return all Fruit entities that match the specified color.
 
-== Update the JAX-RS resource
+== Update the Jakarta REST resource
 
-With the repository in place, the next order of business is to create the JAX-RS resource that will use the `FruitRepository`.
+With the repository in place, the next order of business is to create the Jakarta REST resource that will use the `FruitRepository`.
 Create `FruitResource` with the following content:
 
 [source,java]
@@ -254,7 +254,7 @@ public class FruitResource {
 
 === Note on Spring Web
 
-The JAX-RS resource can also be substituted with a Spring Web controller as Quarkus supports REST endpoint definition using Spring controllers.
+The Jakarta REST resource can also be substituted with a Spring Web controller as Quarkus supports REST endpoint definition using Spring controllers.
 See the xref:spring-web.adoc[Spring Web guide] for more details.
 
 == Update the test

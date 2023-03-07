@@ -85,7 +85,7 @@ public class HelloService {
 
 == How to customize authentication exception responses
 
-You can use JAX-RS `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException`, for example:
+You can use Jakarta REST `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException`, for example:
 
 [source,java]
 ----

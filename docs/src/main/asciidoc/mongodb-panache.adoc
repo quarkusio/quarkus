@@ -445,9 +445,9 @@ NOTE: The rest of the documentation show usages based on the active record patte
 but keep in mind that they can be performed with the repository pattern as well.
 The repository pattern examples have been omitted for brevity.
 
-== Writing a JAX-RS resource
+== Writing a Jakarta REST resource
 
-First, include one of the RESTEasy extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for JAX-RS and JSON support.
+First, include one of the RESTEasy extensions to enable Jakarta REST endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for Jakarta REST and JSON support.
 
 Then, you can create the following resource to create/read/update/delete your Person entity:
 
@@ -981,7 +981,7 @@ Uni<Boolean> deleted = ReactivePerson.deleteById(personId);
 Uni<Long> updated = ReactivePerson.update("name", "Mortal").where("status", Status.Alive);
 ----
 
-TIP: If you use MongoDB with Panache in conjunction with RESTEasy Reactive, you can directly return a reactive type inside your JAX-RS resource endpoint.
+TIP: If you use MongoDB with Panache in conjunction with RESTEasy Reactive, you can directly return a reactive type inside your Jakarta REST resource endpoint.
 
 The same query facility exists for the reactive types, but the `stream()` methods act differently: they return a `Multi` (which implement  a reactive stream `Publisher`) instead of a `Stream`.
 

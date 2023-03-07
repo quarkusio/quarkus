@@ -46,7 +46,7 @@ First, we need a new project. Create a new project with the following command:
 :create-app-extensions: smallrye-fault-tolerance,resteasy-reactive-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a project, importing the extensions for RESTEasy Reactive/JAX-RS and SmallRye Fault Tolerance.
+This command generates a project, importing the extensions for RESTEasy Reactive/Jakarta REST and SmallRye Fault Tolerance.
 
 If you already have your Quarkus project configured, you can add the `smallrye-fault-tolerance` extension
 to your project by running the following command in your project base directory:

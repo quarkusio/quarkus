@@ -19,7 +19,7 @@ For example, the credentials can come from the `Authorization` header, client HT
 
 You can inject a `SecurityIdentity` instance for every authenticated resource to get the authenticated identity information.
 
-In other contexts, it is possible to have other parallel representations of the same information or parts of it, for example, `SecurityContext` for JAX-RS or `JsonWebToken` for JSON Web Tokens (JWT).
+In other contexts, it is possible to have other parallel representations of the same information or parts of it, for example, `SecurityContext` for Jakarta REST or `JsonWebToken` for JSON Web Tokens (JWT).
 
 For more information, see xref:security-identity-providers-concept.adoc[Identity providers].
 

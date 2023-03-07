@@ -90,7 +90,7 @@ The model above is only a subset of the fields provided by the service, but it s
 
 == Create the interface
 
-Using the REST Client Reactive is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/ExtensionsService.java` and have the following content:
+Using the REST Client Reactive is as simple as creating an interface using the proper Jakarta REST and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/ExtensionsService.java` and have the following content:
 
 [source, java]
 ----
@@ -118,7 +118,7 @@ The purpose of the annotations in the code above is the following:
 
 * `@RegisterRestClient` allows Quarkus to know that this interface is meant to be available for
 CDI injection as a REST Client
-* `@Path`, `@GET` and `@QueryParam` are the standard JAX-RS annotations used to define how to access the service
+* `@Path`, `@GET` and `@QueryParam` are the standard Jakarta REST annotations used to define how to access the service
 
 [NOTE]
 ====
@@ -126,7 +126,7 @@ When the `quarkus-rest-client-reactive-jackson` extension is installed, Quarkus 
 by default for most return values, unless the media type is explicitly set via `@Produces` or `@Consumes` annotations.
 
 If you don't rely on the JSON default, it is heavily recommended to annotate your endpoints with the `@Produces` and `@Consumes` annotations to define precisely the expected content-types.
-It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
+It will allow to narrow down the number of Jakarta REST providers (which can be seen as converters) included in the native executable.
 ====
 
 [WARNING]
@@ -317,7 +317,7 @@ quarkus.rest-client.alpn=true
 quarkus.rest-client.extensions-api.alpn=true
 ----
 
-== Create the JAX-RS resource
+== Create the Jakarta REST resource
 
 Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:
 
@@ -822,7 +822,7 @@ public interface ExtensionsService {
 <2> `@ClientHeaderParam` can be used on the client interface and on methods. It can specify a constant header value...
 <3> ... and a name of a method that should compute the value of the header. It can either be a static method or a default method in this interface
 <4> ... as well as a value from your application's configuration
-<5> ... or as a normal JAX-RS `@HeaderParam` annotated argument
+<5> ... or as a normal Jakarta REST `@HeaderParam` annotated argument
 
 [NOTE]
 ====

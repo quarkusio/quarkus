@@ -175,21 +175,25 @@ public final class HibernateOrmProcessor {
     void registerHibernateOrmMetadataForCoreDialects(
             BuildProducer<DatabaseKindDialectBuildItem> producer) {
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.DB2,
-                "org.hibernate.dialect.DB297Dialect"));
+                "org.hibernate.dialect.DB2Dialect"));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.DERBY,
-                "org.hibernate.dialect.DerbyTenSevenDialect"));
+                "org.hibernate.dialect.DerbyDialect"));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.H2,
                 "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect"));
+        // using MariaDBDialect will make us go back to 10.3
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MARIADB,
                 "org.hibernate.dialect.MariaDB106Dialect"));
+        // using SQLServerDialect will make us go back to 2008
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MSSQL,
                 "org.hibernate.dialect.SQLServer2016Dialect"));
+        // using MySQLDialect will make us go back to 5.7
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MYSQL,
                 "org.hibernate.dialect.MySQL8Dialect"));
+        // using OracleDialect will make us go back to 11.2
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.ORACLE,
                 "org.hibernate.dialect.Oracle12cDialect"));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.POSTGRESQL,
-                "io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect"));
+                "org.hibernate.dialect.PostgreSQLDialect"));
     }
 
     @BuildStep

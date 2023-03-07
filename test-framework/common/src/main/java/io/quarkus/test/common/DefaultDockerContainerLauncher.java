@@ -121,6 +121,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.add("--net=" + devServicesLaunchResult.networkId());
         }
 
+        args.addAll(toEnvVar("quarkus.log.category.\"io.quarkus\".level", "INFO"));
         if (DefaultJarLauncher.HTTP_PRESENT) {
             args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
             args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));

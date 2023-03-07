@@ -38,10 +38,10 @@ public class PicocliTest {
     public void testMethodSubCommand(QuarkusMainLauncher launcher) {
         LaunchResult result = launcher.launch("with-method-sub-command", "hello", "-n", "World!");
         assertThat(result.exitCode()).isZero();
-        assertThat(result.getOutput()).isEqualTo("Hello World!");
+        assertThat(result.getOutput()).contains("Hello World!");
         result = launcher.launch("with-method-sub-command", "goodBye", "-n", "Test?");
         assertThat(result.exitCode()).isZero();
-        assertThat(result.getOutput()).isEqualTo("Goodbye Test?");
+        assertThat(result.getOutput()).contains("Goodbye Test?");
     }
 
     @Test
@@ -49,7 +49,7 @@ public class PicocliTest {
         org.jboss.logging.Logger.getLogger("test").error("error");
         LaunchResult result = launcher.launch("with-method-sub-command", "hello", "-n", "World!");
         assertThat(result.exitCode()).isZero();
-        assertThat(result.getOutput()).isEqualTo("Hello World!");
+        assertThat(result.getOutput()).contains("Hello World!");
     }
 
     @Test
@@ -58,14 +58,13 @@ public class PicocliTest {
         LaunchResult result = launcher.launch("with-method-sub-command", "loggingHello", "-n", "World!");
         assertThat(result.exitCode()).isZero();
         assertThat(result.getOutput()).contains("ERROR [io.qua.it.pic.WithMethodSubCommand] (main) Hello World!");
-        assertThat(result.getOutputStream().size()).isEqualTo(1);
         assertThat(result.getOutput()).doesNotContain("ERROR [test] (main) error");
     }
 
     @Test
     @Launch({ "command-used-as-parent", "-p", "testValue", "child" })
     public void testParentCommand(LaunchResult result) {
-        assertThat(result.getOutput()).isEqualTo("testValue");
+        assertThat(result.getOutput()).contains("testValue");
 
         assertThat(value).isNotNull();
     }
@@ -84,7 +83,7 @@ public class PicocliTest {
     @Test
     @Launch({ "dynamic-proxy" })
     public void testDynamicProxy(LaunchResult result) {
-        assertThat(result.getOutput()).isEqualTo("2007-12-03T10:15:30");
+        assertThat(result.getOutput()).contains("2007-12-03T10:15:30");
 
         assertThat(value).isNotNull();
     }
@@ -128,7 +127,7 @@ public class PicocliTest {
     @Test
     @Launch("default-value-provider")
     public void testDefaultValueProvider(LaunchResult result) {
-        assertThat(result.getOutput()).isEqualTo("default:default-value");
+        assertThat(result.getOutput()).contains("default:default-value");
 
         assertThat(value).isNotNull();
     }

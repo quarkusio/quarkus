@@ -132,6 +132,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         Path logFile = PropertyTestUtil.getLogFilePath();
         args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
         args.add("-Dquarkus.log.file.enable=true");
+        args.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
         if (testProfile != null) {
             args.add("-Dquarkus.profile=" + testProfile);
         }

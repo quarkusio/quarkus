@@ -279,7 +279,7 @@ public abstract class BasePanacheMongoResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, entityEnhancer));
 
             //register for reflection entity classes
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, modelClass));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(modelClass).fields(true).methods(true).build());
 
             // Register for building the property mapping cache
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(modelClass));

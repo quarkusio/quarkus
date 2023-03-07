@@ -1,5 +1,6 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_ENUM_VALUE;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_MAP_KEY;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_SECTION;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_ITEM;
@@ -52,7 +53,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.annotation.processor.Constants;
 import io.quarkus.annotation.processor.generate_doc.JavaDocParser.SectionHolder;
 
-class ConfigDoItemFinder {
+class ConfigDocItemFinder {
 
     private static final String COMMA = ",";
     private static final String BACK_TICK = "`";
@@ -70,7 +71,7 @@ class ConfigDoItemFinder {
     private final FsMap allConfigurationGroups;
     private final FsMap allConfigurationRoots;
 
-    public ConfigDoItemFinder(Set<ConfigRootInfo> configRoots,
+    public ConfigDocItemFinder(Set<ConfigRootInfo> configRoots,
             Map<String, TypeElement> configGroupQualifiedNameToTypeElementMap,
             Properties javaDocProperties, FsMap allConfigurationGroups, FsMap allConfigurationRoots) {
         this.configRoots = configRoots;
@@ -435,7 +436,12 @@ class ConfigDoItemFinder {
                 final String constantJavaDocKey = javaDocKey + DOT + enumValue;
                 final String rawJavaDoc = javaDocProperties.getProperty(constantJavaDocKey);
 
-                enumValue = useHyphenatedEnumValue ? hyphenateEnumValue(enumValue) : enumValue;
+                String explicitEnumValueName = extractEnumValueName(field);
+                if (explicitEnumValueName != null) {
+                    enumValue = explicitEnumValueName;
+                } else {
+                    enumValue = useHyphenatedEnumValue ? hyphenateEnumValue(enumValue) : enumValue;
+                }
                 if (rawJavaDoc != null && !rawJavaDoc.isBlank()) {
                     // Show enum constant description as a Tooltip
                     String javaDoc = enumJavaDocParser.parseConfigDescription(rawJavaDoc);
@@ -448,6 +454,22 @@ class ConfigDoItemFinder {
         }
 
         return acceptedValues;
+    }
+
+    private String extractEnumValueName(Element enumField) {
+        for (AnnotationMirror annotationMirror : enumField.getAnnotationMirrors()) {
+            String annotationName = annotationMirror.getAnnotationType().toString();
+            if (annotationName.equals(ANNOTATION_CONFIG_DOC_ENUM_VALUE)) {
+                for (var entry : annotationMirror.getElementValues().entrySet()) {
+                    var key = entry.getKey().toString();
+                    var value = entry.getValue().getValue();
+                    if ("value()".equals(key)) {
+                        return value.toString();
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private boolean isEnumType(TypeMirror realTypeMirror) {

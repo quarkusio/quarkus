@@ -399,7 +399,7 @@ public final class HibernateOrmProcessor {
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             Collections.emptyMap(),
-                            hibernateOrmConfig.databaseOrmCompatibilityVersion,
+                            hibernateOrmConfig.database.ormCompatibilityVersion,
                             false, true));
         }
 
@@ -1209,7 +1209,7 @@ public final class HibernateOrmProcessor {
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
                         persistenceUnitConfig.unsupportedProperties,
-                        hibernateOrmConfig.databaseOrmCompatibilityVersion,
+                        hibernateOrmConfig.database.ormCompatibilityVersion,
                         false, false));
     }
 

@@ -122,9 +122,9 @@ final public class ConfigDocItemScanner {
             throws IOException {
 
         Set<ConfigDocGeneratedOutput> configDocGeneratedOutputs = new HashSet<>();
-        final ConfigDoItemFinder configDoItemFinder = new ConfigDoItemFinder(configRoots, configGroupsToTypeElement,
+        final ConfigDocItemFinder configDocItemFinder = new ConfigDocItemFinder(configRoots, configGroupsToTypeElement,
                 javaDocProperties, allConfigGroupGeneratedDocs, allExtensionGeneratedDocs);
-        final ScannedConfigDocsItemHolder inMemoryScannedItemsHolder = configDoItemFinder.findInMemoryConfigurationItems();
+        final ScannedConfigDocsItemHolder inMemoryScannedItemsHolder = configDocItemFinder.findInMemoryConfigurationItems();
 
         if (!inMemoryScannedItemsHolder.isEmpty()) {
             updateScannedExtensionArtifactFiles(inMemoryScannedItemsHolder);

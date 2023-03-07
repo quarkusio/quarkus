@@ -25,13 +25,13 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 public class InputHandler implements ServerRestHandler {
 
     final long maxBufferSize;
-    private volatile Executor executor;
-    private final Supplier<Executor> supplier;
+    private volatile Executor workerExecutor;
+    private final Supplier<Executor> workerExecutorSupplier;
     private final ClassLoader originalTCCL;
 
-    public InputHandler(long maxBufferSize, Supplier<Executor> supplier) {
+    public InputHandler(long maxBufferSize, Supplier<Executor> workerExecutorSupplier) {
         this.maxBufferSize = maxBufferSize;
-        this.supplier = supplier;
+        this.workerExecutorSupplier = workerExecutorSupplier;
         // capture the proper TCCL in order to avoid losing it to Vert.x in dev-mode
         this.originalTCCL = Thread.currentThread().getContextClassLoader();
 
@@ -93,8 +93,8 @@ public class InputHandler implements ServerRestHandler {
             data.add(event);
             if (dataCount > maxBufferSize) {
                 context.serverRequest().pauseRequestInput();
-                if (executor == null) {
-                    executor = supplier.get();
+                if (workerExecutor == null) {
+                    workerExecutor = workerExecutorSupplier.get();
                 }
                 //super inefficient
                 //TODO: write a stream that just uses the existing vert.x buffers
@@ -107,7 +107,7 @@ public class InputHandler implements ServerRestHandler {
                 }
                 //todo timeout
                 context.setInputStream(context.serverRequest().createInputStream(ByteBuffer.wrap(ar)));
-                context.resume(executor);
+                context.resume(workerExecutor);
             }
         }
     }

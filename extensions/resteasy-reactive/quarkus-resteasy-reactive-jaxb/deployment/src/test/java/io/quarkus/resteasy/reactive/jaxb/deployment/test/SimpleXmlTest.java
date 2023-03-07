@@ -262,9 +262,8 @@ public class SimpleXmlTest {
         @Produces(MediaType.APPLICATION_XML)
         @Consumes(MediaType.APPLICATION_XML)
         public Person personTest(Person person) {
-            //large requests should get bumped from the IO thread
-            if (!BlockingOperationControl.isBlockingAllowed()) {
-                throw new RuntimeException("should have dispatched");
+            if (BlockingOperationControl.isBlockingAllowed()) {
+                throw new RuntimeException("should have dispatched back to event loop");
             }
             return person;
         }

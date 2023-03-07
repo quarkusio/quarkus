@@ -286,6 +286,7 @@ public class RuntimeResourceDeployment {
         }
         // form params can be everywhere (field, beanparam, param)
         boolean checkWithFormReadRequestFilters = false;
+        boolean inputHandlerEngaged = false;
         if (method.isFormParamRequired() || hasWithFormReadRequestFilters) {
             // read the body as multipart in one go
             handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier, method.getFileFormNames()));
@@ -296,6 +297,7 @@ public class RuntimeResourceDeployment {
                     // allow the body to be read by chunks
                     handlers.add(new InputHandler(resteasyReactiveConfig.getInputBufferSize(), executorSupplier));
                     checkWithFormReadRequestFilters = true;
+                    inputHandlerEngaged = true;
                 }
             }
         }
@@ -324,6 +326,10 @@ public class RuntimeResourceDeployment {
             }
             handlers.add(new RequestDeserializeHandler(typeClass, genericType, consumesMediaTypes, serialisers,
                     bodyParameterIndex));
+            if (inputHandlerEngaged) {
+                handlers.add(NonBlockingHandler.INSTANCE);
+            }
+
         }
 
         // given that we may inject form params in the endpoint we need to make sure we read the body before

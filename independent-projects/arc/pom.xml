@@ -73,6 +73,7 @@
         <module>atinject-tck-runner</module>
         <module>cdi-tck-porting-pkg</module>
         <module>cdi-tck-runner</module>
+        <module>lang-model-tck-runner</module>
     </modules>
 
     <dependencyManagement>

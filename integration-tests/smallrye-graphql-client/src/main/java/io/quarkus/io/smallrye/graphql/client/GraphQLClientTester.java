@@ -2,8 +2,11 @@ package io.quarkus.io.smallrye.graphql.client;
 
 import static io.smallrye.graphql.client.core.Argument.arg;
 import static io.smallrye.graphql.client.core.Argument.args;
+import static io.smallrye.graphql.client.core.Directive.directive;
+import static io.smallrye.graphql.client.core.DirectiveArgument.directiveArg;
 import static io.smallrye.graphql.client.core.Document.document;
 import static io.smallrye.graphql.client.core.Field.field;
+import static io.smallrye.graphql.client.core.Field.fieldWithDirectives;
 import static io.smallrye.graphql.client.core.Operation.operation;
 
 import java.util.List;
@@ -147,6 +150,24 @@ public class GraphQLClientTester {
                         || responses.get(i).hasError()) {
                     throw new RuntimeException("Unexpected response: " + responses.get(i));
                 }
+            }
+        }
+    }
+
+    @GET
+    @Path("/dynamic-directive/{url}")
+    public void dynamicDirective(@PathParam("url") String url) throws Exception {
+        try (DynamicGraphQLClient client = DynamicGraphQLClientBuilder.newBuilder().url(url.toString() + "/graphql").build()) {
+            Document query = document(
+                    operation(OperationType.QUERY,
+                            fieldWithDirectives("piNumber",
+                                    directive("skip", directiveArg("if", false)))));
+            Response response = client.executeSync(query);
+
+            final String expectedResult = "3.14159";
+            final String result = response.getData().getString("piNumber");
+            if (!result.equals(expectedResult)) {
+                throw new RuntimeException("Unexpected response: " + response);
             }
         }
     }

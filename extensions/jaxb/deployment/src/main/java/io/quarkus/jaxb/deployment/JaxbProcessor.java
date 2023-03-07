@@ -300,6 +300,7 @@ public class JaxbProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void setupJaxbContextConfig(JaxbConfig config,
             List<JaxbClassesToBeBoundBuildItem> classesToBeBoundBuildItems,
+            List<ExcludeJaxbClassesToBeBoundBuildItem> classesToBeExcludedBuildItems,
             JaxbContextConfigRecorder jaxbContextConfig) {
         Set<String> classNamesToBeBound = new HashSet<>();
         for (JaxbClassesToBeBoundBuildItem classesToBeBoundBuildItem : classesToBeBoundBuildItems) {
@@ -309,6 +310,10 @@ public class JaxbProcessor {
         // remove classes that have been excluded by users
         if (config.excludeClasses.isPresent()) {
             classNamesToBeBound.removeAll(config.excludeClasses.get());
+        }
+
+        for (ExcludeJaxbClassesToBeBoundBuildItem exclusions : classesToBeExcludedBuildItems) {
+            classNamesToBeBound.removeAll(exclusions.getClasses());
         }
 
         // parse class names to class

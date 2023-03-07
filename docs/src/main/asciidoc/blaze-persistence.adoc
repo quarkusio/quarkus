@@ -9,8 +9,8 @@ include::_attributes.adoc[]
 :summary: This guide explains how to use Blaze-Persistence to simplify your data and DTO layers.
 :config-file: application.properties
 
-Blaze-Persistence offers a fluent query builder API on top of JPA with a deep Hibernate ORM integration that enables the
-use of advanced SQL features like Common Table Expressions while staying in the realm of the JPA model.
+Blaze-Persistence offers a fluent query builder API on top of Jakarta Persistence with a deep Hibernate ORM integration that enables the
+use of advanced SQL features like Common Table Expressions while staying in the realm of the Jakarta Persistence model.
 
 On top of that, the Blaze-Persistence Entity-View module allows for DTO definitions that can be applied to business logic
 queries which are then transformed to optimized queries that only fetch the data that is needed to construct the DTO instances.

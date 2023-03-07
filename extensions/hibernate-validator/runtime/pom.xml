@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-hibernate-validator</artifactId>
     <name>Quarkus - Hibernate Validator - Runtime</name>
-    <description>Validate object properties (field, getter) and method parameters for your beans (REST, CDI, JPA)</description>
+    <description>Validate object properties (field, getter) and method parameters for your beans (REST, CDI, Jakarta Persistence)</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

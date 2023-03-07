@@ -55,8 +55,8 @@ For more information, see the following documentation:
 
 * xref:security-basic-authentication-concept.adoc[Basic authentication]
 ** xref:security-basic-authentication-howto.adoc[Enable Basic authentication]
-* xref:security-jpa-concept.adoc[Quarkus Security with JPA]
-** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
+* xref:security-jpa-concept.adoc[Quarkus Security with Jakarta Persistence]
+** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
 * xref:security-identity-providers-concept.adoc[Identity providers]
 
 [[form-auth]]

@@ -33,7 +33,7 @@ Quarkus Security is also highly customizable. For more information, see xref:sec
 
 == Getting started with Quarkus Security
 
-To get started with security in Quarkus, we recommend you combine the Quarkus built-in xref:security-basic-authentication-concept.adoc[Basic authentication] with the JPA identity provider to enable role-based access control (RBAC).
+To get started with security in Quarkus, we recommend you combine the Quarkus built-in xref:security-basic-authentication-concept.adoc[Basic authentication] with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
 Complete the steps in the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication] tutorial.
 
 After you have successfully secured your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, OpenID Connect (OIDC) authentication.
@@ -85,6 +85,6 @@ For information about security vulnerabilities, see xref:security-vulnerability-
 
 == References
 
-* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
+* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
 * xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 * xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC bearer authentication]

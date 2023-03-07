@@ -23,7 +23,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mongodb-panache</artifactId>
         </dependency>
-        <!-- RESTEasy Links need a JPA ID annotation in a classpath -->
+        <!-- RESTEasy Links need a Jakarta Persistence ID annotation in a classpath -->
         <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>

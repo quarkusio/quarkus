@@ -56,7 +56,7 @@ Depending on the use case, other authentication mechanisms that delegate usernam
 For more information about how you can secure your Quarkus applications by using Basic authentication, see the following resources:
 
 * xref:security-basic-authentication-howto.adoc[Enable Basic authentication]
-* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
+* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
 
 == Role-based access control
 

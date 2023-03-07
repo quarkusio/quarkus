@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>quarkus-security-jpa-deployment</artifactId>
-    <name>Quarkus - Security JPA - Deployment</name>
+    <name>Quarkus - Security Jakarta Persistence - Deployment</name>
 
     <dependencies>
         <dependency>

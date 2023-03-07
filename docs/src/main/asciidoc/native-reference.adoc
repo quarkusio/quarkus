@@ -1925,7 +1925,7 @@ Option (2) is a straight forward alternative to work around the issue, but comes
 === I get an `OutOfMemoryError` (OOME) building native executables, what can I do?
 
 Building native executables is not only time consuming, but it also takes a fair amount of memory.
-For example, building a sample native Quarkus JPA application such as the Hibernate quickstart,
+For example, building a sample native Quarkus Jakarta Persistence application such as the Hibernate ORM quickstart,
 may use 6GB to 8GB resident set size in memory.
 A big chunk of this memory is Java heap,
 but extra memory is required for other aspects of the JVM that runs the native building process.

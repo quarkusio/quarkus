@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :summary: Learn how to build and push container images with Jib, S2I or Docker as part of the Quarkus build.
 
 Quarkus provides extensions for building (and pushing) container images. Currently, it supports:
+TESTING
 
 - <<#jib,Jib>>
 - <<#docker,Docker>>

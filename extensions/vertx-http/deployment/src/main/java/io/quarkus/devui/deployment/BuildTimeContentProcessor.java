@@ -76,17 +76,26 @@ public class BuildTimeContentProcessor {
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
         internalImportMapBuildItem.add("devui/", contextRoot + "/");
+        // Quarkus Web Components
         internalImportMapBuildItem.add("qwc/", contextRoot + "qwc/");
+        // Quarkus UI
         internalImportMapBuildItem.add("qui/", contextRoot + "qui/");
         internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
         internalImportMapBuildItem.add("qui-alert", contextRoot + "qui/qui-alert.js");
+        // Echarts
+        internalImportMapBuildItem.add("echarts/", contextRoot + "echarts/");
+        internalImportMapBuildItem.add("echarts-gauge-grade", contextRoot + "echarts/echarts-gauge-grade.js");
+
+        // Other assets
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");
         internalImportMapBuildItem.add("font/", contextRoot + "font/");
+        // Controllers
         internalImportMapBuildItem.add("controller/", contextRoot + "controller/");
         internalImportMapBuildItem.add("log-controller", contextRoot + "controller/log-controller.js");
         internalImportMapBuildItem.add("router-controller", contextRoot + "controller/router-controller.js");
         internalImportMapBuildItem.add("notifier", contextRoot + "controller/notifier.js");
         internalImportMapBuildItem.add("jsonrpc", contextRoot + "controller/jsonrpc.js");
+        // State
         internalImportMapBuildItem.add("state/", contextRoot + "state/");
         internalImportMapBuildItem.add("theme-state", contextRoot + "state/theme-state.js");
         internalImportMapBuildItem.add("connection-state", contextRoot + "state/connection-state.js");

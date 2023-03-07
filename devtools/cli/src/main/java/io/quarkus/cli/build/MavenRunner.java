@@ -7,6 +7,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -25,10 +26,14 @@ import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.commands.RemoveExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
+import io.quarkus.platform.tools.ToolsConstants;
+import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
@@ -142,16 +147,21 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(String targetPlatformVersion, String targetPlatformStreamId, boolean perModule)
+    public Integer updateProject(String targetPlatformVersion, String targetPlatformStream, boolean perModule)
             throws Exception {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, true);
-        args.add("quarkus:update");
+        final ExtensionCatalog extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(
+                ToolsConstants.QUARKUS_CORE_GROUP_ID, null,
+                Version.clientVersion(),
+                QuarkusProjectHelper.artifactResolver(), MessageWriter.info());
+        final Properties props = ToolsUtils.readQuarkusProperties(extensionCatalog);
+        args.add(ToolsUtils.getPluginKey(props) + ":" + ToolsUtils.getMavenPluginVersion(props) + ":update");
         if (targetPlatformVersion != null) {
             args.add("-DplatformVersion=" + targetPlatformVersion);
         }
-        if (targetPlatformStreamId != null) {
-            args.add("-DstreamId=" + targetPlatformStreamId);
+        if (targetPlatformStream != null) {
+            args.add("-Dstream=" + targetPlatformStream);
         }
         if (perModule) {
             args.add("-DperModule");

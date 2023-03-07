@@ -75,7 +75,7 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(String targetPlatformVersion, String targetPlatformStreamId, boolean perModule)
+    public Integer updateProject(String targetPlatformVersion, String targetPlatformStream, boolean perModule)
             throws Exception {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }

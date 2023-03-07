@@ -4,8 +4,8 @@ import picocli.CommandLine;
 
 public class TargetQuarkusVersionGroup {
 
-    @CommandLine.Option(paramLabel = "targetStreamId", names = { "-S",
-            "--stream-id" }, description = "A target stream id, for example:%n  2.0")
+    @CommandLine.Option(paramLabel = "targetStream", names = { "-S",
+            "--stream" }, description = "A target stream, for example:%n  2.0")
     public String streamId;
 
     @CommandLine.Option(paramLabel = "targetPlatformVersion", names = { "-P",

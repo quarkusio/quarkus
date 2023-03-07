@@ -102,7 +102,7 @@ public interface BuildSystemRunner {
 
     Integer projectInfo(boolean perModule) throws Exception;
 
-    Integer updateProject(String targetPlatformVersion, String targetPlatformStreamId, boolean perModule) throws Exception;
+    Integer updateProject(String targetPlatformVersion, String targetPlatformStream, boolean perModule) throws Exception;
 
     BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 

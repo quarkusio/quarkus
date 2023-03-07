@@ -20,9 +20,9 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.registry.RegistryClientMixin;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.registry.config.RegistriesConfigLocator;
-import io.quarkus.runtime.util.StringUtil;
 
 public class GradleRunner implements BuildSystemRunner {
     public static final String[] windowsWrapper = { "gradlew.cmd", "gradlew.bat" };
@@ -136,22 +136,11 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(String targetPlatformVersion, String targetPlatformStreamId, boolean perModule)
+    public Integer updateProject(String targetPlatformVersion, String targetPlatformStream, boolean perModule)
             throws Exception {
-        ArrayDeque<String> args = new ArrayDeque<>();
-        args.add("quarkusUpdate");
-        if (!StringUtil.isNullOrEmpty(targetPlatformVersion)) {
-            args.add("--platform-version");
-            args.add(targetPlatformVersion);
-        }
-        if (!StringUtil.isNullOrEmpty(targetPlatformStreamId)) {
-            args.add("--stream-id");
-            args.add(targetPlatformStreamId);
-        }
-        if (perModule) {
-            args.add("--per-module");
-        }
-        return run(prependExecutable(args));
+        MessageWriter.info().error(
+                "quarkus update is not yet available for Gradle projects. See https://github.com/quarkusio/quarkus/issues/31658 for more information.");
+        return 1;
     }
 
     @Override

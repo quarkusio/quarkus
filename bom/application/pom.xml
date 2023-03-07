@@ -222,6 +222,7 @@
         <lit.version>2.6.1</lit.version>
         <lit-state.version>1.7.0</lit-state.version>
         <vaadin.version>23.3.8</vaadin.version>
+        <echarts.version>5.4.1</echarts.version>
         <vaadin-router.version>1.7.4</vaadin-router.version>
         <wc-codemirror.version>2.1.0</wc-codemirror.version>
     </properties>
@@ -3221,6 +3222,12 @@
                 <groupId>org.mvnpm</groupId>
                 <artifactId>vaadin-web-components</artifactId>
                 <version>${vaadin.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>echarts</artifactId>
+                <version>${echarts.version}</version>
                 <scope>runtime</scope>
             </dependency>
             <!-- Code editor -->

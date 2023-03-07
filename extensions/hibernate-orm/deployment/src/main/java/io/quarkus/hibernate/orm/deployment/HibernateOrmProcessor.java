@@ -397,6 +397,7 @@ public final class HibernateOrmProcessor {
                             new RecordedConfig(
                                     Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                                     jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
+                                    jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbMinVersion),
                                     getMultiTenancyStrategy(
                                             Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
@@ -1166,6 +1167,7 @@ public final class HibernateOrmProcessor {
                         new RecordedConfig(
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
+                                jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbMinVersion),
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database.ormCompatibilityVersion,
                                 persistenceUnitConfig.unsupportedProperties),
@@ -1182,6 +1184,7 @@ public final class HibernateOrmProcessor {
             BiConsumer<String, String> puPropertiesCollector, Set<String> storageEngineCollector) {
         Optional<String> explicitDialect = persistenceUnitConfig.dialect.dialect;
         Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
+        Optional<String> explicitDbMinVersion = jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbMinVersion);
         if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty()) {
             throw new ConfigurationException(String.format(Locale.ROOT,
                     "Datasource must be defined for persistence unit '%s'."
@@ -1192,7 +1195,7 @@ public final class HibernateOrmProcessor {
         }
 
         Optional<String> dialect = explicitDialect;
-        Optional<String> dbProductVersion = Optional.empty();
+        Optional<String> dbProductVersion = explicitDbMinVersion;
         if (dbKind.isPresent() || explicitDialect.isPresent()) {
             for (DatabaseKindDialectBuildItem item : dbKindMetadataBuildItems) {
                 if (dbKind.isPresent() && DatabaseKind.is(dbKind.get(), item.getDbKind())
@@ -1202,7 +1205,9 @@ public final class HibernateOrmProcessor {
                     if (explicitDialect.isEmpty()) {
                         dialect = Optional.of(item.getDialect());
                     }
-                    dbProductVersion = item.getDefaultDatabaseProductVersion();
+                    if (explicitDbMinVersion.isEmpty()) {
+                        dbProductVersion = item.getDefaultDatabaseProductVersion();
+                    }
                     break;
                 }
             }

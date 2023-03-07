@@ -34,6 +34,7 @@ import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
+import io.quarkus.hibernate.orm.runtime.observers.QuarkusSessionFactoryObserverForDbMinVersionCheck;
 import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForNamedQueryValidation;
 import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForSchemaExport;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -164,6 +165,9 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         options.addSessionFactoryObservers(new SessionFactoryObserverForSchemaExport(metadata));
         //Vanilla ORM registers this one as well; we don't:
         //options.addSessionFactoryObservers( new SessionFactoryObserverForRegistration() );
+
+        // This one is specific to Quarkus
+        options.addSessionFactoryObservers(new QuarkusSessionFactoryObserverForDbMinVersionCheck());
 
         options.applyEntityNotFoundDelegate(new JpaEntityNotFoundDelegate());
 

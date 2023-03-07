@@ -1,5 +1,7 @@
 package io.quarkus.agroal.spi;
 
+import java.util.Optional;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -14,11 +16,13 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     private final String dbKind;
 
+    private final Optional<String> dbMinVersion;
     private final boolean isDefault;
 
-    public JdbcDataSourceBuildItem(String name, String kind, boolean isDefault) {
+    public JdbcDataSourceBuildItem(String name, String kind, Optional<String> dbMinVersion, boolean isDefault) {
         this.name = name;
         this.dbKind = kind;
+        this.dbMinVersion = dbMinVersion;
         this.isDefault = isDefault;
     }
 
@@ -28,6 +32,10 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     public String getDbKind() {
         return dbKind;
+    }
+
+    public Optional<String> getDbMinVersion() {
+        return dbMinVersion;
     }
 
     public boolean isDefault() {

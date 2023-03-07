@@ -282,22 +282,29 @@ public class HibernateOrmConfigPersistenceUnit {
     public static class HibernateOrmConfigPersistenceUnitDialect {
 
         /**
-         * Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the
+         * Class name of the Hibernate ORM dialect.
+         *
+         * The complete list of bundled dialects is available in the
          * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM
          * JavaDoc].
          *
-         * [NOTE]
-         * ====
-         * Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for
-         * PostgreSQL,
-         * MariaDB, Microsoft SQL Server and H2.
-         * ====
+         * Setting the dialect directly is only recommended as a last resort:
+         * most popular databases have a corresponding Quarkus extension,
+         * allowing Quarkus to select the dialect automatically,
+         * in which case you do not need to set the dialect at all,
+         * though you may want to set
+         * xref:datasource.adoc#quarkus-datasource_quarkus.datasource.db-min-version[`quarkus.datasource.db-min-version`] as
+         * high as possible
+         * to benefit from the best performance and latest features.
+         *
+         * If your database does not have a corresponding Quarkus extension,
+         * you will need to set the dialect directly.
+         * In that case, keep in mind that the JDBC driver and Hibernate ORM dialect
+         * may not work properly in GraalVM native executables.
          *
          * @asciidoclet
          */
-        // TODO should it be dialects
-        //TODO should it be shortcuts like "postgresql" "h2" etc
-        @ConfigItem(name = ConfigItem.PARENT)
+        @ConfigItem(name = ConfigItem.PARENT, defaultValueDocumentation = "selected automatically for most popular databases")
         @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> dialect;
 

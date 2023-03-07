@@ -188,7 +188,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(new QuarkusRuntimeInitDialectResolverInitiator(rs.getDialect()));
 
         // Custom one: Dialect is injected explicitly
-        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(rs.getDialect()));
+        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.getDialect(),
+                rs.getBuildTimeSettings().getSource()));
 
         // Non-default implementation: optimised for lack of JMX management
         serviceInitiators.add(UnmodifiableBatchBuilderInitiator.INSTANCE);

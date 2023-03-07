@@ -167,7 +167,7 @@ public final class HibernateReactiveProcessor {
             persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
                     PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     new RecordedConfig(Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
-                            dbKindOptional,
+                            dbKindOptional, Optional.empty(),
                             io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
                             hibernateOrmConfig.database.ormCompatibilityVersion,
                             persistenceUnitConfig.unsupportedProperties),

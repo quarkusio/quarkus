@@ -1,6 +1,7 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
+import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +14,6 @@ import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
@@ -38,8 +38,7 @@ public class AppCDSBuildStep {
     public static final String CLASSES_LIST_FILE_NAME = "classes.lst";
     private static final String CONTAINER_IMAGE_BASE_BUILD_DIR = "/tmp/quarkus";
     private static final String CONTAINER_IMAGE_APPCDS_DIR = CONTAINER_IMAGE_BASE_BUILD_DIR + "/appcds";
-    public static final String DOCKER_EXECUTABLE = ConfigProvider.getConfig()
-            .getOptionalValue("quarkus.native.container-runtime", String.class).orElse("docker");
+    public static final String DOCKER_EXECUTABLE = detectContainerRuntime().getExecutableName();
 
     @BuildStep(onlyIf = AppCDSRequired.class)
     public void requested(OutputTargetBuildItem outputTarget, BuildProducer<AppCDSRequestedBuildItem> producer)

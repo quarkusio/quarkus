@@ -11,9 +11,13 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.smallrye.config.SmallRyeConfig;
+
 public final class ContainerRuntimeUtil {
 
     private static final Logger log = Logger.getLogger(ContainerRuntimeUtil.class);
+    private static final String DOCKER_EXECUTABLE = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+            .getOptionalValue("quarkus.native.container-runtime", String.class).orElse(null);
 
     private ContainerRuntimeUtil() {
     }
@@ -32,13 +36,10 @@ public final class ContainerRuntimeUtil {
         // podman version 2.1.1
         String podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
         boolean podmanAvailable = podmanVersionOutput.startsWith("podman version");
-
-        final String executable = ConfigProvider.getConfig()
-                .getOptionalValue("quarkus.native.container-runtime", String.class).orElse(null);
-        if (executable != null) {
-            if (executable.trim().equalsIgnoreCase("docker") && dockerAvailable) {
+        if (DOCKER_EXECUTABLE != null) {
+            if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("docker") && dockerAvailable) {
                 return ContainerRuntime.DOCKER;
-            } else if (executable.trim().equalsIgnoreCase("podman") && podmanAvailable) {
+            } else if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("podman") && podmanAvailable) {
                 return ContainerRuntime.PODMAN;
             } else {
                 log.warn("quarkus.native.container-runtime config property must be set to either podman or docker " +

@@ -54,6 +54,8 @@
         <version.jpa>3.0.0</version.jpa>
         <version.mutiny>2.1.0</version.mutiny>
 
+        <version.arquillian>1.7.0.Alpha14</version.arquillian>
+
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0-M9</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
@@ -63,6 +65,8 @@
         <module>runtime</module>
         <module>processor</module>
         <module>tests</module>
+
+        <module>arquillian</module>
     </modules>
 
     <dependencyManagement>

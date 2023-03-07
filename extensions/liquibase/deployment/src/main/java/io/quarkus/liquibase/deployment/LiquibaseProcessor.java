@@ -118,14 +118,16 @@ class LiquibaseProcessor {
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(
                 liquibase.sqlgenerator.core.LockDatabaseChangeLogGenerator.class.getName()));
 
-        reflective.produce(new ReflectiveClassBuildItem(false, true, false,
-                liquibase.change.AbstractSQLChange.class.getName(),
-                liquibase.database.jvm.JdbcConnection.class.getName()));
+        reflective.produce(ReflectiveClassBuildItem
+                .builder(liquibase.change.AbstractSQLChange.class, liquibase.database.jvm.JdbcConnection.class).methods()
+                .build());
 
-        reflective.produce(new ReflectiveClassBuildItem(true, false, false, "liquibase.command.LiquibaseCommandFactory",
-                liquibase.command.CommandFactory.class.getName()));
+        reflective.produce(ReflectiveClassBuildItem
+                .builder("liquibase.command.LiquibaseCommandFactory",
+                        liquibase.command.CommandFactory.class.getName())
+                .constructors().build());
 
-        reflective.produce(new ReflectiveClassBuildItem(true, true, true,
+        reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.parser.ChangeLogParserConfiguration.class.getName(),
                 liquibase.hub.HubServiceFactory.class.getName(),
                 liquibase.logging.core.DefaultLoggerConfiguration.class.getName(),
@@ -142,10 +144,13 @@ class LiquibaseProcessor {
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
                 liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName(),
-                liquibase.resource.PathHandlerFactory.class.getName()));
+                liquibase.resource.PathHandlerFactory.class.getName(),
+                liquibase.logging.mdc.MdcManagerFactory.class.getName())
+                .constructors().methods().fields().build());
 
-        reflective.produce(new ReflectiveClassBuildItem(false, false, true,
-                liquibase.change.ConstraintsConfig.class.getName()));
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.change.ConstraintsConfig.class.getName())
+                .fields().build());
 
         // register classes marked with @DatabaseChangeProperty for reflection
         Set<String> classesMarkedWithDatabaseChangeProperty = new HashSet<>();
@@ -158,7 +163,8 @@ class LiquibaseProcessor {
             }
         }
         reflective.produce(
-                new ReflectiveClassBuildItem(true, true, true, classesMarkedWithDatabaseChangeProperty.toArray(new String[0])));
+                ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty.toArray(new String[0]))
+                        .constructors().methods().fields().build());
 
         Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
                 .map(JdbcDataSourceBuildItem::getName)
@@ -189,17 +195,20 @@ class LiquibaseProcessor {
                 liquibase.snapshot.SnapshotGenerator.class,
                 liquibase.sqlgenerator.SqlGenerator.class,
                 liquibase.structure.DatabaseObject.class,
-                liquibase.hub.HubService.class)
+                liquibase.hub.HubService.class,
+                liquibase.logging.mdc.MdcManager.class)
                 .forEach(t -> consumeService(t, (serviceClass, implementations) -> {
                     services.produce(
                             new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
-                    reflective.produce(new ReflectiveClassBuildItem(true, true, false, implementations.toArray(new String[0])));
+                    reflective.produce(ReflectiveClassBuildItem.builder(implementations.toArray(new String[0]))
+                            .constructors().methods().build());
                 }));
 
         // Register Precondition services, and the implementation class for reflection while also registering fields for reflection
         consumeService(liquibase.precondition.Precondition.class, (serviceClass, implementations) -> {
             services.produce(new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
-            reflective.produce(new ReflectiveClassBuildItem(true, true, true, implementations.toArray(new String[0])));
+            reflective.produce(ReflectiveClassBuildItem.builder(implementations.toArray(new String[0]))
+                    .constructors().methods().fields().build());
         });
 
         // CommandStep implementations are needed
@@ -208,7 +217,7 @@ class LiquibaseProcessor {
                     .filter(not("liquibase.command.core.StartH2CommandStep"::equals))
                     .toArray(String[]::new);
             services.produce(new ServiceProviderBuildItem(serviceClass.getName(), filteredImpls));
-            reflective.produce(new ReflectiveClassBuildItem(true, false, false, filteredImpls));
+            reflective.produce(ReflectiveClassBuildItem.builder(filteredImpls).constructors().build());
             for (String implementation : filteredImpls) {
                 runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(implementation));
             }
@@ -224,6 +233,11 @@ class LiquibaseProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.12.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.13.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.14.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.16.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.17.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.18.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.19.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "liquibase.build.properties"));

@@ -16,16 +16,19 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @RolesAllowed("admin")
 public class OpenApiResourceSecuredAtClassLevel {
 
+    @SuppressWarnings("unused")
     private ResourceBean resourceBean;
 
     @GET
     @Path("/test-security/classLevel/1")
+    @RolesAllowed("user1")
     public String secureEndpoint1() {
         return "secret";
     }
 
     @GET
     @Path("/test-security/classLevel/2")
+    @RolesAllowed("user2")
     public String secureEndpoint2() {
         return "secret";
     }

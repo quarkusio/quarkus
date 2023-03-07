@@ -15,6 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Server(url = "serverUrl")
 public class OpenApiResourceSecuredAtMethodLevel {
 
+    @SuppressWarnings("unused")
     private ResourceBean resourceBean;
 
     @GET
@@ -34,14 +35,14 @@ public class OpenApiResourceSecuredAtMethodLevel {
 
     @GET
     @Path("/test-security/methodLevel/1")
-    @RolesAllowed("admin")
+    @RolesAllowed("user1")
     public String secureEndpoint1() {
         return "secret";
     }
 
     @GET
     @Path("/test-security/methodLevel/2")
-    @RolesAllowed("admin")
+    @RolesAllowed("user2")
     public String secureEndpoint2() {
         return "secret";
     }

@@ -1,4 +1,4 @@
-import { LitElement, html, css} from 'lit';
+import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import { JsonRpc } from 'jsonrpc';
 
 import '@vaadin/details';
@@ -9,7 +9,7 @@ import 'qui-badge';
 /**
  * This component shows the Rest Easy Reactive Endpoint scores
  */
-export class QwcResteasyReactiveEndpointScores extends LitElement {
+export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
     jsonRpc = new JsonRpc("RESTEasy Reactive");
 
     static styles = css`
@@ -89,7 +89,7 @@ export class QwcResteasyReactiveEndpointScores extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        this._refresh();
+        this.hotReload();
     }
 
     render() {
@@ -194,7 +194,8 @@ export class QwcResteasyReactiveEndpointScores extends LitElement {
         return level;
     }
 
-    _refresh(){
+    hotReload(){
+        this._latestScores = null;
         this.jsonRpc.getEndpointScores().then(endpointScores => {
             this._latestScores = endpointScores.result;
         });

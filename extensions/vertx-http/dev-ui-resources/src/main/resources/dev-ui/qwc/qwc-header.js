@@ -242,7 +242,7 @@ export class QwcHeader extends observeState(LitElement) {
     }
 
     _reload(e) {
-        console.log("TODO: Reload");
+        fetch(devuiState.applicationInfo.contextRoot);
     }
 }
 customElements.define('qwc-header', QwcHeader);

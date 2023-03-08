@@ -41,5 +41,10 @@
             <artifactId>wc-codemirror</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>es-module-shims</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 </project>

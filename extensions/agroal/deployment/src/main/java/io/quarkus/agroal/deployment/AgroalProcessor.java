@@ -1,5 +1,7 @@
 package io.quarkus.agroal.deployment;
 
+import static io.quarkus.deployment.Capability.OPENTELEMETRY_TRACER;
+
 import java.sql.Driver;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,6 +22,7 @@ import org.jboss.logging.Logger;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
 import io.quarkus.agroal.DataSource;
+import io.quarkus.agroal.runtime.AgroalOpenTelemetryRecorder;
 import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.DataSourceSupport;
@@ -77,8 +80,10 @@ class AgroalProcessor {
             List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
+            Capabilities capabilities,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig,
+            BuildProducer<OpenTelemetryJDBCInstrumentationBuildItem> otelInstrumentationActiveProducer,
             CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
         if (dataSourcesBuildTimeConfig.driver.isPresent() || dataSourcesBuildTimeConfig.url.isPresent()) {
             throw new ConfigurationException(
@@ -96,6 +101,7 @@ class AgroalProcessor {
             return;
         }
 
+        boolean otelJdbcInstrumentationActive = false;
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
             validateBuildTimeConfig(aggregatedDataSourceBuildTimeConfig);
 
@@ -105,11 +111,21 @@ class AgroalProcessor {
                                 DataSources.TRACING_DRIVER_CLASSNAME));
             }
 
+            if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().telemetry && !otelJdbcInstrumentationActive) {
+                otelJdbcInstrumentationActive = true;
+            }
+
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, false,
                             aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass()));
 
             aggregatedConfig.produce(aggregatedDataSourceBuildTimeConfig);
+        }
+
+        if (otelJdbcInstrumentationActive && capabilities.isPresent(OPENTELEMETRY_TRACER)) {
+            // at least one datasource is using OpenTelemetry JDBC instrumentation,
+            // therefore we need to prepare OpenTelemetry data source wrapper
+            otelInstrumentationActiveProducer.produce(new OpenTelemetryJDBCInstrumentationBuildItem());
         }
 
         // For now, we can't push the security providers to Agroal so we need to include
@@ -200,6 +216,8 @@ class AgroalProcessor {
             List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             Capabilities capabilities,
+            Optional<OpenTelemetryJDBCInstrumentationBuildItem> otelInstrumentationActive,
+            AgroalOpenTelemetryRecorder agroalOpenTelemetryRecorder,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
@@ -208,6 +226,13 @@ class AgroalProcessor {
         if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
             // No datasource has been configured so bail out
             return;
+        }
+
+        if (otelInstrumentationActive.isPresent()) {
+            // prepare OpenTelemetry datasource wrapper
+            // this code must only run when the OpenTelemetry is active
+            // to avoid native failures
+            agroalOpenTelemetryRecorder.prepareOpenTelemetryAgroalDatasource();
         }
 
         // make a DataSourceProducer bean

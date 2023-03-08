@@ -71,6 +71,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Required for OpenTelemetry JDBC instrumentation -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-jdbc</artifactId>
+            <optional>true</optional>
+        </dependency>
+
     </dependencies>
 
     <build>

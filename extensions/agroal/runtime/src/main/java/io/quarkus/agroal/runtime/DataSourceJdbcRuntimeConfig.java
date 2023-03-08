@@ -145,4 +145,10 @@ public class DataSourceJdbcRuntimeConfig {
     @ConfigItem
     public DataSourceJdbcTracingRuntimeConfig tracing = new DataSourceJdbcTracingRuntimeConfig();
 
+    /**
+     * Enable OpenTelemetry JDBC instrumentation.
+     */
+    @ConfigItem(name = "telemetry.enabled", defaultValueDocumentation = "false if quarkus.datasource.jdbc.telemetry=false and true if quarkus.datasource.jdbc.telemetry=true")
+    public Optional<Boolean> telemetry;
+
 }

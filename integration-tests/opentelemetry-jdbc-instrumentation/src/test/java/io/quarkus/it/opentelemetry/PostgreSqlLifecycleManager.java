@@ -22,7 +22,7 @@ public class PostgreSqlLifecycleManager implements QuarkusTestResourceLifecycleM
 
         Map<String, String> properties = new HashMap<>();
         properties.put("quarkus.datasource.postgresql.jdbc.url",
-                String.format("jdbc:otel:postgresql://%s:%s/%s", postgresContainer.getHost(),
+                String.format("jdbc:postgresql://%s:%s/%s", postgresContainer.getHost(),
                         postgresContainer.getFirstMappedPort(), QUARKUS));
         properties.put("quarkus.datasource.postgresql.password", QUARKUS);
         properties.put("quarkus.datasource.postgresql.username", QUARKUS);

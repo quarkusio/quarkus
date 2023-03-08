@@ -22,7 +22,7 @@ public class MariaDbLifecycleManager implements QuarkusTestResourceLifecycleMana
 
         Map<String, String> properties = new HashMap<>();
         properties.put("quarkus.datasource.mariadb.jdbc.url",
-                String.format("jdbc:otel:mariadb://%s:%s/%s", mariaDbContainer.getHost(),
+                String.format("jdbc:mariadb://%s:%s/%s", mariaDbContainer.getHost(),
                         mariaDbContainer.getFirstMappedPort(), QUARKUS));
         properties.put("quarkus.datasource.mariadb.password", QUARKUS);
         properties.put("quarkus.datasource.mariadb.username", QUARKUS);

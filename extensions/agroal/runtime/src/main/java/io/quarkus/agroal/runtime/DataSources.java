@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -68,6 +69,7 @@ public class DataSources {
     public static final String TRACING_DRIVER_CLASSNAME = "io.opentracing.contrib.jdbc.TracingDriver";
     private static final String JDBC_URL_PREFIX = "jdbc:";
     private static final String JDBC_TRACING_URL_PREFIX = "jdbc:tracing:";
+    private static volatile Function<AgroalDataSource, AgroalDataSource> OTEL_DATASOURCE_TRANSFORMER = null;
 
     private final DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
@@ -250,6 +252,12 @@ public class DataSources {
                 .stream().collect(Collectors.toList());
         if (!interceptorList.isEmpty()) {
             dataSource.setPoolInterceptors(interceptorList);
+        }
+
+        if (dataSourceJdbcBuildTimeConfig.telemetry && dataSourceJdbcRuntimeConfig.telemetry.orElse(true)) {
+            // active OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
+            // use the transformer as we can't reference optional OpenTelemetry classes here
+            dataSource = OTEL_DATASOURCE_TRANSFORMER.apply(dataSource);
         }
 
         return dataSource;
@@ -443,6 +451,14 @@ public class DataSources {
                 dataSource.close();
             }
         }
+    }
+
+    /**
+     * Set a function that will wrap {@link AgroalDataSource} with the OpenTelemetry datasource.
+     */
+    static void setOpenTelemetryDatasourceTransformer(Function<AgroalDataSource, AgroalDataSource> otelDatasourceTransformer) {
+        Objects.requireNonNull(otelDatasourceTransformer);
+        OTEL_DATASOURCE_TRANSFORMER = otelDatasourceTransformer;
     }
 
 }

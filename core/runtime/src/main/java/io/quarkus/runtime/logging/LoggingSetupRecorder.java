@@ -241,7 +241,7 @@ public class LoggingSetupRecorder {
 
                     if (logLevel.intValue() < minLogLevel.intValue()) {
                         log.warnf(
-                                "Log level %s for category '%s' set below minimum logging level %s, promoting it to %s. Set the build time configuration property 'quarkus.log.category.\"%s\".level' to '%s' to avoid this warning",
+                                "Log level %s for category '%s' set below minimum logging level %s, promoting it to %s. Set the build time configuration property 'quarkus.log.category.\"%s\".min-level' to '%s' to avoid this warning",
                                 logLevel,
                                 categoryName, minLogLevel, minLogLevel, categoryName, logLevel);
 
@@ -337,7 +337,7 @@ public class LoggingSetupRecorder {
                 String category = entry.getKey();
                 log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s. "
                         +
-                        "Set the build time configuration property 'quarkus.log.category.\"%s\".level' to '%s' to avoid this warning",
+                        "Set the build time configuration property 'quarkus.log.category.\"%s\".min-level' to '%s' to avoid this warning",
                         logLevel,
                         category, minLogLevel, minLogLevel, category, logLevel);
 

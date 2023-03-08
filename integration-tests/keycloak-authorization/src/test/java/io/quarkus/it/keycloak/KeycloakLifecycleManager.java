@@ -31,6 +31,7 @@ import org.keycloak.representations.idm.authorization.ResourceServerRepresentati
 import org.keycloak.util.JsonSerialization;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.Transferable;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -44,16 +45,22 @@ public class KeycloakLifecycleManager implements QuarkusTestResourceLifecycleMan
     protected static String KEYCLOAK_SERVER_URL;
     private static final String KEYCLOAK_REALM = "quarkus";
     private static final String KEYCLOAK_SERVICE_CLIENT = "quarkus-service-app";
-    private static final String KEYCLOAK_VERSION = System.getProperty("keycloak.version");
+    private static final String KEYCLOAK_IMAGE = System.getProperty("keycloak.docker.image");
 
     @SuppressWarnings("resource")
     @Override
     public Map<String, String> start() {
-        keycloak = new GenericContainer<>("quay.io/keycloak/keycloak:" + KEYCLOAK_VERSION)
-                .withExposedPorts(8080)
-                .withEnv("KEYCLOAK_ADMIN", "admin")
-                .withEnv("KEYCLOAK_ADMIN_PASSWORD", "admin")
-                .waitingFor(Wait.forLogMessage(".*Keycloak.*started.*", 1));
+        try {
+            keycloak = new GenericContainer<>(
+                    new ImageFromDockerfile().withDockerfile(Paths.get(getClass().getResource("/Dockerfile").toURI()))
+                            .withBuildArg("KEYCLOAK_IMAGE", KEYCLOAK_IMAGE))
+                    .withExposedPorts(8080)
+                    .withEnv("KEYCLOAK_ADMIN", "admin")
+                    .withEnv("KEYCLOAK_ADMIN_PASSWORD", "admin")
+                    .waitingFor(Wait.forLogMessage(".*Keycloak.*started.*", 1));
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
 
         keycloak = keycloak
                 .withCopyToContainer(Transferable.of(createPoliciesJar().toByteArray()), "/opt/keycloak/providers/policies.jar")

@@ -225,6 +225,7 @@
         <echarts.version>5.4.1</echarts.version>
         <vaadin-router.version>1.7.4</vaadin-router.version>
         <wc-codemirror.version>2.1.0</wc-codemirror.version>
+        <es-module-shims.version>1.7.0</es-module-shims.version>
     </properties>
 
     <dependencyManagement>
@@ -3237,7 +3238,14 @@
                 <version>${wc-codemirror.version}</version>
                 <scope>runtime</scope>
             </dependency>
-
+            <!-- Polyfill for importmaps -->
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>es-module-shims</artifactId>
+                <version>${es-module-shims.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            
             <!-- Additional dependencies, keep in alphabetical order -->
             <dependency>
                 <groupId>biz.paluch.logging</groupId>

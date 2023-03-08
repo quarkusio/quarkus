@@ -14,6 +14,10 @@ public class PluginListItem {
         return installed;
     }
 
+    public String getSymbol() {
+        return installed ? "*" : " ";
+    }
+
     public String getName() {
         return plugin.getName();
     }
@@ -50,7 +54,7 @@ public class PluginListItem {
 
     public String[] getFields(boolean withCommand) {
         return withCommand
-                ? new String[] { installed ? "*" : " ", getName(), getType(), getLocation(), getDescription(), getCommand() }
-                : new String[] { installed ? "*" : " ", getName(), getType(), getLocation(), getDescription() };
+                ? new String[] { getSymbol(), getName(), getType(), getLocation(), getDescription(), getCommand() }
+                : new String[] { getSymbol(), getName(), getType(), getLocation(), getDescription() };
     }
 }

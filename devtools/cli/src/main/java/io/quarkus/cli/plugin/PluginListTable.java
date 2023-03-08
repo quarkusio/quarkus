@@ -20,17 +20,27 @@ public class PluginListTable {
 
     private List<PluginListItem> items;
     private boolean withCommand;
+    private boolean withDiff;
+
+    public PluginListTable(Collection<PluginListItem> items) {
+        this(items, false, false);
+    }
 
     public PluginListTable(Collection<PluginListItem> items, boolean withCommand) {
+        this(items, withCommand, false);
+    }
+
+    public PluginListTable(Collection<PluginListItem> items, boolean withCommand, boolean withDiff) {
         this.items = new ArrayList<>(items);
         this.withCommand = withCommand;
+        this.withDiff = withDiff;
     }
 
     public PluginListTable() {
     }
 
     public String getContent() {
-        return getContent(items, withCommand);
+        return getContent(items, withCommand, withDiff);
     }
 
     // Utils
@@ -50,25 +60,25 @@ public class PluginListTable {
         return String.format(format, getLabels(withCommand));
     }
 
-    private static String getBody(String format, Collection<PluginListItem> items, boolean withCommand) {
+    private static String getBody(String format, Collection<PluginListItem> items, boolean withCommand, boolean withDiff) {
         StringBuilder sb = new StringBuilder();
         for (PluginListItem item : items) {
-            sb.append(String.format(format, item.getFields(withCommand)));
+            sb.append(String.format(format, fieldsWithDiff(item.getFields(withCommand), withDiff)));
             sb.append(NEWLINE);
         }
         return sb.toString();
     }
 
-    public static String getContent(Collection<PluginListItem> items, boolean wtihCommand) {
+    public static String getContent(Collection<PluginListItem> items, boolean wtihCommand, boolean withDiff) {
         String format = getFormat(items, wtihCommand);
-        return getContent(format, items, wtihCommand);
+        return getContent(format, items, wtihCommand, withDiff);
     }
 
-    public static String getContent(String format, Collection<PluginListItem> items, boolean wtihCommand) {
+    public static String getContent(String format, Collection<PluginListItem> items, boolean wtihCommand, boolean withDiff) {
         StringBuilder sb = new StringBuilder();
         sb.append(getHeader(format, items, wtihCommand));
         sb.append(NEWLINE);
-        sb.append(getBody(format, items, wtihCommand));
+        sb.append(getBody(format, items, wtihCommand, withDiff));
         return sb.toString();
     }
 
@@ -122,5 +132,14 @@ public class PluginListTable {
             sb.append(" %-" + maxCommandLength + "s ");
         }
         return sb.toString();
+    }
+
+    private static String[] fieldsWithDiff(String[] fields, boolean showDiff) {
+        if (!showDiff) {
+            return fields;
+        }
+        //Map '*'' -> '+'' and ' ' -> '-'
+        fields[0] = fields[0].replace("*", "+").replace(" ", "-");
+        return fields;
     }
 }

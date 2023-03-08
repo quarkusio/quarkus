@@ -128,13 +128,18 @@ public class PluginManager {
 
     /**
      * Check that the installed plugins are still available in the environment.
+     *
+     * @return true if any catalog was changed.
      */
-    public void reconcile() {
+    public boolean reconcile() {
         //We are using `|` instead of `||` cause we always want both branches to be executed
         if (state.getUserCatalog().map(c -> reconcile(c)).orElse(false)
                 | state.getProjectCatalog().map(c -> reconcile(c)).orElse(false)) {
             // Refresh the list of installed plugins
             state.invalidate();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -142,6 +147,7 @@ public class PluginManager {
      * Check that the installed plugins are still available in the environment.
      *
      * @param catalog The {@PluginCatalog} to use
+     * @return true if catalog was modified
      */
     private boolean reconcile(PluginCatalog catalog) {
         Path location = catalog.getCatalogLocation()
@@ -175,13 +181,22 @@ public class PluginManager {
 
     /**
      * Remove unavailable plugins, add extension plugins if available.
+     *
+     * @return true if changes any catalog was modified.
      */
-    public void sync() {
-        reconcile();
-        state.getExtensionPlugins().forEach((name, plugin) -> {
+    public boolean sync() {
+        boolean catalogModified = reconcile();
+        Map<String, Plugin> installedPlugins = getInstallablePlugins();
+        Map<String, Plugin> extensionPlugins = state.getExtensionPlugins();
+        Map<String, Plugin> pluginsToInstall = extensionPlugins.entrySet().stream()
+                .filter(e -> !installedPlugins.containsKey(e.getKey()))
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+        catalogModified = catalogModified || !pluginsToInstall.isEmpty();
+        pluginsToInstall.forEach((name, plugin) -> {
             addPlugin(plugin);
         });
         state.invalidate();
+        return catalogModified;
     }
 
     /**

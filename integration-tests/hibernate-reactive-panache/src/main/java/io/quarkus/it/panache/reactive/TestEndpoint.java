@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Assertions;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.PanacheQuery;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -41,7 +40,7 @@ public class TestEndpoint {
     @Inject
     MockablePersonRepository mockablePersonRepository;
 
-    @ReactiveTransactional
+    @WithTransaction
     @GET
     @Path("model")
     public Uni<String> testModel() {
@@ -539,7 +538,6 @@ public class TestEndpoint {
     private Uni<Void> assertThrows(Class<? extends Throwable> exceptionClass,
             Supplier<Uni<?>> f,
             String message) {
-        System.err.println("Asserting " + message + " hoping to get a " + exceptionClass);
         Uni<?> uni;
         try {
             uni = f.get();
@@ -547,9 +545,6 @@ public class TestEndpoint {
             uni = Uni.createFrom().failure(t);
         }
         return uni
-                .onItemOrFailure().invoke((r, t) -> {
-                    System.err.println("Got back val: " + r + " and exception " + t);
-                })
                 .onItem().invoke(v -> Assertions.fail(message))
                 .onFailure(exceptionClass)
                 .recoverWithItem(() -> null)
@@ -1523,7 +1518,7 @@ public class TestEndpoint {
                     Assertions.assertEquals(ownerName, catView.ownerName);
                     Assertions.assertNull(catView.weight);
                 })
-                .chain(() -> Cat.find("select 'fake_cat', 'fake_owner', 12.5 from Cat c")
+                .chain(() -> Cat.find("select 'fake_cat', 'fake_owner', 12.5D from Cat c")
                         .project(CatProjectionBean.class)
                         .<CatProjectionBean> firstResult())
                 .invoke(catView -> {

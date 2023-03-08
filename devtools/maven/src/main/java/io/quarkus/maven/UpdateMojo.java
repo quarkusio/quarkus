@@ -40,10 +40,10 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     private String platformVersion;
 
     /**
-     * Target streamId (e.g: 2.0)
+     * Target stream (e.g: 2.0)
      */
-    @Parameter(property = "streamId", required = false)
-    private String streamId;
+    @Parameter(property = "stream", required = false)
+    private String stream;
 
     @Override
     protected void validateParameters() throws MojoExecutionException {
@@ -61,8 +61,8 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
                 targetPrimaryBom = ArtifactCoords.pom(targetPrimaryBom.getGroupId(), targetPrimaryBom.getArtifactId(),
                         platformVersion);
                 targetCatalog = getExtensionCatalogResolver().resolveExtensionCatalog(List.of(targetPrimaryBom));
-            } else if (streamId != null) {
-                var platformStream = PlatformStreamCoords.fromString(streamId);
+            } else if (stream != null) {
+                var platformStream = PlatformStreamCoords.fromString(stream);
                 targetCatalog = getExtensionCatalogResolver().resolveExtensionCatalog(platformStream);
                 platformVersion = getPrimaryBom(targetCatalog).getVersion();
             } else {

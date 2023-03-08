@@ -1,19 +1,16 @@
 package io.quarkus.jaxb.deployment;
 
-import static io.quarkus.jaxb.deployment.utils.JaxbType.isValidType;
-
 import java.io.IOError;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.annotation.XmlAccessOrder;
@@ -58,6 +55,9 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BeanResolver;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -297,29 +297,62 @@ public class JaxbProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void setupJaxbContextConfig(JaxbConfig config,
-            List<JaxbClassesToBeBoundBuildItem> classesToBeBoundBuildItems,
-            JaxbContextConfigRecorder jaxbContextConfig) {
-        Set<String> classNamesToBeBound = new HashSet<>();
-        for (JaxbClassesToBeBoundBuildItem classesToBeBoundBuildItem : classesToBeBoundBuildItems) {
-            classNamesToBeBound.addAll(classesToBeBoundBuildItem.getClasses());
-        }
+    FilteredJaxbClassesToBeBoundBuildItem filterBoundClasses(
+            JaxbConfig config,
+            List<JaxbClassesToBeBoundBuildItem> classesToBeBoundBuildItems) {
+
+        FilteredJaxbClassesToBeBoundBuildItem.Builder builder = FilteredJaxbClassesToBeBoundBuildItem.builder();
+        classesToBeBoundBuildItems.stream()
+                .map(JaxbClassesToBeBoundBuildItem::getClasses)
+                .forEach(builder::classNames);
 
         // remove classes that have been excluded by users
         if (config.excludeClasses.isPresent()) {
-            classNamesToBeBound.removeAll(config.excludeClasses.get());
+            builder.classNameExcludes(config.excludeClasses.get());
         }
+        return builder.build();
+    }
 
-        // parse class names to class
-        Set<Class<?>> classes = getAllClassesFromClassNames(classNamesToBeBound);
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void setupJaxbContextConfig(
+            FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
+            JaxbContextConfigRecorder jaxbContextConfig) {
+        jaxbContextConfig.addClassesToBeBound(filteredClassesToBeBound.getClasses());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void validateDefaultJaxbContext(
+            JaxbConfig config,
+            FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
+            SynthesisFinishedBuildItem beanContainerState,
+            JaxbContextConfigRecorder jaxbContextConfig /* Force the build time container to invoke this method */) {
+
         if (config.validateJaxbContext) {
-            // validate the context to fail at build time if it's not valid
-            validateContext(classes);
+            final BeanResolver beanResolver = beanContainerState.getBeanResolver();
+            final Set<BeanInfo> beans = beanResolver
+                    .resolveBeans(Type.create(DotName.createSimple(JAXBContext.class), org.jboss.jandex.Type.Kind.CLASS));
+            if (!beans.isEmpty()) {
+                final BeanInfo bean = beanResolver.resolveAmbiguity(beans);
+                if (bean.isDefaultBean()) {
+                    /*
+                     * Validate the default JAXB context at build time and fail early.
+                     * Do this only if the user application actually requires the default JAXBContext bean
+                     */
+                    try {
+                        JAXBContext.newInstance(filteredClassesToBeBound.getClasses().toArray(new Class[0]));
+                    } catch (JAXBException e) {
+                        /*
+                         * Producing a ValidationErrorBuildItem would perhaps be more natural here,
+                         * but doing so causes a cycle between this and reactive JAXB extension
+                         * Throwing from here works well too
+                         */
+                        throw new DeploymentException("Failed to create or validate the default JAXBContext", e);
+                    }
+                }
+            }
         }
-
-        // register the classes to be used at runtime
-        jaxbContextConfig.addClassesToBeBound(classes);
     }
 
     @BuildStep
@@ -388,31 +421,4 @@ public class JaxbProcessor {
         resourceBundle.produce(new NativeImageResourceBundleBuildItem(bundle));
     }
 
-    private void validateContext(Set<Class<?>> classes) {
-        try {
-            JAXBContext.newInstance(classes.toArray(new Class[0]));
-        } catch (JAXBException e) {
-            throw new IllegalStateException("Failed to configure JAXB context", e);
-        }
-    }
-
-    private Set<Class<?>> getAllClassesFromClassNames(Collection<String> classNames) {
-        Set<Class<?>> classes = new HashSet<>();
-        for (String className : classNames) {
-            Class<?> clazz = getClassByName(className);
-            if (isValidType(clazz)) {
-                classes.add(clazz);
-            }
-        }
-
-        return classes;
-    }
-
-    private Class<?> getClassByName(String name) {
-        try {
-            return Class.forName(name, false, Thread.currentThread().getContextClassLoader());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

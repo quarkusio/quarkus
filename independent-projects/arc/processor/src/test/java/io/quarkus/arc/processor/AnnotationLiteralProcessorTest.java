@@ -37,6 +37,12 @@ public class AnnotationLiteralProcessorTest {
     }
 
     @Retention(RetentionPolicy.RUNTIME)
+    public @interface MemberlessAnnotation {
+        class Literal extends AnnotationLiteral<MemberlessAnnotation> implements MemberlessAnnotation {
+        }
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
     public @interface SimpleAnnotation {
         String value();
 
@@ -287,7 +293,7 @@ public class AnnotationLiteralProcessorTest {
     private final IndexView index;
 
     public AnnotationLiteralProcessorTest() throws IOException {
-        index = Index.of(SimpleEnum.class, SimpleAnnotation.class, ComplexAnnotation.class);
+        index = Index.of(SimpleEnum.class, MemberlessAnnotation.class, SimpleAnnotation.class, ComplexAnnotation.class);
     }
 
     @Test
@@ -329,6 +335,54 @@ public class AnnotationLiteralProcessorTest {
 
         assertEquals(
                 "@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$ComplexAnnotation(bool=true, b=1, s=2, i=3, l=4, f=5.0, d=6.0, ch=a, str=bc, en=FOO, cls=class java.lang.Object, nested=@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$SimpleAnnotation(value=one), boolArray=[true, false], bArray=[7, 8], sArray=[9, 10], iArray=[11, 12], lArray=[13, 14], fArray=[15.0, 16.0], dArray=[17.0, 18.0], chArray=[d, e], strArray=[fg, hi], enArray=[BAR, BAZ], clsArray=[class java.lang.String, class java.lang.Number], nestedArray=[@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$SimpleAnnotation(value=two), @io.quarkus.arc.processor.AnnotationLiteralProcessorTest$SimpleAnnotation(value=three)])",
+                annotation.toString());
+    }
+
+    @Test
+    public void memberless() throws ReflectiveOperationException {
+        AnnotationLiteralProcessor literals = new AnnotationLiteralProcessor(index, ignored -> true);
+
+        TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className(generatedClass).build()) {
+            MethodCreator method = creator.getMethodCreator("get", MemberlessAnnotation.class)
+                    .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
+            ResultHandle annotation = literals.create(method, index.getClassByName(MemberlessAnnotation.class),
+                    AnnotationInstance.builder(MemberlessAnnotation.class).build());
+            method.returnValue(annotation);
+        }
+
+        Collection<ResourceOutput.Resource> resources = new AnnotationLiteralGenerator(false)
+                .generate(literals.getCache(), Collections.emptySet());
+        for (ResourceOutput.Resource resource : resources) {
+            if (resource.getType() == ResourceOutput.Resource.Type.JAVA_CLASS) {
+                cl.write(resource.getName(), resource.getData());
+            } else {
+                throw new IllegalStateException("Unexpected " + resource.getType() + " " + resource.getName());
+            }
+        }
+
+        Class<?> clazz = cl.loadClass(generatedClass);
+        MemberlessAnnotation annotation = (MemberlessAnnotation) clazz.getMethod("get").invoke(null);
+
+        assertTrue(annotation instanceof AbstractAnnotationLiteral);
+        AbstractAnnotationLiteral annotationLiteral = (AbstractAnnotationLiteral) annotation;
+        assertEquals(annotation.annotationType(), annotationLiteral.annotationType());
+
+        AnnotationLiteral<MemberlessAnnotation> correctLiteral = new MemberlessAnnotation.Literal();
+        AnnotationLiteral<MemberlessAnnotation> incorrectLiteral = new AnnotationLiteral<>() {
+        };
+
+        // verify both ways, to ensure our generated classes interop correctly with `AnnotationLiteral`
+        assertEquals(correctLiteral, annotation);
+        assertEquals(annotation, correctLiteral);
+
+        assertEquals(incorrectLiteral, annotation);
+        assertEquals(annotation, incorrectLiteral);
+
+        assertEquals(correctLiteral.hashCode(), annotation.hashCode());
+        assertEquals(incorrectLiteral.hashCode(), annotation.hashCode());
+
+        assertEquals("@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$MemberlessAnnotation()",
                 annotation.toString());
     }
 

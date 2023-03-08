@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -315,13 +316,27 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         equals.ifReferencesNotEqual(equals.getThis(), equals.getMethodParam(0))
                 .falseBranch().returnBoolean(true);
 
+        if (literal.annotationMembers().isEmpty()) {
+            // special case for memberless annotations
+            //
+            // a lot of people apparently use the construct `new AnnotationLiteral<MyAnnotation>() {}`
+            // to create an annotation literal for a memberless annotation, which is wrong, because
+            // the result doesn't implement the annotation interface
+            //
+            // yet, we handle that case here by doing what `AnnotationLiteral` does: instead of
+            // checking that the other object is an instance of the same annotation interface,
+            // as specified by the `Annotation.equals()` contract, we check that it implements
+            // the `Annotation` interface and have the same `annotationType()`
+            equals.ifTrue(equals.instanceOf(equals.getMethodParam(0), Annotation.class))
+                    .falseBranch().returnBoolean(false);
+            ResultHandle thisAnnType = equals.loadClass(literal.annotationClass);
+            ResultHandle otherAnnType = equals.invokeInterfaceMethod(MethodDescriptor.ofMethod(Annotation.class,
+                    "annotationType", Class.class), equals.getMethodParam(0));
+            equals.returnValue(Gizmo.equals(equals, thisAnnType, otherAnnType));
+        }
+
         equals.ifTrue(equals.instanceOf(equals.getMethodParam(0), literal.annotationClass.name().toString()))
                 .falseBranch().returnBoolean(false);
-
-        if (literal.annotationMembers().isEmpty()) {
-            // short-circuit for memberless annotations
-            equals.returnBoolean(true);
-        }
 
         ResultHandle other = equals.checkCast(equals.getMethodParam(0), literal.annotationClass.name().toString());
 

@@ -178,9 +178,9 @@ public final class HibernateOrmProcessor {
     void registerHibernateOrmMetadataForCoreDialects(
             BuildProducer<DatabaseKindDialectBuildItem> producer) {
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.DB2,
-                "org.hibernate.dialect.DB2Dialect"));
+                "org.hibernate.dialect.DB2Dialect", DialectVersions.Defaults.DB2));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.DERBY,
-                "org.hibernate.dialect.DerbyDialect"));
+                "org.hibernate.dialect.DerbyDialect", DialectVersions.Defaults.DERBY));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.H2,
                 // Using our own default version is extra important for H2
                 // See https://github.com/quarkusio/quarkus/issues/1886
@@ -194,7 +194,7 @@ public final class HibernateOrmProcessor {
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.ORACLE,
                 "org.hibernate.dialect.OracleDialect", DialectVersions.Defaults.ORACLE));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.POSTGRESQL,
-                "org.hibernate.dialect.PostgreSQLDialect"));
+                "org.hibernate.dialect.PostgreSQLDialect", DialectVersions.Defaults.POSTGRESQL));
     }
 
     @BuildStep

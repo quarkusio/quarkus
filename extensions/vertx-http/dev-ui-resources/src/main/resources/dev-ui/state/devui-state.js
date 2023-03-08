@@ -7,10 +7,7 @@ import { LitState } from 'lit-element-state';
 
 /**
  * This keeps track of the build time data of Dev UI
- * 
- * TODO: Find a way to abstract this so that any build time data can reuse this in an easy way
  * TODO: Import map needs to be reloaded too
- * TODO: Hot reload should trigger this too (not only ws connection drops)
  */
 class DevUIState extends LitState {
     

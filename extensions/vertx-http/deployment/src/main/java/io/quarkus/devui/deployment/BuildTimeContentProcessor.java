@@ -78,6 +78,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("devui/", contextRoot + "/");
         // Quarkus Web Components
         internalImportMapBuildItem.add("qwc/", contextRoot + "qwc/");
+        internalImportMapBuildItem.add("qwc-hot-reload-element", contextRoot + "qwc/qwc-hot-reload-element.js");
         // Quarkus UI
         internalImportMapBuildItem.add("qui/", contextRoot + "qui/");
         internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
@@ -301,6 +302,7 @@ public class BuildTimeContentProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     void createBuildTimeData(BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
             BuildProducer<ThemeVarsBuildItem> themeVarsProducer,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             ExtensionsBuildItem extensionsBuildItem,
             List<MenuPageBuildItem> menuPageBuildItems,
             List<DevServiceDescriptionBuildItem> devServiceDescriptions,
@@ -395,7 +397,9 @@ public class BuildTimeContentProcessor {
         internalBuildTimeData.addBuildTimeData("footerTabs", footerTabs);
 
         // Add version info
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + DEV_UI + SLASH;
         Map<String, String> applicationInfo = new HashMap<>();
+        applicationInfo.put("contextRoot", contextRoot);
         applicationInfo.put("quarkusVersion", Version.getVersion());
         applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         applicationInfo.put("applicationVersion",

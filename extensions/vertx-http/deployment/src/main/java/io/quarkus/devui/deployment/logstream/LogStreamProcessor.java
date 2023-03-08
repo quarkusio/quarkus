@@ -39,7 +39,7 @@ public class LogStreamProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
-        return new JsonRPCProvidersBuildItem("DevUI", LogStreamJsonRPCService.class);
+        return new JsonRPCProvidersBuildItem("devui-logstream", LogStreamJsonRPCService.class);
     }
 
 }

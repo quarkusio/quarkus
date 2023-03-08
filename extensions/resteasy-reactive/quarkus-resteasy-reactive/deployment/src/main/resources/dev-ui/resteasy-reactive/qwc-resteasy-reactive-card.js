@@ -1,10 +1,10 @@
-import { LitElement, html, css} from 'lit';
+import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import { pages } from 'resteasy-reactive-data';
 import { JsonRpc } from 'jsonrpc';
 import 'echarts-gauge-grade';
 import '@vaadin/icon';
 
-export class QwcResteasyReactiveCard extends LitElement {
+export class QwcResteasyReactiveCard extends QwcHotReloadElement {
     jsonRpc = new JsonRpc("RESTEasy Reactive");
     
     static styles = css`
@@ -43,7 +43,7 @@ export class QwcResteasyReactiveCard extends LitElement {
     render() {
         
         if(this._latestScores){
-            return html`<div class="graph" @click=${this._refresh}>
+            return html`<div class="graph" @click=${this.hotReload}>
                 <echarts-gauge-grade 
                             percentage="${this._latestScores.score}"
                             percentageFontSize="14"
@@ -61,7 +61,7 @@ export class QwcResteasyReactiveCard extends LitElement {
             </a>`;
     }
     
-    _refresh(){
+    hotReload(){
         this._latestScores = null;
         this.jsonRpc.getEndpointScores().then(endpointScores => {
             this._latestScores = endpointScores.result;

@@ -2,7 +2,6 @@ package io.quarkus.it.jpa.oracle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.LogCollectingTestResource;
@@ -30,7 +29,6 @@ import io.quarkus.test.junit.QuarkusTest;
 })
 public class HibernateOrmNoWarningsTest {
     @Test
-    @Disabled("We currently use a deprecated dialect, leading to warnings on startup")
     public void testNoWarningsOnStartup() {
         assertThat(LogCollectingTestResource.current().getRecords())
                 // There shouldn't be any warning or error

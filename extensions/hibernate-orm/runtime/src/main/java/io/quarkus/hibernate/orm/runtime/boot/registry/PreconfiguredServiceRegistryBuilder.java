@@ -43,6 +43,7 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractor
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutationExecutorServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectResolverInitiator;
 import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.QuarkusRuntimeBytecodeProviderInitiator;
 
 /**
@@ -193,8 +194,8 @@ public class PreconfiguredServiceRegistryBuilder {
         serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
 
-        // Disabled: Dialect is injected explicitly
-        // serviceInitiators.add( DialectResolverInitiator.INSTANCE );
+        // Custom one: Dialect is injected explicitly
+        serviceInitiators.add(new QuarkusRuntimeInitDialectResolverInitiator(rs.getDialect()));
 
         // Custom one: Dialect is injected explicitly
         serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(rs.getDialect()));

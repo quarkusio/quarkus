@@ -29,6 +29,7 @@ import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -134,6 +135,7 @@ import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
+import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleCreateDDLSupplier;
 import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleIntegrator;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
@@ -180,19 +182,17 @@ public final class HibernateOrmProcessor {
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.DERBY,
                 "org.hibernate.dialect.DerbyDialect"));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.H2,
-                "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect"));
-        // using MariaDBDialect will make us go back to 10.3
+                // Using our own default version is extra important for H2
+                // See https://github.com/quarkusio/quarkus/issues/1886
+                "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect", DialectVersions.Defaults.H2));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MARIADB,
-                "org.hibernate.dialect.MariaDB106Dialect"));
-        // using SQLServerDialect will make us go back to 2008
+                "org.hibernate.dialect.MariaDBDialect", DialectVersions.Defaults.MARIADB));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MSSQL,
-                "org.hibernate.dialect.SQLServer2016Dialect"));
-        // using MySQLDialect will make us go back to 5.7
+                "org.hibernate.dialect.SQLServerDialect", DialectVersions.Defaults.MSSQL));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MYSQL,
-                "org.hibernate.dialect.MySQL8Dialect"));
-        // using OracleDialect will make us go back to 11.2
+                "org.hibernate.dialect.MySQLDialect", DialectVersions.Defaults.MYSQL));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.ORACLE,
-                "org.hibernate.dialect.Oracle12cDialect"));
+                "org.hibernate.dialect.OracleDialect", DialectVersions.Defaults.ORACLE));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.POSTGRESQL,
                 "org.hibernate.dialect.PostgreSQLDialect"));
     }
@@ -973,45 +973,6 @@ public final class HibernateOrmProcessor {
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
                 jdbcDataSources);
 
-        Optional<String> explicitDialect = persistenceUnitConfig.dialect.dialect;
-        String dialect;
-        MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant);
-        if (multiTenancyStrategy == MultiTenancyStrategy.DATABASE) {
-            // The datasource is optional for the DATABASE multi-tenancy strategy,
-            // since the datasource will be resolved separately for each tenant.
-            if (explicitDialect.isPresent()) {
-                dialect = explicitDialectSet(explicitDialect.get());
-            } else if (jdbcDataSource.isPresent()) {
-                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind(),
-                        dbKindMetadataBuildItems);
-            } else {
-                throw new ConfigurationException(String.format(Locale.ROOT,
-                        "The Hibernate ORM extension could not infer the dialect for persistence unit '%s'."
-                                + " When using database multi-tenancy, you must either configure a datasource for that persistence unit"
-                                + " (refer to https://quarkus.io/guides/datasource for guidance),"
-                                + " or set the dialect explicitly through property '"
-                                + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect") + "'.",
-                        persistenceUnitName));
-            }
-
-        } else {
-            if (!jdbcDataSource.isPresent()) {
-                throw new ConfigurationException(String.format(Locale.ROOT,
-                        "Datasource must be defined for persistence unit '%s'."
-                                + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                        persistenceUnitName),
-                        new HashSet<>(Arrays.asList("quarkus.datasource.db-kind", "quarkus.datasource.username",
-                                "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
-            }
-            if (explicitDialect.isPresent()) {
-                dialect = explicitDialectSet(explicitDialect.get());
-            } else {
-                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind(),
-                        dbKindMetadataBuildItems);
-            }
-        }
-
-        // we found one
         ParsedPersistenceXmlDescriptor descriptor = new ParsedPersistenceXmlDescriptor(null); //todo URL
         descriptor.setName(persistenceUnitName);
 
@@ -1033,13 +994,12 @@ public final class HibernateOrmProcessor {
         }
 
         descriptor.setTransactionType(PersistenceUnitTransactionType.JTA);
-        descriptor.getProperties().setProperty(AvailableSettings.DIALECT, dialect);
 
-        // The storage engine has to be set as a system property.
-        if (persistenceUnitConfig.dialect.storageEngine.isPresent()) {
-            systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE,
-                    persistenceUnitConfig.dialect.storageEngine.get()));
-        }
+        MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant);
+        collectDialectConfig(persistenceUnitName, persistenceUnitConfig,
+                dbKindMetadataBuildItems, jdbcDataSource, multiTenancyStrategy,
+                systemProperties, descriptor.getProperties()::setProperty, storageEngineCollector);
+
         // Physical Naming Strategy
         persistenceUnitConfig.physicalNamingStrategy.ifPresent(
                 namingStrategy -> descriptor.getProperties()
@@ -1195,11 +1155,6 @@ public final class HibernateOrmProcessor {
             }
         }
 
-        // Collect the storage engines if MySQL or MariaDB
-        if (isMySQLOrMariaDB(dialect) && persistenceUnitConfig.dialect.storageEngine.isPresent()) {
-            storageEngineCollector.add(persistenceUnitConfig.dialect.storageEngine.get());
-        }
-
         // Discriminator Column
         descriptor.getProperties().setProperty(AvailableSettings.IGNORE_EXPLICIT_DISCRIMINATOR_COLUMNS_FOR_JOINED_SUBCLASS,
                 String.valueOf(persistenceUnitConfig.discriminator.ignoreExplicitForJoined));
@@ -1218,13 +1173,79 @@ public final class HibernateOrmProcessor {
                         false, false));
     }
 
-    private static String explicitDialectSet(String configuredDialectName) {
-        if ("org.hibernate.dialect.H2Dialect".equals(configuredDialectName)) {
-            LOG.warn(
-                    "The dialect property of Hibernate ORM was explicitly set to 'org.hibernate.dialect.H2Dialect'; this won't work in Quarkus - overriding to 'io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect'.");
-            return "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect";
+    private static void collectDialectConfig(String persistenceUnitName,
+            HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
+            List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems, Optional<JdbcDataSourceBuildItem> jdbcDataSource,
+            MultiTenancyStrategy multiTenancyStrategy,
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BiConsumer<String, String> puPropertiesCollector, Set<String> storageEngineCollector) {
+        Optional<String> explicitDialect = persistenceUnitConfig.dialect.dialect;
+        Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
+        if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty()) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Datasource must be defined for persistence unit '%s'."
+                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                    persistenceUnitName),
+                    new HashSet<>(Arrays.asList("quarkus.datasource.db-kind", "quarkus.datasource.username",
+                            "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
         }
-        return configuredDialectName;
+
+        Optional<String> dialect = explicitDialect;
+        Optional<String> dbProductVersion = Optional.empty();
+        if (dbKind.isPresent() || explicitDialect.isPresent()) {
+            for (DatabaseKindDialectBuildItem item : dbKindMetadataBuildItems) {
+                if (dbKind.isPresent() && DatabaseKind.is(dbKind.get(), item.getDbKind())
+                        // Set the default version based on the dialect when we don't have a datasource
+                        // (i.e. for database multi-tenancy)
+                        || explicitDialect.isPresent() && explicitDialect.get().equals(item.getDialect())) {
+                    if (explicitDialect.isEmpty()) {
+                        dialect = Optional.of(item.getDialect());
+                    }
+                    dbProductVersion = item.getDefaultDatabaseProductVersion();
+                    break;
+                }
+            }
+            if (dialect.isEmpty()) {
+                throw new ConfigurationException(
+                        "The Hibernate ORM extension could not guess the dialect from the database kind '" + dbKind.get()
+                                + "'. Add an explicit '"
+                                + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect")
+                                + "' property.");
+            }
+        }
+
+        if (dialect.isPresent()) {
+            puPropertiesCollector.accept(AvailableSettings.DIALECT, dialect.get());
+        } else {
+            // We only get here with the database multi-tenancy strategy; see the initial check, up top.
+            assert multiTenancyStrategy == MultiTenancyStrategy.DATABASE;
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "The Hibernate ORM extension could not infer the dialect for persistence unit '%s'."
+                            + " When using database multi-tenancy, you must either configure a datasource for that persistence unit"
+                            + " (refer to https://quarkus.io/guides/datasource for guidance),"
+                            + " or set the dialect explicitly through property '"
+                            + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect") + "'.",
+                    persistenceUnitName));
+        }
+
+        if (persistenceUnitConfig.dialect.storageEngine.isPresent()) {
+            // Only actually set the storage engines if MySQL or MariaDB
+            if (isMySQLOrMariaDB(dialect.get())) {
+                // The storage engine has to be set as a system property.
+                // We record it so that we can later run checks (because we can only set a single value)
+                storageEngineCollector.add(persistenceUnitConfig.dialect.storageEngine.get());
+                systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE,
+                        persistenceUnitConfig.dialect.storageEngine.get()));
+            } else {
+                LOG.warnf("The storage engine set through configuration property '%1$s' is being ignored"
+                        + " because the database is neither MySQL nor MariaDB.",
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.storage-engine"));
+            }
+        }
+
+        if (dbProductVersion.isPresent()) {
+            puPropertiesCollector.accept(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, dbProductVersion.get());
+        }
     }
 
     private static Optional<JdbcDataSourceBuildItem> findJdbcDataSource(String persistenceUnitName,

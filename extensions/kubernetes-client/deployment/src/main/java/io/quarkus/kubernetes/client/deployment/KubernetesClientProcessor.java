@@ -190,7 +190,7 @@ public class KubernetesClientProcessor {
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, deserializerClasses));
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses).methods(true).build());
 
         final String[] serializerClasses = combinedIndexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
@@ -198,28 +198,19 @@ public class KubernetesClientProcessor {
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, serializerClasses));
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses).methods(true).build());
 
-        reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, true, KubernetesClientImpl.class.getName()));
-        reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, true, DefaultKubernetesClient.class.getName()));
-        reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, false, AnyType.class.getName()));
-        reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, false, IntOrString.class.getName()));
-
-        reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, false, KubernetesDeserializer.class.getName()));
-        reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, true, VersionInfo.class.getName()));
+        reflectiveClasses.produce(
+                ReflectiveClassBuildItem.builder(KubernetesClientImpl.class, DefaultKubernetesClient.class, VersionInfo.class)
+                        .methods(true).fields(true).build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class).methods(true).build());
 
         // exec credentials support - we need to use Strings as the classes are private
         reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, true,
-                        "io.fabric8.kubernetes.client.Config$ExecCredential",
+                .produce(ReflectiveClassBuildItem.builder("io.fabric8.kubernetes.client.Config$ExecCredential",
                         "io.fabric8.kubernetes.client.Config$ExecCredentialSpec",
-                        "io.fabric8.kubernetes.client.Config$ExecCredentialStatus"));
+                        "io.fabric8.kubernetes.client.Config$ExecCredentialStatus").methods(true).fields(true).build());
 
         if (log.isDebugEnabled()) {
             final String watchedClassNames = watchedClasses

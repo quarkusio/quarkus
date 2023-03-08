@@ -71,6 +71,13 @@ public class KnativeWithHealthTest {
                                     assertNotNull(p.getHttpGet());
                                     assertNull(p.getHttpGet().getPort());
                                 });
+                                assertThat(c.getStartupProbe()).isNotNull().satisfies(p -> {
+                                    assertThat(p.getInitialDelaySeconds()).isEqualTo(5);
+                                    assertProbePath(p, "/q/health/started");
+
+                                    assertNotNull(p.getHttpGet());
+                                    assertNull(p.getHttpGet().getPort());
+                                });
                             });
                         });
                     });

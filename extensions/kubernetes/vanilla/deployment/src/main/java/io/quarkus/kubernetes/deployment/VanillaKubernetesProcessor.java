@@ -47,6 +47,7 @@ import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
@@ -134,7 +135,9 @@ public class VanillaKubernetesProcessor {
             Optional<ContainerImageInfoBuildItem> image, Optional<KubernetesCommandBuildItem> command,
             Optional<KubernetesProbePortNameBuildItem> portName,
             List<KubernetesPortBuildItem> ports, Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
-            Optional<KubernetesHealthReadinessPathBuildItem> readinessPath, List<KubernetesRoleBuildItem> roles,
+            Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
+            List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
 
@@ -149,7 +152,7 @@ public class VanillaKubernetesProcessor {
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
         result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration,
-                annotations, labels, command, port, livenessPath, readinessPath, roles, roleBindings));
+                annotations, labels, command, port, livenessPath, readinessPath, startupPath, roles, roleBindings));
 
         KubernetesConfig.DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         if (deploymentKind != KubernetesConfig.DeploymentResourceKind.Deployment) {
@@ -248,6 +251,10 @@ public class VanillaKubernetesProcessor {
                         ports));
         result.add(
                 KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, "readinessProbe", config.readinessProbe,
+                        portName,
+                        ports));
+        result.add(
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, "startupProbe", config.startupProbe,
                         portName,
                         ports));
 

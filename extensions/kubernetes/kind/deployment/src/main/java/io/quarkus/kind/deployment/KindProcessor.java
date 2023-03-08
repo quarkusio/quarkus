@@ -37,6 +37,7 @@ import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
@@ -108,6 +109,7 @@ public class KindProcessor {
             Optional<KubernetesProbePortNameBuildItem> portName,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
@@ -117,6 +119,7 @@ public class KindProcessor {
                 portName,
                 livenessPath,
                 readinessPath,
+                startupPath,
                 roles, roleBindings, customProjectRoot);
     }
 

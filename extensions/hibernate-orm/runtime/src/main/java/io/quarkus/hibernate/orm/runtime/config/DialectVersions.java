@@ -23,7 +23,6 @@ public final class DialectVersions {
 
         // This must be aligned on the H2 version in the Quarkus BOM
         public static final String H2 = "2.1.210";
-        public static final DatabaseVersion H2_DB = DatabaseVersion.make(2, 1, 210);
 
         private Defaults() {
         }

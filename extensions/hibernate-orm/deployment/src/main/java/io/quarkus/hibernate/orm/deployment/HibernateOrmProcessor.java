@@ -184,7 +184,7 @@ public final class HibernateOrmProcessor {
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.H2,
                 // Using our own default version is extra important for H2
                 // See https://github.com/quarkusio/quarkus/issues/1886
-                "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect", DialectVersions.Defaults.H2));
+                "org.hibernate.dialect.H2Dialect", DialectVersions.Defaults.H2));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MARIADB,
                 "org.hibernate.dialect.MariaDBDialect", DialectVersions.Defaults.MARIADB));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MSSQL,
@@ -387,12 +387,13 @@ public final class HibernateOrmProcessor {
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             ParsedPersistenceXmlDescriptor xmlDescriptor = persistenceXmlDescriptorBuildItem.getDescriptor();
+            String puName = xmlDescriptor.getName();
             Optional<JdbcDataSourceBuildItem> jdbcDataSource = jdbcDataSources.stream()
                     .filter(i -> i.isDefault())
                     .findFirst();
+            collectDialectConfigForPersistenceXml(puName, xmlDescriptor);
             persistenceUnitDescriptors
-                    .produce(new PersistenceUnitDescriptorBuildItem(xmlDescriptor,
-                            xmlDescriptor.getName(),
+                    .produce(new PersistenceUnitDescriptorBuildItem(xmlDescriptor, puName,
                             new RecordedConfig(
                                     Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                                     jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
@@ -1245,6 +1246,26 @@ public final class HibernateOrmProcessor {
 
         if (dbProductVersion.isPresent()) {
             puPropertiesCollector.accept(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, dbProductVersion.get());
+        }
+    }
+
+    private static void collectDialectConfigForPersistenceXml(String persistenceUnitName,
+            ParsedPersistenceXmlDescriptor puDescriptor) {
+        Properties properties = puDescriptor.getProperties();
+        String dialect = puDescriptor.getProperties().getProperty(AvailableSettings.DIALECT);
+        // Legacy behavior: we used to do this through a custom DialectSelector,
+        // but we might as well do it at build time.
+        // TODO should we do this for other dialects as well?
+        //   Similar (but different) issue: https://github.com/quarkusio/quarkus/issues/31588
+        if (("H2".equals(dialect) || "org.hibernate.dialect.H2Dialect".equals(dialect))
+                && !properties.containsKey(AvailableSettings.JAKARTA_HBM2DDL_DB_MAJOR_VERSION)
+                && !properties.containsKey(AvailableSettings.JAKARTA_HBM2DDL_DB_MINOR_VERSION)
+                && !properties.containsKey(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION)) {
+            Logger.getLogger(HibernateOrmProcessor.class)
+                    .infof("Persistence unit '%1$s': Enforcing Quarkus defaults for dialect 'org.hibernate.dialect.H2Dialect'"
+                            + " by automatically setting '%2$s=%3$s'.",
+                            persistenceUnitName, AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, DialectVersions.Defaults.H2);
+            properties.setProperty(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, DialectVersions.Defaults.H2);
         }
     }
 

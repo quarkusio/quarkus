@@ -12,6 +12,7 @@ public class PluginListTable {
     private static final String INSTALLED = " ";
     private static final String NAME = "Name";
     private static final String TYPE = "Type";
+    private static final String SCOPE = "Scope";
     private static final String LOCATION = "Location";
     private static final String DESCRIPTION = "Description";
     private static final String COMMAND = "Command";
@@ -50,9 +51,9 @@ public class PluginListTable {
 
     private static String[] getLabels(boolean withCommand) {
         if (withCommand) {
-            return new String[] { INSTALLED, NAME, TYPE, LOCATION, DESCRIPTION, COMMAND };
+            return new String[] { INSTALLED, NAME, TYPE, SCOPE, LOCATION, DESCRIPTION, COMMAND };
         } else {
-            return new String[] { INSTALLED, NAME, TYPE, LOCATION, DESCRIPTION };
+            return new String[] { INSTALLED, NAME, TYPE, SCOPE, LOCATION, DESCRIPTION };
         }
     }
 
@@ -104,7 +105,16 @@ public class PluginListTable {
         sb.append(" %-" + maxTypeLength + "s ");
         sb.append("\t");
 
-        int maxLocationLength = Stream.concat(Stream.of(DESCRIPTION),
+        int maxScopeLength = Stream.concat(Stream.of(SCOPE),
+                items.stream().map(PluginListItem::getScope))
+                .filter(Objects::nonNull)
+                .map(String::length)
+                .max(Comparator.naturalOrder())
+                .orElse(0);
+        sb.append(" %-" + maxScopeLength + "s ");
+        sb.append("\t");
+
+        int maxLocationLength = Stream.concat(Stream.of(LOCATION),
                 items.stream().map(PluginListItem::getLocation))
                 .filter(Objects::nonNull)
                 .map(String::length)

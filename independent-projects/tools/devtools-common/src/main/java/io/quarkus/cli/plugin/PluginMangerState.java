@@ -84,7 +84,9 @@ class PluginMangerState {
 
     public Map<String, Plugin> projectPlugins() {
         return pluginCatalogService.readProjectCatalog(projectRoot).map(catalog -> catalog.getPlugins().values().stream()
-                .filter(pluginFilter).collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
+                .filter(pluginFilter)
+                .map(Plugin::inProjectCatalog)
+                .collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
     }
 
     public Map<String, Plugin> getProjectPluigns() {
@@ -96,7 +98,9 @@ class PluginMangerState {
 
     public Map<String, Plugin> userPlugins() {
         return pluginCatalogService.readUserCatalog(userHome).map(catalog -> catalog.getPlugins().values().stream()
-                .filter(pluginFilter).collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
+                .filter(pluginFilter)
+                .map(Plugin::inUserCatalog)
+                .collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
     }
 
     public Map<String, Plugin> getUserPluigns() {
@@ -107,13 +111,15 @@ class PluginMangerState {
     }
 
     public Map<String, Plugin> installablePlugins() {
+        boolean isUserScoped = !quarkusProject.isPresent();
         Map<String, Plugin> installablePlugins = new HashMap<>();
         //Get installable from JBang
         JBangCatalog jbangCatalog = jbangCatalogService.readCombinedCatalog(projectRoot, userHome);
         jbangCatalog.getAliases().forEach((location, alias) -> {
             String name = util.getName(location);
             Optional<String> description = alias.getDescription();
-            Plugin plugin = new Plugin(name, PluginType.jbang, Optional.of(location), description);
+            Plugin plugin = new Plugin(name, PluginType.jbang, Optional.of(location), description, Optional.empty(),
+                    isUserScoped);
             if (pluginFilter.test(plugin)) {
                 installablePlugins.put(name, plugin);
             }
@@ -124,7 +130,7 @@ class PluginMangerState {
             String name = util.getName(f.getName());
             Optional<String> description = Optional.empty();
             Optional<String> location = Optional.of(f.getAbsolutePath());
-            Plugin plugin = new Plugin(name, PluginType.binary, location, description);
+            Plugin plugin = new Plugin(name, PluginType.executable, location, description, Optional.empty(), isUserScoped);
             if (pluginFilter.test(plugin)) {
                 installablePlugins.put(name, plugin);
             }
@@ -152,7 +158,7 @@ class PluginMangerState {
                 extensionPlugins.putAll(project.getExtensionsCatalog().getExtensions().stream()
                         .filter(e -> installed.contains(e.getArtifact().getKey()))
                         .map(ExtensionProcessor::getCliPlugins).flatMap(Collection::stream).map(util::from)
-                        .collect(Collectors.toMap(p -> p.getName(), p -> p)));
+                        .collect(Collectors.toMap(p -> p.getName(), p -> p.inProjectCatalog())));
             } catch (Exception e) {
                 throw new RuntimeException("Error reading the extension catalog", e);
             }

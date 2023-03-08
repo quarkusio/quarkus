@@ -18,6 +18,8 @@ public class Plugin {
     private final Optional<String> location;
     private final Optional<String> description;
 
+    @JsonIgnore
+    private final boolean inUserCatalog;
     /**
      * This is mostly used for testing.
      */
@@ -25,24 +27,29 @@ public class Plugin {
     private final Optional<Path> catalogLocation;
 
     public Plugin(String name, PluginType type) {
-        this(name, type, Optional.empty(), Optional.empty(), Optional.empty());
-    }
-
-    public Plugin(String name, PluginType type, Optional<String> location, Optional<String> description) {
-        this(name, type, location, description, Optional.empty());
+        this(name, type, Optional.empty(), Optional.empty(), Optional.empty(), true);
     }
 
     @JsonCreator
     public Plugin(@JsonProperty("name") String name,
             @JsonProperty("type") PluginType type,
             @JsonProperty("location") Optional<String> location,
-            @JsonProperty("description") Optional<String> description,
-            @JsonProperty("catalogLocation") Optional<Path> catalogLocation) {
+            @JsonProperty("description") Optional<String> description) {
+        this(name, type, location, description, Optional.empty(), true);
+    }
+
+    public Plugin(String name,
+            PluginType type,
+            Optional<String> location,
+            Optional<String> description,
+            Optional<Path> catalogLocation,
+            boolean inUserCatalog) {
         this.name = Objects.requireNonNull(name);
         this.type = Objects.requireNonNull(type);
         this.description = description != null ? description : Optional.empty();
         this.location = location != null ? location : Optional.empty();
         this.catalogLocation = catalogLocation != null ? catalogLocation : Optional.empty();
+        this.inUserCatalog = inUserCatalog;
     }
 
     public String getName() {
@@ -61,15 +68,27 @@ public class Plugin {
         return location;
     }
 
+    public boolean isInUserCatalog() {
+        return inUserCatalog;
+    }
+
     public Optional<Path> getCatalogLocation() {
         return catalogLocation;
     }
 
     public Plugin withDescription(Optional<String> description) {
-        return new Plugin(name, type, location, description, catalogLocation);
+        return new Plugin(name, type, location, description, catalogLocation, inUserCatalog);
     }
 
     public Plugin withCatalogLocation(Optional<Path> catalogLocation) {
-        return new Plugin(name, type, location, description, catalogLocation);
+        return new Plugin(name, type, location, description, catalogLocation, inUserCatalog);
+    }
+
+    public Plugin inUserCatalog() {
+        return new Plugin(name, type, location, description, catalogLocation, true);
+    }
+
+    public Plugin inProjectCatalog() {
+        return new Plugin(name, type, location, description, catalogLocation, false);
     }
 }

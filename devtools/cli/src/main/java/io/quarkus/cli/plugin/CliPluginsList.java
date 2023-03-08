@@ -66,13 +66,13 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
     }
 
     Integer listPluigns() {
-        PluginManager pluginService = pluginManager();
-        pluginService.reconcile();
-        installedPlugins.putAll(pluginService.getInstalledPlugins());
+        PluginManager pluginManager = pluginManager();
+        pluginManager.reconcile();
+        installedPlugins.putAll(pluginManager.getInstalledPlugins());
 
         Map<String, PluginListItem> items = new HashMap<>();
         if (installable) {
-            Map<String, Plugin> availablePlugins = pluginService.getInstallablePlugins();
+            Map<String, Plugin> availablePlugins = pluginManager.getInstallablePlugins();
             items.putAll(availablePlugins
                     .entrySet().stream()
                     .filter(e -> !installedPlugins.containsKey(e.getKey()))

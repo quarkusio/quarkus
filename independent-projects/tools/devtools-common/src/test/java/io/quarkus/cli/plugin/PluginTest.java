@@ -17,7 +17,7 @@ public class PluginTest {
     @Test
     public void shouldNotHaveNullProperties() throws Exception {
         assertPluginFieldsNotNull(new Plugin("my-plugin", PluginType.executable));
-        assertPluginFieldsNotNull(new Plugin("my-plugin", PluginType.executable, null, null, null));
+        assertPluginFieldsNotNull(new Plugin("my-plugin", PluginType.executable, null, null, null, false));
         assertPluginFieldsNotNull(objectMapper.readValue("{\"name\": \"my-plugin\", \"type\": \"executable\"}", Plugin.class));
     }
 

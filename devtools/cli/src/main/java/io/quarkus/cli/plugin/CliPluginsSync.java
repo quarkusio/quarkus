@@ -29,17 +29,19 @@ public class CliPluginsSync extends CliPluginsBase implements Callable<Integer> 
         PluginManager pluginManager = pluginManager();
         Map<String, Plugin> before = pluginManager.getInstalledPlugins();
         if (pluginManager.sync()) {
-        Map<String, Plugin> after = pluginManager.getInstalledPlugins();
+            Map<String, Plugin> after = pluginManager.getInstalledPlugins();
 
-        Map<String, PluginListItem> installed = after.entrySet().stream().filter(e -> !before.containsKey(e.getKey())).collect(Collectors.toMap(e -> e.getKey(), e -> new PluginListItem(true, e.getValue())));
-        Map<String, PluginListItem> uninstalled = before.entrySet().stream().filter(e -> !after.containsKey(e.getKey())).collect(Collectors.toMap(e -> e.getKey(), e -> new PluginListItem(false, e.getValue())));
-        Map<String, PluginListItem> all = new HashMap<>();
-        all.putAll(installed);
-        all.putAll(uninstalled);
+            Map<String, PluginListItem> installed = after.entrySet().stream().filter(e -> !before.containsKey(e.getKey()))
+                    .collect(Collectors.toMap(e -> e.getKey(), e -> new PluginListItem(true, e.getValue())));
+            Map<String, PluginListItem> uninstalled = before.entrySet().stream().filter(e -> !after.containsKey(e.getKey()))
+                    .collect(Collectors.toMap(e -> e.getKey(), e -> new PluginListItem(false, e.getValue())));
+            Map<String, PluginListItem> all = new HashMap<>();
+            all.putAll(installed);
+            all.putAll(uninstalled);
 
-        PluginListTable table = new PluginListTable(all.values(), false, true);
-        output.info("Sync completed. The following plugins were added/removed:");
-        output.info(table.getContent());
+            PluginListTable table = new PluginListTable(all.values(), false, true);
+            output.info("Sync completed. The following plugins were added/removed:");
+            output.info(table.getContent());
         } else {
             output.info("Nothing to sync (no plugins were added or removed).");
         }

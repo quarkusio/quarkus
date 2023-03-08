@@ -26,6 +26,10 @@ public class PluginListItem {
         return plugin.getType().name();
     }
 
+    public String getScope() {
+        return plugin.isInUserCatalog() ? "user" : "project";
+    }
+
     public String getLocation() {
         return plugin.getLocation().orElse("");
     }
@@ -54,7 +58,7 @@ public class PluginListItem {
 
     public String[] getFields(boolean withCommand) {
         return withCommand
-                ? new String[] { getSymbol(), getName(), getType(), getLocation(), getDescription(), getCommand() }
-                : new String[] { getSymbol(), getName(), getType(), getLocation(), getDescription() };
+                ? new String[] { getSymbol(), getName(), getType(), getScope(), getLocation(), getDescription(), getCommand() }
+                : new String[] { getSymbol(), getName(), getType(), getScope(), getLocation(), getDescription() };
     }
 }

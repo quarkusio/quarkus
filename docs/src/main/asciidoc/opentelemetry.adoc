@@ -243,7 +243,7 @@ The https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/ma
 implementation("io.opentelemetry.instrumentation:opentelemetry-jdbc")
 ----
 
-As it uses a dedicated JDBC datasource wrapper, you must enable JDBC tracing for your datasource:
+As it uses a dedicated JDBC datasource wrapper, you must enable telemetry for your datasource:
 
 [source, properties]
 ----

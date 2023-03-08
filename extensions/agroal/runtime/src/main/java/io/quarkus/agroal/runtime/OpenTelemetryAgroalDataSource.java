@@ -13,7 +13,7 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.instrumentation.jdbc.datasource.OpenTelemetryDataSource;
 
 /**
- * The {@link AgroalDataSource} wrapper that actives OpenTelemetry JDBC instrumentation.
+ * The {@link AgroalDataSource} wrapper that activates OpenTelemetry JDBC instrumentation.
  */
 public class OpenTelemetryAgroalDataSource extends OpenTelemetryDataSource implements AgroalDataSource {
 

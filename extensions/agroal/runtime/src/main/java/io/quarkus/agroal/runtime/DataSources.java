@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -69,7 +68,6 @@ public class DataSources {
     public static final String TRACING_DRIVER_CLASSNAME = "io.opentracing.contrib.jdbc.TracingDriver";
     private static final String JDBC_URL_PREFIX = "jdbc:";
     private static final String JDBC_TRACING_URL_PREFIX = "jdbc:tracing:";
-    private static volatile Function<AgroalDataSource, AgroalDataSource> OTEL_DATASOURCE_TRANSFORMER = null;
 
     private final DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
@@ -81,6 +79,7 @@ public class DataSources {
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
     private final DataSourceSupport dataSourceSupport;
     private final Instance<AgroalPoolInterceptor> agroalPoolInterceptors;
+    private final Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper;
 
     private final ConcurrentMap<String, AgroalDataSource> dataSources = new ConcurrentHashMap<>();
 
@@ -90,8 +89,10 @@ public class DataSources {
             TransactionManagerConfiguration transactionRuntimeConfig,
             TransactionManager transactionManager,
             XAResourceRecoveryRegistry xaResourceRecoveryRegistry,
-            TransactionSynchronizationRegistry transactionSynchronizationRegistry, DataSourceSupport dataSourceSupport,
-            @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors) {
+            TransactionSynchronizationRegistry transactionSynchronizationRegistry,
+            DataSourceSupport dataSourceSupport,
+            @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors,
+            Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper) {
         this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
         this.dataSourcesRuntimeConfig = dataSourcesRuntimeConfig;
         this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
@@ -102,6 +103,7 @@ public class DataSources {
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         this.dataSourceSupport = dataSourceSupport;
         this.agroalPoolInterceptors = agroalPoolInterceptors;
+        this.agroalOpenTelemetryWrapper = agroalOpenTelemetryWrapper;
     }
 
     /**
@@ -129,6 +131,7 @@ public class DataSources {
         });
     }
 
+    @SuppressWarnings("resource")
     public AgroalDataSource doCreateDataSource(String dataSourceName) {
         if (!dataSourceSupport.entries.containsKey(dataSourceName)) {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
@@ -255,9 +258,9 @@ public class DataSources {
         }
 
         if (dataSourceJdbcBuildTimeConfig.telemetry && dataSourceJdbcRuntimeConfig.telemetry.orElse(true)) {
-            // active OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
-            // use the transformer as we can't reference optional OpenTelemetry classes here
-            dataSource = OTEL_DATASOURCE_TRANSFORMER.apply(dataSource);
+            // activate OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
+            // use an optional CDI bean as we can't reference optional OpenTelemetry classes here
+            dataSource = agroalOpenTelemetryWrapper.get().apply(dataSource);
         }
 
         return dataSource;
@@ -452,13 +455,4 @@ public class DataSources {
             }
         }
     }
-
-    /**
-     * Set a function that will wrap {@link AgroalDataSource} with the OpenTelemetry datasource.
-     */
-    static void setOpenTelemetryDatasourceTransformer(Function<AgroalDataSource, AgroalDataSource> otelDatasourceTransformer) {
-        Objects.requireNonNull(otelDatasourceTransformer);
-        OTEL_DATASOURCE_TRANSFORMER = otelDatasourceTransformer;
-    }
-
 }

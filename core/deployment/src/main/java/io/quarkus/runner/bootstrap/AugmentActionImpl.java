@@ -191,7 +191,8 @@ public class AugmentActionImpl implements AugmentAction {
                 .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
                 .collect(Collectors.toList()),
                 jarBuildItem != null ? jarBuildItem.toJarResult() : null,
-                nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null);
+                nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null,
+                nativeImageBuildItem != null ? nativeImageBuildItem.getGraalVMInfo().toMap() : Collections.emptyMap());
     }
 
     private void writeDebugSourceFile(BuildResult result) {

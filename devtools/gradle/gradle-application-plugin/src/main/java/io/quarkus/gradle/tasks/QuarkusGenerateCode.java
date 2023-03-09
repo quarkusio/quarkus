@@ -110,6 +110,7 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
                     .setFrom(sourcesDirectories.stream().map(Path::toFile).collect(Collectors.toList()));
             params.getOutputPath().set(outputPath);
             params.getLaunchMode().set(launchMode);
+            params.getGradleVersion().set(getProject().getGradle().getGradleVersion());
         });
 
         workQueue.await();

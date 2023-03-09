@@ -50,15 +50,23 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
     }
 
     protected void run(boolean performCompile, LaunchMode mode, String... options)
+            throws MavenInvocationException, FileNotFoundException {
+        run(performCompile, mode, true, options);
+    }
+
+    protected void run(boolean performCompile, LaunchMode mode, boolean skipAnalytics, String... options)
             throws FileNotFoundException, MavenInvocationException {
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
 
-        final List<String> args = new ArrayList<>(2 + options.length);
+        final List<String> args = new ArrayList<>(3 + options.length);
         if (performCompile) {
             args.add("compile");
         }
         args.add("quarkus:" + mode.getDefaultProfile());
+        if (skipAnalytics) {
+            args.add("-Dquarkus.analytics.disabled=true");
+        }
         boolean hasDebugOptions = false;
         for (String option : options) {
             args.add(option);

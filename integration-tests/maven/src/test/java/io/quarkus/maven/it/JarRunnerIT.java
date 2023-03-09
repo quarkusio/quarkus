@@ -260,7 +260,8 @@ public class JarRunnerIT extends MojoTestBase {
 
         // The default build
         MavenProcessInvocationResult result = running
-                .execute(List.of("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar"), Map.of());
+                .execute(List.of("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar",
+                        "-Dquarkus.analytics.disabled=true"), Map.of());
         await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();

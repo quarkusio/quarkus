@@ -222,6 +222,7 @@ abstract class QuarkusBuildTask extends QuarkusTask {
             params.getBaseName().set(extension().finalName());
             params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);
+            params.getGradleVersion().set(getProject().getGradle().getGradleVersion());
         });
 
         workQueue.await();

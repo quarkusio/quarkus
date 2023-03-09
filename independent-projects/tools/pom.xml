@@ -75,6 +75,7 @@
         <module>base-codestarts</module>
         <module>devtools-common</module>
         <module>utilities</module>
+        <module>analytics-common</module>
     </modules>
     <dependencyManagement>
         <dependencies>

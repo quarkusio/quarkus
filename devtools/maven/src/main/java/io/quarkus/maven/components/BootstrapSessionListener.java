@@ -10,6 +10,7 @@ import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
 
+import io.quarkus.maven.BuildAnalyticsProvider;
 import io.quarkus.maven.QuarkusBootstrapProvider;
 
 @Singleton
@@ -17,18 +18,21 @@ import io.quarkus.maven.QuarkusBootstrapProvider;
 public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant {
 
     private final QuarkusBootstrapProvider bootstrapProvider;
+    private final BuildAnalyticsProvider buildAnalyticsProvider;
 
     private boolean enabled;
 
     @Inject
-    public BootstrapSessionListener(QuarkusBootstrapProvider bootstrapProvider) {
+    public BootstrapSessionListener(QuarkusBootstrapProvider bootstrapProvider, BuildAnalyticsProvider buildAnalyticsProvider) {
         this.bootstrapProvider = bootstrapProvider;
+        this.buildAnalyticsProvider = buildAnalyticsProvider;
     }
 
     @Override
     public void afterSessionEnd(MavenSession session) throws MavenExecutionException {
         try {
             bootstrapProvider.close();
+            buildAnalyticsProvider.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -16,16 +16,16 @@ import io.quarkus.hibernate.orm.SmokeTestUtils;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class DbMinVersionValidTest {
+public class DbVersionValidTest {
 
     private static final String ACTUAL_H2_VERSION = DialectVersions.Defaults.H2;
-    private static final String DB_MIN_VERSION;
+    private static final String CONFIGURED_DB_VERSION;
     static {
-        // We will set the DB min version to something lower than the actual version: this is valid.
-        DB_MIN_VERSION = ACTUAL_H2_VERSION.replaceAll("\\.[\\d]+\\.[\\d]+$", ".0.0");
+        // We will set the DB version to something lower than the actual version: this is valid.
+        CONFIGURED_DB_VERSION = ACTUAL_H2_VERSION.replaceAll("\\.[\\d]+\\.[\\d]+$", ".0.0");
         assertThat(ACTUAL_H2_VERSION)
                 .as("Test setup - we need the required version to be different from the actual one")
-                .isNotEqualTo(DB_MIN_VERSION);
+                .isNotEqualTo(CONFIGURED_DB_VERSION);
     }
 
     @RegisterExtension
@@ -34,7 +34,7 @@ public class DbMinVersionValidTest {
                     .addClass(SmokeTestUtils.class)
                     .addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.datasource.db-min-version", DB_MIN_VERSION);
+            .overrideConfigKey("quarkus.datasource.db-version", CONFIGURED_DB_VERSION);
 
     @Inject
     SessionFactory sessionFactory;
@@ -45,7 +45,7 @@ public class DbMinVersionValidTest {
     @Test
     public void dialectVersion() {
         var dialectVersion = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
-        assertThat(DialectVersions.toString(dialectVersion)).isEqualTo(DB_MIN_VERSION);
+        assertThat(DialectVersions.toString(dialectVersion)).isEqualTo(CONFIGURED_DB_VERSION);
     }
 
     @Test

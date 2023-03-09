@@ -293,7 +293,7 @@ public class HibernateOrmConfigPersistenceUnit {
          * allowing Quarkus to select the dialect automatically,
          * in which case you do not need to set the dialect at all,
          * though you may want to set
-         * xref:datasource.adoc#quarkus-datasource_quarkus.datasource.db-min-version[`quarkus.datasource.db-min-version`] as
+         * xref:datasource.adoc#quarkus-datasource_quarkus.datasource.db-version[`quarkus.datasource.db-version`] as
          * high as possible
          * to benefit from the best performance and latest features.
          *

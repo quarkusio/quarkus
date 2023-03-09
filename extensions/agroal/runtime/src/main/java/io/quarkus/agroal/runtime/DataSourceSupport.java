@@ -18,16 +18,16 @@ public class DataSourceSupport {
     public static class Entry {
         public final String dataSourceName;
         public final String resolvedDbKind;
-        public final Optional<String> dbMinVersion;
+        public final Optional<String> dbVersion;
         public final String resolvedDriverClass;
         public final boolean isDefault;
 
-        public Entry(String dataSourceName, String resolvedDbKind, Optional<String> dbMinVersion,
+        public Entry(String dataSourceName, String resolvedDbKind, Optional<String> dbVersion,
                 String resolvedDriverClass,
                 boolean isDefault) {
             this.dataSourceName = dataSourceName;
             this.resolvedDbKind = resolvedDbKind;
-            this.dbMinVersion = dbMinVersion;
+            this.dbVersion = dbVersion;
             this.resolvedDriverClass = resolvedDriverClass;
             this.isDefault = isDefault;
         }

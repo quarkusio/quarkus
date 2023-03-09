@@ -7,7 +7,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectFactory;
 
-public class QuarkusSessionFactoryObserverForDbMinVersionCheck implements SessionFactoryObserver {
+public class QuarkusSessionFactoryObserverForDbVersionCheck implements SessionFactoryObserver {
     @Override
     public void sessionFactoryCreated(SessionFactory factory) {
         var dialectFactory = (QuarkusRuntimeInitDialectFactory) ((SessionFactoryImplementor) factory)

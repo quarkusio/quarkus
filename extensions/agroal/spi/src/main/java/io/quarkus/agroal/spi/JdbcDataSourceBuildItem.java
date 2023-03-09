@@ -16,13 +16,13 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     private final String dbKind;
 
-    private final Optional<String> dbMinVersion;
+    private final Optional<String> dbVersion;
     private final boolean isDefault;
 
-    public JdbcDataSourceBuildItem(String name, String kind, Optional<String> dbMinVersion, boolean isDefault) {
+    public JdbcDataSourceBuildItem(String name, String kind, Optional<String> dbVersion, boolean isDefault) {
         this.name = name;
         this.dbKind = kind;
-        this.dbMinVersion = dbMinVersion;
+        this.dbVersion = dbVersion;
         this.isDefault = isDefault;
     }
 
@@ -34,8 +34,8 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
         return dbKind;
     }
 
-    public Optional<String> getDbMinVersion() {
-        return dbMinVersion;
+    public Optional<String> getDbVersion() {
+        return dbVersion;
     }
 
     public boolean isDefault() {

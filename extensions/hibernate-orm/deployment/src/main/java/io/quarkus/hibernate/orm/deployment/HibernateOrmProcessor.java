@@ -397,7 +397,7 @@ public final class HibernateOrmProcessor {
                             new RecordedConfig(
                                     Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                                     jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
-                                    jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbMinVersion),
+                                    jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                     getMultiTenancyStrategy(
                                             Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
@@ -1167,7 +1167,7 @@ public final class HibernateOrmProcessor {
                         new RecordedConfig(
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
-                                jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbMinVersion),
+                                jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database.ormCompatibilityVersion,
                                 persistenceUnitConfig.unsupportedProperties),
@@ -1184,7 +1184,7 @@ public final class HibernateOrmProcessor {
             BiConsumer<String, String> puPropertiesCollector, Set<String> storageEngineCollector) {
         Optional<String> explicitDialect = persistenceUnitConfig.dialect.dialect;
         Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
-        Optional<String> explicitDbMinVersion = jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbMinVersion);
+        Optional<String> explicitDbMinVersion = jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion);
         if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty()) {
             throw new ConfigurationException(String.format(Locale.ROOT,
                     "Datasource must be defined for persistence unit '%s'."

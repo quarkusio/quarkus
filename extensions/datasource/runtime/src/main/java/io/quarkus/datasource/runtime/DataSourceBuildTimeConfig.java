@@ -17,7 +17,7 @@ public class DataSourceBuildTimeConfig {
     public Optional<String> dbKind = Optional.empty();
 
     /**
-     * The minimum version of the database we will connect to (e.g. '10.0').
+     * The version of the database we will connect to (e.g. '10.0').
      *
      * CAUTION: The version number set here should follow the same numbering scheme
      * as the string returned by `java.sql.DatabaseMetaData#getDatabaseProductVersion()`
@@ -36,8 +36,8 @@ public class DataSourceBuildTimeConfig {
      * (e.g. Hibernate ORM may generate invalid SQL that your database will reject).
      *
      * Some extensions (like the Hibernate ORM extension)
-     * will try to check this minimum version against the actual database version on startup,
-     * leading to a startup failure in case of mismatch
+     * will try to check this version against the actual database version on startup,
+     * leading to a startup failure when the actual version is lower
      * or simply a warning in case the database cannot be reached.
      *
      * The default for this property is specific to each extension;
@@ -46,7 +46,7 @@ public class DataSourceBuildTimeConfig {
      * @asciidoclet
      */
     @ConfigItem
-    public Optional<String> dbMinVersion = Optional.empty();
+    public Optional<String> dbVersion = Optional.empty();
 
     /**
      * Configuration for DevServices. DevServices allows Quarkus to automatically start a database in dev and test mode.

@@ -75,7 +75,7 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
                                     " Alternatively, rebuild your application with"
                                             + " '%1$s=%2$s'"
                                             + " (but this may disable some features and/or impact performance negatively).",
-                                    DataSourceUtil.dataSourcePropertyKey(datasourceName.get(), "db-min-version"),
+                                    DataSourceUtil.dataSourcePropertyKey(datasourceName.get(), "db-version"),
                                     DialectVersions.toString(actualDbVersion.get()))));
         }
 

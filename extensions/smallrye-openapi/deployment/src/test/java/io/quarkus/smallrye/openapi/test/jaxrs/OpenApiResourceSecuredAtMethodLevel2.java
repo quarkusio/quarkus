@@ -14,6 +14,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @SecurityRequirement(name = "AtClassLevel")
 public class OpenApiResourceSecuredAtMethodLevel2 {
 
+    @SuppressWarnings("unused")
     private ResourceBean resourceBean;
 
     @GET

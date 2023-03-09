@@ -1,22 +1,27 @@
 package io.quarkus.smallrye.openapi.deployment.filter;
 
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
+import org.eclipse.microprofile.openapi.models.Components;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.Operation;
 import org.eclipse.microprofile.openapi.models.PathItem;
 import org.eclipse.microprofile.openapi.models.Paths;
+import org.eclipse.microprofile.openapi.models.responses.APIResponse;
 import org.eclipse.microprofile.openapi.models.responses.APIResponses;
 import org.eclipse.microprofile.openapi.models.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
 
 import io.smallrye.openapi.api.models.OperationImpl;
-import io.smallrye.openapi.api.models.responses.APIResponseImpl;
-import io.smallrye.openapi.api.models.security.SecurityRequirementImpl;
 
 /**
  * Automatically add security requirement to RolesAllowed methods
@@ -49,6 +54,10 @@ public class AutoRolesAllowedFilter implements OASFilter {
         return this.rolesAllowedMethodReferences != null && !this.rolesAllowedMethodReferences.isEmpty();
     }
 
+    public boolean hasRolesAllowedMethodReference(String methodRef) {
+        return this.rolesAllowedMethodReferences != null && this.rolesAllowedMethodReferences.containsKey(methodRef);
+    }
+
     public List<String> getAuthenticatedMethodReferences() {
         return authenticatedMethodReferences;
     }
@@ -61,6 +70,10 @@ public class AutoRolesAllowedFilter implements OASFilter {
         return this.authenticatedMethodReferences != null && !this.authenticatedMethodReferences.isEmpty();
     }
 
+    public boolean hasAuthenticatedMethodReference(String methodRef) {
+        return this.authenticatedMethodReferences != null && this.authenticatedMethodReferences.contains(methodRef);
+    }
+
     public String getDefaultSecuritySchemeName() {
         return defaultSecuritySchemeName;
     }
@@ -71,81 +84,71 @@ public class AutoRolesAllowedFilter implements OASFilter {
 
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
+        if (!hasRolesAllowedMethodReferences() && !hasAuthenticatedMethodReferences()) {
+            return;
+        }
 
-        if (hasRolesAllowedMethodReferences() || hasAuthenticatedMethodReferences()) {
-            String securitySchemeName = getSecuritySchemeName(openAPI);
-            Paths paths = openAPI.getPaths();
-            if (paths != null) {
-                Map<String, PathItem> pathItems = paths.getPathItems();
-                if (pathItems != null && !pathItems.isEmpty()) {
-                    Set<Map.Entry<String, PathItem>> pathItemsEntries = pathItems.entrySet();
-                    for (Map.Entry<String, PathItem> pathItem : pathItemsEntries) {
-                        Map<PathItem.HttpMethod, Operation> operations = pathItem.getValue().getOperations();
-                        if (operations != null && !operations.isEmpty()) {
+        var securityScheme = getSecurityScheme(openAPI);
+        String schemeName = securityScheme.map(Map.Entry::getKey).orElse(defaultSecuritySchemeName);
+        boolean scopesValidForScheme = securityScheme.map(Map.Entry::getValue)
+                .map(SecurityScheme::getType)
+                .map(Set.of(SecurityScheme.Type.OAUTH2, SecurityScheme.Type.OPENIDCONNECT)::contains)
+                .orElse(false);
+        Map<String, APIResponse> defaultSecurityErrors = getSecurityResponses();
 
-                            for (Operation operation : operations.values()) {
+        Optional.ofNullable(openAPI.getPaths())
+                .map(Paths::getPathItems)
+                .map(Map::entrySet)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty)
+                .map(Map.Entry::getValue)
+                .map(PathItem::getOperations)
+                .filter(Objects::nonNull)
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .forEach(operation -> {
+                    String methodRef = OperationImpl.getMethodRef(operation);
 
-                                OperationImpl operationImpl = (OperationImpl) operation;
-
-                                if (hasRolesAllowedMethodReferences()
-                                        && rolesAllowedMethodReferences.keySet().contains(operationImpl.getMethodRef())) {
-                                    SecurityRequirement securityRequirement = new SecurityRequirementImpl();
-                                    List<String> roles = rolesAllowedMethodReferences.get(operationImpl.getMethodRef());
-                                    securityRequirement = securityRequirement.addScheme(securitySchemeName, roles);
-                                    operation = operation.addSecurityRequirement(securityRequirement);
-                                    APIResponses responses = operation.getResponses();
-                                    for (APIResponseImpl response : getSecurityResponses()) {
-                                        if (!responses.hasAPIResponse(response.getResponseCode())) {
-                                            responses.addAPIResponse(response.getResponseCode(), response);
-                                        }
-                                    }
-                                    operation = operation.responses(responses);
-                                } else if (hasAuthenticatedMethodReferences()
-                                        && authenticatedMethodReferences.contains(operationImpl.getMethodRef())) {
-                                    SecurityRequirement securityRequirement = new SecurityRequirementImpl();
-                                    securityRequirement = securityRequirement.addScheme(securitySchemeName);
-                                    operation = operation.addSecurityRequirement(securityRequirement);
-                                    APIResponses responses = operation.getResponses();
-                                    for (APIResponseImpl response : getSecurityResponses()) {
-                                        if (!responses.hasAPIResponse(response.getResponseCode())) {
-                                            responses.addAPIResponse(response.getResponseCode(), response);
-                                        }
-                                    }
-                                    operation = operation.responses(responses);
-                                }
-                            }
-                        }
+                    if (hasRolesAllowedMethodReference(methodRef)) {
+                        List<String> scopes = rolesAllowedMethodReferences.get(methodRef);
+                        addSecurityRequirement(operation, schemeName, scopesValidForScheme ? scopes : Collections.emptyList());
+                        addDefaultSecurityResponses(operation, defaultSecurityErrors);
+                    } else if (hasAuthenticatedMethodReference(methodRef)) {
+                        addSecurityRequirement(operation, schemeName, Collections.emptyList());
+                        addDefaultSecurityResponses(operation, defaultSecurityErrors);
                     }
-                }
-            }
-        }
+                });
     }
 
-    private String getSecuritySchemeName(OpenAPI openAPI) {
-
+    private Optional<Map.Entry<String, SecurityScheme>> getSecurityScheme(OpenAPI openAPI) {
         // Might be set in annotations
-        if (openAPI.getComponents() != null && openAPI.getComponents().getSecuritySchemes() != null
-                && !openAPI.getComponents().getSecuritySchemes().isEmpty()) {
-            Map<String, SecurityScheme> securitySchemes = openAPI.getComponents().getSecuritySchemes();
-            return securitySchemes.keySet().iterator().next();
-        }
-        return defaultSecuritySchemeName;
+        return Optional.ofNullable(openAPI.getComponents())
+                .map(Components::getSecuritySchemes)
+                .map(Map::entrySet)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty)
+                .findFirst();
     }
 
-    private List<APIResponseImpl> getSecurityResponses() {
-        List<APIResponseImpl> responses = new ArrayList<>();
+    private void addSecurityRequirement(Operation operation, String schemeName, List<String> scopes) {
+        SecurityRequirement securityRequirement = OASFactory.createSecurityRequirement();
+        securityRequirement = securityRequirement.addScheme(schemeName, scopes);
+        operation.addSecurityRequirement(securityRequirement);
+    }
 
-        APIResponseImpl notAuthorized = new APIResponseImpl();
-        notAuthorized.setDescription("Not Authorized");
-        notAuthorized.setResponseCode("401");
-        responses.add(notAuthorized);
+    private void addDefaultSecurityResponses(Operation operation, Map<String, APIResponse> defaultSecurityErrors) {
+        APIResponses responses = operation.getResponses();
 
-        APIResponseImpl forbidden = new APIResponseImpl();
-        forbidden.setDescription("Not Allowed");
-        forbidden.setResponseCode("403");
-        responses.add(forbidden);
+        defaultSecurityErrors.entrySet()
+                .stream()
+                .filter(e -> !responses.hasAPIResponse(e.getKey()))
+                .forEach(e -> responses.addAPIResponse(e.getKey(), e.getValue()));
+    }
 
-        return responses;
+    private Map<String, APIResponse> getSecurityResponses() {
+        return Map.of(
+                "401", OASFactory.createAPIResponse().description("Not Authorized"),
+                "403", OASFactory.createAPIResponse().description("Not Allowed"));
     }
 
 }

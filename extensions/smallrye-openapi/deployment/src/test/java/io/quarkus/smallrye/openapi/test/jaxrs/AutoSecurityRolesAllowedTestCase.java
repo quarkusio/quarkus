@@ -1,5 +1,15 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.iterableWithSize;
+import static org.hamcrest.Matchers.nullValue;
+
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -8,7 +18,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class AutoSecurityRolesAllowedTestCase {
+class AutoSecurityRolesAllowedTestCase {
+
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
@@ -21,42 +32,52 @@ public class AutoSecurityRolesAllowedTestCase {
 
                             "application.properties"));
 
-    @Test
-    public void testAutoSecurityRequirement() {
-        RestAssured.given().header("Accept", "application/json")
-                .when().get("/q/openapi")
-                .then()
-                .log().body()
-                .and()
-                .body("components.securitySchemes.JWTCompanyAuthentication", Matchers.hasEntry("type", "http"))
-                .and()
-                .body("components.securitySchemes.JWTCompanyAuthentication",
-                        Matchers.hasEntry("description", "JWT Authentication"))
-                .and()
-                .body("components.securitySchemes.JWTCompanyAuthentication", Matchers.hasEntry("scheme", "bearer"))
-                .and()
-                .body("components.securitySchemes.JWTCompanyAuthentication", Matchers.hasEntry("bearerFormat", "JWT"))
-                .and()
-                .body("paths.'/resource2/test-security/annotated'.get.security.JWTCompanyAuthentication",
-                        Matchers.notNullValue())
-                .and()
-                .body("paths.'/resource2/test-security/naked'.get.security.JWTCompanyAuthentication", Matchers.notNullValue())
-                .and()
-                .body("paths.'/resource2/test-security/classLevel/1'.get.security.JWTCompanyAuthentication",
-                        Matchers.notNullValue())
-                .and()
-                .body("paths.'/resource2/test-security/classLevel/2'.get.security.JWTCompanyAuthentication",
-                        Matchers.notNullValue())
-                .and()
-                .body("paths.'/resource2/test-security/classLevel/3'.get.security.MyOwnName",
-                        Matchers.notNullValue())
-                .and()
-                .body("paths.'/resource3/test-security/annotated'.get.security.AtClassLevel", Matchers.notNullValue());
-
+    static Matcher<Iterable<Object>> schemeArray(String schemeName) {
+        return allOf(
+                iterableWithSize(1),
+                hasItem(allOf(
+                        aMapWithSize(1),
+                        hasEntry(equalTo(schemeName), emptyIterable()))));
     }
 
     @Test
-    public void testOpenAPIAnnotations() {
+    void testAutoSecurityRequirement() {
+        var defaultSecurity = schemeArray("JWTCompanyAuthentication");
+
+        RestAssured.given()
+                .header("Accept", "application/json")
+                .when()
+                .get("/q/openapi")
+                .then()
+                .log().body()
+                .and()
+                .body("components.securitySchemes.JWTCompanyAuthentication", allOf(
+                        hasEntry("type", "http"),
+                        hasEntry("scheme", "bearer"),
+                        hasEntry("bearerFormat", "JWT"),
+                        hasEntry("description", "JWT Authentication")))
+                .and()
+                // OpenApiResourceSecuredAtMethodLevel
+                .body("paths.'/resource2/test-security/naked'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/annotated'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/1'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/2'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/public'.get.security", nullValue())
+                .body("paths.'/resource2/test-security/annotated/documented'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/3'.get.security", defaultSecurity)
+                .and()
+                // OpenApiResourceSecuredAtClassLevel
+                .body("paths.'/resource2/test-security/classLevel/1'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/classLevel/2'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/classLevel/3'.get.security", schemeArray("MyOwnName"))
+                .body("paths.'/resource2/test-security/classLevel/4'.get.security", defaultSecurity)
+                .and()
+                // OpenApiResourceSecuredAtMethodLevel2
+                .body("paths.'/resource3/test-security/annotated'.get.security", schemeArray("AtClassLevel"));
+    }
+
+    @Test
+    void testOpenAPIAnnotations() {
         RestAssured.given().header("Accept", "application/json")
                 .when().get("/q/openapi")
                 .then()

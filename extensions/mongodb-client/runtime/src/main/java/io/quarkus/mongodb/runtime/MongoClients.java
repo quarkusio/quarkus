@@ -6,6 +6,8 @@ import static com.mongodb.AuthenticationMechanism.MONGODB_X509;
 import static com.mongodb.AuthenticationMechanism.PLAIN;
 import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_1;
 import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_256;
+import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
@@ -56,6 +58,8 @@ import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.credentials.CredentialsProvider;
+import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -381,12 +385,11 @@ public class MongoClients {
     }
 
     private MongoCredential createMongoCredential(MongoClientConfig config) {
-        String username = config.credentials.username.orElse(null);
-        if (username == null) {
+        UsernamePassword usernamePassword = determineUserNamePassword(config.credentials);
+        if (usernamePassword == null) {
             return null;
         }
 
-        char[] password = config.credentials.password.map(String::toCharArray).orElse(null);
         // get the authsource, or the database from the config, or 'admin' as it is the default auth source in mongo
         // and null is not allowed
         String authSource = config.credentials.authSource.orElse(config.database.orElse("admin"));
@@ -398,6 +401,8 @@ public class MongoClients {
         }
 
         // Create the MongoCredential instance.
+        String username = usernamePassword.getUsername();
+        char[] password = usernamePassword.getPassword();
         MongoCredential credential;
         if (mechanism == GSSAPI) {
             credential = MongoCredential.createGSSAPICredential(username);
@@ -427,6 +432,25 @@ public class MongoClients {
         return credential;
     }
 
+    private UsernamePassword determineUserNamePassword(CredentialConfig config) {
+        if (config.credentialsProvider.isPresent()) {
+            String beanName = config.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = config.credentialsProvider.get();
+            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            String user = credentials.get(USER_PROPERTY_NAME);
+            String password = credentials.get(PASSWORD_PROPERTY_NAME);
+            return new UsernamePassword(user, password.toCharArray());
+        } else {
+            String username = config.username.orElse(null);
+            if (username == null) {
+                return null;
+            }
+            char[] password = config.password.map(String::toCharArray).orElse(null);
+            return new UsernamePassword(username, password);
+        }
+    }
+
     private AuthenticationMechanism getAuthenticationMechanism(String authMechanism) {
         AuthenticationMechanism mechanism;
         try {
@@ -448,6 +472,24 @@ public class MongoClients {
             if (reactive != null) {
                 reactive.close();
             }
+        }
+    }
+
+    private static class UsernamePassword {
+        private final String username;
+        private final char[] password;
+
+        public UsernamePassword(String username, char[] password) {
+            this.username = username;
+            this.password = password;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public char[] getPassword() {
+            return password;
         }
     }
 }

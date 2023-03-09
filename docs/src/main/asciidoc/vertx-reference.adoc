@@ -914,7 +914,7 @@ The browser must use the `vertx-eventbus` JavaScript library to consume the mess
 
 IMPORTANT: Native transports are not supported in GraalVM produced binaries.
 
-Vert.x is capable of using https://netty.io/wiki/native-transports.html[Netty's native transports], which offers
+Vert.x is capable of using link:https://netty.io/wiki/native-transports.html[Netty's native transports], which offers
 performance improvements on specific platforms.To enable them, you must include the appropriate dependency for your
 platform. It's usually a good idea to have both to keep your application platform-agnostic. Netty is smart enough
 to use the correct one, that includes none at all on unsupported platforms:
@@ -1025,7 +1025,8 @@ quarkus.http.host-enabled=false
 These properties can be set through Java's `-D` command line parameter or
 on `application.properties`.
 
-IMPORTANT: Do not forget to add the native transport dependency. See <<native-transport>> for details.
+IMPORTANT: Do not forget to add the native transport dependency.
+See xref:native-transport[Native transport] for details.
 
 IMPORTANT: Make sure your application has the right permissions to write to the socket.
 

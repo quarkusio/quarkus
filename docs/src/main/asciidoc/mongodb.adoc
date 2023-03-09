@@ -590,7 +590,7 @@ When building native executables and using generic types, you might need to regi
 
 == Simplifying MongoDB with Panache
 
-The xref:mongodb-panache.adoc[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
+The xref:mongodb-panache.adoc[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in xref:hibernate-orm-panache.adoc[] and focuses on making your entities trivial and fun to write in Quarkus.
 
 == Schema migration with Liquibase
 

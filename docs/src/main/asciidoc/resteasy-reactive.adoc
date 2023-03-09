@@ -265,8 +265,8 @@ see xref:uri-parameters[URI parameters] for more information.
 
 |===
 
-For each of those annotations, you may specify the name of the element they refer to, otherwise
-they will use the name of the annotated method parameter.
+For each of those annotations, you may specify the name of the element they refer to,
+otherwise, they will use the name of the annotated method parameter.
 
 If a client made the following HTTP call:
 
@@ -426,8 +426,8 @@ public class Endpoint {
 
 === Accessing the request body
 
-Any method parameter with no annotation will receive the method body.footnote:[Unless it is a
-xref:path-parameter[URI template parameter] or a xref:context-objects[context object].], after it has been mapped from
+Any method parameter with no annotation will receive the method body footnote:[Unless it is a
+xref:path-parameter[URI template parameter] or a xref:context-objects[context object]] after being mapped from
 its HTTP representation to the Java type of the parameter.
 
 The following parameter types will be supported out of the box:
@@ -2782,7 +2782,7 @@ NOTE: If the client does not support HTTP compression then the response body is 
 === Using Build time conditions
 
 Quarkus enables the inclusion or exclusion of Jakarta REST Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
-Thus, the various Jakarta REST classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these JAX-RS classes should be included.
+Thus, the various Jakarta REST classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these Jakarta REST classes should be included.
 
 In the following example, Quarkus includes the `ResourceForApp1Only` Resource class if and only if the build profile `app1` has been enabled.
 

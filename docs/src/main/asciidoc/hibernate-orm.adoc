@@ -902,7 +902,7 @@ This is useful so to allow multi-line statements and human friendly formatting.
 
 == Simplifying Hibernate ORM with Panache
 
-The xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] extension facilitates the usage of Hibernate ORM by providing active record style entities (and repositories) and focuses on making your entities trivial and fun to write in Quarkus.
+The xref:hibernate-orm-panache.adoc[] extension facilitates the usage of Hibernate ORM by providing active record style entities (and repositories) and focuses on making your entities trivial and fun to write in Quarkus.
 
 == Configure your datasource
 

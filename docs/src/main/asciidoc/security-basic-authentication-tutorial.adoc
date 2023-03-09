@@ -6,7 +6,7 @@ include::_attributes.adoc[]
 Secure your Quarkus application endpoints by combining the built-in Quarkus xref:security-basic-authentication-concept.adoc[Basic authentication] with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
 The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.
 
-For more information about Jakarta Persistence, see the xref:security-jpa-concept.adoc[Quarkus Security with Jakarta Persistence].
+For more information about Jakarta Persistence, see the xref:security-jpa-concept.adoc[Quarkus Security with Jakarta Persistence] section.
 
 This tutorial prepares you for implementing more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
 
@@ -53,7 +53,7 @@ You can either create a new Maven project with the `security-jpa` extension or y
 include::{includes}/devtools/create-app.adoc[]
 [NOTE]
 ====
-xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] is used to store your user identities but you can also use xref:hibernate-orm.adoc[Hibernate ORM].
+xref:hibernate-orm-panache.adoc[] is used to store your user identities but you can also use xref:hibernate-orm.adoc[Hibernate ORM].
 You must also add your preferred database connector library.
 The instructions in this example tutorial use a PostgreSQL database for the identity store.
 ====

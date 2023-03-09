@@ -17,9 +17,12 @@ The API combines both the imperative and the non-blocking reactive style of codi
 In the development mode, all files located in the `src/main/resources/templates` folder are watched for changes and modifications are immediately visible in your application.
 Furthermore, Qute attempts to detect most of the template problems at build time and fail fast.
 
-In this guide, you will find an xref:hello_world_example[introductory example], the description of the xref:core_features[core features] and xref:quarkus_integration[Quarkus integration] details.
+In this guide, you will find an xref:hello_world_example[introductory example], the description of the xref:core_features[core features] and xref:quarkus_integration[] details.
 
-NOTE: Qute is primarily designed as a Quarkus extension. It is possible to use it as a "standalone" library too. However, in such case some features are not available. In general, any feature mentioned under the xref:quarkus_integration[] section is missing. You can find more information about the limitations and possibilities in the xref:standalone[] section.
+NOTE: Qute is primarily designed as a Quarkus extension.
+It is possible to use it as a "standalone" library too. However, in such case some features are not available.
+In general, any feature mentioned under the xref:quarkus_integration[] section is missing.
+Find more information about the limitations and possibilities in the xref:standalone[Qute used as a standalone library] section.
 
 [[the_simplest_example]]
 == The Simplest Example
@@ -49,7 +52,7 @@ Qute.fmt("I am {#if ok}happy{#else}sad{/if}!", Map.of("ok", true)); <5>
 <5> You can use any xref:basic-building-blocks[building block] in the template.
 In this case, the xref:if_section[] is used to render the appropriate part of the message based on the input data.
 
-TIP: Based on xref:quarkus_integration[Quarkus integration], the engine used to format the messages is the same as the one injected by `@Inject Engine`. Therefore, you can make use of any Quarkus-specific integration feature such as xref:template_extension_methods[], xref:injecting-beans-directly-in-templates[] or even xref:type-safe-message-bundles[].
+TIP: Based on xref:quarkus_integration[], the engine used to format the messages is the same as the one injected by `@Inject Engine`. Therefore, you can make use of any Quarkus-specific integration feature such as xref:template_extension_methods[], xref:injecting-beans-directly-in-templates[] or even xref:type-safe-message-bundles[].
 
 
 The format object returned by the `Qute.fmt(String)` method can be evaluated lazily and used e.g. as a log message:
@@ -340,7 +343,7 @@ And afterwards value resolvers will be used to resolve "colors" against the cont
 [TIP]
 ====
 Data passed to the template instance are always accessible using the `data` namespace. 
-This could be useful to access data for which the key is overridden:  
+This could be useful to access data for which the key is overridden:
 
 [source,html]
 ----
@@ -401,22 +404,24 @@ NOTE: The current context can be accessed via the implicit binding `this`.
 |`{item.isActive ? item.name : 'Inactive item'}` outputs the value of `item.name` if `item.isActive` resolves to `true`.
 
 |Logical AND Operator
-|Outputs `true` if both parts are not `falsy` as described in the xref:if_section[]. The parameter is only evaluated if needed.
+|Outputs `true` if both parts are not `falsy` as described in xref:if_section[].
+The parameter is only evaluated if needed.
 |`{person.isActive && person.hasStyle}`
 
 |Logical OR Operator
-|Outputs `true` if any of the parts is not `falsy` as described in the xref:if_section[]. The parameter is only evaluated if needed.
+|Outputs `true` if any of the parts is not `falsy` as described in xref:if_section[].
+The parameter is only evaluated if needed.
 |`{person.isActive \|\| person.hasStyle}`
 
 |===
 
-TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in the xref:if_section[].
+TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in xref:if_section[].
 
 NOTE: In fact, the operators are implemented as "virtual methods" that consume one parameter and can be used with infix notation. For example `{person.name or 'John'}` is translated to `{person.name.or('John')}` and `{item.isActive ? item.name : 'Inactive item'}` is translated to `{item.isActive.ifTruthy(item.name).or('Inactive item')}`
 
 ==== Arrays
 
-You can iterate over elements of an array with the xref:loop_section[].
+You can iterate over elements of an array with xref:loop_section[].
 Moreover, it's also possible to get the length of the specified array and access the elements directly via an index value.
 Additionally, you can access the first/last `n` elements via the `take(n)/takeLast(n)` methods.
 
@@ -1187,7 +1192,7 @@ You can also include a fragment with an `{#include}` section inside another temp
 <1> A template identifier that contains a dollar sign `$` denotes a fragment. The `item$item_aliases` value is translated as: _Use the fragment `item_aliases` from the template `item`._
 <2> The `aliases` parameter is used to pass the relevant data. We need to make sure that the data are set correctly. In this particular case the fragment will use the expression `user.aliases` as the value of `aliases` in the `{#for alias in aliases}` section.
 
-TIP: If you want to reference a fragment from the same template you can skip the part before `$`, i.e. something like `{#include $item_aliases /}`.
+TIP: If you want to reference a fragment from the same template, skip the part before `$`, i.e. something like `{#include $item_aliases /}`.
 
 NOTE: You can specify `{#include item$item_aliases _ignoreFragments=true /}` in order to disable this feature, i.e. a dollar sign `$` in the template identifier does not result in a fragment lookup.
 
@@ -1233,7 +1238,7 @@ a lot of
 ==== Eval Section
 
 This section can be used to parse and evaluate a template dynamically.
-The behavior is very similar to the xref:include_helper[] but:
+The behavior is very similar to xref:include_helper[] but:
 
 1. The template content is passed directly, i.e., not obtained via an `io.quarkus.qute.TemplateLocator`,
 2. It's not possible to override parts of the evaluated template.
@@ -1243,7 +1248,7 @@ The behavior is very similar to the xref:include_helper[] but:
 {#eval myData.template name='Mia' /} <1><2><3>
 ----
 <1> The `myData.template` result will be used as the template.
-The template is executed with the xref:current_context_object[], i.e., it can reference data from the template it's included.
+The template is executed with the xref:current_context_object[current context], i.e., it can reference data from the template it's included.
 <2> It's also possible to define optional parameters that can be used in the evaluated template.
 <3> The content of the section is always ignored.
 
@@ -1253,7 +1258,7 @@ In other words, it's not possible to cache the parsed value to conserve resource
 ==== Cached Section
 
 Sometimes it's practical to cache parts of the template that rarely change.
-In order to use the caching capability you'll need to register and configure the built-in `io.quarkus.qute.CacheSectionHelper.Factory`:
+In order to use the caching capability, register and configure the built-in `io.quarkus.qute.CacheSectionHelper.Factory`:
 
 [source,java]
 ----
@@ -1387,7 +1392,7 @@ The strict rendering enables the developers to catch insidious errors caused by 
 If enabled then any expression that cannot be resolved, i.e. is evaluated to an instance of `io.quarkus.qute.Results.NotFound`, will always result in a `TemplateException` and the rendering is aborted.
 A `NotFound` value is considered an error because it basically means that no value resolver was able to resolve the expression correctly.
 
-NOTE: `null` is a valid value though. It is considered `falsy` as described in the xref:if_section[] and does not produce any output.
+NOTE: `null` is a valid value though. It is considered `falsy` as described in xref:if_section[] and does not produce any output.
 
 Strict rendering is enabled by default.
 However, you can disable this functionality via `io.quarkus.qute.EngineBuilder.strictRendering(boolean)`.
@@ -1404,7 +1409,7 @@ In fact, `??` is just a shorthand notation for `.or(null)`, i.e. `{#if valueNotF
 [[quarkus_integration]]
 == Quarkus Integration
 
-If you want to use Qute in your Quarkus application add the following dependency to your project:
+If you want to use Qute in your Quarkus application, add the following dependency to your project:
 
 [source,xml]
 ----
@@ -2472,7 +2477,7 @@ In the development mode, all files located in `src/main/resources/templates` are
 ==== Basic Concepts
 
 The basic idea is that every message is potentially a very simple template.
-In order to prevent type errors a message is defined as an annotated method of a *message bundle interface*.
+In order to prevent type errors, a message is defined as an annotated method of a *message bundle interface*.
 Quarkus generates the *message bundle implementation* at build time.
 
 .Message Bundle Interface Example
@@ -2489,7 +2494,7 @@ public interface AppMessages {
 }
 ----
 <1> Denotes a message bundle interface. The bundle name is defaulted to `msg` and is used as a namespace in templates expressions, e.g. `{msg:hello_name}`.
-<2> Each method must be annotated with `@Message`. The value is a qute template. If no value is provided, then a corresponding value from a localized file is taken. If no such file exists an exception is thrown and the build fails.
+<2> Each method must be annotated with `@Message`. The value is a qute template. If no value is provided, then a corresponding value from a localized file is taken. If no such file exists, an exception is thrown and the build fails.
 <3> The method parameters can be used in the template.
 
 The message bundles can be used at runtime:
@@ -2564,7 +2569,7 @@ Additionally, there are two ways to define a localized bundle:
 1. Create an interface that extends the default interface that is annotated with `@Localized`
 2. Create an UTF-8 encoded file located in the `src/main/resources/messages` directory of an application archive; e.g. `msg_de.properties`.
 
-TIP: While a localized interface enables easy refactoring an external file might be more convenient in many situations.
+TIP: While a localized interface enables easy refactoring, an external file might be more convenient in many situations.
 
 .Localized Interface Example
 [source,java]
@@ -2615,7 +2620,7 @@ hello=Hello \
 ----
 Note that the line terminator is escaped with a backslash character `\` and white space at the start of the following line is ignored. I.e. `{msg:hello('Edgar')}` would be rendered as `Hello Edgar and good morning!`.
 
-Once we have the localized bundles defined we need a way to _select_ the correct bundle for a specific template instance, i.e. to specify the locale for all message bundle expressions in the template.
+Once we have the localized bundles defined, we need a way to _select_ the correct bundle for a specific template instance, i.e. to specify the locale for all message bundle expressions in the template.
 By default, the locale specified via the `quarkus.default-locale` configuration property is used to select the bundle.
 Alternatively, you can specify the `locale` attribute of a template instance.
 
@@ -2734,6 +2739,6 @@ User-defined Tags::
 
 Type-safety::
 * xref:typesafe_expressions[Type-safe expressions] are not validated.
-* xref:type-safe-message-bundles[Type-safe message bundles] are not supported.
+* xref:type-safe-message-bundles[] are not supported.
 
 Injection:: It is not possible to inject a `Template` instance and vice versa - a template cannot inject a `@Named` CDI bean via the `inject:` and `cdi:` namespace.

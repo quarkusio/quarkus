@@ -12,7 +12,7 @@ include::_attributes.adoc[]
 
 MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:{mongodb-doc-root-url}/fundamentals/data-formats/documents/#document[`Document`].
 
-MongoDB with Panache provides active record style entities (and repositories) like you have in xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
+MongoDB with Panache provides active record style entities (and repositories) like you have in xref:hibernate-orm-panache.adoc[] and focuses on making your entities trivial and fun to write in Quarkus.
 
 It is built on top of the xref:mongodb.adoc[MongoDB Client] extension.
 

@@ -15,8 +15,8 @@ Before you choose an authentication mechanism for securing your Quarkus applicat
 
 Some supported authentication mechanisms are built into Quarkus, and some require you to add an extension, all of which are detailed in the following sections on this page:
 
-* <<Built-in authentication mechanisms>>
-* <<Other supported authentication mechanisms>>
+* xref:built-in-authentication-mechanisms[Built-in authentication mechanisms]
+* xref:other-supported-authentication-mechanisms[Other supported authentication mechanisms]
 
 The following table maps specific authentication requirements to a supported mechanism that you can use in Quarkus:
 
@@ -38,15 +38,16 @@ The following table maps specific authentication requirements to a supported mec
 |Kerberos ticket |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
 |===
 
-See also the <<table>> table featured later in this section.
+See also the xref:table[Token authentication mechanism comparison] table featured later in this section.
 
+[[built-in-authentication-mechanisms]]
 == Built-in authentication mechanisms
 
 Quarkus Security provides the following built-in authentication support:
 
 * xref:security-basic-authentication-concept.adoc[Basic authentication]
-* <<form-auth>>
-* <<mutual-tls>>
+* xref:form-auth[Form-based authentication]
+* xref:mutual-tls[Mutual TLS authentication]
 
 === Basic authentication
 
@@ -152,22 +153,24 @@ X509Certificate certificate = credential.getCertificate();
 The information from the client certificate can be used to enhance Quarkus `SecurityIdentity`. For example, you can add new roles after checking a client certificate subject name, and so on.
 For more information about customizing Quarkus `SecurityIdentity`, see xref:security-customization.adoc#security-identity-customization[SecurityIdentity customization] in the "Security customization" topic.
 
+[[other-supported-authentication-mechanisms]]
 == Other supported authentication mechanisms
 
 Quarkus Security also supports the following authentication mechanisms through extensions:
 
-* <<WebAuthn authentication>>
-* <<OpenID Connect authentication>>
-* <<SmallRye JWT authentication>>
-* <<OAuth2 authentication>>
+* xref:webauthn-authentication[WebAuthn authentication]
+* xref:openid-connect-authentication[OpenID Connect authentication]
+* xref:smallrye-jwt[SmallRye JWT authentication]
+* xref:oauth2-authentication[OAuth2 authentication]
 
+[[webauthn-authentication]]
 === WebAuthn authentication
 
 https://webauthn.guide/[WebAuthn] is an authentication mechanism that replaces passwords.
 When you write a service for registering new users, or logging them in, instead of asking for a password, you can use WebAuthn, which replaces the password.
 For more information, see xref:security-webauthn-concept.adoc[Secure a Quarkus application by using the WebAuthn authentication mechanism].
 
-
+[[openid-connect-authentication]]
 === OpenID Connect authentication
 
 OpenID Connect (OIDC) is an identity layer that works on top of the OAuth 2.0 protocol. OIDC enables client applications to verify the identity of a user based on the authentication performed by the OIDC provider and to retrieve basic information about that user.
@@ -182,7 +185,7 @@ However, opaque (binary) tokens can only be introspected remotely.
 
 [NOTE]
 ====
-Using the Quarkus OIDC extension, both Bearer Token and Authorization Code Flow mechanisms use <<smallrye-jwt, SmallRye JWT>> to represent JWT tokens as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`.
+Using the Quarkus OIDC extension, both Bearer Token and Authorization Code Flow mechanisms use xref:smallrye-jwt[SmallRye JWT] to represent JWT tokens as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`.
 ====
 
 ==== Additional Quarkus resources for OIDC authentication
@@ -239,13 +242,13 @@ The `quarkus-smallrye-jwt` extension provides a MicroProfile JSON Web Token (JWT
 
 For more information, see xref:security-jwt.adoc[Using SmallRye JWT role-based access control].
 
+[[oauth2-authentication]]
 === OAuth2 authentication
 
 `quarkus-elytron-security-oauth2` provides an alternative to the `quarkus-oidc` Bearer Token authentication mechanism. `quarkus-elytron-security-oauth2` is based on `Elytron` and is primarily intended for introspecting opaque tokens remotely.
 For more information, see xref:security-oauth2.adoc[Using OAuth2].
 
 [[oidc-jwt-oauth2-comparison]]
-
 == Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms
 
 Use the following information to select the appropriate token authentication mechanism to secure your Quarkus applications.

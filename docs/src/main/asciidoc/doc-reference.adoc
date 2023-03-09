@@ -21,12 +21,12 @@ The following links provide background on AsciiDoc syntax and general convention
 
 == Language and grammar
 
-Write clear, concise, and consistent technical information in US English. 
-Write for a global audience with localization, translation, inclusivity, and diversity in mind. 
+Write clear, concise, and consistent technical information in US English.
+Write for a global audience with localization, translation, inclusivity, and diversity in mind.
 Try to use the following grammar styles:
 
 * link:https://developers.google.com/style/tense?hl=en[Present tense]
-* link:https://developers.google.com/style/voice?hl=en[Active voice] 
+* link:https://developers.google.com/style/voice?hl=en[Active voice]
 * link:https://developers.google.com/style/person?hl=en[Second person (you)]
 * link:https://developers.google.com/style/tone?hl=en[A conversational tone]
 * link:https://developers.google.com/style/pronouns?hl=en[Gender neutral language]
@@ -37,7 +37,7 @@ Shorter sentences are much easier to read and translate. Try to use less than 32
 
 == Website publication
 
-Content from this repository is published to the https://quarkus.io/guides/[Quarkus.io website].
+Content from this repository is published to the https://quarkus.io/guides/[Quarkus.io] website.
 
 - Documentation built from the main branch is published nightly (main-SNAPSHOT).
 - Documentation for other branches is published at release time.
@@ -67,13 +67,13 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 
 |How-To Guide
 |* Start with an active verb in the imperative verb form, for example, "Create a ..." or "Secure a ..."
-* Be action-oriented or task-oriented, rather than feature-oriented
+* Be action-oriented or task-oriented rather than feature-oriented
 * Finish the implied sentence: "How to ..."
 |Secure your Quarkus application with WebAuthn authentication
 |Applying WebAuthn Authentication In Quarkus
 
 |Reference
-|* Use a noun phrase to concisely summarize the content of the document
+|* Use a noun phrase to summarize the content of the document concisely
 * Not include the word 'reference'
 * Finish the implied sentence: "About ..."
 |Hibernate Reactive API configuration properties
@@ -82,9 +82,9 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 |Tutorial
 |* Start with an active verb in the imperative verb form, for example, "Create a ..." or "Secure a ..."
 * State what task the user will complete, with emphasis on the key topic or demonstrated activity
-* Be action-oriented or task-oriented, rather than feature-oriented
+* Be action-oriented or task-oriented rather than feature-oriented
 * Be led by the needs of the user in learning mode.
-* Finish the implied sentence: "In this tutorial, you will ..." 
+* Finish the implied sentence: "In this tutorial, you will ..."
 |Create a Quarkus application in JVM mode by using the quick start example
 |Creating an App
 |===
@@ -106,7 +106,7 @@ AsciiDoc output to HTML:: AsciiDoc processing creates HTML files in `docs/target
 
 === Templates
 
-Create new documentation files with the appropriate template for the content type: 
+Create new documentation files with the appropriate template for the content type:
 
 Concepts:: Use `docs/src/main/asciidoc/_templates/template-concept.adoc`
 How-To Guides:: Use `docs/src/main/asciidoc/_templates/template-howto.adoc`
@@ -120,7 +120,7 @@ Quarkus documentation uses a flat hierarchy.
 The bulk of the file name should be some representation of its title.
 Use all lowercase letters, separate words with hyphens, and avoid symbols and special characters.
 
-Prefix:: Use a common prefix to group related documents. Documents related to writing and contributing to Quarkus docs share the `doc-` prefix, for example.
+Prefix:: Use a common prefix to group related documents. For example, documents related to writing and contributing to Quarkus docs share the `doc-` prefix.
 
 Suffix:: The file name should reflect the document type:
 
@@ -133,8 +133,8 @@ Suffix:: The file name should reflect the document type:
 
 === Document header
 
-Each document should define a header for document-scoped attributes. 
-Minimally, each document should define and id and a title, and include common attributes (`_attributes.adoc`).
+Each document should define a header for document-scoped attributes.
+Minimally, each document should define an ID and a title and include common attributes (`_attributes.adoc`).
 
 [source,asciidoc]
 ----
@@ -153,16 +153,16 @@ Minimally, each document should define and id and a title, and include common at
 ==== Other common document header attributes
 
 `:extension-status: preview`:: Use this attribute to flag special types of content. Valid values: `experimental`, `preview`, `stable` (not usually used), and `deprecated`.
-`:summary: <text>`:: Use the summary to provide a concise (26 words or less) description of the document. 
-The value of this attribute is used in tiles or other descriptions on the website and is not required in newer diataxis-styled docs, as outlined in <<abstracts-preamble>>. 
-If not present, the first sentence of the abstract is automatically used to generate the tile summary. 
+`:summary: <text>`:: Use the summary to provide a concise (26 words or less) document description.
+The value of this attribute is used in tiles or other descriptions on the website and is not required in newer diataxis-styled docs, as outlined in <<abstracts-preamble>>.
+If not present, the first sentence of the abstract is automatically used to generate the tile summary.
 
-IMPORTANT: Take care with whitespace when working with document-scoped attributes. The document header ends with the first blank line. 
+IMPORTANT: Take care with whitespace when working with document-scoped attributes. The document header ends with the first blank line.
 
 [[abstracts-preamble]]
 === Abstracts (preamble)
 
-The first paragraph in the main body is treated as the abstract, also referred to as the preamble.
+The first paragraph in the main body is treated as the abstract, also called the preamble.
 Add a short description that helps your audience quickly find and understand the purpose and intent of the page.
 The first sentence of the abstract provides a summary and gets automatically added to the tile on the link:https://quarkus.io/guides/[Quarkus guides homepage].
 
@@ -173,14 +173,14 @@ Try to write the abstract by using the following guidelines:
 ** "This document.."
 ** "This tutorial..."
 ** "The following..."
-* *Brief:* Is no more than three sentences long. 
+* *Brief:* Is no more than three sentences long.
 
 [IMPORTANT]
 ====
-Ensure that the first sentence explains the value and some benefits of the content in 26 words or less.
+Ensure that the first sentence explains the content's value and benefits in 26 words or less.
 ====
 
-If the first sentence is too long or can not be simplified to fit on the website tile, you can define a ``:summary:`` attribute in the document header attributes to serve that purpose. 
+If the first sentence is too long or can not be simplified to fit on the website tile, you can define a ``:summary:`` attribute in the document header attributes to serve that purpose.
 For more information, see <<doc-header-optional>>.
 
 === Semantic line breaks
@@ -188,13 +188,13 @@ For more information, see <<doc-header-optional>>.
 :semantic-line-breaks: footnote:smbl[Rhodes, B. Semantic Linefeeds. https://rhodesmill.org/brandon/2012/one-sentence-per-line/]
 
 Text in paragraphs, lists, and tables should be broken into pieces that are easier to review{semantic-line-breaks}.
-Start a new line at the end of each sentence, and split sentences themselves at natural breaks between clauses.
+Start a new line at the end of each sentence, and split sentences at natural breaks between clauses.
 
 === Using sections
 
-Section titles should be written in sentence case, rather than title case.
+Section titles should be written in sentence case rather than title case.
 
-All documents should start with a Title (a `= Level 0` heading), and should 
+All documents should start with a Title (a `= Level 0` heading), and should
 be broken into subsections where appropriate
 (`== Level 1` to `====== Level 5`)
 without skipping any levels.
@@ -206,7 +206,7 @@ should be avoided whenever possible.
 If you end up with deeply nested sections, think about the following:
 
 - Is this information in the right place?
-For example, if this is a reference, should some of this content be moved to a concept doc or how-to guide instead?
+For example, if this is a reference, should some content be moved to a concept doc or how-to guide instead?
 - Can the content be reorganized to make it simpler to consume?
 
 See xref:{doc-guides}/doc-concept.adoc[Quarkus documentation content types] for more information about content types and organization.
@@ -232,22 +232,22 @@ The above source produces this link: https://docs.asciidoctor.org/asciidoc/lates
 
 === Cross-references
 
-Quarkus documentation is built from source in a few different environments.
+Quarkus documentation is built from a source in a few different environments.
 We use attributes in our cross-references to ensure our docs can be built across these environments.
 
 .Cross-reference source attributes
 [cols="<m,<2",options="header"]
 |===
 |Attribute|Description
-|\{code-examples}|Relative path to directory containing collected example source files
+|\{code-examples}|Relative path to the directory containing collected example source files
 |\{doc-examples}|Relative path to source examples for documentation guides
-|\{doc-guides}|Relative path to documentation adoc files
+|\{doc-guides}|Relative path to documentation `*.adoc` files
 |\{generated-dir}|Relative path to generated configuration `*.adoc` files
-|\{imagesdir}|Relative path to directory containing images
-|\{includes}|Relative path to directory containing partial/reusable content
+|\{imagesdir}|Relative path to the directory containing images
+|\{includes}|Relative path to the directory containing partial/reusable content
 |===
 
-When cross-referencing content, always use the inter-document `xref:` syntax and supply a human-readable label to your link.
+When cross-referencing content, use the inter-document `xref:` syntax and supply a human-readable label to your link.
 
 .Cross-reference example
 [source,asciidoc]
@@ -258,8 +258,7 @@ xref:{doc-guides}/doc-concept.adoc[Quarkus Documentation concepts] <1>
 
 === Anchors
 
-Quarkus documentation provides several ways a contributor can create and call anchors.
-To reach consistency and a better single-sourcing experience with Quarkus documentation, we ask contributors to use the `xref` approach for documenting and calling anchors.
+For consistency and better functionality when documenting and calling anchors in Quarkus documentation, use the `xref` macro approach and specify the desired anchor name in `[]` at the end of the syntax.
 
 .Example
 * An anchor to a chapter inside the same `.adoc` file
@@ -274,7 +273,7 @@ To reach consistency and a better single-sourcing experience with Quarkus docume
 +
 [source,asciidoc]
 --
-xref:<anchor-ID>[]
+xref:<anchor-ID>[<anchor-name>]
 --
 
 * A cross-file anchor
@@ -289,14 +288,14 @@ xref:<anchor-ID>[]
 +
 [source,asciidoc]
 --
-xref:<target-file>.adoc#<anchord-ID>[]
+xref:<target-file>.adoc#<anchord-ID>[<anchor-name>]
 --
 
-NOTE: The `[]` part of your `xref` anchors sets up a desired anchor label in cases where the default label does not fit the content.
+IMPORTANT: The `[]` part of your `xref` anchors sets up a desired anchor name when the default name, the value of which `asciidoc` sources from chapter headings, file names, or anchors, does not fit in the current context. When specifying the intended anchor or `xref` name, always verify if the displayed name fits the context of your content.
 
-=== Reference source code 
+=== Reference source code
 
-There are many ways to include source code and examples in documentation.
+There are many ways to include source code and examples in the documentation.
 
 The simplest is to write it directly in the file, like this:
 
@@ -319,9 +318,9 @@ examples:
 ----
 
 <1> define the path of source to be copied
-<2> define the simplified target file name to use when copying the file into the `target/asciidoc/examples` directory.
+<2> define the simplified target file name for copying the file into the `target/asciidoc/examples` directory.
 
-Content copied in this way is referenced by the `\{code-examples}` source attribute. The literal string `{{source}}` in the source file, if present, will be replaced with the path of the source file in the copy.
+The `\{code-examples}` source attribute references content copied this way. The literal string `{{source}}` in the source file, if present, will be replaced with the path of the source file in the copy.
 
 .Micrometer example
 * The source file to be copied is:
@@ -332,7 +331,7 @@ Content copied in this way is referenced by the `\{code-examples}` source attrib
 +
 `telemetry-micrometer-tutorial-example-resource.java`.
 
-* The source and target file names are declared in `docs/src/main/asciidoc/telemetry-examples.yaml`: 
+* The source and target file names are declared in `docs/src/main/asciidoc/telemetry-examples.yaml`:
 +
 [source,yaml]
 ----
@@ -344,12 +343,12 @@ examples:
 * Snippets from this source file are then referenced with the following path:
 +
 `\{code-examples}/telemetry-micrometer-tutorial-example-resource.java`.
-* The source file contains the following comment: 
+* The source file contains the following comment:
 [source,java]
 ----
 // Source: {{source}}
 ----
-* The copied file contains this comment instead: 
+* The copied file contains this comment instead:
 [source,java]
 ----
 // Source: integration-tests/micrometer-prometheus/src/main/java/io/quarkus/doc/micrometer/ExampleResource.java
@@ -359,7 +358,7 @@ examples:
 
 === Categories
 
-Quarkus documentation is grouped into the following categories. 
+Quarkus documentation is grouped into the following categories.
 
 .Categories
 [cols="<m,<2",options="header"]
@@ -370,7 +369,7 @@ Quarkus documentation is grouped into the following categories.
 | business-automation | Business automation integrations
 | cloud | Integrations and support for cloud services
 | command-line | Command Line Applications
-| compatibility | Compatibility with other languages and frameworks 
+| compatibility | Compatibility with other languages and frameworks
 | contributing | Guidance and references to help you contribute to Quarkus.
 | core | Information about how the Quarkus works
 | data | Topics related to using data sources with Quarkus
@@ -388,7 +387,7 @@ Quarkus documentation is grouped into the following categories.
 | writing-extensions | Writing Extensions
 |===
 
-Tag your content to improve findability by adding at least one category to the categories attribute line in the <<Document header,document header>>. To add multiple categories, use comma-separated values. For example:
+Tag your content to improve findability by adding at least one category to the categories attribute line in the <<Document header, document header>>. To add multiple categories, use comma-separated values. For example:
 
 [source,asciidoc]
 ----
@@ -398,7 +397,7 @@ Tag your content to improve findability by adding at least one category to the c
 === Quarkus documentation variables
 
 The following variables externalize key information that can change over time. References
-to such information should use the variable inside of curly brackets, `{}`. 
+to such information should use the variable inside of curly brackets, `{}`.
 
 The complete list of externalized variables for use is given in the following table:
 
@@ -431,4 +430,3 @@ The complete list of externalized variables for use is given in the following ta
 |\{graalvm-version}|{graalvm-version}| Recommended GraalVM version to use.
 |\{graalvm-flavor}|{graalvm-flavor}| The builder image tag of GraalVM to use e.g. `22.3-java17`. Use a `java17` version.
 |===
-

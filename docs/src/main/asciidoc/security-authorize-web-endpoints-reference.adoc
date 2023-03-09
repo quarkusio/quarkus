@@ -248,10 +248,10 @@ s| @RolesAllowed | Specifies the list of security roles permitted to access meth
 As an equivalent to `@RolesAllowed("**")`, {project-name} also provides the `io.quarkus.security.Authenticated` annotation that permits any authenticated user to access the resource.
 |===
 
-<<subject-example>> featured in this chapter demonstrates an endpoint that uses both Jakarta REST and Common Security annotations to describe and secure its endpoints.
+xref:subject-example[SubjectExposingResource example] featured in this chapter demonstrates an endpoint that uses both Jakarta REST and Common Security annotations to describe and secure its endpoints.
 
-[#subject-example]
-.SubjectExposingResource Example
+[[subject-example]]
+.SubjectExposingResource example
 [source,java]
 ----
 import java.security.Principal;
@@ -303,8 +303,10 @@ public class SubjectExposingResource {
 
 CAUTION: If you plan to use standard security annotations on the IO thread, review the information in xref:security-proactive-authentication-concept.adoc[Proactive Authentication].
 
-The `@RolesAllowed` annotation value supports <<config-reference#property-expressions,Property Expressions>> including default values and nested Property Expressions.
+The `@RolesAllowed` annotation value supports xref:config-reference.adoc#property-expressions[Property Expressions] including default values and nested Property Expressions.
 Configuration properties used with the annotation are resolved at runtime.
+
+// link:{url-quarkusio-guides}config-reference#property-expressions[Property Expressions] - Current Downstream synegry link. Needs to be added to upstream attributes.
 
 .Annotation value examples
 |===

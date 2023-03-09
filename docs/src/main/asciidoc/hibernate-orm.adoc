@@ -102,7 +102,8 @@ For a list of the items that you can set in `{config-file}`, see xref:hibernate-
 
 An `EntityManagerFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
 
-Unless you set one explicitly, the dialect will be selected based on the JDBC driver.
+The dialect will be selected and configured automatically based on your datasource;
+you may want to <<hibernate-dialect,configure it to more precisely match your database>>.
 
 You can then happily inject your `EntityManager`:
 
@@ -164,6 +165,93 @@ This is useful to have a data set ready for your tests or demos.
 WARNING: Make sure to wrap methods modifying your database (e.g. `entity.persist()`) within a transaction. Marking a
 CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
+
+[[hibernate-dialect]]
+=== Dialect
+
+[[hibernate-dialect-supported-databases]]
+==== Supported databases
+
+For xref:datasource.adoc#default-datasource[supported databases],
+the link:{orm-doc-url-prefix}##database-dialect[Hibernate ORM dialect]
+does not need to be set explicitly:
+it is selected automatically based on the datasource.
+
+By default, the dialect is configured to target the minimum supported version of the database.
+
+In order for Hibernate ORM to generate more efficient SQL,
+to avoid workarounds and to take advantage of more database features,
+you can set the database version explicitly:
+
+[source,properties]
+.`{config-file}` with an explicit `db-version`
+----
+quarkus.datasource.db-kind = postgresql
+quarkus.datasource.db-version = 14.0 <1>
+quarkus.datasource.username = hibernate
+quarkus.datasource.password = hibernate
+quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
+----
+<1> Set the database version. The Hibernate ORM dialect will target that version.
+
+As a rule, the version set here should be as high as possible,
+but must be lower than or equal to the version of any database your application will connect to.
+
+[NOTE]
+====
+When a version is set explicitly,
+Quarkus will try to check this version against the actual database version on startup,
+leading to a startup failure when the actual version is lower.
+
+This is because Hibernate ORM may generate SQL that is invalid
+for versions of the database older than what is configured,
+which would lead to runtime exceptions.
+
+If the database cannot be reached, a warning will be logged but startup will proceed.
+====
+
+[[hibernate-dialect-other-databases]]
+==== Other databases
+
+If xref:datasource.adoc#other-databases[your database does not have a corresponding Quarkus extension],
+or if the defaults do not match your needs for some reason,
+you will need to set the link:{orm-doc-url-prefix}##database-dialect[Hibernate ORM dialect] explicitly:
+
+[source,properties]
+.`{config-file}` with an explicit `dialect`
+----
+quarkus.datasource.db-kind = postgresql
+quarkus.datasource.username = hibernate
+quarkus.datasource.password = hibernate
+quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
+
+quarkus.hibernate-orm.dialect=org.hibernate.dialect.CockroachDialect <1>
+----
+<1> Set the Hibernate ORM dialect.
+
+[WARNING]
+====
+In that case, keep in mind that the JDBC driver or Hibernate ORM dialect
+may not work properly in GraalVM native executables.
+====
+
+As with <<hibernate-dialect-supported-databases,supported databases>>,
+you can configure the DB version explicitly to get the most out of Hibernate ORM:
+
+[source,properties]
+.`{config-file}` with an explicit `dialect` and `db-version`
+----
+quarkus.datasource.db-kind = postgresql
+quarkus.datasource.db-version = 22.2 <1>
+quarkus.datasource.username = hibernate
+quarkus.datasource.password = hibernate
+quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
+
+quarkus.hibernate-orm.dialect=org.hibernate.dialect.CockroachDialect <2>
+----
+<1> Set the database version. The Hibernate ORM dialect will target that version.
+Since we're targeting CockroachDB here, we're passing the CockroachDB version, not the PostgreSQL version.
+<2> Set the Hibernate ORM dialect.
 
 [[hibernate-configuration-properties]]
 === Hibernate ORM configuration properties
@@ -417,7 +505,7 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 
         <properties>
             <!-- Connection specific -->
-            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
 
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>

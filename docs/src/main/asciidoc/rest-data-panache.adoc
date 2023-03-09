@@ -85,7 +85,7 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] guide.
-* Define the interfaces for generation as explained in <<hr-generating-resources, the resource generation section>>.
+* Define the interfaces for generation as explained in the <<hr-generating-resources>> section.
 
 To see the Hibernate ORM REST Data with Panache in action, you can check out the {quickstarts-tree-url}/hibernate-orm-rest-data-panache-quickstart[hibernate-orm-rest-data-panache-quickstart] quickstart.
 
@@ -169,7 +169,8 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 
 REST Data with Panache generates Jakarta REST resources based on the interfaces available in your application.
 For each entity and repository that you want to generate, provide a resource interface.
-_Do not implement these interfaces and don't provide custom methods because they will be ignored._ You can, however, override the methods from the extended interface in order to customize them (see the section at the end).
+_Do not implement these interfaces and don't provide custom methods because they will be ignored._
+You can, however, override the methods from the extended interface in order to customize them (see the section at the end).
 
 === PanacheEntityResource
 
@@ -290,6 +291,7 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
 == Resource customisation
 
 REST Data with Panache provides a `@ResourceProperties` and `@MethodProperties` annotations that can be used to customize certain features of the resource.
+
 It can be used in your resource interface:
 
 [source,java]
@@ -427,7 +429,7 @@ In this example, we have added a named query to list all the persons that contai
 
 Next, we can set a query param `namedQuery` when listing the entities using the generated resource with the name of the named query that we want to use, for example, calling `http://localhost:8080/people?namedQuery=Person.containsInName&name=ter` would return all the persons which name contains the text "ter".
 
-For more information about how named queries work, go to https://quarkus.io/guides/hibernate-orm-panache#named-queries[the Hibernate ORM] guide or to https://quarkus.io/guides/hibernate-reactive-panache#named-queries[the Hibernate Reactive] guide.
+For more information about how named queries work, go to the xref:hibernate-orm-panache.adoc#named-queries[Hibernate ORM] guide or to the xref:hibernate-reactive-panache.adoc#named-queries[Hibernate Reactive] guide.
 
 == Resource Method Before/After Listeners
 

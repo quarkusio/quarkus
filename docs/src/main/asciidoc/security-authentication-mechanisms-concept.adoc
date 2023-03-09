@@ -38,7 +38,7 @@ The following table maps specific authentication requirements to a supported mec
 |Kerberos ticket |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
 |===
 
-See also the <<table>> table featured later in this section.
+See also the xref:table[Token authentication mechanism comparison] table featured later in this section.
 
 [[built-in-authentication-mechanisms]]
 == Built-in authentication mechanisms
@@ -46,8 +46,8 @@ See also the <<table>> table featured later in this section.
 Quarkus Security provides the following built-in authentication support:
 
 * xref:security-basic-authentication-concept.adoc[Basic authentication]
-* <<form-auth>>
-* <<mutual-tls>>
+* xref:form-auth[Form-based authentication]
+* xref:mutual-tls[Mutual TLS authentication]
 
 === Basic authentication
 
@@ -249,7 +249,6 @@ For more information, see xref:security-jwt.adoc[Using SmallRye JWT role-based a
 For more information, see xref:security-oauth2.adoc[Using OAuth2].
 
 [[oidc-jwt-oauth2-comparison]]
-
 == Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms
 
 Use the following information to select the appropriate token authentication mechanism to secure your Quarkus applications.

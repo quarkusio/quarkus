@@ -3,6 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="security-jwt"]
 = Using JWT RBAC
 include::_attributes.adoc[]
 :categories: security
@@ -14,8 +15,10 @@ This guide explains how your Quarkus application can utilize https://github.com/
 to verify https://tools.ietf.org/html/rfc7519[JSON Web Token]s, represent them as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`
 and provide secured access to the Quarkus HTTP endpoints using Bearer Token Authorization and https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
 
-NOTE: Quarkus OpenID Connect `quarkus-oidc` extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`, please read the xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] guide for more information.
-OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow. For more information, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
+NOTE: Quarkus OpenID Connect `quarkus-oidc` extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`.
+For more information, read the xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] guide.
+OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow.
+For more information, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
 
 == Prerequisites
 
@@ -34,7 +37,7 @@ The solution is located in the `security-jwt-quickstart` {quickstarts-tree-url}/
 
 === Creating the Maven project
 
-First, we need a new project. Create a new project with the following command:
+First, create a new project with the following command:
 
 :create-app-artifact-id: security-jwt-quickstart
 :create-app-extensions: resteasy-reactive-jackson,smallrye-jwt,smallrye-jwt-build
@@ -129,7 +132,8 @@ public class TokenSecuredResource {
     }
 }
 ----
-<1> Here we inject the JsonWebToken interface, an extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
+<1> Here we inject the JsonWebToken interface, an extension of the java.security.
+Principal interface that provides access to the claims associated with the current authenticated token.
 <2> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
 <3> Here we inject the Jakarta REST SecurityContext to inspect the security state of the call and use a `getResponseString()` function to populate a response string.
 <4> Here we check if the call is insecure by checking the request user/caller `Principal` against null.
@@ -169,8 +173,8 @@ $ curl http://127.0.0.1:8080/secured/permit-all; echo
 hello + anonymous, isHttps: false, authScheme: null, hasJWT: false
 ----
 
-We have not provided any JWT in our request, so we would not expect that there is any security state seen by the endpoint, and
-the response is consistent with that:
+We have not provided any JWT in our request, so we would not expect that there is any security state seen by the endpoint,
+and the response is consistent with that:
 
 * username is anonymous
 * isHttps is false as https is not used
@@ -250,7 +254,9 @@ public class TokenSecuredResource {
 they have either a "User" or "Admin" role assigned.
 <4> Here we build the reply the same way as in the `hello` method but also add a value of the JWT `birthdate` claim by directly calling the injected `JsonWebToken`.
 
-After you make this addition to your `TokenSecuredResource`, rerun the `./mvnw compile quarkus:dev` command, and then try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint. Your output should be:
+After you make this addition to your `TokenSecuredResource`, rerun the `./mvnw compile quarkus:dev` command, and then try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint.
+
+Your output should be as follows:
 
 .curl command for /secured/roles-allowed
 [source,shell]
@@ -274,7 +280,8 @@ $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
 Not authorized
 ----
 
-Excellent, we have not provided any JWT in the request, so we should not be able to access the endpoint, and we were not. Instead, we received an HTTP 401 Unauthorized error. We need to obtain and pass in a valid JWT to access that endpoint. There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate a JWT, and 2) generating a matching JWT with the appropriate claims.
+Excellent, we have not provided any JWT in the request, so we should not be able to access the endpoint, and we were not. Instead, we received an HTTP 401 Unauthorized error.
+We need to obtain and pass in a valid JWT to access that endpoint. There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate a JWT, and 2) generating a matching JWT with the appropriate claims.
 
 === Configuring the {extension-name} Extension Security Information
 
@@ -297,10 +304,12 @@ quarkus.native.resources.includes=publicKey.pem #<3>
 
 The https://tools.ietf.org/html/rfc7519[JWT specification] defines various levels of security of JWTs that one can use.
 The {mp-jwt} specification requires that JWTs that are signed with the RSA-256 signature algorithm. This in
-turn requires an RSA public key pair. On the REST endpoint server side, you need to configure the location of the RSA public
-key to use to verify the JWT sent along with requests. The `mp.jwt.verify.publickey.location=publicKey.pem` setting configured
-previously expects that the public key is available on the classpath as `publicKey.pem`. To accomplish this, copy the following
-content to a `security-jwt-quickstart/src/main/resources/publicKey.pem` file.
+turn requires an RSA public key pair.
+On the REST endpoint server side, you need to configure the location of the RSA public
+key to use to verify the JWT sent along with requests.
+The `mp.jwt.verify.publickey.location=publicKey.pem` setting configured
+previously expects that the public key is available on the classpath as `publicKey.pem`.
+To accomplish this, copy the following content to a `security-jwt-quickstart/src/main/resources/publicKey.pem` file.
 
 .RSA Public Key PEM Content
 [source, text]
@@ -318,7 +327,8 @@ nQIDAQAB
 
 === Generating a JWT
 
-Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] for more information).
+Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt`.
+For more information, see xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
 
 Take the code from the following listing and place into `security-jwt-quickstart/src/test/java/org/acme/security/jwt/GenerateToken.java`:
 
@@ -462,11 +472,11 @@ interface, and is in fact the type of the object that is returned by the `jakart
 used previously. This means that code that does not use CDI but does have access to the REST container `SecurityContext` can get
 hold of the caller `JsonWebToken` interface by casting the `SecurityContext#getUserPrincipal()`.
 
-The `JsonWebToken` interface defines methods for accessing claims in the underlying JWT. It provides accessors for common
-claims that are required by the {mp-jwt} specification as well as arbitrary claims that may exist in the JWT.
+The `JsonWebToken` interface defines methods for accessing claims in the underlying JWT.
+It provides accessors for common claims that are required by the {mp-jwt} specification as well as arbitrary claims that may exist in the JWT.
 
-All the JWT claims can also be injected. Let's expand our `TokenSecuredResource` with another endpoint /secured/roles-allowed-admin which uses the injected `birthdate` claim
-(as opposed to getting it from `JsonWebToken`):
+All the JWT claims can also be injected.
+Let's expand our `TokenSecuredResource` with another endpoint /secured/roles-allowed-admin which uses the injected `birthdate` claim (as opposed to getting it from `JsonWebToken`):
 
 [source, java]
 ----
@@ -607,10 +617,8 @@ $ ./target/security-jwt-quickstart-runner
 
 === Explore the Solution
 
-The solution repository located in the `security-jwt-quickstart` {quickstarts-tree-url}/security-jwt-quickstart[directory] contains all the versions we have
-worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection
-of ``JsonWebToken``s and their claims into those using the CDI APIs. We suggest that you check out the quickstart solutions and
-explore the `security-jwt-quickstart` directory to learn more about the {extension-name} extension features.
+The solution repository located in the `security-jwt-quickstart` {quickstarts-tree-url}/security-jwt-quickstart[directory] contains all the versions we have worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection of ``JsonWebToken``s and their claims into those using the CDI APIs.
+We suggest that you check out the quickstart solutions and explore the `security-jwt-quickstart` directory to learn more about the {extension-name} extension features.
 
 == Reference Guide
 
@@ -649,11 +657,11 @@ Please see link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-
 Public Keys may be formatted in any of the following formats, specified in order of
 precedence:
 
- - Public Key Cryptography Standards #8 (PKCS#8) PEM
- - JSON Web Key (JWK)
- - JSON Web Key Set (JWKS)
- - JSON Web Key (JWK) Base64 URL encoded
- - JSON Web Key Set (JWKS) Base64 URL encoded
+- Public Key Cryptography Standards #8 (PKCS#8) PEM
+- JSON Web Key (JWK)
+- JSON Web Key Set (JWKS)
+- JSON Web Key (JWK) Base64 URL encoded
+- JSON Web Key Set (JWKS) Base64 URL encoded
 
 === Dealing with the verification keys
 
@@ -788,7 +796,7 @@ public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
 
 === Token Propagation
 
-Please see xref:security-openid-connect-client.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+Please see the xref:security-openid-connect-client.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
 
 [[integration-testing]]
 === Testing
@@ -819,7 +827,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 
 Note that the tokens issued by Keycloak have an `iss` (issuer) claim set to the realm endpoint address.
 
-If your Quarkus application is running in a docker container then it may share a network interface with a Keycloak docker container launched by DevServices for Keycloak, with the Quarkus application and Keycloak communicating with each other via an internal shared docker network.
+If your Quarkus application is running in a docker container, it may share a network interface with a Keycloak docker container launched by DevServices for Keycloak, with the Quarkus application and Keycloak communicating with each other via an internal shared docker network.
 
 In such cases, use the following configuration instead:
 
@@ -937,7 +945,7 @@ Note that `@TestSecurity` annotation must always be used and its `user` property
 
 [TIP]
 ====
-`@TestSecurity` and `@JwtSecurity` can be combined in a meta-annotation, for example like so:
+`@TestSecurity` and `@JwtSecurity` can be combined in a meta-annotation, as follows:
 
 [source, java]
 ----
@@ -969,7 +977,7 @@ quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-l
 
 === Proactive Authentication
 
-If you'd like to skip the token verification when the public endpoint methods are invoked then please disable the xref:security-proactive-authentication-concept.adoc[Proactive authentication].
+If you'd like to skip the token verification when the public endpoint methods are invoked, disable the xref:security-proactive-authentication-concept.adoc[proactive authentication].
 
 Note that you can't access the injected `JsonWebToken` in the public methods if the token verification has not been done.
 
@@ -1084,5 +1092,5 @@ SmallRye JWT provides more properties which can be used to customize the token p
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
+* xref:security-authentication-mechanisms-concept.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
 * xref:security-overview-concept.adoc[Quarkus Security overview]

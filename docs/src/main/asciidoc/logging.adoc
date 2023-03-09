@@ -200,9 +200,12 @@ See example in the <<category-named-handlers-example>> output.
 |quarkus.log.category."<category-name>".handlers=[<handler>]|empty footnote:[By default, the configured category gets the same handlers attached as the one on the root logger.]|The names of the handlers that you want to attach to a specific category.
 |===
 
-NOTE: The quotes shown in the property name are required as categories normally contain '.',
+[NOTE]
+====
+The quotes shown in the property name are required as categories normally contain '.',
 which must be escaped.
 See the example in <<category-example>>.
+====
 
 === Root logger configuration
 

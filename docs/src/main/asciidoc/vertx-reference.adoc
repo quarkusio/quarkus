@@ -1025,7 +1025,8 @@ quarkus.http.host-enabled=false
 These properties can be set through Java's `-D` command line parameter or
 on `application.properties`.
 
-IMPORTANT: Do not forget to add the native transport dependency. See <<native-transport>> for details.
+IMPORTANT: Do not forget to add the native transport dependency.
+See <<native-transport>> for details.
 
 IMPORTANT: Make sure your application has the right permissions to write to the socket.
 

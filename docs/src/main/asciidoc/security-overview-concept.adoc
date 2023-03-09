@@ -61,7 +61,7 @@ For more information, see xref:security-csrf-prevention.adoc[Cross-Site Request 
 [[samesite-cookies]]
 === SameSite cookies
 
-You can add a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint.
+You can add a link:https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint.
 For more information, see xref:http-reference.adoc#same-site-cookie[SameSite cookies].
 
 [[secrets-engines]]
@@ -80,7 +80,7 @@ For more information, see xref:resteasy-reactive.adoc#secure-serialization[Writi
 [[rest-data-panache]]
 === Secure auto-generated resources by REST Data with Panache
 
-If you're using the REST Data with Panache extension to auto-generate your resources, you can still use the Security annotations within the package `jakarta.annotation.security`.
+If you are using the REST Data with Panache extension to auto-generate your resources, you can still use the Security annotations within the package `jakarta.annotation.security`.
 For more information, see xref:rest-data-panache.adoc#securing-endpoints[Securing auto-generated resources].
  
 == Security vulnerability detection 

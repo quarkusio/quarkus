@@ -123,9 +123,6 @@
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                        <environmentVariables>
-                            <GITHUB_REPOSITORY>some/repo</GITHUB_REPOSITORY>
-                        </environmentVariables>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -293,6 +290,12 @@
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-compat</artifactId>
             <version>3.8.7</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>uk.org.webcompere</groupId>
+            <artifactId>system-stubs-jupiter</artifactId>
+            <version>2.0.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>

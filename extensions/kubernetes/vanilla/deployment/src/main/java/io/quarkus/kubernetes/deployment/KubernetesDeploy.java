@@ -65,7 +65,7 @@ public class KubernetesDeploy {
                                 + masterURL + "' could not be determined. Please ensure that a valid token is being used."));
             }
 
-            log.info("Kubernetes API Server at '" + masterURL + "' successfully contacted.");
+            log.debugf("Kubernetes API Server at '" + masterURL + "' successfully contacted.");
             log.debugf("Kubernetes Version: %s.%s", version.getMajor(), version.getMinor());
             serverFound = true;
             return Result.enabled();

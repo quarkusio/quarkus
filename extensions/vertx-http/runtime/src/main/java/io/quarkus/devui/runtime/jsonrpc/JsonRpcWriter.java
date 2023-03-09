@@ -3,6 +3,7 @@ package io.quarkus.devui.runtime.jsonrpc;
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.CODE;
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.ERROR;
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.ID;
+import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.INTERNAL_ERROR;
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.JSONRPC;
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.MESSAGE;
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.MESSAGE_TYPE;
@@ -36,6 +37,17 @@ public class JsonRpcWriter {
         JsonObject jsonRpcError = JsonObject.of(
                 CODE, METHOD_NOT_FOUND,
                 MESSAGE, "Method [" + jsonRpcMethodName + "] not found");
+
+        return JsonObject.of(
+                ID, id,
+                JSONRPC, VERSION,
+                ERROR, jsonRpcError);
+    }
+
+    public static JsonObject writeErrorResponse(int id, String jsonRpcMethodName, Throwable exception) {
+        JsonObject jsonRpcError = JsonObject.of(
+                CODE, INTERNAL_ERROR,
+                MESSAGE, "Method [" + jsonRpcMethodName + "] failed: " + exception.getMessage());
 
         return JsonObject.of(
                 ID, id,

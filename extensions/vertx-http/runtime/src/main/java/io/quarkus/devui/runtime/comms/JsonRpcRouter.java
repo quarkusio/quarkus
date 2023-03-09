@@ -2,7 +2,6 @@ package io.quarkus.devui.runtime.comms;
 
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.MessageType;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +10,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
@@ -18,7 +20,10 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcReader;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcWriter;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.subscription.Cancellable;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
 
@@ -60,7 +65,7 @@ public class JsonRpcRouter {
                         javaMethod = providerInstance.getClass().getMethod(jsonRpcMethod.getMethodName());
                     }
                     ReflectionInfo reflectionInfo = new ReflectionInfo(jsonRpcMethod.getClazz(), providerInstance, javaMethod,
-                            params);
+                            params, jsonRpcMethod.getExplicitlyBlocking(), jsonRpcMethod.getExplicitlyNonBlocking());
                     String jsonRpcMethodName = extensionName + DOT + methodName;
                     jsonRpcToJava.put(jsonRpcMethodName, reflectionInfo);
                 } catch (NoSuchMethodException | SecurityException ex) {
@@ -70,21 +75,40 @@ public class JsonRpcRouter {
         }
     }
 
+    private Uni<?> invoke(ReflectionInfo info, Object target, Object[] args) {
+        if (info.isReturningUni()) {
+            try {
+                Uni<?> uni = ((Uni<?>) info.method.invoke(target, args));
+                if (info.isExplicitlyBlocking()) {
+                    return uni.runSubscriptionOn(Infrastructure.getDefaultExecutor());
+                } else {
+                    return uni;
+                }
+            } catch (Exception e) {
+                return Uni.createFrom().failure(e);
+            }
+        } else {
+            Uni<?> uni = Uni.createFrom().item(Unchecked.supplier(() -> info.method.invoke(target, args)));
+            if (!info.isExplicitlyNonBlocking()) {
+                return uni.runSubscriptionOn(Infrastructure.getDefaultExecutor());
+            } else {
+                return uni;
+            }
+        }
+    }
+
     public void addSocket(ServerWebSocket socket) {
         socket.textMessageHandler((e) -> {
-            socket.writeTextMessage(route(e, socket));
+            JsonRpcReader jsonRpcRequest = JsonRpcReader.read(e);
+            route(jsonRpcRequest, socket);
         });
     }
 
-    private String route(String message, ServerWebSocket s) {
-        JsonRpcReader jsonRpcRequest = JsonRpcReader.read(message);
-        JsonObject jsonRpcResponse = route(jsonRpcRequest, s);
-        return jsonRpcResponse.encodePrettily();
-    }
+    @Inject
+    Logger logger;
 
     @SuppressWarnings("unchecked")
-    private JsonObject route(JsonRpcReader jsonRpcRequest, ServerWebSocket s) {
-
+    private void route(JsonRpcReader jsonRpcRequest, ServerWebSocket s) {
         String jsonRpcMethodName = jsonRpcRequest.getMethod();
 
         // First check some internal methods
@@ -95,52 +119,72 @@ public class JsonRpcRouter {
                 Cancellable cancellable = this.subscriptions.remove(jsonRpcRequest.getId());
                 cancellable.cancel();
             }
-            return jsonRpcResponse;
-
+            s.writeTextMessage(jsonRpcResponse.encode());
         } else if (this.jsonRpcToJava.containsKey(jsonRpcMethodName)) { // Route to extension
             ReflectionInfo reflectionInfo = this.jsonRpcToJava.get(jsonRpcMethodName);
-            Object providerInstance = Arc.container().select(reflectionInfo.bean).get();
-            try {
-                Object result;
-                if (jsonRpcRequest.hasParams()) {
-                    Object[] args = getArgsAsObjects(reflectionInfo.params, jsonRpcRequest);
-                    result = reflectionInfo.method.invoke(providerInstance, args);
-                } else {
-                    result = reflectionInfo.method.invoke(providerInstance);
+            Object target = Arc.container().select(reflectionInfo.bean).get();
+
+            if (reflectionInfo.isReturningMulti()) {
+                Multi<?> multi;
+                try {
+                    if (jsonRpcRequest.hasParams()) {
+                        Object[] args = getArgsAsObjects(reflectionInfo.params, jsonRpcRequest);
+                        multi = (Multi<?>) reflectionInfo.method.invoke(target, args);
+                    } else {
+                        multi = (Multi<?>) reflectionInfo.method.invoke(target);
+                    }
+                } catch (Exception e) {
+                    logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcMethodName,
+                            jsonRpcRequest);
+                    s.writeTextMessage(JsonRpcWriter.writeErrorResponse(jsonRpcRequest.getId(), jsonRpcMethodName, e).encode());
+                    return;
                 }
 
-                // Here wrap in our own object that contain some more metadata
-                JsonObject jsonRpcResponse;
-                if (reflectionInfo.isSubscription()) {
-                    // Subscription
-                    Multi<?> subscription = (Multi) result;
+                Cancellable cancellable = multi.subscribe()
+                        .with(
+                                item -> {
+                                    JsonObject jsonResponse = JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), item,
+                                            MessageType.SubscriptionMessage);
+                                    s.writeTextMessage(jsonResponse.encodePrettily());
+                                },
+                                failure -> {
+                                    s.writeTextMessage(JsonRpcWriter
+                                            .writeErrorResponse(jsonRpcRequest.getId(), jsonRpcMethodName, failure).encode());
+                                    this.subscriptions.remove(jsonRpcRequest.getId());
+                                },
+                                () -> this.subscriptions.remove(jsonRpcRequest.getId()));
 
-                    // TODO: If Jackson is on the classpath ?
-
-                    Cancellable cancellable = subscription.subscribe().with((t) -> {
-                        JsonObject jsonResponse = JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), t,
-                                MessageType.SubscriptionMessage);
-                        s.writeTextMessage(jsonResponse.encodePrettily());
-                    });
-
-                    this.subscriptions.put(jsonRpcRequest.getId(), cancellable);
-
-                    jsonRpcResponse = JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), null, MessageType.Void);
-
-                } else {
-                    // Normal response
-                    jsonRpcResponse = JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), result, MessageType.Response);
+                this.subscriptions.put(jsonRpcRequest.getId(), cancellable);
+                s.writeTextMessage(JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), null, MessageType.Void).encode());
+            } else {
+                // The invocation will return a Uni<JsonObject>
+                Uni<?> uni;
+                try {
+                    if (jsonRpcRequest.hasParams()) {
+                        Object[] args = getArgsAsObjects(reflectionInfo.params, jsonRpcRequest);
+                        uni = invoke(reflectionInfo, target, args);
+                    } else {
+                        uni = invoke(reflectionInfo, target, new Object[0]);
+                    }
+                } catch (Exception e) {
+                    logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcMethodName,
+                            jsonRpcRequest);
+                    s.writeTextMessage(JsonRpcWriter.writeErrorResponse(jsonRpcRequest.getId(), jsonRpcMethodName, e).encode());
+                    return;
                 }
-
-                return jsonRpcResponse;
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-                throw new RuntimeException(ex);
+                uni.subscribe()
+                        .with(item -> {
+                            s.writeTextMessage(JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), item,
+                                    MessageType.Response).encode());
+                        }, failure -> {
+                            s.writeTextMessage(JsonRpcWriter
+                                    .writeErrorResponse(jsonRpcRequest.getId(), jsonRpcMethodName, failure).encode());
+                        });
             }
+        } else {
+            // Method not found
+            s.writeTextMessage(JsonRpcWriter.writeMethodNotFoundResponse(jsonRpcRequest.getId(), jsonRpcMethodName).encode());
         }
-
-        // Method not found
-        return JsonRpcWriter.writeMethodNotFoundResponse(jsonRpcRequest.getId(), jsonRpcMethodName);
-
     }
 
     private Object[] getArgsAsObjects(Map<String, Class> params, JsonRpcReader jsonRpcRequest) {

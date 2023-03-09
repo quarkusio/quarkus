@@ -7,6 +7,9 @@ public final class JsonRpcMethod {
     private String methodName;
     private Map<String, Class> params;
 
+    private boolean isExplicitlyBlocking;
+    private boolean isExplicitlyNonBlocking;
+
     public JsonRpcMethod() {
     }
 
@@ -42,6 +45,22 @@ public final class JsonRpcMethod {
 
     public void setParams(Map<String, Class> params) {
         this.params = params;
+    }
+
+    public boolean getExplicitlyBlocking() {
+        return isExplicitlyBlocking;
+    }
+
+    public void setExplicitlyBlocking(boolean blocking) {
+        isExplicitlyBlocking = blocking;
+    }
+
+    public boolean getExplicitlyNonBlocking() {
+        return isExplicitlyNonBlocking;
+    }
+
+    public void setExplicitlyNonBlocking(boolean nonblocking) {
+        isExplicitlyNonBlocking = nonblocking;
     }
 
     @Override

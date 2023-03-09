@@ -38,6 +38,20 @@ final class MetadataValue {
         return null;
     }
 
+    public Integer asInteger() {
+        if (val instanceof String) {
+            try {
+                return Integer.parseInt((String) val);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        if (val instanceof Integer) {
+            return (Integer) val;
+        }
+        return null;
+    }
+
     @SuppressWarnings("unchecked")
     public List<String> asStringList() {
         if (val instanceof String) {

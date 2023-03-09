@@ -1,12 +1,8 @@
-{#if info:serverUrl != ""}
-<a target="_blank" href="http://{info:serverUrl}" class="badge badge-light">
-  <i class="fa fa-external-link-alt fa-fw"></i> Web Console</a>
+{#for clientInfo in info:infinispanClient.clientsInfo}
+<a target="_blank" href="http://{clientInfo.serverUrl}" class="badge badge-light">
+  <i class="fa fa-external-link-alt fa-fw"></i> Web Console ({clientInfo.name})</a>
 <br>
-{#else}
-<span class="badge badge-light">
-  <i class="fa fa-exclamation-triangle fa-fw"></i> Configuration is missing</span>
-<br>
-{/if}
+{/for}
 <a target="_blank" href="https://infinispan.org/documentation/" class="badge badge-light">
   <i class="fas fa-info fa-fw"></i> Documentation</a>
 <br>

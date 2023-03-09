@@ -15,7 +15,7 @@ import io.quarkus.infinispan.client.CacheInvalidateAll;
 import io.quarkus.infinispan.client.CacheResult;
 
 @Path("/books")
-public class BookStoreService {
+public class BookStoreResource {
 
     @GET
     @Path("{id}")

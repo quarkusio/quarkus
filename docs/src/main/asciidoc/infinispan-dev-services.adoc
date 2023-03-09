@@ -14,7 +14,7 @@ Quarkus will automatically start an Infinispan container when running tests or d
 
 The following properties are available to customize the Infinispan Dev Services:
 
-include::{generated-dir}/config/quarkus-infinispan-client-config-group-devservices-infinispan-dev-services-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-infinispan-client-config-group-infinispan-client-build-time-config-dev-service-configuration.adoc[opts=optional, leveloffset=+1]
 
 When running the production version of the application, the Infinispan connection need to be configured as normal,
 so if you want to include a production database config in your `application.properties` and continue to use Dev Services
@@ -79,6 +79,15 @@ and in the Infinispan Cross Site Replication
 link:https://infinispan.org/tutorials/simple/simple_tutorials.html#cross-site-replication_remote-cache-tutorials[simple code tutorial].
 ====
 
+== Multiple Dev Services for named connections
+The Infinispan Client extension supports connecting to more than one Infinispan Cluster with
+the named connections. If you need to spin an additional dev service for a connection name, configure
+at least on property in the application properties:
+
+[source,properties]
+----
+quarkus.infinispan-client.conn-2.devservices.enabled=true
+----
 
 == Tracing with OpenTelemetry
 

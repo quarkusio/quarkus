@@ -13,13 +13,11 @@ import org.infinispan.client.hotrod.configuration.NearCacheMode;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * @author Katia Aresti
  */
-@ConfigRoot(name = "infinispan-client", phase = ConfigPhase.RUN_TIME)
+@ConfigGroup
 public class InfinispanClientRuntimeConfig {
 
     // @formatter:off
@@ -48,16 +46,6 @@ public class InfinispanClientRuntimeConfig {
     @ConfigItem
     @Deprecated
     public Optional<String> serverList;
-
-    // @formatter:off
-    /**
-     * Enables or disables Protobuf generated schemas upload to the server.
-     * Set it to 'false' when you need to handle the lifecycle of the Protobuf Schemas on Server side yourself.
-     * Default is 'true'.
-     */
-    // @formatter:on
-    @ConfigItem(defaultValue = "true")
-    Optional<Boolean> useSchemaRegistration;
 
     // @formatter:off
     /**
@@ -263,7 +251,7 @@ public class InfinispanClientRuntimeConfig {
     @Override
     public String toString() {
         return "InfinispanClientRuntimeConfig{" +
-                "serverList=" + serverList +
+                "hosts=" + hosts +
                 '}';
     }
 }

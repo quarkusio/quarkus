@@ -50,7 +50,8 @@ public class CacheResultInterceptor extends CacheInterceptor {
         }
 
         CacheResult binding = interceptionContext.getInterceptorBindings().get(0);
-        RemoteCache remoteCache = cacheManager.getCache(binding.cacheName());
+        RemoteCache remoteCache = getRemoteCacheManager()
+                .getCache(binding.cacheName());
         Object key = getCacheKey(invocationContext.getParameters());
         InfinispanGetWrapper cache = new InfinispanGetWrapper(remoteCache, syncronousInfinispanGet.get(remoteCache.getName()));
         LOGGER.debugf("Loading entry with key [%s] from cache [%s]", key, binding.cacheName());

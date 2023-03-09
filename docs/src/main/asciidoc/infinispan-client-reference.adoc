@@ -115,6 +115,41 @@ quarkus.infinispan-client.client-intelligence=BASIC <2>
 Use Infinispan Dev Services to run a server and connect without configuration.
 ====
 
+=== Default and named connections
+This extension lets you configure a _default_ Infinispan client connections and _named_ ones.
+Named connections are essential to connect to multiple Infinispan clusters.
+
+The default connection is configured using the `quarkus.infinispan-client.*` properties as seen above.
+When using the default connection, you can inject using a _plain_ `@Inject`:
+
+_Named_ clients are configured using the `quarkus.infinispan-client.<name>.*` properties:
+
+[source,properties]
+----
+quarkus.infinispan-client.site-lon.hosts=localhost:11222
+quarkus.infinispan-client.site-lon.username=admin
+quarkus.infinispan-client.site-lon.password=password
+
+quarkus.infinispan-client.site-nyc.hosts=localhost:31222
+quarkus.infinispan-client.site-nyc.username=admin
+quarkus.infinispan-client.site-nyc.password=password
+----
+
+Use the `@InfinispanClientName` qualifier with dependency injection:
+[source,java]
+----
+@ApplicationScoped
+public class InfinispanExample {
+    @Inject
+    @InfinispanClientName("site-lon")
+    RemoteCacheManager rcmLon;
+
+    @Inject
+    @InfinispanClientName("site-nyc")
+    RemoteCacheManager rmcNyc;
+}
+----
+
 === Infinispan Health Check
 If you are using the quarkus-smallrye-health extension, the Infinispan client extensions will automatically add a readiness health check to validate the connection.
 
@@ -495,7 +530,8 @@ the field, constructor or method. In the below code we utilize field and constru
 .SomeClass.java
 [source,java]
 ----
-    @Inject SomeClass(RemoteCacheManager remoteCacheManager) {
+    @Inject
+    SomeClass(RemoteCacheManager remoteCacheManager) {
        this.remoteCacheManager = remoteCacheManager;
     }
 
@@ -506,9 +542,28 @@ the field, constructor or method. In the below code we utilize field and constru
     RemoteCacheManager remoteCacheManager;
 ----
 
-If you notice the `RemoteCache` declaration has an additional optional annotation named `Remote`.
-This is a qualifier annotation allowing you to specify which named cache that will be injected. This
+If you notice the `RemoteCache` declaration has an additional annotation named `Remote`.
+This is a *qualifier* annotation allowing you to specify which named cache that will be injected. This
 annotation is not required and if it is not supplied, the default cache will be injected.
+The RemoteCacheManager bean scope is `@ApplicationScope`.
+The RemoteCache bean scope is `@Singleton`.
+
+For non default connections, combine the qualifier `@InfinispanClientName` and `@Remote`.
+
+.SomeClass.java
+[source,java]
+----
+    @Inject
+    @InfinispanClientName("lon-site")
+    @Remote("books")
+    RemoteCache<String, Book> lonBooks;
+
+    @Inject
+    @InfinispanClientName("nyc-site")
+    @Remote("books")
+    RemoteCache<String, Book> nycBooks;
+----
+
 
 NOTE: Other types may be supported for injection, please see other sections for more information
 

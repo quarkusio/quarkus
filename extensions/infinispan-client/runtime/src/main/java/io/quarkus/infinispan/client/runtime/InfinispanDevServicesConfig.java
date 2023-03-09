@@ -1,4 +1,4 @@
-package io.quarkus.infinispan.client.deployment.devservices;
+package io.quarkus.infinispan.client.runtime;
 
 import java.util.List;
 import java.util.Objects;
@@ -53,7 +53,7 @@ public class InfinispanDevServicesConfig {
      * <p>
      * This property is used when you need multiple shared Infinispan servers.
      */
-    @ConfigItem(defaultValue = "infinispan")
+    @ConfigItem(defaultValue = InfinispanClientUtil.DEFAULT_INFINISPAN_DEV_SERVICE_NAME)
     public String serviceName;
 
     /**
@@ -128,5 +128,13 @@ public class InfinispanDevServicesConfig {
     @Override
     public int hashCode() {
         return Objects.hash(enabled, port, shared, serviceName, imageName, artifacts);
+    }
+
+    @Override
+    public String toString() {
+        return "InfinispanDevServicesConfig{" + "enabled=" + enabled + ", port=" + port + ", shared=" + shared
+                + ", serviceName='" + serviceName + '\'' + ", imageName=" + imageName + ", artifacts=" + artifacts
+                + ", site=" + site + ", mcastPort=" + mcastPort + ", tracing=" + tracing + ", exporterOtlpEndpoint="
+                + exporterOtlpEndpoint + '}';
     }
 }

@@ -47,7 +47,7 @@ export class QwcResteasyReactiveCard extends QwcHotReloadElement {
                 <echarts-gauge-grade 
                             percentage="${this._latestScores.score}"
                             percentageFontSize="14"
-                            sectionColors="--lumo-error-color,--lumo-warning-color,--lumo-success-color"
+                            sectionColors="--lumo-error-color,--lumo-warning-color,--lumo-success-color">
                         </echarts-gauge-grade>
             </div>
             ${this._renderPagesLinks()}`;

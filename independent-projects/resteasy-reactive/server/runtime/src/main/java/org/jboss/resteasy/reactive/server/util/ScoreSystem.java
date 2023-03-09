@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.ext.MessageBodyWriter;
@@ -36,9 +35,7 @@ public class ScoreSystem {
         public final String httpMethod;
         public final String fullPath;
         public final List<MediaType> produces;
-        public final List<String> producesHeaders;
         public final List<MediaType> consumes;
-        public final List<String> consumesHeaders;
         public final Map<Category, List<Diagnostic>> diagnostics;
         public final int score;
         public final List<RequestFilterEntry> requestFilterEntries;
@@ -50,13 +47,7 @@ public class ScoreSystem {
             this.httpMethod = httpMethod;
             this.fullPath = fullPath;
             this.produces = produces;
-            this.producesHeaders = produces.stream()
-                    .map(MediaType::toString)
-                    .collect(Collectors.toList());
             this.consumes = consumes;
-            this.consumesHeaders = consumes.stream()
-                    .map(MediaType::toString)
-                    .collect(Collectors.toList());
             this.diagnostics = diagnostics;
             this.score = score;
             this.requestFilterEntries = requestFilterEntries;

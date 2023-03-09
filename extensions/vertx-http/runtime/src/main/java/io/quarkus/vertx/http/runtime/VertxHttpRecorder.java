@@ -128,6 +128,8 @@ public class VertxHttpRecorder {
 
     public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
 
+    private static final String DISABLE_WEBSOCKETS_PROP_NAME = "vertx.disableWebsockets";
+
     /**
      * Order mark for route with priority over the default route (add an offset from this mark)
      **/
@@ -163,7 +165,6 @@ public class VertxHttpRecorder {
 
         /** JVM system property that disables URI validation, don't use this in production. */
         private static final String DISABLE_URI_VALIDATION_PROP_NAME = "vertx.disableURIValidation";
-
         /**
          * Disables HTTP headers validation, so we can save some processing and save some allocations.
          */
@@ -297,8 +298,13 @@ public class VertxHttpRecorder {
     public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
             LaunchMode launchMode,
             boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, List<String> websocketSubProtocols,
-            boolean auxiliaryApplication)
+            boolean auxiliaryApplication, boolean disableWebSockets)
             throws IOException {
+
+        // disable websockets if we have determined at build time that we should and the user has not overridden the relevant Vert.x property
+        if (disableWebSockets && !System.getProperties().containsKey(DISABLE_WEBSOCKETS_PROP_NAME)) {
+            System.setProperty(DISABLE_WEBSOCKETS_PROP_NAME, "true");
+        }
 
         if (startVirtual) {
             initializeVirtual(vertx.get());

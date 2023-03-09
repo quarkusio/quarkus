@@ -20,6 +20,7 @@ on:
   schedule:
     # first day of month at 12:10am
     - cron: '10 0 1 * *'
+  workflow_dispatch:
 
 concurrency:
   group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"

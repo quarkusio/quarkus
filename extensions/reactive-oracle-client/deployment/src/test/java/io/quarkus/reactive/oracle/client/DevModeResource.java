@@ -11,6 +11,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import io.vertx.oracleclient.OracleException;
 import io.vertx.oracleclient.OraclePool;
 
 @Path("/dev")
@@ -25,7 +26,7 @@ public class DevModeResource {
     public CompletionStage<Response> checkConnectionFailure() throws SQLException {
         CompletableFuture<Response> future = new CompletableFuture<>();
         client.query("SELECT 1 FROM DUAL").execute(ar -> {
-            Class<?> expectedExceptionClass = SQLException.class;
+            Class<?> expectedExceptionClass = OracleException.class;
             if (ar.succeeded()) {
                 future.complete(Response.serverError().entity("Expected SQL query to fail").build());
             } else if (!expectedExceptionClass.isAssignableFrom(ar.cause().getClass())) {

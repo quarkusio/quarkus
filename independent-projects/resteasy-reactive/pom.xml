@@ -63,7 +63,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <mutiny.version>2.1.0</mutiny.version>
         <smallrye-common.version>2.1.0</smallrye-common.version>
-        <vertx.version>4.3.8</vertx.version>
+        <vertx.version>4.4.1</vertx.version>
         <rest-assured.version>5.3.0</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.14.2</jackson-bom.version>

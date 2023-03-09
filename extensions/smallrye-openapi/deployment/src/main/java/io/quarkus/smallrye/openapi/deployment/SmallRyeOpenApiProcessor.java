@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -79,7 +78,6 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
-import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.security.Authenticated;
@@ -689,7 +687,6 @@ public class SmallRyeOpenApiProcessor {
             HttpRootPathBuildItem httpRootPathBuildItem,
             OutputTargetBuildItem out,
             SmallRyeOpenApiConfig smallRyeOpenApiConfig,
-            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             OutputTargetBuildItem outputTargetBuildItem,
             List<IgnoreStaticDocumentBuildItem> ignoreStaticDocumentBuildItems) throws Exception {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
@@ -710,8 +707,7 @@ public class SmallRyeOpenApiProcessor {
         OpenAPI annotationModel;
 
         if (shouldScanAnnotations(capabilities, index)) {
-            annotationModel = generateAnnotationModel(index, capabilities, httpRootPathBuildItem, resteasyJaxrsConfig, config,
-                    openApiConfig);
+            annotationModel = generateAnnotationModel(index, capabilities, httpRootPathBuildItem, config, openApiConfig);
         } else {
             annotationModel = new OpenAPIImpl();
         }
@@ -827,29 +823,24 @@ public class SmallRyeOpenApiProcessor {
 
     private OpenAPI generateAnnotationModel(IndexView indexView, Capabilities capabilities,
             HttpRootPathBuildItem httpRootPathBuildItem,
-            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig, Config config, OpenApiConfig openApiConfig) {
+            Config config, OpenApiConfig openApiConfig) {
 
         List<AnnotationScannerExtension> extensions = new ArrayList<>();
 
         // Add the RESTEasy extension if the capability is present
-        String defaultPath = httpRootPathBuildItem.getRootPath();
+        String rootPath = httpRootPathBuildItem.getRootPath();
+        String appPath = "";
+
         if (capabilities.isPresent(Capability.RESTEASY)) {
             extensions.add(new RESTEasyExtension(indexView));
-            if (resteasyJaxrsConfig.isPresent()) {
-                defaultPath = resteasyJaxrsConfig.get().getRootPath();
-            }
+            appPath = config.getOptionalValue("quarkus.resteasy.path", String.class).orElse("");
         } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             extensions.add(new RESTEasyExtension(indexView));
             openApiConfig.doAllowNakedPathParameter();
-            Optional<String> maybePath = config.getOptionalValue("quarkus.resteasy-reactive.path", String.class);
-            if (maybePath.isPresent()) {
-                defaultPath = maybePath.get();
-            }
+            appPath = config.getOptionalValue("quarkus.resteasy-reactive.path", String.class).orElse("");
         }
 
-        if (defaultPath != null && !"/".equals(defaultPath)) {
-            extensions.add(new CustomPathExtension(defaultPath));
-        }
+        extensions.add(new CustomPathExtension(rootPath, appPath));
 
         OpenApiAnnotationScanner openApiAnnotationScanner = new OpenApiAnnotationScanner(openApiConfig, indexView, extensions);
         return openApiAnnotationScanner.scan(getScanners(capabilities, indexView));

@@ -5,6 +5,7 @@ import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIS
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -14,16 +15,21 @@ import jakarta.inject.Inject;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
+import io.quarkus.cli.plugin.Plugin;
 import io.quarkus.cli.plugin.PluginCommandFactory;
 import io.quarkus.cli.plugin.PluginManager;
+import io.quarkus.devtools.utils.Prompt;
 import io.quarkus.runtime.QuarkusApplication;
 import picocli.CommandLine;
+import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.Help;
 import picocli.CommandLine.IHelpSectionRenderer;
 import picocli.CommandLine.IParameterExceptionHandler;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.UsageMessageSpec;
+import picocli.CommandLine.MutuallyExclusiveArgsException;
 import picocli.CommandLine.ParameterException;
+import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.ScopeType;
 import picocli.CommandLine.UnmatchedArgumentException;
 
@@ -67,8 +73,55 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         PluginCommandFactory pluginCommandFactory = new PluginCommandFactory(output);
         PluginManager pluginManager = pluginManager(output);
         pluginManager.syncIfNeeded();
-        pluginCommandFactory.populateCommands(cmd, pluginManager.getInstalledPlugins());
+        Map<String, Plugin> plugins = new HashMap<>(pluginManager.getInstalledPlugins());
+        pluginCommandFactory.populateCommands(cmd, plugins);
+        try {
+            Optional<String> missing = checkMissingCommand(cmd, args);
+            missing.ifPresent(m -> {
+                Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
+                if (installable.containsKey(m)) {
+                    if (Prompt.yerOrNo(true,
+                            "Command %s is not installed, but a matching plugin is available. Would you like to install it now ?",
+                            args)) {
+                        pluginManager.addPlugin(m).ifPresent(added -> plugins.put(added.getName(), added));
+                        pluginCommandFactory.populateCommands(cmd, plugins);
+                    }
+                }
+
+            });
+        } catch (MutuallyExclusiveArgsException e) {
+            return ExitCode.USAGE;
+        }
         return cmd.execute(args);
+    }
+
+    /**
+     * Recursivelly processes the arguments passed to the command and checks wether a subcommand is missing.
+     *
+     * @param root the root command
+     * @param args the arguments passed to the root command
+     * @retunr the missing subcommand wrapped in {@link Optional} or empty if no subcommand is missing.
+     */
+    public Optional<String> checkMissingCommand(CommandLine root, String[] args) {
+        if (args.length == 0) {
+            return Optional.empty();
+        }
+
+        try {
+            ParseResult result = root.parseArgs(args);
+            if (args.length == 1) {
+                return Optional.empty();
+            }
+            CommandLine next = root.getSubcommands().get(args[0]);
+            if (next == null) {
+                return Optional.of(args[0]);
+            }
+            String[] remaining = new String[args.length - 1];
+            System.arraycopy(args, 1, remaining, 0, remaining.length);
+            return checkMissingCommand(next, remaining).map(nextMissing -> root.getCommandName() + "-" + nextMissing);
+        } catch (UnmatchedArgumentException e) {
+            return Optional.of(args[0]);
+        }
     }
 
     @Override

@@ -245,8 +245,6 @@ public class BuildTimeContentProcessor {
         String themeVars = themeVarsBuildItem.getTemplateValue();
         String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + DEV_UI + SLASH;
 
-        // TODO: Move version and name to build time data
-
         Map<String, Object> data = Map.of(
                 "contextRoot", contextRoot,
                 "importmap", importmap,

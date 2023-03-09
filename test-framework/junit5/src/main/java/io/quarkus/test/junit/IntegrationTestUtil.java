@@ -433,9 +433,10 @@ public final class IntegrationTestUtil {
             }
             throw new IllegalStateException(errorMessage);
         }
-        try {
-            Properties properties = new Properties();
-            properties.load(new FileInputStream(artifactProperties.toFile()));
+
+        Properties properties = new Properties();
+        try (var fis = new FileInputStream(artifactProperties.toFile())) {
+            properties.load(fis);
             return properties;
         } catch (IOException e) {
             throw new UncheckedIOException(

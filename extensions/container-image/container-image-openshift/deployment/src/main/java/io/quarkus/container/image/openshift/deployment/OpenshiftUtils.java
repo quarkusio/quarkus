@@ -28,6 +28,9 @@ import io.fabric8.openshift.client.OpenShiftClient;
  */
 public class OpenshiftUtils {
 
+    private static final String OPENSHIFT_NAMESPACE = "quarkus.openshift.namespace";
+    private static final String KUBERNETES_NAMESPACE = "quarkus.kubernetes.namespace";
+
     /**
      * Wait for the references ImageStreamTags to become available.
      *
@@ -141,5 +144,13 @@ public class OpenshiftUtils {
         result.buildStrategy = openshiftConfig.buildStrategy;
 
         return result;
+    }
+
+    /**
+     * @return the openshift namespace set in the OpenShift extension.
+     */
+    public static Optional<String> getNamespace() {
+        return ConfigProvider.getConfig().getOptionalValue(OPENSHIFT_NAMESPACE, String.class)
+                .or(() -> ConfigProvider.getConfig().getOptionalValue(KUBERNETES_NAMESPACE, String.class));
     }
 }

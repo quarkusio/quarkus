@@ -19,7 +19,7 @@ public abstract class ImagePush extends ImageTask {
 
     @Override
     public Map<String, String> forcedProperties() {
-        return Map.of("quarkus.container-image.push", "true");
+        return Map.of(QUARKUS_CONTAINER_IMAGE_PUSH, "true");
     }
 
     @TaskAction
@@ -27,11 +27,11 @@ public abstract class ImagePush extends ImageTask {
         List<String> containerImageExtensions = getProject().getConfigurations().stream()
                 .flatMap(c -> c.getDependencies().stream())
                 .map(d -> d.getName())
-                .filter(n -> n.startsWith("quarkus-container-image"))
+                .filter(n -> n.startsWith(QUARKUS_CONTAINER_IMAGE_PREFIX))
                 .map(n -> n.replaceAll("-deployment$", ""))
                 .collect(Collectors.toList());
 
-        List<String> extensions = Arrays.stream(ImageBuild.Builder.values()).map(b -> "quarkus-container-image-" + b.name())
+        List<String> extensions = Arrays.stream(ImageBuild.Builder.values()).map(b -> QUARKUS_CONTAINER_IMAGE_PREFIX + b.name())
                 .collect(Collectors.toList());
 
         if (containerImageExtensions.isEmpty()) {

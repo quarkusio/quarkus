@@ -3,7 +3,6 @@ package io.quarkus.arc.test.instance;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.TestLiteral;
 
 public class InvalidQualifierInstanceTest {
 
@@ -21,8 +21,7 @@ public class InvalidQualifierInstanceTest {
     @SuppressWarnings("serial")
     @Test
     public void testIllegalArgumentException() {
-        assertThatThrownBy(() -> Arc.container().instance(Alpha.class).get().instance.select(new AnnotationLiteral<Test>() {
-        }))
+        assertThatThrownBy(() -> Arc.container().instance(Alpha.class).get().instance.select(new TestLiteral()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

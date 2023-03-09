@@ -17,7 +17,6 @@ import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.InjectionPoint;
-import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -29,6 +28,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.TestLiteral;
 
 public class ArcContainerSelectTest {
 
@@ -51,8 +51,7 @@ public class ArcContainerSelectTest {
         assertTrue(strings.contains("washcloth"));
         assertTrue(Washcloth.INIT.get());
         assertTrue(Washcloth.DESTROYED.get());
-        assertThatThrownBy(() -> Arc.container().select(Alpha.class, new AnnotationLiteral<Test>() {
-        }))
+        assertThatThrownBy(() -> Arc.container().select(Alpha.class, new TestLiteral()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

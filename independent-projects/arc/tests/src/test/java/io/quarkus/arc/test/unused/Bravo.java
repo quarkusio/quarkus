@@ -8,6 +8,7 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.interceptor.InterceptorBinding;
 
 @Target({ TYPE, METHOD })
@@ -15,5 +16,6 @@ import jakarta.interceptor.InterceptorBinding;
 @Documented
 @InterceptorBinding
 public @interface Bravo {
-
+    class Literal extends AnnotationLiteral<Bravo> implements Bravo {
+    }
 }

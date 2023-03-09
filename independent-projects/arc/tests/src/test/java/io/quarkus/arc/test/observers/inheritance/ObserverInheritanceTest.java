@@ -2,10 +2,6 @@ package io.quarkus.arc.test.observers.inheritance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.lang.annotation.Annotation;
-
-import jakarta.enterprise.util.AnnotationLiteral;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -35,12 +31,7 @@ public class ObserverInheritanceTest {
     @SuppressWarnings("serial")
     @BeforeEach
     public void setUp() {
-        observingBean = Arc.container().instance(ObservingBean.class, new AnnotationLiteral<ObservingBean.THIS>() {
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return super.annotationType();
-            }
-        }).get();
+        observingBean = Arc.container().instance(ObservingBean.class, new ObservingBean.THIS.Literal()).get();
         observingSubBean = Arc.container().instance(ObservingSubBean.class).get();
         nonObservingSubBean = Arc.container().instance(NonObservingSubBean.class).get();
         emittingBean = Arc.container().instance(EmittingBean.class).get();

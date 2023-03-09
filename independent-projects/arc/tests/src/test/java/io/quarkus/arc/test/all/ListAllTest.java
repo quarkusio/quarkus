@@ -12,7 +12,6 @@ import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.spi.InjectionPoint;
-import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -23,6 +22,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.MyQualifier;
+import io.quarkus.arc.test.TestLiteral;
 
 public class ListAllTest {
 
@@ -52,8 +52,7 @@ public class ListAllTest {
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> bravoHandle.get());
         assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> Arc.container().listAll(Service.class, new AnnotationLiteral<Test>() {
-                }));
+                .isThrownBy(() -> Arc.container().listAll(Service.class, new TestLiteral()));
     }
 
     interface Service {

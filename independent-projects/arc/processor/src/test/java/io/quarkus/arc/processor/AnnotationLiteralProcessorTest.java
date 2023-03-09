@@ -379,8 +379,12 @@ public class AnnotationLiteralProcessorTest {
         assertEquals(incorrectLiteral, annotation);
         assertEquals(annotation, incorrectLiteral);
 
+        assertEquals(correctLiteral, incorrectLiteral);
+        assertEquals(incorrectLiteral, correctLiteral);
+
         assertEquals(correctLiteral.hashCode(), annotation.hashCode());
         assertEquals(incorrectLiteral.hashCode(), annotation.hashCode());
+        assertEquals(correctLiteral.hashCode(), incorrectLiteral.hashCode());
 
         assertEquals("@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$MemberlessAnnotation()",
                 annotation.toString());

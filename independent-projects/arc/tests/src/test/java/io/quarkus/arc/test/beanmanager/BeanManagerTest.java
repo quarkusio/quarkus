@@ -189,8 +189,7 @@ public class BeanManagerTest {
         assertTrue(interceptors.isEmpty());
         // alpha is @Nonbinding
         interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE, new DummyBinding.Literal(false, true),
-                new AnnotationLiteral<UselessBinding>() {
-                });
+                new UselessBinding.Literal());
         assertEquals(2, interceptors.size());
         assertEquals(DummyInterceptor.class, interceptors.get(0).getBeanClass());
         assertEquals(LowPriorityInterceptor.class, interceptors.get(1).getBeanClass());
@@ -224,8 +223,7 @@ public class BeanManagerTest {
     public void testResolveObservers() {
         BeanManager beanManager = Arc.container().beanManager();
         Set<ObserverMethod<? super Long>> observers = beanManager.resolveObserverMethods(Long.valueOf(1),
-                new AnnotationLiteral<High>() {
-                });
+                new High.Literal());
         assertEquals(1, observers.size());
         assertEquals(Number.class, observers.iterator().next().getObservedType());
     }
@@ -254,6 +252,8 @@ public class BeanManagerTest {
     @Documented
     @Qualifier
     public @interface High {
+        class Literal extends AnnotationLiteral<High> implements High {
+        }
     }
 
     @Target({ TYPE, METHOD, PARAMETER, FIELD })
@@ -332,7 +332,7 @@ public class BeanManagerTest {
         boolean bravo();
 
         @SuppressWarnings("serial")
-        static class Literal extends AnnotationLiteral<DummyBinding> implements DummyBinding {
+        class Literal extends AnnotationLiteral<DummyBinding> implements DummyBinding {
 
             private final boolean alpha;
             private final boolean bravo;
@@ -361,7 +361,8 @@ public class BeanManagerTest {
     @Documented
     @InterceptorBinding
     public @interface UselessBinding {
-
+        class Literal extends AnnotationLiteral<UselessBinding> implements UselessBinding {
+        }
     }
 
     @DummyBinding(alpha = true, bravo = true)

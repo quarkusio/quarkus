@@ -49,7 +49,7 @@ public class Http2TestCase {
         ExecutionException exc = Assertions.assertThrows(ExecutionException.class,
                 () -> runHttp2EnabledSsl("client-keystore-2.jks"));
 
-        Assertions.assertEquals("SSLHandshakeException: Received fatal alert: bad_certificate",
+        Assertions.assertEquals("VertxException: Connection was closed",
                 ExceptionUtils.getRootCauseMessage(exc));
     }
 

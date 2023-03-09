@@ -13,7 +13,7 @@ This means you cannot use `@PermitAll` to open a path if the path is blocked by 
 
 [NOTE]
 ====
-If you are using JAX-RS, consider using `quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed` to set default security requirements instead of HTTP path-level matching because annotations can override these properties on an individual endpoint.
+If you are using Jakarta REST, consider using `quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed` to set default security requirements instead of HTTP path-level matching because annotations can override these properties on an individual endpoint.
 ====
 
 Authorization is based on user roles that the security provider provides.
@@ -168,7 +168,7 @@ TIP: Given the above permission set, `GET /api/foo` would match both permission 
 The following configuration settings alter the role-based access control (RBAC) denying behavior:
 
 `quarkus.security.jaxrs.deny-unannotated-endpoints=true|false`::
-If set to true, access is denied for all JAX-RS endpoints by default. If a JAX-RS endpoint does not have any security annotations, it defaults to the `@DenyAll` behavior.
+If set to true, access is denied for all Jakarta REST endpoints by default. If a Jakarta REST endpoint does not have any security annotations, it defaults to the `@DenyAll` behavior.
 This is useful to ensure you cannot accidentally expose an endpoint that is supposed to be secured.
 Defaults to `false`.
 
@@ -179,7 +179,7 @@ This cannot be combined with `deny-unannotated-endpoints`, as `deny` takes the e
 
 `quarkus.security.deny-unannotated-members=true|false`::
 - if set to true, the access will be denied to all CDI methods
-and JAX-RS endpoints that do not have security annotations but are defined in classes that contain methods with
+and Jakarta REST endpoints that do not have security annotations but are defined in classes that contain methods with
 security annotations.
 Defaults to `false`.
 
@@ -248,7 +248,7 @@ s| @RolesAllowed | Specifies the list of security roles permitted to access meth
 As an equivalent to `@RolesAllowed("**")`, {project-name} also provides the `io.quarkus.security.Authenticated` annotation that permits any authenticated user to access the resource.
 |===
 
-<<subject-example>> featured in this chapter demonstrates an endpoint that uses both JAX-RS and Common Security annotations to describe and secure its endpoints.
+<<subject-example>> featured in this chapter demonstrates an endpoint that uses both Jakarta REST and Common Security annotations to describe and secure its endpoints.
 
 [#subject-example]
 .SubjectExposingResource Example
@@ -296,7 +296,7 @@ public class SubjectExposingResource {
 }
 ----
 <1> The `/subject/secured` endpoint requires an authenticated user with the granted "Tester" role through the use of the `@RolesAllowed("Tester")` annotation.
-<2> The endpoint obtains the user principal from the JAX-RS `SecurityContext`. This will be non-null for a secured endpoint.
+<2> The endpoint obtains the user principal from the Jakarta REST `SecurityContext`. This will be non-null for a secured endpoint.
 <3> The `/subject/unsecured` endpoint allows for unauthenticated access by specifying the `@PermitAll` annotation.
 <4> The call to obtain the user principal returns null if the caller is unauthenticated and non-null if the caller is authenticated.
 <5> The `/subject/denied` endpoint declares the `@DenyAll` annotation, thus disallowing all direct access to it as a REST method, regardless of the user calling it. The method is still invokable internally by other methods in this class.
@@ -392,4 +392,4 @@ It is possible to use multiple expressions in the role definition.
 * xref:security-architecture-concept.adoc[Quarkus Security architecture] 
 * xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
 * xref:security-basic-authentication-concept.adoc[Basic authentication]
-* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
+* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]

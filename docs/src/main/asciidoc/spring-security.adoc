@@ -78,7 +78,7 @@ For more information about `security-properties-file`, you can check out the gui
 
 == GreetingController
 
-The Quarkus Maven plugin automatically generated a controller with the Spring Web annotations to define our REST endpoint (instead of the JAX-RS ones used by default).
+The Quarkus Maven plugin automatically generated a controller with the Spring Web annotations to define our REST endpoint (instead of the Jakarta REST ones used by default).
 First create a `src/main/java/org/acme/spring/web/GreetingController.java`, a controller with the Spring Web annotations to define our REST endpoint, as follows:
 
 [source,java]
@@ -417,10 +417,10 @@ classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for e
 
 == Conversion Table
 
-The following table shows how Spring Security annotations can be converted to JAX-RS annotations.
+The following table shows how Spring Security annotations can be converted to Jakarta REST annotations.
 
 |===
-|Spring |JAX-RS |Comments
+|Spring |Jakarta REST |Comments
 
 |@Secured("admin")
 |@RolesAllowed("admin")

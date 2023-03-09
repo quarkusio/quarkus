@@ -509,7 +509,7 @@ The above sequence of commands does the following:
 ** `quarkus-my-ext-parent` in the `extensions/my-ext` directory
 ** `quarkus-my-ext` in the `extensions/my-ext/runtime` directory
 ** `quarkus-my-ext-deployment` in the `extensions/my-ext/deployment` directory; a basic `MyExtProcessor` class is generated in this module.
-** `quarkus-my-ext-integration-test` in the `integration-tests/my-ext/deployment` directory; an empty JAX-RS Resource class and two test classes (for JVM mode and native mode) are generated in this module.
+** `quarkus-my-ext-integration-test` in the `integration-tests/my-ext/deployment` directory; an empty Jakarta REST Resource class and two test classes (for JVM mode and native mode) are generated in this module.
 * Links these three modules where necessary:
 ** `quarkus-my-ext-parent` is added to the `<modules>` of `quarkus-extensions-parent`
 ** `quarkus-my-ext` is added to the `<dependencyManagement>` of the Quarkus BOM (Bill of Materials) `bom/application/pom.xml`

@@ -9,8 +9,8 @@ include::_attributes.adoc[]
 :summary: This guide explains how to use Blaze-Persistence to simplify your data and DTO layers.
 :config-file: application.properties
 
-Blaze-Persistence offers a fluent query builder API on top of JPA with a deep Hibernate ORM integration that enables the
-use of advanced SQL features like Common Table Expressions while staying in the realm of the JPA model.
+Blaze-Persistence offers a fluent query builder API on top of Jakarta Persistence with a deep Hibernate ORM integration that enables the
+use of advanced SQL features like Common Table Expressions while staying in the realm of the Jakarta Persistence model.
 
 On top of that, the Blaze-Persistence Entity-View module allows for DTO definitions that can be applied to business logic
 queries which are then transformed to optimized queries that only fetch the data that is needed to construct the DTO instances.
@@ -36,7 +36,7 @@ Add the following dependencies to your project:
 * the Blaze-Persistence extension: `com.blazebit:blaze-persistence-integration-quarkus`
 * further Blaze-Persistence integrations as needed:
   - `blaze-persistence-integration-jackson` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#Jackson%20integration[Jackson]
-  - `blaze-persistence-integration-jaxrs` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[JAX-RS]
+  - `blaze-persistence-integration-jaxrs` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[Jakarta REST]
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .Example dependencies using Maven
@@ -170,7 +170,7 @@ public interface GiftUpdateView extends GiftView {
 ----
 
 [source,java]
-.Example JAX-RS Resource
+.Example Jakarta REST Resource
 ----
 @Path("/gifts")
 public class GiftResource {

@@ -1677,7 +1677,7 @@ IMPORTANT: The type of a default value is not validated in xref:standalone[Qute 
 [[typesafe_templates]]
 === Type-safe Templates
 You can also define type-safe templates in your Java code.
-If using xref:resteasy_integration[templates in JAX-RS resources], you can rely on the following convention:
+If using xref:resteasy_integration[templates in Jakarta REST resources], you can rely on the following convention:
 
 - Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
   your `ItemResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/ItemResource/hello.txt`
@@ -2363,7 +2363,7 @@ There are several ways to solve this problem:
 [[resteasy_integration]]
 === RESTEasy Integration
 
-If you want to use Qute in your JAX-RS application, then depending on which JAX-RS stack you are using, you'll need to register the proper extension first.
+If you want to use Qute in your Jakarta REST application, then depending on which Jakarta REST stack you are using, you'll need to register the proper extension first.
 If you are using the traditional `quakus-resteasy` extension, then in your `pom.xml` file, add:
 
 [source,xml]
@@ -2386,7 +2386,7 @@ If instead you are using RESTEasy Reactive via the `quarkus-resteasy-reactive` e
 
 Both of these extensions register a special `ContainerResponseFilter` implementation which enables resource methods to return a `TemplateInstance`, thus freeing users of having to take care of all necessary internal steps.
 
-The end result is that a using Qute within a JAX-RS resource may look as simple as:
+The end result is that a using Qute within a Jakarta REST resource may look as simple as:
 
 .HelloResource.java
 [source,java]
@@ -2420,7 +2420,7 @@ In this particular case, we're injecting a template with path `templates/hello.t
 The data map is accessible during rendering.
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
-TIP: Users are encouraged to use xref:typesafe_templates[type-safe templates] that help to organize the templates for a specific JAX-RS resource and enable xref:typesafe_expressions[type-safe expressions] automatically.
+TIP: Users are encouraged to use xref:typesafe_templates[type-safe templates] that help to organize the templates for a specific Jakarta REST resource and enable xref:typesafe_expressions[type-safe expressions] automatically.
 
 The content negotiation is performed automatically.
 The resulting output depends on the `Accept` header received from the client.
@@ -2443,7 +2443,7 @@ class DetailResource {
 <1> Inject a variant template with base path derived from the injected field - `src/main/resources/templates/item`.
 <2> For `text/plain` the `src/main/resources/templates/item.txt` template is used. For `text/html` the `META-INF/resources/templates/item.html` template is used.
 
-The `RestTemplate` util class can be used to obtain a template instance from a body of a JAX-RS resource method:
+The `RestTemplate` util class can be used to obtain a template instance from a body of a Jakarta REST resource method:
 
 .RestTemplate Example
 [source,java]

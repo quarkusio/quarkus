@@ -251,7 +251,7 @@ public class FruitResource {
 }
 ----
 
-The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations and use the `FruitService` to list/add new fruits.
+The implementation is pretty straightforward and you just need to define your endpoints using the Jakarta REST annotations and use the `FruitService` to list/add new fruits.
 
 == Configuring Elasticsearch
 The main property to configure is the URL to connect to the Elasticsearch cluster.
@@ -446,7 +446,7 @@ public class FruitService {
 
 Quarkus supports Hibernate Search with Elasticsearch via the `quarkus-hibernate-search-orm-elasticsearch` extension.
 
-Hibernate Search Elasticsearch allows to synchronize your JPA entities to an Elasticsearch cluster and offers a way to query your Elasticsearch cluster using the Hibernate Search API.
+Hibernate Search Elasticsearch allows to synchronize your Jakarta Persistence entities to an Elasticsearch cluster and offers a way to query your Elasticsearch cluster using the Hibernate Search API.
 
 If you are interested in it, please consult the xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search with Elasticsearch guide].
 

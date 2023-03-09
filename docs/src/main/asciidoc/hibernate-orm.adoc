@@ -3,14 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using Hibernate ORM and JPA
+= Using Hibernate ORM and Jakarta Persistence
 include::_attributes.adoc[]
 :categories: data
-:summary: Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper. It works beautifully in Quarkus.
+:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breath of an Object Relational Mapper. It works beautifully in Quarkus.
 :config-file: application.properties
 :orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/5.6/userguide/html_single/Hibernate_User_Guide.html
 
-Hibernate ORM is the de facto standard JPA implementation and offers you the full breadth of an Object Relational Mapper.
+Hibernate ORM is the de facto standard Jakarta Persistence (formerly known as JPA) implementation and offers you the full breadth of an Object Relational Mapper.
 It works beautifully in Quarkus.
 
 == Solution
@@ -334,7 +334,7 @@ package org.acme.model.user;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
 ----
-<1> Be careful, use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the JPA one.
+<1> Be careful, use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the Jakarta Persistence one.
 
 [CAUTION]
 ====
@@ -446,7 +446,7 @@ the same defaults be applied.
 
 Hibernate ORM in Quarkus supports XML mapping.
 You can add mapping files following
-the https://jakarta.ee/specifications/persistence/3.0/jakarta-persistence-spec-3.0.html#a16944[`orm.xml` format (JPA)]
+the https://jakarta.ee/specifications/persistence/3.0/jakarta-persistence-spec-3.0.html#a16944[`orm.xml` format (Jakarta Persistence)]
 or the http://hibernate.org/dtd/hibernate-mapping-3.0.dtd[`hbm.xml` format (specific to Hibernate ORM, deprecated)]:
 
 * in `application.properties` through the (build-time) link:#quarkus-hibernate-orm_quarkus.hibernate-orm.mapping-files[`quarkus.hibernate-orm.mapping-files`] property.
@@ -834,7 +834,7 @@ To see multitenancy in action, you can check out the {quickstarts-tree-url}/hibe
 
 === Writing the application
 
-Let's start by implementing the `/{tenant}` endpoint. As you can see from the source code below it is just a regular JAX-RS resource:
+Let's start by implementing the `/{tenant}` endpoint. As you can see from the source code below it is just a regular Jakarta REST resource:
 
 [source,java]
 ----

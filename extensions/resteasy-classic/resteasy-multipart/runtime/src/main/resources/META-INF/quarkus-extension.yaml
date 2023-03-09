@@ -8,6 +8,8 @@ metadata:
   - "upload"
   - "resteasy"
   - "jaxrs"
+  - "rest"
+  - "jakarta-rest"
   guide: "https://quarkus.io/guides/rest-json#multipart-support"
   categories:
   - "web"

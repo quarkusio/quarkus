@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-hibernate-envers</artifactId>
     <name>Quarkus - Hibernate Envers - Runtime</name>
-    <description>Enable Hibernate Envers capabilities in your JPA applications</description>
+    <description>Enable Hibernate Envers capabilities in your Jakarta Persistence applications</description>
 
     <dependencies>
         <dependency>

@@ -308,7 +308,7 @@ public static Uni<Fruit> findById(PgPool client, Long id) {
 <2> Get an `Iterator` for the `RowSet` result.
 <3> Create a `Fruit` instance from the `Row` if an entity was found.
 
-And in the JAX-RS resource:
+And in the Jakarta REST resource:
 
 [source,java]
 .src/main/java/org/acme/vertx/FruitResource.java
@@ -321,7 +321,7 @@ public Uni<Response> getSingle(Long id) {
             .onItem().transform(ResponseBuilder::build); // <2>
 }
 ----
-<1> Prepare a JAX-RS response with  either the `Fruit` instance if found or the `404` status code.
+<1> Prepare a Jakarta REST response with  either the `Fruit` instance if found or the `404` status code.
 <2> Build and send the response.
 
 The same logic applies when saving a `Fruit`:

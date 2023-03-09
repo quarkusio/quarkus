@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Writing REST Services with RESTEasy Reactive
 include::_attributes.adoc[]
 :categories: web
-:summary: Discover how to develop highly scalable reactive REST services with JAX-RS and RESTEasy Reactive.
+:summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and RESTEasy Reactive.
 :jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0
 :jaxrsspec: https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html
 :jdkapi: https://docs.oracle.com/en/java/javase/11/docs/api/java.base
@@ -28,14 +28,14 @@ For a more lightweight introduction, please refer to the xref:rest-json.adoc[Wri
 
 == What is RESTEasy Reactive?
 
-RESTEasy Reactive is a new link:{jaxrsspec}[JAX-RS]
+RESTEasy Reactive is a new link:{jaxrsspec}[Jakarta REST (formerly known as JAX-RS)]
 implementation written from the ground up to work on our
 common https://vertx.io/[Vert.x] layer and is thus fully reactive, while also being very tightly integrated with
 Quarkus and consequently moving a lot of work to build time.
 
-You should be able to use it in place of any JAX-RS implementation, but on top of that it has
+You should be able to use it in place of any Jakarta REST implementation, but on top of that it has
 great performance for both blocking and non-blocking endpoints, and a lot of new features on top
-of what JAX-RS provides.
+of what Jakarta REST provides.
 
 == Writing endpoints
 
@@ -82,7 +82,7 @@ public class Endpoint {
 REST:: https://en.wikipedia.org/wiki/Representational_state_transfer[REpresentational State Transfer]
 Endpoint:: Java method which is called to serve a REST call
 URL / URI (Uniform Resource Locator / Identifier):: Used to identify the location of REST resources (https://tools.ietf.org/html/rfc7230#section-2.7[specification])
-Resource:: Represents your domain object. This is what your API serves and modifies. Also called an `entity` in JAX-RS.
+Resource:: Represents your domain object. This is what your API serves and modifies. Also called an `entity` in Jakarta REST.
 Representation:: How your resource is represented on the wire, can vary depending on content types
 Content type:: Designates a particular representation (also called a media type), for example `text/plain` or `application/json`
 HTTP:: Underlying wire protocol for routing REST calls (see https://tools.ietf.org/html/rfc7230[HTTP specifications])
@@ -317,7 +317,7 @@ NOTE: The link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPa
 annotation is optional: any parameter whose name matches an existing URI
 template variable will be automatically assumed to have link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`].
 
-You can also use any of the JAX-RS annotations link:{jaxrsapi}/jakarta/ws/rs/PathParam.html[`@PathParam`],
+You can also use any of the Jakarta REST annotations link:{jaxrsapi}/jakarta/ws/rs/PathParam.html[`@PathParam`],
 link:{jaxrsapi}/jakarta/ws/rs/QueryParam.html[`@QueryParam`],
 link:{jaxrsapi}/jakarta/ws/rs/HeaderParam.html[`@HeaderParam`],
 link:{jaxrsapi}/jakarta/ws/rs/CookieParam.html[`@CookieParam`],
@@ -330,7 +330,7 @@ See xref:parameter-mapping[] for more advanced use-cases.
 [NOTE]
 ====
 When an exception occurs in RESTEasy Reactive request parameter handling code, the exception is not printed by default to the log (for security reasons).
-This can sometimes make it hard to understand why certain HTTP status codes are returned (as the JAX-RS mandates the use of non-intuitive error codes in various cases).
+This can sometimes make it hard to understand why certain HTTP status codes are returned (as the Jakarta REST mandates the use of non-intuitive error codes in various cases).
 In such cases, users are encouraged to set the logging level for the `org.jboss.resteasy.reactive.server.handlers.ParameterHandler` category to `DEBUG` like so:
 
 [source, properties]
@@ -390,7 +390,7 @@ public class Endpoint {
     }
 }
 ----
-<1> `BeanParam` is required to comply with the JAX-RS specification so that libraries like OpenAPI can introspect the parameters.
+<1> `BeanParam` is required to comply with the Jakarta REST specification so that libraries like OpenAPI can introspect the parameters.
 
 === Declaring URI parameters
 
@@ -751,7 +751,7 @@ public class Endpoint {
 }
 ----
 
-NOTE: You can also use the JAX-RS type link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] but it is
+NOTE: You can also use the Jakarta REST type link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] but it is
 not strongly typed to your entity.
 
 ==== Using annotations
@@ -1018,13 +1018,13 @@ method takes parameters of the following type:
 |Provides information about the current endpoint and application URI
 
 |link:{jaxrsapi}/jakarta/ws/rs/core/Application.html[`Application`]
-|Advanced: Current JAX-RS application class
+|Advanced: Current Jakarta REST application class
 
 |link:{jaxrsapi}/jakarta/ws/rs/core/Configuration.html[`Configuration`]
-|Advanced: Configuration about the deployed JAX-RS application
+|Advanced: Configuration about the deployed Jakarta REST application
 
 |link:{jaxrsapi}/jakarta/ws/rs/ext/Providers.html[`Providers`]
-|Advanced: Runtime access to JAX-RS providers
+|Advanced: Runtime access to Jakarta REST providers
 
 |link:{jaxrsapi}/jakarta/ws/rs/core/Request.html[`Request`]
 |Advanced: Access to the current HTTP method and xref:preconditions[precondition]
@@ -1198,7 +1198,7 @@ public class Person {
 }
 ----
 
-A very simple JAX-RS Resource that uses `Person` could be:
+A very simple Jakarta REST Resource that uses `Person` could be:
 
 [source,java]
 ----
@@ -1243,11 +1243,11 @@ Any user however that does not have the `admin` role will receive:
 ----
 
 NOTE: No additional configuration needs to be applied for this secure serialization to take place. However, users can use the `@io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization` and `@io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization`
-annotation to opt in or out for specific JAX-RS Resource classes or methods.
+annotation to opt in or out for specific Jakarta REST Resource classes or methods.
 
 ===== @JsonView support
 
-JAX-RS methods can be annotated with https://fasterxml.github.io/jackson-annotations/javadoc/2.10/com/fasterxml/jackson/annotation/JsonView.html[@JsonView]
+Jakarta REST methods can be annotated with https://fasterxml.github.io/jackson-annotations/javadoc/2.10/com/fasterxml/jackson/annotation/JsonView.html[@JsonView]
 in order to customize the serialization of the returned POJO, on a per method-basis. This is best explained with an example.
 
 A typical use of `@JsonView` is to hide certain fields on certain methods. In that vein, let's define two views:
@@ -1278,7 +1278,7 @@ public class User {
 }
 ----
 
-Depending on the JAX-RS method that returns this user, we might want to exclude the `id` field from serialization.
+Depending on the Jakarta REST method that returns this user, we might want to exclude the `id` field from serialization.
 For example, you might want an insecure method to not expose this field.
 The way we can achieve that in RESTEasy Reactive is shown in the following example:
 
@@ -1304,7 +1304,7 @@ The result of `userPrivate` however will include the `id` as expected when seria
 
 ===== Completely customized per method serialization
 
-There are times when you need to completely customize the serialization of a POJO on a per JAX-RS method basis. For such use cases, the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` annotation
+There are times when you need to completely customize the serialization of a POJO on a per Jakarta REST method basis. For such use cases, the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` annotation
 is a great tool, as it allows you to configure a per-method `com.fasterxml.jackson.databind.ObjectWriter` which can be configured at will.
 
 Here is an example use case:
@@ -1334,7 +1334,7 @@ public static class UnquotedFields implements BiFunction<ObjectMapper, Type, Obj
 
 Essentially what this class does is force Jackson to not include quotes in the field names.
 
-It is important to note that this customization is only performed for the serialization of the JAX-RS methods that use `@CustomSerialization(UnquotedFields.class)`.
+It is important to note that this customization is only performed for the serialization of the Jakarta REST methods that use `@CustomSerialization(UnquotedFields.class)`.
 
 === XML serialisation
 
@@ -1853,7 +1853,7 @@ public class Endpoint {
 ----
 
 If your endpoint method is delegating calls to another service layer which
-does not know of JAX-RS, you need a way to turn service exceptions to an
+does not know of Jakarta REST, you need a way to turn service exceptions to an
 HTTP response, and you can do that using the
 link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/ServerExceptionMapper.html[`@ServerExceptionMapper`]
 annotation on a method, with one parameter of the exception type you want to handle, and turning
@@ -1938,7 +1938,7 @@ class ExceptionMappers {
 }
 ----
 
-You can also declare link:{jaxrsspec}#exceptionmapper[exception mappers in the JAX-RS way].
+You can also declare link:{jaxrsspec}#exceptionmapper[exception mappers in the Jakarta REST way].
 
 Your exception mapper may declare any of the following parameter types:
 
@@ -2096,9 +2096,9 @@ It may declare any of the following return types:
 
 NOTE: You can restrict the Resource methods for which a filter runs, by using link:{jaxrsapi}/jakarta/ws/rs/NameBinding.html[`@NameBinding`] meta-annotations.
 
-==== The JAX-RS way
+==== The Jakarta REST way
 
-You can also link:{jaxrsspec}#filters[declare request and response filters in the JAX-RS way].
+You can also link:{jaxrsspec}#filters[declare request and response filters in the Jakarta REST way].
 
 Both HTTP request and response can be intercepted by providing `ContainerRequestFilter` or `ContainerResponseFilter`
 implementations respectively. These filters are suitable for processing the metadata associated with a message: HTTP
@@ -2388,7 +2388,7 @@ public class CheeseIOInterceptor implements ReaderInterceptor, WriterInterceptor
 ==== RESTEasy Reactive and REST Client Reactive interactions
 
 In Quarkus, the RESTEasy Reactive extension and xref:rest-client-reactive.adoc[the REST Client Reactive extension] share the same infrastructure.
-One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
+One important consequence of this consideration is that they share the same list of providers (in the Jakarta REST meaning of the word).
 
 For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
 which might not be the desired behavior.
@@ -2777,12 +2777,12 @@ TIP: By default, the following list of media types is compressed: `text/html`, `
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
 
 
-== Include/Exclude JAX-RS classes
+== Include/Exclude Jakarta REST classes
 
 === Using Build time conditions
 
-Quarkus enables the inclusion or exclusion of JAX-RS Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
-Thus, the various JAX-RS classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these JAX-RS classes should be included.
+Quarkus enables the inclusion or exclusion of Jakarta REST Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
+Thus, the various Jakarta REST classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these JAX-RS classes should be included.
 
 In the following example, Quarkus includes the `ResourceForApp1Only` Resource class if and only if the build profile `app1` has been enabled.
 
@@ -2799,11 +2799,11 @@ public class ResourceForApp1Only {
 }
 ----
 
-Please note that if a JAX-RS Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the JAX-RS Application.
+Please note that if a Jakarta REST Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the Jakarta REST Application.
 
 === Using a runtime property
 
-Quarkus can also conditionally disable JAX-RS Resources based on the value of runtime properties using the `@io.quarkus.resteasy.reactive.server.EndpointDisabled` annotation.
+Quarkus can also conditionally disable Jakarta REST Resources based on the value of runtime properties using the `@io.quarkus.resteasy.reactive.server.EndpointDisabled` annotation.
 
 In the following example, Quarkus will exclude `RuntimeResource` at runtime if the application has `some.property` configured to `"disable"`.
 

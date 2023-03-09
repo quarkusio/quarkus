@@ -1,12 +1,12 @@
 [id="security-basic-authentication-tutorial"]
-= Secure a Quarkus application with Basic authentication and JPA
+= Secure a Quarkus application with Basic authentication and Jakarta Persistence
 include::_attributes.adoc[]
 :categories: security,getting-started
 
-Secure your Quarkus application endpoints by combining the built-in Quarkus xref:security-basic-authentication-concept.adoc[Basic authentication] with the JPA identity provider to enable role-based access control (RBAC).
-The JPA `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.
+Secure your Quarkus application endpoints by combining the built-in Quarkus xref:security-basic-authentication-concept.adoc[Basic authentication] with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
+The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.
 
-For more information about JPA, see the xref:security-jpa-concept.adoc[Quarkus Security with JPA].
+For more information about Jakarta Persistence, see the xref:security-jpa-concept.adoc[Quarkus Security with Jakarta Persistence].
 
 This tutorial prepares you for implementing more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
 
@@ -43,7 +43,7 @@ You can find the solution in the `security-jpa-quickstart` {quickstarts-tree-url
 
 == Create a Maven project
 
-For Quarkus Security to be able to map your security source to JPA entities, ensure that the Maven project that is used in this tutorial includes the `security-jpa` extension.
+For Quarkus Security to be able to map your security source to Jakarta Persistence entities, ensure that the Maven project that is used in this tutorial includes the `security-jpa` extension.
 You can either create a new Maven project with the `security-jpa` extension or you can add the extension to an existing Maven project.
 
 * To create the Maven project, use the following command:
@@ -84,7 +84,7 @@ implementation("io.quarkus:quarkus-security-jpa")
 == Write the application
 
 * Let's start by implementing the `/api/public` endpoint to allow all users access to access the application.
-Add a regular JAX-RS resource to your Java source code, as outlined in the following code snippet:
+Add a regular Jakarta REST resource to your Java source code, as outlined in the following code snippet:
 +
 [source,java]
 ----
@@ -108,7 +108,7 @@ public class PublicResource {
 }
 ----
 * The source code for the `/api/admin` endpoint is similar, but instead, you use a `@RolesAllowed` annotation to ensure that only users granted the `admin` role can access the endpoint.
-Add a JAX-RS resource with the following `@RolesAllowed` annotation:
+Add a Jakarta REST resource with the following `@RolesAllowed` annotation:
 +
 [source,java]
 ----
@@ -462,7 +462,7 @@ admin
 
 === Results
 
-When you provide the credentials of an authorized user, for example, `admin:admin`, the JPA security extension authenticates and loads the roles of the user.
+When you provide the credentials of an authorized user, for example, `admin:admin`, the Jakarta Persistence security extension authenticates and loads the roles of the user.
 The `admin` user is authorized to access the protected resources.
 
 If a resource is protected with `@RolesAllowed("user")`, the user `admin` is not authorized to access the resource because it is not assigned to the "user" role, as outlined in the following shell example:
@@ -494,7 +494,7 @@ user
 == What's next
 
 Congratulations!
-You have learned how to create and test a secure Quarkus application by combining the built-in xref:security-basic-authentication-concept.adoc[Basic authentication] in Quarkus with the JPA identity provider.
+You have learned how to create and test a secure Quarkus application by combining the built-in xref:security-basic-authentication-concept.adoc[Basic authentication] in Quarkus with the Jakarta Persistence identity provider.
 
 After you have completed this tutorial, explore some of the more advanced security mechanisms in Quarkus.
 Use the following information to learn how you can securely use `OpenID Connect` to provide secure single sign-on access to your Quarkus endpoints:
@@ -511,4 +511,4 @@ Use the following information to learn how you can securely use `OpenID Connect`
 * xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
 * xref:hibernate-orm-panache.adoc[Simplified Hibernate ORM with Panache]
-* xref:hibernate-orm.adoc[Using Hibernate ORM and JPA]
+* xref:hibernate-orm.adoc[Using Hibernate ORM and Jakarta Persistence]

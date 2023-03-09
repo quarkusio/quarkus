@@ -368,7 +368,7 @@ type: code
 tags: extension-codestart
 # public metadata for this example (accessible as data in the templates e.g. {title})
 metadata:
-  title: RESTEasy JAX-RS example
+  title: RESTEasy Jakarta REST example
   description: Rest is easy peasy with this Hello World RESTEasy resource.
   related-guide-section: https://quarkus.io/guides/getting-started#the-jax-rs-resources
   # (optional) use this in web extensions with a specific path (and also add the index page)

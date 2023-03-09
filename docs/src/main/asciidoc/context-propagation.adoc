@@ -215,9 +215,9 @@ their extensions:
 |N/A
 |The servlet context
 
-|`JAX-RS`
+|`Jakarta REST`
 |N/A
-|The RESTEasy Classic context
+|The RESTEasy Reactive or RESTEasy Classic context
 
 |`Application`
 |https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#APPLICATION[`ThreadContext.APPLICATION`]

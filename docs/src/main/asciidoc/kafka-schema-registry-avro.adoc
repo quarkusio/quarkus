@@ -411,7 +411,7 @@ First, let's add test dependencies on REST Client and Awaitility to the build fi
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
-<!-- we'll use JAX-RS Client for talking to the SSE endpoint -->
+<!-- we'll use Jakarta REST Client for talking to the SSE endpoint -->
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-client-reactive</artifactId>
@@ -702,7 +702,7 @@ Also, you need to add a few dependencies and a custom Maven repository to your `
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-confluent-registry-avro</artifactId>
     </dependency>
-    <!-- Confluent registry libraries use JAX-RS client -->
+    <!-- Confluent registry libraries use Jakarta REST client -->
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-rest-client-reactive</artifactId>
@@ -748,7 +748,7 @@ dependencies {
 
     implementation("io.quarkus:quarkus-confluent-registry-avro")
 
-    // Confluent registry libraries use JAX-RS client
+    // Confluent registry libraries use Jakarta REST client
     implementation("io.quarkus:quarkus-rest-client-reactive")
 
     implementation("io.confluent:kafka-avro-serializer:7.2.0") {

@@ -455,7 +455,7 @@ Add the following Maven Dependency:
 
 Note it will also bring `io.quarkus:quarkus-oidc-client`.
 
-`quarkus-oidc-client-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestFilter` JAX-RS ClientRequestFilter which uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value.
+`quarkus-oidc-client-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestFilter` Jakarta REST ClientRequestFilter which uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value.
 
 By default, this filter will get `OidcClient` to acquire the first pair of access and refresh tokens at its initialization time. If the access tokens are short-lived and refresh tokens are not available then the token acquisition should be delayed with `quarkus.oidc-client.early-tokens-acquisition=false`.
 
@@ -494,7 +494,7 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, `OidcClientRequestFilter` can be registered automatically with all MP Rest or JAX-RS clients if `quarkus.oidc-client-filter.register-filter=true` property is set.
+Alternatively, `OidcClientRequestFilter` can be registered automatically with all MP Rest or Jakarta REST clients if `quarkus.oidc-client-filter.register-filter=true` property is set.
 
 `OidcClientRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-client-filter.client-name` configuration property.
 You can also select `OidcClient` by setting `value` attribute of the `@OidcClientFilter` annotation. The client name set through annotation has higher priority than the `quarkus.oidc-client-filter.client-name` configuration property.
@@ -936,7 +936,7 @@ quarkus.oidc-token-propagation-reactive.exchange-token=true
 [[token-propagation]]
 == Token Propagation
 
-The `quarkus-oidc-token-propagation` extension provides two JAX-RS `jakarta.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
+The `quarkus-oidc-token-propagation` extension provides two Jakarta REST `jakarta.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
 `io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the xref:security-oidc-bearer-authentication-concept.adoc[Bearer token] present in the current active request or the token acquired from the xref:security-oidc-code-flow-authentication-concept.adoc[Authorization code flow mechanism], as the HTTP `Authorization` header's `Bearer` scheme value.
 The `io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter` provides the same functionality, but in addition provides support for JWT tokens.
 
@@ -986,7 +986,7 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, `AccessTokenRequestFilter` can be registered automatically with all MP Rest or JAX-RS clients if `quarkus.oidc-token-propagation.register-filter` property is set to `true` and `quarkus.oidc-token-propagation.json-web-token` property is set to `false` (which is a default value).
+Alternatively, `AccessTokenRequestFilter` can be registered automatically with all MP Rest or Jakarta REST clients if `quarkus.oidc-token-propagation.register-filter` property is set to `true` and `quarkus.oidc-token-propagation.json-web-token` property is set to `false` (which is a default value).
 
 ==== Exchange Token Before Propagation
 
@@ -1062,7 +1062,7 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, `JsonWebTokenRequestFilter` can be registered automatically with all MP Rest or JAX-RS clients if both `quarkus.oidc-token-propagation.register-filter` and `quarkus.oidc-token-propagation.json-web-token` properties are set to `true`.
+Alternatively, `JsonWebTokenRequestFilter` can be registered automatically with all MicroProfile REST or Jakarta REST clients if both `quarkus.oidc-token-propagation.register-filter` and `quarkus.oidc-token-propagation.json-web-token` properties are set to `true`.
 
 ==== Update Token Before Propagation
 

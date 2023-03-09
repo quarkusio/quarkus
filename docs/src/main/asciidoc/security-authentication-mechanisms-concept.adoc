@@ -55,8 +55,8 @@ For more information, see the following documentation:
 
 * xref:security-basic-authentication-concept.adoc[Basic authentication]
 ** xref:security-basic-authentication-howto.adoc[Enable Basic authentication]
-* xref:security-jpa-concept.adoc[Quarkus Security with JPA]
-** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and JPA]
+* xref:security-jpa-concept.adoc[Quarkus Security with Jakarta Persistence]
+** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
 * xref:security-identity-providers-concept.adoc[Identity providers]
 
 [[form-auth]]
@@ -214,7 +214,7 @@ The `quarkus-oidc-client` extension provides `OidcClient` for acquiring and refr
 * `password`
 * `refresh_token`
 
-The `quarkus-oidc-client-filter` extension requires the `quarkus-oidc-client` extension and provides JAX-RS `OidcClientRequestFilter`, which sets the access token acquired by `OidcClient` as the `Bearer` scheme value of the HTTP `Authorization` header.
+The `quarkus-oidc-client-filter` extension requires the `quarkus-oidc-client` extension and provides Jakarta REST `OidcClientRequestFilter`, which sets the access token acquired by `OidcClient` as the `Bearer` scheme value of the HTTP `Authorization` header.
 This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint, but it is not related to the authentication requirements of this service endpoint.
 For example, it can be a public endpoint, or it can be protected with mTLS.
 
@@ -223,7 +223,7 @@ For example, it can be a public endpoint, or it can be protected with mTLS.
 In this scenario, you do not need to protect your Quarkus endpoint by using the Quarkus OpenID Connect adapter.
 ====
 
-The `quarkus-oidc-token-propagation` extension requires the `quarkus-oidc` extension and provides JAX-RS `TokenCredentialRequestFilter`, which sets the OpenID Connect Bearer or Authorization Code Flow access token as the `Bearer` scheme value of the HTTP `Authorization` header.
+The `quarkus-oidc-token-propagation` extension requires the `quarkus-oidc` extension and provides Jakarta REST `TokenCredentialRequestFilter`, which sets the OpenID Connect Bearer or Authorization Code Flow access token as the `Bearer` scheme value of the HTTP `Authorization` header.
 This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint, which in turn must be protected by using the Quarkus OpenID Connect adapter.
 This filter can be used to propagate the access token to the downstream services.
 

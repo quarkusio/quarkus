@@ -9,10 +9,10 @@ include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as an Azure Function.
 
-The `quarkus-azure-functions-http` extension allows you to write microservices with RESTEasy Reactive (JAX-RS),
+The `quarkus-azure-functions-http` extension allows you to write microservices with RESTEasy Reactive (our Jakarta REST implementation),
 Undertow (servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] and make these microservices deployable to the Azure Functions runtime.
 
-One azure function deployment can represent any number of JAX-RS, servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
+One azure function deployment can represent any number of Jakarta REST, servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
 
 include::{includes}/extension-status.adoc[]
 
@@ -28,7 +28,7 @@ include::{includes}/prerequisites.adoc[]
 == Solution
 
 This guide walks you through running a maven project that can deploy a Resteasy Reactive endpoint to Azure Functions.
-While only JAX-RS is provided as an example, you can easily replace it with the HTTP framework of your choice.
+While only Jakarta REST is provided as an example, you can easily replace it with the HTTP framework of your choice.
 
 == Creating the Maven Deployment Project
 
@@ -111,7 +111,7 @@ base Edit them as you need to.  Rerun the build when you are ready.
 [#config-azure-paths]
 == Configuring Root Paths
 
-The default route prefix for an Azure Function is `/api`.  All of your JAX-RS, Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must
+The default route prefix for an Azure Function is `/api`.  All of your Jakarta REST, Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must
 explicitly take this into account.  In the generated project this is handled by the
 `quarkus.http.root-path` switch in `application.properties`
 

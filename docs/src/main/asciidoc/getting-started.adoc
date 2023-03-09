@@ -15,7 +15,7 @@ Learn how to create a Hello World Quarkus app.
 This guide covers:
 
 * Bootstrapping an application
-* Creating a JAX-RS endpoint
+* Creating a Jakarta REST endpoint
 * Injecting beans
 * Functional tests
 * Packaging of the application
@@ -144,7 +144,7 @@ If we focus on the dependencies section, you can see the extension allowing the 
 implementation("io.quarkus:quarkus-resteasy-reactive")
 ----
 
-=== The JAX-RS resources
+=== The Jakarta REST resources
 
 During the project creation, the `src/main/java/org/acme/GreetingResource.java` file has been created with the following content:
 
@@ -171,7 +171,7 @@ public class GreetingResource {
 It's a very simple REST endpoint, returning "Hello from RESTEasy Reactive" to requests on "/hello".
 
 [TIP]
-.Differences with vanilla JAX-RS
+.Differences with vanilla Jakarta REST
 ====
 With Quarkus, there is no need to create an `Application` class. It's supported, but not required. In addition, only one instance
 of the resource is created and not one per request. You can configure this using the different `*Scoped` annotations (`ApplicationScoped`, `RequestScoped`, etc).

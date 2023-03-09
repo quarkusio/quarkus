@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 
 [WARNING]
 ====
-This guide is about the REST Client compatible with https://resteasy.dev[RESTEasy Classic] which used to be the default JAX-RS implementation until Quarkus 2.8.
+This guide is about the REST Client compatible with https://resteasy.dev[RESTEasy Classic] which used to be the default Jakarta REST (formerly known as JAX-RS) implementation until Quarkus 2.8.
 
 It is now recommended to use RESTEasy Reactive, which supports equally well traditional blocking workloads and reactive workloads.
 For more information about RESTEasy Reactive,
@@ -103,7 +103,7 @@ The model above is only a subset of the fields provided by the service, but it s
 
 == Create the interface
 
-Using the RESTEasy REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/ExtensionsService.java` and have the following content:
+Using the RESTEasy REST Client is as simple as creating an interface using the proper Jakarta REST and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/ExtensionsService.java` and have the following content:
 
 [source, java]
 ----
@@ -132,7 +132,7 @@ The purpose of the annotations in the code above is the following:
 
 * `@RegisterRestClient` allows Quarkus to know that this interface is meant to be available for
 CDI injection as a REST Client
-* `@Path`, `@GET` and `@QueryParam` are the standard JAX-RS annotations used to define how to access the service
+* `@Path`, `@GET` and `@QueryParam` are the standard Jakarta REST annotations used to define how to access the service
 
 [NOTE]
 ====
@@ -145,7 +145,7 @@ If you don't want JSON by default you can set `quarkus.resteasy-json.default-jso
 you will need to add `@Produces(MediaType.APPLICATION_JSON)` and `@Consumes(MediaType.APPLICATION_JSON)` to your endpoints in order to use JSON.
 
 If you don't rely on the JSON default, it is heavily recommended to annotate your endpoints with the `@Produces` and `@Consumes` annotations to define precisely the expected content-types.
-It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
+It will allow to narrow down the number of Jakarta REST providers (which can be seen as converters) included in the native executable.
 ====
 
 === Path Parameters
@@ -264,7 +264,7 @@ quarkus.tls.trust-all=true
 This setting should not be used in production as it will disable any kind of SSL verification.
 ====
 
-== Create the JAX-RS resource
+== Create the Jakarta REST resource
 
 Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:
 
@@ -646,7 +646,7 @@ include::{includes}/devtools/build-native.adoc[]
 == REST Client and RESTEasy interactions
 
 In Quarkus, the REST Client extension and xref:rest-json.adoc[the RESTEasy extension] share the same infrastructure.
-One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
+One important consequence of this consideration is that they share the same list of providers (in the Jakarta REST meaning of the word).
 
 For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
 which might not be the desired behavior.

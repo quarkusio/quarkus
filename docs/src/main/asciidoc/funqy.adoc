@@ -176,7 +176,7 @@ of protocols and function cloud platforms, it is very minimalistic and constrain
 use Funqy you lose the ability to link (think URIs) to the data your functions spit out.  You also
 lose the ability to leverage cool HTTP features like `cache-control` and conditional GETs.  Many
 developers will be ok with that as many won't be using these REST/HTTP features or styles. You'll
-have to make the decision on what camp you are in.  Quarkus does support REST integration (through JAX-RS,
+have to make the decision on what camp you are in.  Quarkus does support REST integration (through Jakarta REST,
  Spring MVC, Vert.x Web, and Servlet) with
 various cloud/function providers, but there are some disadvantages of using that approach as well.  For example,
 if you want to do xref:amazon-lambda-http.adoc[HTTP with AWS Lambda], this requires you to use the AWS API Gateway which may

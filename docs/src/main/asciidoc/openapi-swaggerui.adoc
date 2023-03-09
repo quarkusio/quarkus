@@ -272,7 +272,7 @@ There are some MicroProfile OpenAPI annotations which describe global API inform
 * License
 
 All of this information (and more) can be included in your Java code by using appropriate OpenAPI annotations
-on a JAX-RS `Application` class.  Because a JAX-RS `Application` class is not required in Quarkus, you will
+on a Jakarta REST `Application` class.  Because a JAX-RS `Application` class is not required in Quarkus, you will
 likely have to create one.  It can simply be an empty class that extends `jakarta.ws.rs.core.Application`.  This
 empty class can then be annotated with various OpenAPI annotations such as `@OpenAPIDefinition`.  For example:
 
@@ -299,7 +299,7 @@ public class ExampleApiApplication extends Application {
 ----
 
 Another option, that is a feature provided by SmallRye and not part of the specification, is to use configuration to add this global API information.
-This way, you do not need to have a JAX-RS `Application` class, and you can name the API differently per environment.
+This way, you do not need to have a Jakarta REST `Application` class, and you can name the API differently per environment.
 
 For example, add the following to your `application.properties`:
 

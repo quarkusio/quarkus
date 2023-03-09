@@ -22,11 +22,11 @@ The model is based on the https://github.com/eclipse/microprofile-lra/blob/maste
 The approach is for the developer to annotate a business method with a Java annotation
 (https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/[`@LRA`]).
 When such a method is called, an LRA context is created (if one is not already present) which is passed
-along with subsequent JAX-RS invocations until a method is reached
+along with subsequent Jakarta REST invocations until a method is reached
 which also contains an `@LRA` annotation with an attribute that indicates that the LRA should be
 closed or cancelled. The default is for the LRA to be closed in the same method that started the
 LRA (which itself may have propagated the context during method execution).
-The JAX-RS resource indicates that it wishes to participate in the interaction by, minimally,
+The Jakarta REST resource indicates that it wishes to participate in the interaction by, minimally,
 marking one of the methods with an
 https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/[`@Compensate`]
 annotation. If the context is later cancelled, then this `@Compensate` action is guaranteed to be
@@ -78,7 +78,7 @@ implementation("io.quarkus:quarkus-rest-client-jackson")
 
 [IMPORTANT]
 ====
-`quarkus-narayana-lra` needs to be complemented with a server JAX-RS implementation and a REST Client implementation in order to work.
+`quarkus-narayana-lra` needs to be complemented with a server Jakarta REST implementation and a REST Client implementation in order to work.
 This means that users should also have either `quarkus-resteasy-jackson` and `quarkus-rest-client-jackson` or `quarkus-resteasy-reactive-jackson` and `quarkus-rest-client-reactive-jackson` dependencies in their application.
 ====
 
@@ -139,7 +139,7 @@ public class SimpleLRAParticipant
     {
         /*
          * Perform business actions in the context of the LRA identified by the
-         * value in the injected JAX-RS header. This LRA was started just before
+         * value in the injected Jakarta REST header. This LRA was started just before
          * the method was entered (REQUIRES_NEW) and will be closed when the
          * method finishes at which point the completeWork method below will be
          * invoked.
@@ -154,7 +154,7 @@ public class SimpleLRAParticipant
     {
         /*
          * Free up resources allocated in the context of the LRA identified by the
-         * value in the injected JAX-RS header.
+         * value in the injected Jakarta REST header.
          *
          * Since there is no @Status method in this class, completeWork MUST be
          * idempotent and MUST return the status.
@@ -169,7 +169,7 @@ public class SimpleLRAParticipant
                                    String userData)
     {
         /*
-         * The LRA identified by the value in the injected JAX-RS header was
+         * The LRA identified by the value in the injected Jakarta REST header was
          * cancelled so the business logic should compensate for any actions
          * that have been performed while running in its context.
          *
@@ -182,7 +182,7 @@ public class SimpleLRAParticipant
 ----
 
 The example also shows that when an LRA is present its identifier can be obtained
-by reading the request headers via the `@HeaderParam` JAX-RS annotation type.
+by reading the request headers via the `@HeaderParam` Jakarta REST annotation type.
 
 And here's an example of how to start an LRA in one resource method and close it in
 a different resource method using the `end` element of the `LRA` annotation. It also
@@ -214,6 +214,6 @@ returns the particular HTTP status codes identified in the `cancelOn` and
 The `end = false` element on the bookTrip method forces the LRA to continue running when
 the method finishes and the `end = true` element on the confirmTrip method forces the LRA
 (started by the bookTrip method) to be closed when the method finishes. Note that this
-end element can be placed on any JAX-RS resource (ie one service can start the LRA whilst
+end element can be placed on any Jakarta REST resource (ie one service can start the LRA whilst
 a different service ends it). There are many more examples in the
 https://github.com/eclipse/microprofile-lra/blob/master/spec/src/main/asciidoc/microprofile-lra-spec.asciidoc#java-annotations-for-lras[Microprofile LRA specification document] and in the https://github.com/eclipse/microprofile-lra/tree/master/tck/src/main/java/org/eclipse/microprofile/lra/tck[Microprofile LRA TCK].

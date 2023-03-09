@@ -8,6 +8,7 @@ metadata:
   - "web"
   - "rest"
   - "servlet"
+  - "jakarta-rest"
   categories:
   - "web"
   status: "experimental"

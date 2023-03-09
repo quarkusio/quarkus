@@ -7,6 +7,8 @@ metadata:
   - "resteasy"
   - "jaxrs"
   - "links"
+  - "rest"
+  - "jakarta-rest"
   categories:
   - "web"
   - "serialization"

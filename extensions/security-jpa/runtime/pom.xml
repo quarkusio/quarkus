@@ -11,8 +11,8 @@
     </parent>
 
     <artifactId>quarkus-security-jpa</artifactId>
-    <name>Quarkus - Security JPA - Runtime</name>
-    <description>Secure your applications with username/password stored in a database via JPA</description>
+    <name>Quarkus - Security Jakarta Persistence - Runtime</name>
+    <description>Secure your applications with username/password stored in a database via Jakarta Persistence</description>
     <dependencies>
         <dependency>
             <groupId>jakarta.persistence</groupId>

@@ -801,7 +801,7 @@ quarkus.redis.my-redis.password=<redis-pwd>
 ----
 
 - `quarkus-hibernate-reactive`: Uses the xref:hibernate-reactive.adoc[`quarkus-hibernate-reactive`] extension to persist processing states. 
-Processing state objects are required to be a JPA entity and extend the `CheckpointEntity` class, 
+Processing state objects are required to be a Jakarta Persistence entity and extend the `CheckpointEntity` class, 
 which handles object identifiers composed of the consumer group id, topic and partition.
 Therefore, the class name of the entity needs to be configured using the `checkpoint.state-type` property.
 
@@ -816,7 +816,7 @@ mp.messaging.incoming.prices.checkpoint.state-store=quarkus-hibernate-reactive
 mp.messaging.incoming.prices.checkpoint.state-type=org.acme.AveragePriceEntity
 ----
 
-With `AveragePriceEntity` being a JPA entity extending `CheckpointEntity`:
+With `AveragePriceEntity` being a Jakarta Persistence entity extending `CheckpointEntity`:
 
 [source, java]
 ----

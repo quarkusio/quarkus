@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy</artifactId>
     <name>Quarkus - RESTEasy - Runtime</name>
-    <description>REST endpoint framework implementing JAX-RS and more</description>
+    <description>REST endpoint framework implementing Jakarta REST and more</description>
 
     <dependencies>
         <dependency>

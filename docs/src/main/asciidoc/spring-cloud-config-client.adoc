@@ -58,7 +58,7 @@ implementation("io.quarkus:quarkus-spring-cloud-config-client")
 
 == GreetingController
 
-First, create a simple `GreetingResource` JAX-RS resource in the
+First, create a simple `GreetingResource` Jakarta REST resource in the
 `src/main/java/org/acme/spring/cloud/config/client/GreetingResource.java` file that looks like:
 
 [source,java]

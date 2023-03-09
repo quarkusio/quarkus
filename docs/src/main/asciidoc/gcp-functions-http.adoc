@@ -9,10 +9,10 @@ include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as a Google Cloud Function.
 
-The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy Reactive (JAX-RS),
+The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy Reactive (Jakarta REST),
 Undertow (Servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP], and make these microservices deployable to the Google Cloud Functions runtime.
 
-One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
+One Google Cloud Functions deployment can represent any number of Jakarta REST, Servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
 
 include::{includes}/extension-status.adoc[]
 
@@ -26,7 +26,7 @@ include::{includes}/prerequisites.adoc[]
 == Solution
 
 This guide walks you through generating a sample project followed by creating three HTTP endpoints
-written with JAX-RS APIs, Servlet APIs, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] APIs. Once built, you will be able to deploy
+written with Jakarta REST APIs, Servlet APIs, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] APIs. Once built, you will be able to deploy
 the project to Google Cloud.
 
 If you don't want to follow all these steps, you can go right to the completed example.
@@ -55,7 +55,7 @@ gcloud auth login
 
 == Creating the endpoints
 
-For this example project, we will create four endpoints, one for RESTEasy (JAX-RS), one for Undertow (Servlet),
+For this example project, we will create four endpoints, one for RESTEasy Reactive (Jakarta REST), one for Undertow (Servlet),
 one for Reactive routes and one for xref:funqy-http.adoc[Funqy HTTP].
 
 [NOTE]
@@ -68,7 +68,7 @@ If you don't need endpoints of each type, you can remove the corresponding exten
 
 NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must and add the `--gen2` parameter.
 
-=== The JAX-RS endpoint
+=== The Jakarta REST endpoint
 
 [source,java]
 ----
@@ -189,7 +189,7 @@ This command will give you as output a `httpsTrigger.url` that points to your fu
 
 You can then call your endpoints via:
 
-- For JAX-RS: {httpsTrigger.url}/hello
+- For Jakarta REST: {httpsTrigger.url}/hello
 - For servlet: {httpsTrigger.url}/servlet/hello
 - For Reactive Routes: {httpsTrigger.url}/vertx/hello
 - For Funqy: {httpsTrigger.url}/funqy

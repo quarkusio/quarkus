@@ -442,7 +442,7 @@ To use this mode, set `quarkus.arc.remove-unused-beans` to `fwk` or `framework`.
 ==== What's Removed?
 
 Quarkus first identifies so-called _unremovable_ beans that form the roots in the dependency tree.
-A good example is a JAX-RS resource class or a bean which declares a `@Scheduled` method.
+A good example is a Jakarta REST resource class or a bean which declares a `@Scheduled` method.
 
 An _unremovable_ bean:
 

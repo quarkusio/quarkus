@@ -235,7 +235,7 @@ For now `@TestHTTPResource` allows you to inject `URI`, `URL` and `String` repre
 == Testing a specific endpoint
 
 Both RESTassured and `@TestHTTPResource` allow you to specify the endpoint class you are testing rather than hard coding
-a path. This currently supports both JAX-RS endpoints, Servlets and Reactive Routes. This makes it a lot easier to see exactly which endpoints
+a path. This currently supports both Jakarta REST endpoints, Servlets and Reactive Routes. This makes it a lot easier to see exactly which endpoints
 a given test is testing.
 
 For the purposes of these examples I am going to assume we have an endpoint that looks like the following:
@@ -253,7 +253,7 @@ public class GreetingResource {
 }
 ----
 
-NOTE: This currently does not support the `@ApplicationPath()` annotation to set the JAX-RS context path. Use the
+NOTE: This currently does not support the `@ApplicationPath()` annotation to set the Jakarta REST context path. Use the
 `quarkus.resteasy.path` config value instead if you want a custom context path.
 
 === TestHTTPResource
@@ -513,7 +513,7 @@ public class MockGreetingProfile implements QuarkusTestProfile { <1>
      * however existing config will be merged with this (i.e. application.properties
      * config will still take effect, unless a specific config key has been overridden).
      *
-     * Here we are changing the JAX-RS root path.
+     * Here we are changing the Jakarta REST root path.
      */
     @Override
     public Map<String, String> getConfigOverrides() {

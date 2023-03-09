@@ -6,10 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Simplified Hibernate ORM with Panache
 include::_attributes.adoc[]
 :categories: data
-:summary: Hibernate ORM is the de facto JPA implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
+:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
 :config-file: application.properties
 
-Hibernate ORM is the de facto JPA implementation and offers you the full breadth of an Object Relational Mapper.
+Hibernate ORM is the de facto Jakarta Persistence (formerly known as JPA) implementation and offers you the full breadth of an Object Relational Mapper.
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
 Hibernate ORM with Panache focuses on making your entities trivial and fun to write in Quarkus.
 
@@ -183,7 +183,7 @@ public class Person extends PanacheEntity {
 }
 ----
 
-You can put all your JPA column annotations on the public fields. If you need a field to not be persisted, use the
+You can put all your Jakarta Persistence column annotations on the public fields. If you need a field to not be persisted, use the
 `@Transient` annotation on it. If you need to write accessors, you can:
 
 [source,java]
@@ -339,7 +339,7 @@ public class Person extends PanacheEntity {
 
 === Defining your entity
 
-When using the repository pattern, you can define your entities as regular JPA entities.
+When using the repository pattern, you can define your entities as regular Jakarta Persistence entities.
 
 [source,java]
 ----
@@ -518,9 +518,9 @@ NOTE: The rest of the documentation show usages based on the active record patte
 but keep in mind that they can be performed with the repository pattern as well.
 The repository pattern examples have been omitted for brevity.
 
-== Writing a JAX-RS resource
+== Writing a Jakarta REST resource
 
-First, include one of the RESTEasy Reactive extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for JAX-RS and JSON support.
+First, include one of the RESTEasy Reactive extensions to enable Jakarta REST endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for Jakarta REST and JSON support.
 
 Then, you can create the following resource to create/read/update/delete your Person entity:
 
@@ -819,7 +819,7 @@ public class Person extends PanacheEntity {
 
 [WARNING]
 ====
-Named queries can only be defined inside your JPA entity classes (being the Panache entity class, or the repository parameterized type),
+Named queries can only be defined inside your Jakarta Persistence entity classes (being the Panache entity class, or the repository parameterized type),
 or on one of its super classes.
 ====
 
@@ -990,9 +990,9 @@ Make sure to wrap methods modifying your database (e.g. `entity.persist()`) with
 CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
 
-JPA batches changes you make to your entities and sends changes (it is called flush) at the end of the transaction or before a query.
+Hibernate ORM batches changes you make to your entities and sends changes (it is called flush) at the end of the transaction or before a query.
 This is usually a good thing as it is more efficient.
-But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call. This will allow you to catch any `PersistenceException` that could occur when JPA send those changes to the database.
+But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call. This will allow you to catch any `PersistenceException` that could occur when Hibernate ORM sends those changes to the database.
 Remember, this is less efficient so don't abuse it.
 And your transaction still has to be committed.
 

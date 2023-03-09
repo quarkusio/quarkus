@@ -64,7 +64,7 @@ implementation("io.quarkus:quarkus-oidc")
 
 === Write the application
 
-Let's write a simple JAX-RS resource which has all the tokens returned in the authorization code grant response injected:
+Let's write a simple Jakarta REST resource which has all the tokens returned in the authorization code grant response injected:
 
 [source,java]
 ----

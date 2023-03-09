@@ -47,7 +47,7 @@ First, we need a new project. Create a new project with the following command:
 :create-app-extensions: resteasy-reactive-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a new project importing the RESTEasy Reactive/JAX-RS and https://github.com/FasterXML/jackson[Jackson] extensions,
+This command generates a new project importing the RESTEasy Reactive/Jakarta REST and https://github.com/FasterXML/jackson[Jackson] extensions,
 and in particular adds the following dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -76,7 +76,7 @@ Quarkus also supports https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] so, if y
 :create-app-extensions: resteasy-reactive-jsonb
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a new project importing the RESTEasy Reactive/JAX-RS and https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] extensions,
+This command generates a new project importing the RESTEasy Reactive/Jakarta REST and https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] extensions,
 and in particular adds the following dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -172,7 +172,7 @@ public class FruitResource {
 }
 ----
 
-The implementation is pretty straightforward, and you just need to define your endpoints using the JAX-RS annotations.
+The implementation is pretty straightforward, and you just need to define your endpoints using the Jakarta REST annotations.
 
 The `Fruit` objects will be automatically serialized/deserialized by https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] or https://github.com/FasterXML/jackson[Jackson],
 depending on the extension you chose when initializing the project.
@@ -364,7 +364,7 @@ public List<Fruit> list() {
 Quarkus does that for you automatically by analyzing the REST methods at build time
 and that's why we didn't need any reflection registration in the first part of this guide.
 
-Another common pattern in the JAX-RS world is to use the `Response` object.
+Another common pattern in the Jakarta REST world is to use the `Response` object.
 `Response` comes with some nice perks:
 
  * you can return different entity types depending on what happens in your method (a `Legume` or an `Error` for instance);

@@ -9,6 +9,7 @@ metadata:
   - "hal"
   - "rest"
   - "jaxrs"
+  - "jakarta-rest"
   - "links"
   categories:
     - "web"

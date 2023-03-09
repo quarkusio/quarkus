@@ -6,9 +6,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus Extension for Spring Web API
 include::_attributes.adoc[]
 :categories: compatibility
-:summary: While you are encouraged to use JAX-RS annotations for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the spring-web extension.
+:summary: While you are encouraged to use Jakarta REST annotations for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the spring-web extension.
 
-While users are encouraged to use JAX-RS annotation for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the `spring-web` extension.
+While users are encouraged to use Jakarta REST (formerly known as JAX-RS) annotations for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the `spring-web` extension.
 
 This guide explains how a Quarkus application can leverage the well known Spring Web annotations to define RESTful services.
 
@@ -471,14 +471,14 @@ classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for e
 
 == Conversion Table
 
-The following table shows how Spring Web annotations can be converted to JAX-RS annotations.
+The following table shows how Spring Web annotations can be converted to Jakarta REST annotations.
 
 |===
-|Spring |JAX-RS |Comments
+|Spring |Jakarta REST |Comments
 
 |@RestController
 |
-|There is no equivalent in JAX-RS. Annotating a class with @Path suffices
+|There is no equivalent in Jakarta REST. Annotating a class with @Path suffices
 
 |@RequestMapping(path="/api")
 |@Path("/api")
@@ -502,19 +502,19 @@ The following table shows how Spring Web annotations can be converted to JAX-RS 
 
 |@RequestBody
 |
-|No equivalent in JAX-RS. Method parameters corresponding to the body of the request are handled in JAX-RS without requiring any annotation
+|No equivalent in Jakarta REST. Method parameters corresponding to the body of the request are handled in Jakarta REST without requiring any annotation
 
 |@RestControllerAdvice
 |
-|No equivalent in JAX-RS
+|No equivalent in Jakarta REST
 
 |@ResponseStatus
 |
-|No equivalent in JAX-RS
+|No equivalent in Jakarta REST
 
 |@ExceptionHandler
 |
-|No equivalent annotation in JAX-RS. Exceptions are handled by implementing `jakarta.ws.rs.ext.ExceptionMapper`
+|No equivalent annotation in Jakarta REST. Exceptions are handled by implementing `jakarta.ws.rs.ext.ExceptionMapper`
 |===
 
 == More Spring guides

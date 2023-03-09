@@ -9,6 +9,8 @@ metadata:
   - "jaxrs"
   - "json"
   - "jackson"
+  - "rest"
+  - "jakarta-rest"
   categories:
   - "web"
   - "serialization"

@@ -22,7 +22,7 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this example, we will build an application which consists of two JAX-RS resources, `FrontendResource` and `ProtectedResource`. `FrontendResource` propagates access tokens to `ProtectedResource` and uses either `OpenID Connect Client Reactive Filter` to acquire a token first before propagating it or `OpenID Token Propagation Reactive Filter` to propagate the incoming, already existing access token.
+In this example, we will build an application which consists of two Jakarta REST resources, `FrontendResource` and `ProtectedResource`. `FrontendResource` propagates access tokens to `ProtectedResource` and uses either `OpenID Connect Client Reactive Filter` to acquire a token first before propagating it or `OpenID Token Propagation Reactive Filter` to propagate the incoming, already existing access token.
 
 `FrontendResource` has 4 endpoints:
 
@@ -266,7 +266,7 @@ public class FrontendResource {
 
 `FrontendResource` will use REST Client with `OpenID Connect Client Reactive Filter` to acquire and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called. And it will use REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
 
-Finally, let's add a JAX-RS `ExceptionMapper`:
+Finally, let's add a Jakarta REST `ExceptionMapper`:
 
 [source,java]
 ----

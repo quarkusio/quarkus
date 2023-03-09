@@ -29,7 +29,7 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-The application built in this guide is just a JAX-RS endpoint (hello world) that relies on dependency injection to use a service.
+The application built in this guide is just a Jakarta REST endpoint (hello world) that relies on dependency injection to use a service.
 The service will be tested with JUnit 5 and the endpoint will be annotated via a `@QuarkusTest` annotation.
 
 == Solution
@@ -49,7 +49,7 @@ include::{includes}/devtools/create-app.adoc[]
 
 Now we'll be adding all the elements necessary to have an application that is properly covered with tests.
 
-First, a JAX-RS resource serving a hello endpoint:
+First, a Jakarta REST resource serving a hello endpoint:
 
 [source,java]
 ----

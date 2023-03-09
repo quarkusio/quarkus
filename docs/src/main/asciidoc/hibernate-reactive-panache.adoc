@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :summary: Simplified reactive ORM layer based on Hibernate Reactive.
 :config-file: application.properties
 
-link:https://hibernate.org/reactive/[Hibernate Reactive] is the only reactive JPA implementation and offers you the full
+link:https://hibernate.org/reactive/[Hibernate Reactive] is the only reactive Jakarta Persistence (formerly known as JPA) implementation and offers you the full
 breadth of an Object Relational Mapper allowing you to access your database over reactive drivers.
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
 Hibernate Reactive with Panache focuses on making your entities trivial and fun to write in Quarkus.
@@ -164,7 +164,7 @@ public class Person extends PanacheEntity {
 }
 ----
 
-You can put all your JPA column annotations on the public fields. If you need a field to not be persisted, use the
+You can put all your Jakarta Persistence column annotations on the public fields. If you need a field to not be persisted, use the
 `@Transient` annotation on it. If you need to write accessors, you can:
 
 [source,java]
@@ -276,7 +276,7 @@ public class Person extends PanacheEntity {
 
 === Defining your entity
 
-When using the repository pattern, you can define your entities as regular JPA entities.
+When using the repository pattern, you can define your entities as regular Jakarta Persistence entities.
 
 [source,java]
 ----
@@ -571,7 +571,7 @@ public class Person extends PanacheEntity {
 
 [WARNING]
 ====
-Named queries can only be defined inside your JPA entity classes (being the Panache entity class, or the repository parameterized type),
+Named queries can only be defined inside your Jakarta Persistence entity classes (being the Panache entity class, or the repository parameterized type),
 or on one of its super classes.
 ====
 
@@ -725,7 +725,7 @@ Hibernate Reactive in Quarkus currently does not support multiple persistence un
 
 First of all, most of the methods of a Panache entity must be invoked within the scope of a reactive `Mutiny.Session`.
 In some cases, the session is opened automatically on demand.
-For example, if a Panache entity method is invoked in a JAX-RS resource method in an application that includes the `quarkus-resteasy-reactive` extension.
+For example, if a Panache entity method is invoked in a Jakarta REST resource method in an application that includes the `quarkus-resteasy-reactive` extension.
 For other cases, there are both a declarative and a programmatic way to ensure the session is opened.
 You can annotate a CDI business method that returns `Uni` with the `@WithSession` annotation.
 The method will be intercepted and the returned `Uni` will be triggered within a scope of a reactive session.
@@ -740,9 +740,9 @@ Alternatively, you can use the `Panache.withTransaction()` method for the same e
 
 IMPORTANT: You cannot use the `@Transactional` annotation with Hibernate Reactive for your transactions: you must use `@WithTransaction`, and your annotated method must return a `Uni` to be non-blocking.
 
-JPA batches changes you make to your entities and sends changes (it is called flush) at the end of the transaction or before a query.
+Hibernate Reactive batches changes you make to your entities and sends changes (it is called flush) at the end of the transaction or before a query.
 This is usually a good thing as it is more efficient.
-But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call. This will allow you to catch any `PersistenceException` that could occur when JPA send those changes to the database.
+But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call. This will allow you to catch any `PersistenceException` that could occur when Hibernate Reactive send those changes to the database.
 Remember, this is less efficient so don't abuse it.
 And your transaction still has to be committed.
 

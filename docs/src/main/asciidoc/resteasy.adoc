@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 
 [WARNING]
 ====
-This guide is about https://resteasy.dev[RESTEasy Classic] which used to be the default JAX-RS implementation until Quarkus 2.8.
+This guide is about https://resteasy.dev[RESTEasy Classic] which used to be the default Jakarta REST (formerly known as JAX-RS) implementation until Quarkus 2.8.
 
 It is now recommended to use RESTEasy Reactive, which supports both traditional blocking workloads and reactive workloads equally well.
 For more information about RESTEasy Reactive,
@@ -32,7 +32,7 @@ First, we need a new project. Create a new project with the following command:
 :create-app-extensions: resteasy-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a new project importing the RESTEasy/JAX-RS and https://github.com/FasterXML/jackson[Jackson] extensions,
+This command generates a new project importing the RESTEasy/Jakarta REST and https://github.com/FasterXML/jackson[Jackson] extensions,
 and in particular adds the following dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -61,7 +61,7 @@ Quarkus also supports https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] so, if y
 :create-app-extensions: resteasy-jsonb
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a new project importing the RESTEasy/JAX-RS and https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] extensions,
+This command generates a new project importing the RESTEasy/Jakarta REST and https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] extensions,
 and in particular adds the following dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -150,7 +150,7 @@ public class FruitResource {
 }
 ----
 
-The implementation is pretty straightforward, and you just need to define your endpoints using the JAX-RS annotations.
+The implementation is pretty straightforward, and you just need to define your endpoints using the Jakarta REST annotations.
 
 The `Fruit` objects will be automatically serialized/deserialized by https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] or https://github.com/FasterXML/jackson[Jackson],
 depending on the extension you chose when initializing the project.
@@ -166,7 +166,7 @@ If you don't want JSON by default you can set `quarkus.resteasy-json.default-jso
 you will need to add `@Produces(MediaType.APPLICATION_JSON)` and `@Consumes(MediaType.APPLICATION_JSON)` to your endpoints in order to use JSON.
 
 If you don't rely on the JSON default, it is heavily recommended to annotate your endpoints with the `@Produces` and `@Consumes` annotations to define precisely the expected content-types.
-It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
+It will allow to narrow down the number of Jakarta REST providers (which can be seen as converters) included in the native executable.
 ====
 
 [[json]]
@@ -446,7 +446,7 @@ public List<Fruit> list() {
 Quarkus does that for you automatically by analyzing the REST methods at build time
 and that's why we didn't need any reflection registration in the first part of this guide.
 
-Another common pattern in the JAX-RS world is to use the `Response` object.
+Another common pattern in the Jakarta REST world is to use the `Response` object.
 `Response` comes with some nice perks:
 
  * you can return different entity types depending on what happens in your method (a `Legume` or an `Error` for instance);
@@ -739,7 +739,7 @@ include::{generated-dir}/config/quarkus-resteasy-multipart.adoc[leveloffset=+1, 
 In Quarkus, RESTEasy can either run directly on top of the Vert.x HTTP server, or on top of Undertow if you have any servlet dependency.
 
 As a result, certain classes, such as `HttpServletRequest` are not always available for injection. Most use-cases for this particular
-class are covered by JAX-RS equivalents, except for getting the remote client's IP. RESTEasy comes with a replacement API which you can inject:
+class are covered by Jakarta REST equivalents, except for getting the remote client's IP. RESTEasy comes with a replacement API which you can inject:
 https://docs.jboss.org/resteasy/docs/4.5.6.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html[`HttpRequest`], which has the methods
 https://docs.jboss.org/resteasy/docs/4.5.6.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html#getRemoteAddress--[`getRemoteAddress()`]
 and https://docs.jboss.org/resteasy/docs/4.5.6.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html#getRemoteHost--[`getRemoteHost()`]
@@ -748,7 +748,7 @@ to solve this problem.
 == RESTEasy and REST Client interactions
 
 In Quarkus, the RESTEasy extension and xref:rest-client.adoc[the REST Client extension] share the same infrastructure.
-One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
+One important consequence of this consideration is that they share the same list of providers (in the Jakarta REST meaning of the word).
 
 For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
 which might not be the desired behavior.
@@ -764,14 +764,14 @@ However, you can change this default behavior and constrain a provider to:
 
 Configuration via an application-supplied subclass of `Application` is supported, but not required.
 
-=== Only a single JAX-RS application
+=== Only a single Jakarta REST application
 
-In contrast to JAX-RS (and RESTeasy) running in a standard servlet-container, Quarkus only supports the deployment of a single JAX-RS application.
-If multiple JAX-RS `Application` classes are defined, the build will fail with the message `Multiple classes have been annotated with @ApplicationPath which is currently not supported`.
+In contrast to Jakarta REST (and RESTeasy) running in a standard servlet-container, Quarkus only supports the deployment of a single Jakarta REST application.
+If multiple Jakarta REST `Application` classes are defined, the build will fail with the message `Multiple classes have been annotated with @ApplicationPath which is currently not supported`.
 
-If multiple JAX-RS applications are defined, the property `quarkus.resteasy.ignore-application-classes=true` can be used to ignore all explicit `Application` classes. This makes all resource-classes available via the application-path as defined by `quarkus.resteasy.path` (default: `/`).
+If multiple Jakarta REST applications are defined, the property `quarkus.resteasy.ignore-application-classes=true` can be used to ignore all explicit `Application` classes. This makes all resource-classes available via the application-path as defined by `quarkus.resteasy.path` (default: `/`).
 
-=== Support limitations of JAX-RS application
+=== Support limitations of Jakarta REST application
 
 The RESTEasy extension doesn't support the method `getProperties()` of the class `jakarta.ws.rs.core.Application`. Moreover, it only relies on the methods `getClasses()` and `getSingletons()` to filter out the annotated resource, provider and feature classes.
 It doesn't filter out the built-in resource, provider and feature classes and also the resource, provider and feature classes registered by the other extensions.
@@ -779,7 +779,7 @@ Finally, the objects returned by the method `getSingletons()` are ignored, only 
 
 === Lifecycle of Resources
 
-In Quarkus all JAX-RS resources are treated as CDI beans.
+In Quarkus all Jakarta REST resources are treated as CDI beans.
 It's possible to inject other beans via `@Inject`, bind interceptors using bindings such as `@Transactional`, define `@PostConstruct` callbacks, etc.
 
 If there is no scope annotation declared on the resource class then the scope is defaulted.
@@ -788,10 +788,10 @@ If set to `true` (default) then a *single instance* of a resource class is creat
 If set to `false` then a *new instance* of the resource class is created per each request.
 An explicit CDI scope annotation (`@RequestScoped`, `@ApplicationScoped`, etc.) always overrides the default behavior and specifies the lifecycle of resource instances.
 
-== Include/Exclude JAX-RS classes with build time conditions
+== Include/Exclude Jakarta REST classes with build time conditions
 
 Quarkus enables the inclusion or exclusion of JAX-RS Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
-Thus, the various JAX-RS classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these JAX-RS classes should be included.
+Thus, the various Jakarta REST classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these Jakarta REST classes should be included.
 
 In the following example, Quarkus includes the endpoint `sayHello` if and only if the build profile `app1` has been enabled.
 
@@ -808,7 +808,7 @@ public class ResourceForApp1Only {
 }
 ----
 
-Please note that if a JAX-RS Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the JAX-RS Application.
+Please note that if a Jakarta REST Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the JAX-RS Application.
 
 == Conclusion
 

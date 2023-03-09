@@ -81,8 +81,8 @@ import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
-import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactory;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticInitDialectFactory;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 
 /**
@@ -122,7 +122,7 @@ public class FastBootMetadataBuilder {
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = puDefinition.getActualHibernateDescriptor();
-        this.dataSource = puDefinition.getDataSource();
+        this.dataSource = puDefinition.getConfig().getDataSource();
         this.isReactive = puDefinition.isReactive();
         this.fromPersistenceXml = puDefinition.isFromPersistenceXml();
         this.additionalIntegrators = additionalIntegrators;
@@ -145,7 +145,7 @@ public class FastBootMetadataBuilder {
 
         // We need to initialize the multi tenancy strategy before building the service registry as it is used to
         // create metadata builder. Adding services afterwards would lead to unpredicted behavior.
-        final MultiTenancyStrategy multiTenancyStrategy = puDefinition.getMultitenancyStrategy();
+        final MultiTenancyStrategy multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
         if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE) {
             ssrBuilder.addService(MultiTenantConnectionProvider.class,
                     new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
@@ -210,7 +210,8 @@ public class FastBootMetadataBuilder {
 
     private BuildTimeSettings createBuildTimeSettings(QuarkusPersistenceUnitDefinition puDefinition,
             Map<String, Object> quarkusConfigSettings) {
-        Map<String, String> quarkusConfigUnsupportedProperties = puDefinition.getQuarkusConfigUnsupportedProperties();
+        Map<String, String> quarkusConfigUnsupportedProperties = puDefinition.getConfig()
+                .getQuarkusConfigUnsupportedProperties();
         Map<String, Object> allSettings = new HashMap<>(quarkusConfigSettings);
 
         // Ignore properties that were already set by Quarkus;
@@ -218,9 +219,10 @@ public class FastBootMetadataBuilder {
         // (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
         quarkusConfigUnsupportedProperties.forEach(allSettings::putIfAbsent);
 
-        var databaseOrmCompatibilityVersion = puDefinition.getDatabaseOrmCompatibilityVersion();
+        var databaseOrmCompatibilityVersion = puDefinition.getConfig().getDatabaseOrmCompatibilityVersion();
         Map<String, String> appliedDatabaseOrmCompatibilitySettings = new HashMap<>();
-        for (Map.Entry<String, String> entry : databaseOrmCompatibilityVersion.settings(puDefinition.getDbKind()).entrySet()) {
+        for (Map.Entry<String, String> entry : databaseOrmCompatibilityVersion.settings(puDefinition.getConfig().getDbKind())
+                .entrySet()) {
             // Not using putIfAbsent() because that would be ambiguous in case of null values
             if (!allSettings.containsKey(entry.getKey())) {
                 appliedDatabaseOrmCompatibilitySettings.put(entry.getKey(), entry.getValue());
@@ -232,7 +234,7 @@ public class FastBootMetadataBuilder {
         // so that we can more easily differentiate between
         // properties coming from Quarkus and "unsupported" properties
         // on startup (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
-        return new BuildTimeSettings(quarkusConfigSettings, databaseOrmCompatibilityVersion,
+        return new BuildTimeSettings(puDefinition.getConfig(), quarkusConfigSettings,
                 appliedDatabaseOrmCompatibilitySettings, allSettings);
     }
 
@@ -254,7 +256,7 @@ public class FastBootMetadataBuilder {
 
         cfg.put(PERSISTENCE_UNIT_NAME, persistenceUnit.getName());
 
-        MultiTenancyStrategy multiTenancyStrategy = puDefinition.getMultitenancyStrategy();
+        MultiTenancyStrategy multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
         if (multiTenancyStrategy != null) {
             String legacyMULTI_TENANT = "hibernate.multiTenancy";
             //FIXME this property is meaningless in Hibernate ORM >6 (and the constant was removed)
@@ -424,7 +426,7 @@ public class FastBootMetadataBuilder {
         destroyServiceRegistry();
         ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
         return new RecordedState(dialect, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, dataSource,
+                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions,
                 isReactive, fromPersistenceXml);
     }
 
@@ -463,7 +465,7 @@ public class FastBootMetadataBuilder {
 
     private Dialect extractDialect() {
         DialectFactory service = standardServiceRegistry.getService(DialectFactory.class);
-        RecordingDialectFactory casted = (RecordingDialectFactory) service;
+        QuarkusStaticInitDialectFactory casted = (QuarkusStaticInitDialectFactory) service;
         return casted.getDialect();
     }
 

@@ -139,6 +139,7 @@ import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleIntegra
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
+import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
@@ -392,14 +393,15 @@ public final class HibernateOrmProcessor {
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(xmlDescriptor,
                             xmlDescriptor.getName(),
-                            Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
-                            jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
-                            getMultiTenancyStrategy(Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
-                                    .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
+                            new RecordedConfig(
+                                    Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                                    jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
+                                    getMultiTenancyStrategy(
+                                            Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
+                                                    .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
+                                    hibernateOrmConfig.database.ormCompatibilityVersion, Collections.emptyMap()),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
-                            Collections.emptyMap(),
-                            hibernateOrmConfig.database.ormCompatibilityVersion,
                             false, true));
         }
 
@@ -760,7 +762,7 @@ public final class HibernateOrmProcessor {
         boolean multitenancyEnabled = false;
 
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
-            if (persistenceUnitDescriptor.getMultiTenancyStrategy() == MultiTenancyStrategy.NONE) {
+            if (persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy() == MultiTenancyStrategy.NONE) {
                 continue;
             }
 
@@ -773,7 +775,8 @@ public final class HibernateOrmProcessor {
                     .defaultBean()
                     .unremovable()
                     .supplier(recorder.dataSourceTenantConnectionResolver(persistenceUnitDescriptor.getPersistenceUnitName(),
-                            persistenceUnitDescriptor.getDataSource(), persistenceUnitDescriptor.getMultiTenancyStrategy(),
+                            persistenceUnitDescriptor.getConfig().getDataSource(),
+                            persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy(),
                             persistenceUnitDescriptor.getMultiTenancySchemaDataSource()));
 
             if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitDescriptor.getPersistenceUnitName())) {
@@ -1202,14 +1205,16 @@ public final class HibernateOrmProcessor {
                 String.valueOf(persistenceUnitConfig.discriminator.ignoreExplicitForJoined));
 
         persistenceUnitDescriptors.produce(
-                new PersistenceUnitDescriptorBuildItem(descriptor, descriptor.getName(),
-                        jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
-                        jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
-                        multiTenancyStrategy,
+                new PersistenceUnitDescriptorBuildItem(descriptor,
+                        descriptor.getName(),
+                        new RecordedConfig(
+                                jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
+                                jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
+                                multiTenancyStrategy,
+                                hibernateOrmConfig.database.ormCompatibilityVersion,
+                                persistenceUnitConfig.unsupportedProperties),
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
-                        persistenceUnitConfig.unsupportedProperties,
-                        hibernateOrmConfig.database.ormCompatibilityVersion,
                         false, false));
     }
 

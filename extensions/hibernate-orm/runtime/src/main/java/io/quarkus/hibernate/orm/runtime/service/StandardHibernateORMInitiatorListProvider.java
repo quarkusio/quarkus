@@ -73,7 +73,7 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
         serviceInitiators.add(DialectResolverInitiator.INSTANCE);
 
         // Custom one!
-        serviceInitiators.add(DialectFactoryInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusStaticInitDialectFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);

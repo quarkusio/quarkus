@@ -42,7 +42,7 @@ import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutationExecutorServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
-import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticDialectFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.QuarkusRuntimeBytecodeProviderInitiator;
 
 /**
@@ -197,7 +197,7 @@ public class PreconfiguredServiceRegistryBuilder {
         // serviceInitiators.add( DialectResolverInitiator.INSTANCE );
 
         // Custom one: Dialect is injected explicitly
-        serviceInitiators.add(new QuarkusStaticDialectFactoryInitiator(rs.getDialect()));
+        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(rs.getDialect()));
 
         // Default implementation
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);

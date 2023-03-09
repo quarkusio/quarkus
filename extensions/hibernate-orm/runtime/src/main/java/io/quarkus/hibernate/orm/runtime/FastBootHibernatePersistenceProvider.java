@@ -208,7 +208,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
         Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
 
-        Optional<String> dataSourceName = recordedState.getDataSource();
+        Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
         if (dataSourceName.isPresent()) {
             // Inject the datasource
             injectDataSource(persistenceUnitName, dataSourceName.get(), runtimeSettingsBuilder);
@@ -254,7 +254,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             runtimeSettingsBuilder.put(entry.getKey(), entry.getValue());
         }
 
-        var databaseOrmCompatibilityVersion = buildTimeSettings.getDatabaseOrmCompatibilityVersion();
+        var databaseOrmCompatibilityVersion = buildTimeSettings.getSource().getDatabaseOrmCompatibilityVersion();
         var databaseOrmCompatibilitySettings = buildTimeSettings.getDatabaseOrmCompatibilitySettings();
         if (databaseOrmCompatibilityVersion != DatabaseOrmCompatibilityVersion.LATEST) {
             log.warnf("Persistence-unit [%1$s]: enabling best-effort backwards compatibility with '%2$s=%3$s'."

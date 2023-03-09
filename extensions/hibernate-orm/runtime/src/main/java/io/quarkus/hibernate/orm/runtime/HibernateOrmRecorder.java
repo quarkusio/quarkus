@@ -68,8 +68,8 @@ public class HibernateOrmRecorder {
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators) {
         SchemaManagementIntegrator.clearDsMap();
         for (QuarkusPersistenceUnitDefinition i : parsedPersistenceXmlDescriptors) {
-            if (i.getDataSource().isPresent()) {
-                SchemaManagementIntegrator.mapDatasource(i.getDataSource().get(), i.getName());
+            if (i.getConfig().getDataSource().isPresent()) {
+                SchemaManagementIntegrator.mapDatasource(i.getConfig().getDataSource().get(), i.getName());
             }
         }
         return new BeanContainerListener() {

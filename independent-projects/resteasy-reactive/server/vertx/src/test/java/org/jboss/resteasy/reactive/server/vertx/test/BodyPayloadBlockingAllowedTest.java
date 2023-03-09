@@ -3,13 +3,20 @@ package org.jboss.resteasy.reactive.server.vertx.test;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 
+import java.io.IOException;
 import java.util.Base64;
 
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.ReaderInterceptorContext;
 
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
@@ -25,7 +32,7 @@ public class BodyPayloadBlockingAllowedTest {
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestResource.class));
+                    .addClasses(TestResource.class, TestInterceptor.class, TestRequestScopedBean.class));
 
     @Test
     void testSmallRequestForNonBlocking() {
@@ -81,4 +88,29 @@ public class BodyPayloadBlockingAllowedTest {
         }
 
     }
+
+    // the interceptor is used in order to test that a request scoped bean works properly no matter what thread the payload is read from
+
+    @Provider
+    public static class TestInterceptor implements ReaderInterceptor {
+
+        @Inject
+        protected TestRequestScopedBean testRequestScopedBean;
+
+        @Override
+        public Object aroundReadFrom(final ReaderInterceptorContext context) throws IOException, WebApplicationException {
+            var entity = context.proceed();
+            testRequestScopedBean.log((String) entity);
+            return entity;
+        }
+    }
+
+    @RequestScoped
+    public static class TestRequestScopedBean {
+
+        public void log(final String ignored) {
+
+        }
+    }
+
 }

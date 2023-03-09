@@ -47,6 +47,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
+        requestContext.requireCDIRequestScope();
         MediaType effectiveRequestType = null;
         Object requestType = requestContext.getHeader(HttpHeaders.CONTENT_TYPE, true);
         if (requestType != null) {

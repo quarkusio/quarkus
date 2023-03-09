@@ -41,7 +41,7 @@ public class DataSourceBuildTimeConfig {
      * or simply a warning in case the database cannot be reached.
      *
      * The default for this property is specific to each extension;
-     * the Hibernate ORM extension will default to the oldest version supported in Quarkus.
+     * the Hibernate ORM extension will default to the oldest version it supports.
      *
      * @asciidoclet
      */

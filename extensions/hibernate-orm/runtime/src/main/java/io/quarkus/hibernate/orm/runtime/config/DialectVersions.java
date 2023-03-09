@@ -16,13 +16,10 @@ public final class DialectVersions {
     public static final class Defaults {
 
         // The following constants must be at least equal to the default dialect version in Hibernate ORM
-        public static final String DB2 = "10.5";
-        public static final String DERBY = "10.14";
         public static final String MARIADB = "10.6";
         public static final String MSSQL = "13"; // 2016
         public static final String MYSQL = "8";
         public static final String ORACLE = "12";
-        public static final String POSTGRESQL = "10.0";
 
         // This must be aligned on the H2 version in the Quarkus BOM
         public static final String H2 = "2.1.210";

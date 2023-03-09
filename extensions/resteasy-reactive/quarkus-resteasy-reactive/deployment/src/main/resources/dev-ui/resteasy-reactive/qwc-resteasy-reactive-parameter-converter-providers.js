@@ -13,6 +13,7 @@ export class QwcResteasyReactiveParameterConverterProviders extends LitElement {
         .datatable {
             height: 100%;
             padding-bottom: 10px;
+            border: none;
         }`;
 
     static properties = {

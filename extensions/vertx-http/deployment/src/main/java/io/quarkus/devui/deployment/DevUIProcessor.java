@@ -152,6 +152,9 @@ public class DevUIProcessor {
 
         String basepath = nonApplicationRootPathBuildItem.resolvePath(DEVUI);
         // For static content generated at build time
+        Path devUiBasePath = Files.createTempDirectory("quarkus-devui");
+        recorder.shutdownTask(shutdownContext, devUiBasePath.toString());
+
         for (StaticContentBuildItem staticContentBuildItem : staticContentBuildItems) {
 
             Map<String, String> urlAndPath = new HashMap<>();
@@ -159,7 +162,8 @@ public class DevUIProcessor {
                 List<DevUIContent> content = staticContentBuildItem.getContent();
                 for (DevUIContent c : content) {
                     String parsedContent = Qute.fmt(new String(c.getTemplate()), c.getData());
-                    Path tempFile = Files.createTempFile("quarkus-dev-ui-", c.getFileName());
+                    Path tempFile = devUiBasePath
+                            .resolve(c.getFileName());
                     Files.write(tempFile, parsedContent.getBytes(StandardCharsets.UTF_8));
 
                     urlAndPath.put(c.getFileName(), tempFile.toString());

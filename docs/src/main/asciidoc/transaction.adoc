@@ -362,6 +362,17 @@ NOTE: The `event` object represents the transaction ID, and defines `toString()`
 TIP: In listener methods, you can access more information about the transaction in progress by accessing the `TransactionManager`,
 which is a CDI bean and can be ``@Inject``ed.
 
+== Configuring transaction log to be stored in a DataSource
+
+The Narayana project has the capability to store the transaction logs into a JDBC Datasource; this should be our recommendation for users needing transaction recovery capabilities, especially when running in volatile containers.
+
+To enable this capability, you need to set `quarkus.transaction-manager.object-store.type` to `jdbc` explicitly. Also, you can specify a datasource name to be used for the transaction log storage by setting `quarkus.transaction-manager.object-store.datasource`. It will use the default datasource configuration if not specified.
+
+If you enable `quarkus.transaction-manager.object-store.create-table`, the transaction log table will be created automatically if it does not exist.
+
+NOTE: When enabling this capability, the transaction node identifier must be set through `quarkus.transaction-manager.node-name`.
+
+
 == Why always having a transaction manager?
 
 Does it work everywhere I want to?::

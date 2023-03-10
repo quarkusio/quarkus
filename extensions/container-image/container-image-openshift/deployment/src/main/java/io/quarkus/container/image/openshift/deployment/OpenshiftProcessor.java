@@ -1,5 +1,6 @@
 package io.quarkus.container.image.openshift.deployment;
 
+import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.getNamespace;
 import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.mergeConfig;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
@@ -264,7 +265,7 @@ public class OpenshiftProcessor {
             return;
         }
 
-        try (KubernetesClient kubernetesClient = kubernetesClientBuilder.buildClient()) {
+        try (KubernetesClient kubernetesClient = buildClient(kubernetesClientBuilder)) {
             String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
             LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
                     + kubernetesClient.getMasterUrl() + " in namespace:" + namespace + ".");
@@ -324,7 +325,7 @@ public class OpenshiftProcessor {
             return;
         }
 
-        try (KubernetesClient kubernetesClient = kubernetesClientBuilder.buildClient()) {
+        try (KubernetesClient kubernetesClient = buildClient(kubernetesClientBuilder)) {
             String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
 
             LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
@@ -541,6 +542,11 @@ public class OpenshiftProcessor {
         configuration.setHttp2Disable(true);
 
         return new KubernetesClientBuilder().withConfig(configuration).withHttpClientFactory(httpClientFactory);
+    }
+
+    private static KubernetesClient buildClient(KubernetesClientBuildItem kubernetesClientBuilder) {
+        getNamespace().ifPresent(kubernetesClientBuilder.getConfig()::setNamespace);
+        return kubernetesClientBuilder.buildClient();
     }
 
     // visible for test

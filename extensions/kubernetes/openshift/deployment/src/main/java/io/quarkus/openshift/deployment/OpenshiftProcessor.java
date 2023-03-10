@@ -24,7 +24,8 @@ public class OpenshiftProcessor {
                 .produce(
                         new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.kind,
                                 deploymentResourceKind.apiGroup,
-                                deploymentResourceKind.apiVersion, true));
+                                deploymentResourceKind.apiVersion, true,
+                                config.getDeployStrategy()));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, deploymentResourceKind.apiGroup,

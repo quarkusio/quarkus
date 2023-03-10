@@ -15,6 +15,7 @@ import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.kubernetes.spi.DeployStrategy;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -304,6 +305,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     boolean deploy;
 
     /**
+     * If deploy is enabled, it will follow this strategy to update the resources to the target Kubernetes cluster.
+     */
+    @ConfigItem(defaultValue = "CreateOrUpdate")
+    DeployStrategy deployStrategy;
+
+    /**
      * If set, the secret will mounted to the application container and its contents will be used for application configuration.
      */
     @ConfigItem
@@ -562,6 +569,10 @@ public class KubernetesConfig implements PlatformConfiguration {
     @Override
     public boolean isIdempotent() {
         return idempotent;
+    }
+
+    public DeployStrategy getDeployStrategy() {
+        return deployStrategy;
     }
 
     public KubernetesConfig.DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {

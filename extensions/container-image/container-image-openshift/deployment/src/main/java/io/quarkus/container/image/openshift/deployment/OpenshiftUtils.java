@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.api.model.ObjectReference;
 import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.api.model.SourceBuildStrategyFluent;
 import io.fabric8.openshift.client.OpenShiftClient;
+import io.quarkus.kubernetes.spi.DeployStrategy;
 
 /**
  * This class is copied from Dekorate, with the difference that the {@code waitForImageStreamTags} method
@@ -30,6 +31,8 @@ public class OpenshiftUtils {
 
     private static final String OPENSHIFT_NAMESPACE = "quarkus.openshift.namespace";
     private static final String KUBERNETES_NAMESPACE = "quarkus.kubernetes.namespace";
+    private static final String OPENSHIFT_DEPLOY_STRATEGY = "quarkus.openshift.deploy-strategy";
+    private static final String KUBERNETES_DEPLOY_STRATEGY = "quarkus.kubernetes.deploy-strategy";
 
     /**
      * Wait for the references ImageStreamTags to become available.
@@ -152,5 +155,14 @@ public class OpenshiftUtils {
     public static Optional<String> getNamespace() {
         return ConfigProvider.getConfig().getOptionalValue(OPENSHIFT_NAMESPACE, String.class)
                 .or(() -> ConfigProvider.getConfig().getOptionalValue(KUBERNETES_NAMESPACE, String.class));
+    }
+
+    /**
+     * @return the openshift deploy strategy set in the OpenShift/Kubernetes extensions.
+     */
+    public static DeployStrategy getDeployStrategy() {
+        return ConfigProvider.getConfig().getOptionalValue(OPENSHIFT_DEPLOY_STRATEGY, DeployStrategy.class)
+                .or(() -> ConfigProvider.getConfig().getOptionalValue(KUBERNETES_DEPLOY_STRATEGY, DeployStrategy.class))
+                .orElse(DeployStrategy.CreateOrUpdate);
     }
 }

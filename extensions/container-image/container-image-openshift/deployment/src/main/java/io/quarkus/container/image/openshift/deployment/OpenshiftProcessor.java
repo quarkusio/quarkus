@@ -1,5 +1,6 @@
 package io.quarkus.container.image.openshift.deployment;
 
+import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.getDeployStrategy;
 import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.getNamespace;
 import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.mergeConfig;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
@@ -39,6 +40,9 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.LogWatch;
+import io.fabric8.kubernetes.client.dsl.NamespaceableResource;
+import io.fabric8.kubernetes.client.dsl.base.PatchContext;
+import io.fabric8.kubernetes.client.dsl.base.PatchType;
 import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.openshift.api.model.Build;
 import io.fabric8.openshift.api.model.BuildConfig;
@@ -68,6 +72,7 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
+import io.quarkus.kubernetes.spi.DeployStrategy;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 
@@ -403,27 +408,7 @@ public class OpenshiftProcessor {
         // Apply build resource requirements
         try {
             for (HasMetadata i : distinct(buildResources)) {
-                if (i instanceof BuildConfig) {
-                    client.resource(i).cascading(true).delete();
-                    try {
-                        client.resource(i).waitUntilCondition(d -> d == null, 10, TimeUnit.SECONDS);
-                    } catch (IllegalArgumentException e) {
-                        // We should ignore that, as its expected to be thrown when item is actually
-                        // deleted.
-                    }
-                } else if (i instanceof ImageStream) {
-                    ImageStream is = (ImageStream) i;
-                    ImageStream existing = client.imageStreams().withName(i.getMetadata().getName()).get();
-                    if (existing != null &&
-                            existing.getSpec() != null &&
-                            existing.getSpec().getDockerImageRepository() != null &&
-                            existing.getSpec().getDockerImageRepository().equals(is.getSpec().getDockerImageRepository())) {
-                        LOG.info("Found: " + i.getKind() + " " + i.getMetadata().getName() + " repository: "
-                                + existing.getSpec().getDockerImageRepository());
-                        continue;
-                    }
-                }
-                client.resource(i).createOrReplace();
+                deployResource(client, i);
                 LOG.info("Applied: " + i.getKind() + " " + i.getMetadata().getName());
             }
             OpenshiftUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
@@ -547,6 +532,55 @@ public class OpenshiftProcessor {
     private static KubernetesClient buildClient(KubernetesClientBuildItem kubernetesClientBuilder) {
         getNamespace().ifPresent(kubernetesClientBuilder.getConfig()::setNamespace);
         return kubernetesClientBuilder.buildClient();
+    }
+
+    private static void deployResource(OpenShiftClient client, HasMetadata metadata) {
+        DeployStrategy deployStrategy = getDeployStrategy();
+        var r = client.resource(metadata);
+        // Delete build config it already existed unless the deploy strategy is not create or update.
+        if (deployStrategy != DeployStrategy.CreateOrUpdate && r instanceof BuildConfig) {
+            deleteBuildConfig(client, metadata, r);
+        }
+
+        // If the image stream is already installed, we proceed with the next.
+        if (r instanceof ImageStream) {
+            ImageStream is = (ImageStream) r;
+            ImageStream existing = client.imageStreams().withName(metadata.getMetadata().getName()).get();
+            if (existing != null &&
+                    existing.getSpec() != null &&
+                    existing.getSpec().getDockerImageRepository() != null &&
+                    existing.getSpec().getDockerImageRepository().equals(is.getSpec().getDockerImageRepository())) {
+                LOG.info("Found: " + metadata.getKind() + " " + metadata.getMetadata().getName() + " repository: "
+                        + existing.getSpec().getDockerImageRepository());
+                return;
+            }
+        }
+
+        // Deploy the current resource.
+        switch (deployStrategy) {
+            case Create:
+                r.create();
+                break;
+            case Replace:
+                r.replace();
+                break;
+            case ServerSideApply:
+                r.patch(PatchContext.of(PatchType.SERVER_SIDE_APPLY));
+                break;
+            default:
+                r.createOrReplace();
+                break;
+        }
+    }
+
+    private static void deleteBuildConfig(OpenShiftClient client, HasMetadata metadata, NamespaceableResource<HasMetadata> r) {
+        r.cascading(true).delete();
+        try {
+            client.resource(metadata).waitUntilCondition(d -> d == null, 10, TimeUnit.SECONDS);
+        } catch (IllegalArgumentException e) {
+            // We should ignore that, as its expected to be thrown when item is actually
+            // deleted.
+        }
     }
 
     // visible for test

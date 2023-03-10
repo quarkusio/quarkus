@@ -3,7 +3,6 @@ package io.quarkus.devui.deployment;
 import static io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor.cleanUpAsciiDocIfNecessary;
 import static io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor.isSetByDevServices;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -58,7 +57,7 @@ import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 public class BuildTimeContentProcessor {
     private static final String SLASH = "/";
     private static final String DEV_UI = "dev-ui";
-    private static final String BUILD_TIME_PATH = "dev-ui-templates" + File.separator + "build-time";
+    private static final String BUILD_TIME_PATH = "dev-ui-templates/build-time";
 
     final Config config = ConfigProvider.getConfig();
 
@@ -270,7 +269,7 @@ public class BuildTimeContentProcessor {
 
                     String templateName = e.getTemplateName(); // Relative to BUILD_TIME_PATH
                     Map<String, Object> data = e.getData();
-                    String resourceName = BUILD_TIME_PATH + File.separator + templateName;
+                    String resourceName = BUILD_TIME_PATH + SLASH + templateName;
                     String fileName = e.getFileName();
                     // TODO: What if we find more than one ?
                     try (InputStream templateStream = cl.getResourceAsStream(resourceName)) {

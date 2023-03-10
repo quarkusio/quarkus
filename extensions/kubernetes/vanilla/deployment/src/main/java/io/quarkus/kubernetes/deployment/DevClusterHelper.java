@@ -37,6 +37,7 @@ import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
@@ -67,6 +68,7 @@ public class DevClusterHelper {
             Optional<KubernetesProbePortNameBuildItem> portName,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
@@ -80,7 +82,7 @@ public class DevClusterHelper {
         result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, config,
                 metricsConfiguration,
                 annotations, labels, command,
-                port, livenessPath, readinessPath, roles, roleBindings));
+                port, livenessPath, readinessPath, startupPath, roles, roleBindings));
 
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage())));
@@ -125,6 +127,10 @@ public class DevClusterHelper {
                         ports));
         result.add(
                 KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, "readinessProbe", config.readinessProbe,
+                        portName,
+                        ports));
+        result.add(
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, "startupProbe", config.startupProbe,
                         portName,
                         ports));
 

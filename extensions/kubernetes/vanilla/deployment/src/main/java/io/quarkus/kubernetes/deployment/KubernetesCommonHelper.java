@@ -47,6 +47,7 @@ import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddRoleBindingResourceDecorator;
 import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
+import io.dekorate.kubernetes.decorator.AddStartupProbeDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyArgsDecorator;
 import io.dekorate.kubernetes.decorator.ApplyCommandDecorator;
@@ -80,6 +81,7 @@ import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
@@ -184,6 +186,7 @@ public class KubernetesCommonHelper {
             Optional<Port> port,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessProbePath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessProbePath,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings) {
         List<DecoratorBuildItem> result = new ArrayList<>();
@@ -201,7 +204,7 @@ public class KubernetesCommonHelper {
         //Handle Probes
         if (!port.isEmpty()) {
             result.addAll(createProbeDecorators(name, target, config.getLivenessProbe(), config.getReadinessProbe(),
-                    livenessProbePath, readinessProbePath));
+                    config.getStartupProbe(), livenessProbePath, readinessProbePath, startupPath));
         }
 
         //Handle RBAC
@@ -708,7 +711,7 @@ public class KubernetesCommonHelper {
      *
      * @param name The name of the deployment / container.
      * @param target The deployment target
-     * @param the probe kind (e.g. readinessProbe, livenessProbe etc)
+     * @param probeKind The probe kind (e.g. readinessProbe, livenessProbe etc)
      * @param portName the probe port name build item
      * @paramt ports a list of kubernetes port build items
      * @return a decorator for configures the port of the http action of the probe.
@@ -740,11 +743,14 @@ public class KubernetesCommonHelper {
      */
     private static List<DecoratorBuildItem> createProbeDecorators(String name, String target, ProbeConfig livenessProbe,
             ProbeConfig readinessProbe,
+            ProbeConfig startupProbe,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
-            Optional<KubernetesHealthReadinessPathBuildItem> readinessPath) {
+            Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath) {
         List<DecoratorBuildItem> result = new ArrayList<>();
         createLivenessProbe(name, target, livenessProbe, livenessPath).ifPresent(d -> result.add(d));
         createReadinessProbe(name, target, readinessProbe, readinessPath).ifPresent(d -> result.add(d));
+        createStartupProbe(name, target, startupProbe, startupPath).ifPresent(d -> result.add(d));
         return result;
     }
 
@@ -768,6 +774,18 @@ public class KubernetesCommonHelper {
         } else if (readinessPath.isPresent()) {
             return Optional.of(new DecoratorBuildItem(target, new AddReadinessProbeDecorator(name,
                     ProbeConverter.builder(readinessProbe).withHttpActionPath(readinessPath.get().getPath()).build())));
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<DecoratorBuildItem> createStartupProbe(String name, String target, ProbeConfig startupProbe,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath) {
+        if (startupProbe.hasUserSuppliedAction()) {
+            return Optional.of(new DecoratorBuildItem(target,
+                    new AddStartupProbeDecorator(name, ProbeConverter.convert(startupProbe))));
+        } else if (startupPath.isPresent()) {
+            return Optional.of(new DecoratorBuildItem(target, new AddStartupProbeDecorator(name,
+                    ProbeConverter.builder(startupProbe).withHttpActionPath(startupPath.get().getPath()).build())));
         }
         return Optional.empty();
     }

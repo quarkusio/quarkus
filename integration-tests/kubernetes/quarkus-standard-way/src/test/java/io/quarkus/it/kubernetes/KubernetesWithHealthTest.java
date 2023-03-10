@@ -85,6 +85,13 @@ public class KubernetesWithHealthTest {
                                 assertNotNull(p.getHttpGet());
                                 assertEquals(p.getHttpGet().getPort().getIntVal(), 9090);
                             });
+                            assertThat(container.getStartupProbe()).isNotNull().satisfies(p -> {
+                                assertThat(p.getInitialDelaySeconds()).isEqualTo(5);
+                                assertProbePath(p, "/q/health/started");
+
+                                assertNotNull(p.getHttpGet());
+                                assertEquals(p.getHttpGet().getPort().getIntVal(), 9090);
+                            });
                         });
                     });
                 });

@@ -127,6 +127,12 @@ public class KnativeConfig implements PlatformConfiguration {
     ProbeConfig readinessProbe;
 
     /**
+     * The startup probe
+     */
+    @ConfigItem
+    ProbeConfig startupProbe;
+
+    /**
      * Prometheus configuration
      */
     @ConfigItem
@@ -322,6 +328,10 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public ProbeConfig getReadinessProbe() {
         return readinessProbe;
+    }
+
+    public ProbeConfig getStartupProbe() {
+        return startupProbe;
     }
 
     public PrometheusConfig getPrometheusConfig() {

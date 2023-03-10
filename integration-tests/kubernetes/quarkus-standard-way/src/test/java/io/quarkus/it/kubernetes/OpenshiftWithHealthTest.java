@@ -3,6 +3,8 @@ package io.quarkus.it.kubernetes;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -78,6 +80,11 @@ public class OpenshiftWithHealthTest {
                                 assertThat(p.getExec()).satisfies(e -> {
                                     assertThat(e.getCommand()).containsOnly("kill");
                                 });
+                            });
+                            assertThat(container.getStartupProbe()).isNotNull().satisfies(p -> {
+                                assertThat(p.getInitialDelaySeconds()).isEqualTo(5);
+                                assertNotNull(p.getHttpGet());
+                                assertEquals(p.getHttpGet().getPath(), "/q/health/started");
                             });
                         });
                     });

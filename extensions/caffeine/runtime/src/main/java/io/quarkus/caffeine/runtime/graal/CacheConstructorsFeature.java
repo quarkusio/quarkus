@@ -80,6 +80,8 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.PSMS",
                 "com.github.benmanes.caffeine.cache.PSW",
                 "com.github.benmanes.caffeine.cache.PSMW",
+                "com.github.benmanes.caffeine.cache.PSAMW",
+                "com.github.benmanes.caffeine.cache.PSAWMW",
                 "com.github.benmanes.caffeine.cache.PSWMS",
                 "com.github.benmanes.caffeine.cache.PSWMW",
                 "com.github.benmanes.caffeine.cache.SILMS",
@@ -88,6 +90,7 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.SSLMS",
                 "com.github.benmanes.caffeine.cache.SSMS",
                 "com.github.benmanes.caffeine.cache.SSMSA",
+                "com.github.benmanes.caffeine.cache.SSMSAW",
                 "com.github.benmanes.caffeine.cache.SSMSW",
                 "com.github.benmanes.caffeine.cache.SSW",
         };
@@ -102,6 +105,7 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.SSSMS",
                 "com.github.benmanes.caffeine.cache.SSSMSA",
                 "com.github.benmanes.caffeine.cache.SSSMSW",
+                "com.github.benmanes.caffeine.cache.SSSMSAW",
                 "com.github.benmanes.caffeine.cache.SSSW"
         };
     }

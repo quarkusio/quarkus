@@ -20,6 +20,7 @@ on:
   schedule:
     # first day of month at 12:10am
     - cron: '10 0 1 * *'
+  workflow_dispatch:
 
 concurrency:
   group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
@@ -55,8 +56,10 @@ jobs:
           # refresh cache every month to avoid unlimited growth
           key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Build
+        if: steps.cache-maven.outputs.cache-hit != 'true'
         run: |
           ./mvnw -T1C -e -B --settings .github/mvn-settings.xml -Dquickly-ci -Dtcks clean install
       - name: Delete Local Artifacts From Cache
+        if: steps.cache-maven.outputs.cache-hit != 'true'
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus

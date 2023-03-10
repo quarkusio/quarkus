@@ -467,8 +467,10 @@ public class KubernetesCommonHelper {
                 }
 
             }
+
             result.add(new DecoratorBuildItem(target,
-                    new AddJobResourceDecorator2(item.getName(), item.getImage(), item.getCommand(), item.getArguments())));
+                    new CreateJobResourceFromImageDecorator(item.getName(), item.getImage(), item.getCommand(),
+                            item.getArguments())));
         });
         return result;
     }

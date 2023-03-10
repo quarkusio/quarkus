@@ -14,6 +14,7 @@ public final class Constants {
     public static final String INGRESS = "Ingress";
     public static final String BATCH_GROUP = "batch";
     public static final String BATCH_VERSION = "v1";
+    public static final String JOB_API_VERSION = BATCH_GROUP + "/" + BATCH_VERSION;
 
     static final String DOCKER = "docker";
 

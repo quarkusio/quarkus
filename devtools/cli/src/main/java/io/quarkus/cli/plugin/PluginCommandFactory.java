@@ -102,7 +102,9 @@ public class PluginCommandFactory {
                     final String commandName = name;
                     final CommandLine commandParent = current;
                     createCommand(plugin).ifPresent(command -> {
-                        commandParent.addSubcommand(commandName, command);
+                        if (!commandParent.getSubcommands().containsKey(commandName)) {
+                            commandParent.addSubcommand(commandName, command);
+                        }
                     });
                 });
     }

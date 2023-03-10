@@ -38,7 +38,8 @@ public class CloserTest {
                             .addClasses(PerRequestResource.class, SingletonResource.class, CounterResource.class,
                                     Counter.class);
                 }
-            });
+            }).overrideRuntimeConfigKey("quarkus.thread-pool.max-threads", "1")
+            .overrideRuntimeConfigKey("quarkus.vertx.event-loops-pool-size", "1");
 
     @Test
     public void test() {

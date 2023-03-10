@@ -17,13 +17,13 @@ share the same prefix.
 [[config-mappings]]
 == `@ConfigMapping`
 
-A config mapping requires an interface with minimal metadata configuration and annotated with the
+A config mapping requires a public interface with minimal metadata configuration and annotated with the
 `@io.smallrye.config.ConfigMapping` annotation.
 
 [source,java]
 ----
 @ConfigMapping(prefix = "server")
-interface Server {
+public interface Server {
     String host();
 
     int port();
@@ -56,7 +56,7 @@ about xref:config-extending-support.adoc#custom-config-source[registration] of a
 ----
 @StaticInitSafe
 @ConfigMapping(prefix = "server")
-interface Server {
+public interface Server {
     String host();
 
     int port();
@@ -139,7 +139,7 @@ name mapping and use the name supplied in the annotation:
 [source,java]
 ----
 @ConfigMapping(prefix = "server")
-interface Server {
+public interface Server {
     @WithName("name")
     String host();
 
@@ -199,7 +199,7 @@ Method names in camelCase map to kebab-case property names:
 [source,java]
 ----
 @ConfigMapping(prefix = "server")
-interface Server {
+public interface Server {
     String theHost();
 
     int thePort();
@@ -443,7 +443,7 @@ values:
 [source,java]
 ----
 @ConfigMapping(prefix = "server")
-interface Server {
+public interface Server {
     @Size(min = 2, max = 20)
     String host();
 

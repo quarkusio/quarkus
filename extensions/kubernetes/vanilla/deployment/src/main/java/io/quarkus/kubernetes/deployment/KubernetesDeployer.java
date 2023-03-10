@@ -72,7 +72,7 @@ public class KubernetesDeployer {
         Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
                 .getActiveContainerImageCapability(capabilities);
 
-        //If container image actions are explicilty disabled block deployment even if a container image capability is not present.
+        //If container image actions are explicitly disabled block deployment even if a container image capability is not present.
         if (!containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyDisabled()
                 && activeContainerImageCapability.isEmpty()) {
             // we can't throw an exception here, because it could prevent the Kubernetes resources from being generated

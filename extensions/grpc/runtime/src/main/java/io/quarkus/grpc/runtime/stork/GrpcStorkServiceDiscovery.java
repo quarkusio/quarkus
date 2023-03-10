@@ -121,7 +121,7 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
                                     socketAddresses.add(new InetSocketAddress(inetAddress, instance.getPort()));
                                 }
                             } catch (UnknownHostException e) {
-                                log.errorf(e, "Ignoring wrong host: '%s' for service name '%s'", instance.getHost(),
+                                log.warnf(e, "Ignoring wrong host: '%s' for service name '%s'", instance.getHost(),
                                         serviceName);
                             }
 

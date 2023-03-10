@@ -26,6 +26,7 @@ import java.util.concurrent.TimeoutException;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logging.Logger;
 
 import io.grpc.CallOptions;
@@ -42,6 +43,7 @@ import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.grpc.GrpcClient;
@@ -51,7 +53,9 @@ import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslClientConfig;
+import io.quarkus.grpc.runtime.stork.StorkGrpcChannel;
 import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
+import io.quarkus.grpc.runtime.stork.VertxStorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.spi.GrpcBuilderProvider;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
@@ -76,8 +80,9 @@ public class Channels {
 
     @SuppressWarnings("rawtypes")
     public static Channel createChannel(String name, Set<String> perClientInterceptors) throws Exception {
-        InstanceHandle<GrpcClientConfigProvider> instance = Arc.container().instance(GrpcClientConfigProvider.class);
+        ArcContainer container = Arc.container();
 
+        InstanceHandle<GrpcClientConfigProvider> instance = container.instance(GrpcClientConfigProvider.class);
         if (!instance.isAvailable()) {
             throw new IllegalStateException("Unable to find the GrpcClientConfigProvider");
         }
@@ -117,11 +122,15 @@ public class Channels {
         }
 
         // Client-side interceptors
-        GrpcClientInterceptorContainer interceptorContainer = Arc.container()
+        GrpcClientInterceptorContainer interceptorContainer = container
                 .instance(GrpcClientInterceptorContainer.class).get();
         if (stork) {
             perClientInterceptors = new HashSet<>(perClientInterceptors);
-            perClientInterceptors.add(StorkMeasuringGrpcInterceptor.class.getName());
+            if (vertxGrpc) {
+                perClientInterceptors.add(VertxStorkMeasuringGrpcInterceptor.class.getName());
+            } else {
+                perClientInterceptors.add(StorkMeasuringGrpcInterceptor.class.getName());
+            }
         }
 
         boolean plainText = config.ssl.trustStore.isEmpty();
@@ -278,9 +287,15 @@ public class Channels {
             // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
             options.setMetricsName("grpc|" + name);
 
-            Vertx vertx = Arc.container().instance(Vertx.class).get();
+            Vertx vertx = container.instance(Vertx.class).get();
             io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(vertx, options);
-            Channel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, host));
+            Channel channel;
+            if (stork) {
+                ManagedExecutor executor = container.instance(ManagedExecutor.class).get();
+                channel = new StorkGrpcChannel(client, config.host, config.stork, executor); // host = service-name
+            } else {
+                channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, host));
+            }
             LOGGER.debugf("Target for client '%s': %s", name, host + ":" + port);
 
             List<ClientInterceptor> interceptors = new ArrayList<>();
@@ -289,7 +304,7 @@ public class Channels {
 
             LOGGER.info("Creating Vert.x gRPC channel ...");
 
-            return new InternalGrpcChannel(client, ClientInterceptors.intercept(channel, interceptors));
+            return new InternalGrpcChannel(client, channel, ClientInterceptors.intercept(channel, interceptors));
         }
     }
 
@@ -380,8 +395,12 @@ public class Channels {
                 }
             } else if (instance instanceof InternalGrpcChannel) {
                 InternalGrpcChannel channel = (InternalGrpcChannel) instance;
-                LOGGER.info("Shutting down Vert.x gRPC channel " + channel.delegate);
+                Channel original = channel.original;
+                LOGGER.info("Shutting down Vert.x gRPC channel " + original);
                 try {
+                    if (original instanceof StorkGrpcChannel) {
+                        ((StorkGrpcChannel) original).close();
+                    }
                     channel.client.close().toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS);
                 } catch (ExecutionException | TimeoutException e) {
                     LOGGER.warn("Unable to shutdown channel after 10 seconds", e);
@@ -395,10 +414,12 @@ public class Channels {
 
     private static class InternalGrpcChannel extends Channel {
         private final io.vertx.grpc.client.GrpcClient client;
+        private final Channel original;
         private final Channel delegate;
 
-        public InternalGrpcChannel(io.vertx.grpc.client.GrpcClient client, Channel delegate) {
+        public InternalGrpcChannel(io.vertx.grpc.client.GrpcClient client, Channel original, Channel delegate) {
             this.client = client;
+            this.original = original;
             this.delegate = delegate;
         }
 

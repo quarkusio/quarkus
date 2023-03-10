@@ -1,5 +1,7 @@
 package io.quarkus.grpc.examples.hello;
 
+import static io.quarkus.grpc.test.utils.GRPCTestUtils.stream;
+
 import java.io.InputStream;
 
 import org.junit.jupiter.api.AfterEach;

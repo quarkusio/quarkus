@@ -2,8 +2,8 @@ package io.quarkus.grpc.runtime.stork;
 
 import static io.grpc.ConnectivityState.IDLE;
 import static io.grpc.ConnectivityState.TRANSIENT_FAILURE;
-import static io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor.STORK_MEASURE_TIME;
-import static io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor.STORK_SERVICE_INSTANCE;
+import static io.quarkus.grpc.runtime.stork.StorkMeasuringCollector.STORK_MEASURE_TIME;
+import static io.quarkus.grpc.runtime.stork.StorkMeasuringCollector.STORK_SERVICE_INSTANCE;
 
 import java.util.Collections;
 import java.util.Comparator;

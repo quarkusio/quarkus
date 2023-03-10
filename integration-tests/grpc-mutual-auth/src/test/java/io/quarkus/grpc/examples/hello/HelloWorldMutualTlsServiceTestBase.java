@@ -2,7 +2,6 @@ package io.quarkus.grpc.examples.hello;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.InputStream;
 import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
@@ -16,10 +15,6 @@ import io.grpc.Channel;
 class HelloWorldMutualTlsServiceTestBase {
 
     Channel channel;
-
-    protected InputStream stream(String resource) {
-        return getClass().getClassLoader().getResourceAsStream(resource);
-    }
 
     @Test
     public void testHelloWorldServiceUsingBlockingStub() {

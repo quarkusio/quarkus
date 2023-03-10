@@ -55,6 +55,9 @@ import io.quarkus.redis.datasource.RedisDataSource;
 
 More details about the various APIs offered by the quarkus-redis extension are available in the xref:apis[] section.
 
+[NOTE]
+To use Redis as a cache backend, refer to the xref:cache-redis-reference.adoc[Redis Cache Backend reference].
+
 [[apis]]
 == One extension, multiple APIs
 

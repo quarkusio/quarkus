@@ -5861,10 +5861,20 @@
                 <artifactId>quarkus-redis-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-redis-cache</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-redis-client-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-redis-cache-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

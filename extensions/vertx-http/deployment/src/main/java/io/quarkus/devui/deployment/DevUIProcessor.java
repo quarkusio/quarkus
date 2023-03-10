@@ -59,6 +59,8 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -272,9 +274,15 @@ public class DevUIProcessor {
                                     params.put(parameterName, parameterClass);
                                 }
                                 JsonRpcMethod jsonRpcMethod = new JsonRpcMethod(clazz, method.name(), params);
+                                jsonRpcMethod.setExplicitlyBlocking(method.hasAnnotation(Blocking.class));
+                                jsonRpcMethod
+                                        .setExplicitlyNonBlocking(method.hasAnnotation(NonBlocking.class));
                                 jsonRpcMethods.put(jsonRpcMethodName, jsonRpcMethod);
                             } else {
                                 JsonRpcMethod jsonRpcMethod = new JsonRpcMethod(clazz, method.name(), null);
+                                jsonRpcMethod.setExplicitlyBlocking(method.hasAnnotation(Blocking.class));
+                                jsonRpcMethod
+                                        .setExplicitlyNonBlocking(method.hasAnnotation(NonBlocking.class));
                                 jsonRpcMethods.put(jsonRpcMethodName, jsonRpcMethod);
                             }
                         }

@@ -33,6 +33,9 @@ import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.dsl.base.PatchContext;
+import io.fabric8.kubernetes.client.dsl.base.PatchType;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil;
 import io.fabric8.openshift.api.model.Route;
@@ -50,6 +53,7 @@ import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
+import io.quarkus.kubernetes.spi.DeployStrategy;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentClusterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesOptionalResourceDefinitionBuildItem;
@@ -212,42 +216,7 @@ public class KubernetesDeployer {
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
             list.getItems().stream().filter(distinctByResourceKey()).forEach(i -> {
-                if (i instanceof GenericKubernetesResource) {
-                    GenericKubernetesResource genericResource = (GenericKubernetesResource) i;
-                    ResourceDefinitionContext context = getGenericResourceContext(client, genericResource)
-                            .orElseThrow(() -> new IllegalStateException("Could not retrieve API resource information for:"
-                                    + i.getApiVersion() + " " + i.getKind() + ". Is the CRD for the resource available?"));
-
-                    client.genericKubernetesResources(context).resource(genericResource).createOrReplace();
-                } else {
-                    final var r = client.resource(i);
-                    if (shouldDeleteExisting(deploymentTarget, i)) {
-                        r.delete();
-                        try {
-                            r.waitUntilCondition(Objects::isNull, 10, TimeUnit.SECONDS);
-                        } catch (Exception e) {
-                            if (e instanceof InterruptedException) {
-                                throw e;
-                            }
-                            //This is something that should not really happen. it's not a fatal condition so let's just log.
-                            log.warn("Failed to wait for the deletion of: " + i.getApiVersion() + " " + i.getKind() + " "
-                                    + i.getMetadata().getName() + ". Is the resource waitable?");
-                        }
-                    }
-                    try {
-                        r.createOrReplace();
-                    } catch (Exception e) {
-                        if (e instanceof InterruptedException) {
-                            throw e;
-                        } else if (isOptional(optionalResourceDefinitions, i)) {
-                            log.warn("Failed to apply: " + i.getKind() + " " + i.getMetadata().getName()
-                                    + ", possibly due to missing a CRD apiVersion: " + i.getApiVersion() + " and kind: "
-                                    + i.getKind() + ".");
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
+                deployResource(deploymentTarget, client, i, optionalResourceDefinitions);
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
 
@@ -266,6 +235,69 @@ public class KubernetesDeployer {
             throw new RuntimeException("Error closing file: " + manifest.getAbsolutePath());
         }
 
+    }
+
+    private void deployResource(DeploymentTargetEntry deploymentTarget, KubernetesClient client, HasMetadata metadata,
+            List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions) {
+        var r = findResource(client, metadata);
+        if (shouldDeleteExisting(deploymentTarget, metadata)) {
+            deleteResource(metadata, r);
+        }
+
+        try {
+            switch (deploymentTarget.getDeployStrategy()) {
+                case Create:
+                    r.create();
+                    break;
+                case Replace:
+                    r.replace();
+                    break;
+                case ServerSideApply:
+                    r.patch(PatchContext.of(PatchType.SERVER_SIDE_APPLY));
+                    break;
+                default:
+                    r.createOrReplace();
+                    break;
+            }
+        } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+                throw e;
+            } else if (isOptional(optionalResourceDefinitions, metadata)) {
+                log.warn("Failed to apply: " + metadata.getKind() + " " + metadata.getMetadata().getName()
+                        + ", possibly due to missing a CRD apiVersion: " + metadata.getApiVersion() + " and kind: "
+                        + metadata.getKind() + ".");
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    private void deleteResource(HasMetadata metadata, Resource<?> r) {
+        r.delete();
+        try {
+            r.waitUntilCondition(Objects::isNull, 10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+                throw e;
+            }
+            //This is something that should not really happen. it's not a fatal condition so let's just log.
+            log.warn("Failed to wait for the deletion of: " + metadata.getApiVersion() + " " + metadata.getKind() + " "
+                    + metadata.getMetadata().getName() + ". Is the resource waitable?");
+        }
+    }
+
+    private Resource<?> findResource(KubernetesClient client, HasMetadata metadata) {
+        if (metadata instanceof GenericKubernetesResource) {
+            GenericKubernetesResource genericResource = (GenericKubernetesResource) metadata;
+            ResourceDefinitionContext context = getGenericResourceContext(client, genericResource)
+                    .orElseThrow(() -> new IllegalStateException("Could not retrieve API resource information for:"
+                            + metadata.getApiVersion() + " " + metadata.getKind()
+                            + ". Is the CRD for the resource available?"));
+
+            return client.genericKubernetesResources(context).resource(genericResource);
+        }
+
+        return client.resource(metadata);
     }
 
     private void printExposeInformation(KubernetesClient client, KubernetesList list, OpenshiftConfig openshiftConfig,
@@ -322,6 +354,10 @@ public class KubernetesDeployer {
     }
 
     private static boolean shouldDeleteExisting(DeploymentTargetEntry deploymentTarget, HasMetadata resource) {
+        if (deploymentTarget.getDeployStrategy() != DeployStrategy.CreateOrUpdate) {
+            return false;
+        }
+
         return KNATIVE.equalsIgnoreCase(deploymentTarget.getName())
                 || resource instanceof Service
                 || (Objects.equals("v1", resource.getApiVersion()) && Objects.equals("Service", resource.getKind()))

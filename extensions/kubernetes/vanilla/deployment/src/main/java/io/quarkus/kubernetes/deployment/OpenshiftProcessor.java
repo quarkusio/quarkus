@@ -83,7 +83,7 @@ public class OpenshiftProcessor {
         DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.kind, deploymentResourceKind.apiGroup,
-                        deploymentResourceKind.apiVersion, OPENSHIFT_PRIORITY, openshiftEnabled));
+                        deploymentResourceKind.apiVersion, OPENSHIFT_PRIORITY, openshiftEnabled, config.deployStrategy));
         if (openshiftEnabled) {
             String name = ResourceNameUtil.getResourceName(config, applicationInfo);
             resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, deploymentResourceKind.apiGroup,

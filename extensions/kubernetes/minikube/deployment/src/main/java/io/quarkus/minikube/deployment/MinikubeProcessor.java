@@ -54,7 +54,7 @@ public class MinikubeProcessor {
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
-                        MINIKUBE_PRIORITY, true));
+                        MINIKUBE_PRIORITY, true, config.getDeployStrategy()));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         resourceMeta.produce(

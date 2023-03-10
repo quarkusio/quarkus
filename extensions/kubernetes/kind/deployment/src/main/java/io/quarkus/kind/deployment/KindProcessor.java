@@ -57,7 +57,7 @@ public class KindProcessor {
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(KIND, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
-                        KIND_PRIORITY, true));
+                        KIND_PRIORITY, true, config.getDeployStrategy()));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         resourceMeta.produce(

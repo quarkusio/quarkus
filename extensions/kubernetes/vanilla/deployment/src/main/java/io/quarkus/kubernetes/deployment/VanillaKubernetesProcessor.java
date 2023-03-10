@@ -73,8 +73,7 @@ public class VanillaKubernetesProcessor {
             deploymentTargets
                     .produce(
                             new KubernetesDeploymentTargetBuildItem(KUBERNETES, kind, DEPLOYMENT_GROUP,
-                                    DEPLOYMENT_VERSION,
-                                    VANILLA_KUBERNETES_PRIORITY, true));
+                                    DEPLOYMENT_VERSION, VANILLA_KUBERNETES_PRIORITY, true, config.deployStrategy));
 
             String name = ResourceNameUtil.getResourceName(config, applicationInfo);
             resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
@@ -83,8 +82,7 @@ public class VanillaKubernetesProcessor {
         } else {
             deploymentTargets
                     .produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, kind, DEPLOYMENT_GROUP,
-                            DEPLOYMENT_VERSION,
-                            VANILLA_KUBERNETES_PRIORITY, false));
+                            DEPLOYMENT_VERSION, VANILLA_KUBERNETES_PRIORITY, false, config.deployStrategy));
         }
     }
 

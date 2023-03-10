@@ -80,7 +80,8 @@ class KubernetesProcessor {
         for (KubernetesDeploymentTargetBuildItem deploymentTarget : mergedDeploymentTargets) {
             if (deploymentTarget.isEnabled()) {
                 entries.add(new DeploymentTargetEntry(deploymentTarget.getName(),
-                        deploymentTarget.getKind(), deploymentTarget.getPriority()));
+                        deploymentTarget.getKind(), deploymentTarget.getPriority(),
+                        deploymentTarget.getDeployStrategy()));
             }
         }
         return new EnabledKubernetesDeploymentTargetsBuildItem(entries);

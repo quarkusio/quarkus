@@ -90,8 +90,7 @@ public class KnativeProcessor {
         boolean knativeEnabled = targets.contains(KNATIVE);
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(KNATIVE, KNATIVE_SERVICE, KNATIVE_SERVICE_GROUP,
-                        KNATIVE_SERVICE_VERSION, KNATIVE_PRIORITY,
-                        knativeEnabled));
+                        KNATIVE_SERVICE_VERSION, KNATIVE_PRIORITY, knativeEnabled, config.deployStrategy));
         if (knativeEnabled) {
             String name = ResourceNameUtil.getResourceName(config, applicationInfo);
             resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KNATIVE, KNATIVE_SERVICE_GROUP,

@@ -27,6 +27,7 @@ import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.kubernetes.spi.DeployStrategy;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -562,6 +563,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     boolean deploy;
 
     /**
+     * If deploy is enabled, it will follow this strategy to update the resources to the target OpenShift cluster.
+     */
+    @ConfigItem(defaultValue = "CreateOrUpdate")
+    DeployStrategy deployStrategy;
+
+    /**
      * Flag to enable init task externalization.
      * When enabled (default), all initialization tasks
      * created by extensions, will be externalized as Jobs.
@@ -593,6 +600,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @Override
     public boolean isIdempotent() {
         return idempotent;
+    }
+
+    public DeployStrategy getDeployStrategy() {
+        return deployStrategy;
     }
 
     public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {

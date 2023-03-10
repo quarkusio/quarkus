@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.quarkus.kubernetes.spi.DeployStrategy;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -497,6 +498,12 @@ public class KnativeConfig implements PlatformConfiguration {
      */
     @ConfigItem(defaultValue = "false")
     boolean deploy;
+
+    /**
+     * If deploy is enabled, it will follow this strategy to update the resources to the target Knative cluster.
+     */
+    @ConfigItem(defaultValue = "CreateOrUpdate")
+    DeployStrategy deployStrategy;
 
     public Optional<String> getAppSecret() {
         return this.appSecret;

@@ -1009,34 +1009,29 @@ Here is an example `info` output for a simple project:
 [WARNING] quarkus:info goal is experimental, its options and output may change in future versions
 [INFO] Quarkus platform BOMs: <1>
 [INFO]   io.quarkus.platform:quarkus-bom:pom:{quarkus-version}
-[INFO]   io.quarkus.platform:quarkus-kogito-bom:pom:{quarkus-version}
 [INFO]   io.quarkus.platform:quarkus-camel-bom:pom:{quarkus-version}
 [INFO] 
 [INFO] Extensions from io.quarkus.platform:quarkus-bom: <2>
 [INFO]   io.quarkus:quarkus-resteasy-reactive
 [INFO] 
-[INFO] Extensions from io.quarkus.platform:quarkus-kogito-bom: <3>
-[INFO]   org.kie.kogito:kogito-quarkus-decisions
-[INFO] 
-[INFO] Extensions from io.quarkus.platform:quarkus-camel-bom: <4>
+[INFO] Extensions from io.quarkus.platform:quarkus-camel-bom: <3>
 [INFO]   org.apache.camel.quarkus:camel-quarkus-rabbitmq
 [INFO] 
-[INFO] Extensions from registry.quarkus.io: <5>
+[INFO] Extensions from registry.quarkus.io: <4>
 [INFO]   io.quarkiverse.prettytime:quarkus-prettytime:0.2.1
 ----
 
 <1> Quarkus platform BOMs imported in the project (BOMs imported by parent POMs will also be reported)
 <2> Direct Quarkus extension dependencies managed by the `quarkus-bom`
-<3> Direct Quarkus extension dependencies managed by the `quarkus-kogito-bom`
-<4> Direct Quarkus extension dependencies managed by the `quarkus-camel-bom`
-<5> Direct Quarkus extensions dependencies that aren't managed by Quarkus BOMs but found in the Quarkus extension registry
+<3> Direct Quarkus extension dependencies managed by the `quarkus-camel-bom`
+<4> Direct Quarkus extensions dependencies that aren't managed by Quarkus BOMs but found in the Quarkus extension registry
 
 NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in the Quarkus extension registries if those are present among the project dependencies, indicating they have an 'unknown origin'.
 
 [[project-info-misaligned]]
 === Highlighting misaligned versions
 
-`quarkus:info` will also highlight basic Quarkus dependency version misalignments, in case they are detected. For example, if we modify the project mentioned above by removing the `kogito-quarkus-decisions` extension from the dependencies and adding a `2.6.3.Final` `<version>` element to the `quarkus-resteasy-reactive` dependency that is managed by the `quarkus-bom` and then run `quarkus:info` again, we'll see something like:
+`quarkus:info` will also highlight basic Quarkus dependency version misalignments, in case they are detected. For example, if we modify the project mentioned above by removing the `camel-quarkus-rabbitmq` extension from the dependencies and adding a `2.6.3.Final` `<version>` element to the `quarkus-resteasy-reactive` dependency that is managed by the `quarkus-bom` and then run `quarkus:info` again, we'll see something like:
 
 [source,text,subs=attributes+]
 ----
@@ -1044,8 +1039,7 @@ NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in th
 [WARNING] quarkus:info goal is experimental, its options and output may change in future versions
 [INFO] Quarkus platform BOMs:
 [INFO]   io.quarkus.platform:quarkus-bom:pom:{quarkus-version}
-[INFO]   io.quarkus.platform:quarkus-kogito-bom:pom:{quarkus-version} | unnecessary <1>
-[INFO]   io.quarkus.platform:quarkus-camel-bom:pom:{quarkus-version}
+[INFO]   io.quarkus.platform:quarkus-camel-bom:pom:{quarkus-version} | unnecessary <1>
 [INFO] 
 [INFO] Extensions from io.quarkus.platform:quarkus-bom:
 [INFO]   io.quarkus:quarkus-resteasy-reactive:2.6.3.Final | misaligned <2>
@@ -1058,8 +1052,7 @@ NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in th
 [INFO]
 [WARNING] Non-recommended Quarkus platform BOM and/or extension versions were found. For more details, please, execute 'mvn quarkus:update -Drectify'
 ----
-
-<1> The `quarkus-kogito-bom` import is now reported as 'unnecessary' since none of the Quarkus extensions it includes are found among the project dependencies
+<1> The `quarkus-camel-bom` import is now reported as 'unnecessary' since none of the Quarkus extensions it includes are found among the project dependencies
 <2> The version `2.6.3.Final` of the `quarkus-resteasy-reactive` is now reported as being misaligned with the version managed by the Quarkus platform BOM imported in the project, which is {quarkus-version}
 
 [[project-update]]
@@ -1090,7 +1083,6 @@ Assuming we have a project including Kogito, Camel and core Quarkus extensions a
 [INFO] 
 [INFO] Recommended Quarkus platform BOM updates: <1>
 [INFO] Update: io.quarkus.platform:quarkus-bom:pom:2.7.1.Final -> {quarkus-version}
-[INFO] Update: io.quarkus.platform:quarkus-kogito-bom:pom:2.7.1.Final -> {quarkus-version}
 [INFO] Update: io.quarkus.platform:quarkus-camel-bom:pom:2.7.1.Final -> {quarkus-version}
 ----
 
@@ -1098,14 +1090,13 @@ Assuming we have a project including Kogito, Camel and core Quarkus extensions a
 
 NOTE: Typically, a single project property will be used to manage all the Quarkus platform BOMs but the implementation isn't currently smart enough to point that out and will report updates for each BOM individually.
 
-If we modify the project to remove all the Kogito extensions from the project, change the version of the `quarkus-resteasy-reactive` extension to `2.6.3.Final` and downgrade `quarkus-prettytime` which is not included in the Quarkus platform BOMs to `0.2.0`, `quarkus:update` will report something like:
+If we modify the project to remove all the Camel Quarkus extensions from the project, change the version of the `quarkus-resteasy-reactive` extension to `2.6.3.Final` and downgrade `quarkus-prettytime` which is not included in the Quarkus platform BOMs to `0.2.0`, `quarkus:update` will report something like:
 
 [source,text,subs=attributes+]
 ----
 [INFO] Recommended Quarkus platform BOM updates: <1>
 [INFO] Update: io.quarkus.platform:quarkus-bom:pom:2.7.1.Final -> {quarkus-version}
-[INFO] Update: io.quarkus.platform:quarkus-camel-bom:pom:2.7.1.Final -> {quarkus-version}
-[INFO] Remove: io.quarkus.platform:quarkus-kogito-bom:pom:2.7.1.Final <2>
+[INFO] Remove: io.quarkus.platform:quarkus-camel-bom:pom:2.7.1.Final <2>
 [INFO] 
 [INFO] Extensions from io.quarkus.platform:quarkus-bom:
 [INFO] Update: io.quarkus:quarkus-resteasy-reactive:2.6.3.Final -> remove version (managed) <3>
@@ -1115,7 +1106,7 @@ If we modify the project to remove all the Kogito extensions from the project, c
 ----
 
 <1> A list of the currently recommended Quarkus platform BOM updates for the project
-<2> Given that the project does not include any Kogito extensions, the BOM import is recommended to be removed
+<2> Given that the project does not include any Camel Quarkus extensions, the BOM import is recommended to be removed
 <3> An outdated version of the `quarkus-resteasy-reactive` is recommended to be removed in favor of the one managed by the `quarkus-bom`
 <4> The latest compatible version of the `quarkus-prettytime` extension
 

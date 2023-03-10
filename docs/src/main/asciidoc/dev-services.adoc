@@ -75,12 +75,6 @@ xref:security-openid-connect-dev-services.adoc[OIDC Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-keycloak-devservices-keycloak-keycloak-build-time-config.adoc[opts=optional, leveloffset=+1]
 
-== Kogito
-
-The Kogito Dev Service will be enabled when either `kogito-quarkus` or `kogito-quarkus-processes` extension is present in your application. More information can be found in the xref:kogito-dev-services.adoc[Kogito Dev Services Guide].
-
-include::{includes}/kogito-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
-
 == Kubernetes
 
 The Kubernetes Dev Service will be enabled when `kubernetes-client` extension is present in your application, and 

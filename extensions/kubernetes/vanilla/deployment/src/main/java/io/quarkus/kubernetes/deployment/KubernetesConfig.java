@@ -263,15 +263,6 @@ public class KubernetesConfig implements PlatformConfiguration {
     ResourcesConfig resources;
 
     /**
-     * If true, a Kubernetes Ingress will be created
-     *
-     * @deprecated Use the {@code quarkus.kubernetes.ingress.expose} instead
-     */
-    @ConfigItem
-    @Deprecated
-    boolean expose;
-
-    /**
      * Ingress configuration
      */
     IngressConfig ingress;

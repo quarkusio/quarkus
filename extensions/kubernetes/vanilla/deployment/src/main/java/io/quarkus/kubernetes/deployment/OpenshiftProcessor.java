@@ -139,7 +139,7 @@ public class OpenshiftProcessor {
             result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(value)));
         });
 
-        result.add(new ConfiguratorBuildItem(new ApplyOpenshiftRouteConfigurator(config.route, config.expose)));
+        result.add(new ConfiguratorBuildItem(new ApplyOpenshiftRouteConfigurator(config.route)));
 
         // Handle remote debug configuration for container ports
         if (config.remoteDebug.enabled) {

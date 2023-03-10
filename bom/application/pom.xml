@@ -167,7 +167,7 @@
         <jboss-logmanager.version>1.1.1</jboss-logmanager.version>
         <flyway.version>9.15.2</flyway.version>
         <yasson.version>3.0.2</yasson.version>
-        <liquibase.version>4.19.1</liquibase.version>
+        <liquibase.version>4.20.0</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.9.0</mongo-client.version>

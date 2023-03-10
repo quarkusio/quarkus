@@ -300,15 +300,6 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Optional<String> containerName;
 
     /**
-     * If true, an Openshift Route will be created
-     *
-     * @deprecated Use the {@code quarkus.openshift.route.exposition} instead
-     */
-    @ConfigItem
-    @Deprecated
-    boolean expose;
-
-    /**
      * Openshift route configuration
      */
     RouteConfig route;

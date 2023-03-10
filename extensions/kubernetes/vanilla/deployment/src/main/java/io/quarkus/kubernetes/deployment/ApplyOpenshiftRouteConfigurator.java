@@ -6,16 +6,14 @@ import io.dekorate.openshift.config.OpenshiftConfigFluent;
 public class ApplyOpenshiftRouteConfigurator extends Configurator<OpenshiftConfigFluent> {
 
     private final RouteConfig routeConfig;
-    private final boolean defaultExpose;
 
-    public ApplyOpenshiftRouteConfigurator(RouteConfig routeConfig, boolean defaultExpose) {
+    public ApplyOpenshiftRouteConfigurator(RouteConfig routeConfig) {
         this.routeConfig = routeConfig;
-        this.defaultExpose = defaultExpose;
     }
 
     @Override
     public void visit(OpenshiftConfigFluent config) {
-        if (routeConfig.expose || defaultExpose) {
+        if (routeConfig.expose) {
             var routeBuilder = config.editOrNewRoute();
             routeBuilder.withExpose(true);
             if (routeConfig.host.isPresent()) {

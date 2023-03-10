@@ -5,6 +5,7 @@ import java.util.List;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.ExitCode;
 
 @Command
 public class JBangCommand implements PluginCommand {
@@ -23,6 +24,16 @@ public class JBangCommand implements PluginCommand {
         this.jbang = new JBangSupport(output);
         this.output = output;
         this.arguments.add(location);
+    }
+
+    @Override
+    public Integer call() throws Exception {
+        if (jbang.isAvailable()) {
+            return PluginCommand.super.call();
+        } else {
+            output.error("Unable to find JBang! Command execution aborted!");
+            return ExitCode.SOFTWARE;
+        }
     }
 
     @Override

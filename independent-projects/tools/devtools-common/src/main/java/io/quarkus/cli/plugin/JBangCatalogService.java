@@ -21,6 +21,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
     private final MessageWriter output;
     private final String pluginPrefix;
     private final String remoteCatalog;
+    private final JBangSupport jbang;
 
     public JBangCatalogService(MessageWriter output) {
         this(output, "quarkus", "quarkusio");
@@ -31,6 +32,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
         this.output = output;
         this.pluginPrefix = pluginPrefix;
         this.remoteCatalog = remoteCatalog;
+        this.jbang = new JBangSupport(output);
     }
 
     @Override
@@ -57,8 +59,6 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
 
         Optional<JBangCatalog> projectCatalog = readProjectCatalog(projectDir);
         Optional<JBangCatalog> userCatalog = readUserCatalog(userDir);
-
-        JBangSupport jbang = new JBangSupport(output);
 
         userCatalog.ifPresent(u -> {
             //Read local

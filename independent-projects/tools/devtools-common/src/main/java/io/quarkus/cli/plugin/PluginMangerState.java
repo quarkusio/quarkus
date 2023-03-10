@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -110,34 +111,29 @@ class PluginMangerState {
         return Collections.unmodifiableMap(_userPlugins);
     }
 
-    public Map<String, Plugin> installablePlugins() {
-        boolean isUserScoped = !quarkusProject.isPresent();
+    public Map<String, Plugin> installablePlugins(List<PluginType> types) {
         Map<String, Plugin> installablePlugins = new HashMap<>();
-        //Get installable from JBang
-        JBangCatalog jbangCatalog = jbangCatalogService.readCombinedCatalog(projectRoot, userHome);
-        jbangCatalog.getAliases().forEach((location, alias) -> {
-            String name = util.getName(location);
-            Optional<String> description = alias.getDescription();
-            Plugin plugin = new Plugin(name, PluginType.jbang, Optional.of(location), description, Optional.empty(),
-                    isUserScoped);
-            if (pluginFilter.test(plugin)) {
-                installablePlugins.put(name, plugin);
+        for (PluginType type : types) {
+            switch (type) {
+                case jbang:
+                    installablePlugins.putAll(jbangPlugins());
+                    break;
+                case executable:
+                    installablePlugins.putAll(executablePlugins());
+                    break;
             }
-        });
-
-        //Get installable from Binaries
-        Binaries.findQuarkusPrefixedCommands().forEach(f -> {
-            String name = util.getName(f.getName());
-            Optional<String> description = Optional.empty();
-            Optional<String> location = Optional.of(f.getAbsolutePath());
-            Plugin plugin = new Plugin(name, PluginType.executable, location, description, Optional.empty(), isUserScoped);
-            if (pluginFilter.test(plugin)) {
-                installablePlugins.put(name, plugin);
-            }
-        });
-
-        installablePlugins.putAll(getExtensionPlugins());
+        }
+        installablePlugins.putAll(executablePlugins().entrySet().stream().filter(e -> types.contains(e.getValue().getType()))
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
         return installablePlugins;
+    }
+
+    public Map<String, Plugin> installablePlugins(PluginType... types) {
+        return installablePlugins(List.of(types));
+    }
+
+    public Map<String, Plugin> installablePlugins() {
+        return installablePlugins(PluginType.values());
     }
 
     public Map<String, Plugin> getInstallablePlugins() {
@@ -145,6 +141,37 @@ class PluginMangerState {
             this._installablePlugins = installablePlugins();
         }
         return Collections.unmodifiableMap(_installablePlugins);
+    }
+
+    public Map<String, Plugin> jbangPlugins() {
+        boolean isUserScoped = !quarkusProject.isPresent();
+        Map<String, Plugin> jbangPlugins = new HashMap<>();
+        JBangCatalog jbangCatalog = jbangCatalogService.readCombinedCatalog(projectRoot, userHome);
+        jbangCatalog.getAliases().forEach((location, alias) -> {
+            String name = util.getName(location);
+            Optional<String> description = alias.getDescription();
+            Plugin plugin = new Plugin(name, PluginType.jbang, Optional.of(location), description, Optional.empty(),
+                    isUserScoped);
+            if (pluginFilter.test(plugin)) {
+                jbangPlugins.put(name, plugin);
+            }
+        });
+        return jbangPlugins;
+    }
+
+    public Map<String, Plugin> executablePlugins() {
+        boolean isUserScoped = !quarkusProject.isPresent();
+        Map<String, Plugin> executablePlugins = new HashMap<>();
+        Binaries.findQuarkusPrefixedCommands().forEach(f -> {
+            String name = util.getName(f.getName());
+            Optional<String> description = Optional.empty();
+            Optional<String> location = Optional.of(f.getAbsolutePath());
+            Plugin plugin = new Plugin(name, PluginType.executable, location, description, Optional.empty(), isUserScoped);
+            if (pluginFilter.test(plugin)) {
+                executablePlugins.put(name, plugin);
+            }
+        });
+        return executablePlugins;
     }
 
     public Map<String, Plugin> extensionPlugins() {

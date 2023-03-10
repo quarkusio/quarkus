@@ -80,7 +80,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             missing.ifPresent(m -> {
                 Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
                 if (installable.containsKey(m)) {
-                    if (Prompt.yerOrNo(true,
+                    if (Prompt.yesOrNo(true,
                             "Command %s is not installed, but a matching plugin is available. Would you like to install it now ?",
                             args)) {
                         pluginManager.addPlugin(m).ifPresent(added -> plugins.put(added.getName(), added));

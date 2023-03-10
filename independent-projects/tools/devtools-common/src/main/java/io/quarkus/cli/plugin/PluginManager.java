@@ -1,6 +1,7 @@
 package io.quarkus.cli.plugin;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -152,8 +153,12 @@ public class PluginManager {
     private boolean reconcile(PluginCatalog catalog) {
         Path location = catalog.getCatalogLocation()
                 .orElseThrow(() -> new IllegalArgumentException("Unknwon plugin catalog location."));
+        List<PluginType> installedTypes = catalog.getPlugins().entrySet().stream().map(Map.Entry::getValue).map(Plugin::getType)
+                .collect(Collectors.toList());
+        Map<String, Plugin> installablePlugins = state.installablePlugins(installedTypes);
+
         Map<String, Plugin> unreachable = catalog.getPlugins().entrySet().stream()
-                .filter(i -> !state.getInstallablePlugins().containsKey(i.getKey()))
+                .filter(i -> !installablePlugins.containsKey(i.getKey()))
                 .filter(i -> PluginUtil.shouldRemove(i.getValue()))
                 .collect(Collectors.toMap(m -> m.getKey(), m -> m.getValue()));
 

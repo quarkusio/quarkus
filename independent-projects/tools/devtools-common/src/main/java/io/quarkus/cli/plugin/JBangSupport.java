@@ -20,6 +20,7 @@ import java.util.function.Predicate;
 
 import io.quarkus.devtools.exec.Executable;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.utils.Prompt;
 import io.quarkus.fs.util.ZipUtils;
 
 public class JBangSupport {
@@ -34,6 +35,8 @@ public class JBangSupport {
 
     private final MessageWriter output;
     private Path workingDirectory;
+
+    private boolean promptForInstallation = true;
 
     public JBangSupport(MessageWriter output) {
         this(output, Paths.get(System.getProperty("user.dir")));
@@ -67,20 +70,31 @@ public class JBangSupport {
         }
     }
 
-    public File getExecutable() {
-        File executable = findWrapper()
+    public Optional<File> getOptionalExecutable() {
+        return findWrapper()
                 .or(() -> findExecutableInPath())
                 .or(() -> findExecutableInLocalJbang())
                 .or(() -> {
-                    installJBang();
-                    return findExecutableInLocalJbang();
-                })
-                .orElseThrow(() -> new IllegalStateException("Unable to find and install jbang!"));
+                    try {
+                        if (promptForInstallation && Prompt.yesOrNo(true,
+                                "JBang is needed to list / run jbang plugins, would you like to install it now ?")) {
+                            installJBang();
+                            return findExecutableInLocalJbang();
+                        } else
+                            return Optional.empty();
+                    } finally {
+                        promptForInstallation = false;
+                    }
+                }).map(e -> {
+                    if (!e.canExecute()) {
+                        e.setExecutable(true);
+                    }
+                    return e;
+                });
+    }
 
-        if (!executable.canExecute()) {
-            executable.setExecutable(true);
-        }
-        return executable;
+    public File getExecutable() {
+        return getOptionalExecutable().orElseThrow(() -> new IllegalStateException("Unable to find and install jbang!"));
     }
 
     public Path getWorkingDirectory() {
@@ -132,7 +146,7 @@ public class JBangSupport {
     }
 
     public boolean isAvailable() {
-        return version().isPresent();
+        return getOptionalExecutable().isPresent() && version().isPresent();
     }
 
     private Path getInstallationDir() {

@@ -384,6 +384,13 @@ public final class HibernateOrmProcessor {
             return;
         }
 
+        if (shouldIgnorePersistenceXmlResources(hibernateOrmConfig)) {
+            LOG.warnf("Hibernate ORM ignores 'persistence.xml' files because config property '%s' or System property '%s' was set to true",
+                    "quarkus.hibernate-orm.persistence-xml.ignore",
+                    "SKIP_PARSE_PERSISTENCE_XML");
+            return;
+        }
+
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             ParsedPersistenceXmlDescriptor xmlDescriptor = persistenceXmlDescriptorBuildItem.getDescriptor();

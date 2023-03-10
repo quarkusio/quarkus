@@ -3,7 +3,6 @@ package io.quarkus.jdbc.oracle.deployment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 
 /**
  * @author Sanne Grinovero <sanne@hibernate.org>
@@ -33,12 +32,6 @@ public final class OracleNativeImage {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jndi.ldap.LdapCtxFactory"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jndi.dns.DnsContextFactory"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jndi.rmi.registry.RegistryContextFactory"));
-    }
-
-    @BuildStep
-    void runtimeInitialization(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClass) {
-        runtimeInitializedClass
-                .produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.BlockSource$ThreadedCachingBlockSource"));
     }
 
 }

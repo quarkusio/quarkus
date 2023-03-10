@@ -11,9 +11,10 @@ include::_attributes.adoc[]
 :sectnums:
 :sectnumlevels: 4
 
-Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
-However, it is not a full CDI implementation verified by the TCK.
-Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
+Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html[Jakarta Contexts and Dependency Injection 4.0, window="_blank"] specification.
+It aims to implement the CDI Lite specification, with selected improvements on top.
+It is not a CDI Full implementation and is not verified by the TCK yet.
+See also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
 TIP: If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introduction to CDI] first.
 
@@ -741,6 +742,7 @@ class Services {
 +
 NOTE: Interceptors can use `InvocationContext.getMethod()` to detect static methods and adjust the behavior accordingly.
 
+[[unproxyable_classes_transformation]]
 === Ability to handle 'final' classes and methods
 
 In normal CDI, classes that are marked as `final` and / or have `final` methods are not eligible for proxy creation,
@@ -1080,6 +1082,32 @@ NOTE: These endpoints are only available in the development mode, i.e. when you 
 
 In the development mode, it is also possible to enable monitoring of business method invocations and fired events.
 Simply set the `quarkus.arc.dev-mode.monitoring-enabled` configuration property to `true` and explore the relevant Dev UI pages.
+
+[[strict_mode]]
+== Strict Mode
+
+By default, ArC does not perform all validations required by the CDI specification.
+It also improves CDI usability in many ways, some of them being directly against the specification.
+
+To be able to eventually pass the CDI Lite TCK, ArC also has a _strict_ mode.
+This mode enables additional validations and disables certain improvements that conflict with the specification.
+
+To enable the strict mode, use the following configuration:
+
+[source,properties]
+----
+quarkus.arc.strict-compatibility=true
+----
+
+Some other features affect specification compatibility as well:
+
+* <<unproxyable_classes_transformation,Transformation of unproxyable classes>>
+* <<remove_unused_beans,Unused beans removal>>
+
+To get a behavior closer to the specification, these features should also be disabled.
+
+Applications are recommended to use the default, non-strict mode, which makes CDI more convenient to use.
+The "strictness" of the strict mode (the set of additional validations and the set of disabled improvements on top of the CDI specification) may change over time.
 
 [[arc-configuration-reference]]
 == ArC Configuration Reference

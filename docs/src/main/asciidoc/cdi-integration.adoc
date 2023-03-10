@@ -286,7 +286,7 @@ You can:
 
 1. Generate the bytecode of the `Contextual#create(CreationalContext<T>)` method directly via `ExtendedBeanConfigurator.creator(Consumer<MethodCreator>)`.
 2. Pass a subclass of `io.quarkus.arc.BeanCreator` via `ExtendedBeanConfigurator#creator(Class<? extends BeanCreator<U>>)`, and possibly specify some build-time parameters via `ExtendedBeanConfigurator#param()` and synthetic injection points via `ExtendedBeanConfigurator#addInjectionPoint()`.
-3. Produce the runtime instance through a proxy returned from a <<writing-extensions.adoc#bytecode-recording,`@Recorder` method>> and set it via `ExtendedBeanConfigurator#runtimeValue(RuntimeValue<?>)`, `ExtendedBeanConfigurator#supplier(Supplier<?>)` or `ExtendedBeanConfigurator#createWith(Function<SyntheticCreationalContext<?>, <?>)`.
+3. Produce the runtime instance through a proxy returned from a <<writing-extensions.adoc#bytecode-recording,`@Recorder` method>> and set it via `ExtendedBeanConfigurator#runtimeValue(RuntimeValue<?>)`, `ExtendedBeanConfigurator#runtimeProxy(Object)`,  `ExtendedBeanConfigurator#supplier(Supplier<?>)` or `ExtendedBeanConfigurator#createWith(Function<SyntheticCreationalContext<?>, <?>)`.
 
 .`SyntheticBeanBuildItem` Example 2
 [source,java]

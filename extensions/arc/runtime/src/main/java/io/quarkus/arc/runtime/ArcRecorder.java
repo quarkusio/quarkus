@@ -127,6 +127,15 @@ public class ArcRecorder {
         };
     }
 
+    public Function<SyntheticCreationalContext<?>, Object> createFunction(Object returnedProxy) {
+        return new Function<SyntheticCreationalContext<?>, Object>() {
+            @Override
+            public Object apply(SyntheticCreationalContext<?> t) {
+                return returnedProxy;
+            }
+        };
+    }
+
     public void initTestApplicationClassPredicate(Set<String> applicationBeanClasses) {
         PreloadedTestApplicationClassPredicate predicate = Arc.container()
                 .instance(PreloadedTestApplicationClassPredicate.class).get();

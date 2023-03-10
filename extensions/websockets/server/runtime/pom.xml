@@ -60,6 +60,9 @@
                         <excludedArtifact>org.jboss.spec.javax.websocket:jboss-websocket-api_1.1_spec</excludedArtifact>
                         <excludedArtifact>javax.websocket:javax.websocket-api</excludedArtifact>
                     </excludedArtifacts>
+                    <capabilities>
+                        <provides>io.quarkus.vertx.websockets</provides>
+                    </capabilities>
                 </configuration>
             </plugin>
             <plugin>

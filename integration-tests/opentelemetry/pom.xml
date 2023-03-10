@@ -132,6 +132,15 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <vertx.disableWebsockets>false</vertx.disableWebsockets>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -155,6 +164,9 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skipTests>${native.surefire.skip}</skipTests>
+                            <systemPropertyVariables>
+                                <vertx.disableWebsockets>false</vertx.disableWebsockets>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
 
@@ -168,6 +180,7 @@
                                 </goals>
                                 <configuration>
                                     <systemPropertyVariables>
+                                        <vertx.disableWebsockets>false</vertx.disableWebsockets>
                                         <native.image.path>
                                             ${project.build.directory}/${project.build.finalName}-runner
                                         </native.image.path>

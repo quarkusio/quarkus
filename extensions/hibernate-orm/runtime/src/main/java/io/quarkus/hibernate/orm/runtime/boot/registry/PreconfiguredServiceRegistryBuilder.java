@@ -43,6 +43,7 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractor
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutationExecutorServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectResolverInitiator;
 import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.QuarkusRuntimeBytecodeProviderInitiator;
 
 /**
@@ -62,9 +63,9 @@ public class PreconfiguredServiceRegistryBuilder {
     private final Collection<Integrator> integrators;
     private final StandardServiceRegistryImpl destroyedRegistry;
 
-    public PreconfiguredServiceRegistryBuilder(RecordedState rs) {
+    public PreconfiguredServiceRegistryBuilder(String puName, RecordedState rs) {
         checkIsNotReactive(rs);
-        this.initiators = buildQuarkusServiceInitiatorList(rs);
+        this.initiators = buildQuarkusServiceInitiatorList(puName, rs);
         this.integrators = rs.getIntegrators();
         this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata()
                 .getMetadataBuildingOptions()
@@ -145,7 +146,7 @@ public class PreconfiguredServiceRegistryBuilder {
      *
      * @return
      */
-    private static List<StandardServiceInitiator<?>> buildQuarkusServiceInitiatorList(RecordedState rs) {
+    private static List<StandardServiceInitiator<?>> buildQuarkusServiceInitiatorList(String puName, RecordedState rs) {
         final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<StandardServiceInitiator<?>>();
 
         //References to this object need to be injected in both the initiator for BytecodeProvider and for
@@ -193,11 +194,13 @@ public class PreconfiguredServiceRegistryBuilder {
         serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
 
-        // Disabled: Dialect is injected explicitly
-        // serviceInitiators.add( DialectResolverInitiator.INSTANCE );
+        // Custom one: Dialect is injected explicitly
+        serviceInitiators.add(new QuarkusRuntimeInitDialectResolverInitiator(rs.getDialect()));
 
         // Custom one: Dialect is injected explicitly
-        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(rs.getDialect()));
+        var recordedConfig = rs.getBuildTimeSettings().getSource();
+        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.getDialect(),
+                rs.getBuildTimeSettings().getSource()));
 
         // Default implementation
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);

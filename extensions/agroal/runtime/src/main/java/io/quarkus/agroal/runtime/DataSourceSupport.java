@@ -1,6 +1,7 @@
 package io.quarkus.agroal.runtime;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class DataSourceSupport {
 
@@ -17,13 +18,16 @@ public class DataSourceSupport {
     public static class Entry {
         public final String dataSourceName;
         public final String resolvedDbKind;
+        public final Optional<String> dbVersion;
         public final String resolvedDriverClass;
         public final boolean isDefault;
 
-        public Entry(String dataSourceName, String resolvedDbKind, String resolvedDriverClass,
+        public Entry(String dataSourceName, String resolvedDbKind, Optional<String> dbVersion,
+                String resolvedDriverClass,
                 boolean isDefault) {
             this.dataSourceName = dataSourceName;
             this.resolvedDbKind = resolvedDbKind;
+            this.dbVersion = dbVersion;
             this.resolvedDriverClass = resolvedDriverClass;
             this.isDefault = isDefault;
         }

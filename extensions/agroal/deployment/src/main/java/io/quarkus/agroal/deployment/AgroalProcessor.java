@@ -186,6 +186,7 @@ class AgroalProcessor {
             String dataSourceName = aggregatedDataSourceBuildTimeConfig.getName();
             dataSourceSupportEntries.put(dataSourceName,
                     new DataSourceSupport.Entry(dataSourceName, aggregatedDataSourceBuildTimeConfig.getDbKind(),
+                            aggregatedDataSourceBuildTimeConfig.getDataSourceConfig().dbVersion,
                             aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass(),
                             aggregatedDataSourceBuildTimeConfig.isDefault()));
         }
@@ -274,6 +275,7 @@ class AgroalProcessor {
 
             jdbcDataSource.produce(new JdbcDataSourceBuildItem(dataSourceName,
                     entry.getValue().resolvedDbKind,
+                    entry.getValue().dbVersion,
                     entry.getValue().isDefault));
         }
     }

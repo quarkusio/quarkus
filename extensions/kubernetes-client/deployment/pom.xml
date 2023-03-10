@@ -30,6 +30,16 @@
             <artifactId>quarkus-vertx-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.dajudge.kindcontainer</groupId>
+            <artifactId>kindcontainer</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>

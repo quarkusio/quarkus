@@ -104,7 +104,7 @@
         <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
         <narayana.version>6.0.0.Final</narayana.version>
-        <agroal.version>2.0</agroal.version>
+        <agroal.version>2.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.6.2</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->

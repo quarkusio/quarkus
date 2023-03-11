@@ -16,6 +16,7 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
+import org.hibernate.reactive.provider.service.NativeParametersRendering;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
@@ -25,16 +26,15 @@ import org.hibernate.reactive.provider.service.ReactiveSqmMultiTableMutationStra
 import org.hibernate.reactive.provider.service.ReactiveValuesMappingProducerProviderInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.sql.ast.internal.JdbcParameterRendererInitiator;
 
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
-import io.quarkus.hibernate.orm.runtime.service.DialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticInitDialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.StandardHibernateORMInitiatorListProvider;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionProviderInitiator;
 
@@ -47,6 +47,9 @@ import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionP
  * @see StandardHibernateORMInitiatorListProvider
  */
 public final class ReactiveHibernateInitiatorListProvider implements InitialInitiatorListProvider {
+
+    //N.B. this class is currently constructed via reflection by the ORM core extension
+    //(iif the Hibernate Reactive extension is available)
 
     @Override
     public List<StandardServiceInitiator<?>> initialInitiatorList() {
@@ -84,7 +87,7 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         serviceInitiators.add(DialectResolverInitiator.INSTANCE);
 
         // Custom Quarkus implementation !
-        serviceInitiators.add(DialectFactoryInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusStaticInitDialectFactoryInitiator.INSTANCE);
 
         // Default implementation
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
@@ -117,8 +120,8 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         //Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE);
 
-        // Default implementation - this is expected to change as we customize the rendering for vert.x drivers
-        serviceInitiators.add(JdbcParameterRendererInitiator.INSTANCE);
+        // Custom for Hibernate Reactive: NativeParametersRendering
+        serviceInitiators.add(NativeParametersRendering.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

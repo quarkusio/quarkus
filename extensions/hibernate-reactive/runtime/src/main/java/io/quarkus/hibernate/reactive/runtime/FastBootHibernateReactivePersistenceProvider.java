@@ -193,7 +193,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RecordedState rs,
             String persistenceUnitName) {
         PreconfiguredReactiveServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredReactiveServiceRegistryBuilder(
-                rs);
+                persistenceUnitName, rs);
 
         registerVertxAndPool(persistenceUnitName, runtimeSettings, serviceRegistryBuilder);
 

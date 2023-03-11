@@ -25,6 +25,7 @@ import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.KubeSchema;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.VersionInfo;
@@ -206,11 +207,11 @@ public class KubernetesClientProcessor {
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class).methods(true).build());
 
-        // exec credentials support - we need to use Strings as the classes are private
+        // exec credentials support
         reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder("io.fabric8.kubernetes.client.Config$ExecCredential",
-                        "io.fabric8.kubernetes.client.Config$ExecCredentialSpec",
-                        "io.fabric8.kubernetes.client.Config$ExecCredentialStatus").methods(true).fields(true).build());
+                .produce(ReflectiveClassBuildItem.builder(Config.ExecCredential.class,
+                        Config.ExecCredentialSpec.class,
+                        Config.ExecCredentialStatus.class).methods(true).fields(true).build());
 
         if (log.isDebugEnabled()) {
             final String watchedClassNames = watchedClasses

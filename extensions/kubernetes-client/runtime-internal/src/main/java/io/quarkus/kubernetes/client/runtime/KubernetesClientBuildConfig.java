@@ -140,12 +140,6 @@ public class KubernetesClientBuildConfig {
     public Duration requestRetryBackoffInterval;
 
     /**
-     * Maximum amount of time in milliseconds to wait for a rollout to be completed
-     */
-    @ConfigItem(defaultValue = "PT15M") // default lifted from Kubernetes Client
-    public Duration rollingTimeout;
-
-    /**
      * HTTP proxy used to access the Kubernetes API server
      */
     @ConfigItem

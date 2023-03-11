@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -53,9 +52,10 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     public BuildResult runGradleWrapper(File projectDir, String... args) throws IOException, InterruptedException {
         setupTestCommand();
-        List<String> command = new LinkedList<>();
+        List<String> systemProperties = getSytemProperties();
+        List<String> command = new ArrayList<>(systemProperties.size() + args.length + 4);
         command.add(getGradleWrapperCommand());
-        command.addAll(getSytemProperties());
+        command.addAll(systemProperties);
         command.add("-Dorg.gradle.console=plain");
         command.add("-Dorg.gradle.daemon=false");
         command.add("--stacktrace");

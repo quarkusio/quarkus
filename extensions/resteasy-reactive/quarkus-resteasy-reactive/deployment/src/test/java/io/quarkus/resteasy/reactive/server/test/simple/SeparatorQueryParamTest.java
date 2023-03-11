@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.get;
 
 import java.util.List;
 
@@ -63,6 +63,15 @@ public class SeparatorQueryParamTest {
     @Test
     public void multipleQueryParams() {
         get("/hello?name=foo,bar&name=one,two,three&name=yolo")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("hello foo bar one two three yolo"))
+                .header("x-size", "6");
+    }
+
+    @Test
+    public void multipleQueryParamsBean() {
+        get("/hello/bean?name=foo,bar&name=one,two,three&name=yolo")
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("hello foo bar one two three yolo"))

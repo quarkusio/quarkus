@@ -115,6 +115,7 @@ public class ServerEndpointIndexer
         this.converterSupplierIndexerExtension = builder.converterSupplierIndexerExtension;
     }
 
+    @Override
     protected void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
         DotName dotName = paramType.name();
         if (dotName.equals(JSONP_JSON_VALUE)
@@ -130,6 +131,7 @@ public class ServerEndpointIndexer
         }
     }
 
+    @Override
     protected void addReaderForType(AdditionalReaders additionalReaders, Type paramType) {
         DotName dotName = paramType.name();
         if (dotName.equals(JSONP_JSON_NUMBER)
@@ -198,6 +200,7 @@ public class ServerEndpointIndexer
         return injectableBean.isFormParamRequired();
     }
 
+    @Override
     protected boolean doesMethodHaveBlockingSignature(MethodInfo info) {
         for (var i : methodScanners) {
             if (i.isMethodSignatureAsync(info)) {
@@ -344,7 +347,6 @@ public class ServerEndpointIndexer
         ParameterConverterSupplier converter = parameterResult.getConverter();
         DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
         String mimeType = getPartMime(parameterResult.getAnns());
-        String separator = getSeparator(parameterResult.getAnns());
         String declaredType = declaredTypes.getDeclaredType();
 
         if (SUPPORTED_MULTIPART_FILE_TYPES.contains(DotName.createSimple(declaredType))) {
@@ -354,9 +356,10 @@ public class ServerEndpointIndexer
                 elementType, declaredType, declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                parameterResult.getCustomParameterExtractor(), mimeType, separator);
+                parameterResult.getCustomParameterExtractor(), mimeType, parameterResult.getSeparator());
     }
 
+    @Override
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             ServerIndexedParameter builder, String elementType) {
         try {
@@ -368,6 +371,7 @@ public class ServerEndpointIndexer
         }
     }
 
+    @Override
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
             boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
@@ -375,6 +379,7 @@ public class ServerEndpointIndexer
         builder.setConverter(new SortedSetConverter.SortedSetSupplier(converter));
     }
 
+    @Override
     protected void handleOptionalParam(Map<String, String> existingConverters,
             Map<DotName, AnnotationInstance> parameterAnnotations,
             String errorLocation,
@@ -409,6 +414,7 @@ public class ServerEndpointIndexer
         builder.setConverter(new OptionalConverter.OptionalSupplier(converter));
     }
 
+    @Override
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             ServerIndexedParameter builder, String elementType) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
@@ -416,6 +422,7 @@ public class ServerEndpointIndexer
         builder.setConverter(new SetConverter.SetSupplier(converter));
     }
 
+    @Override
     protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             ServerIndexedParameter builder, String elementType) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
@@ -423,6 +430,7 @@ public class ServerEndpointIndexer
         builder.setConverter(new ListConverter.ListSupplier(converter));
     }
 
+    @Override
     protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             ServerIndexedParameter builder, String elementType) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
@@ -430,6 +438,7 @@ public class ServerEndpointIndexer
         builder.setConverter(new ArrayConverter.ArraySupplier(converter, elementType));
     }
 
+    @Override
     protected void handlePathSegmentParam(ServerIndexedParameter builder) {
         builder.setConverter(new PathSegmentParamConverter.Supplier());
     }
@@ -439,6 +448,7 @@ public class ServerEndpointIndexer
         return path.substring(0, path.length() - 1);
     }
 
+    @Override
     protected void handleTemporalParam(ServerIndexedParameter builder, DotName paramType,
             Map<DotName, AnnotationInstance> parameterAnnotations,
             MethodInfo currentMethodInfo) {

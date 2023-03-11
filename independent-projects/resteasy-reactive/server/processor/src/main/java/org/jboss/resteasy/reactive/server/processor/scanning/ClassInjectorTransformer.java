@@ -275,26 +275,27 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         break;
                     case FORM:
                         injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true, true,
-                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED));
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), false);
                         break;
                     case HEADER:
-                        injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true, false, false);
+                        injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true, false, false,
+                                false);
                         break;
                     case MATRIX:
                         injectParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true, true,
-                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED));
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), false);
                         break;
                     case COOKIE:
                         injectParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false, false,
-                                false);
+                                false, false);
                         break;
                     case PATH:
                         injectParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false, true,
-                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED));
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), false);
                         break;
                     case QUERY:
                         injectParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true, true,
-                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED));
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), true);
                         break;
                     default:
                         break;
@@ -518,7 +519,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         }
 
         private void injectParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
-                ServerIndexedParameter extractor, boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded) {
+                ServerIndexedParameter extractor, boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded,
+                boolean extraSeparatorParam) {
 
             // spec says:
             /*
@@ -552,7 +554,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             // push the parameter value
             MultipartFormParamExtractor.Type multipartType = getMultipartFormType(extractor);
             if (multipartType == null) {
-                loadParameter(injectMethod, methodName, extractor, extraSingleParameter, extraEncodedParam, encoded);
+                loadParameter(injectMethod, methodName, extractor, extraSingleParameter, extraEncodedParam, encoded,
+                        extraSeparatorParam);
             } else {
                 loadMultipartParameter(injectMethod, fieldInfo, extractor, multipartType);
             }
@@ -886,13 +889,22 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         }
 
         private void loadParameter(MethodVisitor injectMethod, String methodName, IndexedParameter extractor,
-                boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded) {
+                boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded, boolean extraSeparatorParam) {
             // ctx param
             injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
             // name param
             injectMethod.visitLdcInsn(extractor.getName());
             String methodSignature;
-            if (extraEncodedParam && extraSingleParameter) {
+            if (extraEncodedParam && extraSingleParameter && extraSeparatorParam) {
+                injectMethod.visitLdcInsn(extractor.isSingle());
+                injectMethod.visitLdcInsn(encoded);
+                if (extractor.getSeparator() != null) {
+                    injectMethod.visitLdcInsn(extractor.getSeparator());
+                } else {
+                    injectMethod.visitInsn(Opcodes.ACONST_NULL);
+                }
+                methodSignature = "(Ljava/lang/String;ZZLjava/lang/String;)Ljava/lang/Object;";
+            } else if (extraEncodedParam && extraSingleParameter) {
                 injectMethod.visitLdcInsn(extractor.isSingle());
                 injectMethod.visitLdcInsn(encoded);
                 methodSignature = "(Ljava/lang/String;ZZ)Ljava/lang/Object;";

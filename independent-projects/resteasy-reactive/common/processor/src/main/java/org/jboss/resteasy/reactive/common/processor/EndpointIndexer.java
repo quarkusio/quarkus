@@ -278,7 +278,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 clazz.setPath(sanitizePath(path));
             }
             if (factoryCreator != null) {
-                clazz.setFactory((BeanFactory<Object>) factoryCreator.apply(classInfo.name().toString()));
+                clazz.setFactory(factoryCreator.apply(classInfo.name().toString()));
             }
             Map<String, String> classLevelExceptionMappers = this.classLevelExceptionMappers.get(classInfo.name());
             if (classLevelExceptionMappers != null) {
@@ -1238,10 +1238,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if (queryParam != null) {
             builder.setName(queryParam.value().asString());
             builder.setType(ParameterType.QUERY);
+            builder.setSeparator(getSeparator(anns));
             convertible = true;
         } else if (restQueryParam != null) {
             builder.setName(valueOrDefault(restQueryParam.value(), sourceName));
             builder.setType(ParameterType.QUERY);
+            builder.setSeparator(getSeparator(anns));
             convertible = true;
         } else if (cookieParam != null) {
             builder.setName(cookieParam.value().asString());
@@ -1437,6 +1439,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
         if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
             throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
+        }
+        if (builder.isSingle() && builder.getSeparator() != null) {
+            throw new DeploymentException("Single parameters should not be marked with @Separator");
         }
         builder.setElementType(elementType);
         return builder;

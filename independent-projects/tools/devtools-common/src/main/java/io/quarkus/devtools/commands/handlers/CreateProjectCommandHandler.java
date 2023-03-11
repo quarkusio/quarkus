@@ -1,19 +1,9 @@
 package io.quarkus.devtools.commands.handlers;
 
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.DATA;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXAMPLE;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTENSIONS;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTRA_CODESTARTS;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_BUILDTOOL_WRAPPER;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_CODE;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_DOCKERFILES;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PACKAGE_NAME;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PROJECT_GROUP_ID;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.QUARKUS_VERSION;
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.RESOURCE_CLASS_NAME;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.*;
 import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.toCodestartData;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeExtensionsFromQuery;
-import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getMinimumJavaVersion;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +20,7 @@ import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -74,15 +65,14 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
 
         List<Extension> extensionsToAdd = computeRequiredExtensions(invocation.getExtensionsCatalog(), extensionsQuery,
                 invocation.log());
-
-        ExtensionCatalog mainCatalog = invocation.getExtensionsCatalog(); // legacy platform initialization
         final List<ExtensionCatalog> extensionOrigins;
+        ExtensionCatalog mainCatalog = invocation.getExtensionsCatalog(); // legacy platform initialization
+        final String javaVersion = invocation.getStringValue(JAVA_VERSION);
         try {
+            checkMinimumJavaVersion(javaVersion, extensionsToAdd);
             extensionOrigins = getExtensionOrigins(mainCatalog, extensionsToAdd);
         } catch (QuarkusCommandException e) {
-            final StringBuilder buf = new StringBuilder();
-            buf.append(ERROR_ICON).append(' ').append(e.getLocalizedMessage());
-            invocation.log().info(buf.toString());
+            invocation.log().error(e.getLocalizedMessage());
             return QuarkusCommandOutcome.failure();
         }
 
@@ -242,6 +232,26 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         }
         if (eoBuilder != null) {
             extOrigins.add(eoBuilder.build());
+        }
+    }
+
+    private void checkMinimumJavaVersion(String javaVersionString, List<Extension> extensions) throws QuarkusCommandException {
+        final List<Extension> incompatibleExtensions = new ArrayList<>();
+        final int javaVersion = javaVersionString == null ? CreateProjectHelper.DEFAULT_JAVA_VERSION
+                : Integer.parseInt(javaVersionString);
+        for (Extension extension : extensions) {
+            Integer extMinJavaVersion = getMinimumJavaVersion(extension);
+            if (extMinJavaVersion != null
+                    && javaVersion < extMinJavaVersion) {
+                incompatibleExtensions.add(extension);
+            }
+        }
+        if (!incompatibleExtensions.isEmpty()) {
+            final String list = incompatibleExtensions.stream()
+                    .map(e -> String.format("- %s (min: %s)", e.managementKey(), getMinimumJavaVersion(e)))
+                    .collect(Collectors.joining("\n  "));
+            throw new QuarkusCommandException(String
+                    .format("Some extensions are not compatible with the selected Java version (%s):\n %s", javaVersion, list));
         }
     }
 }

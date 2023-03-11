@@ -17,6 +17,8 @@ public interface Extension {
     String MD_NESTED_CODESTART_ARTIFACT = "codestart.artifact";
 
     String MD_GUIDE = "guide";
+
+    String MD_MINIMUM_JAVA_VERSION = "minimum-java-version";
     String MD_KEYWORDS = "keywords";
     String MD_UNLISTED = "unlisted";
     String MD_CATEGORIES = "categories";

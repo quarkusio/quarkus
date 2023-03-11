@@ -50,6 +50,10 @@ public final class ExtensionProcessor {
         return getMetadataValue(extension, MD_GUIDE).asString();
     }
 
+    public static Integer getMinimumJavaVersion(Extension extension) {
+        return getMetadataValue(extension, MD_MINIMUM_JAVA_VERSION).asInteger();
+    }
+
     public static List<String> getCategories(Extension extension) {
         return getMetadataValue(extension, MD_CATEGORIES).asStringList();
     }
@@ -198,6 +202,10 @@ public final class ExtensionProcessor {
 
     public List<String> getKeywords() {
         return getKeywords(extension);
+    }
+
+    public Integer getMinimumJavaVersion() {
+        return getMinimumJavaVersion(extension);
     }
 
     /**

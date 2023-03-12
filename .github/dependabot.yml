@@ -80,6 +80,7 @@ updates:
       - dependency-name: io.fabric8:docker-maven-plugin
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
+      - dependency-name: org.apache.maven.plugins:maven-invoker-plugin
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*

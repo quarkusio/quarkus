@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.matching;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.util.function.Supplier;

@@ -8,7 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -103,9 +102,21 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                 .completionStage(new Supplier<CompletionStage<V>>() {
                     @Override
                     public CompletionStage<V> get() {
-                        // When stats are enabled we need to use Map.compute() in order to call statsCounter.recordHits(1)
-                        // Map.compute() is more costly compared to Map.computeIfAbsent() because the remapping function is always called and the returned value is replaced
-                        return recordStats ? computeWithStats(key, valueLoader) : computeWithoutStats(key, valueLoader);
+                        // When stats are enabled we need to call statsCounter.recordHits(1)/statsCounter.recordMisses(1) accordingly
+                        StatsRecorder recorder = recordStats ? new OperationalStatsRecorder() : NoopStatsRecorder.INSTANCE;
+                        @SuppressWarnings("unchecked")
+                        CompletionStage<V> result = (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
+                                new Function<Object, CompletableFuture<Object>>() {
+                                    @Override
+                                    public CompletableFuture<Object> apply(Object key) {
+                                        recorder.onValueAbsent();
+                                        return valueLoader.apply((K) key)
+                                                .map(TO_CACHE_VALUE)
+                                                .subscribeAsCompletionStage();
+                                    }
+                                });
+                        recorder.doRecord(key);
+                        return result;
                     }
                 }).map(fromCacheValue());
     }
@@ -126,6 +137,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             // cast, but still throw the CacheException in case it fails
             return unwrapCacheValueOrThrowable(existingCacheValue)
                     .thenApply(new Function<>() {
+                        @SuppressWarnings("unchecked")
                         @Override
                         public V apply(Object value) {
                             try {
@@ -227,6 +239,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         return Collections.unmodifiableSet(new HashSet<>(cache.asMap().keySet()));
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <V> void put(Object key, CompletableFuture<V> valueFuture) {
         cache.put(key, (CompletableFuture<Object>) valueFuture);
@@ -288,41 +301,53 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     }
 
     @SuppressWarnings("unchecked")
-    private <K, V> CompletionStage<V> computeWithStats(K key, Function<K, Uni<V>> valueLoader) {
-        return (CompletionStage<V>) cache.asMap().compute(key,
-                new BiFunction<Object, CompletableFuture<Object>, CompletableFuture<Object>>() {
-                    @Override
-                    public CompletableFuture<Object> apply(Object key, CompletableFuture<Object> value) {
-                        if (value == null) {
-                            statsCounter.recordMisses(1);
-                            return valueLoader.apply((K) key)
-                                    .map(TO_CACHE_VALUE)
-                                    .subscribeAsCompletionStage();
-                        } else {
-                            LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
-                            statsCounter.recordHits(1);
-                            return value;
-                        }
-                    }
-                });
-    }
-
-    @SuppressWarnings("unchecked")
-    private <K, V> CompletionStage<V> computeWithoutStats(K key, Function<K, Uni<V>> valueLoader) {
-        return (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
-                new Function<Object, CompletableFuture<Object>>() {
-                    @Override
-                    public CompletableFuture<Object> apply(Object key) {
-                        return valueLoader.apply((K) key)
-                                .map(TO_CACHE_VALUE)
-                                .subscribeAsCompletionStage();
-                    }
-                });
-    }
-
-    @SuppressWarnings("unchecked")
     private <V> Function<V, V> fromCacheValue() {
         return (Function<V, V>) FROM_CACHE_VALUE;
+    }
+
+    private interface StatsRecorder {
+
+        void onValueAbsent();
+
+        <K> void doRecord(K key);
+
+    }
+
+    private static class NoopStatsRecorder implements StatsRecorder {
+
+        static final NoopStatsRecorder INSTANCE = new NoopStatsRecorder();
+
+        @Override
+        public void onValueAbsent() {
+            // no-op
+        }
+
+        @Override
+        public <K> void doRecord(K key) {
+            // no-op
+        }
+
+    }
+
+    private class OperationalStatsRecorder implements StatsRecorder {
+
+        private boolean valueAbsent;
+
+        @Override
+        public void onValueAbsent() {
+            valueAbsent = true;
+        }
+
+        @Override
+        public <K> void doRecord(K key) {
+            if (valueAbsent) {
+                statsCounter.recordMisses(1);
+            } else {
+                LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
+                statsCounter.recordHits(1);
+            }
+        }
+
     }
 
     private static final Function<Object, Object> FROM_CACHE_VALUE = new Function<Object, Object>() {

@@ -172,7 +172,9 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
 
     private LocalProject loadProject(final Path projectPom, String skipModule) throws BootstrapMavenException {
         final Model rawModel = rawModel(projectPom);
-
+        if (rawModel == null) {
+            return null;
+        }
         final Path parentPom = getParentPom(projectPom, rawModel);
         final LocalProject parentProject = parentPom == null || rawModelCache.containsKey(parentPom.getParent()) ? null
                 : loadProject(parentPom, parentPom.getParent().relativize(projectPom.getParent()).toString());

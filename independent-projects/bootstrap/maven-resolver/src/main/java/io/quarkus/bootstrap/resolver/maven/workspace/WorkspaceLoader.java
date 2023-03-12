@@ -172,6 +172,9 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
 
     private LocalProject loadProject(Path projectPom, String skipModule) throws BootstrapMavenException {
         final Model rawModel = rawModel(projectPom);
+        if (rawModel == null) {
+            return null;
+        }
         final LocalProject parentProject = loadParentProject(projectPom, rawModel);
         final LocalProject project = project(projectPom);
         if (project == null) {

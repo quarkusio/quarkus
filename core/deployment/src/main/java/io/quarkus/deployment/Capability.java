@@ -42,6 +42,7 @@ public interface Capability {
     String REST = QUARKUS_PREFIX + ".rest";
     String REST_CLIENT = REST + ".client";
     String REST_CLIENT_REACTIVE = REST_CLIENT + ".reactive";
+    String REST_CLIENT_REACTIVE_JACKSON = REST_CLIENT_REACTIVE + ".jackson";
     String REST_JACKSON = REST + ".jackson";
     String REST_JSONB = REST + ".jsonb";
 

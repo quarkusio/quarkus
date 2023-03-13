@@ -7,19 +7,22 @@ import java.util.function.Supplier;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.processor.BeanConfiguratorBase;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl.ReturnedProxy;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
  * Makes it possible to register a synthetic bean.
  * <p>
  * Bean instances can be easily produced through a recorder and set via {@link ExtendedBeanConfigurator#supplier(Supplier)},
- * {@link ExtendedBeanConfigurator#runtimeValue(RuntimeValue)} and {@link ExtendedBeanConfigurator#createWith(Function)}.
+ * {@link ExtendedBeanConfigurator#runtimeValue(RuntimeValue)}, {@link ExtendedBeanConfigurator#createWith(Function)} and
+ * {@link ExtendedBeanConfigurator#runtimeProxy(Object)}.
  *
  * @see ExtendedBeanConfigurator
  * @see BeanRegistrar
@@ -61,7 +64,8 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
     }
 
     boolean hasRecorderInstance() {
-        return configurator.supplier != null || configurator.runtimeValue != null || configurator.fun != null;
+        return configurator.supplier != null || configurator.runtimeValue != null || configurator.fun != null
+                || configurator.runtimeProxy != null;
     }
 
     /**
@@ -69,6 +73,7 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
      */
     public static class ExtendedBeanConfigurator extends BeanConfiguratorBase<ExtendedBeanConfigurator, Object> {
 
+        private Object runtimeProxy;
         private Supplier<?> supplier;
         private RuntimeValue<?> runtimeValue;
         private Function<SyntheticCreationalContext<?>, ?> fun;
@@ -85,7 +90,7 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
          * @return a new build item
          */
         public SyntheticBeanBuildItem done() {
-            if (supplier == null && runtimeValue == null && fun == null && creatorConsumer == null) {
+            if (supplier == null && runtimeValue == null && fun == null && runtimeProxy == null && creatorConsumer == null) {
                 throw new IllegalStateException(
                         "Synthetic bean does not provide a creation method, use ExtendedBeanConfigurator#creator(), ExtendedBeanConfigurator#supplier(), ExtendedBeanConfigurator#createWith()  or ExtendedBeanConfigurator#runtimeValue()");
             }
@@ -93,45 +98,67 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         }
 
         /**
+         * The contextual bean instance is supplied by a proxy returned from a recorder method.
+         * <p>
          * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection points.
          *
-         * @param supplier A supplier returned from a recorder
+         * @param supplier A supplier returned from a recorder method
          * @return self
+         * @throws IllegalArgumentException If the supplier argument is not a proxy returned from a recorder method
          */
         public ExtendedBeanConfigurator supplier(Supplier<?> supplier) {
-            if (runtimeValue != null || fun != null) {
-                throw multipleCreationMethods();
-            }
+            checkReturnedProxy(supplier);
+            checkMultipleCreationMethods();
             this.supplier = Objects.requireNonNull(supplier);
             return this;
         }
 
         /**
+         * The contextual bean instance is a proxy returned from a recorder method.
+         * <p>
          * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection points.
          *
-         * @param runtimeValue A runtime value returned from a recorder
+         * @param runtimeValue A runtime value returned from a recorder method
          * @return self
+         * @throws IllegalArgumentException If the runtimeValue argument is not a proxy returned from a recorder method
          */
         public ExtendedBeanConfigurator runtimeValue(RuntimeValue<?> runtimeValue) {
-            if (supplier != null || fun != null) {
-                throw multipleCreationMethods();
-            }
+            checkReturnedProxy(runtimeValue);
+            checkMultipleCreationMethods();
             this.runtimeValue = Objects.requireNonNull(runtimeValue);
             return this;
         }
 
         /**
+         * The contextual bean instance is created by a proxy returned from a recorder method.
+         * <p>
          * This method is useful if you need to use build-time parameters or synthetic injection points during creation of a
          * bean instance.
          *
-         * @param fun A function returned from a recorder
+         * @param function A function returned from a recorder method
          * @return self
+         * @throws IllegalArgumentException If the function argument is not a proxy returned from a recorder method
          */
-        public <B> ExtendedBeanConfigurator createWith(Function<SyntheticCreationalContext<B>, B> fun) {
-            if (supplier != null || runtimeValue != null) {
-                throw multipleCreationMethods();
-            }
-            this.fun = cast(Objects.requireNonNull(fun));
+        public <B> ExtendedBeanConfigurator createWith(Function<SyntheticCreationalContext<B>, B> function) {
+            checkReturnedProxy(function);
+            checkMultipleCreationMethods();
+            this.fun = cast(Objects.requireNonNull(function));
+            return this;
+        }
+
+        /**
+         * The contextual bean instance is a proxy returned from a recorder method.
+         * <p>
+         * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection points.
+         *
+         * @param proxy A proxy returned from a recorder method
+         * @return self
+         * @throws IllegalArgumentException If the proxy argument is not a proxy returned from a recorder method
+         */
+        public ExtendedBeanConfigurator runtimeProxy(Object proxy) {
+            checkReturnedProxy(proxy);
+            checkMultipleCreationMethods();
+            this.runtimeProxy = Objects.requireNonNull(proxy);
             return this;
         }
 
@@ -158,6 +185,10 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
             return implClazz;
         }
 
+        Set<Type> getTypes() {
+            return types;
+        }
+
         Set<AnnotationInstance> getQualifiers() {
             return qualifiers;
         }
@@ -174,8 +205,23 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
             return fun;
         }
 
-        private IllegalStateException multipleCreationMethods() {
-            return new IllegalStateException("It is not possible to specify multiple creation methods");
+        Object getRuntimeProxy() {
+            return runtimeProxy;
+        }
+
+        private void checkMultipleCreationMethods() {
+            if (runtimeProxy == null && runtimeValue == null && supplier == null && fun == null) {
+                return;
+            }
+            throw new IllegalStateException("It is not possible to specify multiple creation methods");
+        }
+
+        private void checkReturnedProxy(Object object) {
+            if (object instanceof ReturnedProxy) {
+                return;
+            }
+            throw new IllegalArgumentException(
+                    "The object is not a proxy returned from a recorder method: " + object.toString());
         }
 
     }

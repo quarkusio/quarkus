@@ -8,10 +8,9 @@ import java.util.function.Function;
 
 import jakarta.enterprise.inject.CreationException;
 
-import org.jboss.jandex.DotName;
-
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -75,16 +74,17 @@ public class SyntheticBeansProcessor {
     private void configureSyntheticBean(ArcRecorder recorder,
             Map<String, Function<SyntheticCreationalContext<?>, ?>> functionsMap,
             BeanRegistrationPhaseBuildItem beanRegistration, SyntheticBeanBuildItem bean) {
-        DotName implClazz = bean.configurator().getImplClazz();
-        String name = createName(implClazz.toString(), bean.configurator().getQualifiers().toString());
+        String name = createName(bean.configurator());
         if (bean.configurator().getRuntimeValue() != null) {
             functionsMap.put(name, recorder.createFunction(bean.configurator().getRuntimeValue()));
         } else if (bean.configurator().getSupplier() != null) {
             functionsMap.put(name, recorder.createFunction(bean.configurator().getSupplier()));
         } else if (bean.configurator().getFunction() != null) {
             functionsMap.put(name, bean.configurator().getFunction());
+        } else if (bean.configurator().getRuntimeProxy() != null) {
+            functionsMap.put(name, recorder.createFunction(bean.configurator().getRuntimeProxy()));
         }
-        BeanConfigurator<?> configurator = beanRegistration.getContext().configure(implClazz)
+        BeanConfigurator<?> configurator = beanRegistration.getContext().configure(bean.configurator().getImplClazz())
                 .read(bean.configurator());
         if (bean.hasRecorderInstance()) {
             configurator.creator(creator(name, bean));
@@ -92,9 +92,9 @@ public class SyntheticBeansProcessor {
         configurator.done();
     }
 
-    private String createName(String beanClass, String qualifiers) {
-        return beanClass.replace(".", "_") + "_"
-                + HashUtil.sha1(qualifiers);
+    private String createName(ExtendedBeanConfigurator configurator) {
+        return configurator.getImplClazz().toString().replace(".", "_") + "_"
+                + HashUtil.sha1(configurator.getTypes().toString() + configurator.getQualifiers().toString());
     }
 
     private Consumer<MethodCreator> creator(String name, SyntheticBeanBuildItem bean) {

@@ -3,10 +3,13 @@ package io.quarkus.it.spring.data.jpa;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+import org.springframework.data.repository.NoRepositoryBean;
+
 /**
  * Used to ensure that entity relationships work correctly
  */
-public interface IntermediatePostRepository extends BypassHolderRepository<Post, Long> {
+@NoRepositoryBean
+public interface IntermediatePostRepository<T extends ByPassHolder> extends BypassHolderRepository<T, Long> {
 
-    List<Post> findByPostedBefore(ZonedDateTime zdt);
+    List<T> findByPostedBefore(ZonedDateTime zdt);
 }

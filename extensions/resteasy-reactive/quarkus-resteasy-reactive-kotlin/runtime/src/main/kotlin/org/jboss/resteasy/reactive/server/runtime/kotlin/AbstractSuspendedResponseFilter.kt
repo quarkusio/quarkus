@@ -7,18 +7,26 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestCo
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerResponseFilter
 
 /**
- * Base class used by Quarkus to generate an implementation at build-time that calls
- * a `suspend` method annotated with [org.jboss.resteasy.reactive.server.ServerResponseFilter](ServerResponseFilter)
+ * Base class used by Quarkus to generate an implementation at build-time that calls a `suspend`
+ * method annotated with
+ * [org.jboss.resteasy.reactive.server.ServerResponseFilter](ServerResponseFilter)
  */
 @Suppress("unused")
 abstract class AbstractSuspendedResponseFilter : ResteasyReactiveContainerResponseFilter {
 
-    abstract suspend fun doFilter(requestContext: ResteasyReactiveContainerRequestContext, responseContext: ContainerResponseContext): Any
+    abstract suspend fun doFilter(
+        requestContext: ResteasyReactiveContainerRequestContext,
+        responseContext: ContainerResponseContext
+    ): Any
 
     private val originalTCCL: ClassLoader = Thread.currentThread().contextClassLoader
 
-    override fun filter(requestContext: ResteasyReactiveContainerRequestContext, responseContext: ContainerResponseContext) {
-        val (dispatcher, coroutineScope) = prepareExecution(requestContext.serverRequestContext as ResteasyReactiveRequestContext)
+    override fun filter(
+        requestContext: ResteasyReactiveContainerRequestContext,
+        responseContext: ContainerResponseContext
+    ) {
+        val (dispatcher, coroutineScope) =
+            prepareExecution(requestContext.serverRequestContext as ResteasyReactiveRequestContext)
 
         requestContext.suspend()
         coroutineScope.launch(context = dispatcher) {
@@ -27,7 +35,8 @@ abstract class AbstractSuspendedResponseFilter : ResteasyReactiveContainerRespon
             try {
                 doFilter(requestContext, responseContext)
             } catch (t: Throwable) {
-                (requestContext.serverRequestContext as ResteasyReactiveRequestContext).handleException(t, true)
+                (requestContext.serverRequestContext as ResteasyReactiveRequestContext)
+                    .handleException(t, true)
             }
             requestContext.resume()
         }

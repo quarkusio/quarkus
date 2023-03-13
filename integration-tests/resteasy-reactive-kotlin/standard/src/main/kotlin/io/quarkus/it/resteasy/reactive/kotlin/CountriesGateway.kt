@@ -8,7 +8,5 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient
 @RegisterRestClient(configKey = "countries")
 interface CountriesGateway {
 
-    @GET
-    @Path("/name/{name}")
-    suspend fun byName(name: String): Set<Country>
+    @GET @Path("/name/{name}") suspend fun byName(name: String): Set<Country>
 }

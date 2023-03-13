@@ -7,13 +7,18 @@ import com.mongodb.client.model.Collation
 import io.quarkus.mongodb.panache.common.runtime.CommonPanacheQueryImpl
 import io.quarkus.mongodb.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
-import org.bson.conversions.Bson
 import java.util.stream.Stream
+import org.bson.conversions.Bson
 
 class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
     private val delegate: CommonPanacheQueryImpl<Entity>
 
-    internal constructor(collection: MongoCollection<out Entity>?, session: ClientSession?, mongoQuery: Bson?, sort: Bson?) {
+    internal constructor(
+        collection: MongoCollection<out Entity>?,
+        session: ClientSession?,
+        mongoQuery: Bson?,
+        sort: Bson?
+    ) {
         delegate = CommonPanacheQueryImpl(collection, session, mongoQuery, sort)
     }
 

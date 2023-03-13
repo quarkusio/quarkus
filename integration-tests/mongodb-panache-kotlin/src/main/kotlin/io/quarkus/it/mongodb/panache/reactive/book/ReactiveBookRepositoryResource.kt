@@ -18,23 +18,27 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.bson.types.ObjectId
-import org.jboss.logging.Logger
-import org.jboss.resteasy.reactive.RestStreamElementType
 import java.net.URI
 import java.time.LocalDate
 import java.util.concurrent.Flow
+import org.bson.types.ObjectId
+import org.jboss.logging.Logger
+import org.jboss.resteasy.reactive.RestStreamElementType
 
 @Path("/reactive/books/repository")
 class ReactiveBookRepositoryResource {
-    @Inject
-    lateinit var reactiveBookRepository: ReactiveBookRepository
+    @Inject lateinit var reactiveBookRepository: ReactiveBookRepository
 
     @PostConstruct
     fun init() {
         val databaseName: String = reactiveBookRepository.mongoDatabase().name
-        val collectionName: String = reactiveBookRepository.mongoCollection().namespace.collectionName
-        LOGGER.infov("Using BookRepository[database={0}, collection={1}]", databaseName, collectionName)
+        val collectionName: String =
+            reactiveBookRepository.mongoCollection().namespace.collectionName
+        LOGGER.infov(
+            "Using BookRepository[database={0}, collection={1}]",
+            databaseName,
+            collectionName
+        )
     }
 
     @GET
@@ -63,7 +67,8 @@ class ReactiveBookRepositoryResource {
     }
 
     @PUT
-    fun updateBook(book: Book): Uni<Response> = reactiveBookRepository.update(book).map { Response.accepted().build() }
+    fun updateBook(book: Book): Uni<Response> =
+        reactiveBookRepository.update(book).map { Response.accepted().build() }
 
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
@@ -73,13 +78,12 @@ class ReactiveBookRepositoryResource {
     @DELETE
     @Path("/{id}")
     fun deleteBook(@PathParam("id") id: String?): Uni<Void> {
-        return reactiveBookRepository.deleteById(ObjectId(id))
-            .map { d ->
-                if (d) {
-                    return@map null
-                }
-                throw NotFoundException()
+        return reactiveBookRepository.deleteById(ObjectId(id)).map { d ->
+            if (d) {
+                return@map null
             }
+            throw NotFoundException()
+        }
     }
 
     @GET
@@ -100,7 +104,9 @@ class ReactiveBookRepositoryResource {
         @QueryParam("dateTo") dateTo: String?
     ): Uni<Book?> {
         return if (author != null) {
-            reactiveBookRepository.find("{'author': ?1,'bookTitle': ?2}", author, title!!).firstResult()
+            reactiveBookRepository
+                .find("{'author': ?1,'bookTitle': ?2}", author, title!!)
+                .firstResult()
         } else {
             reactiveBookRepository
                 .find(
@@ -121,18 +127,23 @@ class ReactiveBookRepositoryResource {
         @QueryParam("dateTo") dateTo: String?
     ): Uni<Book?> {
         return if (author != null) {
-            reactiveBookRepository.find(
-                "{'author': :author,'bookTitle': :title}",
-                Parameters.with("author", author).and("title", title)
-            ).firstResult()
-        } else reactiveBookRepository.find(
-            "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
-            Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))
-        ).firstResult()
+            reactiveBookRepository
+                .find(
+                    "{'author': :author,'bookTitle': :title}",
+                    Parameters.with("author", author).and("title", title)
+                )
+                .firstResult()
+        } else
+            reactiveBookRepository
+                .find(
+                    "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
+                    Parameters.with("dateFrom", LocalDate.parse(dateFrom))
+                        .and("dateTo", LocalDate.parse(dateTo))
+                )
+                .firstResult()
     }
 
-    @DELETE
-    fun deleteAll(): Uni<Void> = reactiveBookRepository.deleteAll().map { null }
+    @DELETE fun deleteAll(): Uni<Void> = reactiveBookRepository.deleteAll().map { null }
 
     companion object {
         private val LOGGER: Logger = Logger.getLogger(ReactiveBookRepositoryResource::class.java)

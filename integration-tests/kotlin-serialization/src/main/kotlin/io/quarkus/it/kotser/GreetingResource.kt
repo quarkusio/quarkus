@@ -10,10 +10,10 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import kotlinx.coroutines.flow.flowOf
-import org.jboss.resteasy.reactive.RestResponse
 import java.lang.reflect.Method
 import kotlin.reflect.jvm.javaMethod
+import kotlinx.coroutines.flow.flowOf
+import org.jboss.resteasy.reactive.RestResponse
 
 @Path("/")
 @RegisterForReflection
@@ -70,10 +70,7 @@ class GreetingResource {
     @Produces(MediaType.TEXT_PLAIN)
     fun create(): Response? {
         val javaMethod: Method = this::reflect.javaMethod!!
-        return Response
-            .ok()
-            .entity(javaMethod.invoke(this))
-            .build()
+        return Response.ok().entity(javaMethod.invoke(this)).build()
     }
 
     fun reflect() = "hello, world"

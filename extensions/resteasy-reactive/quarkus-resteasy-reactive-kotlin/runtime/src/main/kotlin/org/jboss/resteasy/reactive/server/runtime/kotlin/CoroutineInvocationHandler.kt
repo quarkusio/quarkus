@@ -28,8 +28,9 @@ class CoroutineInvocationHandler(
         }
 
         val requestScope = requestContext.captureCDIRequestScope()
-        val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let { VertxDispatcher(it, requestScope, requestContext) }
-            ?: throw IllegalStateException("No Vertx context found")
+        val dispatcher: CoroutineDispatcher =
+            Vertx.currentContext()?.let { VertxDispatcher(it, requestScope, requestContext) }
+                ?: throw IllegalStateException("No Vertx context found")
 
         logger.trace("Handling request with dispatcher {}", dispatcher)
 
@@ -38,12 +39,17 @@ class CoroutineInvocationHandler(
             // ensure the proper CL is not lost in dev-mode
             Thread.currentThread().contextClassLoader = originalTCCL
             try {
-                val result = invoker.invokeCoroutine(requestContext.endpointInstance, requestContext.parameters)
+                val result =
+                    invoker.invokeCoroutine(
+                        requestContext.endpointInstance,
+                        requestContext.parameters
+                    )
                 if (result != Unit) {
                     requestContext.result = result
                 }
             } catch (t: Throwable) {
-                // passing true since the target doesn't change and we want response filters to be able to know what the resource method was
+                // passing true since the target doesn't change and we want response filters to be
+                // able to know what the resource method was
                 requestContext.handleException(t, true)
             }
             requestContext.resume()

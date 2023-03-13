@@ -6,7 +6,5 @@ import jakarta.ws.rs.Path
 @Path("v2")
 class V2CountryEndpoint {
 
-    @GET
-    @Path("/name/{name}")
-    fun byName(name: String) = listOf(Country(name, "$name-capital"))
+    @GET @Path("/name/{name}") fun byName(name: String) = listOf(Country(name, "$name-capital"))
 }

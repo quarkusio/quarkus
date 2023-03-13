@@ -20,8 +20,7 @@ import java.net.URI
 
 @Path("/reactive/persons/repository")
 class ReactivePersonRepositoryResource {
-    @Inject
-    lateinit var reactivePersonRepository: ReactivePersonRepository
+    @Inject lateinit var reactivePersonRepository: ReactivePersonRepository
 
     @GET
     fun getPersons(@QueryParam("sort") sort: String?): Uni<List<Person>> {
@@ -34,12 +33,14 @@ class ReactivePersonRepositoryResource {
     @Path("/search/{name}")
     fun searchPersons(@PathParam("name") name: String): Set<PersonName> {
         val uniqueNames = mutableSetOf<PersonName>()
-        val lastnames: List<PersonName> = reactivePersonRepository.find("lastname", name)
-            .project(PersonName::class.java)
-            .withReadPreference(ReadPreference.primaryPreferred())
-            .list()
-            .await()
-            .indefinitely()
+        val lastnames: List<PersonName> =
+            reactivePersonRepository
+                .find("lastname", name)
+                .project(PersonName::class.java)
+                .withReadPreference(ReadPreference.primaryPreferred())
+                .list()
+                .await()
+                .indefinitely()
         lastnames.forEach { p -> uniqueNames.add(p) } // this will throw if it's not the right type
         return uniqueNames
     }
@@ -68,25 +69,28 @@ class ReactivePersonRepositoryResource {
     @DELETE
     @Path("/{id}")
     fun deletePerson(@PathParam("id") id: String): Uni<Void> {
-        return reactivePersonRepository.findById(id.toLong())
-            .flatMap { person -> person?.let { reactivePersonRepository.delete(it) } }
+        return reactivePersonRepository.findById(id.toLong()).flatMap { person ->
+            person?.let { reactivePersonRepository.delete(it) }
+        }
     }
 
     @GET
     @Path("/{id}")
     fun getPerson(@PathParam("id") id: String) = reactivePersonRepository.findById(id.toLong())
 
-    @GET
-    @Path("/count")
-    fun countAll(): Uni<Long> = reactivePersonRepository.count()
+    @GET @Path("/count") fun countAll(): Uni<Long> = reactivePersonRepository.count()
 
-    @DELETE
-    fun deleteAll(): Uni<Void> = reactivePersonRepository.deleteAll().map { null }
+    @DELETE fun deleteAll(): Uni<Void> = reactivePersonRepository.deleteAll().map { null }
 
     @POST
     @Path("/rename")
-    fun rename(@QueryParam("previousName") previousName: String, @QueryParam("newName") newName: String): Uni<Response> {
-        return reactivePersonRepository.update("lastname", newName).where("lastname", previousName)
+    fun rename(
+        @QueryParam("previousName") previousName: String,
+        @QueryParam("newName") newName: String
+    ): Uni<Response> {
+        return reactivePersonRepository
+            .update("lastname", newName)
+            .where("lastname", previousName)
             .map { count -> Response.ok().build() }
     }
 }

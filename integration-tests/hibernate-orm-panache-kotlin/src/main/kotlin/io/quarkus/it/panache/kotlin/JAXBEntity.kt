@@ -14,14 +14,11 @@ import jakarta.xml.bind.annotation.XmlTransient
 @XmlRootElement(name = "JAXBEntity")
 @XmlAccessorType(XmlAccessType.NONE)
 open class JAXBEntity : PanacheEntity() {
-    @XmlAttribute(name = "Named")
-    var namedAnnotatedProp: String? = null
+    @XmlAttribute(name = "Named") var namedAnnotatedProp: String? = null
 
-    @XmlTransient
-    var transientProp: String? = null
+    @XmlTransient var transientProp: String? = null
 
-    @XmlAttribute
-    var defaultAnnotatedProp: String? = null
+    @XmlAttribute var defaultAnnotatedProp: String? = null
 
     @XmlElements(XmlElement(name = "array1"), XmlElement(name = "array2"))
     var arrayAnnotatedProp: String? = null

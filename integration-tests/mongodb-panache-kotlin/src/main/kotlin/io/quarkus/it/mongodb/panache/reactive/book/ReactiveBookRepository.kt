@@ -4,5 +4,4 @@ import io.quarkus.it.mongodb.panache.book.Book
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoRepository
 import jakarta.enterprise.context.ApplicationScoped
 
-@ApplicationScoped
-class ReactiveBookRepository : ReactivePanacheMongoRepository<Book>
+@ApplicationScoped class ReactiveBookRepository : ReactivePanacheMongoRepository<Book>

@@ -21,24 +21,23 @@ import java.net.URI
 
 @Path("/persons/repository")
 class PersonRepositoryResource {
-    // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests
-    @Inject
-    lateinit var mockablePersonRepository: MockablePersonRepository
+    // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the
+    // tests
+    @Inject lateinit var mockablePersonRepository: MockablePersonRepository
 
-    @Inject
-    lateinit var personRepository: PersonRepository
+    @Inject lateinit var personRepository: PersonRepository
 
     @GET
     fun getPersons(@QueryParam("sort") sort: String?): List<Person> {
-        return sort?.let {
-            personRepository.listAll(Sort.ascending(sort))
-        } ?: personRepository.listAll()
+        return sort?.let { personRepository.listAll(Sort.ascending(sort)) }
+            ?: personRepository.listAll()
     }
 
     @GET
     @Path("/search/{name}")
     fun searchPersons(@PathParam("name") name: String): Set<PersonName> {
-        return personRepository.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
+        return personRepository
+            .find("lastname = ?1 and status = ?2", name, Status.ALIVE)
             .project(PersonName::class.java)
             .withReadPreference(ReadPreference.primaryPreferred())
             .list()
@@ -81,9 +80,7 @@ class PersonRepositoryResource {
     @Path("/{id}")
     fun getPerson(@PathParam("id") id: String) = personRepository.findById(id.toLong())
 
-    @GET
-    @Path("/count")
-    fun countAll(): Long = personRepository.count()
+    @GET @Path("/count") fun countAll(): Long = personRepository.count()
 
     @DELETE
     fun deleteAll() {
@@ -92,7 +89,10 @@ class PersonRepositoryResource {
 
     @POST
     @Path("/rename")
-    fun rename(@QueryParam("previousName") previousName: String, @QueryParam("newName") newName: String): Response {
+    fun rename(
+        @QueryParam("previousName") previousName: String,
+        @QueryParam("newName") newName: String
+    ): Response {
         personRepository.update("lastname", newName).where("lastname", previousName)
         return Response.ok().build()
     }

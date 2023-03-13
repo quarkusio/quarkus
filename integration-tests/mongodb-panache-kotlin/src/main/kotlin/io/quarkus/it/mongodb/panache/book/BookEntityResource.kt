@@ -13,10 +13,10 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.Response
-import org.bson.types.ObjectId
-import org.jboss.logging.Logger
 import java.net.URI
 import java.time.LocalDate
+import org.bson.types.ObjectId
+import org.jboss.logging.Logger
 
 @Path("/books/entity")
 class BookEntityResource {
@@ -82,13 +82,13 @@ class BookEntityResource {
     ): BookEntity? {
         return if (author != null) {
             BookEntity.find("{'author': ?1,'bookTitle': ?2}", author, title!!).firstResult()
-        } else BookEntity
-            .find(
-                "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
-                LocalDate.parse(dateFrom),
-                LocalDate.parse(dateTo)
-            )
-            .firstResult()
+        } else
+            BookEntity.find(
+                    "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
+                    LocalDate.parse(dateFrom),
+                    LocalDate.parse(dateTo)
+                )
+                .firstResult()
     }
 
     @GET
@@ -101,13 +101,17 @@ class BookEntityResource {
     ): BookEntity? {
         return if (author != null) {
             BookEntity.find(
-                "{'author': :author,'bookTitle': :title}",
-                Parameters.with("author", author).and("title", title)
-            ).firstResult()
-        } else BookEntity.find(
-            "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
-            Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))
-        ).firstResult()
+                    "{'author': :author,'bookTitle': :title}",
+                    Parameters.with("author", author).and("title", title)
+                )
+                .firstResult()
+        } else
+            BookEntity.find(
+                    "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
+                    Parameters.with("dateFrom", LocalDate.parse(dateFrom))
+                        .and("dateTo", LocalDate.parse(dateTo))
+                )
+                .firstResult()
     }
 
     @DELETE

@@ -14,10 +14,7 @@ open class Address : PanacheEntityBase {
         }
     }
 
-    @Id
-    @GeneratedValue
-    @JvmField
-    var id: Int? = null
+    @Id @GeneratedValue @JvmField var id: Int? = null
 
     var street: String? = null
 

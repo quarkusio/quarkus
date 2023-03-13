@@ -13,11 +13,14 @@ import java.util.Optional;
  * Code example:
  *
  * <pre>
- * {@literal @}ApplicationScoped
+ * {@literal @}Singleton
  * public class CachedService {
  *
- *     {@literal @}Inject
- *     CacheManager cacheManager;
+ *     private final CacheManager cacheManager;
+ *
+ *     public CachedService(CacheManager cacheManager) {
+ *         this.cacheManager = cacheManager;
+ *     }
 
  *     String getExpensiveValue(Object key) {
  *         Cache cache = cacheManager.getCache("my-cache");

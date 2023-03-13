@@ -539,19 +539,22 @@ Another way to retrieve a `Cache` instance consists in injecting the `io.quarkus
 ----
 package org.acme.cache;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 
 import java.util.Optional;
 
-@ApplicationScoped
+@Singleton
 public class CacheClearer {
 
-    @Inject
-    CacheManager cacheManager;
+    private final CacheManager cacheManager;
+
+    public CacheClearer(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+    }
 
     public void clearCache(String cacheName) {
         Optional<Cache> cache = cacheManager.getCache(cacheName);
@@ -668,21 +671,24 @@ Similarly, the maximum size of a `CaffeineCache` can be changed in real time if 
 ----
 package org.acme.cache;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CaffeineCache;
 
 import java.time.Duration;
-import java.util.Optional;
+import java.util.Optional;import javax.inject.Singleton;
 
-@ApplicationScoped
+@Singleton
 public class CacheConfigManager {
 
-    @Inject
-    CacheManager cacheManager;
+    private final CacheManager cacheManager;
+
+    public CacheConfigManager(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+    }
 
     public void setExpireAfterAccess(String cacheName, Duration duration) {
         Optional<Cache> cache = cacheManager.getCache(cacheName);
@@ -928,16 +934,19 @@ public class CachedService {
 ----
 package org.acme.cache;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import io.quarkus.cache.CacheManager;
 
-@ApplicationScoped
+@Singleton
 public class CacheClearer {
 
-    @Inject
-    CacheManager cacheManager;
+    private final CacheManager cacheManager;
+
+    public CacheClearer(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+    }
 
     public void clearAllCaches() {
         for (String cacheName : cacheManager.getCacheNames()) {

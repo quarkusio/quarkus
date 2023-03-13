@@ -228,6 +228,24 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
+    public void loadWorkspaceWithMissingModule() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-missing-module/root");
+        assertNotNull(projectUrl);
+        final Path rootProjectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(rootProjectDir));
+        final Path nestedProjectDir = rootProjectDir.resolve("module1");
+        assertTrue(Files.exists(nestedProjectDir));
+
+        final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setCurrentProject(nestedProjectDir.toString()))
+                .getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "module1"));
+        assertNotNull(ws.getProject("org.acme", "root"));
+        assertEquals(2, ws.getProjects().size());
+    }
+
+    @Test
     public void loadWorkspaceRootWithNoModules() throws Exception {
         final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-root-no-module/root");
         assertNotNull(projectUrl);

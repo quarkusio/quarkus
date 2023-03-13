@@ -1,6 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.deployment.pkg.steps.AppCDSBuildStep.DOCKER_EXECUTABLE;
+import static io.quarkus.deployment.pkg.steps.AppCDSBuildStep.CONTAINER_RUNTIME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 class NativeImageBuildContainerRunnerTest {
 
@@ -18,6 +19,10 @@ class NativeImageBuildContainerRunnerTest {
     @DisabledIfSystemProperty(named = "avoid-containers", matches = "true")
     @Test
     void testBuilderImageBeingPickedUp() {
+        if (CONTAINER_RUNTIME == ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE) {
+            throw new IllegalStateException("No container runtime was found. "
+                    + "Make sure you have either Docker or Podman installed in your environment.");
+        }
         NativeConfig nativeConfig = new NativeConfig();
         nativeConfig.containerRuntime = Optional.empty();
         boolean found;
@@ -26,7 +31,8 @@ class NativeImageBuildContainerRunnerTest {
 
         nativeConfig.builderImage = "graalvm";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
-        command = localRunner.buildCommand(DOCKER_EXECUTABLE, Collections.emptyList(), Collections.emptyList());
+        command = localRunner.buildCommand(CONTAINER_RUNTIME.getExecutableName(), Collections.emptyList(),
+                Collections.emptyList());
         found = false;
         for (String part : command) {
             if (part.contains("ubi-quarkus-graalvmce-builder-image")) {
@@ -38,7 +44,8 @@ class NativeImageBuildContainerRunnerTest {
 
         nativeConfig.builderImage = "mandrel";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
-        command = localRunner.buildCommand(DOCKER_EXECUTABLE, Collections.emptyList(), Collections.emptyList());
+        command = localRunner.buildCommand(CONTAINER_RUNTIME.getExecutableName(), Collections.emptyList(),
+                Collections.emptyList());
         found = false;
         for (String part : command) {
             if (part.contains("ubi-quarkus-mandrel-builder-image")) {
@@ -50,7 +57,8 @@ class NativeImageBuildContainerRunnerTest {
 
         nativeConfig.builderImage = "RandomString";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
-        command = localRunner.buildCommand(DOCKER_EXECUTABLE, Collections.emptyList(), Collections.emptyList());
+        command = localRunner.buildCommand(CONTAINER_RUNTIME.getExecutableName(), Collections.emptyList(),
+                Collections.emptyList());
         found = false;
         for (String part : command) {
             if (part.equals("RandomString")) {

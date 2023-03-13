@@ -29,6 +29,7 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.quarkus.utilities.JavaBinFinder;
 
 public class AppCDSBuildStep {
@@ -38,7 +39,7 @@ public class AppCDSBuildStep {
     public static final String CLASSES_LIST_FILE_NAME = "classes.lst";
     private static final String CONTAINER_IMAGE_BASE_BUILD_DIR = "/tmp/quarkus";
     private static final String CONTAINER_IMAGE_APPCDS_DIR = CONTAINER_IMAGE_BASE_BUILD_DIR + "/appcds";
-    public static final String DOCKER_EXECUTABLE = detectContainerRuntime().getExecutableName();
+    public static final ContainerRuntimeUtil.ContainerRuntime CONTAINER_RUNTIME = detectContainerRuntime(false);
 
     @BuildStep(onlyIf = AppCDSRequired.class)
     public void requested(OutputTargetBuildItem outputTarget, BuildProducer<AppCDSRequestedBuildItem> producer)
@@ -203,8 +204,12 @@ public class AppCDSBuildStep {
     // generate the classes file on the host
     private List<String> dockerRunCommands(OutputTargetBuildItem outputTarget, String containerImage,
             String containerWorkingDir) {
+        if (CONTAINER_RUNTIME == ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE) {
+            throw new IllegalStateException("No container runtime was found. "
+                    + "Make sure you have either Docker or Podman installed in your environment.");
+        }
         List<String> command = new ArrayList<>(10);
-        command.add(DOCKER_EXECUTABLE);
+        command.add(CONTAINER_RUNTIME.getExecutableName());
         command.add("run");
         command.add("-v");
         command.add(outputTarget.getOutputDirectory().toAbsolutePath().toString() + ":" + CONTAINER_IMAGE_BASE_BUILD_DIR

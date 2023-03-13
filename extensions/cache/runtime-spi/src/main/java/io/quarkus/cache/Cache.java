@@ -7,7 +7,7 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * Use this interface to interact with a cache programmatically e.g. store, retrieve or delete cache values. The cache can be
- * injected using the {@link CacheName} annotation or retrieved using {@link CacheManager#getCache(String)}.
+ * injected using the {@code @io.quarkus.cache.CacheName} annotation or retrieved using {@link CacheManager#getCache(String)}.
  */
 public interface Cache {
 
@@ -20,7 +20,8 @@ public interface Cache {
 
     /**
      * Returns the unique and immutable default key for the current cache. This key is used by the annotations caching API when
-     * a no-args method annotated with {@link CacheResult} or {@link CacheInvalidate} is invoked. It can also be used with the
+     * a no-args method annotated with {@code @io.quarkus.cache.CacheResult} or {@code @io.quarkus.cache.CacheInvalidate} is
+     * invoked. It can also be used with the
      * programmatic caching API.
      *
      * @return default cache key

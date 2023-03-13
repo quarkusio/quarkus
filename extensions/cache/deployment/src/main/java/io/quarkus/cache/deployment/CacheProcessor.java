@@ -53,6 +53,7 @@ import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
 import io.quarkus.cache.deployment.exception.UnsupportedRepeatedAnnotationException;
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.cache.deployment.spi.AdditionalCacheNameBuildItem;
+import io.quarkus.cache.deployment.spi.CacheManagerInfoBuildItem;
 import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
 import io.quarkus.cache.runtime.CacheInvalidateInterceptor;
 import io.quarkus.cache.runtime.CacheManagerRecorder;
@@ -238,17 +239,26 @@ class CacheProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    SyntheticBeanBuildItem configureCacheManagerSyntheticBean(CacheNamesBuildItem cacheNames,
-            CacheManagerRecorder cacheManagerRecorder, Optional<MetricsCapabilityBuildItem> metricsCapability) {
+    void cacheManagerInfos(BuildProducer<CacheManagerInfoBuildItem> producer,
+            Optional<MetricsCapabilityBuildItem> metricsCapability, CacheManagerRecorder recorder) {
+        producer.produce(new CacheManagerInfoBuildItem(recorder.noOpCacheManagerInfo()));
+        producer.produce(new CacheManagerInfoBuildItem(recorder.getCacheManagerInfoWithoutMetrics()));
+        if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MICROMETER)) {
+            // if we include this unconditionally the native image building will fail when Micrometer is not around
+            producer.produce(new CacheManagerInfoBuildItem(recorder.getCacheManagerInfoWithMicrometerMetrics()));
+        }
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    SyntheticBeanBuildItem configureCacheManagerSyntheticBean(List<CacheManagerInfoBuildItem> infos,
+            CacheNamesBuildItem cacheNames, Optional<MetricsCapabilityBuildItem> metricsCapability,
+            CacheManagerRecorder cacheManagerRecorder) {
 
         boolean micrometerSupported = metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MICROMETER);
-
-        Supplier<CacheManager> cacheManagerSupplier;
-        if (micrometerSupported) {
-            cacheManagerSupplier = cacheManagerRecorder.getCacheManagerSupplierWithMicrometerMetrics(cacheNames.getNames());
-        } else {
-            cacheManagerSupplier = cacheManagerRecorder.getCacheManagerSupplierWithoutMetrics(cacheNames.getNames());
-        }
+        Supplier<CacheManager> cacheManagerSupplier = cacheManagerRecorder.resolveCacheInfo(
+                infos.stream().map(CacheManagerInfoBuildItem::get).collect(toList()), cacheNames.getNames(),
+                micrometerSupported);
 
         return SyntheticBeanBuildItem.configure(CacheManager.class)
                 .scope(ApplicationScoped.class)

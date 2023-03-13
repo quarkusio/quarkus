@@ -7,7 +7,7 @@ import java.util.Optional;
  * <p>
  * Use this interface to retrieve all existing {@link Cache} names and interact with any cache programmatically e.g. store,
  * retrieve or delete cache values. It shares the same caches collection the Quarkus caching annotations use. The
- * {@link CacheName} annotation can also be used to inject and access a specific cache from its name.
+ * {@code @io.quarkus.cache.CacheName} annotation can also be used to inject and access a specific cache from its name.
  * </p>
  * <p>
  * Code example:

@@ -22,7 +22,7 @@ public class JarCommand implements PluginCommand {
     }
 
     public JarCommand(String name, Path location, OutputOptionMixin output, Path workingDirectory) {
-        this.jbang = new JBangSupport(output, workingDirectory);
+        this.jbang = new JBangSupport(output.isCliTest(), output, workingDirectory);
         this.name = name;
         this.location = location;
         this.arguments = new ArrayList<>();

@@ -33,16 +33,18 @@ public class JBangSupport {
     private static final String[] windowsWrapper = { "jbang.cmd", "jbang.ps1" };
     private static final String otherWrapper = "jbang";
 
+    private final boolean interactiveMode;
     private final MessageWriter output;
     private Path workingDirectory;
 
     private boolean promptForInstallation = true;
 
-    public JBangSupport(MessageWriter output) {
-        this(output, Paths.get(System.getProperty("user.dir")));
+    public JBangSupport(boolean interactiveMode, MessageWriter output) {
+        this(interactiveMode, output, Paths.get(System.getProperty("user.dir")));
     }
 
-    public JBangSupport(MessageWriter output, Path workingDirectory) {
+    public JBangSupport(boolean interactiveMode, MessageWriter output, Path workingDirectory) {
+        this.interactiveMode = interactiveMode;
         this.output = output;
         this.workingDirectory = workingDirectory;
     }
@@ -76,7 +78,8 @@ public class JBangSupport {
                 .or(() -> findExecutableInLocalJbang())
                 .or(() -> {
                     try {
-                        if (promptForInstallation && Prompt.yesOrNo(true,
+                        // We don't want to prompt users for input when running tests.
+                        if (interactiveMode && promptForInstallation && Prompt.yesOrNo(true,
                                 "JBang is needed to list / run jbang plugins, would you like to install it now ?")) {
                             installJBang();
                             return findExecutableInLocalJbang();
@@ -147,6 +150,10 @@ public class JBangSupport {
 
     public boolean isAvailable() {
         return getOptionalExecutable().isPresent() && version().isPresent();
+    }
+
+    public boolean isInstallable() {
+        return interactiveMode; //installation requires interaction
     }
 
     private Path getInstallationDir() {

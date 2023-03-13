@@ -17,19 +17,12 @@ public class PluginManager {
     private final PluginManagerSettings settings;
     private final PluginManagerUtil util;
 
-    public PluginManager(MessageWriter output, Optional<Path> userHome, Optional<Path> projectRoot,
-            Optional<QuarkusProject> quarkusProject, Predicate<Plugin> pluginFilter) {
+    public PluginManager(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
+            Optional<Path> projectRoot, Optional<QuarkusProject> quarkusProject, Predicate<Plugin> pluginFilter) {
+        this.settings = settings;
         this.output = output;
-        this.settings = PluginManagerSettings.defaultSettings();
         this.util = PluginManagerUtil.getUtil(settings);
         this.state = new PluginMangerState(settings, output, userHome, projectRoot, quarkusProject, pluginFilter);
-    }
-
-    public PluginManager(MessageWriter output, PluginMangerState state) {
-        this.output = output;
-        this.state = state;
-        this.settings = PluginManagerSettings.defaultSettings();
-        this.util = PluginManagerUtil.getUtil(settings);
     }
 
     /**
@@ -209,6 +202,11 @@ public class PluginManager {
      * Sync happens weekly or when project files are updated.
      */
     public boolean syncIfNeeded() {
+        if (!settings.isInteractiveMode()) {
+            //syncing may require user interaction, so just return false
+            return false;
+        }
+
         PluginCatalog catalog = state.getCombinedCatalog();
         if (PluginUtil.shouldSync(state.getProjectRoot(), catalog)) {
             output.info("Plugin catalog last updated on: " + catalog.getLastUpdate() + ". Syncing!");

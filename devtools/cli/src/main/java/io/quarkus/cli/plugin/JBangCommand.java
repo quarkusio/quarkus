@@ -21,7 +21,7 @@ public class JBangCommand implements PluginCommand {
 
     public JBangCommand(String location, OutputOptionMixin output) {
         this.location = location;
-        this.jbang = new JBangSupport(output);
+        this.jbang = new JBangSupport(output.isCliTest(), output);
         this.output = output;
         this.arguments.add(location);
     }

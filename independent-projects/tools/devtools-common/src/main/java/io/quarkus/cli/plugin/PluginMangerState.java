@@ -31,8 +31,8 @@ class PluginMangerState {
         //Inferred
         this.projectRoot = projectRoot.or(() -> quarkusProject.map(QuarkusProject::getProjectDirPath))
                 .filter(p -> !p.equals(userHome.orElse(null)));
-        this.jbangCatalogService = new JBangCatalogService(output, settings.getPluginPrefix(),
-                settings.getRemoteJBangCatalog());
+        this.jbangCatalogService = new JBangCatalogService(settings.isInteractiveMode(), output, settings.getPluginPrefix(),
+                settings.getRemoteJBangCatalogs());
         this.pluginCatalogService = new PluginCatalogService(settings.getToRelativePath());
         this.util = PluginManagerUtil.getUtil(settings);
     }

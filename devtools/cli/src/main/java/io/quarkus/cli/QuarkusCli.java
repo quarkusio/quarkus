@@ -4,6 +4,7 @@ import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIS
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +19,9 @@ import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.plugin.Plugin;
 import io.quarkus.cli.plugin.PluginCommandFactory;
 import io.quarkus.cli.plugin.PluginManager;
+import io.quarkus.cli.plugin.PluginManagerSettings;
+import io.quarkus.cli.registry.RegistryClientMixin;
+import io.quarkus.cli.utils.Registries;
 import io.quarkus.devtools.utils.Prompt;
 import io.quarkus.runtime.QuarkusApplication;
 import picocli.CommandLine;
@@ -49,6 +53,9 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     CommandLine.IFactory factory;
 
     @CommandLine.Mixin
+    protected RegistryClientMixin registryClient;
+
+    @CommandLine.Mixin
     protected HelpOption helpOption;
 
     @CommandLine.Option(names = { "-v",
@@ -70,8 +77,10 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         cmd.getHelpSectionMap().put(SECTION_KEY_COMMAND_LIST, new SubCommandListRenderer());
         cmd.setParameterExceptionHandler(new ShortErrorMessageHandler());
 
+        //When running tests the cli should not prompt for user input.
+        boolean interactiveMode = Arrays.stream(args).noneMatch(arg -> arg.equals("--cli-test"));
         PluginCommandFactory pluginCommandFactory = new PluginCommandFactory(output);
-        PluginManager pluginManager = pluginManager(output);
+        PluginManager pluginManager = pluginManager(output, interactiveMode);
         pluginManager.syncIfNeeded();
         Map<String, Plugin> plugins = new HashMap<>(pluginManager.getInstalledPlugins());
         pluginCommandFactory.populateCommands(cmd, plugins);
@@ -80,14 +89,13 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             missing.ifPresent(m -> {
                 Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
                 if (installable.containsKey(m)) {
-                    if (Prompt.yesOrNo(true,
+                    if (interactiveMode && Prompt.yesOrNo(true,
                             "Command %s is not installed, but a matching plugin is available. Would you like to install it now ?",
                             args)) {
                         pluginManager.addPlugin(m).ifPresent(added -> plugins.put(added.getName(), added));
                         pluginCommandFactory.populateCommands(cmd, plugins);
                     }
                 }
-
             });
         } catch (MutuallyExclusiveArgsException e) {
             return ExitCode.USAGE;
@@ -220,8 +228,12 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         return Optional.ofNullable(projectRoot);
     }
 
-    private static PluginManager pluginManager(OutputOptionMixin output) {
-        return new PluginManager(output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
+    private PluginManager pluginManager(OutputOptionMixin output, boolean interactiveMode) {
+        PluginManagerSettings settings = PluginManagerSettings.defaultSettings()
+                .withCatalogs(Registries.getRegistries(registryClient, "quarkusio"))
+                .withInteractivetMode(interactiveMode); // Why not just getting it from output.isClieTest ? Cause args have not been parsed yet.
+
+        return new PluginManager(settings, output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
                 getProjectRoot(output), Optional.empty(), p -> true);
     }
 }

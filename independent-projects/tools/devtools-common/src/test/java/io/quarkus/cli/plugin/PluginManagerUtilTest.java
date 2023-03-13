@@ -29,7 +29,9 @@ public class PluginManagerUtilTest {
         //No replacement here
         assertEquals("something-cli2", util.getName("something-cli2@quarkusio"));
 
-        PluginManagerSettings customSetttings = PluginManagerSettings.create("awesomeoss", "awesomeossio");
+        PluginManagerSettings customSetttings = PluginManagerSettings.defaultSettings()
+                .withPluignPrefix("awesomeoss")
+                .withCatalogs("awesomeossio");
         util = PluginManagerUtil.getUtil(customSetttings);
 
         assertEquals("my", util.getName("http://shomehost/some/path/my.jar"));

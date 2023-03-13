@@ -395,14 +395,10 @@ public class SpringDIProcessor {
                                 Collections.singletonList((AnnotationValue.createStringValue("value", value)))));
                     }
                 }
-
-                // in Spring List<SomeBean> means that all instances of SomeBean should be injected
-                if (fieldInfo.type().name().equals(DotNames.LIST)) {
-                    annotationsToAdd.add(create(
-                            QUARKUS_ALL_ANNOTATION,
-                            target,
-                            Collections.emptyList()));
-                }
+                addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
+            } else if (fieldInfo.hasAnnotation(CDI_INJECT_ANNOTATION)) {
+                // Mix case of JSR-303 support in Spring
+                addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
             } else if (fieldInfo.hasAnnotation(SPRING_VALUE_ANNOTATION)) {
                 final AnnotationInstance annotation = fieldInfo.annotation(SPRING_VALUE_ANNOTATION);
                 addSpringValueAnnotations(target, annotation, true, annotationsToAdd);
@@ -437,18 +433,11 @@ public class SpringDIProcessor {
                         CDI_INJECT_ANNOTATION,
                         target,
                         Collections.emptyList()));
-                // in Spring List<SomeBean> means that all instances of SomeBean should be injected
-                List<Type> parameters = methodInfo.parameterTypes();
-                for (int i = 0; i < parameters.size(); i++) {
-                    Type parameter = parameters.get(i);
-                    if (parameter.name().equals(DotNames.LIST)) {
-                        annotationsToAdd.add(create(
-                                QUARKUS_ALL_ANNOTATION,
-                                MethodParameterInfo.create(methodInfo, (short) i),
-                                Collections.emptyList()));
-                    }
-                }
+                addAllAnnotationOnMethodListParameters(annotationsToAdd, methodInfo);
 
+            } else if (methodInfo.hasAnnotation(CDI_INJECT_ANNOTATION)) {
+                // Mix case of JSR-303 support in Spring
+                addAllAnnotationOnMethodListParameters(annotationsToAdd, methodInfo);
             }
 
             // add method parameter conversion annotations
@@ -471,6 +460,31 @@ public class SpringDIProcessor {
 
         }
         return annotationsToAdd;
+    }
+
+    private void addAllAnnotationOnListField(AnnotationTarget target, Set<AnnotationInstance> annotationsToAdd,
+            FieldInfo fieldInfo) {
+        // in Spring List<SomeBean> means that all instances of SomeBean should be injected
+        if (fieldInfo.type().name().equals(DotNames.LIST)) {
+            annotationsToAdd.add(create(
+                    QUARKUS_ALL_ANNOTATION,
+                    target,
+                    Collections.emptyList()));
+        }
+    }
+
+    private void addAllAnnotationOnMethodListParameters(Set<AnnotationInstance> annotationsToAdd, MethodInfo methodInfo) {
+        // in Spring List<SomeBean> means that all instances of SomeBean should be injected
+        List<Type> parameters = methodInfo.parameterTypes();
+        for (int i = 0; i < parameters.size(); i++) {
+            Type parameter = parameters.get(i);
+            if (parameter.name().equals(DotNames.LIST)) {
+                annotationsToAdd.add(create(
+                        QUARKUS_ALL_ANNOTATION,
+                        MethodParameterInfo.create(methodInfo, (short) i),
+                        Collections.emptyList()));
+            }
+        }
     }
 
     /**

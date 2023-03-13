@@ -283,7 +283,7 @@ The following table shows how Spring DI annotations can be converted to CDI and 
 
 |@Autowired
 |@Inject
-|
+|If the type is `java.util.List`, the `io.quarkus.arc.All` qualifier is added.
 
 |@Qualifier
 |@Named

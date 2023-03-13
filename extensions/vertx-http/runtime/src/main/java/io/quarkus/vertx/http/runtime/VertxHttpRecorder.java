@@ -161,14 +161,38 @@ public class VertxHttpRecorder {
     private static volatile int actualHttpsPort = -1;
 
     public static final String GET = "GET";
+    private static final int VALID_URIS_CAPACITY = greaterOrEqualsZeroPowerOfTwo(64, "VALID_URIS_CAPACITY");
+
+    private static int greaterOrEqualsZeroPowerOfTwo(int value, String variableName) {
+        if (value == 0) {
+            return 0;
+        }
+        if (value < 0) {
+            throw new IllegalStateException(variableName + " must be greater or equals zero, while it is " + value);
+        }
+        if (Integer.bitCount(value) != 1) {
+            throw new IllegalStateException(variableName + " must be a power of two, while it is " + value);
+        }
+        return value;
+    }
+
     private static final Handler<HttpServerRequest> ACTUAL_ROOT = new Handler<HttpServerRequest>() {
 
         /** JVM system property that disables URI validation, don't use this in production. */
         private static final String DISABLE_URI_VALIDATION_PROP_NAME = "vertx.disableURIValidation";
+
+        private static final String MAX_CACHED_URI_VALIDATION_PROP_NAME = "vertx.maxCachedURIValidation";
+
+        private final int MAX_CACHED_URI_LENGTH = Integer.getInteger(MAX_CACHED_URI_VALIDATION_PROP_NAME,
+                greaterOrEqualsZeroPowerOfTwo(64, MAX_CACHED_URI_VALIDATION_PROP_NAME));
+
         /**
          * Disables HTTP headers validation, so we can save some processing and save some allocations.
          */
         private final boolean DISABLE_URI_VALIDATION = Boolean.getBoolean(DISABLE_URI_VALIDATION_PROP_NAME);
+
+        private final String[] VALID_URIS = DISABLE_URI_VALIDATION || MAX_CACHED_URI_LENGTH == 0 ? null
+                : new String[VALID_URIS_CAPACITY];
 
         @Override
         public void handle(HttpServerRequest httpServerRequest) {
@@ -197,9 +221,31 @@ public class VertxHttpRecorder {
             if (DISABLE_URI_VALIDATION) {
                 return true;
             }
+            final String uri = httpServerRequest.uri();
+            if (uri.length() > MAX_CACHED_URI_LENGTH) {
+                return validateUri(uri);
+            }
+            return cachedValidateUri(uri);
+        }
+
+        private boolean cachedValidateUri(String uri) {
+            final int index = uri.hashCode() & (VALID_URIS_CAPACITY - 1);
+            final String[] validUris = VALID_URIS;
+            final String foundUri = validUris[index];
+            if (uri.equals(foundUri)) {
+                return true;
+            }
+            if (validateUri(uri)) {
+                validUris[index] = uri;
+                return true;
+            }
+            return false;
+        }
+
+        private boolean validateUri(String uri) {
             try {
                 // we simply need to know if the URI is valid
-                new URI(httpServerRequest.uri());
+                new URI(uri);
                 return true;
             } catch (URISyntaxException e) {
                 return false;

@@ -34,6 +34,8 @@ import io.quarkus.runtime.graal.InetRunTime;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.ConfigValidator;
+import io.smallrye.config.SecretKeysHandler;
+import io.smallrye.config.SecretKeysHandlerFactory;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 class ConfigBuildSteps {
@@ -90,6 +92,8 @@ class ConfigBuildSteps {
                 Converter.class,
                 ConfigSourceInterceptor.class,
                 ConfigSourceInterceptorFactory.class,
+                SecretKeysHandler.class,
+                SecretKeysHandlerFactory.class,
                 ConfigValidator.class)) {
             final String serviceName = serviceClass.getName();
             final Set<String> names = ServiceUtil.classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceName);

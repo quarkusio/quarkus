@@ -90,14 +90,8 @@ public final class ConfigUtils {
             final boolean addDiscovered, final LaunchMode launchMode) {
         SmallRyeConfigBuilder builder = emptyConfigBuilder();
 
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        builder.forClassLoader(classLoader);
-        builder.addDefaultSources();
-        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem());
-        builder.withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath());
-        builder.withSources(new DotEnvConfigSourceProvider());
         if (launchMode.isDevOrTest() && (runTime || bootstrap)) {
-            builder.withSources(new RuntimeOverrideConfigSource(classLoader));
+            builder.withSources(new RuntimeOverrideConfigSource(Thread.currentThread().getContextClassLoader()));
         }
         if (runTime || bootstrap) {
             // Validator only for runtime. We cannot use the current validator for build time (chicken / egg problem)
@@ -184,9 +178,16 @@ public final class ConfigUtils {
         // Ignore unmapped quarkus properties, because properties in the same root may be split between build / runtime
         builder.withMappingIgnore("quarkus.**");
 
-        builder.addDefaultInterceptors();
-        builder.addDiscoveredInterceptors();
-        builder.addDiscoveredConverters();
+        builder.forClassLoader(Thread.currentThread().getContextClassLoader())
+                .addDiscoveredConverters()
+                .addDefaultInterceptors()
+                .addDiscoveredInterceptors()
+                .addDiscoveredSecretKeysHandlers()
+                .addDefaultSources()
+                .withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem())
+                .withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath())
+                .withSources(new DotEnvConfigSourceProvider());
+
         return builder;
     }
 

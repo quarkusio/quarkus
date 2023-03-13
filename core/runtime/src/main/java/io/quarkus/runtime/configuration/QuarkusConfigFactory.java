@@ -26,7 +26,7 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
             //TODO: this code path is only hit when start fails in dev mode very early in the process
             //the recovery code will fail without this as it cannot read any properties such as
             //the HTTP port or logging info
-            return ConfigUtils.emptyConfigBuilder().addDefaultSources().addDiscoveredSources().build();
+            return ConfigUtils.emptyConfigBuilder().addDiscoveredSources().build();
         }
         return config;
     }

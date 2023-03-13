@@ -39,7 +39,7 @@ public class UnknownBuildConfigTest {
                         .orElse(new Object[0]))
                 .collect(toSet());
 
-        assertEquals(7, logRecords.size());
+        assertEquals(7, unrecognized.size());
         assertTrue(unrecognized.contains("quarkus.unknown.prop"));
         assertTrue(unrecognized.contains("quarkus.build.unknown.prop"));
         assertTrue(unrecognized.contains("quarkus.rename-old.prop"));

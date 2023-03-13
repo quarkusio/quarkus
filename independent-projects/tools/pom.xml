@@ -66,7 +66,7 @@
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>21</maven-model-helper.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <smallrye-common.version>1.13.2</smallrye-common.version>
+        <smallrye-common.version>2.1.0</smallrye-common.version>
         <jandex.version>3.0.5</jandex.version>
     </properties>
     <modules>

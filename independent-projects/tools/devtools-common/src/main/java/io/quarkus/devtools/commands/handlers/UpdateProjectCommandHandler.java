@@ -88,7 +88,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     invocation.log().info("Project update recipe has been created:\n%s", tempFile.toString());
 
                     invocation.log().info("The commands to update this project: \n" +
-                            "./mvnw -e org.openrewrite.maven:rewrite-maven-plugin:4.39.0:run \\\n" +
+                            "./mvnw -e org.openrewrite.maven:rewrite-maven-plugin:4.41.0:run \\\n" +
                             "    -D\"rewrite.configLocation=%s\" \\\n" +
                             "    -D\"activeRecipes=%s\" \\\n" +
                             "    -D\"plainTextMasks=%s\" \\\n" +

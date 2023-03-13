@@ -7,7 +7,6 @@ import jakarta.decorator.Decorator;
 import jakarta.decorator.Delegate;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
@@ -27,8 +26,7 @@ public class DelegateQualifiersTest {
     public void testDecoration() {
         @SuppressWarnings("serial")
         ToUpperCaseConverter converter = Arc.container()
-                .instance(ToUpperCaseConverter.class, new AnnotationLiteral<MyQualifier>() {
-                }).get();
+                .instance(ToUpperCaseConverter.class, new MyQualifier.Literal()).get();
         assertEquals("HOLA!", converter.convert(" holA!"));
         assertEquals(" HOLA!", converter.convertNoDelegation(" holA!"));
     }

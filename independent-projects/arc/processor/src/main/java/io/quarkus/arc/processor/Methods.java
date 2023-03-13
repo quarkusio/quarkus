@@ -50,14 +50,7 @@ final class Methods {
 
     public static final String TO_STRING = "toString";
 
-    private static final List<String> IGNORED_METHODS = initIgnoredMethods();
-
-    private static List<String> initIgnoredMethods() {
-        List<String> ignored = new ArrayList<>();
-        ignored.add(INIT);
-        ignored.add(CLINIT);
-        return ignored;
-    }
+    static final Set<String> IGNORED_METHODS = Set.of(INIT, CLINIT);
 
     private Methods() {
     }

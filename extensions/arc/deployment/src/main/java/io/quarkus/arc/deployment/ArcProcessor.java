@@ -373,6 +373,7 @@ public class ArcProcessor {
         builder.setJtaCapabilities(capabilities.isPresent(Capability.TRANSACTIONS));
         builder.setGenerateSources(BootstrapDebug.DEBUG_SOURCES_DIR != null);
         builder.setAllowMocking(launchModeBuildItem.getLaunchMode() == LaunchMode.TEST);
+        builder.setStrictCompatibility(arcConfig.strictCompatibility);
 
         if (arcConfig.selectedAlternatives.isPresent()) {
             final List<Predicate<ClassInfo>> selectedAlternatives = initClassPredicates(

@@ -16,7 +16,7 @@ import io.quarkus.arc.test.ArcTestContainer;
 public class TypeVariableInitializerInjectionPointTest {
 
     @RegisterExtension
-    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(Head.class).shouldFail().build();;
+    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(Head.class).shouldFail().build();
 
     @Test
     public void testError() {

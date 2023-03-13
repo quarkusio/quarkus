@@ -122,12 +122,7 @@ public class BeanInfo implements InjectionTargetInfo {
         for (Type type : types) {
             Beans.analyzeType(type, beanDeployment);
         }
-        if (qualifiers.isEmpty()
-                || (qualifiers.size() <= 2 && qualifiers.stream()
-                        .allMatch(a -> DotNames.NAMED.equals(a.name()) || DotNames.ANY.equals(a.name())))) {
-            qualifiers.add(BuiltinQualifier.DEFAULT.getInstance());
-        }
-        qualifiers.add(BuiltinQualifier.ANY.getInstance());
+        Beans.addImplicitQualifiers(qualifiers);
         this.qualifiers = qualifiers;
         this.injections = injections;
         this.declaringBean = declaringBean;

@@ -1,5 +1,7 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -11,6 +13,8 @@ import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -23,7 +27,7 @@ final class Decorators {
     }
 
     static DecoratorInfo createDecorator(ClassInfo decoratorClass, BeanDeployment beanDeployment,
-            InjectionPointModifier transformer, AnnotationStore store) {
+            InjectionPointModifier transformer) {
 
         // Find the delegate injection point
         List<InjectionPointInfo> delegateInjectionPoints = new LinkedList<>();
@@ -45,7 +49,7 @@ final class Decorators {
         InjectionPointInfo delegateInjectionPoint = delegateInjectionPoints.get(0);
 
         Integer priority = null;
-        for (AnnotationInstance annotation : store.getAnnotations(decoratorClass)) {
+        for (AnnotationInstance annotation : beanDeployment.getAnnotations(decoratorClass)) {
             if (annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
             }
@@ -113,8 +117,42 @@ final class Decorators {
             }
         }
 
+        checkDecoratorFieldsAndMethods(decoratorClass, beanDeployment);
+
         return new DecoratorInfo(decoratorClass, beanDeployment, delegateInjectionPoint,
                 decoratedTypes, injections, priority);
+    }
+
+    private static void checkDecoratorFieldsAndMethods(ClassInfo decoratorClass, BeanDeployment beanDeployment) {
+        ClassInfo aClass = decoratorClass;
+        while (aClass != null) {
+            for (MethodInfo method : aClass.methods()) {
+                if (beanDeployment.hasAnnotation(method, DotNames.PRODUCES)) {
+                    throw new DefinitionException("Decorator declares a producer method: " + decoratorClass);
+                }
+                // the following 3 checks rely on the annotation store returning parameter annotations for methods
+                if (beanDeployment.hasAnnotation(method, DotNames.DISPOSES)) {
+                    throw new DefinitionException("Decorator declares a disposer method: " + decoratorClass);
+                }
+                if (beanDeployment.hasAnnotation(method, DotNames.OBSERVES)) {
+                    throw new DefinitionException("Decorator declares an observer method: " + decoratorClass);
+                }
+                if (beanDeployment.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
+                    throw new DefinitionException("Decorator declares an async observer method: " + decoratorClass);
+                }
+            }
+
+            for (FieldInfo field : aClass.fields()) {
+                if (beanDeployment.hasAnnotation(field, DotNames.PRODUCES)) {
+                    throw new DefinitionException("Decorator declares a producer field: " + decoratorClass);
+                }
+            }
+
+            DotName superClass = aClass.superName();
+            aClass = superClass != null && !superClass.equals(DotNames.OBJECT)
+                    ? getClassByName(beanDeployment.getBeanArchiveIndex(), superClass)
+                    : null;
+        }
     }
 
 }

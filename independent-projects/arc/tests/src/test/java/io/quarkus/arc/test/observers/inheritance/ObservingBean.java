@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
@@ -32,6 +33,7 @@ public class ObservingBean {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.FIELD, ElementType.TYPE })
     public @interface THIS {
-
+        class Literal extends AnnotationLiteral<THIS> implements THIS {
+        }
     }
 }

@@ -1734,6 +1734,22 @@ public class BeanGenerator extends AbstractGenerator {
             }
         }
 
+        if (bean.isSubclassRequired()) {
+            // marking the *_Subclass instance as constructed not when its constructor finishes,
+            // but only after injection is complete, to satisfy the Interceptors specification:
+            //
+            // > With the exception of `@AroundConstruct` lifecycle callback interceptor methods,
+            // > no interceptor methods are invoked until after dependency injection has been completed
+            // > on both the interceptor instances and the target.
+            //
+            // and also the CDI specification:
+            //
+            // > Invocations of initializer methods by the container are not business method invocations.
+            String subclassName = SubclassGenerator.generatedName(bean.getProviderType().name(), baseName);
+            create.invokeVirtualMethod(MethodDescriptor.ofMethod(subclassName,
+                    SubclassGenerator.MARK_CONSTRUCTED_METHOD_NAME, void.class), instanceHandle);
+        }
+
         // PostConstruct lifecycle callback interceptors
         InterceptionInfo postConstructs = bean.getLifecycleInterceptors(InterceptionType.POST_CONSTRUCT);
         if (!postConstructs.isEmpty()) {
@@ -1785,6 +1801,7 @@ public class BeanGenerator extends AbstractGenerator {
                 }
             }
         }
+
         create.returnValue(instanceHandle);
     }
 

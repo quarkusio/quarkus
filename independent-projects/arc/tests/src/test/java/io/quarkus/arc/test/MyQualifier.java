@@ -10,6 +10,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 @Qualifier
@@ -17,5 +18,6 @@ import jakarta.inject.Qualifier;
 @Target({ TYPE, METHOD, FIELD, PARAMETER })
 @Retention(RUNTIME)
 public @interface MyQualifier {
-
+    class Literal extends AnnotationLiteral<MyQualifier> implements MyQualifier {
+    }
 }

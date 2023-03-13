@@ -42,6 +42,16 @@ final class EventTypeAssignabilityRules {
     }
 
     boolean matchesNoBoxing(Type observedType, Type eventType) {
+        if (Types.isArray(observedType) && Types.isArray(eventType)) {
+            final Type observedComponentType = Types.getArrayComponentType(observedType);
+            for (Type type : new HierarchyDiscovery(Types.getArrayComponentType(eventType)).getTypeClosure()) {
+                if (matchesNoBoxing(observedComponentType, type)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         if (observedType instanceof TypeVariable<?>) {
             /*
              * An event type is considered assignable to a type variable if the event type is assignable to the upper bound, if

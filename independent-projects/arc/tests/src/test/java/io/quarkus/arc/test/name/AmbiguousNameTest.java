@@ -26,6 +26,7 @@ public class AmbiguousNameTest {
         Throwable error = container.getFailure();
         assertNotNull(error);
         assertTrue(error instanceof DeploymentException);
+        assertTrue(error.getMessage().contains("Unresolvable ambiguous bean name detected"));
     }
 
     @Named("A")

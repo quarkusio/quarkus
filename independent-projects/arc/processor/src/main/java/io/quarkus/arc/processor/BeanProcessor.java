@@ -488,6 +488,7 @@ public class BeanProcessor {
         boolean transformPrivateInjectedFields;
         boolean failOnInterceptedPrivateMethod;
         boolean allowMocking;
+        boolean strictCompatibility;
 
         AlternativePriorities alternativePriorities;
         final List<Predicate<ClassInfo>> excludeTypes;
@@ -522,6 +523,7 @@ public class BeanProcessor {
             transformPrivateInjectedFields = false;
             failOnInterceptedPrivateMethod = false;
             allowMocking = false;
+            strictCompatibility = false;
 
             excludeTypes = new ArrayList<>();
 
@@ -765,6 +767,24 @@ public class BeanProcessor {
          */
         public Builder setGenerateSources(boolean value) {
             this.generateSources = value;
+            return this;
+        }
+
+        /**
+         * If set to {@code true}, the container will perform additional validations mandated by the CDI specification.
+         * Some improvements on top of the CDI specification may be disabled. Applications that work as expected
+         * in the strict mode should work without a change in the default, non-strict mode.
+         * <p>
+         * The strict mode is mainly introduced to allow passing the CDI Lite TCK. Applications are recommended
+         * to use the default, non-strict mode, which makes CDI more convenient to use. The "strictness" of
+         * the strict mode (the set of additional validations and the set of disabled improvements on top of
+         * the CDI specification) may change over time.
+         * <p>
+         * Note that {@link #setTransformUnproxyableClasses(boolean)} also has effect on specification compatibility.
+         * Set it to {@code false} when unproxyable bean types should always lead to a deployment problem.
+         */
+        public Builder setStrictCompatibility(boolean strictCompatibility) {
+            this.strictCompatibility = strictCompatibility;
             return this;
         }
 

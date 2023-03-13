@@ -59,8 +59,7 @@ public class ObservertransformerTest {
 
         @SuppressWarnings("serial")
         Event<String> event = Arc.container().beanManager().getEvent().select(String.class,
-                new AnnotationLiteral<AlphaQualifier>() {
-                });
+                new AlphaQualifier.Literal());
         event.fire("foo");
         // Reception was transformed to IF_EXISTS so test1() is not invoked
         assertEquals(List.of("foo_MyObserver2"), MyObserver.EVENTS);
@@ -91,7 +90,8 @@ public class ObservertransformerTest {
     @Target({ TYPE, METHOD, FIELD, PARAMETER })
     @Retention(RUNTIME)
     public @interface AlphaQualifier {
-
+        class Literal extends AnnotationLiteral<AlphaQualifier> implements AlphaQualifier {
+        }
     }
 
 }

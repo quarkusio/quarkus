@@ -129,6 +129,9 @@ final class Deployer {
                             Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>(),
                             beanArchiveIndex))
                     .setApplicationIndex(applicationIndex)
+                    .setStrictCompatibility(true)
+                    .setTransformUnproxyableClasses(false)
+                    .setRemoveUnusedBeans(false)
                     .setBuildCompatibleExtensions(buildCompatibleExtensions)
                     .setAdditionalBeanDefiningAnnotations(Set.of(new BeanDefiningAnnotation(
                             DotName.createSimple(ExtraBean.class.getName()), null)))

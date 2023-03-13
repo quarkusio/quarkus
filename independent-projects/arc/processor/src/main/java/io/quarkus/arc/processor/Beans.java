@@ -181,6 +181,14 @@ public final class Beans {
             }
         }
 
+        if (scope != null // `null` is just like `@Dependent`
+                && !BuiltinScope.DEPENDENT.is(scope)
+                && producerMethod.returnType().kind() == Kind.PARAMETERIZED_TYPE
+                && Types.containsTypeVariable(producerMethod.returnType())) {
+            throw new DefinitionException("Producer method return type is a parameterized type with a type variable, "
+                    + "its scope must be @Dependent: " + producerMethod);
+        }
+
         List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer);
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, beanTypes, qualifiers, injections, declaringBean,
                 disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority);
@@ -288,6 +296,14 @@ public final class Beans {
                         producerField);
                 return null;
             }
+        }
+
+        if (scope != null // `null` is just like `@Dependent`
+                && !BuiltinScope.DEPENDENT.is(scope)
+                && producerField.type().kind() == Kind.PARAMETERIZED_TYPE
+                && Types.containsTypeVariable(producerField.type())) {
+            throw new DefinitionException("Producer field type is a parameterized type with a type variable, "
+                    + "its scope must be @Dependent: " + producerField);
         }
 
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(),
@@ -617,6 +633,15 @@ public final class Beans {
         return false;
     }
 
+    static void addImplicitQualifiers(Set<AnnotationInstance> qualifiers) {
+        if (qualifiers.isEmpty()
+                || (qualifiers.size() <= 2 && qualifiers.stream()
+                        .allMatch(a -> DotNames.NAMED.equals(a.name()) || DotNames.ANY.equals(a.name())))) {
+            qualifiers.add(BuiltinQualifier.DEFAULT.getInstance());
+        }
+        qualifiers.add(BuiltinQualifier.ANY.getInstance());
+    }
+
     static List<MethodInfo> getCallbacks(ClassInfo beanClass, DotName annotation, IndexView index) {
         List<MethodInfo> callbacks = new ArrayList<>();
         collectCallbacks(beanClass, callbacks, annotation, index, new HashSet<>());
@@ -669,6 +694,10 @@ public final class Beans {
                 } else {
                     errors.add(new DeploymentException(String.format("%s bean must not be final: %s", classifier, bean)));
                 }
+            }
+            if (bean.getDeployment().strictCompatibility && classifier != null) {
+                validateNonStaticFinalMethods(beanClass, bean.getDeployment().getBeanArchiveIndex(),
+                        classifier, errors);
             }
 
             MethodInfo noArgsConstructor = beanClass.method(Methods.INIT);
@@ -756,6 +785,10 @@ public final class Beans {
                                         " return type that is final: %s", classifier, bean)));
                     }
                 }
+                if (bean.getDeployment().strictCompatibility) {
+                    validateNonStaticFinalMethods(returnTypeClass, bean.getDeployment().getBeanArchiveIndex(),
+                            classifier, errors);
+                }
                 MethodInfo noArgsConstructor = returnTypeClass.method(Methods.INIT);
                 if (noArgsConstructor == null) {
                     if (bean.getDeployment().transformUnproxyableClasses) {
@@ -835,6 +868,37 @@ public final class Beans {
                                     bean)));
                 }
             }
+            if (bean.getScope().isNormal() && !Modifier.isInterface(beanClass.flags())
+                    && bean.getDeployment().strictCompatibility) {
+                validateNonStaticFinalMethods(beanClass, bean.getDeployment().getBeanArchiveIndex(), "Normal scoped", errors);
+            }
+        }
+    }
+
+    private static void validateNonStaticFinalMethods(ClassInfo clazz, IndexView beanArchiveIndex,
+            String classifier, List<Throwable> errors) {
+        // see also Methods.skipForClientProxy()
+        while (!clazz.name().equals(DotNames.OBJECT)) {
+            for (MethodInfo method : clazz.methods()) {
+                if (Methods.IGNORED_METHODS.contains(method.name()) // constructor or static init
+                        || Modifier.isStatic(method.flags())
+                        || Modifier.isPrivate(method.flags())
+                        || method.isSynthetic()) {
+                    continue;
+                }
+
+                if (Modifier.isFinal(method.flags())) {
+                    errors.add(new DeploymentException(String.format(
+                            "%s bean must not declare non-static final methods with public, protected or default visibility: %s",
+                            classifier, method)));
+                }
+            }
+
+            ClassInfo superClass = getClassByName(beanArchiveIndex, clazz.superName());
+            if (superClass == null) {
+                break;
+            }
+            clazz = superClass;
         }
     }
 

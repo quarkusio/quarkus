@@ -1,6 +1,5 @@
 package io.quarkus.arc.test.event.select;
 
-import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.enterprise.util.TypeLiteral;
 
 import org.junit.jupiter.api.Assertions;
@@ -61,8 +60,7 @@ public class EventSelectTest {
     public void testEventSelectThrowsExceptionIfAnnotationIsNotBindingType() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             SecuritySensor sensor = Arc.container().select(SecuritySensor.class).get();
-            sensor.securityEvent.select(new AnnotationLiteral<NotABindingType>() {
-            });
+            sensor.securityEvent.select(new NotABindingType.Literal());
         }, "Event#select should throw IllegalArgumentException if the annotation is not a binding type.");
     }
 
@@ -70,8 +68,7 @@ public class EventSelectTest {
     public void testEventSelectWithSubtypeThrowsExceptionIfAnnotationIsNotBindingType() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             SecuritySensor sensor = Arc.container().select(SecuritySensor.class).get();
-            sensor.securityEvent.select(BreakInEvent.class, new AnnotationLiteral<NotABindingType>() {
-            });
+            sensor.securityEvent.select(BreakInEvent.class, new NotABindingType.Literal());
         }, "Event#select should throw IllegalArgumentException when selecting a subtype and using annotation that is not a binding type.");
     }
 }

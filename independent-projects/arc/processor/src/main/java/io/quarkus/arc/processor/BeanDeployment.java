@@ -116,6 +116,8 @@ public class BeanDeployment {
 
     private final boolean jtaCapabilities;
 
+    final boolean strictCompatibility;
+
     private final AlternativePriorities alternativePriorities;
 
     private final List<Predicate<ClassInfo>> excludeTypes;
@@ -217,6 +219,7 @@ public class BeanDeployment {
         this.transformPrivateInjectedFields = builder.transformPrivateInjectedFields;
         this.failOnInterceptedPrivateMethod = builder.failOnInterceptedPrivateMethod;
         this.jtaCapabilities = builder.jtaCapabilities;
+        this.strictCompatibility = builder.strictCompatibility;
         this.alternativePriorities = builder.alternativePriorities;
     }
 
@@ -969,7 +972,7 @@ public class BeanDeployment {
                 beanClasses.add(beanClass);
             }
 
-            // non-inherited stuff:
+            // non-inherited methods
             for (MethodInfo method : beanClass.methods()) {
                 if (method.isSynthetic()) {
                     continue;
@@ -993,7 +996,7 @@ public class BeanDeployment {
                 }
             }
 
-            // inherited stuff
+            // inherited methods
             ClassInfo aClass = beanClass;
             Set<Methods.MethodKey> methods = new HashSet<>();
             while (aClass != null) {
@@ -1048,6 +1051,8 @@ public class BeanDeployment {
                         ? getClassByName(getBeanArchiveIndex(), superType)
                         : null;
             }
+
+            // non-inherited fields
             for (FieldInfo field : beanClass.fields()) {
                 if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)
                         && !annotationStore.hasAnnotation(field, DotNames.VETOED_PRODUCER)) {
@@ -1084,6 +1089,29 @@ public class BeanDeployment {
                 beans.add(classBean);
                 beanClassToBean.put(beanClass, classBean);
                 injectionPoints.addAll(classBean.getAllInjectionPoints());
+
+                // specification requires to disallow non-static public fields on non-`@Dependent` beans,
+                // but we do what Weld does: only disallow them on normal scoped beans (disallowing them
+                // on `@Singleton` beans would actually prevent passing the AtInject TCK)
+                //
+                // only check this in the strictly compatible mode, as this is pretty invasive,
+                // it even prevents public producer fields
+                if (classBean.getScope().isNormal() && strictCompatibility) {
+                    ClassInfo aClass = beanClass;
+                    while (aClass != null) {
+                        for (FieldInfo field : aClass.fields()) {
+                            if (Modifier.isPublic(field.flags()) && !Modifier.isStatic(field.flags())) {
+                                throw new DefinitionException("Non-static public field " + field
+                                        + " present on normal scoped bean " + beanClass);
+                            }
+                        }
+
+                        DotName superClass = aClass.superName();
+                        aClass = superClass != null && !superClass.equals(DotNames.OBJECT)
+                                ? getClassByName(getBeanArchiveIndex(), superClass)
+                                : null;
+                    }
+                }
             }
         }
 
@@ -1098,13 +1126,16 @@ public class BeanDeployment {
                 injectionPoints.addAll(injection.injectionPoints);
             }
         }
+        Set<DisposerInfo> unusedDisposers = new HashSet<>(disposers);
 
         for (MethodInfo producerMethod : producerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(producerMethod.declaringClass());
             if (declaringBean != null) {
                 Set<Type> beanTypes = Types.getProducerMethodTypeClosure(producerMethod, this);
+                DisposerInfo disposer = findDisposer(beanTypes, declaringBean, producerMethod, disposers);
+                unusedDisposers.remove(disposer);
                 BeanInfo producerMethodBean = Beans.createProducerMethod(beanTypes, producerMethod, declaringBean, this,
-                        findDisposer(beanTypes, declaringBean, producerMethod, disposers), injectionPointTransformer);
+                        disposer, injectionPointTransformer);
                 if (producerMethodBean != null) {
                     beans.add(producerMethodBean);
                     injectionPoints.addAll(producerMethodBean.getAllInjectionPoints());
@@ -1116,11 +1147,37 @@ public class BeanDeployment {
             BeanInfo declaringBean = beanClassToBean.get(producerField.declaringClass());
             if (declaringBean != null) {
                 Set<Type> beanTypes = Types.getProducerFieldTypeClosure(producerField, this);
+                DisposerInfo disposer = findDisposer(beanTypes, declaringBean, producerField, disposers);
+                unusedDisposers.remove(disposer);
                 BeanInfo producerFieldBean = Beans.createProducerField(producerField, declaringBean, this,
-                        findDisposer(beanTypes, declaringBean, producerField, disposers));
+                        disposer);
                 if (producerFieldBean != null) {
                     beans.add(producerFieldBean);
                 }
+            }
+        }
+
+        // we track unused disposers to make this validation cheaper: no need to validate disposers
+        // that are used, clearly a matching producer bean exists for those
+        for (DisposerInfo unusedDisposer : unusedDisposers) {
+            Type disposedParamType = unusedDisposer.getDisposedParameterType();
+            boolean matchingProducerBeanExists = false;
+            scan: for (BeanInfo bean : beans) {
+                if (bean.isProducerMethod() || bean.isProducerField()) {
+                    if (!bean.getDeclaringBean().equals(unusedDisposer.getDeclaringBean())) {
+                        continue;
+                    }
+                    for (Type beanType : bean.getTypes()) {
+                        if (beanResolver.matches(disposedParamType, beanType)) {
+                            matchingProducerBeanExists = true;
+                            break scan;
+                        }
+                    }
+                }
+            }
+            if (!matchingProducerBeanExists) {
+                throw new DefinitionException("No producer method or field declared by the bean class that is assignable "
+                        + "to the disposed parameter of a disposer method: " + unusedDisposer.getDisposerMethod());
             }
         }
 
@@ -1191,12 +1248,18 @@ public class BeanDeployment {
         }
     }
 
-    private DisposerInfo findDisposer(Set<Type> beanTypes, BeanInfo declaringBean, AnnotationTarget annotationTarget,
+    private DisposerInfo findDisposer(Set<Type> beanTypes, BeanInfo declaringBean, AnnotationTarget producer,
             List<DisposerInfo> disposers) {
-        List<DisposerInfo> found = new ArrayList<>();
+        // we don't have a `BeanInfo` for the producer yet (the outcome of this method is used to build it),
+        // so we need to construct its set of qualifiers manually
         Set<AnnotationInstance> qualifiers = new HashSet<>();
-        Collection<AnnotationInstance> allAnnotations = getAnnotations(annotationTarget);
-        allAnnotations.forEach(a -> extractQualifiers(a).forEach(qualifiers::add));
+        // ignore annotations on producer method parameters -- they may be injection point qualifiers
+        for (AnnotationInstance annotation : Annotations.getAnnotations(producer.kind(), getAnnotations(producer))) {
+            qualifiers.addAll(extractQualifiers(annotation));
+        }
+        Beans.addImplicitQualifiers(qualifiers); // need to consider `@Any` (and possibly `@Default`) too
+
+        List<DisposerInfo> found = new ArrayList<>();
         for (DisposerInfo disposer : disposers) {
             if (disposer.getDeclaringBean().equals(declaringBean)) {
                 boolean hasQualifier = true;
@@ -1217,7 +1280,7 @@ public class BeanDeployment {
             }
         }
         if (found.size() > 1) {
-            throw new DefinitionException("Multiple disposer methods found for " + annotationTarget);
+            throw new DefinitionException("Multiple disposer methods found for " + producer);
         }
         return found.isEmpty() ? null : found.get(0);
     }
@@ -1325,8 +1388,7 @@ public class BeanDeployment {
                 // Skip vetoed interceptors
                 continue;
             }
-            interceptors
-                    .add(Interceptors.createInterceptor(interceptorClass, this, injectionPointTransformer, annotationStore));
+            interceptors.add(Interceptors.createInterceptor(interceptorClass, this, injectionPointTransformer));
         }
         if (LOGGER.isTraceEnabled()) {
             for (InterceptorInfo interceptor : interceptors) {
@@ -1352,8 +1414,7 @@ public class BeanDeployment {
                 // Skip vetoed decorators
                 continue;
             }
-            decorators
-                    .add(Decorators.createDecorator(decoratorClass, this, injectionPointTransformer, annotationStore));
+            decorators.add(Decorators.createDecorator(decoratorClass, this, injectionPointTransformer));
         }
         if (LOGGER.isTraceEnabled()) {
             for (DecoratorInfo decorator : decorators) {
@@ -1378,6 +1439,7 @@ public class BeanDeployment {
 
     private void validateBeans(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
 
+        Set<String> namespaces = new HashSet<>();
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
         Set<DotName> classesReceivingNoArgsCtor = new HashSet<>();
 
@@ -1389,21 +1451,50 @@ public class BeanDeployment {
                     namedBeans.put(bean.getName(), named);
                 }
                 named.add(bean);
+                findNamespaces(bean, namespaces);
             }
             bean.validate(errors, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
         }
 
         if (!namedBeans.isEmpty()) {
             for (Entry<String, List<BeanInfo>> entry : namedBeans.entrySet()) {
-                if (entry.getValue()
-                        .size() > 1) {
+                String name = entry.getKey();
+
+                if (entry.getValue().size() > 1) {
                     if (Beans.resolveAmbiguity(entry.getValue()) == null) {
-                        errors.add(new DeploymentException("Unresolvable ambiguous bean name detected: " + entry.getKey()
+                        errors.add(new DeploymentException("Unresolvable ambiguous bean name detected: " + name
                                 + "\nBeans:\n" + entry.getValue()
                                         .stream()
                                         .map(Object::toString)
                                         .collect(Collectors.joining("\n"))));
                     }
+                }
+
+                if (strictCompatibility && namespaces.contains(name)) {
+                    errors.add(new DeploymentException(
+                            "Bean name '" + name + "' is identical to a bean name prefix used elsewhere"));
+                }
+            }
+        }
+    }
+
+    private void findNamespaces(BeanInfo bean, Set<String> namespaces) {
+        if (!strictCompatibility) {
+            return;
+        }
+
+        if (bean.getName() != null) {
+            String[] parts = bean.getName().split("\\.");
+            if (parts.length > 1) {
+                for (int i = 0; i < parts.length - 1; i++) {
+                    StringBuilder builder = new StringBuilder();
+                    for (int j = 0; j <= i; j++) {
+                        if (j > 0) {
+                            builder.append('.');
+                        }
+                        builder.append(parts[j]);
+                    }
+                    namespaces.add(builder.toString());
                 }
             }
         }

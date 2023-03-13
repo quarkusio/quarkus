@@ -42,10 +42,10 @@ public class CaffeineProcessor {
         }
         if (!effectiveImplementorNames.isEmpty()) {
             //Do not force registering any Caffeine classes if we can avoid it: there's a significant chain reaction
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, CACHE_LOADER_CLASS_NAME));
-            for (String name : effectiveImplementorNames) {
-                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, name));
-            }
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(CACHE_LOADER_CLASS_NAME).methods(true).build());
+
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(effectiveImplementorNames.toArray(new String[0])).methods(true).build());
         }
     }
 

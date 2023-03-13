@@ -8,10 +8,11 @@
         <groupId>io.quarkus.arc</groupId>
         <artifactId>arc-parent</artifactId>
         <version>999-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>arc-atinject-tck-runner</artifactId>
-    <name>ArC - AtInject TCK Runner</name>
+    <artifactId>arc-lang-model-tck-runner</artifactId>
+    <name>ArC - Lang Model TCK Runner</name>
 
     <dependencyManagement>
         <dependencies>
@@ -31,19 +32,9 @@
             <artifactId>arc-arquillian</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.inject</groupId>
-            <artifactId>jakarta.inject-tck</artifactId>
-            <version>${version.atinject-tck}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>jakarta.inject</groupId>
-                    <artifactId>jakarta.inject-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>cdi-tck-lang-model</artifactId>
+            <version>${version.cdi-tck}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

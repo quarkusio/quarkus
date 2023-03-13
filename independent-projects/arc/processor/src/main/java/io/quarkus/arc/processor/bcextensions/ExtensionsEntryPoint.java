@@ -33,6 +33,7 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.InstanceImpl;
 import io.quarkus.arc.impl.SyntheticCreationalContextImpl;
+import io.quarkus.arc.impl.bcextensions.ParametersImpl;
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanDeploymentValidator;

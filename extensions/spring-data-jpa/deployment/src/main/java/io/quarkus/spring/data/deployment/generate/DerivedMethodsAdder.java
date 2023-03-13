@@ -20,10 +20,12 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -169,7 +171,8 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                             methodCreator.load(finalQuery), sort, paramsArray);
 
-                    Type resultType = verifyQueryResultType(method.returnType(), index);
+                    Type resultType = extractResultType(repositoryClassInfo, method);
+
                     DotName customResultTypeName = resultType.name();
 
                     if (customResultTypeName.equals(entityClassInfo.name())
@@ -285,6 +288,25 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
             generateCustomResultTypes(interfaceName, implName, entityClassInfo, customResultTypes.get(implName));
             projectionClassCreatedCallback.accept(implName.toString());
         }
+    }
+
+    private Type extractResultType(ClassInfo repositoryClassInfo, MethodInfo method) {
+        Type resultType = verifyQueryResultType(method.returnType(), index);
+        if (resultType.kind() == Type.Kind.TYPE_VARIABLE) {
+            // we can handle the generic result type case where interface only declares one generic type that is the same as the method result type uses (TODO: look into enhancing)
+            // this is accomplished by resolving the generic type from the interface we are actually implementing
+            TypeVariable resultTypeVariable = resultType.asTypeVariable();
+            List<TypeVariable> interfaceTypeVariables = method.declaringClass().typeParameters();
+            if (interfaceTypeVariables.size() == 1 && interfaceTypeVariables.get(0)
+                    .equals(resultTypeVariable)) {
+                List<Type> resolveTypeParameters = JandexUtil.resolveTypeParameters(repositoryClassInfo.name(),
+                        method.declaringClass().name(), index);
+                if (resolveTypeParameters.size() == 1) {
+                    return resolveTypeParameters.get(0);
+                }
+            }
+        }
+        return resultType;
     }
 
     private void addAllMethodOfIntermediateRepository(DotName interfaceDotName, Set<MethodInfo> result) {

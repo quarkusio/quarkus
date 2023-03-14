@@ -22,7 +22,7 @@ public class Db2LifecycleManager implements QuarkusTestResourceLifecycleManager 
 
         Map<String, String> properties = new HashMap<>();
         properties.put("quarkus.datasource.db2.jdbc.url",
-                String.format("jdbc:otel:db2://%s:%s/%s", db2Container.getHost(),
+                String.format("jdbc:db2://%s:%s/%s", db2Container.getHost(),
                         db2Container.getFirstMappedPort(), QUARKUS));
         properties.put("quarkus.datasource.db2.password", QUARKUS);
         properties.put("quarkus.datasource.db2.username", QUARKUS);

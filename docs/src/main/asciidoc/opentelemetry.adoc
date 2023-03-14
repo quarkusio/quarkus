@@ -243,15 +243,16 @@ The https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/ma
 implementation("io.opentelemetry.instrumentation:opentelemetry-jdbc")
 ----
 
-As it uses a dedicated JDBC driver, you must configure your datasource and Hibernate ORM to use it.
+As it uses a dedicated JDBC datasource wrapper, you must enable telemetry for your datasource:
 
 [source, properties]
 ----
+# enable tracing
+quarkus.datasource.jdbc.telemetry=true
+
+# configure datasource
 quarkus.datasource.db-kind=postgresql
-# add ':otel' to your database URL
-quarkus.datasource.jdbc.url=jdbc:otel:postgresql://localhost:5432/mydatabase
-# use the 'OpenTelemetryDriver' instead of the one for your database
-quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/mydatabase
 ----
 
 == Additional configuration

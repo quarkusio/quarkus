@@ -79,6 +79,7 @@ public class DataSources {
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
     private final DataSourceSupport dataSourceSupport;
     private final Instance<AgroalPoolInterceptor> agroalPoolInterceptors;
+    private final Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper;
 
     private final ConcurrentMap<String, AgroalDataSource> dataSources = new ConcurrentHashMap<>();
 
@@ -88,8 +89,10 @@ public class DataSources {
             TransactionManagerConfiguration transactionRuntimeConfig,
             TransactionManager transactionManager,
             XAResourceRecoveryRegistry xaResourceRecoveryRegistry,
-            TransactionSynchronizationRegistry transactionSynchronizationRegistry, DataSourceSupport dataSourceSupport,
-            @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors) {
+            TransactionSynchronizationRegistry transactionSynchronizationRegistry,
+            DataSourceSupport dataSourceSupport,
+            @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors,
+            Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper) {
         this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
         this.dataSourcesRuntimeConfig = dataSourcesRuntimeConfig;
         this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
@@ -100,6 +103,7 @@ public class DataSources {
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         this.dataSourceSupport = dataSourceSupport;
         this.agroalPoolInterceptors = agroalPoolInterceptors;
+        this.agroalOpenTelemetryWrapper = agroalOpenTelemetryWrapper;
     }
 
     /**
@@ -127,6 +131,7 @@ public class DataSources {
         });
     }
 
+    @SuppressWarnings("resource")
     public AgroalDataSource doCreateDataSource(String dataSourceName) {
         if (!dataSourceSupport.entries.containsKey(dataSourceName)) {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
@@ -250,6 +255,12 @@ public class DataSources {
                 .stream().collect(Collectors.toList());
         if (!interceptorList.isEmpty()) {
             dataSource.setPoolInterceptors(interceptorList);
+        }
+
+        if (dataSourceJdbcBuildTimeConfig.telemetry && dataSourceJdbcRuntimeConfig.telemetry.orElse(true)) {
+            // activate OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
+            // use an optional CDI bean as we can't reference optional OpenTelemetry classes here
+            dataSource = agroalOpenTelemetryWrapper.get().apply(dataSource);
         }
 
         return dataSource;
@@ -444,5 +455,4 @@ public class DataSources {
             }
         }
     }
-
 }

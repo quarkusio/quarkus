@@ -2,7 +2,6 @@ package io.quarkus.opentelemetry.deployment;
 
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -20,16 +19,13 @@ import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
-import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -47,6 +43,7 @@ import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps(onlyIf = OpenTelemetryEnabled.class)
@@ -168,17 +165,20 @@ public class OpenTelemetryProcessor {
     }
 
     @BuildStep
-    void collectAllJdbcDataSourcesUsingOTelDriver(BuildProducer<OpenTelemetryDriverJdbcDataSourcesBuildItem> resultProducer,
-            List<JdbcDataSourceBuildItem> jdbcDataSources) {
-        final List<JdbcDataSourceBuildItem> result = new ArrayList<>();
+    void validateDataSourcesWithEnabledTelemetry(List<JdbcDataSourceBuildItem> jdbcDataSources,
+            BuildProducer<ValidationErrorBuildItem> validationErrors) {
         for (JdbcDataSourceBuildItem dataSource : jdbcDataSources) {
-            // if the datasource is explicitly configured to use the OTel driver...
-            if (dataSourceUsesOTelJdbcDriver(dataSource.getName())) {
-                result.add(dataSource);
+            final String dataSourceName = dataSource.getName();
+
+            // verify that no datasource is using OpenTelemetryDriver as that is not supported anymore
+            if (dataSourceUsesOTelJdbcDriver(dataSourceName)) {
+                validationErrors.produce(
+                        new ValidationErrorBuildItem(
+                                new ConfigurationException(
+                                        String.format(
+                                                "Data source '%s' is using unsupported JDBC driver '%s', please active JDBC instrumentation with the 'quarkus.datasource.jdbc.telemetry=true' configuration property instead",
+                                                dataSourceName, OPEN_TELEMETRY_DRIVER))));
             }
-        }
-        if (!result.isEmpty()) {
-            resultProducer.produce(new OpenTelemetryDriverJdbcDataSourcesBuildItem(result));
         }
     }
 
@@ -193,30 +193,4 @@ public class OpenTelemetryProcessor {
         return false;
     }
 
-    /**
-     * 'OracleDriver' register itself as driver in static initialization block, however we don't want to
-     * force runtime initialization for compatibility reasons, for more information please check:
-     * io.quarkus.jdbc.oracle.deployment.OracleMetadataOverrides#runtimeInitializeDriver
-     */
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void registerOracleDriver(Optional<OpenTelemetryDriverJdbcDataSourcesBuildItem> otJdbcDataSourcesBuildItem,
-            List<JdbcDriverBuildItem> driverBuildItems, Capabilities capabilities, OpenTelemetryRecorder recorder) {
-        // check if there are data sources using OT driver and jdbc-oracle extension is present
-        if (otJdbcDataSourcesBuildItem.isPresent() && capabilities.isPresent(Capability.JDBC_ORACLE)) {
-            for (JdbcDataSourceBuildItem jdbcDataSource : otJdbcDataSourcesBuildItem.get().jdbcDataSources) {
-                if (jdbcDataSource.getDbKind().equals(DatabaseKind.ORACLE)) {
-                    // now we know there is Oracle JDBC datasource
-                    // let's find Oracle driver
-                    for (JdbcDriverBuildItem driverBuildItem : driverBuildItems) {
-                        if (DatabaseKind.ORACLE.equals(driverBuildItem.getDbKind())) {
-                            recorder.registerJdbcDriver(driverBuildItem.getDriverClass());
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    }
 }

@@ -1,5 +1,7 @@
 package io.quarkus.agroal.deployment;
 
+import static io.quarkus.deployment.Capability.OPENTELEMETRY_TRACER;
+
 import java.sql.Driver;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,8 +79,10 @@ class AgroalProcessor {
             List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
+            Capabilities capabilities,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
         if (dataSourcesBuildTimeConfig.driver.isPresent() || dataSourcesBuildTimeConfig.url.isPresent()) {
             throw new ConfigurationException(
@@ -96,6 +100,7 @@ class AgroalProcessor {
             return;
         }
 
+        boolean otelJdbcInstrumentationActive = false;
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
             validateBuildTimeConfig(aggregatedDataSourceBuildTimeConfig);
 
@@ -105,11 +110,23 @@ class AgroalProcessor {
                                 DataSources.TRACING_DRIVER_CLASSNAME));
             }
 
+            if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().telemetry) {
+                otelJdbcInstrumentationActive = true;
+            }
+
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, false,
                             aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass()));
 
             aggregatedConfig.produce(aggregatedDataSourceBuildTimeConfig);
+        }
+
+        if (otelJdbcInstrumentationActive && capabilities.isPresent(OPENTELEMETRY_TRACER)) {
+            // at least one datasource is using OpenTelemetry JDBC instrumentation,
+            // therefore we register the OpenTelemetry data source wrapper bean
+            additionalBeans.produce(new AdditionalBeanBuildItem.Builder()
+                    .addBeanClass("io.quarkus.agroal.runtime.AgroalOpenTelemetryWrapper")
+                    .setDefaultScope(DotNames.SINGLETON).build());
         }
 
         // For now, we can't push the security providers to Agroal so we need to include

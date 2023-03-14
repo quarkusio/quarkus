@@ -43,4 +43,10 @@ public class DataSourceJdbcBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean tracing = false;
+
+    /**
+     * Enable OpenTelemetry JDBC instrumentation.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean telemetry = false;
 }

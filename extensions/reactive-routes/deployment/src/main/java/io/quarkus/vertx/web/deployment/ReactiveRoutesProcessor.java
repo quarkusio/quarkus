@@ -97,6 +97,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
@@ -141,6 +142,7 @@ class ReactiveRoutesProcessor {
     private static final DotName ROLES_ALLOWED = DotName.createSimple(RolesAllowed.class.getName());
     private static final DotName AUTHENTICATED = DotName.createSimple(Authenticated.class.getName());
     private static final DotName DENY_ALL = DotName.createSimple(DenyAll.class.getName());
+    private static final DotName PERMISSIONS_ALLOWED = DotName.createSimple(PermissionsAllowed.class.getName());
 
     private static final List<ParameterInjector> PARAM_INJECTORS = initParamInjectors();
 
@@ -232,6 +234,7 @@ class ReactiveRoutesProcessor {
                                 && !returnTypeName.equals(DotNames.MULTI) && !returnTypeName.equals(DotNames.COMPLETION_STAGE);
                         final boolean hasRbacAnnotationThatRequiresAuth = annotationStore.hasAnnotation(method, ROLES_ALLOWED)
                                 || annotationStore.hasAnnotation(method, AUTHENTICATED)
+                                || annotationStore.hasAnnotation(method, PERMISSIONS_ALLOWED)
                                 || annotationStore.hasAnnotation(method, DENY_ALL);
                         alwaysAuthenticateRoute = possiblySynchronousResponse && hasRbacAnnotationThatRequiresAuth;
                     } else {

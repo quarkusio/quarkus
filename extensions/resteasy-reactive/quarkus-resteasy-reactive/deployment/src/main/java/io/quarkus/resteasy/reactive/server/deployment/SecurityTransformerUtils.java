@@ -15,6 +15,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 
 public class SecurityTransformerUtils {
     public static final Set<DotName> SECURITY_BINDINGS = new HashSet<>();
@@ -22,6 +23,7 @@ public class SecurityTransformerUtils {
     static {
         // keep the contents the same as in io.quarkus.resteasy.deployment.SecurityTransformerUtils
         SECURITY_BINDINGS.add(DotName.createSimple(RolesAllowed.class.getName()));
+        SECURITY_BINDINGS.add(DotName.createSimple(PermissionsAllowed.class.getName()));
         SECURITY_BINDINGS.add(DotName.createSimple(Authenticated.class.getName()));
         SECURITY_BINDINGS.add(DotName.createSimple(DenyAll.class.getName()));
         SECURITY_BINDINGS.add(DotName.createSimple(PermitAll.class.getName()));
@@ -32,7 +34,7 @@ public class SecurityTransformerUtils {
     }
 
     public static boolean hasStandardSecurityAnnotation(ClassInfo classInfo) {
-        return hasStandardSecurityAnnotation(classInfo.classAnnotations());
+        return hasStandardSecurityAnnotation(classInfo.declaredAnnotations());
     }
 
     private static boolean hasStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
@@ -49,7 +51,7 @@ public class SecurityTransformerUtils {
     }
 
     public static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(ClassInfo classInfo) {
-        return findFirstStandardSecurityAnnotation(classInfo.classAnnotations());
+        return findFirstStandardSecurityAnnotation(classInfo.declaredAnnotations());
     }
 
     private static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {

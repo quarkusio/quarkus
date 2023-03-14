@@ -94,13 +94,11 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 });
             }
 
-            deferredIdentity.map(new Function<SecurityIdentity, Object>() {
+            deferredIdentity.flatMap(new Function<SecurityIdentity, Uni<?>>() {
                 @Override
-                public Object apply(SecurityIdentity securityIdentity) {
-                    theCheck.apply(securityIdentity, methodDescription,
-                            requestContext.getParameters());
+                public Uni<?> apply(SecurityIdentity securityIdentity) {
                     preventRepeatedSecurityChecks(requestContext, methodDescription);
-                    return null;
+                    return theCheck.nonBlockingApply(securityIdentity, methodDescription, requestContext.getParameters());
                 }
             })
                     .subscribe().withSubscriber(new UniSubscriber<Object>() {

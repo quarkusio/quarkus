@@ -17,6 +17,7 @@ import jakarta.interceptor.InvocationContext;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
 
@@ -55,6 +56,16 @@ public abstract class StandardSecurityCheckInterceptor {
     @RolesAllowed("")
     @Priority(Interceptor.Priority.PLATFORM_BEFORE)
     public static final class RolesAllowedInterceptor extends StandardSecurityCheckInterceptor {
+
+    }
+
+    /**
+     * Prevent the SecurityHandler from performing {@link io.quarkus.security.PermissionsAllowed} security checks
+     */
+    @Interceptor
+    @PermissionsAllowed("")
+    @Priority(Interceptor.Priority.PLATFORM_BEFORE)
+    public static final class PermissionsAllowedInterceptor extends StandardSecurityCheckInterceptor {
 
     }
 

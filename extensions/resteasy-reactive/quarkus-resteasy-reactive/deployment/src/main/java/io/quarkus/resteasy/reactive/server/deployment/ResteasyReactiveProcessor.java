@@ -1509,7 +1509,8 @@ public class ResteasyReactiveProcessor {
             // Register interceptors for standard security annotations to prevent repeated security checks
             beans.produce(new AdditionalBeanBuildItem(StandardSecurityCheckInterceptor.RolesAllowedInterceptor.class,
                     StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class,
-                    StandardSecurityCheckInterceptor.PermitAllInterceptor.class));
+                    StandardSecurityCheckInterceptor.PermitAllInterceptor.class,
+                    StandardSecurityCheckInterceptor.PermissionsAllowedInterceptor.class));
         }
     }
 

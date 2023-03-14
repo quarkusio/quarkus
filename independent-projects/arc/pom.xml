@@ -69,11 +69,11 @@
         <module>processor</module>
         <module>tests</module>
 
-        <module>arquillian</module>
-        <module>atinject-tck-runner</module>
-        <module>cdi-tck-porting-pkg</module>
-        <module>cdi-tck-runner</module>
-        <module>lang-model-tck-runner</module>
+        <module>tcks/arquillian</module>
+        <module>tcks/atinject-tck-runner</module>
+        <module>tcks/cdi-tck-porting-pkg</module>
+        <module>tcks/cdi-tck-runner</module>
+        <module>tcks/lang-model-tck-runner</module>
     </modules>
 
     <dependencyManagement>

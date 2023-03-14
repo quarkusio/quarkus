@@ -1,4 +1,4 @@
-package io.quarkus.arc.processor.bcextensions;
+package io.quarkus.arc.impl.bcextensions;
 
 import java.util.Map;
 import java.util.Objects;

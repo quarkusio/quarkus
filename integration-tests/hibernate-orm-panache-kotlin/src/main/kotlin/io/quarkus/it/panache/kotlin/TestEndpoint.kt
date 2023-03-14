@@ -5,6 +5,7 @@ import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.exception.PanacheQueryException
+import io.quarkus.runtime.annotations.RegisterForReflection
 import jakarta.inject.Inject
 import jakarta.persistence.LockModeType
 import jakarta.persistence.NoResultException
@@ -1086,6 +1087,49 @@ class TestEndpoint {
         // these should be unaffected
         Assertions.assertEquals(3, Person.count())
         Assertions.assertEquals(3, Person.listAll().size)
+
+        Person.deleteAll()
+
+        return "OK"
+    }
+
+    @GET
+    @Path("project")
+    @Transactional
+    fun testProject(): String {
+        @RegisterForReflection
+        data class MyProjection(
+            val projectedName: String
+        )
+
+        val mark = Person()
+        mark.name = "Mark"
+        mark.persistAndFlush()
+
+        val hqlWithoutSpace = """
+            select
+                name as projectedName
+            from
+                io.quarkus.it.panache.kotlin.Person
+            where
+                name = ?1
+        """.trimIndent()
+        val withoutSpace = Person.find(hqlWithoutSpace, "Mark").project(MyProjection::class.java).firstResult()
+        Assertions.assertNotNull(withoutSpace)
+        Assertions.assertEquals(mark.name, withoutSpace?.projectedName)
+
+        // There is a space behind "select "
+        val hqlWithSpace = """
+            select 
+                name as projectedName
+            from
+                io.quarkus.it.panache.kotlin.Person
+            where
+                name = ?1
+        """.trimIndent()
+        val withSpace = Person.find(hqlWithSpace, "Mark").project(MyProjection::class.java).firstResult()
+        Assertions.assertNotNull(withSpace)
+        Assertions.assertEquals(mark.name, withSpace?.projectedName)
 
         Person.deleteAll()
 

@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.is;
 
+import io.quarkus.test.TestTransaction;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.mongodb.panache.person.Person;
@@ -19,6 +20,7 @@ class PersonResourceTest {
     private static final String ROOT_URL = "/hibernate/persons";
 
     @Test
+    @TestTransaction
     void testRecordInPanache() {
         var person1 = new Person();
         person1.firstname = "Loïc";
@@ -42,4 +44,11 @@ class PersonResourceTest {
                 .body("size()", is(2));
     }
 
+    @Test
+    @TestTransaction
+    void testHqlPanacheProject() {
+        when().get(ROOT_URL + "/hql-project")
+                .then().statusCode(200)
+                .body("size()", is(2));
+    }
 }

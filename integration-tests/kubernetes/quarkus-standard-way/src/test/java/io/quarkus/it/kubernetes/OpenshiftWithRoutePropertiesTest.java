@@ -65,6 +65,7 @@ public class OpenshiftWithRoutePropertiesTest {
                 });
                 assertThat(r.getSpec().getPort().getTargetPort().getStrVal()).isEqualTo("http");
                 assertThat(r.getSpec().getHost()).isEqualTo("foo.bar.io");
+                assertThat(r.getSpec().getTls()).isNull();
             });
         });
     }

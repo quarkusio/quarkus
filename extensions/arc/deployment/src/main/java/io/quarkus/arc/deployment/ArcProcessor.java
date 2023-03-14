@@ -1,5 +1,6 @@
 package io.quarkus.arc.deployment;
 
+import static io.quarkus.arc.processor.KotlinUtils.isKotlinClass;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
@@ -490,7 +491,7 @@ public class ArcProcessor {
                 } else {
                     declaringClass = injectionPoint.getTarget().asMethod().declaringClass();
                 }
-                if (declaringClass.declaredAnnotation(DotNames.KOTLIN_METADATA_ANNOTATION) != null) {
+                if (isKotlinClass(declaringClass)) {
                     validationErrors.produce(new ValidationErrorBuildItem(
                             new DefinitionException(
                                     "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "

@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+import static io.quarkus.arc.processor.KotlinUtils.isKotlinMethod;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
@@ -824,7 +825,6 @@ public class SubclassGenerator extends AbstractGenerator {
         // catch exceptions declared on the original method
         boolean addCatchRuntimeException = true;
         boolean addCatchException = true;
-        boolean isKotlin = method.declaringClass().declaredAnnotation(DotNames.KOTLIN_METADATA_ANNOTATION) != null;
         Set<DotName> declaredExceptions = new LinkedHashSet<>(method.exceptions().size());
         for (Type declaredException : method.exceptions()) {
             declaredExceptions.add(declaredException.name());
@@ -849,7 +849,7 @@ public class SubclassGenerator extends AbstractGenerator {
         }
         // now catch the rest (Exception e) if not already caught
         // this catch is _not_ included for Kotlin methods because Kotlin has not checked exceptions contract
-        if (addCatchException && !isKotlin) {
+        if (addCatchException && !isKotlinMethod(method)) {
             CatchBlockCreator catchOtherExceptions = tryCatch.addCatch(Exception.class);
             // and wrap them in a new RuntimeException(e)
             catchOtherExceptions.throwException(ArcUndeclaredThrowableException.class, "Error invoking subclass method",

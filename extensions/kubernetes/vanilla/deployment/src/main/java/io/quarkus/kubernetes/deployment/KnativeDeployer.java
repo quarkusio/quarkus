@@ -5,7 +5,7 @@ import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import java.util.List;
 import java.util.Optional;
 
-import io.fabric8.knative.client.DefaultKnativeClient;
+import io.fabric8.knative.client.KnativeClient;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
@@ -24,8 +24,8 @@ public class KnativeDeployer {
                 return;
             }
             if (target.getEntry().getName().equals(KNATIVE)) {
-                try (DefaultKnativeClient client = kubernetesClientBuilder.buildClient().adapt(DefaultKnativeClient.class)) {
-                    if (client.isSupported()) {
+                try (KnativeClient client = kubernetesClientBuilder.buildClient().adapt(KnativeClient.class)) {
+                    if (client.hasApiGroup("knative.dev", false)) {
                         deploymentCluster.produce(new KubernetesDeploymentClusterBuildItem(KNATIVE));
                     } else {
                         throw new IllegalStateException(

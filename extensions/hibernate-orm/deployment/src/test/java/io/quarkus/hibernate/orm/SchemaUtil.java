@@ -7,7 +7,11 @@ import java.util.Set;
 import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.metamodel.MappingMetamodel;
+import org.hibernate.metamodel.mapping.SelectableConsumer;
+import org.hibernate.metamodel.mapping.SelectableMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.EntityPersister;
 
 public final class SchemaUtil {
 
@@ -26,5 +30,24 @@ public final class SchemaUtil {
             Collections.addAll(result, persister.getPropertyColumnNames(propertyName));
         }
         return result;
+    }
+
+    public static String getColumnTypeName(EntityManagerFactory entityManagerFactory, Class<?> entityType,
+            String columnName) {
+        MappingMetamodel domainModel = entityManagerFactory
+                .unwrap(SessionFactoryImplementor.class).getRuntimeMetamodels().getMappingMetamodel();
+        EntityPersister entityDescriptor = domainModel.findEntityDescriptor(entityType);
+        var columnFinder = new SelectableConsumer() {
+            private SelectableMapping found;
+
+            @Override
+            public void accept(int selectionIndex, SelectableMapping selectableMapping) {
+                if (found == null && selectableMapping.getSelectableName().equals(columnName)) {
+                    found = selectableMapping;
+                }
+            }
+        };
+        entityDescriptor.forEachSelectable(columnFinder);
+        return columnFinder.found.getJdbcMapping().getJdbcType().getFriendlyName();
     }
 }

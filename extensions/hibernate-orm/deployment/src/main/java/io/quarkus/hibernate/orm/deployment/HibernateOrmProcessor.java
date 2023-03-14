@@ -1017,6 +1017,12 @@ public final class HibernateOrmProcessor {
                 className -> descriptor.getProperties()
                         .setProperty(EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR, className));
 
+        // Mapping
+        if (persistenceUnitConfig.mapping.timeZoneDefaultStorage.isPresent()) {
+            descriptor.getProperties().setProperty(AvailableSettings.TIMEZONE_DEFAULT_STORAGE,
+                    persistenceUnitConfig.mapping.timeZoneDefaultStorage.get().name());
+        }
+
         //charset
         descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME,
                 persistenceUnitConfig.database.charset.name());

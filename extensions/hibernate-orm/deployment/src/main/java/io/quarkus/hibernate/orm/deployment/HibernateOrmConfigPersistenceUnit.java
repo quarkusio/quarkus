@@ -10,6 +10,8 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
+import org.hibernate.annotations.TimeZoneStorageType;
+
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -155,6 +157,13 @@ public class HibernateOrmConfigPersistenceUnit {
     public Optional<Set<String>> mappingFiles;
 
     /**
+     * Mapping configuration.
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public HibernateOrmConfigPersistenceUnitMapping mapping;
+
+    /**
      * Query related configuration.
      */
     @ConfigItem
@@ -265,6 +274,7 @@ public class HibernateOrmConfigPersistenceUnit {
                 physicalNamingStrategy.isPresent() ||
                 implicitNamingStrategy.isPresent() ||
                 metadataBuilderContributor.isPresent() ||
+                mapping.isAnyPropertySet() ||
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
@@ -321,6 +331,58 @@ public class HibernateOrmConfigPersistenceUnit {
 
         public boolean isAnyPropertySet() {
             return dialect.isPresent() || storageEngine.isPresent();
+        }
+    }
+
+    /**
+     * Mapping-related configuration.
+     */
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitMapping {
+        /**
+         * How to store timezones in the database by default
+         * for properties of type `OffsetDateTime` and `ZonedDateTime`.
+         *
+         * This default may be overridden on a per-property basis using `@TimeZoneStorage`.
+         *
+         * NOTE: Properties of type `OffsetTime` are https://hibernate.atlassian.net/browse/HHH-16287[not affected by this
+         * setting].
+         *
+         * `default`::
+         * Equivalent to `native` if supported, `normalize-utc` otherwise.
+         * `auto`::
+         * Equivalent to `native` if supported, `column` otherwise.
+         * `native`::
+         * Stores the timestamp and timezone in a column of type `timestamp with time zone`.
+         * +
+         * Only available on some databases/dialects;
+         * if not supported, an exception will be thrown during static initialization.
+         * `column`::
+         * Stores the timezone in a separate column next to the timestamp column.
+         * +
+         * Use `@TimeZoneColumn` on the relevant entity property to customize the timezone column.
+         * `normalize-utc`::
+         * Does not store the timezone, and loses timezone information upon persisting.
+         * +
+         * Instead, normalizes the value to a timestamp in the UTC timezone.
+         * `normalize`::
+         * Does not store the timezone, and loses timezone information upon persisting.
+         * +
+         * Instead, normalizes the value:
+         * * upon persisting to the database, to a timestamp in the JDBC timezone
+         * set through `quarkus.hibernate-orm.jdbc.timezone`,
+         * or the JVM default timezone if not set.
+         * * upon reading back from the database, to the JVM default timezone.
+         * +
+         * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
+         *
+         * @asciidoclet
+         */
+        @ConfigItem(name = "timezone.default-storage", defaultValueDocumentation = "default")
+        public Optional<TimeZoneStorageType> timeZoneDefaultStorage;
+
+        public boolean isAnyPropertySet() {
+            return timeZoneDefaultStorage.isPresent();
         }
     }
 
@@ -398,6 +460,8 @@ public class HibernateOrmConfigPersistenceUnit {
 
         /**
          * The time zone pushed to the JDBC driver.
+         *
+         * See `quarkus.hibernate-orm.mapping.timezone.default-storage`.
          */
         @ConfigItem
         @ConvertWith(TrimmedStringConverter.class)

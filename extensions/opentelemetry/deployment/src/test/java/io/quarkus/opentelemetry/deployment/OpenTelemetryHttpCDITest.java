@@ -57,7 +57,7 @@ public class OpenTelemetryHttpCDITest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals("/hello", server.getName());
+        assertEquals("GET /hello", server.getName());
         // verify that OpenTelemetryServerFilter took place
         assertStringAttribute(server, SemanticAttributes.CODE_NAMESPACE,
                 "io.quarkus.opentelemetry.deployment.OpenTelemetryHttpCDITest$HelloResource");
@@ -79,7 +79,7 @@ public class OpenTelemetryHttpCDITest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
 
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals("/hello/withSpan", server.getName());
+        assertEquals("GET /hello/withSpan", server.getName());
 
         final SpanData withSpan = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("withSpan", withSpan.getName());

@@ -131,19 +131,19 @@ public class BasicTest {
         String serverSpanId = null;
         String serverTraceId = null;
         String clientSpanId = null;
-
+        // brunobat: This tests has been remade, for resilience, in another branch and will be merged in the future.
         for (Map<String, Object> spanData : getSpans()) {
             Assertions.assertNotNull(spanData);
             Assertions.assertNotNull(spanData.get("spanId"));
 
             if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("/call-hello-client")) {
+                    && spanData.get("name").equals("POST /call-hello-client")) {
                 outsideServerFound = true;
                 // Server Span
                 serverSpanId = (String) spanData.get("spanId");
                 serverTraceId = (String) spanData.get("traceId");
 
-                Assertions.assertEquals("/call-hello-client", spanData.get("name"));
+                Assertions.assertEquals("POST /call-hello-client", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -160,10 +160,10 @@ public class BasicTest {
                 Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
                 Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
             } else if (spanData.get("kind").equals(SpanKind.CLIENT.toString())
-                    && spanData.get("name").equals("HTTP POST")) {
+                    && spanData.get("name").equals("POST")) {
                 clientFound = true;
                 // Client span
-                Assertions.assertEquals("HTTP POST", spanData.get("name"));
+                Assertions.assertEquals("POST", spanData.get("name"));
 
                 Assertions.assertEquals(SpanKind.CLIENT.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
@@ -183,11 +183,11 @@ public class BasicTest {
 
                 clientSpanId = (String) spanData.get("spanId");
             } else if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("/hello")) {
+                    && spanData.get("name").equals("POST /hello")) {
                 clientServerFound = true;
                 // Server span of client
 
-                Assertions.assertEquals("/hello", spanData.get("name"));
+                Assertions.assertEquals("POST /hello", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 

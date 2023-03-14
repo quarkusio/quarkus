@@ -143,7 +143,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
             implements HttpClientAttributesGetter<ClientRequestContext, ClientResponseContext> {
 
         @Override
-        public String url(final ClientRequestContext request) {
+        public String getUrl(final ClientRequestContext request) {
             URI uri = request.getUri();
             if (uri.getUserInfo() != null) {
                 return UriBuilder.fromUri(uri).userInfo(null).build().toString();
@@ -152,28 +152,28 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         }
 
         @Override
-        public String flavor(final ClientRequestContext request, final ClientResponseContext response) {
+        public String getFlavor(final ClientRequestContext request, final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        public String method(final ClientRequestContext request) {
+        public String getMethod(final ClientRequestContext request) {
             return request.getMethod();
         }
 
         @Override
-        public List<String> requestHeader(final ClientRequestContext request, final String name) {
+        public List<String> getRequestHeader(final ClientRequestContext request, final String name) {
             return request.getStringHeaders().getOrDefault(name, emptyList());
         }
 
         @Override
-        public Integer statusCode(ClientRequestContext clientRequestContext,
+        public Integer getStatusCode(ClientRequestContext clientRequestContext,
                 ClientResponseContext clientResponseContext, Throwable error) {
             return clientResponseContext.getStatus();
         }
 
         @Override
-        public List<String> responseHeader(final ClientRequestContext request, final ClientResponseContext response,
+        public List<String> getResponseHeader(final ClientRequestContext request, final ClientResponseContext response,
                 final String name) {
             return response.getHeaders().getOrDefault(name, emptyList());
         }

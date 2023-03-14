@@ -120,7 +120,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 .addAttributesExtractor(
                         HttpServerAttributesExtractor.create(serverAttributesExtractor, new HttpServerNetAttributesGetter()))
                 .addAttributesExtractor(new AdditionalServerAttributesExtractor())
-                .addContextCustomizer(HttpRouteHolder.get())
+                .addContextCustomizer(HttpRouteHolder.create(serverAttributesExtractor))
                 .buildServerInstrumenter(new HttpRequestTextMapGetter());
     }
 
@@ -166,7 +166,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
     private static class ServerAttributesExtractor implements HttpServerAttributesGetter<HttpRequest, HttpResponse> {
         @Override
-        public String flavor(final HttpRequest request) {
+        public String getFlavor(final HttpRequest request) {
             if (request instanceof HttpServerRequest) {
                 HttpVersion version = ((HttpServerRequest) request).version();
                 if (version != null) {
@@ -188,17 +188,17 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public String target(final HttpRequest request) {
+        public String getTarget(final HttpRequest request) {
             return request.uri();
         }
 
         @Override
-        public String route(final HttpRequest request) {
+        public String getRoute(final HttpRequest request) {
             return null;
         }
 
         @Override
-        public String scheme(final HttpRequest request) {
+        public String getScheme(final HttpRequest request) {
             if (request instanceof HttpServerRequest) {
                 return ((HttpServerRequest) request).scheme();
             }
@@ -206,22 +206,22 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public String method(final HttpRequest request) {
+        public String getMethod(final HttpRequest request) {
             return request.method().name();
         }
 
         @Override
-        public List<String> requestHeader(final HttpRequest request, final String name) {
+        public List<String> getRequestHeader(final HttpRequest request, final String name) {
             return request.headers().getAll(name);
         }
 
         @Override
-        public Integer statusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
+        public Integer getStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
             return httpResponse != null ? httpResponse.statusCode() : null;
         }
 
         @Override
-        public List<String> responseHeader(final HttpRequest request, final HttpResponse response, final String name) {
+        public List<String> getResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
             return response != null ? response.headers().getAll(name) : Collections.emptyList();
         }
 
@@ -268,13 +268,13 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
     private static class HttpServerNetAttributesGetter implements NetServerAttributesGetter<HttpRequest> {
         @Nullable
         @Override
-        public String transport(HttpRequest httpRequest) {
+        public String getTransport(HttpRequest httpRequest) {
             return null;
         }
 
         @Nullable
         @Override
-        public String hostName(HttpRequest httpRequest) {
+        public String getHostName(HttpRequest httpRequest) {
             if (httpRequest instanceof HttpServerRequest) {
                 return VertxUtil.extractRemoteHostname((HttpServerRequest) httpRequest);
             }
@@ -283,7 +283,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
         @Nullable
         @Override
-        public Integer hostPort(HttpRequest httpRequest) {
+        public Integer getHostPort(HttpRequest httpRequest) {
             if (httpRequest instanceof HttpServerRequest) {
                 Long remoteHostPort = VertxUtil.extractRemoteHostPort((HttpServerRequest) httpRequest);
                 if (remoteHostPort == null) {
@@ -313,32 +313,32 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
     private static class ClientAttributesExtractor implements HttpClientAttributesGetter<HttpRequest, HttpResponse> {
         @Override
-        public String url(final HttpRequest request) {
+        public String getUrl(final HttpRequest request) {
             return request.absoluteURI();
         }
 
         @Override
-        public String flavor(final HttpRequest request, final HttpResponse response) {
+        public String getFlavor(final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        public String method(final HttpRequest request) {
+        public String getMethod(final HttpRequest request) {
             return request.method().name();
         }
 
         @Override
-        public List<String> requestHeader(final HttpRequest request, final String name) {
+        public List<String> getRequestHeader(final HttpRequest request, final String name) {
             return request.headers().getAll(name);
         }
 
         @Override
-        public Integer statusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
+        public Integer getStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
             return httpResponse.statusCode();
         }
 
         @Override
-        public List<String> responseHeader(final HttpRequest request, final HttpResponse response, final String name) {
+        public List<String> getResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
             return response.headers().getAll(name);
         }
     }

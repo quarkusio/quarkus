@@ -56,7 +56,7 @@ public class OpenTelemetryReactiveClientTest {
         // First span is the client call. It does not have a parent span.
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertEquals("HTTP GET", client.get("name"));
+        assertEquals("GET", client.get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
 
@@ -64,7 +64,7 @@ public class OpenTelemetryReactiveClientTest {
         Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
         assertEquals(SpanKind.SERVER.toString(), server.get("kind"));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
-        assertEquals("/reactive", server.get("name"));
+        assertEquals("GET /reactive", server.get("name"));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.getKey()));
         assertEquals("/reactive?name=Naruto", ((Map<?, ?>) server.get("attributes")).get(HTTP_TARGET.getKey()));
         assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
@@ -91,7 +91,7 @@ public class OpenTelemetryReactiveClientTest {
         // First span is the client call. It does not have a parent span.
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertEquals("HTTP POST", client.get("name"));
+        assertEquals("POST", client.get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
 
@@ -99,7 +99,7 @@ public class OpenTelemetryReactiveClientTest {
         Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
         assertEquals(SpanKind.SERVER.toString(), server.get("kind"));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
-        assertEquals("/reactive", server.get("name"));
+        assertEquals("POST /reactive", server.get("name"));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.getKey()));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_TARGET.getKey()));
         assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.getKey()));

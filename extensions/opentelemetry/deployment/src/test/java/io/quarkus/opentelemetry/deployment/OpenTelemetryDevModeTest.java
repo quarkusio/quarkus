@@ -26,7 +26,7 @@ public class OpenTelemetryDevModeTest {
         //and the hot replacement stuff is not messing things up
         RestAssured.when().get("/hello").then()
                 .statusCode(200)
-                .body(is("HTTP GET"));
+                .body(is("GET"));
 
         RestAssured.when().get("/tracer").then()
                 .statusCode(200)

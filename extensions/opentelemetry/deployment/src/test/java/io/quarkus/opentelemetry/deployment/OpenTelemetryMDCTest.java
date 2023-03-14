@@ -65,7 +65,7 @@ public class OpenTelemetryMDCTest {
         List<MdcEntry> expectedMdcEntries = getExpectedMDCEntries(spans);
 
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals("/hello", server.getName());
+        assertEquals("GET /hello", server.getName());
 
         final SpanData programmatic = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("something", programmatic.getName());

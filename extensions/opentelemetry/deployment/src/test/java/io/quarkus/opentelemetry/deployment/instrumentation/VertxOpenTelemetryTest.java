@@ -107,7 +107,7 @@ public class VertxOpenTelemetryTest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals("/tracer", server.getName());
+        assertEquals("GET /tracer", server.getName());
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals("1.1", server.getAttributes().get(HTTP_FLAVOR));
         assertEquals("/tracer?id=1", server.getAttributes().get(HTTP_TARGET));
@@ -134,7 +134,7 @@ public class VertxOpenTelemetryTest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
         assertEquals(1, spans.size());
 
-        assertEquals("/hello/:name", spans.get(0).getName());
+        assertEquals("GET /hello/:name", spans.get(0).getName());
         assertEquals(HTTP_OK, spans.get(0).getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(GET.toString(), spans.get(0).getAttributes().get(HTTP_METHOD));
         assertEquals("/hello/:name", spans.get(0).getAttributes().get(HTTP_ROUTE));
@@ -147,7 +147,7 @@ public class VertxOpenTelemetryTest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
         assertEquals(1, spans.size());
 
-        assertEquals("/*", spans.get(0).getName());
+        assertEquals("GET /*", spans.get(0).getName());
         assertEquals("/*", spans.get(0).getAttributes().get(HTTP_ROUTE));
         assertEquals(HTTP_NOT_FOUND, spans.get(0).getAttributes().get(HTTP_STATUS_CODE));
     }
@@ -162,7 +162,7 @@ public class VertxOpenTelemetryTest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
         assertEquals(1, spans.size());
 
-        assertEquals("/hello/:name", spans.get(0).getName());
+        assertEquals("GET /hello/:name", spans.get(0).getName());
         assertEquals(HTTP_NOT_FOUND, spans.get(0).getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(GET.toString(), spans.get(0).getAttributes().get(HTTP_METHOD));
         assertEquals("/hello/:name", spans.get(0).getAttributes().get(HTTP_ROUTE));

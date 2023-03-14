@@ -92,7 +92,7 @@ public class SqlClientTest {
         assertEquals(spans.get(0).getTraceId(), spans.get(1).getTraceId());
         assertEquals(spans.get(0).getSpanId(), spans.get(1).getParentSpanId());
 
-        assertEquals("/sqlClient", spans.get(0).getName());
+        assertEquals("GET /sqlClient", spans.get(0).getName());
         assertEquals(HTTP_OK, spans.get(0).getAttributes().get(HTTP_STATUS_CODE));
 
         assertEquals("SELECT USERS", spans.get(1).getName());

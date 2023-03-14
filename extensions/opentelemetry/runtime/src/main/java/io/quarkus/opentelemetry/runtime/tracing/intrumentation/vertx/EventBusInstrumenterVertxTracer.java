@@ -90,57 +90,57 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         INSTANCE;
 
         @Override
-        public String system(final Message message) {
+        public String getSystem(final Message message) {
             return "vert.x";
         }
 
         @Override
-        public String destinationKind(final Message message) {
+        public String getDestinationKind(final Message message) {
             return message.isSend() ? "queue" : "topic";
         }
 
         @Override
-        public String destination(final Message message) {
+        public String getDestination(final Message message) {
             return message.address();
         }
 
         @Override
-        public boolean temporaryDestination(final Message message) {
+        public boolean isTemporaryDestination(final Message message) {
             return false;
         }
 
         @Override
-        public String protocol(final Message message) {
+        public String getProtocol(final Message message) {
             return null;
         }
 
         @Override
-        public String protocolVersion(final Message message) {
+        public String getProtocolVersion(final Message message) {
             return "4.0";
         }
 
         @Override
-        public String url(final Message message) {
+        public String getUrl(final Message message) {
             return null;
         }
 
         @Override
-        public String conversationId(final Message message) {
+        public String getConversationId(final Message message) {
             return message.replyAddress();
         }
 
         @Override
-        public Long messagePayloadSize(final Message message) {
+        public Long getMessagePayloadSize(final Message message) {
             return null;
         }
 
         @Override
-        public Long messagePayloadCompressedSize(final Message message) {
+        public Long getMessagePayloadCompressedSize(final Message message) {
             return null;
         }
 
         @Override
-        public String messageId(final Message message, final Message message2) {
+        public String getMessageId(final Message message, final Message message2) {
             return null;
         }
     }

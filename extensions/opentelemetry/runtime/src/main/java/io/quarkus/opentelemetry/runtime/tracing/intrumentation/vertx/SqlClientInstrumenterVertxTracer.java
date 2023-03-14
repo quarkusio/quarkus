@@ -120,27 +120,27 @@ public class SqlClientInstrumenterVertxTracer implements
             io.opentelemetry.instrumentation.api.instrumenter.db.SqlClientAttributesGetter<QueryTrace> {
 
         @Override
-        public String rawStatement(final QueryTrace queryTrace) {
+        public String getRawStatement(final QueryTrace queryTrace) {
             return queryTrace.rawStatement();
         }
 
         @Override
-        public String system(final QueryTrace queryTrace) {
+        public String getSystem(final QueryTrace queryTrace) {
             return queryTrace.system();
         }
 
         @Override
-        public String user(final QueryTrace queryTrace) {
+        public String getUser(final QueryTrace queryTrace) {
             return queryTrace.user();
         }
 
         @Override
-        public String name(final QueryTrace queryTrace) {
+        public String getName(final QueryTrace queryTrace) {
             return null;
         }
 
         @Override
-        public String connectionString(final QueryTrace queryTrace) {
+        public String getConnectionString(final QueryTrace queryTrace) {
             return queryTrace.connectionString();
         }
     }

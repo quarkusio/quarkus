@@ -13,9 +13,8 @@ public class DeployMojo extends AbstractDeploymentMojo {
     @Override
     protected boolean beforeExecute() throws MojoExecutionException {
         systemProperties = new HashMap<>(systemProperties);
-        boolean shouldBuildImage = imageBuild || imageBuilder != null && !imageBuilder.isEmpty();
         systemProperties.put("quarkus." + getDeployer().name() + ".deploy", "true");
-        systemProperties.put("quarkus.container-image.build", String.valueOf(shouldBuildImage));
+        systemProperties.put("quarkus.container-image.build", String.valueOf(shouldBuildImage()));
         return super.beforeExecute();
     }
 }

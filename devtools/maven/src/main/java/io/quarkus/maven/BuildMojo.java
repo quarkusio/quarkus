@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.maven.artifact.Artifact;
@@ -92,9 +93,15 @@ public class BuildMojo extends QuarkusBootstrapMojo {
 
     @Override
     protected void doExecute() throws MojoExecutionException {
-        try {
-            Set<String> propertiesToClear = new HashSet<>();
+        withAugmentAction(action -> {
+            AugmentResult result = action.createProductionApplication();
+            postProcessArtifact(result);
+        });
+    }
 
+    public void withAugmentAction(Consumer<AugmentAction> consumer) throws MojoExecutionException {
+        Set<String> propertiesToClear = new HashSet<>();
+        try {
             // Add the system properties of the plugin to the system properties
             // if and only if they are not already set.
             for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
@@ -128,46 +135,50 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                 getLog().warn("* parallel execution                                            *");
                 getLog().warn("*****************************************************************");
             }
+
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
                 AugmentAction action = curatedApplication.createAugmentor();
-                AugmentResult result = action.createProductionApplication();
-
-                Artifact original = mavenProject().getArtifact();
-                if (result.getJar() != null) {
-
-                    final boolean uberJarWithSuffix = result.getJar().isUberJar()
-                            && result.getJar().getOriginalArtifact() != null
-                            && !result.getJar().getOriginalArtifact().equals(result.getJar().getPath());
-                    if (!skipOriginalJarRename && uberJarWithSuffix
-                            && result.getJar().getOriginalArtifact() != null) {
-                        final Path standardJar = result.getJar().getOriginalArtifact();
-                        if (Files.exists(standardJar)) {
-                            final Path renamedOriginal = standardJar.getParent().toAbsolutePath()
-                                    .resolve(standardJar.getFileName() + ".original");
-                            try {
-                                IoUtils.recursiveDelete(renamedOriginal);
-                                Files.move(standardJar, renamedOriginal);
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
-                            original.setFile(result.getJar().getOriginalArtifact().toFile());
-                        }
-                    }
-                    if (uberJarWithSuffix) {
-                        if (result.getJar().getClassifier().isEmpty()) {
-                            original.setFile(result.getJar().getPath().toFile());
-                        } else {
-                            projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),
-                                    result.getJar().getClassifier());
-                        }
-                    }
-                }
-            } finally {
-                // Clear all the system properties set by the plugin
-                propertiesToClear.forEach(System::clearProperty);
+                consumer.accept(action);
+            } catch (Exception e) {
+                throw new MojoExecutionException("Failed to build quarkus application", e);
             }
-        } catch (Exception e) {
-            throw new MojoExecutionException("Failed to build quarkus application", e);
+
+        } finally {
+            // Clear all the system properties set by the plugin
+            propertiesToClear.forEach(System::clearProperty);
+        }
+    }
+
+    public void postProcessArtifact(AugmentResult result) {
+        Artifact original = mavenProject().getArtifact();
+        if (result.getJar() != null) {
+
+            final boolean uberJarWithSuffix = result.getJar().isUberJar()
+                    && result.getJar().getOriginalArtifact() != null
+                    && !result.getJar().getOriginalArtifact().equals(result.getJar().getPath());
+            if (!skipOriginalJarRename && uberJarWithSuffix
+                    && result.getJar().getOriginalArtifact() != null) {
+                final Path standardJar = result.getJar().getOriginalArtifact();
+                if (Files.exists(standardJar)) {
+                    final Path renamedOriginal = standardJar.getParent().toAbsolutePath()
+                            .resolve(standardJar.getFileName() + ".original");
+                    try {
+                        IoUtils.recursiveDelete(renamedOriginal);
+                        Files.move(standardJar, renamedOriginal);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                    original.setFile(result.getJar().getOriginalArtifact().toFile());
+                }
+            }
+            if (uberJarWithSuffix) {
+                if (result.getJar().getClassifier().isEmpty()) {
+                    original.setFile(result.getJar().getPath().toFile());
+                } else {
+                    projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),
+                            result.getJar().getClassifier());
+                }
+            }
         }
     }
 

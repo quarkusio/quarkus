@@ -2,12 +2,16 @@ package io.quarkus.maven;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
 
+import io.quarkus.deployment.deploy.DeployCommandHandler;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.util.DeploymentUtil;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
@@ -65,7 +69,16 @@ public class AbstractDeploymentMojo extends BuildMojo {
                         getLog().info(" - " + e.getKey() + ": " + e.getValue());
                     });
         } else {
-            super.doExecute();
+            withAugmentAction(action -> {
+                List<String> outputs = new ArrayList<>();
+                outputs.add(DeploymentResultBuildItem.class.getName());
+                if (shouldBuildImage()) {
+                    outputs.add(ArtifactResultBuildItem.class.getName());
+                }
+                HashMap<String, String> context = new HashMap<>();
+                action.performCustomBuild(DeployCommandHandler.class.getName(), new HashMap(),
+                        outputs.toArray(new String[outputs.size()]));
+            });
         }
     }
 
@@ -136,6 +149,15 @@ public class AbstractDeploymentMojo extends BuildMojo {
                     .findFirst();
 
         });
+    }
+
+    /**
+     * Check if an image should be built.
+     *
+     * @return true if image build or builder has been specified.
+     */
+    protected boolean shouldBuildImage() {
+        return imageBuild || imageBuilder != null && !imageBuilder.isEmpty();
     }
 
     protected static String containerImageBuilderArtifactId(String builder) {

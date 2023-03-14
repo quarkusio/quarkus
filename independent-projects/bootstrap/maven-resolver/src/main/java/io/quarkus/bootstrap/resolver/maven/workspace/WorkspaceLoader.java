@@ -194,6 +194,9 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     private Path getParentPom(Path projectPom, Model rawModel) {
+        if (rawModel == null) {
+            return null;
+        }
         Path parentPom = null;
         final Path projectDir = projectPom.getParent();
         final Parent parent = rawModel.getParent();

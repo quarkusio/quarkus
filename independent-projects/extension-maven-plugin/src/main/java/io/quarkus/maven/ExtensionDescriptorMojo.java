@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Scm;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -678,15 +679,45 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     }
 
     private void addSource(ObjectNode extObject) throws MojoExecutionException {
-        Map<String, String> repo = ScmInfoProvider.getSourceRepo();
+        Scm scm = getScm();
+        String scmUrl = scm != null ? scm.getUrl() : null;
+
+        Map<String, String> repo = new ScmInfoProvider().getSourceRepo(scmUrl);
         if (repo != null) {
             ObjectNode metadata = getMetadataNode(extObject);
             for (Map.Entry<String, String> e : repo.entrySet()) {
-                // Tools may not be able to handle nesting in metadata, so do fake-nesting
-                metadata.put("scm-" + e.getKey(), e.getValue());
+                // Ignore if already set
+                String value = e.getValue();
+                String fieldName = "scm-" + e.getKey();
+                if (!metadata.has(fieldName) && value != null) {
+                    // Tools may not be able to handle nesting in metadata, so do fake-nesting
+                    metadata.put(fieldName, value);
+                }
 
             }
         }
+    }
+
+    private Scm getScm() {
+        // We have three ways to do this; project.getScm() will query the derived model. Sadly, inherited <scm> entries are usually wrong, unless the parent is in the same project
+        // We can use getOriginalModel and getParent to walk the tree, but this will miss parents in poms outside the current execution, which might include a local reactor that we'd actually want to query
+        // Or we can use the bootstrap provider
+        Scm scm = null;
+        final Artifact artifact = project.getArtifact();
+        LocalProject localProject = workspaceProvider.getProject(artifact.getGroupId(), artifact.getArtifactId());
+
+        if (localProject == null) {
+            final Log log = getLog();
+            log.warn("Workspace provider could not resolve local project for " + artifact.getGroupId() + ":"
+                    + artifact.getArtifactId());
+        }
+
+        while (scm == null && localProject != null) {
+            scm = localProject.getRawModel().getScm();
+            localProject = localProject.getLocalParent();
+        }
+        return scm;
+
     }
 
     public void addJavaVersion(ObjectNode extObject) {

@@ -56,7 +56,7 @@
 
         <version.arquillian>1.7.0.Alpha14</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>
-        <version.cdi-tck>4.0.7</version.cdi-tck>
+        <version.cdi-tck>4.0.8</version.cdi-tck>
         <version.junit4>4.13.2</version.junit4>
 
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>

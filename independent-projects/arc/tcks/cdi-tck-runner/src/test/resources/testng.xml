@@ -194,12 +194,6 @@
                     <exclude name="testConditionalObserverMethodNotInvokedIfNoActiveContext"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.injectionpoint.InjectableReferenceTest">
-                <methods>
-                    <exclude name="testGetInjectableReferenceReturnsDelegateForDelegateInjectionPoint"/>
-                    <exclude name="testGetInjectableReferenceOnBeanManager"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.order.aroundInvoke.AroundInvokeOrderTest">
                 <methods>
                     <exclude name="testInvocationOrder"/>

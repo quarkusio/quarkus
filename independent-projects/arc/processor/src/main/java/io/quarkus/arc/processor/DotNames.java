@@ -34,6 +34,7 @@ import jakarta.enterprise.inject.Typed;
 import jakarta.enterprise.inject.Vetoed;
 import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanContainer;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.EventMetadata;
 import jakarta.enterprise.inject.spi.Extension;
@@ -96,6 +97,7 @@ public final class DotNames {
     public static final DotName ANY = create(Any.class);
     public static final DotName BEAN = create(Bean.class);
     public static final DotName INJECTABLE_BEAN = create(InjectableBean.class);
+    public static final DotName BEAN_CONTAINER = create(BeanContainer.class);
     public static final DotName BEAN_MANAGER = create(BeanManager.class);
     public static final DotName EVENT = create(Event.class);
     public static final DotName EVENT_METADATA = create(EventMetadata.class);

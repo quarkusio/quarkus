@@ -55,7 +55,7 @@ enum BuiltinBean {
                     && ip.getRequiredQualifiers().size() == 1
                     && ip.getRequiredQualifiers().iterator().next().name().equals(DotNames.INTERCEPTED),
             DotNames.BEAN),
-    BEAN_MANAGER(BuiltinBean::generateBeanManagerBytecode, DotNames.BEAN_MANAGER),
+    BEAN_MANAGER(BuiltinBean::generateBeanManagerBytecode, DotNames.BEAN_MANAGER, DotNames.BEAN_CONTAINER),
     EVENT(BuiltinBean::generateEventBytecode, DotNames.EVENT),
     RESOURCE(BuiltinBean::generateResourceBytecode, (ip, names) -> ip.getKind() == InjectionPointKind.RESOURCE,
             DotNames.OBJECT),

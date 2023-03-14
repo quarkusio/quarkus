@@ -98,8 +98,9 @@
                 <!-- Includes its own copy of an old version of the servlet API-->
                 <exclude>org.apache.tomcat.embed:tomcat-embed-core</exclude>
                 <exclude>org.jboss.modules:jboss-modules</exclude>
-                <!-- We prefer ByteBuddy where possible -->
-                <exclude>org.javassist:javassist</exclude>
+                <!-- We prefer ByteBuddy where possible
+                     but Protostream requires Javassist and moving away from it will be hard)-->
+                <!--<exclude>org.javassist:javassist</exclude>-->
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

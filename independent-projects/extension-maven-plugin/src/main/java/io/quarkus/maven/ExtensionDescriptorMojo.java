@@ -705,6 +705,13 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         Scm scm = null;
         final Artifact artifact = project.getArtifact();
         LocalProject localProject = workspaceProvider.getProject(artifact.getGroupId(), artifact.getArtifactId());
+
+        if (localProject == null) {
+            final Log log = getLog();
+            log.warn("Workspace provider could not resolve local project for " + artifact.getGroupId() + ":"
+                    + artifact.getArtifactId());
+        }
+
         while (scm == null && localProject != null) {
             scm = localProject.getRawModel().getScm();
             localProject = localProject.getLocalParent();

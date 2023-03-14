@@ -253,7 +253,7 @@ public final class LauncherUtil {
 
                         long now = System.currentTimeMillis();
                         // if we have seen info that the app is started in the log a while ago
-                        // or waiting the the next check interval will exceed the bailout time, it's time to finish waiting:
+                        // or waiting the next check interval will exceed the bailout time, it's time to finish waiting:
                         if (now + LOG_CHECK_INTERVAL > bailoutTime || now - 2 * LOG_CHECK_INTERVAL > timeStarted) {
                             if (started) {
                                 dataDetermined(null, null); // no http, all is null

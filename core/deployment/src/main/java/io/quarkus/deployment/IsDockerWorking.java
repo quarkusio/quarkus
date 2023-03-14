@@ -1,7 +1,8 @@
 
 package io.quarkus.deployment;
 
-import java.io.File;
+import static io.quarkus.runtime.util.ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -11,23 +12,20 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.util.ExecUtil;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public class IsDockerWorking implements BooleanSupplier {
 
     private static final Logger LOGGER = Logger.getLogger(IsDockerWorking.class.getName());
     public static final int DOCKER_HOST_CHECK_TIMEOUT = 1000;
-    public static final int DOCKER_CMD_CHECK_TIMEOUT = 3000;
 
     private final List<Strategy> strategies;
 
@@ -36,8 +34,7 @@ public class IsDockerWorking implements BooleanSupplier {
     }
 
     public IsDockerWorking(boolean silent) {
-        this.strategies = List.of(new TestContainersStrategy(silent), new DockerHostStrategy(),
-                new DockerBinaryStrategy(silent));
+        this.strategies = List.of(new TestContainersStrategy(silent), new DockerHostStrategy(), new DockerBinaryStrategy());
     }
 
     @Override
@@ -170,41 +167,11 @@ public class IsDockerWorking implements BooleanSupplier {
 
     private static class DockerBinaryStrategy implements Strategy {
 
-        private final boolean silent;
-        private final String binary;
-
-        private DockerBinaryStrategy(boolean silent) {
-            this.silent = silent;
-            this.binary = ConfigProvider.getConfig().getOptionalValue("quarkus.docker.executable-name", String.class)
-                    .orElse("docker");
-        }
-
         @Override
         public Result get() {
-            try {
-                if (!ExecUtil.execSilentWithTimeout(Duration.ofMillis(DOCKER_CMD_CHECK_TIMEOUT), binary, "-v")) {
-                    LOGGER.warnf("'%s -v' returned an error code. Make sure your Docker binary is correct", binary);
-                    return Result.UNKNOWN;
-                }
-            } catch (Exception e) {
-                LOGGER.warnf("No %s binary found or general error: %s", binary, e);
-                return Result.UNKNOWN;
-            }
-
-            try {
-                OutputFilter filter = new OutputFilter();
-                if (ExecUtil.execWithTimeout(new File("."), filter, Duration.ofMillis(DOCKER_CMD_CHECK_TIMEOUT),
-                        "docker", "version", "--format", "'{{.Server.Version}}'")) {
-                    LOGGER.debugf("Docker daemon found. Version: %s", filter.getOutput());
-                    return Result.AVAILABLE;
-                } else {
-                    if (!silent) {
-                        LOGGER.warn("Could not determine version of Docker daemon");
-                    }
-                    return Result.UNAVAILABLE;
-                }
-            } catch (Exception e) {
-                LOGGER.warn("Unexpected error occurred while determining Docker daemon version", e);
+            if (ContainerRuntimeUtil.detectContainerRuntime(false) != UNAVAILABLE) {
+                return Result.AVAILABLE;
+            } else {
                 return Result.UNKNOWN;
             }
         }

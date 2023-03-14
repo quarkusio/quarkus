@@ -18,7 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class InvalidConditionalΜappersTest {
+public class InvalidConditionalMappersTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()

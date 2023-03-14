@@ -57,6 +57,7 @@
         <gizmo.version>1.6.0.Final</gizmo.version>
         <jakarta.persistence-api.version>3.0.0</jakarta.persistence-api.version>
 
+        <version.compiler.plugin>3.11.0</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0-M9</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
@@ -387,6 +388,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${version.compiler.plugin}</version>
                     <configuration>
                         <parameters>true</parameters>
                     </configuration>

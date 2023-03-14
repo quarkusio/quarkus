@@ -56,4 +56,13 @@ public class DynamicClientTest {
                 .statusCode(204);
     }
 
+    @Test
+    public void testDynamicClientDirective() throws Exception {
+        when()
+                .get("/dynamic-directive/" + url.toString())
+                .then()
+                .log().everything()
+                .statusCode(204);
+    }
+
 }

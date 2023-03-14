@@ -292,6 +292,13 @@
             <version>3.8.7</version>
             <scope>test</scope>
         </dependency>
+        <!-- Needed for system stubs -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.1.1</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>uk.org.webcompere</groupId>
             <artifactId>system-stubs-jupiter</artifactId>

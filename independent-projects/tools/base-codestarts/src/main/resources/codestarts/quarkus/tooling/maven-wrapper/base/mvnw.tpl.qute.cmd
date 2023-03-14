@@ -153,6 +153,24 @@ if exist %WRAPPER_JAR% (
 )
 @REM End of extension
 
+@REM If specified, validate the SHA-256 sum of the Maven wrapper jar file
+SET WRAPPER_SHA_256_SUM=""
+FOR /F "usebackq tokens=1,2 delims==" %%A IN ("%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.properties") DO (
+    IF "%%A"=="wrapperSha256Sum" SET WRAPPER_SHA_256_SUM=%%B
+)
+IF NOT %WRAPPER_SHA_256_SUM%=="" (
+    powershell -Command "&{"^
+       "$hash = (Get-FileHash \"%WRAPPER_JAR%\" -Algorithm SHA256).Hash.ToLower();"^
+       "If('%WRAPPER_SHA_256_SUM%' -ne $hash){"^
+       "  Write-Output 'Error: Failed to validate Maven wrapper SHA-256, your Maven wrapper might be compromised.';"^
+       "  Write-Output 'Investigate or delete %WRAPPER_JAR% to attempt a clean download.';"^
+       "  Write-Output 'If you updated your Maven version, you need to update the specified wrapperSha256Sum property.';"^
+       "  exit 1;"^
+       "}"^
+       "}"
+    if ERRORLEVEL 1 goto error
+)
+
 @REM Provide a "standardized" way to retrieve the CLI args that will
 @REM work with both Windows and non-Windows executions.
 set MAVEN_CMD_LINE_ARGS=%*

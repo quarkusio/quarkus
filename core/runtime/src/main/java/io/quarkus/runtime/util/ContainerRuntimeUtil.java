@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -16,7 +17,7 @@ import io.smallrye.config.SmallRyeConfig;
 public final class ContainerRuntimeUtil {
 
     private static final Logger log = Logger.getLogger(ContainerRuntimeUtil.class);
-    private static final String DOCKER_EXECUTABLE = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+    private static final String CONTAINER_EXECUTABLE = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
             .getOptionalValue("quarkus.native.container-runtime", String.class).orElse(null);
 
     /**
@@ -51,8 +52,8 @@ public final class ContainerRuntimeUtil {
             // podman version 2.1.1
             String podmanVersionOutput;
             boolean podmanAvailable;
-            if (DOCKER_EXECUTABLE != null) {
-                if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("docker")) {
+            if (CONTAINER_EXECUTABLE != null) {
+                if (CONTAINER_EXECUTABLE.trim().equalsIgnoreCase("docker")) {
                     dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
                     dockerAvailable = dockerVersionOutput.contains("Docker version");
                     if (dockerAvailable) {
@@ -60,7 +61,7 @@ public final class ContainerRuntimeUtil {
                         return ContainerRuntime.DOCKER;
                     }
                 }
-                if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("podman")) {
+                if (CONTAINER_EXECUTABLE.trim().equalsIgnoreCase("podman")) {
                     podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
                     podmanAvailable = podmanVersionOutput.startsWith("podman version");
                     if (podmanAvailable) {
@@ -125,8 +126,14 @@ public final class ContainerRuntimeUtil {
             final ProcessBuilder pb = new ProcessBuilder(containerRuntime.getExecutableName(), "--version")
                     .redirectErrorStream(true);
             versionProcess = pb.start();
-            versionProcess.waitFor();
-            return new String(versionProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            final int timeoutS = 10;
+            if (versionProcess.waitFor(timeoutS, TimeUnit.SECONDS)) {
+                return new String(versionProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            } else {
+                log.debugf("Failure. It took command %s more than %d seconds to execute.", containerRuntime.getExecutableName(),
+                        timeoutS);
+                return "";
+            }
         } catch (IOException | InterruptedException e) {
             // If an exception is thrown in the process, just return an empty String
             log.debugf(e, "Failure to read version output from %s", containerRuntime.getExecutableName());

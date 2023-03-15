@@ -49,7 +49,6 @@ import org.hibernate.boot.spi.MetadataBuilderImplementor;
 import org.hibernate.cache.internal.CollectionCacheInvalidator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.integrator.spi.Integrator;
@@ -143,13 +142,6 @@ public class FastBootMetadataBuilder {
         // Build the "standard" service registry
         ssrBuilder.applySettings(buildTimeSettings.getAllSettings());
 
-        // We need to initialize the multi tenancy strategy before building the service registry as it is used to
-        // create metadata builder. Adding services afterwards would lead to unpredicted behavior.
-        final MultiTenancyStrategy multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
-        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE) {
-            ssrBuilder.addService(MultiTenantConnectionProvider.class,
-                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
-        }
         this.standardServiceRegistry = ssrBuilder.build();
         registerIdentifierGenerators(standardServiceRegistry);
 
@@ -257,10 +249,15 @@ public class FastBootMetadataBuilder {
         cfg.put(PERSISTENCE_UNIT_NAME, persistenceUnit.getName());
 
         MultiTenancyStrategy multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
-        if (multiTenancyStrategy != null) {
-            String legacyMULTI_TENANT = "hibernate.multiTenancy";
-            //FIXME this property is meaningless in Hibernate ORM >6 (and the constant was removed)
-            cfg.put(legacyMULTI_TENANT, multiTenancyStrategy);
+        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE) {
+            // We need to initialize the multi tenant connection provider
+            // on static init as it is used in MetadataBuildingOptionsImpl
+            // to determine if multi-tenancy is enabled.
+            // Adding the service on runtime init would lead to unpredictable behavior
+            // (metadata generated for a single-tenant application but runtime using multi-tenancy...).
+            // Nothing is expected to actually retrieve a connection from the provider until runtime init, though.
+            cfg.put(AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER,
+                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
         }
 
         applyTransactionProperties(persistenceUnit, cfg);

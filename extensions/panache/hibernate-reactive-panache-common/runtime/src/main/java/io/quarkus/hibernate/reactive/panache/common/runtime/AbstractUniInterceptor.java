@@ -15,4 +15,8 @@ abstract class AbstractUniInterceptor {
         }
     }
 
+    protected boolean isUniReturnType(InvocationContext context) {
+        return context.getMethod().getReturnType().equals(Uni.class);
+    }
+
 }

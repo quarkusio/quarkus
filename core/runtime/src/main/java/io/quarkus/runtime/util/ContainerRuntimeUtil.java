@@ -5,9 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -21,16 +18,12 @@ public final class ContainerRuntimeUtil {
     private static final Logger log = Logger.getLogger(ContainerRuntimeUtil.class);
     private static final String DOCKER_EXECUTABLE = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
             .getOptionalValue("quarkus.native.container-runtime", String.class).orElse(null);
-    /*
-     * Caching the value in a file helps us only as much as one JVM execution is concerned.
-     * Test suite's pom.xml sets things like <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>,
-     * so the file could appear in /tmp/ or C:\Users\karm\AppData\Local\Temp\ or in fact in
-     * quarkus/integration-tests/something/target.
-     * There is no point in reaching it in `Path.of(Paths.get("").toAbsolutePath().toString(), "target",
-     * "quarkus_container_runtime.txt")`
-     * as the file is deleted between JVM executions anyway.
+
+    /**
+     * Static variable is not used because the class gets loaded by different classloaders at
+     * runtime and the container runtime would be detected again and again unnecessarily.
      */
-    static final Path CONTAINER_RUNTIME = Path.of(System.getProperty("java.io.tmpdir"), "quarkus_container_runtime.txt");
+    private static final String CONTAINER_RUNTIME_SYS_PROP = "quarkus-local-container-runtime";
 
     private ContainerRuntimeUtil() {
     }
@@ -94,39 +87,24 @@ public final class ContainerRuntimeUtil {
     }
 
     private static ContainerRuntime loadConfig() {
-        try {
-            if (Files.isReadable(CONTAINER_RUNTIME)) {
-                final String runtime = Files.readString(CONTAINER_RUNTIME, StandardCharsets.UTF_8);
-                if (ContainerRuntime.DOCKER.name().equalsIgnoreCase(runtime)) {
-                    return ContainerRuntime.DOCKER;
-                } else if (ContainerRuntime.PODMAN.name().equalsIgnoreCase(runtime)) {
-                    return ContainerRuntime.PODMAN;
-                } else if (ContainerRuntime.UNAVAILABLE.name().equalsIgnoreCase(runtime)) {
-                    return ContainerRuntime.UNAVAILABLE;
-                } else {
-                    log.warnf("The file %s contains an unknown value %s. Ignoring it.",
-                            CONTAINER_RUNTIME.toAbsolutePath(), runtime);
-                    return null;
-                }
-            } else {
-                return null;
-            }
-        } catch (IOException e) {
-            log.warnf("Error reading file %s. Ignoring it. See: %s",
-                    CONTAINER_RUNTIME.toAbsolutePath(), e);
+        final String runtime = System.getProperty(CONTAINER_RUNTIME_SYS_PROP);
+        if (runtime == null) {
+            return null;
+        } else if (ContainerRuntime.DOCKER.name().equalsIgnoreCase(runtime)) {
+            return ContainerRuntime.DOCKER;
+        } else if (ContainerRuntime.PODMAN.name().equalsIgnoreCase(runtime)) {
+            return ContainerRuntime.PODMAN;
+        } else if (ContainerRuntime.UNAVAILABLE.name().equalsIgnoreCase(runtime)) {
+            return ContainerRuntime.UNAVAILABLE;
+        } else {
+            log.warnf("System property %s contains an unknown value %s. Ignoring it.",
+                    CONTAINER_RUNTIME_SYS_PROP, runtime);
             return null;
         }
     }
 
     private static void storeConfig(ContainerRuntime containerRuntime) {
-        try {
-            Files.writeString(CONTAINER_RUNTIME, containerRuntime.name(), StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            CONTAINER_RUNTIME.toFile().deleteOnExit();
-        } catch (IOException e) {
-            log.warnf("Error writing to file %s. Ignoring it. See: %s",
-                    CONTAINER_RUNTIME.toAbsolutePath(), e);
-        }
+        System.setProperty(CONTAINER_RUNTIME_SYS_PROP, containerRuntime.name());
     }
 
     private static String getVersionOutputFor(ContainerRuntime containerRuntime) {

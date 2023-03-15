@@ -114,8 +114,10 @@ public class GrpcReflectionTest {
     }
 
     private ServerReflectionResponse invoke(ServerReflectionRequest request) {
+        subscriber.reset();
         Multi<ServerReflectionResponse> multi = reflection.serverReflectionInfo(processor);
         multi.subscribe().withSubscriber(subscriber);
+        subscriber.awaitForSubscription();
         processor.onNext(request);
         return subscriber.awaitAndGetLast();
     }
@@ -242,6 +244,14 @@ public class GrpcReflectionTest {
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
             this.subscription = subscription;
+        }
+
+        public void reset() {
+            this.subscription = null;
+        }
+
+        public void awaitForSubscription() {
+            await().until(() -> subscription != null);
         }
 
         public T awaitAndGetLast() {

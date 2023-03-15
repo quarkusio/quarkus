@@ -220,12 +220,12 @@ public class KubernetesDeployer {
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
 
-            printExposeInformation(client, list, openshiftConfig, applicationInfo);
-
+            Optional<String> exposedUrl = printExposeInformation(client, list, openshiftConfig, applicationInfo);
             HasMetadata m = list.getItems().stream().filter(r -> r.getKind().equals(deploymentTarget.getKind()))
                     .findFirst().orElseThrow(() -> new IllegalStateException(
                             "No " + deploymentTarget.getKind() + " found under: " + manifest.getAbsolutePath()));
-            return new DeploymentResultBuildItem(m.getMetadata().getName(), m.getMetadata().getLabels());
+            return new DeploymentResultBuildItem(deploymentTarget.getName(), m.getKind(), m.getMetadata().getName(), exposedUrl,
+                    m.getMetadata().getLabels());
         } catch (FileNotFoundException e) {
             throw new IllegalStateException("Can't find generated kubernetes manifest: " + manifest.getAbsolutePath());
         } catch (KubernetesClientException e) {
@@ -300,7 +300,8 @@ public class KubernetesDeployer {
         return client.resource(metadata);
     }
 
-    private void printExposeInformation(KubernetesClient client, KubernetesList list, OpenshiftConfig openshiftConfig,
+    private Optional<String> printExposeInformation(KubernetesClient client, KubernetesList list,
+            OpenshiftConfig openshiftConfig,
             ApplicationInfoBuildItem applicationInfo) {
         String generatedRouteName = ResourceNameUtil.getResourceName(openshiftConfig, applicationInfo);
         List<HasMetadata> items = list.getItems();
@@ -312,13 +313,14 @@ public class KubernetesDeployer {
                     Route route = openShiftClient.routes().withName(generatedRouteName).get();
                     boolean isTLS = (route.getSpec().getTls() != null);
                     String host = route.getSpec().getHost();
-                    log.infov("The deployed application can be accessed at: http{0}://{1}", isTLS ? "s" : "", host);
+                    String url = "http" + (isTLS ? "s" : "") + "://" + host;
+                    log.infov("The deployed application can be accessed at: ", url);
+                    return Optional.of(url);
                 } catch (KubernetesClientException ignored) {
-
                 }
-                break;
             }
         }
+        return Optional.empty();
     }
 
     /**

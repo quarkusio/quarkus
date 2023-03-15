@@ -85,8 +85,8 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
 
         @Override
         public MySQLPool create(Input input) {
-            assertEquals(12345, input.mySQLConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return MySQLPool.pool(input.vertx(), input.mySQLConnectOptions().setHost("localhost").setPort(3308),
+            assertEquals(12345, input.mySQLConnectOptions().get(0).getPort()); // validate that the bean has been called for the proper datasource
+            return MySQLPool.pool(input.vertx(), input.mySQLConnectOptions().get(0).setHost("localhost").setPort(3308),
                     input.poolOptions());
         }
     }
@@ -97,8 +97,8 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
 
         @Override
         public MySQLPool create(Input input) {
-            assertEquals(55555, input.mySQLConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return MySQLPool.pool(input.vertx(), input.mySQLConnectOptions().setHost("localhost").setPort(3308),
+            assertEquals(55555, input.mySQLConnectOptions().get(0).getPort()); // validate that the bean has been called for the proper datasource
+            return MySQLPool.pool(input.vertx(), input.mySQLConnectOptions().get(0).setHost("localhost").setPort(3308),
                     input.poolOptions());
         }
     }

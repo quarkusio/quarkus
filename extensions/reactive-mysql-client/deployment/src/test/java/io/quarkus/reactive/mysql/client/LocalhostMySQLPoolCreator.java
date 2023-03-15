@@ -9,7 +9,7 @@ public class LocalhostMySQLPoolCreator implements MySQLPoolCreator {
 
     @Override
     public MySQLPool create(Input input) {
-        return MySQLPool.pool(input.vertx(), input.mySQLConnectOptions().setHost("localhost").setPort(3308),
+        return MySQLPool.pool(input.vertx(), input.mySQLConnectOptions().get(0).setHost("localhost").setPort(3308),
                 input.poolOptions());
     }
 }

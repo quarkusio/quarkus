@@ -262,7 +262,7 @@ public class MySQLPoolRecorder {
         return mysqlConnectOptions;
     }
 
-    private MySQLPool createPool(Vertx vertx, PoolOptions poolOptions, MySQLConnectOptions mySQLConnectOptions,
+    private MySQLPool createPool(Vertx vertx, PoolOptions poolOptions, List<MySQLConnectOptions> mySQLConnectOptions,
             String dataSourceName) {
         Instance<MySQLPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
@@ -281,9 +281,9 @@ public class MySQLPoolRecorder {
     private static class DefaultInput implements MySQLPoolCreator.Input {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
-        private final MySQLConnectOptions mySQLConnectOptions;
+        private final List<MySQLConnectOptions> mySQLConnectOptions;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, MySQLConnectOptions mySQLConnectOptions) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, List<MySQLConnectOptions> mySQLConnectOptions) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
             this.mySQLConnectOptions = mySQLConnectOptions;
@@ -300,7 +300,7 @@ public class MySQLPoolRecorder {
         }
 
         @Override
-        public MySQLConnectOptions mySQLConnectOptions() {
+        public List<MySQLConnectOptions> mySQLConnectOptions() {
             return mySQLConnectOptions;
         }
     }

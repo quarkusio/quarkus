@@ -1,11 +1,12 @@
 package io.quarkus.opentelemetry.deployment;
 
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
+import static java.util.stream.Collectors.toList;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
@@ -14,10 +15,15 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigurablePropagatorProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -32,13 +38,13 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.opentelemetry.deployment.tracing.TracerProviderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryProducer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
-import io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.runtime.LaunchMode;
@@ -54,8 +60,6 @@ public class OpenTelemetryProcessor {
     private static final DotName WITH_SPAN = DotName.createSimple(WithSpan.class.getName());
     private static final DotName SPAN_KIND = DotName.createSimple(SpanKind.class.getName());
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
-    private static final DotName LEGACY_SPAN_ATRIBUTE = DotName.createSimple(
-            io.opentelemetry.extension.annotations.SpanAttribute.class.getName());;
     private static final DotName SPAN_ATTRIBUTE = DotName.createSimple(SpanAttribute.class.getName());
 
     @BuildStep
@@ -64,6 +68,21 @@ public class OpenTelemetryProcessor {
                 .setUnremovable()
                 .addBeanClass(OpenTelemetryProducer.class)
                 .build();
+    }
+
+    @BuildStep
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> services) throws IOException {
+        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
+                ConfigurableSpanExporterProvider.class.getName()));
+        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
+                ConfigurableSamplerProvider.class.getName()));
+        // The following are added but not officially supported, yet.
+        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
+                AutoConfigurationCustomizerProvider.class.getName()));
+        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
+                ResourceProvider.class.getName()));
+        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
+                ConfigurablePropagatorProvider.class.getName()));
     }
 
     @BuildStep
@@ -108,7 +127,7 @@ public class OpenTelemetryProcessor {
 
                 List<AnnotationInstance> legacyWithSpans = context.getAnnotations().stream()
                         .filter(annotationInstance -> annotationInstance.name().equals(LEGACY_WITH_SPAN))
-                        .collect(Collectors.toList());
+                        .collect(toList());
 
                 for (AnnotationInstance legacyAnnotation : legacyWithSpans) {
                     AnnotationValue value = Optional.ofNullable(legacyAnnotation.value("value"))
@@ -135,33 +154,24 @@ public class OpenTelemetryProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     void createOpenTelemetry(
-            OpenTelemetryConfig openTelemetryConfig,
             OpenTelemetryRecorder recorder,
             InstrumentationRecorder instrumentationRecorder,
-            Optional<TracerProviderBuildItem> tracerProviderBuildItem,
-            LaunchModeBuildItem launchMode) {
+            CoreVertxBuildItem vertx,
+            LaunchModeBuildItem launchMode,
+            ShutdownContextBuildItem shutdownContextBuildItem) {
 
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
             recorder.resetGlobalOpenTelemetryForDevMode();
         }
 
-        RuntimeValue<SdkTracerProvider> tracerProvider = tracerProviderBuildItem.map(TracerProviderBuildItem::getTracerProvider)
-                .orElse(null);
-        recorder.createOpenTelemetry(tracerProvider, openTelemetryConfig);
+        RuntimeValue<OpenTelemetry> openTelemetry = recorder.createOpenTelemetry(shutdownContextBuildItem);
+
         recorder.eagerlyCreateContextStorage();
-
-        // just checking for live reload would bypass the OpenTelemetryDevModeTest
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            instrumentationRecorder.setTracerDevMode(instrumentationRecorder.createTracers());
-        }
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void storeVertxOnContextStorage(OpenTelemetryRecorder recorder, CoreVertxBuildItem vertx) {
         recorder.storeVertxOnContextStorage(vertx.getVertx());
+
+        instrumentationRecorder.setTracer(instrumentationRecorder.createTracers(openTelemetry));
     }
 
     @BuildStep

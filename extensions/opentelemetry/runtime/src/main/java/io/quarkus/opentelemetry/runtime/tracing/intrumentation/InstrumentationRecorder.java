@@ -4,14 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.EventBusInstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.HttpInstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.InstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxMetricsFactory;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxTracer;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxTracingDevModeFactory;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxTracingFactory;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.SqlClientInstrumenterVertxTracer;
 import io.quarkus.runtime.RuntimeValue;
@@ -23,36 +21,27 @@ import io.vertx.core.tracing.TracingOptions;
 @Recorder
 public class InstrumentationRecorder {
 
-    public static final OpenTelemetryVertxTracingDevModeFactory FACTORY = new OpenTelemetryVertxTracingDevModeFactory();
+    public static final OpenTelemetryVertxTracingFactory FACTORY = new OpenTelemetryVertxTracingFactory();
 
     /* RUNTIME INIT */
-    public RuntimeValue<OpenTelemetryVertxTracer> createTracers() {
-        OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
+    public RuntimeValue<OpenTelemetryVertxTracer> createTracers(RuntimeValue<OpenTelemetry> openTelemetry) {
         List<InstrumenterVertxTracer<?, ?>> instrumenterVertxTracers = new ArrayList<>();
-        instrumenterVertxTracers.add(new HttpInstrumenterVertxTracer(openTelemetry));
-        instrumenterVertxTracers.add(new EventBusInstrumenterVertxTracer(openTelemetry));
+        instrumenterVertxTracers.add(new HttpInstrumenterVertxTracer(openTelemetry.getValue()));
+        instrumenterVertxTracers.add(new EventBusInstrumenterVertxTracer(openTelemetry.getValue()));
         // TODO - Selectively register this in the recorder if the SQL Client is available.
-        instrumenterVertxTracers.add(new SqlClientInstrumenterVertxTracer(openTelemetry));
+        instrumenterVertxTracers.add(new SqlClientInstrumenterVertxTracer(openTelemetry.getValue()));
         return new RuntimeValue<>(new OpenTelemetryVertxTracer(instrumenterVertxTracers));
     }
 
     /* RUNTIME INIT */
-    public Consumer<VertxOptions> getVertxTracingOptionsProd(
-            RuntimeValue<OpenTelemetryVertxTracer> tracer) {
-        TracingOptions tracingOptions = new TracingOptions()
-                .setFactory(new OpenTelemetryVertxTracingFactory(tracer.getValue()));
-        return vertxOptions -> vertxOptions.setTracingOptions(tracingOptions);
-    }
-
-    /* RUNTIME INIT */
-    public Consumer<VertxOptions> getVertxTracingOptionsDevMode() {
+    public Consumer<VertxOptions> getVertxTracingOptions() {
         TracingOptions tracingOptions = new TracingOptions()
                 .setFactory(FACTORY);
         return vertxOptions -> vertxOptions.setTracingOptions(tracingOptions);
     }
 
     /* RUNTIME INIT */
-    public void setTracerDevMode(RuntimeValue<OpenTelemetryVertxTracer> tracer) {
+    public void setTracer(RuntimeValue<OpenTelemetryVertxTracer> tracer) {
         FACTORY.getVertxTracerDelegator().setDelegate(tracer.getValue());
     }
 

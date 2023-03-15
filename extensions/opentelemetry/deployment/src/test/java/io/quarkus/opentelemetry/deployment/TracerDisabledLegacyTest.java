@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class TracerDisabledTest {
+public class TracerDisabledLegacyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

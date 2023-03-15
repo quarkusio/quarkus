@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -19,6 +20,8 @@ import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 public class StaticResourceTest {
+
+    @BeforeEach
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);

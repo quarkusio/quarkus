@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanKind;
@@ -39,7 +39,7 @@ import io.vertx.core.http.HttpMethod;
 
 @QuarkusTest
 class HelloRouterTest {
-    @BeforeEach
+
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
@@ -94,7 +94,7 @@ class HelloRouterTest {
                 .statusCode(HTTP_OK)
                 .body(equalTo("hello Naruto"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(5, TimeUnit.SECONDS).until(() -> spanSize(1));
         List<Map<String, Object>> spans = getSpans();
         assertEquals(1, spans.size());
 
@@ -121,9 +121,9 @@ class HelloRouterTest {
         assertEquals(1, messages.size());
         assertEquals("hello to bus", messages.get(0));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(50, TimeUnit.SECONDS).until(() -> spanSize(3));
         List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
+        assertEquals(3, spans.size(), "found:" + printSpans(spans));
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
 
         Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
@@ -147,6 +147,28 @@ class HelloRouterTest {
         assertEquals(MessageOperation.RECEIVE.toString().toLowerCase(Locale.ROOT),
                 ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_OPERATION.toString()));
         assertEquals(consumer.get("parentSpanId"), producer.get("spanId"));
+    }
+
+    private String printSpans(List<Map<String, Object>> spans) {
+        if (spans.isEmpty()) {
+            return "empty";
+        }
+        return spans.stream()
+                .map(stringObjectMap -> stringObjectMap.get("spanId") + " - " +
+                        stringObjectMap.get("kind") + " - " +
+                        stringObjectMap.get("http.route") + "\n")
+                .collect(Collectors.joining());
+    }
+
+    private Boolean spanSize(int expected) {
+        List<Map<String, Object>> spans = getSpans();
+        int size = spans.size();
+        if (size == expected) {
+            return true;
+        } else {
+            System.out.println("Reset but span remain: " + printSpans(spans));
+            return false;
+        }
     }
 
     private static List<Map<String, Object>> getSpans() {

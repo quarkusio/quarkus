@@ -2,14 +2,18 @@ package io.quarkus.opentelemetry.runtime;
 
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.BeanManager;
+
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.events.GlobalEventEmitterProvider;
+import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
-import io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig;
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Vertx;
 
@@ -21,25 +25,29 @@ public class OpenTelemetryRecorder {
     /* STATIC INIT */
     public void resetGlobalOpenTelemetryForDevMode() {
         GlobalOpenTelemetry.resetForTest();
+        GlobalLoggerProvider.resetForTest();
+        GlobalEventEmitterProvider.resetForTest();
     }
 
-    /* STATIC INIT */
-    public RuntimeValue<OpenTelemetry> createOpenTelemetry(RuntimeValue<SdkTracerProvider> tracerProvider,
-            OpenTelemetryConfig openTelemetryConfig) {
-        OpenTelemetrySdkBuilder builder = OpenTelemetrySdk.builder();
+    /* RUNTIME INIT */
+    public RuntimeValue<OpenTelemetry> createOpenTelemetry(ShutdownContext shutdownContext) {
 
-        // Set tracer provider if present
-        if (tracerProvider != null) {
-            builder.setTracerProvider(tracerProvider.getValue());
-        }
+        BeanManager beanManager = Arc.container().beanManager();
 
-        builder.setPropagators(OpenTelemetryUtil.mapPropagators(openTelemetryConfig.propagators));
+        OpenTelemetry openTelemetry = beanManager.createInstance()
+                .select(OpenTelemetry.class, Any.Literal.INSTANCE).get();
 
-        OpenTelemetry openTelemetry = builder.buildAndRegisterGlobal();
+        // Because we are producing the ObfuscatedOpenTelemetry. These methods are not be available otherwise.
+        // Register shutdown tasks, because we are using CDI beans
+        shutdownContext.addShutdownTask(() -> {
+            ((OpenTelemetrySdk) openTelemetry).getSdkTracerProvider().forceFlush();
+            ((OpenTelemetrySdk) openTelemetry).getSdkTracerProvider().shutdown();
+        });
+
         return new RuntimeValue<>(openTelemetry);
     }
 
-    /* STATIC INIT */
+    /* RUNTIME INIT */
     public void eagerlyCreateContextStorage() {
         ContextStorage.get();
     }

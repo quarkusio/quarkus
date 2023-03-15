@@ -9,18 +9,25 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class OpenTelemetrySamplerBeanTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class));
+            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class)
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .withConfigurationResource("application-default.properties");
 
     @Inject
     OpenTelemetry openTelemetry;

@@ -34,3 +34,6 @@ You can enable it with `enable-db2` system property like this:
 ```
 mvn verify -Dtest-containers -Dstart-containers -Denable-db2
 ```
+
+### Warning
+Some warning messages in the logs, related with table "pghit" not being found are expected.

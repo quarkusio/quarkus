@@ -10,11 +10,13 @@ import java.util.List;
 
 import jakarta.inject.Inject;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -23,8 +25,11 @@ public class VertxOpenTelemetryXForwardedTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(TestSpanExporter.class)
-                    .addClass(TracerRouter.class));
+                    .addClass(TracerRouter.class)
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .withConfigurationResource("application-default.properties");
 
     @Inject
     TestSpanExporter testSpanExporter;

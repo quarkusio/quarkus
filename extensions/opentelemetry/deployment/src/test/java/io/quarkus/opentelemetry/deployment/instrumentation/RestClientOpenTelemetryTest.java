@@ -29,18 +29,24 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 public class RestClientOpenTelemetryTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(TestSpanExporter.class))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.rest-client.client.url", "${test.url}");
 
     @Inject

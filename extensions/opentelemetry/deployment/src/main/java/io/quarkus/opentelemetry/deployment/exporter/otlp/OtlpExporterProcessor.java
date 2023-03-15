@@ -1,14 +1,21 @@
 package io.quarkus.opentelemetry.deployment.exporter.otlp;
 
+import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constants.CDI_VALUE;
+import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constants.OTLP_VALUE;
+
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpExporterConfig;
+import io.quarkus.opentelemetry.runtime.config.build.OtelBuildConfig;
+import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.OtelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpExporterProvider;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpRecorder;
 
@@ -16,10 +23,16 @@ import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpRecorder;
 public class OtlpExporterProcessor {
 
     static class OtlpExporterEnabled implements BooleanSupplier {
-        OtlpExporterConfig.OtlpExporterBuildConfig otlpExporterConfig;
+        OtlpExporterBuildConfig exporBuildConfig;
+        OtelBuildConfig otelBuildConfig;
 
         public boolean getAsBoolean() {
-            return otlpExporterConfig.enabled;
+            return otelBuildConfig.enabled &&
+                    otelBuildConfig.traces.enabled.orElse(Boolean.TRUE) &&
+                    (otelBuildConfig.traces.exporter.contains(OTLP_VALUE) ||
+                            otelBuildConfig.traces.exporter.contains(CDI_VALUE))
+                    &&
+                    exporBuildConfig.enabled;
         }
     }
 
@@ -32,9 +45,14 @@ public class OtlpExporterProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void installBatchSpanProcessorForOtlp(OtlpRecorder recorder,
+    void installBatchSpanProcessorForOtlp(
+            OtlpRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,
-            OtlpExporterConfig.OtlpExporterRuntimeConfig runtimeConfig) {
-        recorder.installBatchSpanProcessorForOtlp(runtimeConfig, launchModeBuildItem.getLaunchMode());
+            OtelRuntimeConfig otelRuntimeConfig,
+            OtlpExporterRuntimeConfig exporterRuntimeConfig,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        recorder.installBatchSpanProcessorForOtlp(otelRuntimeConfig,
+                exporterRuntimeConfig,
+                launchModeBuildItem.getLaunchMode());
     }
 }

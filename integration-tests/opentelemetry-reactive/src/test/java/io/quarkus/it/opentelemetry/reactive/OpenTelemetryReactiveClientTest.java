@@ -23,6 +23,7 @@ import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanKind;
@@ -37,6 +38,7 @@ public class OpenTelemetryReactiveClientTest {
     @RestClient
     ReactiveRestClient client;
 
+    @BeforeEach
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);

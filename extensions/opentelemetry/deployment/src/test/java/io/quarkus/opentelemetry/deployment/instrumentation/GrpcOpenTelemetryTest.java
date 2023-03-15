@@ -10,7 +10,7 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_M
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SERVICE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SYSTEM;
 import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
-import static io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.config.build.OtelBuildConfig.INSTRUMENTATION_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,6 +22,7 @@ import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -56,6 +57,7 @@ import io.quarkus.opentelemetry.deployment.StreamingClient;
 import io.quarkus.opentelemetry.deployment.StreamingGrpc;
 import io.quarkus.opentelemetry.deployment.StreamingProto;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
@@ -64,7 +66,7 @@ public class GrpcOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TestSpanExporter.class)
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
                     .addClasses(HelloService.class)
                     .addClasses(GreeterGrpc.class, MutinyGreeterGrpc.class,
                             Greeter.class, GreeterBean.class, GreeterClient.class,
@@ -73,7 +75,10 @@ public class GrpcOpenTelemetryTest {
                     .addClasses(StreamingService.class)
                     .addClasses(StreamingGrpc.class, MutinyStreamingGrpc.class,
                             Streaming.class, StreamingBean.class, StreamingClient.class,
-                            StreamingProto.class, Item.class, ItemOrBuilder.class))
+                            StreamingProto.class, Item.class, ItemOrBuilder.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.grpc.clients.greeter.host", "localhost")
             .overrideConfigKey("quarkus.grpc.clients.greeter.port", "9001")
             .overrideConfigKey("quarkus.grpc.clients.streaming.host", "localhost")

@@ -119,101 +119,99 @@ public class BasicTest {
         // Reset captured traces
         RestAssured.given().when().get("/export-clear").then().statusCode(200);
 
-        Response response = RestAssured.with().body(helloUrl).post("/call-hello-client");
-        assertThat(response.asString()).isEqualTo("Hello, JohnJohn");
-
-        Awaitility.await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 3);
-
-        boolean outsideServerFound = false;
-        boolean clientFound = false;
-        boolean clientServerFound = false;
+        Response response = RestAssured.with().body(helloUrl).post("/call-hello-client-trace");
+        assertThat(response.asString()).isEqualTo("Hello, MaryMaryMary");
 
         String serverSpanId = null;
         String serverTraceId = null;
         String clientSpanId = null;
-        // brunobat: This tests has been remade, for resilience, in another branch and will be merged in the future.
-        for (Map<String, Object> spanData : getSpans()) {
-            Assertions.assertNotNull(spanData);
-            Assertions.assertNotNull(spanData.get("spanId"));
 
-            if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("POST /call-hello-client")) {
-                outsideServerFound = true;
-                // Server Span
-                serverSpanId = (String) spanData.get("spanId");
-                serverTraceId = (String) spanData.get("traceId");
+        Awaitility.await().atMost(Duration.ofMinutes(2))
+                .until(() -> getServerSpans("POST /call-hello-client-trace", "/call-hello-client-trace").size() > 0);
 
-                Assertions.assertEquals("POST /call-hello-client", spanData.get("name"));
-                Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
-                Assertions.assertTrue((Boolean) spanData.get("ended"));
+        List<Map<String, Object>> spans = getServerSpans("POST /call-hello-client-trace", "/call-hello-client-trace");
+        Assertions.assertEquals(1, spans.size());
 
-                Assertions.assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
-                Assertions.assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
-                Assertions.assertFalse((Boolean) spanData.get("parent_valid"));
-                Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
+        final Map<String, Object> initialServerSpan = spans.get(0);
+        Assertions.assertNotNull(initialServerSpan);
+        Assertions.assertNotNull(initialServerSpan.get("spanId"));
 
-                Assertions.assertEquals("POST", spanData.get("attr_http.method"));
-                Assertions.assertEquals("1.1", spanData.get("attr_http.flavor"));
-                Assertions.assertEquals("/call-hello-client", spanData.get("attr_http.target"));
-                Assertions.assertEquals("http", spanData.get("attr_http.scheme"));
-                Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
-                Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
-                Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
-            } else if (spanData.get("kind").equals(SpanKind.CLIENT.toString())
-                    && spanData.get("name").equals("POST")) {
-                clientFound = true;
-                // Client span
-                Assertions.assertEquals("POST", spanData.get("name"));
+        // *** Server Span ***
+        serverSpanId = (String) initialServerSpan.get("spanId");
+        serverTraceId = (String) initialServerSpan.get("traceId");
 
-                Assertions.assertEquals(SpanKind.CLIENT.toString(), spanData.get("kind"));
-                Assertions.assertTrue((Boolean) spanData.get("ended"));
+        Assertions.assertEquals("POST /call-hello-client-trace", initialServerSpan.get("name"));
+        Assertions.assertEquals(SpanKind.SERVER.toString(), initialServerSpan.get("kind"));
+        Assertions.assertTrue((Boolean) initialServerSpan.get("ended"));
 
-                if (serverSpanId != null) {
-                    Assertions.assertEquals(serverSpanId, spanData.get("parent_spanId"));
-                }
-                if (serverTraceId != null) {
-                    Assertions.assertEquals(serverTraceId, spanData.get("parent_traceId"));
-                }
-                Assertions.assertTrue((Boolean) spanData.get("parent_valid"));
-                Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
+        Assertions.assertEquals(SpanId.getInvalid(), initialServerSpan.get("parent_spanId"));
+        Assertions.assertEquals(TraceId.getInvalid(), initialServerSpan.get("parent_traceId"));
+        Assertions.assertFalse((Boolean) initialServerSpan.get("parent_valid"));
+        Assertions.assertFalse((Boolean) initialServerSpan.get("parent_remote"));
 
-                Assertions.assertEquals("POST", spanData.get("attr_http.method"));
-                Assertions.assertEquals("http://localhost:8081/hello?count=2", spanData.get("attr_http.url"));
-                Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
+        Assertions.assertEquals("POST", initialServerSpan.get("attr_http.method"));
+        Assertions.assertEquals("1.1", initialServerSpan.get("attr_http.flavor"));
+        Assertions.assertEquals("/call-hello-client-trace", initialServerSpan.get("attr_http.target"));
+        Assertions.assertEquals("http", initialServerSpan.get("attr_http.scheme"));
+        Assertions.assertEquals("200", initialServerSpan.get("attr_http.status_code"));
+        Assertions.assertNotNull(initialServerSpan.get("attr_http.client_ip"));
+        Assertions.assertNotNull(initialServerSpan.get("attr_http.user_agent"));
 
-                clientSpanId = (String) spanData.get("spanId");
-            } else if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("POST /hello")) {
-                clientServerFound = true;
-                // Server span of client
+        spans = getClientSpans("POST", "http://localhost:8081/hello?count=3");
+        Assertions.assertEquals(1, spans.size());
 
-                Assertions.assertEquals("POST /hello", spanData.get("name"));
-                Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
-                Assertions.assertTrue((Boolean) spanData.get("ended"));
+        final Map<String, Object> clientSpan = spans.get(0);
+        Assertions.assertNotNull(clientSpan);
+        Assertions.assertNotNull(clientSpan.get("spanId"));
 
-                if (clientSpanId != null) {
-                    Assertions.assertEquals(clientSpanId, spanData.get("parent_spanId"));
-                }
-                if (serverTraceId != null) {
-                    Assertions.assertEquals(serverTraceId, spanData.get("parent_traceId"));
-                }
-                Assertions.assertTrue((Boolean) spanData.get("parent_valid"));
-                Assertions.assertTrue((Boolean) spanData.get("parent_remote"));
+        // *** Client span ***
+        Assertions.assertEquals("POST", clientSpan.get("name"));
 
-                Assertions.assertEquals("POST", spanData.get("attr_http.method"));
-                Assertions.assertEquals("1.1", spanData.get("attr_http.flavor"));
-                Assertions.assertEquals("/hello?count=2", spanData.get("attr_http.target"));
-                Assertions.assertEquals("http", spanData.get("attr_http.scheme"));
-                Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
-                Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
-            } else {
-                Assertions.fail("Received an unknown Span - " + spanData.get("name"));
-            }
+        Assertions.assertEquals(SpanKind.CLIENT.toString(), clientSpan.get("kind"));
+        Assertions.assertTrue((Boolean) clientSpan.get("ended"));
+
+        if (serverSpanId != null) {
+            Assertions.assertEquals(serverSpanId, clientSpan.get("parent_spanId"));
         }
+        if (serverTraceId != null) {
+            Assertions.assertEquals(serverTraceId, clientSpan.get("parent_traceId"));
+        }
+        Assertions.assertTrue((Boolean) clientSpan.get("parent_valid"));
+        Assertions.assertFalse((Boolean) clientSpan.get("parent_remote"));
 
-        Assertions.assertTrue(outsideServerFound);
-        Assertions.assertTrue(clientFound);
-        Assertions.assertTrue(clientServerFound);
+        Assertions.assertEquals("POST", clientSpan.get("attr_http.method"));
+        Assertions.assertEquals("http://localhost:8081/hello?count=3", clientSpan.get("attr_http.url"));
+        Assertions.assertEquals("200", clientSpan.get("attr_http.status_code"));
+
+        clientSpanId = (String) clientSpan.get("spanId");
+
+        spans = getServerSpans("POST /hello", "/hello?count=3");
+        Assertions.assertEquals(1, spans.size());
+
+        final Map<String, Object> serverSpanClientSide = spans.get(0);
+        Assertions.assertNotNull(serverSpanClientSide);
+        Assertions.assertNotNull(serverSpanClientSide.get("spanId"));
+
+        // *** Server span of client ***
+        Assertions.assertEquals("POST /hello", serverSpanClientSide.get("name"));
+        Assertions.assertEquals(SpanKind.SERVER.toString(), serverSpanClientSide.get("kind"));
+        Assertions.assertTrue((Boolean) serverSpanClientSide.get("ended"));
+
+        if (clientSpanId != null) {
+            Assertions.assertEquals(clientSpanId, serverSpanClientSide.get("parent_spanId"));
+        }
+        if (serverTraceId != null) {
+            Assertions.assertEquals(serverTraceId, serverSpanClientSide.get("parent_traceId"));
+        }
+        Assertions.assertTrue((Boolean) serverSpanClientSide.get("parent_valid"));
+        Assertions.assertTrue((Boolean) serverSpanClientSide.get("parent_remote"));
+
+        Assertions.assertEquals("POST", serverSpanClientSide.get("attr_http.method"));
+        Assertions.assertEquals("1.1", serverSpanClientSide.get("attr_http.flavor"));
+        Assertions.assertEquals("/hello?count=3", serverSpanClientSide.get("attr_http.target"));
+        Assertions.assertEquals("http", serverSpanClientSide.get("attr_http.scheme"));
+        Assertions.assertEquals("200", serverSpanClientSide.get("attr_http.status_code"));
+        Assertions.assertNotNull(serverSpanClientSide.get("attr_http.client_ip"));
     }
 
     @Test
@@ -224,8 +222,21 @@ public class BasicTest {
                 .body(equalTo("1"));
     }
 
-    private List<Map<String, Object>> getSpans() {
+    private List<Map<String, Object>> getServerSpans(final String spanName, final String httpTarget) {
         return get("/export").body().as(new TypeRef<List<Map<String, Object>>>() {
-        });
+        }).stream()
+                .filter(stringObjectMap -> spanName.equals(stringObjectMap.get("name")) &&
+                        "SERVER".equals(stringObjectMap.get("kind")) &&
+                        ((String) stringObjectMap.get("attr_http.target")).startsWith(httpTarget))
+                .collect(Collectors.toList());
+    }
+
+    private List<Map<String, Object>> getClientSpans(final String spanName, final String httpUrl) {
+        return get("/export").body().as(new TypeRef<List<Map<String, Object>>>() {
+        }).stream()
+                .filter(stringObjectMap -> spanName.equals(stringObjectMap.get("name")) &&
+                        "CLIENT".equals(stringObjectMap.get("kind")) &&
+                        ((String) stringObjectMap.get("attr_http.url")).startsWith(httpUrl))
+                .collect(Collectors.toList());
     }
 }

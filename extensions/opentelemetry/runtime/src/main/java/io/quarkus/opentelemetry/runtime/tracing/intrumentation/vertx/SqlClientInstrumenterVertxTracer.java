@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
-import static io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.config.build.OtelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.util.Map;
 import java.util.function.BiConsumer;

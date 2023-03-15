@@ -5,12 +5,13 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.arc.DefaultBean;
 
+@Deprecated
 @Singleton
 public class OtlpExporterProvider {
     @Produces
     @Singleton
     @DefaultBean
-    public LateBoundBatchSpanProcessor batchSpanProcessorForJaeger() {
+    public LateBoundBatchSpanProcessor batchSpanProcessorForOtlp() {
         return new LateBoundBatchSpanProcessor();
     }
 }

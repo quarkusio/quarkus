@@ -9,7 +9,10 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -72,16 +75,60 @@ public class MySQLPoolRecorder {
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMySQLConfig);
-        MySQLConnectOptions mysqlConnectOptions = toMySQLConnectOptions(dataSourceRuntimeConfig,
-                dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig);
+
+        List<MySQLConnectOptions> mysqlConnectOptions = new ArrayList<>();
+        if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
+            String[] urls = toDataSourceUrls(dataSourceReactiveRuntimeConfig.url.get());
+            if (urls != null) {
+                for (String url : urls) {
+                    dataSourceReactiveRuntimeConfig.url = Optional.of(url);
+                    mysqlConnectOptions.add(toMySQLConnectOptions(dataSourceRuntimeConfig,
+                            dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig));
+                }
+            }
+        }
+        if (mysqlConnectOptions.isEmpty()) {
+            mysqlConnectOptions.add(toMySQLConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+                    dataSourceReactiveMySQLConfig));
+        }
 
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with mysql.
         // and the client_name as tag.
         // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
         // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
-        mysqlConnectOptions.setMetricsName("mysql|" + dataSourceName);
+        mysqlConnectOptions.forEach(option -> option.setMetricsName("mysql|" + dataSourceName));
 
         return createPool(vertx, poolOptions, mysqlConnectOptions, dataSourceName);
+    }
+
+    private String[] toDataSourceUrls(String url) {
+        if (url.indexOf(',') < 0) {
+            return null;
+        }
+
+        int hostBegin = url.indexOf("://");
+        if (hostBegin < 0) {
+            return null;
+        }
+        hostBegin += 3;
+        String prefix = url.substring(0, hostBegin).replace(":loadbalance:", ":");
+
+        int portEnd = url.indexOf('/', hostBegin + 1);
+        if (portEnd < 0) {
+            return null;
+        }
+        String postfix = url.substring(portEnd);
+
+        String[] servers = url.substring(hostBegin, portEnd).split(",");
+        if (servers.length == 1) {
+            return null;
+        }
+
+        String[] urls = new String[servers.length];
+        for (int i = 0; i < servers.length; i++) {
+            urls[i] = prefix + servers[i] + postfix;
+        }
+        return urls;
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,

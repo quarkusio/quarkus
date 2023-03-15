@@ -25,16 +25,20 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
+import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.db2.client.DB2PoolCreator;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.VertxInternal;
 import io.vertx.db2client.DB2ConnectOptions;
 import io.vertx.db2client.DB2Pool;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.impl.Utils;
 
 @Recorder
 public class DB2PoolRecorder {
@@ -49,7 +53,7 @@ public class DB2PoolRecorder {
             DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config,
             ShutdownContext shutdown) {
 
-        DB2Pool db2Pool = initialize(vertx.getValue(),
+        DB2Pool db2Pool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
@@ -64,7 +68,7 @@ public class DB2PoolRecorder {
         return new RuntimeValue<>(io.vertx.mutiny.db2client.DB2Pool.newInstance(db2Pool.getValue()));
     }
 
-    private DB2Pool initialize(Vertx vertx,
+    private DB2Pool initialize(VertxInternal vertx,
             Integer eventLoopCount,
             String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -72,16 +76,26 @@ public class DB2PoolRecorder {
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveDB2Config);
-        DB2ConnectOptions connectOptions = toConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
-                dataSourceReactiveDB2Config);
+        DB2ConnectOptions db2ConnectOptions = toConnectOptions(dataSourceName, dataSourceRuntimeConfig,
+                dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config);
+        Supplier<Future<DB2ConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(db2ConnectOptions),
+                dataSourceRuntimeConfig);
+        return createPool(vertx, poolOptions, db2ConnectOptions, dataSourceName, databasesSupplier);
+    }
 
-        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with db2. and
-        // the client_name as tag.
-        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
-        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
-        connectOptions.setMetricsName("db2|" + dataSourceName);
-
-        return createPool(vertx, poolOptions, connectOptions, dataSourceName);
+    private Supplier<Future<DB2ConnectOptions>> toDatabasesSupplier(Vertx vertx, List<DB2ConnectOptions> db2ConnectOptionsList,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig) {
+        Supplier<Future<DB2ConnectOptions>> supplier;
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, db2ConnectOptionsList,
+                    DB2ConnectOptions::new);
+        } else {
+            supplier = Utils.roundRobinSupplier(db2ConnectOptionsList);
+        }
+        return supplier;
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -114,7 +128,7 @@ public class DB2PoolRecorder {
         return poolOptions;
     }
 
-    private DB2ConnectOptions toConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private DB2ConnectOptions toConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
         DB2ConnectOptions connectOptions;
@@ -155,7 +169,7 @@ public class DB2PoolRecorder {
                 connectOptions.setUser(user);
             }
             if (password != null) {
-                connectOptions.setPassword(user);
+                connectOptions.setPassword(password);
             }
         }
 
@@ -184,11 +198,17 @@ public class DB2PoolRecorder {
 
         dataSourceReactiveRuntimeConfig.additionalProperties.forEach(connectOptions::addProperty);
 
+        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with db2.
+        // and the client_name as tag.
+        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+        connectOptions.setMetricsName("db2|" + dataSourceName);
+
         return connectOptions;
     }
 
     private DB2Pool createPool(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions dB2ConnectOptions,
-            String dataSourceName) {
+            String dataSourceName, Supplier<Future<DB2ConnectOptions>> databases) {
         Instance<DB2PoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
             instance = Arc.container().select(DB2PoolCreator.class);
@@ -200,7 +220,7 @@ public class DB2PoolRecorder {
             DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, dB2ConnectOptions);
             return instance.get().create(input);
         }
-        return DB2Pool.pool(vertx, dB2ConnectOptions, poolOptions);
+        return DB2Pool.pool(vertx, databases, poolOptions);
     }
 
     private static class DefaultInput implements DB2PoolCreator.Input {

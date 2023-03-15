@@ -25,16 +25,20 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
+import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.mssql.client.MSSQLPoolCreator;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.VertxInternal;
 import io.vertx.mssqlclient.MSSQLConnectOptions;
 import io.vertx.mssqlclient.MSSQLPool;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.impl.Utils;
 
 @SuppressWarnings("deprecation")
 @Recorder
@@ -50,7 +54,7 @@ public class MSSQLPoolRecorder {
             DataSourcesReactiveMSSQLConfig dataSourcesReactiveMSSQLConfig,
             ShutdownContext shutdown) {
 
-        MSSQLPool mssqlPool = initialize(vertx.getValue(),
+        MSSQLPool mssqlPool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
@@ -65,23 +69,34 @@ public class MSSQLPoolRecorder {
         return new RuntimeValue<>(io.vertx.mutiny.mssqlclient.MSSQLPool.newInstance(mssqlPool.getValue()));
     }
 
-    private MSSQLPool initialize(Vertx vertx,
+    private MSSQLPool initialize(VertxInternal vertx,
             Integer eventLoopCount,
             String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMSSQLConfig);
-        MSSQLConnectOptions mssqlConnectOptions = toMSSQLConnectOptions(dataSourceRuntimeConfig,
+        MSSQLConnectOptions mssqlConnectOptions = toMSSQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMSSQLConfig);
+        Supplier<Future<MSSQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(mssqlConnectOptions),
+                dataSourceRuntimeConfig);
+        return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName, databasesSupplier);
+    }
 
-        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with mssql.
-        // with the client_name as tag.
-        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
-        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
-        mssqlConnectOptions.setMetricsName("mssql|" + dataSourceName);
-
-        return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName);
+    private Supplier<Future<MSSQLConnectOptions>> toDatabasesSupplier(Vertx vertx,
+            List<MSSQLConnectOptions> mssqlConnectOptionsList,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig) {
+        Supplier<Future<MSSQLConnectOptions>> supplier;
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, mssqlConnectOptionsList,
+                    MSSQLConnectOptions::new);
+        } else {
+            supplier = Utils.roundRobinSupplier(mssqlConnectOptionsList);
+        }
+        return supplier;
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -114,7 +129,7 @@ public class MSSQLPoolRecorder {
         return poolOptions;
     }
 
-    private MSSQLConnectOptions toMSSQLConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private MSSQLConnectOptions toMSSQLConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
         MSSQLConnectOptions mssqlConnectOptions;
@@ -185,11 +200,17 @@ public class MSSQLPoolRecorder {
 
         dataSourceReactiveRuntimeConfig.additionalProperties.forEach(mssqlConnectOptions::addProperty);
 
+        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with mssql.
+        // with the client_name as tag.
+        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+        mssqlConnectOptions.setMetricsName("mssql|" + dataSourceName);
+
         return mssqlConnectOptions;
     }
 
     private MSSQLPool createPool(Vertx vertx, PoolOptions poolOptions, MSSQLConnectOptions mSSQLConnectOptions,
-            String dataSourceName) {
+            String dataSourceName, Supplier<Future<MSSQLConnectOptions>> databases) {
         Instance<MSSQLPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
             instance = Arc.container().select(MSSQLPoolCreator.class);
@@ -201,7 +222,7 @@ public class MSSQLPoolRecorder {
             MSSQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mSSQLConnectOptions);
             return instance.get().create(input);
         }
-        return MSSQLPool.pool(vertx, mSSQLConnectOptions, poolOptions);
+        return MSSQLPool.pool(vertx, databases, poolOptions);
     }
 
     private static class DefaultInput implements MSSQLPoolCreator.Input {

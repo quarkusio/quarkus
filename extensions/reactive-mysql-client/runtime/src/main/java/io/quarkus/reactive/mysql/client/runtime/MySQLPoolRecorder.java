@@ -26,17 +26,21 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
+import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.mysql.client.MySQLPoolCreator;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.VertxInternal;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.mysqlclient.SslMode;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.impl.Utils;
 
 @Recorder
 @SuppressWarnings("deprecation")
@@ -52,7 +56,7 @@ public class MySQLPoolRecorder {
             DataSourcesReactiveMySQLConfig dataSourcesReactiveMySQLConfig,
             ShutdownContext shutdown) {
 
-        MySQLPool mysqlPool = initialize(vertx.getValue(),
+        MySQLPool mysqlPool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
@@ -67,24 +71,35 @@ public class MySQLPoolRecorder {
         return new RuntimeValue<>(io.vertx.mutiny.mysqlclient.MySQLPool.newInstance(mysqlPool.getValue()));
     }
 
-    private MySQLPool initialize(Vertx vertx,
+    private MySQLPool initialize(VertxInternal vertx,
             Integer eventLoopCount,
-            String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            String dataSourceName,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMySQLConfig);
-        List<MySQLConnectOptions> mysqlConnectOptionsList = toMySQLConnectOptions(dataSourceRuntimeConfig,
+        List<MySQLConnectOptions> mySQLConnectOptions = toMySQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig);
+        Supplier<Future<MySQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, mySQLConnectOptions,
+                dataSourceRuntimeConfig);
+        return createPool(vertx, poolOptions, mySQLConnectOptions, dataSourceName, databasesSupplier);
+    }
 
-        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with mysql.
-        // and the client_name as tag.
-        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
-        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
-        mysqlConnectOptionsList.forEach(
-                mysqlConnectOptions -> mysqlConnectOptions.setMetricsName("mysql|" + dataSourceName));
-
-        return createPool(vertx, poolOptions, mysqlConnectOptionsList, dataSourceName);
+    private Supplier<Future<MySQLConnectOptions>> toDatabasesSupplier(Vertx vertx,
+            List<MySQLConnectOptions> mySQLConnectOptions,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig) {
+        Supplier<Future<MySQLConnectOptions>> supplier;
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, mySQLConnectOptions,
+                    MySQLConnectOptions::new);
+        } else {
+            supplier = Utils.roundRobinSupplier(mySQLConnectOptions);
+        }
+        return supplier;
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -122,7 +137,8 @@ public class MySQLPoolRecorder {
         return poolOptions;
     }
 
-    private List<MySQLConnectOptions> toMySQLConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private List<MySQLConnectOptions> toMySQLConnectOptions(String dataSourceName,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
         List<MySQLConnectOptions> mysqlConnectOptionsList = new ArrayList<>();
@@ -203,13 +219,19 @@ public class MySQLPoolRecorder {
             dataSourceReactiveMySQLConfig.authenticationPlugin.ifPresent(mysqlConnectOptions::setAuthenticationPlugin);
 
             dataSourceReactiveRuntimeConfig.additionalProperties.forEach(mysqlConnectOptions::addProperty);
+
+            // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with mysql.
+            // and the client_name as tag.
+            // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+            // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+            mysqlConnectOptions.setMetricsName("mysql|" + dataSourceName);
         });
 
         return mysqlConnectOptionsList;
     }
 
     private MySQLPool createPool(Vertx vertx, PoolOptions poolOptions, List<MySQLConnectOptions> mySQLConnectOptionsList,
-            String dataSourceName) {
+            String dataSourceName, Supplier<Future<MySQLConnectOptions>> databases) {
         Instance<MySQLPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
             instance = Arc.container().select(MySQLPoolCreator.class);
@@ -221,7 +243,7 @@ public class MySQLPoolRecorder {
             MySQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mySQLConnectOptionsList);
             return instance.get().create(input);
         }
-        return MySQLPool.pool(vertx, mySQLConnectOptionsList, poolOptions);
+        return MySQLPool.pool(vertx, databases, poolOptions);
     }
 
     private static class DefaultInput implements MySQLPoolCreator.Input {

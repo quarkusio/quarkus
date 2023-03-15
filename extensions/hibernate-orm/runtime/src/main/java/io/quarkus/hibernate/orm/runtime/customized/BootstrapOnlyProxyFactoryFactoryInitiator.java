@@ -24,7 +24,7 @@ public final class BootstrapOnlyProxyFactoryFactoryInitiator implements Standard
 
     @Override
     public ProxyFactoryFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        BytecodeProviderImpl bbProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V8);
+        BytecodeProviderImpl bbProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V11);
         return bbProvider.getProxyFactoryFactory();
     }
 

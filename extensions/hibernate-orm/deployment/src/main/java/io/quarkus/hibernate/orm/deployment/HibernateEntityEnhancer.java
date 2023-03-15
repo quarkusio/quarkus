@@ -30,7 +30,7 @@ import net.bytebuddy.ClassFileVersion;
 public final class HibernateEntityEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     private static final BytecodeProvider PROVIDER = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl(
-            ClassFileVersion.JAVA_V8);
+            ClassFileVersion.JAVA_V11);
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {

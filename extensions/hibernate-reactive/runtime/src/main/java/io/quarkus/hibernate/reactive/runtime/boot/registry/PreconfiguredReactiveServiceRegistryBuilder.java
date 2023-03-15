@@ -22,6 +22,7 @@ import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
 import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
+import org.hibernate.reactive.provider.service.NativeParametersHandling;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
@@ -32,7 +33,6 @@ import org.hibernate.reactive.provider.service.ReactiveValuesMappingProducerProv
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.sql.ast.internal.JdbcParameterRendererInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.boot.registry.MirroringIntegratorService;
@@ -238,8 +238,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         //Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE);
 
-        // Default implementation - this is expected to change as we customize the rendering for vert.x drivers
-        serviceInitiators.add(JdbcParameterRendererInitiator.INSTANCE);
+        // Custom for Hibernate Reactive: ParameterMarkerStrategy
+        serviceInitiators.add(NativeParametersHandling.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

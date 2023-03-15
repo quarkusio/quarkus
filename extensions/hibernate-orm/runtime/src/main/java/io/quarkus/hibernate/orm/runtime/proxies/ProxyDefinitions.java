@@ -193,7 +193,7 @@ public final class ProxyDefinitions {
         @Override
         public ByteBuddyProxyHelper get() {
             if (helper == null) {
-                bytecodeProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V8);
+                bytecodeProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V11);
                 helper = bytecodeProvider.getByteBuddyProxyHelper();
             }
             return helper;

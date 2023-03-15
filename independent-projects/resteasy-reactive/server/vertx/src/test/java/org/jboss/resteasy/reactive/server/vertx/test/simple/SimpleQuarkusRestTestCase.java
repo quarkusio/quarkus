@@ -209,6 +209,8 @@ public class SimpleQuarkusRestTestCase {
                 .then().body(Matchers.equalTo("OK"));
         RestAssured.get("/simple/writer")
                 .then().body(Matchers.equalTo("WRITER"));
+        RestAssured.get("/simple/uni-writer")
+                .then().body(Matchers.equalTo("WRITER"));
 
         RestAssured.get("/simple/fast-writer")
                 .then().body(Matchers.equalTo("OK"));

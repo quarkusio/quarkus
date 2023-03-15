@@ -167,9 +167,8 @@ public class QuarkusPlugin implements Plugin<Project> {
             task.finalizedBy(quarkusBuild);
         });
 
-        TaskProvider<Deploy> deploy = tasks.register(DEPLOY_TASK_NAME, Deploy.class, buildConfig);
+        TaskProvider<Deploy> deploy = tasks.register(DEPLOY_TASK_NAME, Deploy.class);
         deploy.configure(task -> {
-            task.finalizedBy(quarkusBuild);
         });
 
         TaskProvider<QuarkusDev> quarkusDev = tasks.register(QUARKUS_DEV_TASK_NAME, QuarkusDev.class, devRuntimeDependencies,

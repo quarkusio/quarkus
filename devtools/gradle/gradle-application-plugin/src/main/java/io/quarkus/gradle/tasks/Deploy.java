@@ -1,5 +1,6 @@
 package io.quarkus.gradle.tasks;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -14,9 +15,12 @@ import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
+import io.quarkus.deployment.deploy.DeployCommandHandler;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.util.DeploymentUtil;
 
-public abstract class Deploy extends QuarkusBuildProviderTask {
+public abstract class Deploy extends QuarkusAugmentTask {
 
     public enum Deployer {
 
@@ -48,8 +52,8 @@ public abstract class Deploy extends QuarkusBuildProviderTask {
     }
 
     @Inject
-    public Deploy(QuarkusBuildConfiguration buildConfiguration) {
-        super(buildConfiguration, "Deploy");
+    public Deploy() {
+        super("Deploy");
     }
 
     @Input
@@ -73,11 +77,10 @@ public abstract class Deploy extends QuarkusBuildProviderTask {
         this.imageBuild = true;
     }
 
-    public Deploy(QuarkusBuildConfiguration buildConfiguration, String description) {
-        super(buildConfiguration, description);
+    public Deploy(String description) {
+        super(description);
     }
 
-    @Override
     public Map<String, String> forcedProperties() {
         Map<String, String> props = new HashMap<>();
         props.put("quarkus." + getDeployer().name() + ".deploy", "true");
@@ -118,6 +121,20 @@ public abstract class Deploy extends QuarkusBuildProviderTask {
                         deployer.name(), unsatisfied.stream().collect(Collectors.joining(", ", "[", "]")));
             }
         }
+    }
+
+    @TaskAction
+    public void deploy() {
+        withAugmentAction(action -> {
+            List<String> outputs = new ArrayList<>();
+            outputs.add(DeploymentResultBuildItem.class.getName());
+            if (imageBuild || imageBuilder.isPresent()) {
+                outputs.add(ArtifactResultBuildItem.class.getName());
+            }
+            Map<String, String> context = new HashMap<>();
+            action.performCustomBuild(DeployCommandHandler.class.getName(), context,
+                    outputs.toArray(new String[outputs.size()]));
+        });
     }
 
     public Deployer getDeployer() {

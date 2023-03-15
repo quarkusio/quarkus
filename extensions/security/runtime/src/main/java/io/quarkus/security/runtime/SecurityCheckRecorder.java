@@ -2,9 +2,14 @@ package io.quarkus.security.runtime;
 
 import static io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder.transformToKey;
 
+import java.lang.reflect.InvocationTargetException;
+import java.security.Permission;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.Config;
@@ -12,9 +17,11 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.security.StringPermission;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.check.AuthenticatedCheck;
 import io.quarkus.security.runtime.interceptor.check.DenyAllCheck;
+import io.quarkus.security.runtime.interceptor.check.PermissionSecurityCheck;
 import io.quarkus.security.runtime.interceptor.check.PermitAllCheck;
 import io.quarkus.security.runtime.interceptor.check.RolesAllowedCheck;
 import io.quarkus.security.runtime.interceptor.check.SupplierRolesAllowedCheck;
@@ -84,6 +91,201 @@ public class SecurityCheckRecorder {
         return AuthenticatedCheck.INSTANCE;
     }
 
+    /**
+     * Creates {@link SecurityCheck} for a single permission.
+     *
+     * @return SecurityCheck
+     */
+    public SecurityCheck permissionsAllowed(Function<Object[], Permission> computedPermission,
+            RuntimeValue<Permission> permissionRuntimeValue) {
+        final Permission permission;
+        if (computedPermission == null) {
+            Objects.requireNonNull(permissionRuntimeValue);
+            permission = permissionRuntimeValue.getValue();
+        } else {
+            permission = null;
+        }
+        return PermissionSecurityCheck.of(permission, computedPermission);
+    }
+
+    /**
+     * Creates {@link SecurityCheck} for a permission set. User must have at least one of security check permissions.
+     *
+     * @return SecurityCheck
+     */
+    public SecurityCheck permissionsAllowed(List<Function<Object[], Permission>> computedPermissions,
+            List<RuntimeValue<Permission>> permissionsRuntimeValue) {
+        final Permission[] permissions;
+        final Function<Object[], Permission[]> computedPermissionsAggregator;
+        if (computedPermissions == null) {
+
+            // plain permissions
+            Objects.requireNonNull(permissionsRuntimeValue);
+            computedPermissionsAggregator = null;
+            permissions = new Permission[permissionsRuntimeValue.size()];
+            for (int i = 0; i < permissionsRuntimeValue.size(); i++) {
+                // assign permission
+                permissions[i] = Objects.requireNonNull(permissionsRuntimeValue.get(i).getValue());
+            }
+        } else {
+
+            // computed permissions
+            permissions = null;
+            computedPermissionsAggregator = new Function<>() {
+                @Override
+                public Permission[] apply(Object[] securedMethodParameters) {
+
+                    // compute permissions
+                    Permission[] result = new Permission[computedPermissions.size()];
+                    for (int i = 0; i < computedPermissions.size(); i++) {
+                        // instantiate Permission with actual method arguments
+                        result[i] = computedPermissions.get(i).apply(securedMethodParameters);
+                    }
+                    return result;
+                }
+            };
+        }
+
+        return PermissionSecurityCheck.of(permissions, computedPermissionsAggregator);
+    }
+
+    /**
+     * Creates {@link SecurityCheck} for a permission groups.
+     * User must have at least one of security check permissions from each permission group.
+     *
+     * @return SecurityCheck
+     */
+    public SecurityCheck permissionsAllowedGroups(List<List<Function<Object[], Permission>>> computedPermissionGroups,
+            List<List<RuntimeValue<Permission>>> permissionGroupsRuntimeValue) {
+        final Function<Object[], Permission[][]> computedPermissionGroupAggregator;
+        final Permission[][] permissionGroups;
+        if (computedPermissionGroups == null) {
+
+            // plain permission groups
+            Objects.requireNonNull(permissionGroupsRuntimeValue);
+            computedPermissionGroupAggregator = null;
+            permissionGroups = new Permission[permissionGroupsRuntimeValue.size()][];
+
+            // collect runtime values
+            for (int i = 0; i < permissionGroupsRuntimeValue.size(); i++) {
+                var groupRuntimeValue = permissionGroupsRuntimeValue.get(i);
+                permissionGroups[i] = new Permission[groupRuntimeValue.size()];
+                for (int j = 0; j < groupRuntimeValue.size(); j++) {
+                    // assign permission
+                    permissionGroups[i][j] = groupRuntimeValue.get(j).getValue();
+                }
+            }
+        } else {
+
+            // computed permission groups
+            permissionGroups = null;
+            computedPermissionGroupAggregator = new Function<>() {
+                @Override
+                public Permission[][] apply(Object[] securedMethodParams) {
+
+                    // compute permissions
+                    Permission[][] permissionGroups = new Permission[computedPermissionGroups.size()][];
+                    for (int i = 0; i < computedPermissionGroups.size(); i++) {
+                        var computedPermissionGroup = computedPermissionGroups.get(i);
+                        permissionGroups[i] = new Permission[computedPermissionGroup.size()];
+                        for (int j = 0; j < computedPermissionGroup.size(); j++) {
+                            // instantiate Permission with actual method arguments
+                            permissionGroups[i][j] = computedPermissionGroup.get(j).apply(securedMethodParams);
+                        }
+                    }
+
+                    return permissionGroups;
+                }
+            };
+        }
+
+        return PermissionSecurityCheck.of(permissionGroups, computedPermissionGroupAggregator);
+    }
+
+    public Function<Object[], Permission> toComputedPermission(RuntimeValue<Permission> permissionRuntimeVal) {
+        return new Function<>() {
+            @Override
+            public Permission apply(Object[] objects) {
+                return permissionRuntimeVal.getValue();
+            }
+        };
+    }
+
+    public RuntimeValue<Permission> createStringPermission(String name, String[] actions) {
+        return new RuntimeValue<>(new StringPermission(name, actions));
+    }
+
+    /**
+     * Creates permission.
+     *
+     * @param name permission name
+     * @param clazz permission class
+     * @param actions nullable actions
+     * @param passActionsToConstructor flag signals whether Permission constructor accepts (name) or (name, actions)
+     * @return {@link RuntimeValue<Permission>}
+     */
+    public RuntimeValue<Permission> createPermission(String name, String clazz, String[] actions,
+            boolean passActionsToConstructor) {
+        final Permission permission;
+        try {
+            if (passActionsToConstructor) {
+                permission = (Permission) loadClass(clazz).getConstructors()[0].newInstance(name, actions);
+            } else {
+                permission = (Permission) loadClass(clazz).getConstructors()[0].newInstance(name);
+            }
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(String.format("Failed to create Permission - class '%s', name '%s', actions '%s'", clazz,
+                    name, Arrays.toString(actions)), e);
+        }
+        return new RuntimeValue<>(permission);
+    }
+
+    /**
+     * Creates function that transform arguments of a method annotated with {@link io.quarkus.security.PermissionsAllowed}
+     * to custom {@link Permission}.
+     *
+     * @param permissionName permission name
+     * @param clazz permission class
+     * @param actions permission actions
+     * @param passActionsToConstructor flag signals whether Permission constructor accepts (name) or (name, actions)
+     * @param formalParamIndexes indexes of secured method params that should be passed to permission constructor
+     * @return computed permission
+     */
+    public Function<Object[], Permission> createComputedPermission(String permissionName, String clazz, String[] actions,
+            boolean passActionsToConstructor, int[] formalParamIndexes) {
+        final int addActions = (passActionsToConstructor ? 1 : 0);
+        final int argsCount = 1 + addActions + formalParamIndexes.length;
+        final int methodArgsStart = 1 + addActions;
+        final var permissionClassConstructor = loadClass(clazz).getConstructors()[0];
+        return new Function<>() {
+            @Override
+            public Permission apply(Object[] securedMethodArgs) {
+                try {
+                    final Object[] initArgs = initArgs(securedMethodArgs);
+                    return (Permission) permissionClassConstructor.newInstance(initArgs);
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    throw new RuntimeException(
+                            String.format("Failed to create computed Permission - class '%s', name '%s', actions '%s', ", clazz,
+                                    permissionName, Arrays.toString(actions)),
+                            e);
+                }
+            }
+
+            private Object[] initArgs(Object[] methodArgs) {
+                // Permission constructor init args are: permission name, possibly actions, selected secured method args
+                final Object[] initArgs = new Object[argsCount];
+                initArgs[0] = permissionName;
+                if (passActionsToConstructor) {
+                    initArgs[1] = actions;
+                }
+                for (int i = 0; i < formalParamIndexes.length; i++) {
+                    initArgs[methodArgsStart + i] = methodArgs[formalParamIndexes[i]];
+                }
+                return initArgs;
+            }
+        };
+    }
+
     public RuntimeValue<SecurityCheckStorageBuilder> newBuilder() {
         return new RuntimeValue<>(new SecurityCheckStorageBuilder());
     }
@@ -105,6 +307,14 @@ public class SecurityCheckRecorder {
                 configExpRolesAllowedCheck.resolveAllowedRoles();
             }
             configExpRolesAllowedChecks.clear();
+        }
+    }
+
+    private Class<?> loadClass(String className) {
+        try {
+            return Thread.currentThread().getContextClassLoader().loadClass(className);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Unable to load class '" + className + "' for creating permission", e);
         }
     }
 }

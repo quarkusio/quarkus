@@ -1,11 +1,13 @@
 package io.quarkus.security.runtime.interceptor;
 
 import java.lang.reflect.Method;
+import java.util.function.Function;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
@@ -46,7 +48,12 @@ public class SecurityConstrainer {
         if (securityCheck != null && !securityCheck.isPermitAll()) {
             return identity.getDeferredIdentity()
                     .onItem()
-                    .invoke(identity -> securityCheck.apply(identity, method, parameters));
+                    .transformToUni(new Function<SecurityIdentity, Uni<?>>() {
+                        @Override
+                        public Uni<?> apply(SecurityIdentity securityIdentity) {
+                            return securityCheck.nonBlockingApply(securityIdentity, method, parameters);
+                        }
+                    });
         }
         return Uni.createFrom().item(CHECK_OK);
     }

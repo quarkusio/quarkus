@@ -3,6 +3,7 @@ package io.quarkus.security.test.utils;
 import java.security.Permission;
 import java.security.Principal;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,17 +26,19 @@ import io.smallrye.mutiny.Uni;
 public class IdentityMock implements SecurityIdentity {
 
     public static final AuthData ANONYMOUS = new AuthData(null, true, null);
-    public static final AuthData USER = new AuthData(Collections.singleton("user"), false, "user");
-    public static final AuthData ADMIN = new AuthData(Collections.singleton("admin"), false, "admin");
+    public static final AuthData USER = new AuthData(Collections.singleton("user"), false, "user", Set.of());
+    public static final AuthData ADMIN = new AuthData(Collections.singleton("admin"), false, "admin", Set.of());
 
     private static volatile boolean anonymous;
     private static volatile Set<String> roles;
+    private static volatile Set<Permission> permissions = new HashSet<>();
     private static volatile String name;
 
     public static void setUpAuth(AuthData auth) {
         IdentityMock.anonymous = auth.anonymous;
         IdentityMock.roles = auth.roles;
         IdentityMock.name = auth.name;
+        IdentityMock.permissions = auth.permissions == null ? Set.of() : auth.permissions;
     }
 
     @Override
@@ -88,7 +91,8 @@ public class IdentityMock implements SecurityIdentity {
 
     @Override
     public Uni<Boolean> checkPermission(Permission permission) {
-        return null;
+        final boolean permitted = permission != null && permissions.stream().anyMatch(p -> p.implies(permission));
+        return Uni.createFrom().item(permitted);
     }
 
     @Alternative

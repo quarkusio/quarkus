@@ -35,6 +35,7 @@ public class TestIdentityProvider implements IdentityProvider<UsernamePasswordAu
                 .setPrincipal(new QuarkusPrincipal(ident.username))
                 .addRoles(ident.roles)
                 .addCredential(request.getPassword())
+                .addPermissionCheckers(ident.permissionCheckers)
                 .build();
         return Uni.createFrom().item(identity);
     }

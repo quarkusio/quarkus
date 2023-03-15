@@ -2,6 +2,7 @@ package io.quarkus.security.deployment;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.security.deployment.DotNames.DENY_ALL;
+import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
 import static io.quarkus.security.deployment.DotNames.ROLES_ALLOWED;
 import static io.quarkus.security.runtime.SecurityProviderUtils.findProviderIndex;
 
@@ -71,6 +72,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
 import io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder;
 import io.quarkus.security.runtime.SecurityBuildTimeConfig;
@@ -82,6 +84,7 @@ import io.quarkus.security.runtime.SecurityProviderUtils;
 import io.quarkus.security.runtime.X509IdentityProvider;
 import io.quarkus.security.runtime.interceptor.AuthenticatedInterceptor;
 import io.quarkus.security.runtime.interceptor.DenyAllInterceptor;
+import io.quarkus.security.runtime.interceptor.PermissionsAllowedInterceptor;
 import io.quarkus.security.runtime.interceptor.PermitAllInterceptor;
 import io.quarkus.security.runtime.interceptor.RolesAllowedInterceptor;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
@@ -432,7 +435,7 @@ public class SecurityProcessor {
             BuildProducer<AdditionalBeanBuildItem> beans) {
         registrars.produce(new InterceptorBindingRegistrarBuildItem(new SecurityAnnotationsRegistrar()));
         Class<?>[] interceptors = { AuthenticatedInterceptor.class, DenyAllInterceptor.class, PermitAllInterceptor.class,
-                RolesAllowedInterceptor.class };
+                RolesAllowedInterceptor.class, PermissionsAllowedInterceptor.class };
         beans.produce(new AdditionalBeanBuildItem(interceptors));
         beans.produce(new AdditionalBeanBuildItem(SecurityHandler.class, SecurityConstrainer.class));
     }
@@ -497,6 +500,7 @@ public class SecurityProcessor {
             BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityCheckRecorder recorder,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
 
@@ -510,7 +514,8 @@ public class SecurityProcessor {
 
         IndexView index = beanArchiveBuildItem.getIndex();
         Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(index, configExpSecurityCheckProducer,
-                additionalSecured.values(), config.denyUnannotated, recorder, configBuilderProducer);
+                additionalSecured.values(), config.denyUnannotated, recorder, configBuilderProducer,
+                reflectiveClassBuildItemBuildProducer);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
@@ -556,7 +561,8 @@ public class SecurityProcessor {
     private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(IndexView index,
             BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
             Collection<AdditionalSecured> additionalSecuredMethods, boolean denyUnannotated, SecurityCheckRecorder recorder,
-            BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer) {
+            BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
 
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
@@ -649,6 +655,24 @@ public class SecurityProcessor {
                     .produce(new RunTimeConfigBuilderBuildItem(QuarkusSecurityRolesAllowedConfigBuilder.class.getName()));
         }
 
+        List<AnnotationInstance> permissionInstances = new ArrayList<>(
+                index.getAnnotationsWithRepeatable(PERMISSIONS_ALLOWED, index));
+        if (!permissionInstances.isEmpty()) {
+            var securityChecks = new PermissionSecurityChecksBuilder(recorder)
+                    .gatherPermissionsAllowedAnnotations(permissionInstances, methodToInstanceCollector, classAnnotations)
+                    .validatePermissionClasses(index)
+                    .createPermissionPredicates()
+                    .build();
+            result.putAll(securityChecks.get());
+
+            // register used permission classes for reflection
+            for (String permissionClass : securityChecks.permissionClasses()) {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(ReflectiveClassBuildItem.builder(permissionClass).constructors().fields().methods().build());
+                log.debugf("Register Permission class for reflection: %s", permissionClass);
+            }
+        }
+
         /*
          * If we need to add the denyAll security check to all unannotated methods, we simply go through all secured methods,
          * collect the declaring classes, then go through all methods of the classes and add the necessary check
@@ -704,7 +728,7 @@ public class SecurityProcessor {
                 && alreadyExistingInstance.name().equals(annotationName);
     }
 
-    private boolean isPublicNonStaticNonConstructor(MethodInfo methodInfo) {
+    static boolean isPublicNonStaticNonConstructor(MethodInfo methodInfo) {
         return Modifier.isPublic(methodInfo.flags()) && !Modifier.isStatic(methodInfo.flags())
                 && !"<init>".equals(methodInfo.name());
     }
@@ -802,4 +826,5 @@ public class SecurityProcessor {
             return s.equals(SecurityCheckStorage.class.getName());
         }
     }
+
 }

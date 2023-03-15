@@ -45,43 +45,55 @@ public final class ContainerRuntimeUtil {
             return containerRuntime;
         } else {
             // Docker version 19.03.14, build 5eb3275d40
-            final String dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
-            boolean dockerAvailable = dockerVersionOutput.contains("Docker version");
+            String dockerVersionOutput;
+            boolean dockerAvailable;
             // Check if Podman is installed
             // podman version 2.1.1
-            final String podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
-            boolean podmanAvailable = podmanVersionOutput.startsWith("podman version");
+            String podmanVersionOutput;
+            boolean podmanAvailable;
             if (DOCKER_EXECUTABLE != null) {
-                if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("docker") && dockerAvailable) {
-                    storeConfig(ContainerRuntime.DOCKER);
-                    return ContainerRuntime.DOCKER;
-                } else if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("podman") && podmanAvailable) {
-                    storeConfig(ContainerRuntime.PODMAN);
-                    return ContainerRuntime.PODMAN;
-                } else {
-                    log.warn("quarkus.native.container-runtime config property must be set to either podman or docker " +
-                            "and the executable must be available. Ignoring it.");
+                if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("docker")) {
+                    dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
+                    dockerAvailable = dockerVersionOutput.contains("Docker version");
+                    if (dockerAvailable) {
+                        storeConfig(ContainerRuntime.DOCKER);
+                        return ContainerRuntime.DOCKER;
+                    }
                 }
+                if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("podman")) {
+                    podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
+                    podmanAvailable = podmanVersionOutput.startsWith("podman version");
+                    if (podmanAvailable) {
+                        storeConfig(ContainerRuntime.PODMAN);
+                        return ContainerRuntime.PODMAN;
+                    }
+                }
+                log.warn("quarkus.native.container-runtime config property must be set to either podman or docker " +
+                        "and the executable must be available. Ignoring it.");
             }
+            dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
+            dockerAvailable = dockerVersionOutput.contains("Docker version");
             if (dockerAvailable) {
                 // Check if "docker" is an alias to "podman"
-                if (dockerVersionOutput.equals(podmanVersionOutput)) {
+                if (dockerVersionOutput.startsWith("podman version")) {
                     storeConfig(ContainerRuntime.PODMAN);
                     return ContainerRuntime.PODMAN;
                 }
                 storeConfig(ContainerRuntime.DOCKER);
                 return ContainerRuntime.DOCKER;
-            } else if (podmanAvailable) {
+            }
+            podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
+            podmanAvailable = podmanVersionOutput.startsWith("podman version");
+            if (podmanAvailable) {
                 storeConfig(ContainerRuntime.PODMAN);
                 return ContainerRuntime.PODMAN;
+            }
+            if (required) {
+                throw new IllegalStateException("No container runtime was found. "
+                        + "Make sure you have either Docker or Podman installed in your environment.");
             } else {
-                if (required) {
-                    throw new IllegalStateException("No container runtime was found. "
-                            + "Make sure you have either Docker or Podman installed in your environment.");
-                } else {
-                    storeConfig(ContainerRuntime.UNAVAILABLE);
-                    return ContainerRuntime.UNAVAILABLE;
-                }
+                storeConfig(ContainerRuntime.UNAVAILABLE);
+                return ContainerRuntime.UNAVAILABLE;
             }
         }
     }

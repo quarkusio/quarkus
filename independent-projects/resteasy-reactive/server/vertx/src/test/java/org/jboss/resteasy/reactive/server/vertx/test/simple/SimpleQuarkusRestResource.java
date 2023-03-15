@@ -234,6 +234,12 @@ public class SimpleQuarkusRestResource {
     }
 
     @GET
+    @Path("uni-writer")
+    public Uni<TestClass> uniWriter() {
+        return Uni.createFrom().item(new TestClass());
+    }
+
+    @GET
     @Path("fast-writer")
     @Produces("text/plain")
     public String fastWriter() {

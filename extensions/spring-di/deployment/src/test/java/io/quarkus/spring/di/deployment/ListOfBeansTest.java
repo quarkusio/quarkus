@@ -9,6 +9,8 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
@@ -20,13 +22,16 @@ public class ListOfBeansTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class, Bar.class, ServiceAlpha.class, ServiceBravo.class, Service.class,
-                            Converter.class, ConverterAlpha.class, ConverterBravo.class));
+                            Converter.class, ConverterAlpha.class, ConverterBravo.class, Configuration.class));
 
     @Inject
     Foo foo;
 
     @Inject
     Bar bar;
+
+    @Inject
+    Baz baz;
 
     @Test
     public void testInjection() {
@@ -35,6 +40,8 @@ public class ListOfBeansTest {
 
         assertThat(bar.services).hasSize(2).extractingResultOf("ping").containsExactlyInAnyOrder("alpha", "bravo");
         assertThat(bar.converters).hasSize(2).extractingResultOf("pong").containsExactlyInAnyOrder("alpha", "bravo");
+
+        assertThat(baz.converters).hasSize(2).extractingResultOf("pong").containsExactlyInAnyOrder("alpha", "bravo");
     }
 
     @org.springframework.stereotype.Service
@@ -67,6 +74,15 @@ public class ListOfBeansTest {
             this.converters = converters;
         }
 
+    }
+
+    public static class Baz {
+
+        final List<Converter> converters;
+
+        Baz(List<Converter> converters) {
+            this.converters = converters;
+        }
     }
 
     public interface Service {
@@ -113,5 +129,14 @@ public class ListOfBeansTest {
             return "bravo";
         }
 
+    }
+
+    @org.springframework.context.annotation.Configuration
+    public static class Configuration {
+
+        @Bean
+        public Baz baz(List<Converter> converters) {
+            return new Baz(converters);
+        }
     }
 }

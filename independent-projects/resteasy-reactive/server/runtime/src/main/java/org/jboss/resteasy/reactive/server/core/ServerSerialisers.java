@@ -202,16 +202,19 @@ public class ServerSerialisers extends Serialisers {
         WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
         boolean outputStreamSet = context.getOutputStream() != null;
         context.serverResponse().setPreCommitListener(HEADER_FUNCTION);
+
+        RuntimeResource target = context.getTarget();
+        Type genericType;
+        if (context.hasGenericReturnType()) { // make sure that when a Response with a GenericEntity was returned, we use it
+            genericType = context.getGenericReturnType();
+        } else {
+            genericType = target == null ? null : target.getReturnType();
+        }
+
         try {
             if (writer instanceof ServerMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
                 ServerMessageBodyWriter<Object> quarkusRestWriter = (ServerMessageBodyWriter<Object>) writer;
-                RuntimeResource target = context.getTarget();
-                Type genericType;
-                if (context.hasGenericReturnType()) { // make sure that when a Response with a GenericEntity was returned, we use it
-                    genericType = context.getGenericReturnType();
-                } else {
-                    genericType = target == null ? null : target.getReturnType();
-                }
+
                 Class<?> entityClass = entity.getClass();
                 if (quarkusRestWriter.isWriteable(
                         entityClass,
@@ -234,7 +237,7 @@ public class ServerSerialisers extends Serialisers {
                         context.setResponseContentType(mediaType);
                     }
                     if (writerInterceptors == null) {
-                        writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
+                        writer.writeTo(entity, entity.getClass(), genericType,
                                 context.getAllAnnotations(), context.getResponseMediaType(), response.getHeaders(),
                                 context.getOrCreateOutputStream());
                         context.getOrCreateOutputStream().close();

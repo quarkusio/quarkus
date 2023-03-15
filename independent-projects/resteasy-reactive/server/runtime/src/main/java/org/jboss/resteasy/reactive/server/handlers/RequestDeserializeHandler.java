@@ -54,6 +54,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
             try {
                 effectiveRequestType = MediaType.valueOf((String) requestType);
             } catch (Exception e) {
+                log.debugv("Incorrect media type", e);
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }
 
@@ -70,6 +71,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
         }
         List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, effectiveRequestType, RuntimeType.SERVER);
         if (readers.isEmpty()) {
+            log.debugv("No matching MessageBodyReader found for type {0} and media type {1}", type, effectiveRequestType);
             throw new NotSupportedException();
         }
         for (MessageBodyReader<?> reader : readers) {
@@ -102,6 +104,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                 return;
             }
         }
+        log.debugv("No matching MessageBodyReader found for type {0} and media type {1}", type, effectiveRequestType);
         throw new NotSupportedException("No supported MessageBodyReader found");
     }
 

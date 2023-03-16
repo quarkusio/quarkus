@@ -1297,6 +1297,11 @@ The executable is retrieved by the _Failsafe Maven Plugin_.
 
 More information can be found in the link:building-native-image#testing-the-native-executable[Testing the native executable Guide].
 
+[IMPORTANT]
+====
+When the application is tested using `@QuarkusIntegrationTest` it is launched using the `prod` configuration profile, but this can be changed using the `quarkus.test.integration-test-profile` property.
+====
+
 === Launching containers
 
 When `@QuarkusIntegrationTest` results in launching a container (because the application was built with `quarkus.container-image.build` set to `true`), the container is launched on a predictable container network. This facilitates writing integration tests that need to launch services to support the application.

@@ -107,7 +107,7 @@ public class SmallRyeFaultToleranceProcessor {
             AdditionalBeanBuildItem.Builder fallbackHandlersBeans = AdditionalBeanBuildItem.builder()
                     .setDefaultScope(BuiltinScope.DEPENDENT.getName());
             for (String fallbackHandler : fallbackHandlers) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, fallbackHandler));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(fallbackHandler).methods().build());
                 fallbackHandlersBeans.addBeanClass(fallbackHandler);
             }
             beans.produce(fallbackHandlersBeans.build());
@@ -151,11 +151,11 @@ public class SmallRyeFaultToleranceProcessor {
         }
         // Add reflective access to custom backoff strategies
         for (ClassInfo strategy : index.getAllKnownImplementors(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, strategy.name().toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(strategy.name().toString()).methods().build());
         }
 
         for (DotName annotation : DotNames.FT_ANNOTATIONS) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, annotation.toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(annotation.toString()).methods().build());
             // also make them bean defining annotations
             additionalBda.produce(new BeanDefiningAnnotationBuildItem(annotation));
         }
@@ -262,7 +262,7 @@ public class SmallRyeFaultToleranceProcessor {
         for (String exceptionConfig : exceptionConfigs) {
             Optional<String[]> exceptionNames = config.getOptionalValue(exceptionConfig, String[].class);
             if (exceptionNames.isPresent()) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, exceptionNames.get()));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get()).build());
             }
         }
 
@@ -289,7 +289,7 @@ public class SmallRyeFaultToleranceProcessor {
                     Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
                             + "/" + exceptionConfig, String[].class);
                     if (exceptionNames.isPresent()) {
-                        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, exceptionNames.get()));
+                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get()).build());
                     }
                 }
 
@@ -314,7 +314,7 @@ public class SmallRyeFaultToleranceProcessor {
                             Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
                                     + "/" + method.name() + "/" + exceptionConfig, String[].class);
                             if (exceptionNames.isPresent()) {
-                                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, exceptionNames.get()));
+                                reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get()).build());
                             }
                         }
                     }

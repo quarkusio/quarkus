@@ -4,12 +4,14 @@ import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.APPLICAT
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HandlerType;
+import io.quarkus.vertx.http.runtime.RouteCandidate;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -145,6 +147,21 @@ public final class RouteBuildItem extends MultiBuildItem {
         public Builder route(String route) {
             this.routeFunction = new BasicRoute(route);
             this.notFoundPagePath = this.routePath = route;
+            return this;
+        }
+
+        /**
+         * Creates route if {@code routeCandidate} is resolved to the route path during runtime init.
+         * If {@code routeCandidate} supplies null, route is not going to be created.
+         * This way, extensions may create routes from runtime configuration properties.
+         *
+         * Only HTTP routes with {@link HandlerType#NORMAL} handler type and no {@code notFoundPage} are supported.
+         *
+         * @param routeCandidate route that may be resolved to null during runtime init
+         * @return Builder
+         */
+        public Builder route(Supplier<String> routeCandidate) {
+            this.routeFunction = new RouteCandidate(routeCandidate);
             return this;
         }
 

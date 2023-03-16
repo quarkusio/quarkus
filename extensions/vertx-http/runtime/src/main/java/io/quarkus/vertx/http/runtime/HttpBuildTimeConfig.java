@@ -24,7 +24,7 @@ public class HttpBuildTimeConfig {
     @ConvertWith(NormalizeRootHttpPathConverter.class)
     public String rootPath;
 
-    public AuthConfig auth;
+    public AuthBuildTimeConfig auth;
 
     /**
      * Configures the engine to require/request client authentication.

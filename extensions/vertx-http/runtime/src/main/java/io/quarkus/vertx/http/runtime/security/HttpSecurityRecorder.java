@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.security;
 
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
@@ -13,8 +14,7 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -25,6 +25,7 @@ import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
@@ -209,14 +210,23 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public BeanContainerListener initPermissions(HttpBuildTimeConfig permissions,
-            Map<String, Supplier<HttpSecurityPolicy>> policies) {
-        return new BeanContainerListener() {
-            @Override
-            public void created(BeanContainer container) {
-                container.beanInstance(PathMatchingHttpSecurityPolicy.class).init(permissions, policies);
+    public void initPermissions(
+            Map<String, Supplier<HttpSecurityPolicy>> buildTimePolicies) {
+        var permissions = httpConfiguration.getValue().auth.permissions;
+        if (!permissions.isEmpty()) {
+            Map<String, Supplier<HttpSecurityPolicy>> policies = new HashMap<>(buildTimePolicies);
+            var rolePolicies = httpConfiguration.getValue().auth.rolePolicy;
+            for (Map.Entry<String, PolicyConfig> e : rolePolicies.entrySet()) {
+                if (policies.containsKey(e.getKey())) {
+                    throw new RuntimeException("Multiple HTTP security policies defined with name " + e.getKey());
+                }
+                policies.put(e.getKey(),
+                        new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed)));
             }
-        };
+
+            PathMatchingHttpSecurityPolicy bean = Arc.container().instance(PathMatchingHttpSecurityPolicy.class).get();
+            bean.init(buildTimeConfig, policies, permissions);
+        }
     }
 
     public Supplier<FormAuthenticationMechanism> setupFormAuth() {
@@ -239,7 +249,7 @@ public class HttpSecurityRecorder {
                 } else {
                     key = httpConfiguration.getValue().encryptionKey.get();
                 }
-                FormAuthConfig form = buildTimeConfig.auth.form;
+                FormAuthConfig form = httpConfiguration.getValue().auth.form;
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
                         form.newCookieInterval.toMillis(), form.httpOnlyCookie, form.cookieSameSite.name(),
                         form.cookiePath.orElse(null));
@@ -270,8 +280,8 @@ public class HttpSecurityRecorder {
         return new Supplier<BasicAuthenticationMechanism>() {
             @Override
             public BasicAuthenticationMechanism get() {
-                return new BasicAuthenticationMechanism(buildTimeConfig.auth.realm.orElse(null),
-                        buildTimeConfig.auth.form.enabled);
+                return new BasicAuthenticationMechanism(httpConfiguration.getValue().auth.realm.orElse(null),
+                        buildTimeConfig.auth.form);
             }
         };
     }
@@ -281,6 +291,16 @@ public class HttpSecurityRecorder {
             @Override
             public MtlsAuthenticationMechanism get() {
                 return new MtlsAuthenticationMechanism();
+            }
+        };
+    }
+
+    /* RUNTIME_INIT */
+    public Supplier<String> getFormPostLocation() {
+        return new Supplier<String>() {
+            @Override
+            public String get() {
+                return httpConfiguration.getValue().auth.form.postLocation;
             }
         };
     }

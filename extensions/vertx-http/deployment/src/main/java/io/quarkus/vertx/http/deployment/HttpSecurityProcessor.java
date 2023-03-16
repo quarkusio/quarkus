@@ -8,7 +8,6 @@ import java.util.function.Supplier;
 import jakarta.inject.Singleton;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -17,7 +16,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.security.AuthenticatedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.DenySecurityPolicy;
@@ -30,7 +28,6 @@ import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.PermitSecurityPolicy;
-import io.quarkus.vertx.http.runtime.security.RolesAllowedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SupplierImpl;
 import io.vertx.core.http.ClientAuth;
 
@@ -43,14 +40,8 @@ public class HttpSecurityProcessor {
         producer.produce(new HttpSecurityPolicyBuildItem("permit", new SupplierImpl<>(new PermitSecurityPolicy())));
         producer.produce(
                 new HttpSecurityPolicyBuildItem("authenticated", new SupplierImpl<>(new AuthenticatedHttpSecurityPolicy())));
-        if (!buildTimeConfig.auth.permissions.isEmpty()) {
-            beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(PathMatchingHttpSecurityPolicy.class));
-        }
-        for (Map.Entry<String, PolicyConfig> e : buildTimeConfig.auth.rolePolicy.entrySet()) {
-            producer.produce(new HttpSecurityPolicyBuildItem(e.getKey(),
-                    new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed))));
-        }
 
+        beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(PathMatchingHttpSecurityPolicy.class));
     }
 
     @BuildStep
@@ -59,11 +50,11 @@ public class HttpSecurityProcessor {
             HttpSecurityRecorder recorder,
             HttpBuildTimeConfig buildTimeConfig,
             BuildProducer<RouteBuildItem> filterBuildItemBuildProducer) {
-        if (!buildTimeConfig.auth.proactive) {
-            filterBuildItemBuildProducer.produce(RouteBuildItem.builder().route(buildTimeConfig.auth.form.postLocation)
-                    .handler(recorder.formAuthPostHandler()).build());
-        }
-        if (buildTimeConfig.auth.form.enabled) {
+        if (buildTimeConfig.auth.form) {
+            if (!buildTimeConfig.auth.proactive) {
+                filterBuildItemBuildProducer.produce(RouteBuildItem.builder().route(recorder.getFormPostLocation())
+                        .handler(recorder.formAuthPostHandler()).build());
+            }
             return SyntheticBeanBuildItem.configure(FormAuthenticationMechanism.class)
                     .types(HttpAuthenticationMechanism.class)
                     .setRuntimeInit()
@@ -99,7 +90,7 @@ public class HttpSecurityProcessor {
             return null;
         }
         boolean basicExplicitlyEnabled = buildTimeConfig.auth.basic.orElse(false);
-        if ((buildTimeConfig.auth.form.enabled || isMtlsClientAuthenticationEnabled(buildTimeConfig))
+        if ((buildTimeConfig.auth.form || isMtlsClientAuthenticationEnabled(buildTimeConfig))
                 && !basicExplicitlyEnabled) {
             //if form auth is enabled and we are not then we don't install
             return null;
@@ -110,7 +101,7 @@ public class HttpSecurityProcessor {
                 .setRuntimeInit()
                 .scope(Singleton.class)
                 .supplier(recorder.setupBasicAuth(buildTimeConfig));
-        if (!buildTimeConfig.auth.form.enabled && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
+        if (!buildTimeConfig.auth.form && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
                 && !basicExplicitlyEnabled) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
             configurator.defaultBean();
@@ -121,25 +112,34 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void initPermissions(HttpSecurityRecorder recorder,
+            Capabilities capabilities,
+            List<HttpSecurityPolicyBuildItem> httpSecurityPolicyBuildItemList) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            Map<String, Supplier<HttpSecurityPolicy>> policyMap = new HashMap<>();
+            for (HttpSecurityPolicyBuildItem e : httpSecurityPolicyBuildItemList) {
+                if (policyMap.containsKey(e.getName())) {
+                    throw new RuntimeException("Multiple HTTP security policies defined with name " + e.getName());
+                }
+                policyMap.put(e.getName(), e.policySupplier);
+            }
+
+            recorder.initPermissions(policyMap);
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setupAuthenticationMechanisms(
             HttpSecurityRecorder recorder,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> beanProducer,
             Capabilities capabilities,
-            BuildProducer<BeanContainerListenerBuildItem> beanContainerListenerBuildItemBuildProducer,
             HttpBuildTimeConfig buildTimeConfig,
-            List<HttpSecurityPolicyBuildItem> httpSecurityPolicyBuildItemList,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
-        Map<String, Supplier<HttpSecurityPolicy>> policyMap = new HashMap<>();
-        for (HttpSecurityPolicyBuildItem e : httpSecurityPolicyBuildItemList) {
-            if (policyMap.containsKey(e.getName())) {
-                throw new RuntimeException("Multiple HTTP security policies defined with name " + e.getName());
-            }
-            policyMap.put(e.getName(), e.policySupplier);
-        }
 
-        if (!buildTimeConfig.auth.form.enabled && buildTimeConfig.auth.basic.orElse(false)) {
+        if (!buildTimeConfig.auth.form && buildTimeConfig.auth.basic.orElse(false)) {
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
         }
 
@@ -153,15 +153,6 @@ public class HttpSecurityProcessor {
                             FilterBuildItem.AUTHENTICATION));
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));
-
-            if (!buildTimeConfig.auth.permissions.isEmpty()) {
-                beanContainerListenerBuildItemBuildProducer
-                        .produce(new BeanContainerListenerBuildItem(recorder.initPermissions(buildTimeConfig, policyMap)));
-            }
-        } else {
-            if (!buildTimeConfig.auth.permissions.isEmpty()) {
-                throw new IllegalStateException("HTTP permissions have been set however security is not enabled");
-            }
         }
     }
 

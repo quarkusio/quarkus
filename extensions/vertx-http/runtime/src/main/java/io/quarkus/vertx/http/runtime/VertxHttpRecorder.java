@@ -959,6 +959,14 @@ public class VertxHttpRecorder {
             HandlerType type) {
 
         Route vr = route.apply(router.getValue());
+
+        // routes prepared during the build time for runtime configuration
+        // properties are nullable if user decided to not configure the property
+        // please see class 'RouteCandidate' for more details
+        if (vr == null) {
+            return;
+        }
+
         if (type == HandlerType.BLOCKING) {
             vr.blockingHandler(handler, false);
         } else if (type == HandlerType.FAILURE) {

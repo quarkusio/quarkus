@@ -83,14 +83,16 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
                 });
     }
 
-    void init(HttpBuildTimeConfig config, Map<String, Supplier<HttpSecurityPolicy>> supplierMap) {
+    void init(HttpBuildTimeConfig config, Map<String, Supplier<HttpSecurityPolicy>> supplierMap,
+            Map<String, PolicyMappingConfig> permissions) {
+
         Map<String, HttpSecurityPolicy> permissionCheckers = new HashMap<>();
         for (Map.Entry<String, Supplier<HttpSecurityPolicy>> i : supplierMap.entrySet()) {
             permissionCheckers.put(i.getKey(), i.getValue().get());
         }
 
         Map<String, List<HttpMatcher>> tempMap = new HashMap<>();
-        for (Map.Entry<String, PolicyMappingConfig> entry : config.auth.permissions.entrySet()) {
+        for (Map.Entry<String, PolicyMappingConfig> entry : permissions.entrySet()) {
             HttpSecurityPolicy checker = permissionCheckers.get(entry.getValue().policy);
             if (checker == null) {
                 throw new RuntimeException("Unable to find HTTP security policy " + entry.getValue().policy);

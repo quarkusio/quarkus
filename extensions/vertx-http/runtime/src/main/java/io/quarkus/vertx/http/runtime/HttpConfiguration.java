@@ -14,6 +14,8 @@ import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class HttpConfiguration {
 
+    public AuthConfig auth;
+
     /**
      * Enable the CORS filter.
      */

@@ -21,12 +21,6 @@ public class FormAuthConfig {
     }
 
     /**
-     * If form authentication is enabled.
-     */
-    @ConfigItem
-    public boolean enabled;
-
-    /**
      * The login page. Redirect to login page can be disabled by setting `quarkus.http.auth.form.login-page=`.
      */
     @ConfigItem(defaultValue = "/login.html")

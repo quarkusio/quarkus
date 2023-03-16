@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+import static io.quarkus.arc.processor.KotlinUtils.isNoninterceptableKotlinMethod;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -178,7 +179,7 @@ final class Methods {
             }
             boolean addToCandidates = true;
             if (Modifier.isFinal(method.flags())) {
-                if (transformUnproxyableClasses) {
+                if (transformUnproxyableClasses && !isNoninterceptableKotlinMethod(method)) {
                     methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
                 } else {
                     addToCandidates = false;

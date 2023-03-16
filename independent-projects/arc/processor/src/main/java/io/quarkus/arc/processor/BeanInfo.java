@@ -605,9 +605,15 @@ public class BeanInfo implements InjectionTargetInfo {
             Set<MethodInfo> finalMethods = Methods.addInterceptedMethodCandidates(beanDeployment, target.get().asClass(),
                     candidates, classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses);
             if (!finalMethods.isEmpty()) {
+                String additionalError = "";
+                if (finalMethods.stream().anyMatch(KotlinUtils::isNoninterceptableKotlinMethod)) {
+                    additionalError = "\n\tKotlin `suspend` functions must be `open` and declared in `open` classes, "
+                            + "otherwise they cannot be intercepted";
+                }
                 errors.add(new DeploymentException(String.format(
-                        "Intercepted methods of the bean %s may not be declared final:\n\t- %s", getBeanClass(),
-                        finalMethods.stream().map(Object::toString).sorted().collect(Collectors.joining("\n\t- ")))));
+                        "Intercepted methods of the bean %s may not be declared final:\n\t- %s%s", getBeanClass(),
+                        finalMethods.stream().map(Object::toString).sorted().collect(Collectors.joining("\n\t- ")),
+                        additionalError)));
                 return Collections.emptyMap();
             }
 

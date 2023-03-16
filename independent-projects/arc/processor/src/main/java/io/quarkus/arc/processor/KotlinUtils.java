@@ -19,6 +19,9 @@ public class KotlinUtils {
         if (!isKotlinMethod(method)) {
             return false;
         }
+        if (method.parametersCount() == 0) {
+            return false;
+        }
 
         Type lastParameter = method.parameterType(method.parametersCount() - 1);
         return KotlinDotNames.CONTINUATION.equals(lastParameter.name());

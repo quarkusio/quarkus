@@ -13,6 +13,8 @@ public class SmallRyeHealthConfig {
     /**
      * Root path for health-checking endpoints.
      * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
+     * If the management interface is enabled, the value will be resolved as a path relative to
+     * `${quarkus.management.root-path}`.
      */
     @ConfigItem(defaultValue = "health")
     String rootPath;

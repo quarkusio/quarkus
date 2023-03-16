@@ -357,6 +357,7 @@
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
                 <module>istio</module>
+                <module>management-interface</module>
             </modules>
         </profile>
 

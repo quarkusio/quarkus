@@ -10,12 +10,16 @@ public final class VertxWebRouterBuildItem extends SimpleBuildItem {
     private final RuntimeValue<Router> mainRouter;
     private final RuntimeValue<Router> frameworkRouter;
     private final RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter;
+    private final RuntimeValue<Router> managementRouter;
 
     VertxWebRouterBuildItem(RuntimeValue<Router> httpRouter, RuntimeValue<Router> mainRouter,
-            RuntimeValue<Router> frameworkRouter, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter) {
+            RuntimeValue<Router> frameworkRouter,
+            RuntimeValue<Router> managementRouter,
+            RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter) {
         this.httpRouter = httpRouter;
         this.mainRouter = mainRouter;
         this.frameworkRouter = frameworkRouter;
+        this.managementRouter = managementRouter; // Can be null if the management interface is disabled
         this.mutinyRouter = mutinyRouter;
     }
 
@@ -44,5 +48,14 @@ public final class VertxWebRouterBuildItem extends SimpleBuildItem {
      */
     RuntimeValue<Router> getFrameworkRouter() {
         return frameworkRouter;
+    }
+
+    /**
+     * Will be {@code null} if the management interface is disabled.
+     *
+     * @return RuntimeValue<Router>
+     */
+    RuntimeValue<Router> getManagementRouter() {
+        return managementRouter;
     }
 }

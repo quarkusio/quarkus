@@ -21,6 +21,8 @@ public final class RouteBuildItem extends MultiBuildItem {
         return new Builder();
     }
 
+    private final boolean management;
+
     private final Function<Router, Route> routeFunction;
     private final Handler<RoutingContext> handler;
     private final HandlerType type;
@@ -29,9 +31,10 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final NotFoundPageDisplayableEndpointBuildItem notFoundPageDisplayableEndpoint;
     private final ConfiguredPathInfo configuredPathInfo;
 
-    RouteBuildItem(Builder builder, RouteType routeType, RouteType routerType) {
+    RouteBuildItem(Builder builder, RouteType routeType, RouteType routerType, boolean management) {
         this.routeFunction = builder.routeFunction;
         this.handler = builder.handler;
+        this.management = management;
         this.type = builder.type;
         this.routeType = routeType;
         this.routerType = routerType;
@@ -79,6 +82,15 @@ public final class RouteBuildItem extends MultiBuildItem {
         return configuredPathInfo;
     }
 
+    /**
+     * @return {@code true} if the route is exposing a management endpoint.
+     *         It matters when using a different interface/port for the management endpoints, as these routes will only
+     *         be accessible from that different interface/port.
+     */
+    public boolean isManagement() {
+        return management;
+    }
+
     public enum RouteType {
         FRAMEWORK_ROUTE,
         APPLICATION_ROUTE,
@@ -99,6 +111,8 @@ public final class RouteBuildItem extends MultiBuildItem {
         protected String routePath;
         protected String routeConfigKey;
         protected String absolutePath;
+
+        protected boolean isManagement;
 
         /**
          * {@link #routeFunction(String, Consumer)} should be used instead
@@ -195,12 +209,17 @@ public final class RouteBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public Builder management() {
+            this.isManagement = true;
+            return this;
+        }
+
         public RouteBuildItem build() {
             if (routeFunction == null) {
                 throw new IllegalStateException(
                         "'RouteBuildItem$Builder.routeFunction' was not set. Ensure that one of the builder methods that result in it being set is called");
             }
-            return new RouteBuildItem(this, APPLICATION_ROUTE, APPLICATION_ROUTE);
+            return new RouteBuildItem(this, APPLICATION_ROUTE, APPLICATION_ROUTE, isManagement);
         }
 
         protected ConfiguredPathInfo getRouteConfigInfo() {
@@ -212,9 +231,9 @@ public final class RouteBuildItem extends MultiBuildItem {
                         + " as no explicit path was specified and a route function is in use");
             }
             if (absolutePath != null) {
-                return new ConfiguredPathInfo(routeConfigKey, absolutePath, true);
+                return new ConfiguredPathInfo(routeConfigKey, absolutePath, true, isManagement);
             }
-            return new ConfiguredPathInfo(routeConfigKey, routePath, false);
+            return new ConfiguredPathInfo(routeConfigKey, routePath, false, isManagement);
         }
 
         protected NotFoundPageDisplayableEndpointBuildItem getNotFoundEndpoint() {

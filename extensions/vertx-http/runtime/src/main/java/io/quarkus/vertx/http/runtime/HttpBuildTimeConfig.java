@@ -52,6 +52,9 @@ public class HttpBuildTimeConfig {
      * * `${quarkus.http.root-path}` -> Setting this path to the same value as HTTP root path disables
      * this root path. All extension-provided endpoints will be served from `${quarkus.http.root-path}`.
      *
+     * If the management interface is enabled, the root path for the endpoints exposed on the management interface
+     * is configured using the `quarkus.management.root-path` property instead of this property.
+     *
      * @asciidoclet
      */
     @ConfigItem(defaultValue = "q")

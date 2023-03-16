@@ -100,6 +100,15 @@ The general `status` of the health check is computed as a logical AND of all the
 declared health check procedures. The `checks` array is empty as we have not specified 
 any health check procedure yet so let's define some.
 
+[NOTE]
+.Management interface
+====
+By default, the health checks are exposed on the main HTTP server.
+You can expose them on a separate network interface and port by enabling the management interface with the
+`quarkus.management.enabled=true` property.
+Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
+====
+
 == Creating your first health check
 
 In this section, we create our first simple health check procedure.
@@ -409,6 +418,18 @@ The Quarkus `smallrye-health` extension ships with `health-ui` and enables it by
 `health-ui` can be accessed from http://localhost:8080/q/health-ui/ .
 
 image:health-ui-screenshot01.png[alt=Health UI]
+
+== Management interface
+
+By default, the health checks are exposed on the main HTTP server.
+You can expose them on a separate network interface and port by setting `quarkus.management.enabled=true` in your application configuration.
+Note that this property is a build-time property.
+The value cannot be overridden at runtime.
+
+If you enable the management interface without customizing the management network interface and port, the health checks are exposed under: `http://0.0.0.0:9000/q/health`.
+You can configure the _path_ (the `health` segment in the previous URL) using the `quarkus.smallrye-health.root-path` property.
+
+Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
 
 == Conclusion
 

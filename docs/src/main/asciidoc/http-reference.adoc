@@ -112,6 +112,16 @@ As an example, if an extension configures a `service` path, that endpoint will b
 
 The link:https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus] blog post further explains how path resolution works for both user and extension defined paths.
 
+[IMPORTANT]
+.Management Interface
+====
+`quarkus.http.root-path` is only used for the main HTTP server.
+If you enabled the management interface (using the `quarkus.management.enabled=true` property), you can configure the root path of the management interface using:
+`quarkus.management.root-path`.
+
+Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
+====
+
 [[ssl]]
 == Supporting secure connections with SSL
 
@@ -261,7 +271,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-filter-config.ad
 == Support 100-Continue in vert.x
 
 In order to support `100-continue`, the `quarkus.http.handle-100-continue-automatically` option needs to be enabled explicitly
-For additional information check https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1[100-continue= and the related
+For additional information check https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1[100-continue] and the related
 https://vertx.io/docs/apidocs/io/vertx/core/http/HttpServerOptions.html#DEFAULT_HANDLE_100_CONTINE_AUTOMATICALLY[Vert.x documentation].
 
 [source,properties]

@@ -682,9 +682,11 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         Scm scm = getScm();
         String scmUrl = scm != null ? scm.getUrl() : null;
 
-        Map<String, String> repo = new ScmInfoProvider().getSourceRepo(scmUrl);
+        ScmInfoProvider scmInfoProvider = new ScmInfoProvider(scmUrl);
+        Map<String, String> repo = scmInfoProvider.getSourceRepo();
+        ObjectNode metadata = getMetadataNode(extObject);
+
         if (repo != null) {
-            ObjectNode metadata = getMetadataNode(extObject);
             for (Map.Entry<String, String> e : repo.entrySet()) {
                 // Ignore if already set
                 String value = e.getValue();
@@ -695,6 +697,16 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                 }
 
             }
+
+            String warning = scmInfoProvider.getInconsistencyWarning();
+            if (warning != null) {
+                getLog().warn(warning);
+            }
+        }
+        // We had been generic, but go a bit more specific so we can give a sensible message
+        else if (!metadata.has("scm-url")) {
+            getLog().debug(
+                    "Could not work out a source control repository from the build environment or build file. Consider adding an scm-url entry in quarkus-extension.yaml");
         }
     }
 
@@ -708,7 +720,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         if (localProject == null) {
             final Log log = getLog();
-            log.warn("Workspace provider could not resolve local project for " + artifact.getGroupId() + ":"
+            log.debug("Workspace provider could not resolve local project for " + artifact.getGroupId() + ":"
                     + artifact.getArtifactId());
         }
 
@@ -716,6 +728,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             scm = localProject.getRawModel().getScm();
             localProject = localProject.getLocalParent();
         }
+
         return scm;
 
     }

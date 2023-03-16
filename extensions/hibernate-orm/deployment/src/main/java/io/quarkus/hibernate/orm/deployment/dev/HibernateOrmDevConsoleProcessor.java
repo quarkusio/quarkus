@@ -18,15 +18,17 @@ import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfoCreateDDLSupplier
 import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfoSupplier;
 
 @BuildSteps(onlyIf = { HibernateOrmEnabled.class, IsDevelopment.class })
+@Deprecated // Only useful for the legacy Dev UI
 public class HibernateOrmDevConsoleProcessor {
 
     @BuildStep
-    public DevConsoleRuntimeTemplateInfoBuildItem collectDeploymentUnits(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+    public DevConsoleRuntimeTemplateInfoBuildItem exposeInfo(CurateOutcomeBuildItem curateOutcomeBuildItem) {
         return new DevConsoleRuntimeTemplateInfoBuildItem("persistence", new HibernateOrmDevInfoSupplier(),
                 this.getClass(),
                 curateOutcomeBuildItem);
     }
 
+    // FIXME migrate to a JsonRpcService
     @BuildStep
     void handleInitialSql(List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,

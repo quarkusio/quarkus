@@ -23,7 +23,7 @@ public class DevConsoleHibernateOrmSmokeTest {
                     .addClasses(MyEntity.class));
 
     @Test
-    public void testPages() {
+    public void testLegacyPages() {
         RestAssured.get("q/dev/io.quarkus.quarkus-hibernate-orm/persistence-units")
                 .then()
                 .statusCode(200)
@@ -38,6 +38,26 @@ public class DevConsoleHibernateOrmSmokeTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("No named queries were found."));
+    }
+
+    @Test
+    public void testPages() {
+        // TODO #31970 restore tests of the page's content as we used to do for the old Dev UI
+
+        RestAssured.get("q/dev-ui/hibernate-orm/persistence-units")
+                .then()
+                .statusCode(200);
+        //      .body(Matchers.containsString("&lt;default&gt;"));
+
+        RestAssured.get("q/dev-ui/hibernate-orm/entity-types")
+                .then()
+                .statusCode(200);
+        //      .body(Matchers.containsString("io.quarkus.test.devconsole.MyEntity"));
+
+        RestAssured.get("q/dev-ui/hibernate-orm/named-queries")
+                .then()
+                .statusCode(200);
+        //      .body(Matchers.containsString("No named queries were found."));
     }
 
 }

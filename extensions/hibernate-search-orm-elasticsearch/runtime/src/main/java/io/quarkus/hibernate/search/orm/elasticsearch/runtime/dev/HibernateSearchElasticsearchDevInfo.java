@@ -33,23 +33,28 @@ class HibernateSearchElasticsearchDevInfo {
 
         @Override
         public int compare(PersistenceUnit o1, PersistenceUnit o2) {
-            return persistenceUnitNameComparator.compare(o1.persistenceUnitName, o2.persistenceUnitName);
+            return persistenceUnitNameComparator.compare(o1.name, o2.name);
         }
     }
 
     static class PersistenceUnit implements Comparable<PersistenceUnit> {
-        public final String persistenceUnitName;
+        public final String name;
 
         public final List<IndexedEntity> indexedEntities;
 
-        public PersistenceUnit(String persistenceUnitName, List<IndexedEntity> indexedEntities) {
-            this.persistenceUnitName = persistenceUnitName;
+        public PersistenceUnit(String name, List<IndexedEntity> indexedEntities) {
+            this.name = name;
             this.indexedEntities = indexedEntities;
+        }
+
+        @Deprecated // Only useful for the legacy Dev UI
+        public String getPersistenceUnitName() {
+            return name;
         }
 
         @Override
         public int compareTo(PersistenceUnit o) {
-            return this.persistenceUnitName.compareTo(o.persistenceUnitName);
+            return this.name.compareTo(o.name);
         }
     }
 

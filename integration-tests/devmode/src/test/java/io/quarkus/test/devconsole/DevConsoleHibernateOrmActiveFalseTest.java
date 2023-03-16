@@ -25,7 +25,7 @@ public class DevConsoleHibernateOrmActiveFalseTest {
                     .addClasses(MyEntity.class));
 
     @Test
-    public void testPages() {
+    public void testLegacyPages() {
         RestAssured.get("q/dev/io.quarkus.quarkus-hibernate-orm/persistence-units")
                 .then()
                 .statusCode(200)
@@ -40,6 +40,26 @@ public class DevConsoleHibernateOrmActiveFalseTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("No persistence units were found"));
+    }
+
+    @Test
+    public void testPages() {
+        // TODO #31970 restore tests of the page's content as we used to do for the old Dev UI
+
+        RestAssured.get("q/dev-ui/hibernate-orm/persistence-units")
+                .then()
+                .statusCode(200);
+        //        .body(Matchers.containsString("No persistence units were found"));
+
+        RestAssured.get("q/dev-ui/hibernate-orm/entity-types")
+                .then()
+                .statusCode(200);
+        //      .body(Matchers.containsString("No persistence units were found"));
+
+        RestAssured.get("q/dev-ui/hibernate-orm/named-queries")
+                .then()
+                .statusCode(200);
+        //      .body(Matchers.containsString("No persistence units were found"));
     }
 
 }

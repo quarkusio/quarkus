@@ -2,8 +2,6 @@ package io.quarkus.hibernate.search.orm.elasticsearch.runtime.dev;
 
 import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
 
-import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -35,7 +33,7 @@ public class HibernateSearchElasticsearchDevController {
     }
 
     public HibernateSearchElasticsearchDevInfo getInfo() {
-        Map<String, SearchMapping> mappings = searchMapping(activePersistenceUnitNames);
+        Map<String, SearchMapping> mappings = searchMappings(activePersistenceUnitNames);
         if (mappings.isEmpty()) {
             return new HibernateSearchElasticsearchDevInfo();
         }
@@ -51,16 +49,17 @@ public class HibernateSearchElasticsearchDevController {
                         }));
     }
 
-    public Map<String, SearchMapping> searchMapping(Set<String> persistenceUnitNames) {
-        return Arrays.stream(getPersistenceUnitQualifiers(persistenceUnitNames)).map(
-                qualifier -> Arc.container().select(SearchMapping.class, qualifier).get())
-                .collect(Collectors.toMap(HibernateSearchElasticsearchDevController::getPersistenceUnitName,
-                        mapping -> mapping));
+    public SearchMapping searchMapping(String persistenceUnitName) {
+        return Arc.container()
+                .select(SearchMapping.class,
+                        new io.quarkus.hibernate.orm.PersistenceUnit.PersistenceUnitLiteral(persistenceUnitName))
+                .get();
     }
 
-    private static Annotation[] getPersistenceUnitQualifiers(Set<String> persistenceUnitNames) {
-        return persistenceUnitNames.stream().map(io.quarkus.hibernate.orm.PersistenceUnit.PersistenceUnitLiteral::new)
-                .toArray(Annotation[]::new);
+    public Map<String, SearchMapping> searchMappings(Set<String> persistenceUnitNames) {
+        return persistenceUnitNames.stream().map(this::searchMapping)
+                .collect(Collectors.toMap(HibernateSearchElasticsearchDevController::getPersistenceUnitName,
+                        mapping -> mapping));
     }
 
     private static String getPersistenceUnitName(SearchMapping searchMapping) {

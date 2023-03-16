@@ -5,7 +5,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.hibernate.search.mapper.orm.entity.SearchIndexedEntity;
@@ -23,7 +22,7 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class HibernateSearchElasticsearchDevRecorder {
 
-    public Supplier<HibernateSearchElasticsearchDevInfo> infoSupplier(
+    public void initController(
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, Set<String> persistenceUnitNames) {
         Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> puConfigs = runtimeConfig
                 .getAllPersistenceUnitConfigsAsMap();
@@ -34,9 +33,9 @@ public class HibernateSearchElasticsearchDevRecorder {
                 })
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         HibernateSearchElasticsearchDevController.get().setActivePersistenceUnitNames(activePersistenceUnitNames);
-        return new HibernateSearchElasticsearchDevInfoSupplier();
     }
 
+    @Deprecated // Only useful for the legacy Dev UI
     public Handler<RoutingContext> indexEntity() {
         return new DevConsolePostHandler() {
             @Override
@@ -47,7 +46,7 @@ public class HibernateSearchElasticsearchDevRecorder {
                 Set<String> persistenceUnitNames = form.entries().stream().map(Map.Entry::getValue)
                         .collect(Collectors.toSet());
                 Map<String, SearchMapping> mappings = HibernateSearchElasticsearchDevController.get()
-                        .searchMapping(persistenceUnitNames);
+                        .searchMappings(persistenceUnitNames);
                 if (mappings.isEmpty()) {
                     flashMessage(event, "There are no indexed entity types.", FlashScopeUtil.FlashMessageStatus.ERROR);
                     return;

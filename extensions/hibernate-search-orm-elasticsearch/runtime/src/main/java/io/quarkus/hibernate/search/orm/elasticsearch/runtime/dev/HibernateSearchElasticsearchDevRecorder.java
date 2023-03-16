@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.orm.elasticsearch.runtime.devconsole;
+package io.quarkus.hibernate.search.orm.elasticsearch.runtime.dev;
 
 import java.time.Duration;
 import java.util.LinkedHashSet;
@@ -21,9 +21,9 @@ import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
-public class HibernateSearchDevConsoleRecorder {
+public class HibernateSearchElasticsearchDevRecorder {
 
-    public Supplier<HibernateSearchSupplier.IndexedPersistenceUnits> infoSupplier(
+    public Supplier<HibernateSearchElasticsearchDevInfo> infoSupplier(
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, Set<String> persistenceUnitNames) {
         Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> puConfigs = runtimeConfig
                 .getAllPersistenceUnitConfigsAsMap();
@@ -33,7 +33,8 @@ public class HibernateSearchDevConsoleRecorder {
                     return puConfig == null || puConfig.active.orElse(true);
                 })
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        return new HibernateSearchSupplier(activePersistenceUnitNames);
+        HibernateSearchElasticsearchDevController.get().setActivePersistenceUnitNames(activePersistenceUnitNames);
+        return new HibernateSearchElasticsearchDevInfoSupplier();
     }
 
     public Handler<RoutingContext> indexEntity() {
@@ -45,7 +46,8 @@ public class HibernateSearchDevConsoleRecorder {
                 }
                 Set<String> persistenceUnitNames = form.entries().stream().map(Map.Entry::getValue)
                         .collect(Collectors.toSet());
-                Map<String, SearchMapping> mappings = HibernateSearchSupplier.searchMapping(persistenceUnitNames);
+                Map<String, SearchMapping> mappings = HibernateSearchElasticsearchDevController.get()
+                        .searchMapping(persistenceUnitNames);
                 if (mappings.isEmpty()) {
                     flashMessage(event, "There are no indexed entity types.", FlashScopeUtil.FlashMessageStatus.ERROR);
                     return;

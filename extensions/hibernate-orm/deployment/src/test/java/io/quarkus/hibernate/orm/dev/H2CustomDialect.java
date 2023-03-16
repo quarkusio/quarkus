@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.devconsole;
+package io.quarkus.hibernate.orm.dev;
 
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.metamodel.mapping.EntityMappingType;

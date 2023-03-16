@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.runtime.devconsole;
+package io.quarkus.hibernate.orm.runtime.dev;
 
 import static org.hibernate.cfg.AvailableSettings.HBM2DDL_IMPORT_FILES;
 
@@ -7,11 +7,11 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
-public class HibernateOrmDevConsoleIntegrator implements Integrator {
+public class HibernateOrmDevIntegrator implements Integrator {
     @Override
     public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactoryImplementor,
             SessionFactoryServiceRegistry sessionFactoryServiceRegistry) {
-        HibernateOrmDevConsoleInfoSupplier.pushPersistenceUnit(
+        HibernateOrmDevController.get().pushPersistenceUnit(
                 (String) sessionFactoryImplementor.getProperties()
                         .get(org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME),
                 metadata, sessionFactoryServiceRegistry,
@@ -21,6 +21,6 @@ public class HibernateOrmDevConsoleIntegrator implements Integrator {
     @Override
     public void disintegrate(SessionFactoryImplementor sessionFactoryImplementor,
             SessionFactoryServiceRegistry sessionFactoryServiceRegistry) {
-        HibernateOrmDevConsoleInfoSupplier.clearData();
+        HibernateOrmDevController.get().clearData();
     }
 }

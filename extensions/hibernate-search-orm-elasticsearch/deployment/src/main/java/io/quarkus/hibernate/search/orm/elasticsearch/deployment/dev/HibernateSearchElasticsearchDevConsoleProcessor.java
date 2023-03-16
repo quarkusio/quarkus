@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.orm.elasticsearch.deployment.devconsole;
+package io.quarkus.hibernate.search.orm.elasticsearch.deployment.dev;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
@@ -17,14 +17,14 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchEnabled;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.devconsole.HibernateSearchDevConsoleRecorder;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.dev.HibernateSearchElasticsearchDevRecorder;
 
-@BuildSteps(onlyIf = HibernateSearchEnabled.class)
+@BuildSteps(onlyIf = { HibernateSearchEnabled.class, IsDevelopment.class })
 public class HibernateSearchElasticsearchDevConsoleProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     @Record(RUNTIME_INIT)
-    public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo(HibernateSearchDevConsoleRecorder recorder,
+    public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo(HibernateSearchElasticsearchDevRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> persistenceUnitBuildItems) {
@@ -37,7 +37,7 @@ public class HibernateSearchElasticsearchDevConsoleProcessor {
 
     @BuildStep
     @Record(value = STATIC_INIT, optional = true)
-    DevConsoleRouteBuildItem invokeEndpoint(HibernateSearchDevConsoleRecorder recorder) {
+    DevConsoleRouteBuildItem invokeEndpoint(HibernateSearchElasticsearchDevRecorder recorder) {
         return new DevConsoleRouteBuildItem("entity-types", "POST", recorder.indexEntity());
     }
 }

@@ -429,7 +429,7 @@ Write the SPI loader text file at `resources/META-INF/services` with name `io.op
 Then activate on the configuration:
 [source,properties]
 ----
-quarkus.opentelemetry.tracer.sampler=custom-spi-sampler
+quarkus.otel.traces.sampler=custom-spi-sampler
 ----
 
 As you can see, CDI is much simpler to work with.

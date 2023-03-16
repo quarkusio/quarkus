@@ -56,6 +56,7 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.quarkus.smallrye.faulttolerance.deployment.devui.FaultToleranceInfoBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusAsyncExecutorProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusExistingCircuitBreakerNames;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
@@ -252,7 +253,8 @@ public class SmallRyeFaultToleranceProcessor {
             AnnotationProxyBuildItem annotationProxy,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors,
+            BuildProducer<FaultToleranceInfoBuildItem> faultToleranceInfo) {
 
         Config config = ConfigProvider.getConfig();
 
@@ -368,6 +370,9 @@ public class SmallRyeFaultToleranceProcessor {
         }
 
         recorder.initExistingCircuitBreakerNames(existingCircuitBreakerNames.keySet());
+
+        // dev UI
+        faultToleranceInfo.produce(new FaultToleranceInfoBuildItem(ftMethods.size()));
     }
 
     @BuildStep

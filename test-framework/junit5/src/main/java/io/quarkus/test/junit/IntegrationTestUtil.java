@@ -65,7 +65,6 @@ public final class IntegrationTestUtil {
     public static final int DEFAULT_PORT = 8081;
     public static final int DEFAULT_HTTPS_PORT = 8444;
     public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
-    public static final ContainerRuntimeUtil.ContainerRuntime CONTAINER_RUNTIME = detectContainerRuntime(false);
 
     private IntegrationTestUtil() {
     }
@@ -337,13 +336,11 @@ public final class IntegrationTestUtil {
     private static void createNetworkIfNecessary(
             final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
         if (devServicesLaunchResult.manageNetwork() && (devServicesLaunchResult.networkId() != null)) {
-            if (CONTAINER_RUNTIME == ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE) {
-                throw new IllegalStateException("No container runtime was found. "
-                        + "Make sure you have either Docker or Podman installed in your environment.");
-            }
+            ContainerRuntimeUtil.ContainerRuntime containerRuntime = detectContainerRuntime(true);
+
             try {
                 int networkCreateResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
-                        .command(CONTAINER_RUNTIME.getExecutableName(), "network", "create",
+                        .command(containerRuntime.getExecutableName(), "network", "create",
                                 devServicesLaunchResult.networkId())
                         .start().waitFor();
                 if (networkCreateResult > 0) {
@@ -356,7 +353,7 @@ public final class IntegrationTestUtil {
                     public void run() {
                         try {
                             new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
-                                    .command(CONTAINER_RUNTIME.getExecutableName(), "network", "rm",
+                                    .command(containerRuntime.getExecutableName(), "network", "rm",
                                             devServicesLaunchResult.networkId())
                                     .start()
                                     .waitFor();

@@ -204,7 +204,7 @@ public class DockerProcessor {
             boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, executableName,
                     dockerArgs);
             if (!buildSuccessful) {
-                throw dockerException(dockerArgs);
+                throw dockerException(executableName, dockerArgs);
             }
 
             dockerConfig.buildx.platform
@@ -250,7 +250,8 @@ public class DockerProcessor {
                     containerImageConfig.username.get(),
                     "-p" + containerImageConfig.password.get());
             if (!loginSuccessful) {
-                throw dockerException(new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });
+                throw dockerException(executableName,
+                        new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });
             }
         }
     }
@@ -326,7 +327,7 @@ public class DockerProcessor {
             String[] tagArgs = { "tag", image, additionalTag };
             boolean tagSuccessful = ExecUtil.exec(executableName, tagArgs);
             if (!tagSuccessful) {
-                throw dockerException(tagArgs);
+                throw dockerException(executableName, tagArgs);
             }
         }
     }
@@ -336,14 +337,15 @@ public class DockerProcessor {
         String[] pushArgs = { "push", image };
         boolean pushSuccessful = ExecUtil.exec(executableName, pushArgs);
         if (!pushSuccessful) {
-            throw dockerException(pushArgs);
+            throw dockerException(executableName, pushArgs);
         }
         log.info("Successfully pushed docker image " + image);
     }
 
-    private RuntimeException dockerException(String[] dockerArgs) {
+    private RuntimeException dockerException(String executableName, String[] dockerArgs) {
         return new RuntimeException(
-                "Execution of 'docker " + String.join(" ", dockerArgs) + "' failed. See docker output for more details");
+                "Execution of '" + executableName + " " + String.join(" ", dockerArgs)
+                        + "' failed. See docker output for more details");
     }
 
     private DockerfilePaths getDockerfilePaths(DockerConfig dockerConfig, boolean forNative,

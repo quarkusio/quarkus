@@ -41,7 +41,7 @@ public final class ContainerRuntimeUtil {
     }
 
     public static ContainerRuntime detectContainerRuntime(boolean required) {
-        final ContainerRuntime containerRuntime = loadConfig();
+        final ContainerRuntime containerRuntime = loadContainerRuntimeFromSystemProperty();
         if (containerRuntime != null) {
             return containerRuntime;
         } else {
@@ -57,7 +57,7 @@ public final class ContainerRuntimeUtil {
                     dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
                     dockerAvailable = dockerVersionOutput.contains("Docker version");
                     if (dockerAvailable) {
-                        storeConfig(ContainerRuntime.DOCKER);
+                        storeContainerRuntimeInSystemProperty(ContainerRuntime.DOCKER);
                         return ContainerRuntime.DOCKER;
                     }
                 }
@@ -65,7 +65,7 @@ public final class ContainerRuntimeUtil {
                     podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
                     podmanAvailable = podmanVersionOutput.startsWith("podman version");
                     if (podmanAvailable) {
-                        storeConfig(ContainerRuntime.PODMAN);
+                        storeContainerRuntimeInSystemProperty(ContainerRuntime.PODMAN);
                         return ContainerRuntime.PODMAN;
                     }
                 }
@@ -77,46 +77,48 @@ public final class ContainerRuntimeUtil {
             if (dockerAvailable) {
                 // Check if "docker" is an alias to "podman"
                 if (dockerVersionOutput.startsWith("podman version")) {
-                    storeConfig(ContainerRuntime.PODMAN);
+                    storeContainerRuntimeInSystemProperty(ContainerRuntime.PODMAN);
                     return ContainerRuntime.PODMAN;
                 }
-                storeConfig(ContainerRuntime.DOCKER);
+                storeContainerRuntimeInSystemProperty(ContainerRuntime.DOCKER);
                 return ContainerRuntime.DOCKER;
             }
             podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
             podmanAvailable = podmanVersionOutput.startsWith("podman version");
             if (podmanAvailable) {
-                storeConfig(ContainerRuntime.PODMAN);
+                storeContainerRuntimeInSystemProperty(ContainerRuntime.PODMAN);
                 return ContainerRuntime.PODMAN;
             }
+
+            storeContainerRuntimeInSystemProperty(ContainerRuntime.UNAVAILABLE);
+
             if (required) {
                 throw new IllegalStateException("No container runtime was found. "
                         + "Make sure you have either Docker or Podman installed in your environment.");
-            } else {
-                storeConfig(ContainerRuntime.UNAVAILABLE);
-                return ContainerRuntime.UNAVAILABLE;
             }
+
+            return ContainerRuntime.UNAVAILABLE;
         }
     }
 
-    private static ContainerRuntime loadConfig() {
+    private static ContainerRuntime loadContainerRuntimeFromSystemProperty() {
         final String runtime = System.getProperty(CONTAINER_RUNTIME_SYS_PROP);
+
         if (runtime == null) {
             return null;
-        } else if (ContainerRuntime.DOCKER.name().equalsIgnoreCase(runtime)) {
-            return ContainerRuntime.DOCKER;
-        } else if (ContainerRuntime.PODMAN.name().equalsIgnoreCase(runtime)) {
-            return ContainerRuntime.PODMAN;
-        } else if (ContainerRuntime.UNAVAILABLE.name().equalsIgnoreCase(runtime)) {
-            return ContainerRuntime.UNAVAILABLE;
-        } else {
+        }
+
+        ContainerRuntime containerRuntime = ContainerRuntime.valueOf(runtime);
+
+        if (containerRuntime == null) {
             log.warnf("System property %s contains an unknown value %s. Ignoring it.",
                     CONTAINER_RUNTIME_SYS_PROP, runtime);
-            return null;
         }
+
+        return containerRuntime;
     }
 
-    private static void storeConfig(ContainerRuntime containerRuntime) {
+    private static void storeContainerRuntimeInSystemProperty(ContainerRuntime containerRuntime) {
         System.setProperty(CONTAINER_RUNTIME_SYS_PROP, containerRuntime.name());
     }
 
@@ -197,6 +199,10 @@ public final class ContainerRuntimeUtil {
         private Boolean rootless;
 
         public String getExecutableName() {
+            if (this == UNAVAILABLE) {
+                throw new IllegalStateException("Cannot get an executable name when no container runtime is available");
+            }
+
             return this.name().toLowerCase();
         }
 
@@ -212,6 +218,16 @@ public final class ContainerRuntimeUtil {
                 }
             }
             return rootless;
+        }
+
+        public static ContainerRuntime of(String value) {
+            for (ContainerRuntime containerRuntime : values()) {
+                if (containerRuntime.name().equalsIgnoreCase(value)) {
+                    return containerRuntime;
+                }
+            }
+
+            return null;
         }
     }
 }

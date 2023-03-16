@@ -47,6 +47,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.CaffeineCacheBuilderCustomizer;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
 import io.quarkus.cache.deployment.exception.KeyGeneratorConstructorException;
 import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
@@ -83,6 +84,11 @@ class CacheProcessor {
     @BuildStep
     AnnotationsTransformerBuildItem annotationsTransformer() {
         return new AnnotationsTransformerBuildItem(new CacheAnnotationsTransformer());
+    }
+
+    @BuildStep
+    void unremoveableBeans(BuildProducer<UnremovableBeanBuildItem> producer) {
+        producer.produce(UnremovableBeanBuildItem.beanTypes(CaffeineCacheBuilderCustomizer.class));
     }
 
     @BuildStep

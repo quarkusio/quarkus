@@ -3,6 +3,7 @@ package io.quarkus.cache.runtime.caffeine;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -23,6 +24,7 @@ import com.github.benmanes.caffeine.cache.stats.StatsCounter;
 
 import io.quarkus.cache.CacheException;
 import io.quarkus.cache.CaffeineCache;
+import io.quarkus.cache.CaffeineCacheBuilderCustomizer;
 import io.quarkus.cache.runtime.AbstractCache;
 import io.quarkus.cache.runtime.NullValueConverter;
 import io.smallrye.mutiny.Uni;
@@ -41,7 +43,8 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     private final StatsCounter statsCounter;
     private final boolean recordStats;
 
-    public CaffeineCacheImpl(CaffeineCacheInfo cacheInfo, boolean recordStats) {
+    public CaffeineCacheImpl(CaffeineCacheInfo cacheInfo, List<CaffeineCacheBuilderCustomizer> customizers,
+            boolean recordStats) {
         this.cacheInfo = cacheInfo;
         Caffeine<Object, Object> builder = Caffeine.newBuilder();
         if (cacheInfo.initialCapacity != null) {
@@ -69,6 +72,11 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         } else {
             LOGGER.tracef("Caffeine stats recording is disabled for cache [%s]", cacheInfo.name);
             statsCounter = StatsCounter.disabledStatsCounter();
+        }
+        if (customizers != null && !customizers.isEmpty()) {
+            for (CaffeineCacheBuilderCustomizer customizer : customizers) {
+                customizer.customize(builder);
+            }
         }
         cache = builder.buildAsync();
     }

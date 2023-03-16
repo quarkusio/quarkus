@@ -282,13 +282,15 @@ public class ItemResource {
     @GET
     @Path("{id}")
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance get(Integer id) {
+    public TemplateInstance get(@PathParam("id") Integer id) {
         return Templates.item(service.findItem(id)); <2>
     }
 }
 ----
 <1> Declare a method that gives us a `TemplateInstance` for `templates/ItemResource/item.html` and declare its `Item item` parameter so we can validate the template.
 <2> Make the `Item` object accessible in the template.
+
+NOTE: When the `--parameters` compiler argument is enabled, RESTEasy Reactive may infer the parameter names from the method argument names, making the `@PathParam("id")` annotation optional in this case.
 
 === Template parameter declaration inside the template itself
 

@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
 
 class CacheProcessor {
 
@@ -83,6 +84,11 @@ class CacheProcessor {
     @BuildStep
     AnnotationsTransformerBuildItem annotationsTransformer() {
         return new AnnotationsTransformerBuildItem(new CacheAnnotationsTransformer());
+    }
+
+    @BuildStep
+    RestClientAnnotationsTransformerBuildItem restClientAnnotationsTransformer() {
+        return new RestClientAnnotationsTransformerBuildItem(new RestClientCacheAnnotationsTransformer());
     }
 
     @BuildStep

@@ -48,6 +48,7 @@ import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.index.ConstPoolScanner;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -76,7 +77,9 @@ public class ClassTransformingBuildStep {
             ApplicationArchivesBuildItem appArchives, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, ClassLoadingConfig classLoadingConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem, List<RemovedResourceBuildItem> removedResourceBuildItems,
-            ArchiveRootBuildItem archiveRoot, LaunchModeBuildItem launchMode, PackageConfig packageConfig,
+            ArchiveRootBuildItem archiveRoot, LaunchModeBuildItem launchMode,
+            List<OverridePackageConfigBuildItem> packageConfigOverride, // order after config overrides
+            PackageConfig packageConfig,
             ExecutorService buildExecutor)
             throws ExecutionException, InterruptedException {
         if (bytecodeTransformerBuildItems.isEmpty() && classLoadingConfig.removedResources.isEmpty()

@@ -17,11 +17,12 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
@@ -33,8 +34,9 @@ public class FunctionZipProcessor {
     private static final Logger log = Logger.getLogger(FunctionZipProcessor.class);
 
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
-    public void requireLegacy(BuildProducer<LegacyJarRequiredBuildItem> required) {
-        required.produce(new LegacyJarRequiredBuildItem());
+    public OverridePackageConfigBuildItem requireLegacy(PackageConfig packageConfig) {
+        packageConfig.type = PackageConfig.BuiltInType.LEGACY_JAR.name();
+        return new OverridePackageConfigBuildItem();
     }
 
     /**

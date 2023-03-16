@@ -9,18 +9,20 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
+import io.quarkus.deployment.pkg.builditem.OverridePackageConfigBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.pkg.steps.NativeSourcesBuild;
 
 public class CloudFunctionDeploymentBuildStep {
     @BuildStep
-    public UberJarRequiredBuildItem forceUberJar() {
+    public OverridePackageConfigBuildItem forceUberJar(PackageConfig config) {
         // Google Cloud Function needs a single JAR inside a dedicated directory
-        return new UberJarRequiredBuildItem();
+        config.type = PackageConfig.BuiltInType.LEGACY_JAR.name();
+        return new OverridePackageConfigBuildItem();
     }
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)

@@ -27,6 +27,7 @@ public class TransactionalJsonCommandsTest extends DatasourceTestBase {
 
     Person person = new Person("luke", "skywalker");
     Person person2 = new Person("leia", "skywalker");
+    Person person3 = new Person("anakin", "skywalker");
 
     @BeforeEach
     void initialize() {
@@ -62,8 +63,12 @@ public class TransactionalJsonCommandsTest extends DatasourceTestBase {
 
             json.jsonSet("sister", "$", new JsonObject(Json.encode(person2)));
             json.jsonGet("sister", Person.class);
+
+            json.jsonSet("someone", person3);
+            json.jsonGetObject("someone");
+
         });
-        assertThat(result.size()).isEqualTo(12);
+        assertThat(result.size()).isEqualTo(14);
         assertThat(result.discarded()).isFalse();
 
         assertThat((Void) result.get(0)).isNull();
@@ -82,6 +87,7 @@ public class TransactionalJsonCommandsTest extends DatasourceTestBase {
         assertThat(actual.getJsonArray("a")).isEmpty();// cleared
         assertThat((Void) result.get(10)).isNull();
         assertThat((Person) result.get(11)).isEqualTo(person2);
+        assertThat(((JsonObject) result.get(13)).mapTo(Person.class)).isEqualTo(person3);
     }
 
     @Test
@@ -100,9 +106,11 @@ public class TransactionalJsonCommandsTest extends DatasourceTestBase {
                     .chain(() -> json.jsonStrLen(key, "$.sister.lastname")) // 8 -> 10
                     .chain(() -> json.jsonGet(key)) // 9 {...}
                     .chain(() -> json.jsonSet("sister", "$", new JsonObject(Json.encode(person2))))
-                    .chain(() -> json.jsonGet("sister", Person.class));
+                    .chain(() -> json.jsonGet("sister", Person.class))
+                    .chain(() -> json.jsonSet("someone", person3))
+                    .chain(() -> json.jsonGetObject("someone"));
         }).await().atMost(Duration.ofSeconds(5));
-        assertThat(result.size()).isEqualTo(12);
+        assertThat(result.size()).isEqualTo(14);
         assertThat(result.discarded()).isFalse();
 
         assertThat((Void) result.get(0)).isNull();
@@ -121,6 +129,8 @@ public class TransactionalJsonCommandsTest extends DatasourceTestBase {
         assertThat(actual.getJsonArray("a")).isEmpty();// cleared
         assertThat((Void) result.get(10)).isNull();
         assertThat((Person) result.get(11)).isEqualTo(person2);
+        assertThat((Person) result.get(11)).isEqualTo(person2);
+        assertThat(((JsonObject) result.get(13)).mapTo(Person.class)).isEqualTo(person3);
     }
 
 }

@@ -27,6 +27,21 @@ public interface ReactiveTransactionalJsonCommands<K> extends ReactiveTransactio
      * Group: json
      *
      * @param key the key, must not be {@code null}
+     * @param value the value, encoded to JSON
+     * @param <T> the type for the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
+     **/
+    default <T> Uni<Void> jsonSet(K key, T value) {
+        return jsonSet(key, "$", value);
+    }
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/json.set/">JSON.SET</a>.
+     * Summary: Sets the JSON value at path in key.
+     * Group: json
+     *
+     * @param key the key, must not be {@code null}
      * @param path the path, must not be {@code null}
      * @param json the JSON object to store, must not be {@code null}
      * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
@@ -52,6 +67,22 @@ public interface ReactiveTransactionalJsonCommands<K> extends ReactiveTransactio
      * Execute the command <a href="https://redis.io/commands/json.set/">JSON.SET</a>.
      * Summary: Sets the JSON value at path in key.
      * Group: json
+     * <p>
+     * This variant uses {@code $} as path.
+     *
+     * @param key the key, must not be {@code null}
+     * @param json the JSON object to store, must not be {@code null}
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
+     **/
+    default Uni<Void> jsonSet(K key, JsonObject json) {
+        return jsonSet(key, "$", json);
+    }
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/json.set/">JSON.SET</a>.
+     * Summary: Sets the JSON value at path in key.
+     * Group: json
      *
      * @param key the key, must not be {@code null}
      * @param path the path, must not be {@code null}
@@ -60,6 +91,20 @@ public interface ReactiveTransactionalJsonCommands<K> extends ReactiveTransactio
      *         otherwise. In the case of failure, the transaction is discarded.
      */
     Uni<Void> jsonSet(K key, String path, JsonArray json);
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/json.set/">JSON.SET</a>.
+     * Summary: Sets the JSON value at path in key.
+     * Group: json
+     *
+     * @param key the key, must not be {@code null}
+     * @param json the JSON array to store, must not be {@code null}
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
+     **/
+    default Uni<Void> jsonSet(K key, JsonArray json) {
+        return jsonSet(key, "$", json);
+    }
 
     /**
      * Execute the command <a href="https://redis.io/commands/json.set/">JSON.SET</a>.
@@ -254,6 +299,22 @@ public interface ReactiveTransactionalJsonCommands<K> extends ReactiveTransactio
      *         otherwise. In the case of failure, the transaction is discarded.
      */
     <T> Uni<Void> jsonArrPop(K key, Class<T> clazz, String path, int index);
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/json.arrpop/">JSON.ARRPOP</a>.
+     * Summary: Removes and returns an element from the index in the array.
+     * Group: json
+     * <p>
+     *
+     * @param key the key, must not be {@code null}
+     * @param clazz the type of the popped object
+     * @param path path the path, defaults to root if not provided.
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
+     **/
+    default <T> Uni<Void> jsonArrPop(K key, Class<T> clazz, String path) {
+        return jsonArrPop(key, clazz, path, -1);
+    }
 
     /**
      * Execute the command <a href="https://redis.io/commands/json.arrtrim/">JSON.ARRTRIM</a>.

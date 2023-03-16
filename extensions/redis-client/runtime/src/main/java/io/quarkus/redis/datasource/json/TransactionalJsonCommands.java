@@ -24,10 +24,49 @@ public interface TransactionalJsonCommands<K> extends TransactionalRedisCommands
      * Group: json
      *
      * @param key the key, must not be {@code null}
+     * @param value the value, encoded to JSON
+     * @param <T> the type for the value
+     **/
+    default <T> void jsonSet(K key, T value) {
+        jsonSet(key, "$", value);
+    }
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/json.set/">JSON.SET</a>.
+     * Summary: Sets the JSON value at path in key.
+     * Group: json
+     *
+     * @param key the key, must not be {@code null}
      * @param path the path, must not be {@code null}
      * @param json the JSON object to store, must not be {@code null}
      */
     void jsonSet(K key, String path, JsonObject json);
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/json.set/">JSON.SET</a>.
+     * Summary: Sets the JSON value at path in key.
+     * Group: json
+     * <p>
+     * This variant uses {@code $} as path.
+     *
+     * @param key the key, must not be {@code null}
+     * @param json the JSON object to store, must not be {@code null}
+     **/
+    default void jsonSet(K key, JsonObject json) {
+        jsonSet(key, "$", json);
+    }
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/json.set/">JSON.SET</a>.
+     * Summary: Sets the JSON value at path in key.
+     * Group: json
+     *
+     * @param key the key, must not be {@code null}
+     * @param json the JSON array to store, must not be {@code null}
+     **/
+    default void jsonSet(K key, JsonArray json) {
+        jsonSet(key, "$", json);
+    }
 
     /**
      * Execute the command <a href="https://redis.io/commands/json.set/">JSON.SET</a>.
@@ -219,6 +258,20 @@ public interface TransactionalJsonCommands<K> extends TransactionalRedisCommands
      *        Out-of-range indexes round to their respective array ends.
      */
     <T> void jsonArrPop(K key, Class<T> clazz, String path, int index);
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/json.arrpop/">JSON.ARRPOP</a>.
+     * Summary: Removes and returns an element from the index in the array.
+     * Group: json
+     * <p>
+     *
+     * @param key the key, must not be {@code null}
+     * @param clazz the type of the popped object
+     * @param path path the path, defaults to root if not provided.
+     **/
+    default <T> void jsonArrPop(K key, Class<T> clazz, String path) {
+        jsonArrPop(key, clazz, path, -1);
+    }
 
     /**
      * Execute the command <a href="https://redis.io/commands/json.arrtrim/">JSON.ARRTRIM</a>.

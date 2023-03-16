@@ -173,9 +173,6 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     @Override
     public ClientImpl build() {
-        Buffer keyStore = asBuffer(this.keyStore, keystorePassword);
-        Buffer trustStore = asBuffer(this.trustStore, this.trustStorePassword);
-
         HttpClientOptions options = Optional.ofNullable(configuration.getFromContext(HttpClientOptions.class))
                 .orElseGet(HttpClientOptions::new);
 
@@ -185,6 +182,9 @@ public class ClientBuilderImpl extends ClientBuilder {
             options.setVerifyHost(false);
         }
 
+        char[] effectiveTrustStorePassword = trustStorePassword == null ? EMPTY_CHAR_ARARAY : trustStorePassword;
+        Buffer keyStore = asBuffer(this.keyStore, keystorePassword);
+        Buffer trustStore = asBuffer(this.trustStore, effectiveTrustStorePassword);
         if (keyStore != null || trustStore != null) {
             options = options.setSsl(true);
             if (keyStore != null) {
@@ -196,7 +196,7 @@ public class ClientBuilderImpl extends ClientBuilder {
             if (trustStore != null) {
                 JksOptions jks = new JksOptions();
                 jks.setValue(trustStore);
-                jks.setPassword(trustStorePassword == null ? "" : new String(trustStorePassword));
+                jks.setPassword(new String(effectiveTrustStorePassword));
                 options.setTrustStoreOptions(jks);
             }
         }

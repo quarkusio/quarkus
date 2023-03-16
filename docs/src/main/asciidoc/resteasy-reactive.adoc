@@ -954,7 +954,6 @@ import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 
 import io.smallrye.reactive.messaging.annotations.Channel;
 
@@ -975,6 +974,52 @@ public class Endpoint {
     }
 }
 ----
+
+Sometimes it's useful to create a customized SSE message, for example if you need to specify the `event` field of a SSE message to distinguish various event types.
+A resource method may return `Multi<jakarta.ws.rs.sse.OutboundSseEvent>` and an injected `jakarta.ws.rs.sse.Sse` can be used to create `OutboundSseEvent` instances.
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.Sse;
+
+import org.jboss.resteasy.reactive.RestStreamElementType;
+
+import io.smallrye.mutiny.Multi;
+
+import io.smallrye.reactive.messaging.annotations.Channel;
+
+@Path("escoffier")
+public class Endpoint {
+
+    @Inject
+    @Channel("book-out")
+    Multi<Book> books;
+    
+    @Inject
+    Sse sse; <1>
+
+    @GET
+    @RestStreamElementType(MediaType.TEXT_PLAIN)
+    public Multi<OutboundSseEvent> stream() {
+        return books.map(book -> sse.newEventBuilder() <2>
+            .name("book")  <3>
+            .data(book.title) <4>
+            .build());
+    }
+}
+----
+<1> Inject the server-side entry point for creating ``OutboundSseEvent``s.
+<2> Create a new outbound event builder.
+<3> Set the event name, i.e. the value of the `event` field of a SSE message.
+<4> Set the data, i.e. the value of the `data` field of a SSE message.
 
 === Controlling HTTP Caching features
 

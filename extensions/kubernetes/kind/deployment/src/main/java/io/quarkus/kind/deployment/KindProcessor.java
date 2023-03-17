@@ -23,6 +23,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.ExecUtil;
+import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.deployment.AddPortToKubernetesConfig;
 import io.quarkus.kubernetes.deployment.DevClusterHelper;
 import io.quarkus.kubernetes.deployment.KubernetesCommonHelper;
@@ -32,6 +33,7 @@ import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
@@ -46,6 +48,7 @@ import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 
 public class KindProcessor {
 
@@ -97,6 +100,7 @@ public class KindProcessor {
             KubernetesConfig config,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
+            Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
             List<KubernetesInitContainerBuildItem> initContainers,
             List<KubernetesJobBuildItem> jobs,
             List<KubernetesAnnotationBuildItem> annotations,
@@ -111,16 +115,16 @@ public class KindProcessor {
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
             Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
+            List<KubernetesClusterRoleBuildItem> clusterRoles,
+            List<KubernetesServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
         return DevClusterHelper.createDecorators(KIND, applicationInfo, outputTarget, config, packageConfig,
-                metricsConfiguration, initContainers, jobs, annotations, labels, envs, baseImage, image, command, ports,
-                portName,
-                livenessPath,
-                readinessPath,
-                startupPath,
-                roles, roleBindings, customProjectRoot);
+                metricsConfiguration, kubernetesClientConfiguration, initContainers, jobs, annotations, labels, envs,
+                baseImage, image, command, ports, portName,
+                livenessPath, readinessPath, startupPath,
+                roles, clusterRoles, serviceAccounts, roleBindings, customProjectRoot);
     }
 
     @BuildStep

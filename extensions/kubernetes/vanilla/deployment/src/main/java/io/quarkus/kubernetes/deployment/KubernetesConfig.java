@@ -263,6 +263,11 @@ public class KubernetesConfig implements PlatformConfiguration {
     ResourcesConfig resources;
 
     /**
+     * RBAC configuration
+     */
+    RbacConfig rbac;
+
+    /**
      * Ingress configuration
      */
     IngressConfig ingress;
@@ -564,6 +569,11 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public DeployStrategy getDeployStrategy() {
         return deployStrategy;
+    }
+
+    @Override
+    public RbacConfig getRbacConfig() {
+        return rbac;
     }
 
     public KubernetesConfig.DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {

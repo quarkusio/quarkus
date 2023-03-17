@@ -54,7 +54,7 @@ import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
-import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
+import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class KubernetesClientProcessor {
@@ -69,6 +69,7 @@ public class KubernetesClientProcessor {
     private static final DotName KUBE_SCHEMA = DotName.createSimple(KubeSchema.class.getName());
     private static final DotName VISITABLE_BUILDER = DotName.createSimple(VisitableBuilder.class.getName());
     private static final DotName CUSTOM_RESOURCE = DotName.createSimple(CustomResource.class.getName());
+    private static final String SERVICE_ACCOUNT = "ServiceAccount";
 
     private static final DotName JSON_FORMAT = DotName.createSimple(JsonFormat.class.getName());
     private static final String[] EMPTY_STRINGS_ARRAY = new String[0];
@@ -106,13 +107,13 @@ public class KubernetesClientProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
             BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses,
-            BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer,
-            BuildProducer<ServiceProviderBuildItem> serviceProviderProducer) {
+            BuildProducer<ServiceProviderBuildItem> serviceProviderProducer,
+            BuildProducer<KubernetesClientCapabilityBuildItem> kubernetesClientCapabilityProducer) {
 
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
-        if (kubernetesClientConfig.generateRbac) {
-            roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));
-        }
+
+        kubernetesClientCapabilityProducer
+                .produce(new KubernetesClientCapabilityBuildItem(kubernetesClientConfig.generateRbac));
 
         // register fully (and not weakly) for reflection watchers, informers and custom resources
         final Set<DotName> watchedClasses = new HashSet<>();

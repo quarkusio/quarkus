@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
+import io.fabric8.kubernetes.api.model.rbac.Subject;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.LogFile;
@@ -21,10 +23,12 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 public class WithKubernetesClientTest {
 
+    private static final String APP_NAME = "kubernetes-with-client";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-with-client")
+            .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
@@ -58,11 +62,21 @@ public class WithKubernetesClientTest {
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
         assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).singleElement().satisfies(h -> {
-            assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client");
+            assertThat(h.getMetadata().getName()).isEqualTo(APP_NAME);
         });
 
         assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).singleElement().satisfies(h -> {
-            assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client-view");
+            assertThat(h.getMetadata().getName()).isEqualTo(APP_NAME + "-view");
+            RoleBinding roleBinding = (RoleBinding) h;
+            // verify role ref
+            assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("ClusterRole");
+            assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view");
+
+            // verify subjects
+            assertThat(roleBinding.getSubjects()).isNotEmpty();
+            Subject subject = roleBinding.getSubjects().get(0);
+            assertThat(subject.getKind()).isEqualTo("ServiceAccount");
+            assertThat(subject.getName()).isEqualTo(APP_NAME);
         });
     }
 

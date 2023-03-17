@@ -1,5 +1,8 @@
 package io.quarkus.kubernetes.spi;
 
+import java.util.Collections;
+import java.util.Map;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -17,17 +20,22 @@ public final class KubernetesRoleBindingBuildItem extends MultiBuildItem {
      */
     private final String name;
     /**
-     * Name of the bound role.
+     * RoleRef configuration.
      */
-    private final String role;
-    /**
-     * If {@code true}, the binding refers to a {@code ClusterRole}, otherwise to a namespaced {@code Role}.
-     */
-    private final boolean clusterWide;
+    private final RoleRef roleRef;
     /**
      * The target manifest that should include this role.
      */
     private final String target;
+    /**
+     * The target subjects.
+     */
+    private final Subject[] subjects;
+
+    /**
+     * The labels of the cluster role resource.
+     */
+    private final Map<String, String> labels;
 
     public KubernetesRoleBindingBuildItem(String role, boolean clusterWide) {
         this(null, role, clusterWide, null);
@@ -38,25 +46,85 @@ public final class KubernetesRoleBindingBuildItem extends MultiBuildItem {
     }
 
     public KubernetesRoleBindingBuildItem(String name, String role, boolean clusterWide, String target) {
+        this(name, target, Collections.emptyMap(),
+                new RoleRef(role, clusterWide),
+                new Subject("", "ServiceAccount", name, null));
+    }
+
+    public KubernetesRoleBindingBuildItem(String name, String target, Map<String, String> labels, RoleRef roleRef,
+            Subject... subjects) {
         this.name = name;
-        this.role = role;
-        this.clusterWide = clusterWide;
         this.target = target;
+        this.labels = labels;
+        this.roleRef = roleRef;
+        this.subjects = subjects;
     }
 
     public String getName() {
         return this.name;
     }
 
-    public String getRole() {
-        return this.role;
-    }
-
-    public boolean isClusterWide() {
-        return clusterWide;
-    }
-
     public String getTarget() {
         return target;
+    }
+
+    public Map<String, String> getLabels() {
+        return labels;
+    }
+
+    public RoleRef getRoleRef() {
+        return roleRef;
+    }
+
+    public Subject[] getSubjects() {
+        return subjects;
+    }
+
+    public static final class RoleRef {
+        private final boolean clusterWide;
+        private final String name;
+
+        public RoleRef(String name, boolean clusterWide) {
+            this.name = name;
+            this.clusterWide = clusterWide;
+        }
+
+        public boolean isClusterWide() {
+            return clusterWide;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    public static final class Subject {
+        private final String apiGroup;
+        private final String kind;
+        private final String name;
+        private final String namespace;
+
+        public Subject(String apiGroup, String kind, String name, String namespace) {
+            this.apiGroup = apiGroup;
+            this.kind = kind;
+            this.name = name;
+            this.namespace = namespace;
+        }
+
+        public String getApiGroup() {
+            return apiGroup;
+        }
+
+        public String getKind() {
+            return kind;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getNamespace() {
+            return namespace;
+        }
     }
 }

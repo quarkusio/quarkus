@@ -170,7 +170,9 @@ public class KubernetesClientBuildConfig {
     public Optional<String[]> noProxy;
 
     /**
-     * Enable the generation of the RBAC manifests.
+     * Enable the generation of the RBAC manifests. If enabled and no other role binding are provided using the properties
+     * `quarkus.kubernetes.rbac.`, it will generate a default role binding using the role "view" and the application
+     * service account.
      */
     @ConfigItem(defaultValue = "true")
     public boolean generateRbac;

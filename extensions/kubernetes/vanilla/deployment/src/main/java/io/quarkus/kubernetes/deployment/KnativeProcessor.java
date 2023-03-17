@@ -48,10 +48,12 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
@@ -63,6 +65,7 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 
 public class KnativeProcessor {
 
@@ -132,6 +135,7 @@ public class KnativeProcessor {
             KnativeConfig config,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
+            Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             List<KubernetesEnvBuildItem> envs,
@@ -143,6 +147,8 @@ public class KnativeProcessor {
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
             Optional<KubernetesHealthStartupPathBuildItem> startupProbePath,
             List<KubernetesRoleBuildItem> roles,
+            List<KubernetesClusterRoleBuildItem> clusterRoles,
+            List<KubernetesServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
@@ -157,8 +163,10 @@ public class KnativeProcessor {
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, "http");
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config, metricsConfiguration, annotations,
-                labels, command, port, livenessPath, readinessPath, startupProbePath, roles, roleBindings));
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config,
+                metricsConfiguration, kubernetesClientConfiguration, annotations,
+                labels, command, port, livenessPath, readinessPath, startupProbePath,
+                roles, clusterRoles, serviceAccounts, roleBindings));
 
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(KNATIVE, new ApplyContainerImageDecorator(name, i.getImage())));

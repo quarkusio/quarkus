@@ -224,6 +224,12 @@ public class KnativeConfig implements PlatformConfiguration {
     ResourcesConfig resources;
 
     /**
+     * RBAC configuration
+     */
+    @ConfigItem
+    RbacConfig rbac;
+
+    /**
      * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and Deployment
      */
     @ConfigItem(defaultValue = "true")
@@ -521,5 +527,10 @@ public class KnativeConfig implements PlatformConfiguration {
     @Override
     public boolean isIdempotent() {
         return idempotent;
+    }
+
+    @Override
+    public RbacConfig getRbacConfig() {
+        return rbac;
     }
 }

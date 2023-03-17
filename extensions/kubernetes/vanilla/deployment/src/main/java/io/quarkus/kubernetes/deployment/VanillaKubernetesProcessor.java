@@ -38,10 +38,12 @@ import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
@@ -56,6 +58,7 @@ import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 
 public class VanillaKubernetesProcessor {
 
@@ -126,6 +129,7 @@ public class VanillaKubernetesProcessor {
             OutputTargetBuildItem outputTarget, Capabilities capabilities, KubernetesConfig config,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
+            Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
             List<KubernetesJobBuildItem> jobs,
             List<KubernetesInitContainerBuildItem> initContainers,
             List<KubernetesAnnotationBuildItem> annotations,
@@ -136,6 +140,8 @@ public class VanillaKubernetesProcessor {
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
             Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
+            List<KubernetesClusterRoleBuildItem> clusterRoles,
+            List<KubernetesServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
 
@@ -149,8 +155,10 @@ public class VanillaKubernetesProcessor {
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration,
-                annotations, labels, command, port, livenessPath, readinessPath, startupPath, roles, roleBindings));
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config,
+                metricsConfiguration, kubernetesClientConfiguration, annotations, labels, command, port,
+                livenessPath, readinessPath, startupPath,
+                roles, clusterRoles, serviceAccounts, roleBindings));
 
         KubernetesConfig.DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         if (deploymentKind != KubernetesConfig.DeploymentResourceKind.Deployment) {

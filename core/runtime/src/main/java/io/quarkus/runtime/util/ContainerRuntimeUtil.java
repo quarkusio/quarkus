@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -19,18 +17,14 @@ import io.smallrye.config.SmallRyeConfig;
 public final class ContainerRuntimeUtil {
 
     private static final Logger log = Logger.getLogger(ContainerRuntimeUtil.class);
-    private static final String DOCKER_EXECUTABLE = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+    private static final String CONTAINER_EXECUTABLE = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
             .getOptionalValue("quarkus.native.container-runtime", String.class).orElse(null);
-    /*
-     * Caching the value in a file helps us only as much as one JVM execution is concerned.
-     * Test suite's pom.xml sets things like <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>,
-     * so the file could appear in /tmp/ or C:\Users\karm\AppData\Local\Temp\ or in fact in
-     * quarkus/integration-tests/something/target.
-     * There is no point in reaching it in `Path.of(Paths.get("").toAbsolutePath().toString(), "target",
-     * "quarkus_container_runtime.txt")`
-     * as the file is deleted between JVM executions anyway.
+
+    /**
+     * Static variable is not used because the class gets loaded by different classloaders at
+     * runtime and the container runtime would be detected again and again unnecessarily.
      */
-    static final Path CONTAINER_RUNTIME = Path.of(System.getProperty("java.io.tmpdir"), "quarkus_container_runtime.txt");
+    private static final String CONTAINER_RUNTIME_SYS_PROP = "quarkus-local-container-runtime";
 
     private ContainerRuntimeUtil() {
     }
@@ -47,86 +41,85 @@ public final class ContainerRuntimeUtil {
     }
 
     public static ContainerRuntime detectContainerRuntime(boolean required) {
-        final ContainerRuntime containerRuntime = loadConfig();
+        final ContainerRuntime containerRuntime = loadContainerRuntimeFromSystemProperty();
         if (containerRuntime != null) {
             return containerRuntime;
         } else {
             // Docker version 19.03.14, build 5eb3275d40
-            final String dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
-            boolean dockerAvailable = dockerVersionOutput.contains("Docker version");
+            String dockerVersionOutput;
+            boolean dockerAvailable;
             // Check if Podman is installed
             // podman version 2.1.1
-            final String podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
-            boolean podmanAvailable = podmanVersionOutput.startsWith("podman version");
-            if (DOCKER_EXECUTABLE != null) {
-                if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("docker") && dockerAvailable) {
-                    storeConfig(ContainerRuntime.DOCKER);
-                    return ContainerRuntime.DOCKER;
-                } else if (DOCKER_EXECUTABLE.trim().equalsIgnoreCase("podman") && podmanAvailable) {
-                    storeConfig(ContainerRuntime.PODMAN);
-                    return ContainerRuntime.PODMAN;
-                } else {
-                    log.warn("quarkus.native.container-runtime config property must be set to either podman or docker " +
-                            "and the executable must be available. Ignoring it.");
+            String podmanVersionOutput;
+            boolean podmanAvailable;
+            if (CONTAINER_EXECUTABLE != null) {
+                if (CONTAINER_EXECUTABLE.trim().equalsIgnoreCase("docker")) {
+                    dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
+                    dockerAvailable = dockerVersionOutput.contains("Docker version");
+                    if (dockerAvailable) {
+                        storeContainerRuntimeInSystemProperty(ContainerRuntime.DOCKER);
+                        return ContainerRuntime.DOCKER;
+                    }
                 }
+                if (CONTAINER_EXECUTABLE.trim().equalsIgnoreCase("podman")) {
+                    podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
+                    podmanAvailable = podmanVersionOutput.startsWith("podman version");
+                    if (podmanAvailable) {
+                        storeContainerRuntimeInSystemProperty(ContainerRuntime.PODMAN);
+                        return ContainerRuntime.PODMAN;
+                    }
+                }
+                log.warn("quarkus.native.container-runtime config property must be set to either podman or docker " +
+                        "and the executable must be available. Ignoring it.");
             }
+            dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
+            dockerAvailable = dockerVersionOutput.contains("Docker version");
             if (dockerAvailable) {
                 // Check if "docker" is an alias to "podman"
-                if (dockerVersionOutput.equals(podmanVersionOutput)) {
-                    storeConfig(ContainerRuntime.PODMAN);
+                if (dockerVersionOutput.startsWith("podman version")) {
+                    storeContainerRuntimeInSystemProperty(ContainerRuntime.PODMAN);
                     return ContainerRuntime.PODMAN;
                 }
-                storeConfig(ContainerRuntime.DOCKER);
+                storeContainerRuntimeInSystemProperty(ContainerRuntime.DOCKER);
                 return ContainerRuntime.DOCKER;
-            } else if (podmanAvailable) {
-                storeConfig(ContainerRuntime.PODMAN);
-                return ContainerRuntime.PODMAN;
-            } else {
-                if (required) {
-                    throw new IllegalStateException("No container runtime was found. "
-                            + "Make sure you have either Docker or Podman installed in your environment.");
-                } else {
-                    storeConfig(ContainerRuntime.UNAVAILABLE);
-                    return ContainerRuntime.UNAVAILABLE;
-                }
             }
+            podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
+            podmanAvailable = podmanVersionOutput.startsWith("podman version");
+            if (podmanAvailable) {
+                storeContainerRuntimeInSystemProperty(ContainerRuntime.PODMAN);
+                return ContainerRuntime.PODMAN;
+            }
+
+            storeContainerRuntimeInSystemProperty(ContainerRuntime.UNAVAILABLE);
+
+            if (required) {
+                throw new IllegalStateException("No container runtime was found. "
+                        + "Make sure you have either Docker or Podman installed in your environment.");
+            }
+
+            return ContainerRuntime.UNAVAILABLE;
         }
     }
 
-    private static ContainerRuntime loadConfig() {
-        try {
-            if (Files.isReadable(CONTAINER_RUNTIME)) {
-                final String runtime = Files.readString(CONTAINER_RUNTIME, StandardCharsets.UTF_8);
-                if (ContainerRuntime.DOCKER.name().equalsIgnoreCase(runtime)) {
-                    return ContainerRuntime.DOCKER;
-                } else if (ContainerRuntime.PODMAN.name().equalsIgnoreCase(runtime)) {
-                    return ContainerRuntime.PODMAN;
-                } else if (ContainerRuntime.UNAVAILABLE.name().equalsIgnoreCase(runtime)) {
-                    return ContainerRuntime.UNAVAILABLE;
-                } else {
-                    log.warnf("The file %s contains an unknown value %s. Ignoring it.",
-                            CONTAINER_RUNTIME.toAbsolutePath(), runtime);
-                    return null;
-                }
-            } else {
-                return null;
-            }
-        } catch (IOException e) {
-            log.warnf("Error reading file %s. Ignoring it. See: %s",
-                    CONTAINER_RUNTIME.toAbsolutePath(), e);
+    private static ContainerRuntime loadContainerRuntimeFromSystemProperty() {
+        final String runtime = System.getProperty(CONTAINER_RUNTIME_SYS_PROP);
+
+        if (runtime == null) {
             return null;
         }
+
+        ContainerRuntime containerRuntime = ContainerRuntime.valueOf(runtime);
+
+        if (containerRuntime == null) {
+            log.warnf("System property %s contains an unknown value %s. Ignoring it.",
+                    CONTAINER_RUNTIME_SYS_PROP, runtime);
+        }
+
+        return containerRuntime;
     }
 
-    private static void storeConfig(ContainerRuntime containerRuntime) {
-        try {
-            Files.writeString(CONTAINER_RUNTIME, containerRuntime.name(), StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            CONTAINER_RUNTIME.toFile().deleteOnExit();
-        } catch (IOException e) {
-            log.warnf("Error writing to file %s. Ignoring it. See: %s",
-                    CONTAINER_RUNTIME.toAbsolutePath(), e);
-        }
+    private static void storeContainerRuntimeInSystemProperty(ContainerRuntime containerRuntime) {
+        System.setProperty(CONTAINER_RUNTIME_SYS_PROP, containerRuntime.name());
     }
 
     private static String getVersionOutputFor(ContainerRuntime containerRuntime) {
@@ -135,8 +128,14 @@ public final class ContainerRuntimeUtil {
             final ProcessBuilder pb = new ProcessBuilder(containerRuntime.getExecutableName(), "--version")
                     .redirectErrorStream(true);
             versionProcess = pb.start();
-            versionProcess.waitFor();
-            return new String(versionProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            final int timeoutS = 10;
+            if (versionProcess.waitFor(timeoutS, TimeUnit.SECONDS)) {
+                return new String(versionProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            } else {
+                log.debugf("Failure. It took command %s more than %d seconds to execute.", containerRuntime.getExecutableName(),
+                        timeoutS);
+                return "";
+            }
         } catch (IOException | InterruptedException e) {
             // If an exception is thrown in the process, just return an empty String
             log.debugf(e, "Failure to read version output from %s", containerRuntime.getExecutableName());
@@ -200,6 +199,10 @@ public final class ContainerRuntimeUtil {
         private Boolean rootless;
 
         public String getExecutableName() {
+            if (this == UNAVAILABLE) {
+                throw new IllegalStateException("Cannot get an executable name when no container runtime is available");
+            }
+
             return this.name().toLowerCase();
         }
 
@@ -215,6 +218,16 @@ public final class ContainerRuntimeUtil {
                 }
             }
             return rootless;
+        }
+
+        public static ContainerRuntime of(String value) {
+            for (ContainerRuntime containerRuntime : values()) {
+                if (containerRuntime.name().equalsIgnoreCase(value)) {
+                    return containerRuntime;
+                }
+            }
+
+            return null;
         }
     }
 }

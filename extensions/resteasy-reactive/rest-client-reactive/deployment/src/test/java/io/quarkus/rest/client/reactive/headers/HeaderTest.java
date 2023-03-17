@@ -3,6 +3,13 @@ package io.quarkus.rest.client.reactive.headers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.GET;
@@ -40,6 +47,15 @@ public class HeaderTest {
         assertThat(client.cookieSub("bar", null).send(null, "bar4", "dummy")).isEqualTo("bar:null:null:bar4:X-My-Header/dummy");
     }
 
+    @Test
+    void testHeadersWithCollections() {
+        String expected = "a, b, c, d";
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        assertThat(client.headersList(List.of("a", "b"), List.of("c", "d"))).isEqualTo(expected);
+        assertThat(client.headersSet(Set.of("a", "b"), Set.of("c", "d"))).isEqualTo(expected);
+        assertThat(client.headersSet(new TreeSet(List.of("a", "b")), new TreeSet(List.of("c", "d")))).isEqualTo(expected);
+    }
+
     @Path("/")
     @ApplicationScoped
     public static class Resource {
@@ -51,12 +67,50 @@ public class HeaderTest {
             return header + ":" + header2 + ":" + header3 + ":" + header4 + ":" + myHeaderName + "/"
                     + headers.getHeaderString("X-My-Header");
         }
+
+        @GET
+        @Path("/headers-list")
+        public String headersList(@HeaderParam("foo") List foo, @RestHeader List header) {
+            return joiningCollections(foo, header);
+        }
+
+        @GET
+        @Path("/headers-set")
+        public String headersSet(@HeaderParam("foo") Set foo, @RestHeader Set header) {
+            return joiningCollections(foo, header);
+        }
+
+        @GET
+        @Path("/headers-sorted-set")
+        public String headersSortedSet(@HeaderParam("foo") SortedSet foo, @RestHeader SortedSet header) {
+            return joiningCollections(foo, header);
+        }
+
+        private String joiningCollections(Collection... collections) {
+            List<String> allHeaders = new ArrayList<>();
+            for (Collection collection : collections) {
+                collection.forEach(v -> allHeaders.add((String) v));
+            }
+            return allHeaders.stream().collect(Collectors.joining(", "));
+        }
     }
 
     public interface Client {
 
         @Path("/")
         SubClient cookieSub(@HeaderParam("foo") String cookie, @HeaderParam("foo2") String cookie2);
+
+        @GET
+        @Path("/headers-list")
+        String headersList(@HeaderParam("foo") List foo, @RestHeader List header);
+
+        @GET
+        @Path("/headers-set")
+        String headersSet(@HeaderParam("foo") Set foo, @RestHeader Set header);
+
+        @GET
+        @Path("/headers-sorted-set")
+        String headersSortedSet(@HeaderParam("foo") SortedSet foo, @RestHeader SortedSet header);
     }
 
     public interface SubClient {

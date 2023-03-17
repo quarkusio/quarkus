@@ -1,6 +1,7 @@
 package io.quarkus.rest.client.reactive.runtime;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -81,11 +82,13 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
         }
     }
 
-    private static List<String> castToListOfStrings(List<Object> values) {
+    private static List<String> castToListOfStrings(Collection<Object> values) {
         List<String> result = new ArrayList<>();
         for (Object value : values) {
             if (value instanceof String) {
                 result.add((String) value);
+            } else if (value instanceof Collection) {
+                result.addAll(castToListOfStrings((Collection<Object>) value));
             } else {
                 result.add(String.valueOf(value));
             }

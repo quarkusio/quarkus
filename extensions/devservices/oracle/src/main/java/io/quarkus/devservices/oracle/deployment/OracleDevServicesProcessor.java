@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
 public class OracleDevServicesProcessor {
@@ -53,6 +54,7 @@ public class OracleDevServicesProcessor {
                         .withDatabaseName(effectiveDbName)
                         .withReuse(true);
                 Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
 
                 // We need to limit the maximum amount of CPUs being used by the container;
                 // otherwise the hardcoded memory configuration of the DB might not be enough to successfully boot it.

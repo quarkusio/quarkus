@@ -80,8 +80,21 @@ public class DevServicesBuildTimeConfig {
     /**
      * Path to a SQL script that will be loaded from the classpath and applied to the Dev Service database
      *
-     * If the provider is not container based (e.g. a H2 or Derby Database) then this has no effect.
+     * If the provider is not container based (e.g. an H2 or Derby Database) then this has no effect.
      */
     @ConfigItem
     public Optional<String> initScriptPath;
+
+    /**
+     * The volumes to be mapped to the container. The map key corresponds to the host location and the map value is the
+     * container location. If the host location starts with "classpath:", then the mapping will load the resource from the
+     * classpath with read-only permission.
+     *
+     * When using a file system location, the volume will be created with read-write permission, so the data in your file
+     * system might be wiped out or altered.
+     *
+     * If the provider is not container based (e.g. an H2 or Derby Database) then this has no effect.
+     */
+    @ConfigItem
+    public Map<String, String> volumes;
 }

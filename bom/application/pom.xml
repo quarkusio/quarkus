@@ -218,7 +218,7 @@
         <mime4j.version>0.8.9</mime4j.version>
         <mutiny-zero.version>1.0.0</mutiny-zero.version>
         <!-- Dev UI -->
-        <importmap.version>1.0.6</importmap.version>
+        <importmap.version>1.0.7</importmap.version>
         <lit.version>2.6.1</lit.version>
         <lit-state.version>1.7.0</lit-state.version>
         <vaadin.version>23.3.8</vaadin.version>

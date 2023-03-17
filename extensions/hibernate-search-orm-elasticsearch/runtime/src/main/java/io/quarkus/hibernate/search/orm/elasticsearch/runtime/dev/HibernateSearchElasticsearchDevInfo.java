@@ -1,10 +1,12 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime.dev;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.hibernate.search.backend.elasticsearch.index.ElasticsearchIndexManager;
 import org.hibernate.search.mapper.orm.entity.SearchIndexedEntity;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -62,10 +64,14 @@ class HibernateSearchElasticsearchDevInfo {
 
         public final String jpaName;
         public final String javaClass;
+        public final Set<String> indexNames = new HashSet<>();
 
         IndexedEntity(SearchIndexedEntity<?> searchIndexedEntity) {
             this.jpaName = searchIndexedEntity.jpaName();
             this.javaClass = searchIndexedEntity.javaClass().getName();
+            ElasticsearchIndexManager indexManager = searchIndexedEntity.indexManager().unwrap(ElasticsearchIndexManager.class);
+            indexNames.add(indexManager.descriptor().readName());
+            indexNames.add(indexManager.descriptor().writeName());
         }
 
         @Override

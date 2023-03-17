@@ -90,7 +90,15 @@ export class HibernateSearchOrmElasticsearchIndexedEntitiesComponent extends Lit
                                         header="Class name"
                                         path="javaClass">
                     </vaadin-grid-column>
+                    <vaadin-grid-column auto-width
+                                        header="Index names"
+                                        ${columnBodyRenderer(this._indexNameRenderer, [])}>
+                    </vaadin-grid-column>
                 </vaadin-grid>`;
+    }
+
+    _indexNameRenderer(entity) {
+        return entity.indexNames.map((indexName) => html`<qui-badge>${indexName}</qui-badge>`);
     }
 
     _selectEntityTypes(puName, selectedItems) {

@@ -1,34 +1,23 @@
 package io.quarkus.flyway;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static java.util.List.of;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.dev.config.CurrentConfig;
-import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainersSupplier;
-import io.quarkus.flyway.runtime.FlywayDataSourceBuildTimeConfig;
 import io.quarkus.flyway.runtime.devconsole.FlywayDevConsoleRecorder;
-import io.vertx.core.MultiMap;
-import io.vertx.ext.web.RoutingContext;
+import io.quarkus.runtime.configuration.ConfigUtils;
 
 public class FlywayDevConsoleProcessor {
 
@@ -42,71 +31,24 @@ public class FlywayDevConsoleProcessor {
     @BuildStep
     @Record(value = RUNTIME_INIT, optional = true)
     DevConsoleRouteBuildItem invokeEndpoint(FlywayDevConsoleRecorder recorder) {
-        return new DevConsoleRouteBuildItem("datasources", "POST", recorder.handler());
+        return new DevConsoleRouteBuildItem("datasources", "POST", recorder.datasourcesHandler());
     }
 
     @BuildStep
-    DevConsoleRouteBuildItem invokeEndpoint(List<JdbcInitialSQLGeneratorBuildItem> generatorBuildItem,
+    @Record(value = RUNTIME_INIT, optional = true)
+    DevConsoleRouteBuildItem invokeEndpoint(FlywayDevConsoleRecorder recorder,
+            List<JdbcInitialSQLGeneratorBuildItem> generatorBuildItem,
             FlywayBuildTimeConfig buildTimeConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        return new DevConsoleRouteBuildItem("create-initial-migration", "POST", new DevConsolePostHandler() {
-            @Override
-            protected void handlePostAsync(RoutingContext event, MultiMap form) throws Exception {
-                String name = form.get("datasource");
-                JdbcInitialSQLGeneratorBuildItem found = null;
-                for (var i : generatorBuildItem) {
-                    if (i.getDatabaseName().equals(name)) {
-                        found = i;
-                        break;
-                    }
-                }
-                if (found == null) {
-                    flashMessage(event, "Unable to find SQL generator");
-                    return;
-                }
-                FlywayDataSourceBuildTimeConfig config = buildTimeConfig.getConfigForDataSourceName(name);
-                if (config.locations.isEmpty()) {
-                    flashMessage(event, "Datasource has no locations configured");
-                    return;
-                }
-                System.out.println(found.getSqlSupplier().get());
-
-                List<Path> resourcesDir = DevConsoleManager.getHotReplacementContext().getResourcesDir();
-                if (resourcesDir.isEmpty()) {
-                    flashMessage(event, "No resource directory found");
-                    return;
-                }
-
-                // In the current project only
-                Path path = resourcesDir.get(0);
-
-                Path migrationDir = path.resolve(config.locations.get(0));
-                Files.createDirectories(migrationDir);
-                Path file = migrationDir.resolve(
-                        "V1.0.0__" + curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getArtifactId() + ".sql");
-                Files.writeString(file, found.getSqlSupplier().get());
-                flashMessage(event, file + " was created");
-                Map<String, String> newConfig = new HashMap<>();
-                if (ConfigProvider.getConfig().getOptionalValue("quarkus.flyway.baseline-on-migrate", String.class).isEmpty()) {
-                    newConfig.put("quarkus.flyway.baseline-on-migrate", "true");
-                }
-                if (ConfigProvider.getConfig().getOptionalValue("quarkus.flyway.migrate-at-start", String.class).isEmpty()) {
-                    newConfig.put("quarkus.flyway.migrate-at-start", "true");
-                }
-                for (var profile : of("test", "dev")) {
-                    if (ConfigProvider.getConfig().getOptionalValue("quarkus.flyway.clean-at-start", String.class).isEmpty()) {
-                        newConfig.put("%" + profile + ".quarkus.flyway.clean-at-start", "true");
-                    }
-                }
-                CurrentConfig.EDITOR.accept(newConfig);
-                //force a scan, to make sure everything is up-to-date
-                DevConsoleManager.getHotReplacementContext().doScan(true);
-                flashMessage(event, "Initial migration created, Flyway will now manage this datasource");
-                event.response().setStatusCode(HttpResponseStatus.SEE_OTHER.code()).headers()
-                        .set(HttpHeaderNames.LOCATION,
-                                event.request().absoluteURI().replace("create-initial-migration", "datasources"));
-                event.response().end();
-            }
-        });
+        Map<String, Supplier<String>> initialSqlSuppliers = new HashMap<>();
+        for (JdbcInitialSQLGeneratorBuildItem buildItem : generatorBuildItem) {
+            initialSqlSuppliers.put(buildItem.getDatabaseName(), buildItem.getSqlSupplier());
+        }
+        return new DevConsoleRouteBuildItem("create-initial-migration", "POST",
+                recorder.createInitialMigrationHandler(buildTimeConfig,
+                        curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getArtifactId(), initialSqlSuppliers,
+                        ConfigUtils.isPropertyPresent("quarkus.flyway.baseline-on-migrate"),
+                        ConfigUtils.isPropertyPresent("quarkus.flyway.migrate-at-start"),
+                        ConfigUtils.isPropertyPresent("quarkus.flyway.clean-at-start")));
     }
 }

@@ -1,7 +1,8 @@
 package io.quarkus.hibernate.orm.runtime.dev;
 
-import io.quarkus.arc.profile.IfBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.profile.IfBuildProfile;
 
 @ApplicationScoped
 @IfBuildProfile("dev")

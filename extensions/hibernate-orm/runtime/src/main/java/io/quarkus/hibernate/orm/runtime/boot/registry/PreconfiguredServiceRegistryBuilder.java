@@ -26,7 +26,7 @@ import org.hibernate.query.sqm.mutation.internal.SqmMultiTableMutationStrategyPr
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.sql.ast.internal.JdbcParameterRendererInitiator;
+import org.hibernate.sql.ast.internal.ParameterMarkerStrategyInitiator;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesMappingProducerProviderInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
@@ -232,7 +232,7 @@ public class PreconfiguredServiceRegistryBuilder {
         serviceInitiators.add(SqmMultiTableMutationStrategyProviderInitiator.INSTANCE);
 
         // Default implementation
-        serviceInitiators.add(JdbcParameterRendererInitiator.INSTANCE);
+        serviceInitiators.add(ParameterMarkerStrategyInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

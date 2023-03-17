@@ -18,8 +18,6 @@ import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniCreate;
 import io.smallrye.mutiny.groups.UniOnFailure;
-import io.smallrye.mutiny.groups.UniSubscribe;
-import io.smallrye.mutiny.subscription.Cancellable;
 
 public final class UniImplementor {
 
@@ -34,13 +32,13 @@ public final class UniImplementor {
     }
 
     /**
-     * Given an uni, it will subscribe to the item when set.
+     * Given an uni, it will call invoke on it
      *
      * @param creator
      * @param uniInstance
      * @param function
      */
-    public static void subscribeWith(BytecodeCreator creator, ResultHandle uniInstance,
+    public static ResultHandle invoke(BytecodeCreator creator, ResultHandle uniInstance,
             BiConsumer<BytecodeCreator, ResultHandle> function) {
         ResultHandle rrContext = creator
                 .invokeStaticMethod(ofMethod(CurrentRequestManager.class, "get", ResteasyReactiveRequestContext.class));
@@ -52,10 +50,9 @@ public final class UniImplementor {
                 rrContext);
 
         function.accept(body, item);
+        body.returnNull();
 
-        ResultHandle uniSubscribe = creator.invokeInterfaceMethod(ofMethod(Uni.class, "subscribe", UniSubscribe.class),
-                uniInstance);
-        creator.invokeVirtualMethod(ofMethod(UniSubscribe.class, "with", Cancellable.class, Consumer.class), uniSubscribe,
+        return creator.invokeInterfaceMethod(ofMethod(Uni.class, "invoke", Uni.class, Consumer.class), uniInstance,
                 lambda.getInstance());
     }
 

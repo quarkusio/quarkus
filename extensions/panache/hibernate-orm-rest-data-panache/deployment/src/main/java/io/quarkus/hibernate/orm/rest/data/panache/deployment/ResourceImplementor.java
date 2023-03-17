@@ -24,7 +24,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.deployment.Constants;
-import io.quarkus.rest.data.panache.deployment.ResourceMethodListenerImplementor;
 import io.quarkus.runtime.util.HashUtil;
 
 /**
@@ -62,8 +61,9 @@ class ResourceImplementor {
         classCreator.addAnnotation(Alternative.class);
         classCreator.addAnnotation(Priority.class).add("value", Integer.MAX_VALUE);
 
-        ResourceMethodListenerImplementor listenerImplementor = new ResourceMethodListenerImplementor(classCreator,
-                resourceMethodListeners, false);
+        HibernateORMResourceMethodListenerImplementor listenerImplementor = new HibernateORMResourceMethodListenerImplementor(
+                classCreator,
+                resourceMethodListeners);
 
         implementList(classCreator, dataAccessImplementor);
         implementListWithQuery(classCreator, dataAccessImplementor);
@@ -141,7 +141,7 @@ class ResourceImplementor {
     }
 
     private void implementAdd(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
-            ResourceMethodListenerImplementor resourceMethodListenerImplementor) {
+            HibernateORMResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("add", Object.class, Object.class);
         methodCreator.addAnnotation(Transactional.class);
         ResultHandle entity = methodCreator.getMethodParam(0);
@@ -153,7 +153,7 @@ class ResourceImplementor {
     }
 
     private void implementUpdate(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor, String entityType,
-            ResourceMethodListenerImplementor resourceMethodListenerImplementor) {
+            HibernateORMResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("update", Object.class, Object.class, Object.class);
         methodCreator.addAnnotation(Transactional.class);
         ResultHandle id = methodCreator.getMethodParam(0);
@@ -168,7 +168,7 @@ class ResourceImplementor {
     }
 
     private void implementDelete(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
-            ResourceMethodListenerImplementor resourceMethodListenerImplementor) {
+            HibernateORMResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("delete", boolean.class, Object.class);
         methodCreator.addAnnotation(Transactional.class);
         ResultHandle id = methodCreator.getMethodParam(0);

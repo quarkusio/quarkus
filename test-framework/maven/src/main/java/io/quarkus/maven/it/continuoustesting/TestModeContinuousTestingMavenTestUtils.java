@@ -3,7 +3,11 @@ package io.quarkus.maven.it.continuoustesting;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,10 +22,16 @@ public class TestModeContinuousTestingMavenTestUtils extends ContinuousTestingMa
     // Example output we look for
     // 1 test failed (1 passing, 0 skipped), 1 test was run in 217ms. Tests completed at 21:22:34 due to changes to HelloResource$Blah.class and 1 other files.
     // All 2 tests are passing (0 skipped), 2 tests were run in 1413ms. Tests completed at 21:22:33.
-    private static final Pattern ALL_PASSING = Pattern.compile("All (\\d\\d*) tests are passing \\((\\d\\d*) skipped\\)",
+    // Windows log, despite `quarkus.console.basic=true', might contain terminal control symbols, colour decorations.
+    // e.g. the matcher is then fighting: [39m[91m1 test failed[39m ([32m1 passing[39m, [94m0 skipped[39m)
+    private static final Pattern ALL_PASSING = Pattern.compile(
+            "(?:\\e\\[[\\d;]+m)*All (\\d+) tests are passing \\((\\d+) skipped\\)",
             Pattern.MULTILINE);
     private static final Pattern SOME_PASSING = Pattern
-            .compile("(\\d\\d*) tests? failed \\((\\d\\d*) passing, (\\d\\d*) skipped\\)", Pattern.MULTILINE);
+            .compile(
+                    "(?:\\e\\[[\\d;]+m)*(\\d+) tests? failed(?:\\e\\[[\\d;]+m)* \\((?:\\e\\[[\\d;]+m)*(\\d+) " +
+                            "passing(?:\\e\\[[\\d;]+m)*, (?:\\e\\[[\\d;]+m)*(\\d+) skipped(?:\\e\\[[\\d;]+m)*\\)",
+                    Pattern.MULTILINE);
     private static final String TESTS_COMPLETED = "Tests completed at";
     private final RunningInvoker running;
     private int startPosition = 0;
@@ -39,7 +49,7 @@ public class TestModeContinuousTestingMavenTestUtils extends ContinuousTestingMa
                 .atMost(3, TimeUnit.MINUTES).until(() -> getLogSinceLastRun().contains(TESTS_COMPLETED));
         TestStatus testStatus = new TestStatus();
         try {
-            String log = getLogSinceLastRun();
+            final String log = getLogSinceLastRun();
 
             Matcher matcher = ALL_PASSING.matcher(log);
             int failCount;
@@ -52,7 +62,15 @@ public class TestModeContinuousTestingMavenTestUtils extends ContinuousTestingMa
             } else {
                 matcher = SOME_PASSING.matcher(log);
                 if (!matcher.find()) {
-                    fail("Tests were run, but the log is not parseable with the patterns we know. This is the log\n: " + log);
+                    final Path f = File.createTempFile("quarkus-maven-test-debug-log", ".txt").toPath();
+                    Files.writeString(f, log, StandardCharsets.UTF_8);
+                    fail("Tests were run, but the log is not parseable with the patterns we know, " + System.lineSeparator()
+                            + "i.e. neither \"" + ALL_PASSING.pattern() + "\" nor \"" + SOME_PASSING.pattern() + "\"."
+                            + System.lineSeparator() +
+                            " Note that possible terminal control characters might not be seen here. " + System.lineSeparator()
+                            +
+                            "Check the text file dump too: " + f.toAbsolutePath() + ". This is the log:"
+                            + System.lineSeparator() + log);
                 }
                 failCount = Integer.parseInt(matcher.group(1));
                 passCount = Integer.parseInt(matcher.group(2));

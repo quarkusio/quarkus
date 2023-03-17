@@ -50,12 +50,14 @@ public class BeanArchiveProcessor {
             LiveReloadBuildItem liveReloadBuildItem, BuildProducer<GeneratedClassBuildItem> generatedClass,
             CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
             List<BeanArchivePredicateBuildItem> beanArchivePredicates,
+            List<KnownCompatibleBeanArchiveBuildItem> knownCompatibleBeanArchives,
             BuildCompatibleExtensionsBuildItem buildCompatibleExtensions)
             throws Exception {
 
         // First build an index from application archives
         IndexView applicationIndex = buildApplicationIndex(config, applicationArchivesBuildItem,
-                additionalBeanDefiningAnnotations, customScopes, excludeDependencyBuildItems, beanArchivePredicates);
+                additionalBeanDefiningAnnotations, customScopes, excludeDependencyBuildItems, beanArchivePredicates,
+                new KnownCompatibleBeanArchives(knownCompatibleBeanArchives));
 
         // Then build additional index for beans added by extensions
         Indexer additionalBeanIndexer = new Indexer();
@@ -106,7 +108,8 @@ public class BeanArchiveProcessor {
     private IndexView buildApplicationIndex(ArcConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
             CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
-            List<BeanArchivePredicateBuildItem> beanArchivePredicates) {
+            List<BeanArchivePredicateBuildItem> beanArchivePredicates,
+            KnownCompatibleBeanArchives knownCompatibleBeanArchives) {
 
         Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
 
@@ -138,7 +141,7 @@ public class BeanArchiveProcessor {
             if (isApplicationArchiveExcluded(config, excludeDependencyBuildItems, archive)) {
                 continue;
             }
-            if (!possiblyBeanArchive(archive)) {
+            if (!possiblyBeanArchive(archive, knownCompatibleBeanArchives)) {
                 continue;
             }
             IndexView index = archive.getIndex();
@@ -173,7 +176,8 @@ public class BeanArchiveProcessor {
         return false;
     }
 
-    private boolean possiblyBeanArchive(ApplicationArchive archive) {
+    private boolean possiblyBeanArchive(ApplicationArchive archive,
+            KnownCompatibleBeanArchives knownCompatibleBeanArchives) {
         return archive.apply(tree -> {
             boolean result = true;
             for (String beansXml : List.of("META-INF/beans.xml", "WEB-INF/beans.xml")) {
@@ -192,11 +196,14 @@ public class BeanArchiveProcessor {
 
                         if (text.contains("bean-discovery-mode='all'")
                                 || text.contains("bean-discovery-mode=\"all\"")) {
-                            LOGGER.warnf("Detected bean archive with bean discovery mode of 'all', "
-                                    + "this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! "
-                                    + "Path to beans.xml: %s",
-                                    archive.getKey() != null ? archive.getKey().toGacString() + ":" + pathVisit.getPath()
-                                            : pathVisit.getPath());
+
+                            if (!knownCompatibleBeanArchives.isKnownCompatible(archive)) {
+                                LOGGER.warnf("Detected bean archive with bean discovery mode of 'all', "
+                                        + "this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! "
+                                        + "Path to beans.xml: %s",
+                                        archive.getKey() != null ? archive.getKey().toGacString() + ":" + pathVisit.getPath()
+                                                : pathVisit.getPath());
+                            }
                         }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);

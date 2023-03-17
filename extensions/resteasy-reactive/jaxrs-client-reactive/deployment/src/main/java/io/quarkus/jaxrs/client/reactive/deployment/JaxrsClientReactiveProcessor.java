@@ -941,7 +941,7 @@ public class JaxrsClientReactiveProcessor {
                             MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(name,
                                     method.getName() + "$$" + methodIndex + "$$handleHeader$$" + paramIdx,
                                     Invocation.Builder.class,
-                                    Invocation.Builder.class, param.type);
+                                    Invocation.Builder.class, param.declaredType);
                             MethodCreator handleHeaderMethod = classContext.classCreator.getMethodCreator(
                                     handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
@@ -1358,7 +1358,7 @@ public class JaxrsClientReactiveProcessor {
                                     subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$param"
                                             + inheritedParamIndex + "$" + subParamField.paramIndex,
                                     Invocation.Builder.class,
-                                    Invocation.Builder.class, param.type);
+                                    Invocation.Builder.class, param.declaredType);
                             MethodCreator handleHeaderMethod = subContext.classCreator.getMethodCreator(
                                     handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 
@@ -1464,7 +1464,7 @@ public class JaxrsClientReactiveProcessor {
                             MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(subName,
                                     subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$" + paramIdx,
                                     Invocation.Builder.class,
-                                    Invocation.Builder.class, param.type);
+                                    Invocation.Builder.class, param.declaredType);
                             MethodCreator handleHeaderMethod = subContext.classCreator.getMethodCreator(
                                     handleHeaderDescriptor).setModifiers(Modifier.PRIVATE);
 

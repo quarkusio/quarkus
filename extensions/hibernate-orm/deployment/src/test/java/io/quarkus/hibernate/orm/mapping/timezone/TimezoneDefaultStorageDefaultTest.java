@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.mapping;
+package io.quarkus.hibernate.orm.mapping.timezone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,15 +9,14 @@ import io.quarkus.hibernate.orm.SchemaUtil;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class TimezoneDefaultStorageNativeTest extends AbstractTimezoneDefaultStorageTest {
+public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultStorageTest {
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(EntityWithTimezones.class)
                     .addClasses(SchemaUtil.class, SmokeTestUtils.class))
-            .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.hibernate-orm.mapping.timezone.default-storage", "native");
+            .withConfigurationResource("application.properties");
 
     @Test
     public void schema() throws Exception {

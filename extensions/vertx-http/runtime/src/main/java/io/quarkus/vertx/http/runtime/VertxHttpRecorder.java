@@ -652,7 +652,7 @@ public class VertxHttpRecorder {
             LaunchMode launchMode,
             Supplier<Integer> eventLoops, List<String> websocketSubProtocols) throws IOException {
 
-        if (!httpConfiguration.hostEnabled) {
+        if (!httpConfiguration.hostEnabled && !httpConfiguration.domainSocketEnabled) {
             return CompletableFuture.completedFuture(null);
         }
 

@@ -50,7 +50,7 @@ public class ExampleResource {
 }
 ----
 
-NOTE: If you use JBoss Logging but one of your libraries uses a different logging API, you may need to configure a xref:logging-adapters[logging adapter].
+NOTE: If you use JBoss Logging but one of your libraries uses a different logging API, you may need to configure a <<logging-adapters,logging adapter>>.
 
 === Logging with Panache
 
@@ -176,7 +176,7 @@ opening the door to optimization opportunities.
 As an example, in native execution the minimum level enables lower level checks (e.g. `isTraceEnabled`) to be folded to `false`,
 resulting in dead code elimination for code that will never to be executed.
 
-All possible properties are listed in the xref:loggingConfigurationReference[logging configuration reference] section.
+All possible properties are listed in <<loggingConfigurationReference, the logging configuration reference>> section.
 
 NOTE: If you are adding these properties by using the command line, make sure `"` is escaped.
 For example `-Dquarkus.log.category.\"org.hibernate\".level=TRACE`.
@@ -189,7 +189,7 @@ A configuration which applies to a category will also apply to all sub-categorie
 unless there is a more specific matching sub-category configuration.
 For every category the same settings that are configured on ( console / file / syslog ) apply.
 These can also be overridden by attaching one or more named handlers to a category.
-See example in the xref:category-named-handlers-example[] output.
+See example in the <<category-named-handlers-example>> output.
 
 [cols="<m,<m,<2",options="header"]
 |===
@@ -200,7 +200,9 @@ See example in the xref:category-named-handlers-example[] output.
 |quarkus.log.category."<category-name>".handlers=[<handler>]|empty footnote:[By default, the configured category gets the same handlers attached as the one on the root logger.]|The names of the handlers that you want to attach to a specific category.
 |===
 
-NOTE: The quotes shown in the property name are required as categories normally contain '.', which must be escaped. See the example in xref:category-example[].
+NOTE: The quotes shown in the property name are required as categories normally contain '.',
+which must be escaped.
+See the example in <<category-example>>.
 
 === Root logger configuration
 
@@ -493,7 +495,7 @@ test {
 }
 ----
 
-See also xref:getting-started-testing.adoc#test-from-ide[Running `@QuarkusTest` from an IDE].
+See also <<getting-started-testing.adoc#test-from-ide,Running `@QuarkusTest` from an IDE>>.
 
 [[logging-adapters]]
 == Logging Adapters

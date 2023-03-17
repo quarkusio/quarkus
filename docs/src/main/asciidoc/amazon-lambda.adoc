@@ -58,7 +58,7 @@ Copy the build.gradle, gradle.properties and settings.gradle into the above-gene
 
 Execute: gradle wrapper to set up the gradle wrapper (recommended).
 
-For full Gradle details, see the xref:gradle[Gradle build] section below.
+For full Gradle details, see the <<gradle,Gradle build>> section below.
 ====
 
 [[choose]]
@@ -458,7 +458,7 @@ when using synchronous mode, due to issues in the GraalVM compilation (at presen
 Add `quarkus-jaxb` as a dependency in your Maven `pom.xml`, or Gradle `build.gradle` file.
 
 You must also force your AWS service client for SQS, SNS, S3 et al., to use the URL Connection client,
-which connects to AWS services over HTTPS, hence the inclusion of the SSL enabled property, as described in the xref:https[] section above.
+which connects to AWS services over HTTPS, hence the inclusion of the SSL enabled property, as described in the <<https>> section above.
 
 [source,java]
 ----

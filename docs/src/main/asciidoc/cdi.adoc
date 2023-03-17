@@ -167,14 +167,14 @@ The reason is that `@Inject Translator` is automatically transformed to `@Inject
 And since our `SuperiorTranslator` does not declare `@Default` only the original `Translator` bean is assignable.
 
 [[bean-scope]]
-== [[looks-good-what-is-the-bean-scope]] Looks good. What is the bean scope?
+== Looks good. What is the bean scope?
 
 The scope of a bean determines the lifecycle of its instances, i.e. when and where an instance should be created and destroyed.
 
 NOTE: Every bean has exactly one scope.
 
 [[bean-scope-available]]
-== [[what-scopes-can-i-actually-use-in-my-quarkus-application]] What scopes can I actually use in my Quarkus application?
+== What scopes can I actually use in my Quarkus application?
 
 You can use all the built-in scopes mentioned by the specification except for `jakarta.enterprise.context.ConversationScoped`.
 

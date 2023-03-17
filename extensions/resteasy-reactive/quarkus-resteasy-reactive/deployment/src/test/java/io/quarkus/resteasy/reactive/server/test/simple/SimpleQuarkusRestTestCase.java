@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -311,6 +313,34 @@ public class SimpleQuarkusRestTestCase {
 
         RestAssured.with().header("h2", "v2").get("/ctor-header")
                 .then().body(Matchers.is(emptyString()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "rest-header-list",
+            "rest-header-set",
+            "rest-header-sorted-set"
+    })
+    public void testRestHeaderUsingCollection(String path) {
+        RestAssured.with().header("header", "a", "b")
+                .get("/simple/" + path)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(Matchers.equalTo("a, b"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "header-param-list",
+            "header-param-set",
+            "header-param-sorted-set"
+    })
+    public void testHeaderParamUsingCollection(String path) {
+        RestAssured.with().header("header", "a", "b")
+                .get("/simple/" + path)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(Matchers.equalTo("a, b"));
     }
 
     @Test

@@ -1359,12 +1359,27 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             elementType = paramType.name().toString();
             handleTemporalParam(builder, paramType.name(), anns, currentMethodInfo);
             typeHandled = true;
-        } else if (paramType.name().equals(LIST) && (type == ParameterType.QUERY)) { // RESTEasy Classic handles the non-generic List type
+        } else if (paramType.name().equals(LIST) && (type == ParameterType.QUERY
+                || type == ParameterType.HEADER)) { // RESTEasy Classic handles the non-generic List type
             elementType = String.class.getName();
             typeHandled = true;
             builder.setSingle(false);
             if (convertible) {
                 handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            }
+        } else if (paramType.name().equals(SET) && type == ParameterType.HEADER) { // RESTEasy Classic handles the non-generic Set type
+            elementType = String.class.getName();
+            typeHandled = true;
+            builder.setSingle(false);
+            if (convertible) {
+                handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            }
+        } else if (paramType.name().equals(SORTED_SET) && type == ParameterType.HEADER) { // RESTEasy Classic handles the non-generic SortedSet type
+            elementType = String.class.getName();
+            typeHandled = true;
+            builder.setSingle(false);
+            if (convertible) {
+                handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
         } else if (paramType.kind() == Kind.ARRAY) {
             ArrayType at = paramType.asArrayType();

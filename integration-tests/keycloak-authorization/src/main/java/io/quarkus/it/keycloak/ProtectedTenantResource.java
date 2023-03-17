@@ -2,10 +2,7 @@ package io.quarkus.it.keycloak;
 
 import java.util.List;
 
-import javax.security.auth.AuthPermission;
-
 import jakarta.inject.Inject;
-import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
@@ -22,12 +19,6 @@ public class ProtectedTenantResource {
 
     @GET
     public Uni<List<Permission>> permissions() {
-        return identity.checkPermission(new AuthPermission("Permission Resource Tenant")).onItem()
-                .transform(granted -> {
-                    if (granted) {
-                        return identity.getAttribute("permissions");
-                    }
-                    throw new ForbiddenException();
-                });
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
     }
 }

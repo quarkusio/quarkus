@@ -328,36 +328,6 @@ export access_token=$(\
  )
 ----
 
-== Checking Permissions Programmatically
-
-In some cases, you may want to programmatically check whether a request is granted to access a protected resource. By
-injecting a `SecurityIdentity` instance in your beans, you are allowed to check permissions as follows:
-
-[source,java]
-----
-import io.quarkus.security.identity.SecurityIdentity;
-import io.smallrye.mutiny.Uni;
-
-@Path("/api/protected")
-public class ProtectedResource {
-
-    @Inject
-    SecurityIdentity identity;
-
-
-    @GET
-    public Uni<List<Permission>> get() {
-        return identity.checkPermission(new AuthPermission("{resource_name}")).onItem()
-                .transform(granted -> {
-                    if (granted) {
-                        return identity.getAttribute("permissions");
-                    }
-                    throw new ForbiddenException();
-                });
-    }
-}
-----
-
 == Injecting the Authorization Client
 
 In some cases, you may want to use the https://www.keycloak.org/docs/latest/authorization_services/#_service_client_api[Keycloak Authorization Client Java API] to perform
@@ -416,6 +386,92 @@ quarkus.keycloak.policy-enforcer.paths.1.enforcement-mode=ENFORCING
 ----
 
 Note only the default tenant configuration applies when controlling anonymous access to the public resource is required.
+
+== Checking Permission Scopes Programmatically
+
+In addition to resource permissions, you may want to specify method scopes. The scope usually represents an action that
+can be performed on a resource. You can create an enforcing Keycloak Authorization Policy with method scope like this:
+
+[source,properties]
+----
+# path policy with enforced scope 'read' for method 'GET'
+quarkus.keycloak.policy-enforcer.paths.1.name=Scope Permission Resource
+quarkus.keycloak.policy-enforcer.paths.1.path=/api/protected/standard-way
+quarkus.keycloak.policy-enforcer.paths.1.methods.get.method=GET
+quarkus.keycloak.policy-enforcer.paths.1.methods.get.scopes=read <1>
+
+# path policies without scope
+quarkus.keycloak.policy-enforcer.paths.2.name=Scope Permission Resource
+quarkus.keycloak.policy-enforcer.paths.2.path=/api/protected/programmatic-way
+quarkus.keycloak.policy-enforcer.paths.3.name=Scope Permission Resource
+quarkus.keycloak.policy-enforcer.paths.3.path=/api/protected/annotation-way
+----
+<1> User must have resource permission 'Scope Permission Resource' and scope 'read'
+
+Request path `/api/protected/standard-way` is now secured by the Keycloak Policy Enforcer and does not require
+any additions (such as `@RolesAllowed` annotation). In some cases, you may want to perform the same check programmatically.
+You are allowed to do that by injecting a `SecurityIdentity` instance in your beans, as demonstrated in the example below.
+Alternatively, if you annotate resource method with the `@PermissionsAllowed` annotation, you can achieve the same effect.
+The following example shows three resource method that all requires same 'read' scope:
+
+[source,java]
+----
+import java.security.BasicPermission;
+import java.util.List;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.keycloak.representations.idm.authorization.Permission;
+
+import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
+
+@Path("/api/protected")
+public class ProtectedResource {
+
+    @Inject
+    SecurityIdentity identity;
+
+    @GET
+    @Path("/standard-way")
+    public Uni<List<Permission>> standardWay() { <1>
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
+    }
+
+    @GET
+    @Path("/programmatic-way")
+    public Uni<List<Permission>> programmaticWay() {
+        var requiredPermission = new BasicPermission("Scope Permission Resource") {
+            @Override
+            public String getActions() {
+                return "read";
+            }
+        };
+        return identity.checkPermission(requiredPermission).onItem() <2>
+                .transform(granted -> {
+                    if (granted) {
+                        return identity.getAttribute("permissions");
+                    }
+                    throw new ForbiddenException();
+                });
+    }
+
+    @PermissionsAllowed("Scope Permission Resource:read") <3>
+    @GET
+    @Path("/annotation-way")
+    public Uni<List<Permission>> annotationWay() {
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
+    }
+}
+----
+<1> Request sub-path `/standard-way` requires both resource permission and scope `read` according to the configuration properties we set in the `application.properties` before.
+<2> Request sub-path `/programmatic-way` only requires permission `Scope Permission Resource`, but we can enforce scope with `SecurityIdentity#checkPermission`.
+<3> The `@PermissionsAllowed` annotation only grants access to the requests with permission `Scope Permission Resource` and scope `read`.
+For more information, see the section xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Authorization using annotations] of the Security Authorization guide.
 
 == Multi-Tenancy
 

@@ -5,8 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.security.auth.AuthPermission;
-
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
@@ -19,6 +17,7 @@ import jakarta.ws.rs.core.Context;
 import org.keycloak.authorization.client.AuthzClient;
 import org.keycloak.representations.idm.authorization.Permission;
 
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -40,13 +39,7 @@ public class ProtectedResource {
 
     @GET
     public Uni<List<Permission>> permissions() {
-        return identity.checkPermission(new AuthPermission("Permission Resource")).onItem()
-                .transform(granted -> {
-                    if (granted) {
-                        return identity.getAttribute("permissions");
-                    }
-                    throw new ForbiddenException();
-                });
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
     }
 
     @GET
@@ -64,6 +57,20 @@ public class ProtectedResource {
                     }
                     throw new ForbiddenException();
                 });
+    }
+
+    @PermissionsAllowed("Scope Permission Resource:read")
+    @GET
+    @Path("/annotation/scope-read")
+    public Uni<List<Permission>> hasScopeReadPermission() {
+        return permissions();
+    }
+
+    @PermissionsAllowed("Scope Permission Resource:write")
+    @GET
+    @Path("/annotation/scope-write")
+    public Uni<List<Permission>> hasScopeWritePermission() {
+        return permissions();
     }
 
     @Path("/claim-protected")

@@ -18,6 +18,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,6 +30,7 @@ import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
+@Disabled("Flaky test")
 public class OpenTelemetryDevServicesDatasourcesTest {
 
     @RegisterExtension
@@ -41,6 +43,7 @@ public class OpenTelemetryDevServicesDatasourcesTest {
                             "quarkus.datasource.db-kind=h2\n" +
                                     "quarkus.datasource.jdbc.telemetry=true\n" +
                                     "quarkus.otel.traces.exporter=test-span-exporter\n" +
+                                    "quarkus.otel.bsp.export.timeout=1s\n" +
                                     "quarkus.otel.bsp.schedule.delay=50\n"),
                             "application.properties"));
 

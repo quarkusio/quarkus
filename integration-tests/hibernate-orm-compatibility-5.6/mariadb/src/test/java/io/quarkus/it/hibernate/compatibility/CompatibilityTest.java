@@ -65,7 +65,10 @@ public class CompatibilityTest {
                 .extract().as(MyEntityWithSequenceGeneratorAndDefaultAllocationSize.class);
         // Sequence generators defined through @SequenceGenerator have always defaulted to an allocation size of 50.
         // Since we've created 2 entities in Hibernate 5, we should be starting the second pool here, starting at 52.
-        assertThat(createdEntity.id).isEqualTo(52L);
+        // BUT! Quarkus 3 changes the default ID optimizer to pooled-lo,
+        // which means we'll interpret the value returned by the sequence (101) as the *start* of the pool
+        // instead of the *end* of the pool. That's an expected change and should be harmless.
+        assertThat(createdEntity.id).isEqualTo(101L);
     }
 
     // Just check that persisting with the old schema and new application does not throw any exception

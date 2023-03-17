@@ -7,6 +7,7 @@ import java.util.Set;
 import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.generator.Generator;
 import org.hibernate.metamodel.MappingMetamodel;
 import org.hibernate.metamodel.mapping.SelectableConsumer;
 import org.hibernate.metamodel.mapping.SelectableMapping;
@@ -49,5 +50,12 @@ public final class SchemaUtil {
         };
         entityDescriptor.forEachSelectable(columnFinder);
         return columnFinder.found.getJdbcMapping().getJdbcType().getFriendlyName();
+    }
+
+    public static Generator getGenerator(EntityManagerFactory entityManagerFactory, Class<?> entityType) {
+        MappingMetamodel domainModel = entityManagerFactory
+                .unwrap(SessionFactoryImplementor.class).getRuntimeMetamodels().getMappingMetamodel();
+        EntityPersister entityDescriptor = domainModel.findEntityDescriptor(entityType);
+        return entityDescriptor.getGenerator();
     }
 }

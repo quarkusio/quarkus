@@ -102,15 +102,6 @@ public class JibConfig {
     public Map<String, String> environmentVariables;
 
     /**
-     * Custom labels to add to the generated image
-     *
-     * @deprecated Use 'quarkus.container-image.labels' instead
-     */
-    @ConfigItem
-    @Deprecated
-    public Map<String, String> labels;
-
-    /**
      * The username to use to authenticate with the registry used to pull the base JVM image
      */
     @ConfigItem

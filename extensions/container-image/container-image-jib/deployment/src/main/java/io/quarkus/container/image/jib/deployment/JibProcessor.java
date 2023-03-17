@@ -787,12 +787,11 @@ public class JibProcessor {
 
     private Map<String, String> allLabels(JibConfig jibConfig, ContainerImageConfig containerImageConfig,
             List<ContainerImageLabelBuildItem> containerImageLabels) {
-        if (jibConfig.labels.isEmpty() && containerImageLabels.isEmpty() && containerImageConfig.labels.isEmpty()) {
+        if (containerImageLabels.isEmpty() && containerImageConfig.labels.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        final Map<String, String> allLabels = new HashMap<>(jibConfig.labels);
-        allLabels.putAll(containerImageConfig.labels);
+        final Map<String, String> allLabels = new HashMap<>(containerImageConfig.labels);
         for (ContainerImageLabelBuildItem containerImageLabel : containerImageLabels) {
             // we want the user supplied labels to take precedence so the user can override labels generated from other extensions if desired
             allLabels.putIfAbsent(containerImageLabel.getName(), containerImageLabel.getValue());

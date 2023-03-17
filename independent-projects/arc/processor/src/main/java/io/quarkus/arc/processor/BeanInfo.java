@@ -754,7 +754,8 @@ public class BeanInfo implements InjectionTargetInfo {
             putLifecycleInterceptors(lifecycleInterceptors, classLevelBindings, InterceptionType.PRE_DESTROY);
             MethodInfo interceptedConstructor = findInterceptedConstructor(target.get().asClass());
             if (beanDeployment.getAnnotation(interceptedConstructor, DotNames.NO_CLASS_INTERCEPTORS) == null) {
-                constructorLevelBindings.addAll(classLevelBindings);
+                constructorLevelBindings = Methods.mergeMethodAndClassLevelBindings(constructorLevelBindings,
+                        classLevelBindings);
             }
             putLifecycleInterceptors(lifecycleInterceptors, constructorLevelBindings, InterceptionType.AROUND_CONSTRUCT);
             return lifecycleInterceptors;

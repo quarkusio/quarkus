@@ -184,15 +184,6 @@
                     <exclude name="testAbstractClassDeclaredInJavaNotDiscovered"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.bindings.aroundConstruct.ConstructorInterceptionTest">
-                <methods>
-                    <exclude name="testTypeLevelAndConstructorLevelBinding"/>
-                    <exclude name="testTypeLevelBinding"/>
-                    <exclude name="testConstructorLevelBinding"/>
-                    <exclude name="testOverridingTypeLevelBinding"/>
-                    <exclude name="testMultipleConstructorLevelBinding"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.inheritance.InterceptorBindingInheritanceTest">
                 <methods>
                     <exclude name="testInterceptorBindingDirectlyInheritedFromManagedBean"/>

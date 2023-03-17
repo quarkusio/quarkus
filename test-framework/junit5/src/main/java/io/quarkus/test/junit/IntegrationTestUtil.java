@@ -64,7 +64,6 @@ public final class IntegrationTestUtil {
     public static final int DEFAULT_PORT = 8081;
     public static final int DEFAULT_HTTPS_PORT = 8444;
     public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
-    private static final String DOCKER_BINARY = detectContainerRuntime().getExecutableName();
 
     private IntegrationTestUtil() {
     }
@@ -337,8 +336,9 @@ public final class IntegrationTestUtil {
             final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
         if (devServicesLaunchResult.manageNetwork() && (devServicesLaunchResult.networkId() != null)) {
             try {
+                String dockerBinary = detectContainerRuntime().getExecutableName();
                 int networkCreateResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
-                        .command(DOCKER_BINARY, "network", "create", devServicesLaunchResult.networkId()).start().waitFor();
+                        .command(dockerBinary, "network", "create", devServicesLaunchResult.networkId()).start().waitFor();
                 if (networkCreateResult > 0) {
                     throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
                             + "' completed unsuccessfully");
@@ -349,7 +349,7 @@ public final class IntegrationTestUtil {
                     public void run() {
                         try {
                             new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
-                                    .command(DOCKER_BINARY, "network", "rm", devServicesLaunchResult.networkId()).start()
+                                    .command(dockerBinary, "network", "rm", devServicesLaunchResult.networkId()).start()
                                     .waitFor();
                         } catch (InterruptedException | IOException ignored) {
                             System.out.println(

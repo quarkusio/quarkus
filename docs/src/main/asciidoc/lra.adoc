@@ -96,7 +96,7 @@ quarkus.lra.coordinator-url=http://localhost:8080/lra-coordinator
 ----
 
 For a Narayana coordinator the path component of the url is normally `lra-coordinator`.
-Coordinators can be obtained from `https://hub.docker.com/r/jbosstm/lra-coordinator`
+Coordinators can be obtained from https://quay.io/repository/jbosstm/lra-coordinator
 or you can build your own coordinator using a maven pom that includes the appropriate
 dependencies. A Quarkus quickstart will be provided to show how to do this, or you can
 take a look at one of the https://github.com/jbosstm/quickstart/tree/master/rts/lra-examples/lra-coordinator[Narayana quickstarts].

@@ -21,11 +21,11 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
+import io.quarkus.deployment.console.QuarkusGroupCommand;
 import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
 import org.aesh.command.CommandResult;
-import org.aesh.command.GroupCommand;
 import org.aesh.command.GroupCommandDefinition;
 import org.aesh.command.completer.CompleterInvocation;
 import org.aesh.command.completer.OptionCompleter;
@@ -653,21 +653,13 @@ public final class LoggingResourceProcessor {
     }
 
     @GroupCommandDefinition(name = "log", description = "Logging Commands")
-    public static class LogCommand implements GroupCommand {
-
-        @Option(shortName = 'h', hasValue = false, overrideRequired = true)
-        public boolean help;
+    public static class LogCommand extends QuarkusGroupCommand {
 
         @Override
         public List<Command> getCommands() {
             return List.of(new SetLogLevelCommand());
         }
 
-        @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-            commandInvocation.getShell().writeln(commandInvocation.getHelpInfo());
-            return CommandResult.SUCCESS;
-        }
     }
 
     @CommandDefinition(name = "set-level", description = "Sets the log level for a logger")

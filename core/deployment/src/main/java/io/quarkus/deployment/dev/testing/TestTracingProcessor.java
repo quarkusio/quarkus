@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import io.quarkus.deployment.console.QuarkusGroupCommand;
 import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
@@ -197,24 +198,24 @@ public class TestTracingProcessor {
         return new ConsoleCommandBuildItem(new TestCommand());
     }
 
-    @GroupCommandDefinition(name = "test", description = "Test Commands", groupCommands = { TagsCommand.class,
-            PatternCommand.class })
-    public static class TestCommand implements Command {
+    @GroupCommandDefinition(name = "test", description = "Test Commands")
+    public static class TestCommand extends QuarkusGroupCommand {
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-            return CommandResult.SUCCESS;
+        public List<Command> getCommands() {
+            return List.of(new TagsCommand(), new PatternCommand());
         }
+
     }
 
-    @GroupCommandDefinition(name = "tags", description = "Tag Commands", groupCommands = { IncludeTagsCommand.class,
-            ExcludeTagsCommand.class })
-    public static class TagsCommand implements Command {
+    @GroupCommandDefinition(name = "tags", description = "Tag Commands")
+    public static class TagsCommand extends QuarkusGroupCommand {
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-            return CommandResult.SUCCESS;
+        public List<Command> getCommands() {
+            return List.of(new IncludeTagsCommand(), new ExcludeTagsCommand());
         }
+
     }
 
     @CommandDefinition(name = "include", description = "Sets the current included tags")
@@ -269,15 +270,14 @@ public class TestTracingProcessor {
         }
     }
 
-    @GroupCommandDefinition(name = "pattern", description = "Include/Exclude pattern Commands", groupCommands = {
-            IncludePatternCommand.class,
-            ExcludePatternCommand.class })
-    public static class PatternCommand implements Command {
+    @GroupCommandDefinition(name = "pattern", description = "Include/Exclude pattern Commands")
+    public static class PatternCommand extends QuarkusGroupCommand {
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-            return CommandResult.SUCCESS;
+        public List<Command> getCommands() {
+            return List.of(new IncludePatternCommand(), new ExcludePatternCommand());
         }
+
     }
 
     @CommandDefinition(name = "include", description = "Sets the current include pattern")

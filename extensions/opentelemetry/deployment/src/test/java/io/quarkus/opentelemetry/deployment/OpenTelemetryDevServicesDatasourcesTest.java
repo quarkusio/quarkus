@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.deployment;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import java.util.List;
 
 import jakarta.annotation.PostConstruct;
@@ -16,6 +17,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.awaitility.Awaitility;
+import org.awaitility.core.ThrowingRunnable;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -41,6 +44,7 @@ public class OpenTelemetryDevServicesDatasourcesTest {
                             "quarkus.datasource.db-kind=h2\n" +
                                     "quarkus.datasource.jdbc.telemetry=true\n" +
                                     "quarkus.otel.traces.exporter=test-span-exporter\n" +
+                                    "quarkus.otel.bsp.export.timeout=1s\n" +
                                     "quarkus.otel.bsp.schedule.delay=50\n"),
                             "application.properties"));
 
@@ -60,9 +64,12 @@ public class OpenTelemetryDevServicesDatasourcesTest {
     }
 
     private void verifyNumOfInsertedTraces(int expectedSpans, int insertCount) {
-        RestAssured.get("/hello/greetings-insert-count/" + expectedSpans).then()
+        ThrowingRunnable assertInsertCount = () -> RestAssured
+                .get("/hello/greetings-insert-count/" + expectedSpans)
+                .then()
                 .statusCode(200)
                 .body(Matchers.is(Integer.toString(insertCount)));
+        Awaitility.await().atMost(Duration.ofMinutes(1)).untilAsserted(assertInsertCount);
     }
 
     private void createGreeting(String greeting) {

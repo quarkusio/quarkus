@@ -143,7 +143,7 @@ public class SchedulerProcessor {
             MethodInfo method = annotationInstance.target().asMethod();
             if (Modifier.isStatic(method.flags()) && !KotlinUtil.isSuspendMethod(method)) {
                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, schedules,
-                        transformedAnnotations.getAnnotation(method, SchedulerDotNames.NON_BLOCKING) != null));
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING)));
                 LOGGER.debugf("Found scheduled static method %s declared on %s", method, method.declaringClass().name());
             }
         }
@@ -183,7 +183,7 @@ public class SchedulerProcessor {
             }
             if (schedules != null) {
                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(bean, method, schedules,
-                        transformedAnnotations.getAnnotation(method, SchedulerDotNames.NON_BLOCKING) != null));
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING)));
                 LOGGER.debugf("Found scheduled business method %s declared on %s", method, bean);
             }
         }

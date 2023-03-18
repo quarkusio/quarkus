@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.export.JsonMeterRegistryProvider;
@@ -17,6 +18,7 @@ import io.quarkus.micrometer.runtime.export.JsonRecorder;
 import io.quarkus.micrometer.runtime.registry.json.JsonMeterRegistry;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
 @BuildSteps(onlyIf = JsonRegistryProcessor.JsonRegistryEnabled.class)
 public class JsonRegistryProcessor {
@@ -39,6 +41,8 @@ public class JsonRegistryProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<RegistryBuildItem> registries,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            LaunchModeBuildItem launchModeBuildItem,
             JsonRecorder recorder) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(JsonMeterRegistryProvider.class)
@@ -46,16 +50,18 @@ public class JsonRegistryProcessor {
         registryProviders.produce(new MicrometerRegistryProviderBuildItem(JsonMeterRegistry.class));
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .management()
                 .routeFunction(config.export.json.path, recorder.route())
                 .routeConfigKey("quarkus.micrometer.export.json.path")
                 .handler(recorder.getHandler())
                 .blockingRoute()
                 .build());
 
-        log.debug("Initialized a JSON meter registry on path="
-                + nonApplicationRootPathBuildItem.resolvePath(config.export.json.path));
+        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.export.json.path,
+                managementInterfaceBuildTimeConfig, launchModeBuildItem);
+        log.debug("Initialized a JSON meter registry on path=" + path);
 
-        registries.produce(new RegistryBuildItem("JSON", nonApplicationRootPathBuildItem.resolvePath(config.export.json.path)));
+        registries.produce(new RegistryBuildItem("JSON", path));
     }
 
 }

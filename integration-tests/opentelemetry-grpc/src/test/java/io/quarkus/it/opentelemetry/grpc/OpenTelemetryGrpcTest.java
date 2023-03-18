@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.grpc.Status;
@@ -37,6 +38,8 @@ import io.vertx.core.http.HttpMethod;
 
 @QuarkusTest
 public class OpenTelemetryGrpcTest {
+
+    @BeforeEach
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);

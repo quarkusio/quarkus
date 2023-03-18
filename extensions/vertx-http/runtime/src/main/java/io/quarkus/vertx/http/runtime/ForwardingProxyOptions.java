@@ -7,14 +7,14 @@ import io.quarkus.vertx.http.runtime.TrustedProxyCheck.TrustedProxyCheckBuilder;
 import io.quarkus.vertx.http.runtime.TrustedProxyCheck.TrustedProxyCheckPart;
 
 public class ForwardingProxyOptions {
-    final boolean proxyAddressForwarding;
+    public final boolean proxyAddressForwarding;
     final boolean allowForwarded;
     final boolean allowXForwarded;
     final boolean enableForwardedHost;
     final boolean enableForwardedPrefix;
     final AsciiString forwardedHostHeader;
     final AsciiString forwardedPrefixHeader;
-    final TrustedProxyCheckBuilder trustedProxyCheckBuilder;
+    public final TrustedProxyCheckBuilder trustedProxyCheckBuilder;
 
     public ForwardingProxyOptions(final boolean proxyAddressForwarding,
             final boolean allowForwarded,
@@ -34,18 +34,18 @@ public class ForwardingProxyOptions {
         this.trustedProxyCheckBuilder = trustedProxyCheckBuilder;
     }
 
-    public static ForwardingProxyOptions from(HttpConfiguration httpConfiguration) {
-        final boolean proxyAddressForwarding = httpConfiguration.proxy.proxyAddressForwarding;
-        final boolean allowForwarded = httpConfiguration.proxy.allowForwarded;
-        final boolean allowXForwarded = httpConfiguration.proxy.allowXForwarded.orElse(!allowForwarded);
+    public static ForwardingProxyOptions from(ProxyConfig proxy) {
+        final boolean proxyAddressForwarding = proxy.proxyAddressForwarding;
+        final boolean allowForwarded = proxy.allowForwarded;
+        final boolean allowXForwarded = proxy.allowXForwarded.orElse(!allowForwarded);
 
-        final boolean enableForwardedHost = httpConfiguration.proxy.enableForwardedHost;
-        final boolean enableForwardedPrefix = httpConfiguration.proxy.enableForwardedPrefix;
-        final AsciiString forwardedPrefixHeader = AsciiString.cached(httpConfiguration.proxy.forwardedPrefixHeader);
-        final AsciiString forwardedHostHeader = AsciiString.cached(httpConfiguration.proxy.forwardedHostHeader);
+        final boolean enableForwardedHost = proxy.enableForwardedHost;
+        final boolean enableForwardedPrefix = proxy.enableForwardedPrefix;
+        final AsciiString forwardedPrefixHeader = AsciiString.cached(proxy.forwardedPrefixHeader);
+        final AsciiString forwardedHostHeader = AsciiString.cached(proxy.forwardedHostHeader);
 
-        final List<TrustedProxyCheckPart> parts = httpConfiguration.proxy.trustedProxies
-                .isPresent() ? List.copyOf(httpConfiguration.proxy.trustedProxies.get()) : List.of();
+        final List<TrustedProxyCheckPart> parts = proxy.trustedProxies
+                .isPresent() ? List.copyOf(proxy.trustedProxies.get()) : List.of();
         final var proxyCheckBuilder = (!allowXForwarded && !allowForwarded)
                 || parts.isEmpty() ? null : TrustedProxyCheckBuilder.builder(parts);
 

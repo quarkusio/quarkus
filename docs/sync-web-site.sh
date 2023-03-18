@@ -99,7 +99,7 @@ rsync -vr --delete \
     target/asciidoc/sources/ \
     $TARGET_GUIDES
 
-if [ -f ../target/asciidoc/generated/ ]; then
+if [ -d ../target/asciidoc/generated/ ]; then
   echo
   echo "Copying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
   echo

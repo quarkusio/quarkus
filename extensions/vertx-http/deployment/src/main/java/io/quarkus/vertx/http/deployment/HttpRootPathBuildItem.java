@@ -210,12 +210,18 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
 
         @Override
         public RouteBuildItem build() {
-            return new RouteBuildItem(this, routeType, routerType);
+            return new RouteBuildItem(this, routeType, routerType, isManagement);
         }
 
         @Override
         protected ConfiguredPathInfo getRouteConfigInfo() {
             return super.getRouteConfigInfo();
+        }
+
+        @Override
+        public Builder management() {
+            super.management();
+            return this;
         }
 
         @Override

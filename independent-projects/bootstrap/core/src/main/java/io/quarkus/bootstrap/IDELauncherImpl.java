@@ -33,7 +33,7 @@ public class IDELauncherImpl implements Closeable {
 
     public static Closeable launch(Path classesDir, Map<String, Object> context) {
         System.setProperty(FORCE_COLOR_SUPPORT, "true");
-        System.setProperty("quarkus.test.basic-console", "true"); //IDE's don't support raw mode
+        System.setProperty("quarkus.console.basic", "true"); //IDE's don't support raw mode
         final Path projectDir = BuildToolHelper.getProjectDir(classesDir);
         if (projectDir == null) {
             throw new IllegalStateException("Failed to locate project dir for " + classesDir);

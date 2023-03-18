@@ -42,7 +42,7 @@
         <opentelemetry-aws-xray.contrib.version>1.23.0</opentelemetry-aws-xray.contrib.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>5.0.1.Final</quarkus-http.version>
-        <micrometer.version>1.10.4</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <micrometer.version>1.10.5</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>3.0.2</microprofile-config-api.version>
@@ -218,7 +218,7 @@
         <mime4j.version>0.8.9</mime4j.version>
         <mutiny-zero.version>1.0.0</mutiny-zero.version>
         <!-- Dev UI -->
-        <importmap.version>1.0.6</importmap.version>
+        <importmap.version>1.0.7</importmap.version>
         <lit.version>2.6.1</lit.version>
         <lit-state.version>1.7.0</lit-state.version>
         <vaadin.version>23.3.8</vaadin.version>

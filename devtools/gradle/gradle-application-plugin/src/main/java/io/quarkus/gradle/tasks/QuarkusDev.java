@@ -373,7 +373,7 @@ public class QuarkusDev extends QuarkusTask {
                 .debugPort(System.getProperty("debugPort"))
                 .suspend(System.getProperty("suspend"));
         if (System.getProperty(IO_QUARKUS_DEVMODE_ARGS) == null) {
-            builder.jvmArgs("-Dquarkus.test.basic-console=true")
+            builder.jvmArgs("-Dquarkus.console.basic=true")
                     .jvmArgs("-Dio.quarkus.force-color-support=true");
         }
 

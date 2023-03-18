@@ -17,10 +17,22 @@ public class BootstrapWorkspaceProvider {
     private final Path base;
     private boolean initialized;
     private LocalProject origin;
+    private final boolean honourAlternatePomFile;
 
     public BootstrapWorkspaceProvider() {
+        this("", true);
+    }
+
+    // Mostly for use by tests
+    BootstrapWorkspaceProvider(String dirName) {
+        // If we get passed in a directory explicitly, don't try and tack the "-f" value onto it
+        this(dirName, false);
+    }
+
+    private BootstrapWorkspaceProvider(String dirName, boolean honourAlternatePomFile) {
+        this.honourAlternatePomFile = honourAlternatePomFile;
         // load the workspace lazily on request, in case the component is injected but the logic using it is skipped
-        base = Paths.get("").normalize().toAbsolutePath();
+        base = Paths.get(dirName).normalize().toAbsolutePath();
     }
 
     public LocalProject origin() {
@@ -28,7 +40,7 @@ public class BootstrapWorkspaceProvider {
             Path modulePath = base;
             final String alternatePomParam = BootstrapMavenOptions.newInstance()
                     .getOptionValue(BootstrapMavenOptions.ALTERNATE_POM_FILE);
-            if (alternatePomParam != null) {
+            if (alternatePomParam != null && honourAlternatePomFile) {
                 final Path path = Paths.get(alternatePomParam);
                 if (path.isAbsolute()) {
                     modulePath = path;

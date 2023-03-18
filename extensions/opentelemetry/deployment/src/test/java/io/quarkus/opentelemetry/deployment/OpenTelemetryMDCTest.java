@@ -18,6 +18,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.logging.MDC;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -28,6 +29,7 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -37,8 +39,11 @@ public class OpenTelemetryMDCTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(MdcEntry.class)
                     .addClass(TestMdcCapturer.class)
-                    .addClass(TestSpanExporter.class)
-                    .addClass(TestResource.class));
+                    .addClass(TestResource.class)
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .withConfigurationResource("application-default.properties");
 
     @Inject
     TestSpanExporter spanExporter;

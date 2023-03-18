@@ -49,7 +49,7 @@ public class QuarkusFaultToleranceOperationProvider implements FaultToleranceOpe
         return FaultToleranceOperation.create(FaultToleranceMethods.create(key.beanClass, key.method));
     }
 
-    Map<CacheKey, FaultToleranceOperation> getOperationCache() {
+    public Map<CacheKey, FaultToleranceOperation> getOperationCache() {
         return operationCache;
     }
 

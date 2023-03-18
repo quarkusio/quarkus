@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.cdi;
 
-import static io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.config.build.OtelBuildConfig.INSTRUMENTATION_NAME;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Produces;
@@ -12,7 +12,6 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
-import io.quarkus.opentelemetry.runtime.tracing.LateBoundSampler;
 
 @Singleton
 public class TracerProducer {
@@ -20,12 +19,6 @@ public class TracerProducer {
     @Singleton
     public DelayedAttributes getDelayedAttributes() {
         return new DelayedAttributes();
-    }
-
-    @Produces
-    @Singleton
-    public LateBoundSampler getLateBoundSampler() {
-        return new LateBoundSampler();
     }
 
     @Produces

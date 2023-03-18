@@ -6,22 +6,28 @@ import java.lang.reflect.InvocationTargetException;
 
 import jakarta.inject.Inject;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class OpenTelemetrySamplerConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.opentelemetry.tracer.sampler", "ratio")
-            .overrideConfigKey("quarkus.opentelemetry.tracer.sampler.ratio", "0.5")
-            .overrideConfigKey("quarkus.opentelemetry.tracer.sampler.parent-based", "false")
-            .overrideConfigKey("quarkus.opentelemetry.tracer.suppress-non-application-uris", "false")
-            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class));
+            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class)
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .withConfigurationResource("application-default.properties")
+            .overrideConfigKey("quarkus.otel.traces.sampler", "traceidratio")
+            .overrideConfigKey("quarkus.otel.traces.sampler.arg", "0.5")
+            .overrideConfigKey("quarkus.otel.traces.suppress-non-application-uris", "false");
 
     @Inject
     OpenTelemetry openTelemetry;

@@ -11,6 +11,10 @@
     <ignoreNotDetectedQuarkusCoreVersion>true</ignoreNotDetectedQuarkusCoreVersion>
   </properties>
 
+  <scm>
+    <url>https://github.com/from/pom</url>
+  </scm>
+
   <build>
     <plugins>
       <plugin>

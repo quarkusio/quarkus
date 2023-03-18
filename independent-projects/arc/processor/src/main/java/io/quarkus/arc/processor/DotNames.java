@@ -134,6 +134,11 @@ public final class DotNames {
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
     public static final DotName DEPRECATED = create(Deprecated.class);
+
+    /**
+     * @deprecated use {@link KotlinUtils}; this constant will be removed at some time after Quarkus 3.6
+     */
+    @Deprecated(forRemoval = true, since = "3.0")
     public static final DotName KOTLIN_METADATA_ANNOTATION = create("kotlin.Metadata");
 
     public static final DotName BOOLEAN = create(Boolean.class);

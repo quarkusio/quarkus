@@ -400,7 +400,7 @@ can nonetheless have additional named handlers attached to it using the `quarkus
 ----
 quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
 quarkus.log.console.level=DEBUG
-quarkus.log.console.color=false
+quarkus.console.color=false
 
 quarkus.log.category."io.quarkus".level=INFO
 ----

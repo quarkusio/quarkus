@@ -16,8 +16,8 @@ import jakarta.interceptor.InterceptorBinding;
  * triggered, then this session is reused. Otherwise, a new session is opened and eventually closed when the
  * {@link io.smallrye.mutiny.Uni} completes.
  * <p>
- * A method annotated with this annotation must return either {@link io.smallrye.mutiny.Uni}. If declared on a class then all
- * methods that are intercepted must return {@link io.smallrye.mutiny.Uni}.
+ * A method annotated with this annotation must return {@link io.smallrye.mutiny.Uni}. If declared on a class then all methods
+ * that return {@link io.smallrye.mutiny.Uni} are considered; all other methods are ignored.
  */
 @Inherited
 @InterceptorBinding

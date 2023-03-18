@@ -25,7 +25,6 @@ public class PersonResource {
         return Response.created(URI.create("/persons/entity/" + id)).build();
     }
 
-
     @GET
     @Path("hql-project")
     @Transactional

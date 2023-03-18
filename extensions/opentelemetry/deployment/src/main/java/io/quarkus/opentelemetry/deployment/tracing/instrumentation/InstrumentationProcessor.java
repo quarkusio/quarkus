@@ -19,7 +19,6 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.opentelemetry.deployment.tracing.TracerEnabled;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingClientInterceptor;
@@ -30,7 +29,6 @@ import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTele
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryReactiveServerFilter;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.vertx.core.VertxOptions;
 
@@ -102,18 +100,11 @@ public class InstrumentationProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxOptionsConsumerBuildItem vertxTracingOptions(InstrumentationRecorder recorder,
-            LaunchModeBuildItem launchMode) {
+    VertxOptionsConsumerBuildItem vertxTracingOptions(
+            InstrumentationRecorder recorder) {
         Consumer<VertxOptions> vertxTracingOptions;
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            // tracers are set in the OpenTelemetryProcessor
-            vertxTracingOptions = recorder.getVertxTracingOptionsDevMode();
-        } else {
-            vertxTracingOptions = recorder.getVertxTracingOptionsProd(recorder.createTracers());
-        }
-        return new VertxOptionsConsumerBuildItem(
-                vertxTracingOptions,
-                LIBRARY_AFTER);
+        vertxTracingOptions = recorder.getVertxTracingOptions();
+        return new VertxOptionsConsumerBuildItem(vertxTracingOptions, LIBRARY_AFTER);
     }
 
     // RESTEasy and Vert.x web

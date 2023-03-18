@@ -129,6 +129,14 @@ public class ClientCallingResource {
             rc.response().end(greeting);
         });
 
+        router.route("/call-hello-client-trace").blockingHandler(rc -> {
+            String url = rc.getBody().toString();
+            HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(HelloClient.class);
+            String greeting = client.greeting("Mary", 3);
+            rc.response().end(greeting);
+        });
+
         router.route("/call-helloFromMessage-client").blockingHandler(rc -> {
             String url = rc.getBody().toString();
             HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))

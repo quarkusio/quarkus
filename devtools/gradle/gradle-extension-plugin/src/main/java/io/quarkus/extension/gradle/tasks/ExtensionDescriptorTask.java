@@ -311,7 +311,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
     }
 
     private void computeSourceLocation(ObjectNode extObject) {
-        Map<String, String> repo = ScmInfoProvider.getSourceRepo();
+        Map<String, String> repo = new ScmInfoProvider(null).getSourceRepo();
         if (repo != null) {
             ObjectNode metadata = getMetadataNode(extObject);
 

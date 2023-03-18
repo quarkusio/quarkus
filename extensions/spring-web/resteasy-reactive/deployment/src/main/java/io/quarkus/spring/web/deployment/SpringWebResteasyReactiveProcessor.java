@@ -75,11 +75,6 @@ public class SpringWebResteasyReactiveProcessor {
 
     private static final DotName RESPONSE_STATUS = DotName
             .createSimple("org.springframework.web.bind.annotation.ResponseStatus");
-    private static final DotName EXCEPTION_HANDLER = DotName
-            .createSimple("org.springframework.web.bind.annotation.ExceptionHandler");
-
-    private static final DotName REST_CONTROLLER_ADVICE = DotName
-            .createSimple("org.springframework.web.bind.annotation.RestControllerAdvice");
 
     private static final DotName MODEL_AND_VIEW = DotName.createSimple("org.springframework.web.servlet.ModelAndView");
     private static final DotName VIEW = DotName.createSimple("org.springframework.web.servlet.View");
@@ -87,9 +82,6 @@ public class SpringWebResteasyReactiveProcessor {
 
     private static final DotName HTTP_ENTITY = DotName.createSimple("org.springframework.http.HttpEntity");
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
-
-    private static final Set<DotName> DISALLOWED_EXCEPTION_CONTROLLER_RETURN_TYPES = Set.of(
-            MODEL_AND_VIEW, VIEW, MODEL, HTTP_ENTITY);
 
     private static final String DEFAULT_NONE = "\n\t\t\n\t\t\n\uE000\uE001\uE002\n\t\t\t\t\n"; // from ValueConstants
 

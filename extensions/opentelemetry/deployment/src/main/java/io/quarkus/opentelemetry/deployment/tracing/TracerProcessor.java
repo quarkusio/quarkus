@@ -33,8 +33,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.opentelemetry.runtime.config.TracerRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -140,26 +138,44 @@ public class TracerProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    TracerProviderBuildItem createTracerProvider(
-            TracerRecorder recorder,
-            ApplicationInfoBuildItem appInfo,
-            ShutdownContextBuildItem shutdownContext,
+    TracerIdGeneratorBuildItem createIdGenerator(TracerRecorder recorder,
             BeanContainerBuildItem beanContainerBuildItem) {
-        String serviceName = appInfo.getName();
-        String serviceVersion = appInfo.getVersion();
-        return new TracerProviderBuildItem(
-                recorder.createTracerProvider(Version.getVersion(), serviceName, serviceVersion, shutdownContext));
+        return new TracerIdGeneratorBuildItem(recorder.createIdGenerator());
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.STATIC_INIT)
+    TracerResourceBuildItem createResource(TracerRecorder recorder,
+            ApplicationInfoBuildItem appInfo,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        String serviceName = appInfo.getName();
+        String serviceVersion = appInfo.getVersion();
+        return new TracerResourceBuildItem(recorder.createResource(Version.getVersion(), serviceName, serviceVersion));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    TracerSpanExportersBuildItem createSpanExporters(TracerRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        return new TracerSpanExportersBuildItem(recorder.createSpanExporter());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    TracerSpanProcessorsBuildItem createSpanProcessors(TracerRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        return new TracerSpanProcessorsBuildItem(recorder.createSpanProcessors());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     void setupTracer(
             TracerRecorder recorder,
-            TracerRuntimeConfig runtimeConfig,
             DropNonApplicationUrisBuildItem dropNonApplicationUris,
             DropStaticResourcesBuildItem dropStaticResources) {
 
-        recorder.setupResources(runtimeConfig);
-        recorder.setupSampler(runtimeConfig, dropNonApplicationUris.getDropNames(), dropStaticResources.getDropNames());
+        recorder.setupSampler(
+                dropNonApplicationUris.getDropNames(),
+                dropStaticResources.getDropNames());
     }
 }

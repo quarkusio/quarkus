@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.Interceptor;
@@ -22,6 +21,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -58,6 +58,8 @@ import io.smallrye.mutiny.Uni;
 
 @BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class PanacheJpaCommonResourceProcessor {
+
+    private static final Logger LOG = Logger.getLogger(PanacheJpaCommonResourceProcessor.class);
 
     private static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
     private static final DotName DOTNAME_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
@@ -114,15 +116,7 @@ public final class PanacheJpaCommonResourceProcessor {
                     // Method returns Uni - no need to iterate over the bindings
                     continue;
                 }
-                if (Annotations.containsAny(e.getValue(), bindings)) {
-                    errors.produce(new ValidationErrorBuildItem(
-                            new IllegalStateException(
-                                    "A method annotated with "
-                                            + bindings.stream().map(b -> "@" + b.withoutPackagePrefix())
-                                                    .collect(Collectors.toList())
-                                            + " must return Uni: "
-                                            + e.getKey() + " declared on " + e.getKey().declaringClass())));
-                }
+                validateBindings(bindings, e, errors);
             }
         }
     }
@@ -244,6 +238,28 @@ public final class PanacheJpaCommonResourceProcessor {
             ClassInfo superClass = index.getComputingIndex().getClassByName(superType.name());
             if (superClass != null) {
                 lookupNamedQueries(index, superClass.name(), namedQueries);
+            }
+        }
+    }
+
+    private void validateBindings(List<DotName> bindings, Entry<MethodInfo, Set<AnnotationInstance>> entry,
+            BuildProducer<ValidationErrorBuildItem> errors) {
+        for (DotName binding : bindings) {
+            for (AnnotationInstance annotation : entry.getValue()) {
+                if (annotation.name().equals(binding)) {
+                    if (annotation.target().kind() == Kind.METHOD) {
+                        errors.produce(new ValidationErrorBuildItem(
+                                new IllegalStateException(
+                                        "A method annotated with @"
+                                                + binding.withoutPackagePrefix()
+                                                + " must return io.smallrye.mutiny.Uni: "
+                                                + entry.getKey() + " declared on " + entry.getKey().declaringClass())));
+                    } else {
+                        LOG.debugf("Class-level binding %s will be ignored for method %s() declared on %s", binding,
+                                entry.getKey().name(), entry.getKey().declaringClass());
+                    }
+                    return;
+                }
             }
         }
     }

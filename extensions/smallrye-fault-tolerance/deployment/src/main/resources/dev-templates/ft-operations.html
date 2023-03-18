@@ -66,6 +66,10 @@
             <li>@Asynchronous</li>
             {/if}
 
+            {#if ftOperation.asynchronousNonBlocking}
+            <li>@AsynchronousNonBlocking</li>
+            {/if}
+
             {#if ftOperation.blocking}
             <li>@Blocking</li>
             {/if}

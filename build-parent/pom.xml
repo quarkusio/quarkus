@@ -19,7 +19,7 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
-        <compiler-plugin.version>3.10.1</compiler-plugin.version>
+        <compiler-plugin.version>3.11.0</compiler-plugin.version>
         <kotlin.version>1.8.10</kotlin.version>
         <dokka.version>1.8.10</dokka.version>
         <scala.version>2.13.8</scala.version>
@@ -133,7 +133,7 @@
         <webjar.bootstrap-multiselect.version>0.9.15</webjar.bootstrap-multiselect.version>
         <webjar.bootstrap-icons.version>1.9.1</webjar.bootstrap-icons.version>
         <webjar.font-awesome.version>6.2.1</webjar.font-awesome.version>
-        <webjar.jquery.version>3.6.3</webjar.jquery.version>
+        <webjar.jquery.version>3.6.4</webjar.jquery.version>
         <webjar.codemirror.version>5.62.2</webjar.codemirror.version>
         <!-- we don't add mermaid as a dependency as it brings a ton of things we don't use -->
         <webjar.mermaid.version>9.4.0</webjar.mermaid.version>
@@ -428,6 +428,10 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${compiler-plugin.version}</version>
+                </plugin>
+                <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${version.surefire.plugin}</version>
                     <configuration>
@@ -680,7 +684,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.9</version>
+                            <version>4.0.10</version>
                         </dependency>
                     </dependencies>
                 </plugin>

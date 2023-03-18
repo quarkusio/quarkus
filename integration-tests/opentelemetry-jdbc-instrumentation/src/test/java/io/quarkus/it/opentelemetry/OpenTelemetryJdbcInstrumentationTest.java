@@ -7,10 +7,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import io.restassured.common.mapper.TypeRef;
@@ -18,9 +21,17 @@ import io.restassured.common.mapper.TypeRef;
 public abstract class OpenTelemetryJdbcInstrumentationTest {
 
     @BeforeEach
+    @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 0);
+        await().atMost(5, SECONDS).until(() -> {
+            // make sure spans are cleared
+            List<Map<String, Object>> spans = getSpans();
+            if (spans.size() > 0) {
+                given().get("/reset").then().statusCode(HTTP_OK);
+            }
+            return spans.size() == 0;
+        });
     }
 
     private List<Map<String, Object>> getSpans() {
@@ -35,6 +46,8 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .then()
                 .statusCode(200)
                 .body("message", Matchers.equalTo("Hit message."));
+
+        Awaitility.await().during(Duration.ofSeconds(2)).until(() -> !getSpans().isEmpty());
 
         // Assert insert has been traced
         boolean hitInserted = false;

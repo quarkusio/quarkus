@@ -53,6 +53,7 @@ import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
 import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
+import io.quarkus.vertx.http.deployment.spi.UseManagementInterfaceBuildItem;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
@@ -64,6 +65,7 @@ import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.impl.VertxImpl;
@@ -88,18 +90,26 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    NonApplicationRootPathBuildItem frameworkRoot(HttpBuildTimeConfig httpBuildTimeConfig) {
-        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.rootPath, httpBuildTimeConfig.nonApplicationRootPath);
+    NonApplicationRootPathBuildItem frameworkRoot(HttpBuildTimeConfig httpBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+        String mrp = null;
+        if (managementBuildTimeConfig.enabled) {
+            mrp = managementBuildTimeConfig.rootPath;
+        }
+        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.rootPath, httpBuildTimeConfig.nonApplicationRootPath,
+                mrp);
     }
 
     @BuildStep
     FrameworkEndpointsBuildItem frameworkEndpoints(NonApplicationRootPathBuildItem nonApplicationRootPath,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem,
             List<RouteBuildItem> routes) {
         List<String> frameworkEndpoints = new ArrayList<>();
         for (RouteBuildItem route : routes) {
             if (FRAMEWORK_ROUTE.equals(route.getRouteType())) {
                 if (route.getConfiguredPathInfo() != null) {
-                    frameworkEndpoints.add(route.getConfiguredPathInfo().getEndpointPath(nonApplicationRootPath));
+                    frameworkEndpoints.add(route.getConfiguredPathInfo().getEndpointPath(nonApplicationRootPath,
+                            managementInterfaceBuildTimeConfig, launchModeBuildItem));
                     continue;
                 }
                 if (route.getRouteFunction() != null && route.getRouteFunction() instanceof BasicRoute) {
@@ -135,6 +145,14 @@ class VertxHttpProcessor {
         return UnremovableBeanBuildItem.beanTypes(HttpServerOptionsCustomizer.class);
     }
 
+    @BuildStep
+    UseManagementInterfaceBuildItem useManagementInterfaceBuildItem(ManagementInterfaceBuildTimeConfig config) {
+        if (config.enabled) {
+            return new UseManagementInterfaceBuildItem();
+        }
+        return null;
+    }
+
     /**
      * Workaround for https://github.com/quarkusio/quarkus/issues/4720 by filtering Vertx multiple instance warning in dev
      * mode.
@@ -163,6 +181,16 @@ class VertxHttpProcessor {
 
         int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
         kubernetesPorts.produce(new KubernetesPortBuildItem(port, "http"));
+    }
+
+    @BuildStep
+    public KubernetesPortBuildItem kubernetesForManagement(
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
+        if (managementInterfaceBuildTimeConfig.enabled) {
+            int port = ConfigProvider.getConfig().getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
+            return new KubernetesPortBuildItem(port, "management");
+        }
+        return null;
     }
 
     @BuildStep
@@ -203,6 +231,7 @@ class VertxHttpProcessor {
             CoreVertxBuildItem vertx,
             List<RouteBuildItem> routes,
             HttpBuildTimeConfig httpBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPath,
             ShutdownContextBuildItem shutdown) {
 
@@ -210,19 +239,28 @@ class VertxHttpProcessor {
         RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter = initialRouter.getMutinyRouter();
         RuntimeValue<Router> frameworkRouter = null;
         RuntimeValue<Router> mainRouter = null;
+        RuntimeValue<Router> managementRouter = null;
 
         List<RouteBuildItem> redirectRoutes = new ArrayList<>();
         boolean frameworkRouterCreated = false;
         boolean mainRouterCreated = false;
+        boolean managementRouterCreated = false;
+
+        boolean isManagementInterfaceEnabled = managementBuildTimeConfig.enabled;
 
         for (RouteBuildItem route : routes) {
-            if (nonApplicationRootPath.isDedicatedRouterRequired() && route.isRouterFramework()) {
+            if (route.isManagement() && isManagementInterfaceEnabled) {
+                if (!managementRouterCreated) {
+                    managementRouter = recorder.initializeRouter(vertx.getVertx());
+                    managementRouterCreated = true;
+                }
+                recorder.addRoute(managementRouter, route.getRouteFunction(), route.getHandler(), route.getType());
+            } else if (nonApplicationRootPath.isDedicatedRouterRequired() && route.isRouterFramework()) {
                 // Non-application endpoints on a separate path
                 if (!frameworkRouterCreated) {
                     frameworkRouter = recorder.initializeRouter(vertx.getVertx());
                     frameworkRouterCreated = true;
                 }
-
                 recorder.addRoute(frameworkRouter, route.getRouteFunction(), route.getHandler(), route.getType());
             } else if (route.isRouterAbsolute()) {
                 // Add Route to "/"
@@ -248,7 +286,7 @@ class VertxHttpProcessor {
             }
         }
 
-        return new VertxWebRouterBuildItem(httpRouteRouter, mainRouter, frameworkRouter, mutinyRouter);
+        return new VertxWebRouterBuildItem(httpRouteRouter, mainRouter, frameworkRouter, managementRouter, mutinyRouter);
     }
 
     @BuildStep
@@ -325,6 +363,7 @@ class VertxHttpProcessor {
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
                 httpRouteRouter.getMutinyRouter(), httpRouteRouter.getFrameworkRouter(),
+                httpRouteRouter.getManagementRouter(),
                 httpRootPathBuildItem.getRootPath(),
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
                 launchMode.getLaunchMode(),

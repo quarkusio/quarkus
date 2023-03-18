@@ -14,9 +14,12 @@ public class WithSessionInterceptor extends AbstractUniInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {
-        // Note that intercepted methods annotated with @WithSession are validated at build time
-        // The build fails if a method does not return Uni
-        return SessionOperations.withSession(s -> proceedUni(context));
+        // Bindings are validated at build time - method-level binding declared on a method that does not return Uni results in a build failure
+        // However, a class-level binding implies that methods that do not return Uni are just a no-op
+        if (isUniReturnType(context)) {
+            return SessionOperations.withSession(s -> proceedUni(context));
+        }
+        return context.proceed();
     }
 
 }

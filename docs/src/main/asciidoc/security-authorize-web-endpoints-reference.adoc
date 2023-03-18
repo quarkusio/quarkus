@@ -386,6 +386,271 @@ It is possible to use multiple expressions in the role definition.
 <3> This `/subject/user` endpoint requires an authenticated user that has been granted the role "User" through the use of the `@RolesAllowed("${customer:User}")` annotation, as we did not set the configuration property `customer`.
 <4> This `/subject/secured` endpoint requires an authenticated user that has been granted the role `User` in production but allows any authenticated user in development mode.
 
+=== Permission annotation
+
+Quarkus also provides the `io.quarkus.security.PermissionsAllowed` annotation that will permit any authenticated user with given permission to access the resource.
+The annotation is extension of the common security annotations and has no relation to configuration permissions defined with the configuration property `quarkus.http.auth.permission`.
+
+.Example of endpoints secured with the `@PermissionsAllowed` annotation
+
+[source,java]
+----
+import io.quarkus.arc.Arc;
+import io.vertx.ext.web.RoutingContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+
+import io.quarkus.security.PermissionsAllowed;
+
+import java.security.Permission;
+import java.util.Collection;
+import java.util.Collections;
+
+@Path("/crud")
+public class CRUDResource {
+
+    @PermissionsAllowed("create") <1>
+    @PermissionsAllowed("update")
+    @POST
+    public String createOrUpdate() {
+        return "modified";
+    }
+
+    @PermissionsAllowed(value = {"create", "update"}, inclusive=true) <2>
+    @POST
+    public String createOrUpdate(Long id) {
+        return id + " modified";
+    }
+
+    @PermissionsAllowed({"see:detail", "see:all", "read"}) <3>
+    @GET
+    @Path("/id/{id}")
+    public String getItem(String id) {
+        return "item-detail-" + id;
+    }
+
+    @PermissionsAllowed(value = "list", permission = CustomPermission.class) <4>
+    @GET
+    public Collection<String> list(@QueryParam("query-options") String queryOptions) {
+        // your business logic comes here
+        return Collections.emptySet();
+    }
+
+    public static class CustomPermission extends Permission {
+
+        public CustomPermission(String name) {
+            super(name);
+        }
+
+        @Override
+        public boolean implies(Permission permission) {
+            var event = Arc.container().instance(RoutingContext.class).get(); <5>
+            var publicContent = "public-content".equals(event.request().params().get("query-options"));
+            var hasPermission = getName().equals(permission.getName());
+            return hasPermission && publicContent;
+        }
+
+        ...
+    }
+}
+----
+<1> Resource method `createOrUpdate` is only accessible by user with both `create` and `update` permissions.
+<2> By default, at least one of the permissions specified through one annotation instance is required.
+You can require all of them by setting `inclusive=true`. Both resource methods `createOrUpdate` have equal authorization requirements.
+<3> Access is granted to `getItem` if `SecurityIdentity` has either `read` permission or `see` permission and one of actions (`all`, `detail`).
+<4> You can use any `java.security.Permission` implementation of your choice.
+By default, string-based permission is performed by the `io.quarkus.security.StringPermission`.
+<5> Permissions are not beans, therefore only way to obtain bean instances is programmatically via the `Arc.container()`.
+
+CAUTION: If you plan to use the `@PermissionsAllowed` on the IO thread, review the information in xref:security-proactive-authentication-concept.adoc[Proactive Authentication].
+NOTE: The `@PermissionsAllowed` is not repeatable on class-level due to limitations of Quarkus interceptors.
+Please find well-argued explanation in the xref:cdi-reference.adoc#repeatable-interceptor-bindings[Repeatable interceptor bindings] section of the CDI reference.
+
+You can also create a custom `java.security.Permission` with additional constructor parameters.
+These additional parameters will be matched with arguments of the method annotated with the `@PermissionsAllowed` annotation.
+Later, Quarkus will instantiate your custom Permission with actual arguments, with which the method annotated with the `@PermissionsAllowed` has been invoked.
+
+.Example of a custom `java.security.Permission` that accepts additional arguments
+
+[source,java]
+----
+import java.security.Permission;
+import java.util.Arrays;
+import java.util.Set;
+
+public class LibraryPermission extends Permission {
+
+    private final Set<String> actions;
+    private final Library library;
+
+    public LibraryPermission(String libraryName, String[] actions, Library library) { <1>
+        super(libraryName);
+        this.actions = Set.copyOf(Arrays.asList(actions));
+        this.library = library;
+    }
+
+    @Override
+    public boolean implies(Permission requiredPermission) {
+        if (requiredPermission instanceof LibraryPermission) {
+            LibraryPermission that = (LibraryPermission) requiredPermission;
+            boolean librariesMatch = getName().equals(that.getName());
+            boolean requiredLibraryIsSublibrary = library.isParentLibraryOf(that.library);
+            boolean hasOneOfRequiredActions = that.actions.stream().anyMatch(actions::contains);
+            return (librariesMatch || requiredLibraryIsSublibrary) && hasOneOfRequiredActions;
+        }
+        return false;
+    }
+
+    ...
+
+    public static abstract class Library {
+
+        protected String description;
+
+        abstract boolean isParentLibraryOf(Library library);
+
+    }
+
+    public static class MediaLibrary extends Library {
+
+        @Override
+        boolean isParentLibraryOf(Library library) {
+            return library instanceof MediaLibrary;
+        }
+    }
+
+    public static class TvLibrary extends MediaLibrary {
+        ...
+    }
+}
+----
+<1> There must be exactly one constructor of a custom `Permission` class, also first parameter is always considered a permission name (must be `String`).
+Optionally, Quarkus may pass Permission actions to the constructor. Just declare the second parameter as `String[]`.
+
+The `LibraryPermission` permit access to a library if `SecurityIdentity` is allowed to perform one of required actions
+(like `read`, `write`, `list`) on the very same library, or the parent one. Let's see how it is used:
+
+[source,java]
+----
+import io.quarkus.security.PermissionsAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class LibraryService {
+
+    @PermissionsAllowed(value = "tv:write", permission = LibraryPermission.class) <1>
+    public Library updateLibrary(String newDesc, Library update) {
+        update.description = newDesc;
+        return update;
+    }
+
+    @PermissionsAllowed(value = "tv:write", permission = LibraryPermission.class, params = "library") <2>
+    @PermissionsAllowed(value = {"tv:read", "tv:list"}, permission = LibraryPermission.class)
+    public Library migrateLibrary(Library migrate, Library library) {
+        // migrate libraries
+        return library;
+    }
+
+}
+----
+<1> Formal parameter `update` is identified as the first `Library` parameter and passed to the `LibraryPermission`.
+However this option comes with a price, as the `LibraryPermission` must be instantiated every single time `updateLibrary` method is invoked.
+<2> Here, the first `Library` parameter is `migrate`, therefore we marked `library` parameter explicitly via `PermissionsAllowed#params`.
+Please note that both Permission constructor and annotated method must have parameter `library`, otherwise validation will fail.
+
+CAUTION: If you would like to pass method parameters to a custom `Permission` constructor from RESTEasy Reactive endpoints,
+make sure you have `@PermissionsAllowed` annotation set not on the JAX-RS resource method itself, but on the injected CDI
+bean to which this method will delegate to. Setting `@PermissionsAllowed` on the JAX-RS resource method will not work
+because RESTEasy Reactive performs the security checks before the deserialization.
+These limitations are demonstrated in the example below.
+
+.Example of endpoint limitations when it comes to passing annotated method arguments to the Permission constructor
+
+[source,java]
+----
+@Path("/library")
+public class LibraryResource {
+
+    @Inject
+    LibraryService libraryService;
+
+    @PermissionsAllowed(value = "tv:write", permission = LibraryPermission.class)
+    @PUT
+    @Path("/id/{id}")
+    public Library updateLibrary(@PathParam("id") Integer id, Library library) { <1>
+        ...
+    }
+
+    @PUT
+    @Path("/service-way/id/{id}")
+    public Library updateLibrarySvc(@PathParam("id") Integer id, Library library) {
+        String newDescription = "new description " + id;
+        return libraryService.updateLibrary(newDescription, library); <2>
+    }
+
+}
+----
+<1> In the RESTEasy Reactive, the endpoint argument `library` won't ever be passed to the `LibraryPermission`, because it is not available.
+Instead, Quarkus will pass `null` for the argument `library`.
+That gives you option to reuse your custom Permission when the method argument (like `library`) is optional.
+<2> Argument `library` will be passed to the `LibraryPermission` constructor as the `LibraryService#updateLibrary` method is not an endpoint.
+
+Currently, there is only one way to add permissions, and that is xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
+
+.Example of Adding the `LibraryPermission` to the `SecurityIdentity`
+
+[source,java]
+----
+import java.security.Permission;
+import java.util.function.Function;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
+
+    @Override
+    public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
+        if (isNotAdmin(identity)) {
+            return Uni.createFrom().item(identity);
+        }
+        return Uni.createFrom().item(build(identity));
+    }
+
+    private boolean isNotAdmin(SecurityIdentity identity) {
+        return identity.isAnonymous() || !"admin".equals(identity.getPrincipal().getName());
+    }
+
+    SecurityIdentity build(SecurityIdentity identity) {
+        Permission possessedPermission = new LibraryPermission("media-library",
+                new String[] { "read", "write", "list"}, new MediaLibrary()); <1>
+        return QuarkusSecurityIdentity.builder(identity)
+                .addPermissionChecker(new Function<Permission, Uni<Boolean>>() { <2>
+                    @Override
+                    public Uni<Boolean> apply(Permission requiredPermission) {
+                        boolean accessGranted = possessedPermission.implies(requiredPermission);
+                        return Uni.createFrom().item(accessGranted);
+                    }
+                })
+                .build();
+    }
+
+}
+----
+<1> Created permission `media-library` is allowed to perform actions `read`, `write` and `list`.
+Considering `MediaLibrary` is the `TvLibrary` class parent, we know that administrator is also going to be allowed to modify television library.
+<2> You can add a permission checker via `io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder#addPermissionChecker`.
+
+CAUTION: Annotation permissions do not work with the custom xref:security-customization.adoc#jaxrs-security-context[JAX-RS SecurityContext], for there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
+
 == References
 
 * xref:security-overview-concept.adoc[Quarkus Security overview]

@@ -128,4 +128,19 @@ public final class OpenTelemetryUtil {
         vertxMDC.remove(PARENT_ID, vertxContext);
         vertxMDC.remove(SAMPLED, vertxContext);
     }
+
+    public static boolean isStringEmpty(CharSequence cs) {
+        return cs == null || cs.length() == 0;
+    }
+
+    public static String subStringAfter(String str, String separator) {
+        if (isStringEmpty(str)) {
+            return str;
+        } else if (separator == null) {
+            return "";
+        } else {
+            int pos = str.indexOf(separator);
+            return pos == -1 ? "" : str.substring(pos + separator.length());
+        }
+    }
 }

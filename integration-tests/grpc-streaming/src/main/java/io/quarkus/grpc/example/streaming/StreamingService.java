@@ -46,17 +46,9 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
                 .call(() -> {
                     throw new RuntimeException("Any error");
                 })
-                .map(x -> {
-                    return StringReply.newBuilder()
-                            .setMessage(x.toString())
-                            .build();
-                })
+                .map(x -> StringReply.newBuilder().setMessage(x.toString()).build())
                 .collect().asList()
-                .replaceWith(StringReply.newBuilder()
-                        .setMessage("DONE")
-                        .build())
-                .onFailure()
-                .invoke(th -> System.err.println("Quick: " + th.getMessage()));
+                .replaceWith(StringReply.newBuilder().setMessage("DONE").build());
     }
 
     @Override
@@ -64,18 +56,33 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
         AtomicInteger atomicInteger = new AtomicInteger(0);
         return request
                 .map(x -> {
-                    if (atomicInteger.getAndIncrement() == 5) {
-                        throw new RuntimeException("We reached 5, error here");
+                    if (atomicInteger.getAndIncrement() == 3) {
+                        throw new RuntimeException("We reached 3, error here");
                     }
-                    return StringReply.newBuilder()
-                            .setMessage(x.toString())
-                            .build();
+                    return StringReply.newBuilder().setMessage(x.toString()).build();
                 })
                 .collect().asList()
-                .replaceWith(StringReply.newBuilder()
-                        .setMessage("DONE")
-                        .build())
-                .onFailure()
-                .invoke(th -> System.err.println("Mid: " + th.getMessage()));
+                .replaceWith(StringReply.newBuilder().setMessage("DONE").build());
+    }
+
+    @Override
+    public Multi<StringReply> quickStringBiDiStream(Multi<StringRequest> request) {
+        return request
+                .call(() -> {
+                    throw new RuntimeException("Any error");
+                })
+                .map(x -> StringReply.newBuilder().setMessage(x.toString()).build());
+    }
+
+    @Override
+    public Multi<StringReply> midStringBiDiStream(Multi<StringRequest> request) {
+        AtomicInteger atomicInteger = new AtomicInteger(0);
+        return request
+                .map(x -> {
+                    if (atomicInteger.getAndIncrement() == 3) {
+                        throw new RuntimeException("We reached 3, error here");
+                    }
+                    return StringReply.newBuilder().setMessage(x.toString()).build();
+                });
     }
 }

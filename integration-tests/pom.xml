@@ -317,6 +317,7 @@
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>opentelemetry</module>
+                <module>opentelemetry-spi</module>
                 <module>opentelemetry-jdbc-instrumentation</module>
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
@@ -356,6 +357,7 @@
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
                 <module>istio</module>
+                <module>management-interface</module>
             </modules>
         </profile>
 

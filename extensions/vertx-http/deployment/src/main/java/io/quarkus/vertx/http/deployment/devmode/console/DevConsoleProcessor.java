@@ -102,6 +102,7 @@ import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
 import io.quarkus.vertx.http.runtime.logstream.WebSocketLogHandler;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.config.common.utils.StringUtil;
 import io.vertx.core.Handler;
@@ -340,6 +341,7 @@ public class DevConsoleProcessor {
             List<RouteBuildItem> allRoutes,
             List<DevConsoleRouteBuildItem> routes,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
             List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
             LaunchModeBuildItem launchModeBuildItem) {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
@@ -352,6 +354,7 @@ public class DevConsoleProcessor {
                 buildSystemTargetBuildItem,
                 effectiveIdeBuildItem,
                 nonApplicationRootPathBuildItem,
+                managementInterfaceBuildTimeConfig,
                 configDescriptionBuildItems,
                 launchModeBuildItem);
         newRouter(quteEngine, nonApplicationRootPathBuildItem);
@@ -584,6 +587,7 @@ public class DevConsoleProcessor {
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
             List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
             LaunchModeBuildItem launchModeBuildItem) {
         EngineBuilder builder = Engine.builder().addDefaults();
@@ -618,8 +622,9 @@ public class DevConsoleProcessor {
         for (RouteBuildItem item : allRoutes) {
             ConfiguredPathInfo resolvedPathBuildItem = item.getConfiguredPathInfo();
             if (resolvedPathBuildItem != null) {
-                resolvedPaths.put(resolvedPathBuildItem.getName(),
-                        resolvedPathBuildItem.getEndpointPath(nonApplicationRootPathBuildItem));
+                String path = resolvedPathBuildItem.getEndpointPath(nonApplicationRootPathBuildItem,
+                        managementInterfaceBuildTimeConfig, launchModeBuildItem);
+                resolvedPaths.put(resolvedPathBuildItem.getName(), path);
             }
         }
 

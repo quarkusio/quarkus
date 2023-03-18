@@ -29,7 +29,7 @@ import io.vertx.core.http.impl.HttpServerRequestWrapper;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
-class ForwardedServerRequestWrapper extends HttpServerRequestWrapper implements HttpServerRequest {
+public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper implements HttpServerRequest {
     private final ForwardedParser forwardedParser;
 
     private boolean modified;
@@ -40,7 +40,7 @@ class ForwardedServerRequestWrapper extends HttpServerRequestWrapper implements 
     private String uri;
     private String absoluteURI;
 
-    ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions,
+    public ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions,
             TrustedProxyCheck trustedProxyCheck) {
         super((HttpServerRequestInternal) request);
         forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions, trustedProxyCheck);

@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanKind;
@@ -29,6 +30,8 @@ import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 public class OpenTelemetryReactiveTest {
+
+    @BeforeEach
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);

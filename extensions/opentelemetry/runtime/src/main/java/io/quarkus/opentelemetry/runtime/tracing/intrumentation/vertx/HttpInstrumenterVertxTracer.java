@@ -2,7 +2,7 @@ package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
 import static io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteSource.FILTER;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
-import static io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.config.build.OtelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.util.Collections;
 import java.util.List;

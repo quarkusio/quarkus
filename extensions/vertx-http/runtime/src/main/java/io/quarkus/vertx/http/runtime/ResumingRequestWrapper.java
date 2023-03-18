@@ -7,11 +7,11 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.http.impl.HttpServerRequestWrapper;
 
-class ResumingRequestWrapper extends HttpServerRequestWrapper {
+public class ResumingRequestWrapper extends HttpServerRequestWrapper {
 
     private boolean userSetState;
 
-    ResumingRequestWrapper(HttpServerRequest request) {
+    public ResumingRequestWrapper(HttpServerRequest request) {
         super((HttpServerRequestInternal) request);
     }
 

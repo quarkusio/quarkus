@@ -29,7 +29,7 @@ public class SecurityTransformerUtils {
     }
 
     public static boolean hasStandardSecurityAnnotation(ClassInfo classInfo) {
-        return hasStandardSecurityAnnotation(classInfo.classAnnotations());
+        return hasStandardSecurityAnnotation(classInfo.declaredAnnotations());
     }
 
     private static boolean hasStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
@@ -46,7 +46,7 @@ public class SecurityTransformerUtils {
     }
 
     public static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(ClassInfo classInfo) {
-        return findFirstStandardSecurityAnnotation(classInfo.classAnnotations());
+        return findFirstStandardSecurityAnnotation(classInfo.declaredAnnotations());
     }
 
     private static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {

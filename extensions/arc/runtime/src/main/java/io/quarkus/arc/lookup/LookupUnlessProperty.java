@@ -71,7 +71,7 @@ public @interface LookupUnlessProperty {
     String stringValue();
 
     /**
-     * Determines if the bean should be suppressed when the property name specified by {@code name} has not been specified at
+     * Determines if the bean should be looked up when the property name specified by {@code name} has not been specified at
      * all
      */
     boolean lookupIfMissing() default false;

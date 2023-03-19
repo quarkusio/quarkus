@@ -112,7 +112,16 @@ public class PolicyEnforcerTest {
                 .then()
                 .statusCode(403);
         RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/annotation/scope-write")
+                .then()
+                .statusCode(403);
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
                 .when().get("/api/permission/scope?scope=read")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("read"));
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/annotation/scope-read")
                 .then()
                 .statusCode(200)
                 .and().body(Matchers.containsString("read"));
@@ -219,6 +228,44 @@ public class PolicyEnforcerTest {
                 .when().get("/")
                 .then()
                 .statusCode(404);
+    }
+
+    @Test
+    public void testPermissionScopes() {
+        // 'jdoe' has scope 'read' and 'read' is required
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/standard-way")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("read"));
+
+        // 'jdoe' has scope 'read' while 'write' is required
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/standard-way-denied")
+                .then()
+                .statusCode(403);
+
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/programmatic-way")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("read"));
+
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/programmatic-way-denied")
+                .then()
+                .statusCode(403);
+
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/annotation-way")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("read"));
+
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/annotation-way-denied")
+                .then()
+                .statusCode(403);
     }
 
     protected String getAccessToken(String userName) {

@@ -6,7 +6,9 @@ import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.iterableWithSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
 import org.hamcrest.Matcher;
@@ -28,7 +30,9 @@ class AutoSecurityRolesAllowedTestCase {
                     .addAsResource(
                             new StringAsset("quarkus.smallrye-openapi.security-scheme=jwt\n"
                                     + "quarkus.smallrye-openapi.security-scheme-name=JWTCompanyAuthentication\n"
-                                    + "quarkus.smallrye-openapi.security-scheme-description=JWT Authentication"),
+                                    + "quarkus.smallrye-openapi.security-scheme-description=JWT Authentication\n"
+                                    + "quarkus.smallrye-openapi.security-scheme-extensions.x-my-extension1=extension-value\n"
+                                    + "quarkus.smallrye-openapi.security-scheme-extensions.my-extension2=extension-value"),
 
                             "application.properties"));
 
@@ -55,7 +59,9 @@ class AutoSecurityRolesAllowedTestCase {
                         hasEntry("type", "http"),
                         hasEntry("scheme", "bearer"),
                         hasEntry("bearerFormat", "JWT"),
-                        hasEntry("description", "JWT Authentication")))
+                        hasEntry("description", "JWT Authentication"),
+                        hasEntry("x-my-extension1", "extension-value"),
+                        not(hasKey("my-extension2"))))
                 .and()
                 // OpenApiResourceSecuredAtMethodLevel
                 .body("paths.'/resource2/test-security/naked'.get.security", defaultSecurity)

@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.openapi.runtime.filter;
 
+import java.util.Map;
+
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
 
@@ -15,8 +17,9 @@ public class OpenIDConnectSecurityFilter extends AutoSecurityFilter {
     }
 
     public OpenIDConnectSecurityFilter(String securitySchemeName, String securitySchemeDescription,
+            Map<String, String> securitySchemeExtensions,
             AutoUrl openIdConnectUrl) {
-        super(securitySchemeName, securitySchemeDescription);
+        super(securitySchemeName, securitySchemeDescription, securitySchemeExtensions);
         this.openIdConnectUrl = openIdConnectUrl;
     }
 

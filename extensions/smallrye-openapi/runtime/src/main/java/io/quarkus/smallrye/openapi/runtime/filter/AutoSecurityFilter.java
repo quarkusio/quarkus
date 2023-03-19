@@ -19,14 +19,17 @@ public abstract class AutoSecurityFilter implements OASFilter {
 
     private String securitySchemeName;
     private String securitySchemeDescription;
+    private Map<String, String> securitySchemeExtensions;
 
-    public AutoSecurityFilter() {
+    protected AutoSecurityFilter() {
 
     }
 
-    public AutoSecurityFilter(String securitySchemeName, String securitySchemeDescription) {
+    protected AutoSecurityFilter(String securitySchemeName, String securitySchemeDescription,
+            Map<String, String> securitySchemeExtensions) {
         this.securitySchemeName = securitySchemeName;
         this.securitySchemeDescription = securitySchemeDescription;
+        this.securitySchemeExtensions = securitySchemeExtensions;
     }
 
     public String getSecuritySchemeName() {
@@ -43,6 +46,14 @@ public abstract class AutoSecurityFilter implements OASFilter {
 
     public void setSecuritySchemeDescription(String securitySchemeDescription) {
         this.securitySchemeDescription = securitySchemeDescription;
+    }
+
+    public Map<String, String> getSecuritySchemeExtensions() {
+        return securitySchemeExtensions;
+    }
+
+    public void setSecuritySchemeExtensions(Map<String, String> securitySchemeExtensions) {
+        this.securitySchemeExtensions = securitySchemeExtensions;
     }
 
     @Override
@@ -62,6 +73,8 @@ public abstract class AutoSecurityFilter implements OASFilter {
 
         SecurityScheme securityScheme = getSecurityScheme();
         securityScheme.setDescription(securitySchemeDescription);
+        securitySchemeExtensions.forEach(securityScheme::addExtension);
+
         securitySchemes.put(securitySchemeName, securityScheme);
         openAPI.getComponents().setSecuritySchemes(securitySchemes);
     }

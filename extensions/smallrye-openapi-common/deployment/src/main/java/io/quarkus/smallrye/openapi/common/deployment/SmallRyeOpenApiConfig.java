@@ -1,8 +1,11 @@
 package io.quarkus.smallrye.openapi.common.deployment;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -57,6 +60,12 @@ public final class SmallRyeOpenApiConfig {
      */
     @ConfigItem(defaultValue = "Authentication")
     public String securitySchemeDescription;
+
+    /**
+     * Add one or more extensions to the security scheme
+     */
+    @ConfigItem
+    public Map<String, String> securitySchemeExtensions = Collections.emptyMap();
 
     /**
      * This will automatically add the security requirement to all methods/classes that has a `RolesAllowed` annotation.
@@ -215,5 +224,13 @@ public final class SmallRyeOpenApiConfig {
         METHOD,
         CLASS_METHOD,
         PACKAGE_CLASS_METHOD
+    }
+
+    public Map<String, String> getValidSecuritySchemeExtentions() {
+        return securitySchemeExtensions
+                .entrySet()
+                .stream()
+                .filter(x -> x.getKey().startsWith("x-"))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

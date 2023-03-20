@@ -18,6 +18,8 @@ public class JaxbConfig {
 
     /**
      * Exclude classes to automatically be bound to the default JAXB context.
+     * Values with suffix {@code .*}, i.e. {@code org.acme.*}, are considered packages and exclude all classes that are members
+     * of these packages
      */
     @ConfigItem
     public Optional<List<String>> excludeClasses;

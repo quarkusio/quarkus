@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.quarkus.builder.item.SimpleBuildItem;
@@ -33,11 +34,20 @@ public final class FilteredJaxbClassesToBeBoundBuildItem extends SimpleBuildItem
 
     public static class Builder {
         private final Set<String> classNames = new LinkedHashSet<>();
-        private final Set<String> classNameExcludes = new LinkedHashSet<>();
+        private final Set<Predicate<String>> classNamePredicateExcludes = new LinkedHashSet<>();
 
         public Builder classNameExcludes(Collection<String> classNameExcludes) {
-            for (String className : classNameExcludes) {
-                this.classNameExcludes.add(className);
+            final String packMatch = ".*";
+
+            for (String classNameExclude : classNameExcludes) {
+                if (classNameExclude.endsWith(packMatch)) {
+                    // Package ends with ".*"
+                    final String packageName = classNameExclude.substring(0, classNameExclude.length() - packMatch.length());
+                    this.classNamePredicateExcludes.add((className) -> className.startsWith(packageName));
+                } else {
+                    // Standard class name
+                    this.classNamePredicateExcludes.add(classNameExclude::equals);
+                }
             }
             return this;
         }
@@ -51,7 +61,7 @@ public final class FilteredJaxbClassesToBeBoundBuildItem extends SimpleBuildItem
 
         public FilteredJaxbClassesToBeBoundBuildItem build() {
             final List<Class<?>> classes = classNames.stream()
-                    .filter(className -> !this.classNameExcludes.contains(className))
+                    .filter(className -> this.classNamePredicateExcludes.stream().noneMatch(p -> p.test(className)))
                     .map(FilteredJaxbClassesToBeBoundBuildItem::getClassByName)
                     .filter(JaxbType::isValidType)
                     .collect(Collectors.toList());

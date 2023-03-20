@@ -288,10 +288,11 @@ mp.jwt.verify.issuer=https://example.com/issuer #<2>
 
 quarkus.native.resources.includes=publicKey.pem #<3>
 ----
-<1> We are setting public key location to point to a classpath publicKey.pem location. We will add this key in part B, <<Adding a Public Key>>.
+<1> We are setting public key location to point to a classpath publicKey.pem location. We will add this key in part B, <<add-public-key>>.
 <2> We are setting the issuer to the URL string `https://example.com/issuer`.
 <3> We are including the public key as a resource in the native executable.
 
+[[add-public-key]]
 === Adding a Public Key
 
 The https://tools.ietf.org/html/rfc7519[JWT specification] defines various levels of security of JWTs that one can use.
@@ -642,6 +643,7 @@ Note you can also use the injected `JsonWebToken` to access the individual claim
 
 Please see link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-1.2/microprofile-jwt-auth-spec-1.2.html#_cdi_injection_requirements[MP JWT CDI Injection Requirements] for more details.
 
+[[supported-public-key-formats]]
 === Supported Public Key Formats
 
 Public Keys may be formatted in any of the following formats, specified in order of
@@ -1016,7 +1018,7 @@ include::{generated-dir}/config/quarkus-smallrye-jwt.adoc[opts=optional, levelof
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in the <<Supported Public Key Formats>> section.
+|mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in the <<supported-public-key-formats>> section.
 |mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see xref:native-and-ssl.adoc[Using SSL With Native Executables] for more details.
 |mp.jwt.verify.publickey.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |mp.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.

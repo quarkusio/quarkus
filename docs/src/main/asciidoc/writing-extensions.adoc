@@ -337,7 +337,7 @@ The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extensi
 There are three distinct bootstrap phases of a Quarkus app:
 
 Augmentation::
-    This is the first phase, and is done by the <<Build Step Processors>>. These processors have access to Jandex annotation
+    This is the first phase, and is done by the <<build-step-processors>>. These processors have access to Jandex annotation
     information and can parse any descriptors and read annotations, but should not attempt to load any application classes. The output of these
     build steps is some recorded bytecode, using an extension of the ObjectWeb ASM project called Gizmo(ext/gizmo), that is used to actually bootstrap the application at runtime. Depending on the `io.quarkus.deployment.annotations.ExecutionTime` value of the `@io.quarkus.deployment.annotations.Record` annotation associated with the build step,
     the step may be run in a different JVM based on the following two modes.
@@ -576,6 +576,7 @@ dependencies {
 This plugin is still experimental, it does not validate the extension dependencies as the equivalent Maven plugin does.
 ====
 
+[[build-step-processors]]
 === Build Step Processors
 
 Work is done at augmentation time by _build steps_ which produce and consume _build items_.  The build steps found in
@@ -1056,6 +1057,7 @@ Extensions must use https://smallrye.io/smallrye-config/Main/config/mappings/[Sm
 the configuration required by the Extension. This will allow Quarkus to automatically expose an instance of the mapping
 to each configuration phase and generate the configuration documentation.
 
+[[config-phases]]
 ==== Config Phases
 
 Configuration mappings are strictly bound by configuration phase, and attempting to access a configuration mapping from
@@ -1202,7 +1204,7 @@ quarkus.log.file.path=/tmp/debug.log
 Since `format` is not defined in these properties, the default value from `@WithDefault` will be used instead.
 
 A configuration mapping name can contain an extra suffix segment for the case where there are configuration
-mappings for multiple <<Config Phases>>. Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
+mappings for multiple <<config-phases>>. Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
 may end with `BuildTimeConfig` or `BuildTimeConfiguration`, classes which correspond to the `RUN_TIME` phase
 may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration` while classes which
 correspond to the `BOOTSTRAP` configuration may end with `BootstrapConfig` or `BootstrapConfiguration`.
@@ -2312,7 +2314,7 @@ The name of the feature gets displayed in the log during application bootstrap.
 ----
 <1> A list of features installed in the runtime image
 
-A feature can be registered in a <<Build Step Processors>> method that produces a `FeatureBuildItem`:
+A feature can be registered in a <<build-step-processors>> method that produces a `FeatureBuildItem`:
 
 .TestProcessor#feature()
 [source,java]
@@ -2349,7 +2351,7 @@ An extension may provide multiple capabilities and multiple extensions can provi
 By default, capabilities are not displayed to users.
 Capabilities should be used when checking for the presence of an extension rather than class path based checks.
 
-Capabilities can be registered in a <<Build Step Processors>> method that produces a `CapabilityBuildItem`:
+Capabilities can be registered in a <<build-step-processors>> method that produces a `CapabilityBuildItem`:
 
 .TestProcessor#capability()
 [source,java]
@@ -2422,6 +2424,7 @@ public class ConfiguredBean implements IConfigConsumer {
 <1> Register the annotation class and CDI default scope using the Jandex `DotName` class.
 <2> `ConfiguredBean` will be processed by the CDI layer the same as a bean annotated with the CDI standard @ApplicationScoped.
 
+[[parsing-config-to-objects]]
 ==== Parsing Config to Objects
 One of the main things an extension is likely to do is completely separate the configuration phase of behavior from the runtime phase. Frameworks often do parsing/load of configuration on startup that can be done during build time to both reduce the runtime dependencies on frameworks like xml parsers as well as reducing the startup time the parsing incurs.
 
@@ -2453,13 +2456,13 @@ An example of parsing an XML config file using JAXB is shown in the `TestProcess
 If there was no /config.xml resource available in the build environment, then a null `RuntimeServiceBuildItem` would be returned and no subsequent logic based on a `RuntimeServiceBuildItem` being produced would execute.
 ====
 
-Typically, one is loading a configuration to create some runtime component/service as `parseServiceXmlConfig` is doing. We will come back to the rest of the behavior in `parseServiceXmlConfig` in the following <<Manage Non-CDI Service>> section.
+Typically, one is loading a configuration to create some runtime component/service as `parseServiceXmlConfig` is doing. We will come back to the rest of the behavior in `parseServiceXmlConfig` in the following <<manage-non-cdi-service>> section.
 
 If for some reason you need to parse the config and use it in other build steps in an extension processor, you would need to create an `XmlConfigBuildItem` to pass the parsed XmlConfig instance around.
 
 [TIP]
 ====
-If you look at the XmlConfig code you will see that it does carry around the JAXB annotations. If you don't want these in the runtime image, you could clone the XmlConfig instance into some POJO object graph and then replace XmlConfig with the POJO class. We will do this in <<Replacing Classes in the Native Image>>.
+If you look at the XmlConfig code you will see that it does carry around the JAXB annotations. If you don't want these in the runtime image, you could clone the XmlConfig instance into some POJO object graph and then replace XmlConfig with the POJO class. We will do this in <<replacing-classes-in-native-image>>.
 ====
 
 ==== Scanning Deployments Using Jandex
@@ -2535,8 +2538,9 @@ You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact wit
 <4> Runtime recorder retrieves the bean using its type.
 <5> Runtime recorder invokes the `IConfigConsumer#loadConfig(...)` method passing in the configuration objects with runtime information.
 
+[[manage-non-cdi-service]]
 ==== Manage Non-CDI Service
-A common purpose for an extension is to integrate a non-CDI aware service into the CDI based Quarkus runtime. Step 1 of this task is to load any configuration needed in a STATIC_INIT build step as we did in <<Parsing Config to Objects>>. Now we need to create an instance of the service using the configuration. Let's return to the `TestProcessor#parseServiceXmlConfig` method to see how this can be done.
+A common purpose for an extension is to integrate a non-CDI aware service into the CDI based Quarkus runtime. Step 1 of this task is to load any configuration needed in a STATIC_INIT build step as we did in <<parsing-config-to-objects>>. Now we need to create an instance of the service using the configuration. Let's return to the `TestProcessor#parseServiceXmlConfig` method to see how this can be done.
 
 .Creating a Non-CDI Service
 [source,java]
@@ -2582,6 +2586,7 @@ A common purpose for an extension is to integrate a non-CDI aware service into t
 <2> Using the parsed `XmlConfig` instance, create an instance of `RuntimeXmlConfigService` and wrap it in a `RuntimeValue`. Use a `RuntimeValue` wrapper for non-interface objects that are non-proxiable.
 <3> Wrap the return service value in a `RuntimeServiceBuildItem` for use in a RUNTIME_INIT build step that will start the service.
 
+[[starting-service]]
 ===== Starting a Service
 Now that you have recorded the creation of a service during the build phase, you need to record how to start the service at runtime during booting. You do this with a RUNTIME_INIT build step as shown in the `TestProcessor#startRuntimeService` method.
 
@@ -2613,7 +2618,7 @@ Now that you have recorded the creation of a service during the build phase, you
 <1> We consume a ShutdownContextBuildItem to register the service shutdown.
 <2> We consume the previously initialized service captured in `RuntimeServiceBuildItem`.
 <3> Call the runtime recorder to record the service start invocation.
-<4> Produce a `ServiceStartBuildItem` to indicate the startup of a service. See <<Startup and Shutdown Events>> for details.
+<4> Produce a `ServiceStartBuildItem` to indicate the startup of a service. See <<startup-shutdown-events>> for details.
 <5> Runtime recorder retrieves the service instance reference and calls its `startService` method.
 <6> Runtime recorder registers an invocation of the service instance `stopService` method with the Quarkus `ShutdownContext`.
 
@@ -2622,6 +2627,7 @@ The code for the `RuntimeXmlConfigService` can be viewed here:
 
 The testcase for validating that the `RuntimeXmlConfigService` has started can be found in the `testRuntimeXmlConfigService` test of `ConfiguredBeanTest` and `NativeImageIT`.
 
+[[startup-shutdown-events]]
 ==== Startup and Shutdown Events
 The Quarkus container supports startup and shutdown lifecycle events to notify components of the container startup
 and shutdown. There are CDI events fired that components can observe are illustrated in this example:
@@ -2654,7 +2660,7 @@ public class SomeBean {
 <2> Observe a `ShutdownEvent` to be notified when the runtime is going to shut down.
 
 What is the relevance of startup and shutdown events for extension authors? We have already seen the use of a `ShutdownContext`
-to register a callback to perform shutdown tasks in the <<Starting a Service>> section. These shutdown tasks would be called
+to register a callback to perform shutdown tasks in the <<starting-service>> section. These shutdown tasks would be called
 after a `ShutdownEvent` had been sent.
 
 A `StartupEvent` is fired after all `io.quarkus.deployment.builditem.ServiceStartBuildItem` producers have been consumed.
@@ -2899,6 +2905,7 @@ An extension registers this substitution by producing an `ObjectSubstitutionBuil
     }
 ----
 
+[[replacing-classes-in-native-image]]
 ==== Replacing Classes in the Native Image
 The Graal SDK supports substitutions of classes in the native image. An example of how one could replace the `XmlConfig/XmlData` classes with versions that have no JAXB annotation dependencies is shown in these example classes:
 

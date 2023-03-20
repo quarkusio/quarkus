@@ -42,6 +42,7 @@ Content from this repository is published to the https://quarkus.io/guides/[Quar
 - Documentation built from the main branch is published nightly (main-SNAPSHOT).
 - Documentation for other branches is published at release time.
 
+[[titles-headings]]
 == Titles and headings
 
 Regardless of content type, ensure that the main title and any headings in your document are:
@@ -131,6 +132,7 @@ Suffix:: The file name should reflect the document type:
 
 == Document structure
 
+[[document-header]]
 === Document header
 
 Each document should define a header for document-scoped attributes. 
@@ -145,9 +147,9 @@ Minimally, each document should define and id and a title, and include common at
 ----
 
 <1> Use the filename as the ID for the document.
-<2> Define the document title following guidance in <<Titles and headings>>.
+<2> Define the document title following guidance in <<titles-headings>>.
 <3> Include common document attributes.
-<4> Specify the relevant <<Categories>> (comma separated).
+<4> Specify the relevant <<categories>> (comma separated).
 
 [[doc-header-optional]]
 ==== Other common document header attributes
@@ -319,6 +321,7 @@ examples:
 
 == Document attributes and variables
 
+[[categories]]
 === Categories
 
 Quarkus documentation is grouped into the following categories. 
@@ -350,7 +353,7 @@ Quarkus documentation is grouped into the following categories.
 | writing-extensions | Writing Extensions
 |===
 
-Tag your content to improve findability by adding at least one category to the categories attribute line in the <<Document header,document header>>. To add multiple categories, use comma-separated values. For example:
+Tag your content to improve findability by adding at least one category to the categories attribute line in the <<document-header,document header>>. To add multiple categories, use comma-separated values. For example:
 
 [source,asciidoc]
 ----

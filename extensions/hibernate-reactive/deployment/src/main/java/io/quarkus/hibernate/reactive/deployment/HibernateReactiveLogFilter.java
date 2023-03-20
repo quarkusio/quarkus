@@ -12,6 +12,9 @@ public final class HibernateReactiveLogFilter {
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
         filters.produce(new LogCleanupFilterBuildItem(
                 "org.hibernate.engine.jdbc.connections.internal.ConnectionProviderInitiator", "HHH000181"));
+        //See https://hibernate.atlassian.net/browse/HHH-16224
+        filters.produce(new LogCleanupFilterBuildItem(
+                "org.hibernate.dialect.PostgreSQLPGObjectJdbcType", "HHH000514"));
     }
 
 }

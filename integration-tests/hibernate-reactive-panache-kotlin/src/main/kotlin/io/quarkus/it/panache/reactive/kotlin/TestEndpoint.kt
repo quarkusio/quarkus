@@ -606,7 +606,7 @@ class TestEndpoint {
                 assertEquals(catName, catView.name)
                 assertEquals(ownerName, catView.ownerName)
                 Assertions.assertNull(catView.weight)
-                Cat.find("select 'fake_cat', 'fake_owner', 12.5 from Cat c")
+                Cat.find("select 'fake_cat', 'fake_owner', 12.5D from Cat c")
                     .project(CatProjectionBean::class.java)
                     .firstResult()
             }.map { catView ->

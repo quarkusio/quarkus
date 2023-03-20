@@ -12,7 +12,6 @@ import java.util.function.Supplier;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.Filter;
-import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.reactive.panache.common.ProjectedFieldName;
@@ -351,7 +350,7 @@ public class CommonPanacheQueryImpl<Entity> {
         }
 
         if (this.lockModeType != null) {
-            jpaQuery.setLockMode(LockModeConverter.convertToLockMode(lockModeType));
+            jpaQuery.setLockMode(lockModeType);
         }
 
         if (hints != null) {

@@ -230,9 +230,9 @@
                                     <alias>postgresql</alias>
                                     <run>
                                         <env>
-                                            <POSTGRES_USER>quarkus_test</POSTGRES_USER>
-                                            <POSTGRES_PASSWORD>quarkus_test</POSTGRES_PASSWORD>
-                                            <POSTGRES_DB>quarkus_test</POSTGRES_DB>
+                                            <POSTGRES_USER>hibernate_orm_test</POSTGRES_USER>
+                                            <POSTGRES_PASSWORD>hibernate_orm_test</POSTGRES_PASSWORD>
+                                            <POSTGRES_DB>hibernate_orm_test</POSTGRES_DB>
                                         </env>
                                         <ports>
                                             <port>5431:5432</port>

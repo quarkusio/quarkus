@@ -44,7 +44,7 @@ import io.smallrye.mutiny.Uni;
         @NamedQuery(name = "Person.deleteById", query = "delete from Person2 p where p.id = :id"),
         @NamedQuery(name = "Person.deleteById.ordinal", query = "delete from Person2 p where p.id = ?1"),
 })
-@FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = "string"))
+@FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = String.class))
 @FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'")
 @Filter(name = "Person.isAlive")
 @Filter(name = "Person.hasName")

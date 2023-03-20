@@ -620,6 +620,10 @@ public abstract class ResteasyReactiveRequestContext
 
     protected void handleUnrecoverableError(Throwable throwable) {
         log.error("Request failed", throwable);
+        endResponse();
+    }
+
+    protected void endResponse() {
         if (serverResponse().headWritten()) {
             serverRequest().closeConnection();
         } else {

@@ -24,6 +24,7 @@ import io.quarkus.scheduler.common.runtime.ScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
@@ -86,6 +87,7 @@ public class SchedulerJsonRPCService {
         return runningStatus;
     }
 
+    @NonBlocking
     public JsonObject getData() {
         SchedulerContext c = context.get();
         Scheduler s = scheduler.get();
@@ -127,6 +129,7 @@ public class SchedulerJsonRPCService {
         return ret;
     }
 
+    @NonBlocking
     public JsonObject pauseScheduler() {
         Scheduler s = scheduler.get();
         if (!s.isRunning()) {
@@ -137,6 +140,7 @@ public class SchedulerJsonRPCService {
         return newSuccess("Scheduler was paused");
     }
 
+    @NonBlocking
     public JsonObject resumeScheduler() {
         Scheduler s = scheduler.get();
         if (s.isRunning()) {
@@ -147,6 +151,7 @@ public class SchedulerJsonRPCService {
         return newSuccess("Scheduler was resumed");
     }
 
+    @NonBlocking
     public JsonObject pauseJob(String identity) {
         Scheduler s = scheduler.get();
         if (s.isPaused(identity)) {
@@ -157,6 +162,7 @@ public class SchedulerJsonRPCService {
         return newSuccess("Job with identity " + identity + " was paused");
     }
 
+    @NonBlocking
     public JsonObject resumeJob(String identity) {
         Scheduler s = scheduler.get();
         if (!s.isPaused(identity)) {
@@ -167,6 +173,7 @@ public class SchedulerJsonRPCService {
         return newSuccess("Job with identity " + identity + " was resumed");
     }
 
+    @NonBlocking
     public JsonObject executeJob(String methodDescription) {
         SchedulerContext c = context.get();
         for (ScheduledMethod metadata : c.getScheduledMethods()) {

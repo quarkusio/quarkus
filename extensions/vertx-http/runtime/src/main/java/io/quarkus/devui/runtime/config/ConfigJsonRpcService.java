@@ -1,4 +1,4 @@
-package io.quarkus.devui.runtime;
+package io.quarkus.devui.runtime.config;
 
 import java.util.Map;
 
@@ -14,7 +14,6 @@ import io.vertx.core.json.JsonObject;
 public class ConfigJsonRpcService {
 
     public boolean updateProperty(String name, String value) {
-        System.out.println("setting " + name + " to " + value);
         DevConsoleManager.invoke("config-update-property", Map.of("name", name, "value", value));
         return true;
     }
@@ -27,5 +26,4 @@ public class ConfigJsonRpcService {
         }
         return values;
     }
-
 }

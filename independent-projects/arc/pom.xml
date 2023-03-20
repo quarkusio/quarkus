@@ -57,7 +57,7 @@
         <version.mutiny>2.1.0</version.mutiny>
         <version.arquillian>1.7.0.Alpha14</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>
-        <version.cdi-tck>4.0.8</version.cdi-tck>
+        <version.cdi-tck>4.0.9</version.cdi-tck>
         <version.junit4>4.13.2</version.junit4>
 
         <version.compiler.plugin>3.11.0</version.compiler.plugin>

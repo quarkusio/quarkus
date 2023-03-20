@@ -48,7 +48,7 @@
         <version.junit5>5.9.2</version.junit5>
         <version.kotlin>1.8.10</version.kotlin>
         <version.kotlin-coroutines>1.6.4</version.kotlin-coroutines>
-        <version.maven>3.8.7</version.maven>
+        <version.maven>3.8.8</version.maven>
         <version.assertj>3.24.2</version.assertj>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
         <version.jakarta-annotation>2.1.1</version.jakarta-annotation>

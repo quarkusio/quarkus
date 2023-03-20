@@ -29,7 +29,7 @@ import java.nio.file.StandardCopyOption;
 
 public final class MavenWrapperDownloader
 {
-    private static final String WRAPPER_VERSION = "{maven.wrapper-version}";
+    private static final String WRAPPER_VERSION = "3.2.0";
 
     private static final boolean VERBOSE = Boolean.parseBoolean( System.getenv( "MVNW_VERBOSE" ) );
 

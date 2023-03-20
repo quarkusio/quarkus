@@ -153,7 +153,7 @@ You can also configure the `jvm.args` system property directly inside the `quark
 When trying to debug startup performance, it is convenient to log build steps execution time. 
 This can be achieved by adding the following system property: `-Dquarkus.debug.print-startup-times=true` in dev mode or when launching the JAR.
 
-There is also a nice visualization of build steps available in the Dev UI located here: http://localhost:8080/q/dev/io.quarkus.quarkus-vertx-http/build-steps.
+There is also a nice visualization of build steps available in the Dev UI located here: http://localhost:8080/q/dev/build-steps.
 
 If you want to have the same visualization of build steps processing when building your application, you can use the `quarkus.debug.dump-build-metrics=true` property. 
 For example using `mvn package -Dquarkus.debug.dump-build-metrics=true`, will generate a `build-metrics.json` in your `target` repository that you can process via the quarkus-build-report application available here https://github.com/mkouba/quarkus-build-report. 

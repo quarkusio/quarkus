@@ -14,7 +14,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class DevUIBuildTimeStaticHandler implements Handler<RoutingContext> {
     private Map<String, String> urlAndPath;
-    private String basePath; // Like /q/dev-ui
+    private String basePath; // Like /q/dev
 
     public DevUIBuildTimeStaticHandler() {
 

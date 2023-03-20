@@ -57,7 +57,7 @@ public class TestsProcessor {
         if (TestSupport.instance().isPresent()) {
             // Add continuous testing
             routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .route("dev/test")
+                    .route("devui-v1/test")
                     .handler(recorder.continuousTestHandler(shutdownContextBuildItem))
                     .build());
         }

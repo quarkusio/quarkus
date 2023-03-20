@@ -46,12 +46,12 @@ export class RouterController {
      * Get the header title for a certain path
      */
     static titleForPath(path){
-        if(path.includes('/dev-ui/')){
+        if(path.includes('/dev/')){
             var metadata = RouterController.metaDataForPath(path);
             if(metadata && metadata.extensionName){
                 return metadata.extensionName;
             }else{
-                var currentPage = path.substring(path.indexOf('/dev-ui/') + 8);
+                var currentPage = path.substring(path.indexOf('/dev/') + 8);
                 if(currentPage.includes('/')){
                     // This is a submenu
                     var extension = currentPage.substring(0, currentPage.lastIndexOf("/"));
@@ -81,8 +81,8 @@ export class RouterController {
      */
     static subMenuForPath(path){
         
-        if(path.includes('/dev-ui/')){
-            var currentPage = path.substring(path.indexOf('/dev-ui/') + 8);
+        if(path.includes('/dev/')){
+            var currentPage = path.substring(path.indexOf('/dev/') + 5);
             if(currentPage.includes('/')){
                 // This is a submenu
                 const links = [];
@@ -92,7 +92,7 @@ export class RouterController {
                 var counter = 0;
                 var index = 0;
                 routes.forEach((route) => {
-                    var pageLink = route.path.substring(route.path.indexOf('/dev-ui/') + 8);
+                    var pageLink = route.path.substring(route.path.indexOf('/dev/') + 5);
                     if(pageLink.includes('/')){ // To filter out section menu items
                         if(route.path.startsWith(startOfPath)){
                             links.push(route);
@@ -197,7 +197,8 @@ export class RouterController {
 
     static basePath(){
         var base = window.location.pathname;
-        return base.substring(0, base.indexOf('/dev')) + "/dev-ui";
+        console.log(("Base is", base.substring(0, base.indexOf('/dev')) + "/dev"));
+        return base.substring(0, base.indexOf('/dev')) + "/dev";
     }
 
     static pageRef(pageName) {
@@ -242,7 +243,7 @@ export class RouterController {
             if (currentSelection === path) {
                 Router.go({pathname: path});
                 // The default naked route  
-            } else if (!RouterController.router.location.route && defaultRoute && currentSelection.endsWith('/dev-ui/')) {
+            } else if (!RouterController.router.location.route && defaultRoute && currentSelection.endsWith('/dev/')) {
                 Router.go({pathname: path});
                 // We do not know and have not yet loaded the requested location
             } else if (!RouterController.router.location.route && defaultRoute) {

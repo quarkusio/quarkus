@@ -8,7 +8,7 @@ import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 
 /**
  * Contains info on the build time template used to build static content for Dev UI
- * All files are relative to dev-ui-templates/build-time/{extensionName} (in src/main/resources)
+ * All files are relative to dev-templates/build-time/{extensionName} (in src/main/resources)
  *
  * This contain the fileName to the template, and the template data (variables)
  *

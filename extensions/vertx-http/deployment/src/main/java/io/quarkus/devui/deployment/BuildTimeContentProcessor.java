@@ -56,8 +56,8 @@ import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
  */
 public class BuildTimeContentProcessor {
     private static final String SLASH = "/";
-    private static final String DEV_UI = "dev-ui";
-    private static final String BUILD_TIME_PATH = "dev-ui-templates/build-time";
+    private static final String DEV_UI = "dev";
+    private static final String BUILD_TIME_PATH = "dev-templates/build-time";
 
     final Config config = ConfigProvider.getConfig();
 

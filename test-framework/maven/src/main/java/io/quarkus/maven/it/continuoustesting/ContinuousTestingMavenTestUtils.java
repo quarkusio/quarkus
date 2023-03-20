@@ -23,7 +23,7 @@ public class ContinuousTestingMavenTestUtils {
 
     static {
         try {
-            DEFAULT = new URL("http://localhost:8080/q/dev/io.quarkus.quarkus-vertx-http/tests/status");
+            DEFAULT = new URL("http://localhost:8080/q/devui-v1/io.quarkus.quarkus-vertx-http/tests/status");
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }

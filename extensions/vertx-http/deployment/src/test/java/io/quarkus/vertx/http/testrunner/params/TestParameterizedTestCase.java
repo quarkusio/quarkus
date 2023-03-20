@@ -43,7 +43,7 @@ public class TestParameterizedTestCase {
         Assertions.assertEquals(4L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
-        RestAssured.post("q/dev/io.quarkus.quarkus-vertx-http/tests/runfailed");
+        RestAssured.post("q/devui-v1/io.quarkus.quarkus-vertx-http/tests/runfailed");
 
         ts = utils.waitForNextCompletion();
 

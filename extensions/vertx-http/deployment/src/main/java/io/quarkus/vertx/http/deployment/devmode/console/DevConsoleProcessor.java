@@ -273,7 +273,7 @@ public class DevConsoleProcessor {
                 .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
-        mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("dev*")).subRouter(router);
+        mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("devui-v1*")).subRouter(router);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -461,14 +461,14 @@ public class DevConsoleProcessor {
         }
 
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev/resources/*")
+                .route("devui-v1/resources/*")
                 .handler(recorder.fileSystemStaticHandler(
                         result.getWebRootConfigurations(), shutdownContext))
                 .build());
 
         // Add the log stream
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev/logstream")
+                .route("devui-v1/logstream")
                 .handler(logStreamRecorder.websocketHandler(historyHandlerBuildItem.value))
                 .build());
 
@@ -479,13 +479,13 @@ public class DevConsoleProcessor {
             if (!i.isDeploymentSide()) {
                 if (devUIConfig.cors.enabled) {
                     routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                            .route("dev/*")
+                            .route("devui-v1/*")
                             .handler(new DevConsoleCORSFilter())
                             .build());
                 }
                 NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
-                                "dev/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
+                                "devui-v1/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
                                 new RuntimeDevConsoleRoute(i.getMethod(),
                                         i.isBodyHandlerRequired() ? bodyHandlerBuildItem.getHandler() : null));
                 if (i.isBlockingHandler()) {
@@ -499,12 +499,12 @@ public class DevConsoleProcessor {
         DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
         //must be last so the above routes have precedence
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev/*")
+                .route("devui-v1/*")
                 .handler(new DevConsoleFilter())
                 .build());
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev")
-                .displayOnNotFoundPage("Dev UI")
+                .route("devui-v1")
+                .displayOnNotFoundPage("Dev UI (v1)")
                 .handler(new RedirectHandler())
                 .build());
     }
@@ -533,6 +533,7 @@ public class DevConsoleProcessor {
         String port = c.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
         context.reset(
                 new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/", host, port)),
+                // Open the new dev ui.
                 new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev", host, port)));
     }
 

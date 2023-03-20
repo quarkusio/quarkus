@@ -15,7 +15,7 @@ public class QuteDataPageBuilder extends PageBuilder<QuteDataPageBuilder> {
     public QuteDataPageBuilder templateLink(String templateLink) {
         if (templateLink == null || templateLink.isEmpty() || !templateLink.endsWith(DOT_HTML)) {
             throw new RuntimeException(
-                    "Invalid template link [" + templateLink + "] - Expeting a link that ends with .html");
+                    "Invalid template link [" + templateLink + "] - Expecting a link that ends with .html");
         }
 
         this.templateLink = templateLink;
@@ -30,7 +30,7 @@ public class QuteDataPageBuilder extends PageBuilder<QuteDataPageBuilder> {
     }
 
     public String getTemplatePath() {
-        return "/dev-ui/" + super.namespace + "/" + this.templateLink;
+        return "/dev/" + super.namespace + "/" + this.templateLink;
     }
 
 }

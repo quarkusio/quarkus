@@ -94,8 +94,9 @@ export class JsonRpc {
                 JsonRpc.serverUri = "ws:";
             }
             var currentPath = window.location.pathname;
-            currentPath = currentPath.substring(0, currentPath.indexOf('/dev')) + "/dev-ui";
+            currentPath = currentPath.substring(0, currentPath.indexOf('/dev')) + "/dev";
             JsonRpc.serverUri += "//" + window.location.host + currentPath + "/json-rpc-ws";
+            console.log(("Json RPC server uri", JsonRpc.serverUri));
             JsonRpc.connect();
         }
 

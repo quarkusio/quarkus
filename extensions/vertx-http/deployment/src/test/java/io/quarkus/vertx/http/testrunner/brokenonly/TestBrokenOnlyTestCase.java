@@ -44,7 +44,7 @@ public class TestBrokenOnlyTestCase {
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
         //start broken only mode
-        RestAssured.post("q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-broken-only");
+        RestAssured.post("q/devui-v1/io.quarkus.quarkus-vertx-http/tests/toggle-broken-only");
 
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
             @Override

@@ -36,7 +36,7 @@ public class FlywayDevModeCreateFromHibernateTest {
         RestAssured.get("fruit").then().statusCode(200)
                 .body("[0].name", CoreMatchers.is("Orange"));
         RestAssured.given().redirects().follow(false).formParam("datasource", "<default>")
-                .post("/q/dev/io.quarkus.quarkus-flyway/create-initial-migration").then().statusCode(303);
+                .post("/q/devui-v1/io.quarkus.quarkus-flyway/create-initial-migration").then().statusCode(303);
 
         config.modifySourceFile(Fruit.class, s -> s.replace("Fruit {", "Fruit {\n" +
                 "    \n" +

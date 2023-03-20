@@ -56,7 +56,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
                 .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("carambar"));
 
         //also verify that the dev ui console is disabled
-        DevModeTestUtils.getHttpResponse("/q/dev", 404, 10, TimeUnit.SECONDS);
+        DevModeTestUtils.getHttpResponse("/q/devui-v1", 404, 10, TimeUnit.SECONDS);
     }
 
     @Test

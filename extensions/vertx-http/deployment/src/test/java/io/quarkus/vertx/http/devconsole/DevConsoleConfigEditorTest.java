@@ -22,7 +22,7 @@ public class DevConsoleConfigEditorTest {
                 .formParam("value", "/foo")
                 .formParam("action", "updateProperty")
                 .redirects().follow(false)
-                .post("q/dev/io.quarkus.quarkus-vertx-http/config")
+                .post("q/devui-v1/io.quarkus.quarkus-vertx-http/config")
                 .then()
                 .statusCode(303);
         RestAssured.with()
@@ -46,7 +46,7 @@ public class DevConsoleConfigEditorTest {
                 .formParam("value", "")
                 .formParam("action", "updateProperty")
                 .redirects().follow(false)
-                .post("q/dev/io.quarkus.quarkus-vertx-http/config")
+                .post("q/devui-v1/io.quarkus.quarkus-vertx-http/config")
                 .then()
                 .statusCode(303);
         RestAssured.with()

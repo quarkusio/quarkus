@@ -73,7 +73,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class DevUIProcessor {
 
-    private static final String DEVUI = "dev-ui";
+    private static final String DEVUI = "dev";
     private static final String SLASH = "/";
     private static final String DOT = ".";
     private static final String SPACE = " ";

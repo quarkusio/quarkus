@@ -16,7 +16,7 @@ It also describes Dev UI for all OpenID Connect providers which have already bee
 Quarkus introduces an experimental `Dev Services For Keycloak` feature which is enabled by default when the `quarkus-oidc` extension is started in dev mode and when the integration tests are running in test mode, but only when no `quarkus.oidc.auth-server-url` property is configured.
 It starts a Keycloak container for both the dev and/or test modes and initializes them by registering the existing Keycloak realm or creating a new realm with the client and users for you to start developing your Quarkus application secured by Keycloak immediately. It will restart the container when the `application.properties` or the realm file changes have been detected.
 
-Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page which helps to acquire the tokens from Keycloak and test your Quarkus application.
+Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/devui-v1[/q/devui-v1] complements this feature with a Dev UI page which helps to acquire the tokens from Keycloak and test your Quarkus application.
 
 If `quarkus.oidc.auth-server-url` is already set then a generic OpenID Connect Dev Console which can be used with all OpenID Connect providers will be activated, please see <<dev-ui-all-oidc-providers,Dev UI for all OpenID Connect Providers>> for more information.
 
@@ -53,7 +53,7 @@ include::{includes}/devtools/dev.adoc[]
 
 Note that you can disable sharing the containers with `quarkus.keycloak.devservices.shared=false`.
 
-Now open the main link:http://localhost:8080/q/dev[Dev UI page], and you will see the `OpenID Connect Card` linking to a Keycloak page:
+Now open the main link:http://localhost:8080/q/devui-v1[Dev UI (v1) page], and you will see the `OpenID Connect Card` linking to a Keycloak page:
 
 image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
 
@@ -128,7 +128,7 @@ You may need to register a redirect URI for the authorization code flow initiate
 
 If Keycloak does enforce it then you will see an authentication error informing you that the `redirect_uri` value is wrong.
 
-In this case select the `Keycloak Admin` option in the right top corner, login as `admin:admin`, select the test realm and the client which Dev UI for Keycloak is configured with and add `http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider` to `Valid Redirect URIs`. If you used `-Dquarkus.http.port` when starting Quarkus then change `8080` to the value of `quarkus.http.port`.
+In this case select the `Keycloak Admin` option in the right top corner, login as `admin:admin`, select the test realm and the client which Dev UI for Keycloak is configured with and add `http://localhost:8080/q/devui-v1/io.quarkus.quarkus-oidc/provider` to `Valid Redirect URIs`. If you used `-Dquarkus.http.port` when starting Quarkus then change `8080` to the value of `quarkus.http.port`.
 
 If the container is shared between multiple applications running on different ports then you will need to register `redirect_uri` values for each of these applications.
 
@@ -297,13 +297,13 @@ And you will see the following message:
 ...
 ----
 
-If the provider metadata discovery has been successful then, after you open the main link:http://localhost:8080/q/dev[Dev UI page], you will see the `OpenID Connect Card` page linking to `Dev Console`:
+If the provider metadata discovery has been successful then, after you open the main link:http://localhost:8080/q/devui-v1[Dev UI (V1) page], you will see the `OpenID Connect Card` page linking to `Dev Console`:
 
 image::dev-ui-oidc-devconsole-card.png[alt=Generic Dev UI OpenID Connect Card,role="center"]
 
 Follow the link, and you will be able to log in to your provider, get the tokens and test the application. The experience will be the same as described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section, where `Dev Services for Keycloak` container has been started, especially if you work with Keycloak.
 
-You will most likely need to configure your OpenId Connect provider to support redirecting back to the `Dev Console`. Add `http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider` as one of the supported redirect and logout URLs.
+You will most likely need to configure your OpenId Connect provider to support redirecting back to the `Dev Console`. Add `http://localhost:8080/q/devui-v1/io.quarkus.quarkus-oidc/provider` as one of the supported redirect and logout URLs.
 
 If you work with other providers then a Dev UI experience described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section might differ slightly. For example, an access token may not be in a JWT format, so it won't be possible to show its internal content, though all providers should return an ID Token as JWT.
 
@@ -401,7 +401,7 @@ Please follow the xref:dev-ui.adoc[Dev UI] tutorial as well as check the `extens
 
 == Non Application Root Path Considerations
 
-This document refers to the `http://localhost:8080/q/dev` Dev UI URL in several places where `q` is a default non application root path. If you customize `quarkus.http.root-path` and/or `quarkus.http.non-application-root-path` properties then replace `q` accordingly, please see https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus] for more information.
+This document refers to the `http://localhost:8080/q/devui-v1` Dev UI URL in several places where `q` is a default non application root path. If you customize `quarkus.http.root-path` and/or `quarkus.http.non-application-root-path` properties then replace `q` accordingly, please see https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus] for more information.
 
 == References
 

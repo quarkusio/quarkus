@@ -5,6 +5,8 @@ import io.vertx.ext.web.RoutingContext;
 
 public final class HttpSecurityUtils {
     public final static String ROUTING_CONTEXT_ATTRIBUTE = "quarkus.http.routing.context";
+    public static final String SECURITY_IDENTITY_ATTRIBUTE = "io.quarkus.security.identity";
+    public static final String SECURITY_IDENTITIES_ATTRIBUTE = "io.quarkus.security.identities";
 
     private HttpSecurityUtils() {
 

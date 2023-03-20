@@ -18,9 +18,7 @@ public class OidcConfigurationMetadataProducer {
     @Produces
     @RequestScoped
     OidcConfigurationMetadata produce() {
-        OidcConfigurationMetadata configMetadata = null;
-
-        configMetadata = (OidcConfigurationMetadata) identity.getAttribute(OidcUtils.CONFIG_METADATA_ATTRIBUTE);
+        OidcConfigurationMetadata configMetadata = OidcUtils.getAttribute(identity, OidcUtils.CONFIG_METADATA_ATTRIBUTE);
 
         if (configMetadata == null && tenantConfig.getDefaultTenant().oidcConfig.tenantEnabled) {
             configMetadata = tenantConfig.getDefaultTenant().provider.getMetadata();

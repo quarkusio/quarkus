@@ -3,7 +3,9 @@ package io.quarkus.vertx.http.runtime.security;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -87,14 +89,15 @@ public class HttpAuthenticator {
      * <p>
      * If no credentials are present it will resolve to null.
      */
-    public Uni<SecurityIdentity> attemptAuthentication(RoutingContext routingContext) {
+    public Uni<SecurityIdentity> attemptAuthentication(RoutingContext routingContext, boolean inclusiveAuthentication) {
 
         String pathSpecificMechanism = pathMatchingPolicy.isResolvable()
                 ? pathMatchingPolicy.get().getAuthMechanismName(routingContext)
                 : null;
-        Uni<HttpAuthenticationMechanism> matchingMechUni = findBestCandidateMechanism(routingContext, pathSpecificMechanism);
+        Uni<HttpAuthenticationMechanism> matchingMechUni = inclusiveAuthentication ? null
+                : findBestCandidateMechanism(routingContext, pathSpecificMechanism);
         if (matchingMechUni == null) {
-            return createSecurityIdentity(routingContext);
+            return createSecurityIdentity(routingContext, inclusiveAuthentication);
         }
 
         return matchingMechUni.onItem()
@@ -107,28 +110,109 @@ public class HttpAuthenticator {
                         } else if (pathSpecificMechanism != null) {
                             return Uni.createFrom().optional(Optional.empty());
                         }
-                        return createSecurityIdentity(routingContext);
+                        return createSecurityIdentity(routingContext, false);
                     }
 
                 });
 
     }
 
-    private Uni<SecurityIdentity> createSecurityIdentity(RoutingContext routingContext) {
+    private Uni<SecurityIdentity> createSecurityIdentity(RoutingContext routingContext, boolean inclusiveAuthentication) {
         Uni<SecurityIdentity> result = mechanisms[0].authenticate(routingContext, identityProviderManager);
-        for (int i = 1; i < mechanisms.length; ++i) {
-            HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
-                @Override
-                public Uni<SecurityIdentity> apply(SecurityIdentity data) {
-                    if (data != null) {
-                        return Uni.createFrom().item(data);
+
+        if (!inclusiveAuthentication) {
+            // Return the first SecurityIdentity
+            for (int i = 1; i < mechanisms.length; ++i) {
+                HttpAuthenticationMechanism mech = mechanisms[i];
+                result = result.onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                    @Override
+                    public Uni<SecurityIdentity> apply(SecurityIdentity identity) {
+                        if (identity != null) {
+                            return Uni.createFrom().item(identity);
+                        }
+                        return mech.authenticate(routingContext, identityProviderManager);
                     }
-                    return mech.authenticate(routingContext, identityProviderManager);
+                });
+            }
+            return result;
+        } else {
+            // Have all authentication mechanisms produce SecurityIdentity
+            for (int i = 1; i < mechanisms.length; ++i) {
+                final int currentIndex = i;
+                HttpAuthenticationMechanism mech = mechanisms[i];
+                result = result.onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                    @Override
+                    public Uni<SecurityIdentity> apply(SecurityIdentity identity) {
+                        if (identity != null) {
+                            SecurityIdentity firstIdentity = routingContext.get(HttpSecurityUtils.SECURITY_IDENTITY_ATTRIBUTE);
+                            if (firstIdentity == null) {
+                                // If it is the very first SecurityIdentity then save it as a 'io.quarkus.security.identity' attribute on RoutingContext.
+                                firstIdentity = identity;
+                                routingContext.put(HttpSecurityUtils.SECURITY_IDENTITY_ATTRIBUTE, firstIdentity);
+                                // Get the second authentication mechanism produce SecurityIdentity
+                                return mech.authenticate(routingContext, identityProviderManager);
+                            } else {
+                                // Otherwise add it to the first SecurityIdentity's 'io.quarkus.security.identities' map attribute.
+                                // This branch will run if there are at least 3 authentication mechanism
+                                final Map<String, SecurityIdentity> identities = getSecurityIdentities(firstIdentity);
+                                return getCredentialTransport(mechanisms[currentIndex - 1], routingContext)
+                                        .onItem().transformToUni(
+                                                new Function<HttpCredentialTransport, Uni<? extends SecurityIdentity>>() {
+                                                    @Override
+                                                    public Uni<SecurityIdentity> apply(HttpCredentialTransport transport) {
+                                                        // Save the extra identity in the identities map
+                                                        // Get the next authentication mechanism produce SecurityIdentity
+                                                        identities.put(transport.getAuthenticationScheme(), identity);
+                                                        return mech.authenticate(routingContext, identityProviderManager);
+                                                    }
+                                                });
+                            }
+
+                        }
+                        return Uni.createFrom().optional(Optional.empty());
+                    }
+                });
+            }
+
+            // Now make sure the first SecurityIdentity is returned since the current SecurityIdentity was created
+            // by the last authentication mechanism in the list
+            return result.onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                @Override
+                public Uni<SecurityIdentity> apply(final SecurityIdentity identity) {
+                    if (identity != null) {
+                        final SecurityIdentity firstIdentity = routingContext
+                                .get(HttpSecurityUtils.SECURITY_IDENTITY_ATTRIBUTE);
+                        if (firstIdentity != null) {
+                            final Map<String, SecurityIdentity> identities = getSecurityIdentities(firstIdentity);
+
+                            return getCredentialTransport(mechanisms[mechanisms.length - 1], routingContext)
+                                    .onItem().transform(new Function<HttpCredentialTransport, SecurityIdentity>() {
+                                        @Override
+                                        public SecurityIdentity apply(HttpCredentialTransport transport) {
+                                            // Save the extra identity in the identities map
+                                            identities.put(transport.getAuthenticationScheme(), identity);
+                                            // Return the first identity
+                                            return firstIdentity;
+                                        }
+                                    });
+                        } else {
+                            // Single authentication mechanism is available only
+                            return Uni.createFrom().item(identity);
+                        }
+                    }
+                    return Uni.createFrom().optional(Optional.empty());
                 }
             });
         }
-        return result;
+    }
+
+    private Map<String, SecurityIdentity> getSecurityIdentities(SecurityIdentity firstIdentity) {
+        Map<String, SecurityIdentity> identities = firstIdentity.getAttribute(HttpSecurityUtils.SECURITY_IDENTITIES_ATTRIBUTE);
+        if (identities == null) {
+            identities = new LinkedHashMap<>();
+            firstIdentity.getAttributes().put(HttpSecurityUtils.SECURITY_IDENTITIES_ATTRIBUTE, identities);
+        }
+        return identities;
     }
 
     /**

@@ -8,6 +8,5 @@ import jakarta.inject.Singleton;
  * This is used for the default path/method based RBAC.
  */
 @Singleton
-public class PathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecurityPolicy
-        implements HttpSecurityPolicy {
+public class ManagementPathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecurityPolicy {
 }

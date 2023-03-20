@@ -81,7 +81,6 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             }
 
             if (event.failure() instanceof AuthenticationException) {
-
                 if (event.response().getStatusCode() == HttpResponseStatus.OK.code()) {
                     //set 401 if status wasn't set upstream
                     event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());

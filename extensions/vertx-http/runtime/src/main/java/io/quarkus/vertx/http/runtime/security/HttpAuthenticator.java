@@ -30,7 +30,6 @@ public class HttpAuthenticator {
     private static final Logger log = Logger.getLogger(HttpAuthenticator.class);
 
     private final IdentityProviderManager identityProviderManager;
-    private final Instance<PathMatchingHttpSecurityPolicy> pathMatchingPolicy;
     private final HttpAuthenticationMechanism[] mechanisms;
 
     public HttpAuthenticator(IdentityProviderManager identityProviderManager,
@@ -38,7 +37,6 @@ public class HttpAuthenticator {
             Instance<HttpAuthenticationMechanism> httpAuthenticationMechanism,
             Instance<IdentityProvider<?>> providers) {
         this.identityProviderManager = identityProviderManager;
-        this.pathMatchingPolicy = pathMatchingPolicy;
         List<HttpAuthenticationMechanism> mechanisms = new ArrayList<>();
         for (HttpAuthenticationMechanism mechanism : httpAuthenticationMechanism) {
             boolean found = false;
@@ -73,7 +71,7 @@ public class HttpAuthenticator {
         }
     }
 
-    IdentityProviderManager getIdentityProviderManager() {
+    public IdentityProviderManager getIdentityProviderManager() {
         return identityProviderManager;
     }
 
@@ -88,9 +86,11 @@ public class HttpAuthenticator {
      * If no credentials are present it will resolve to null.
      */
     public Uni<SecurityIdentity> attemptAuthentication(RoutingContext routingContext) {
+        AbstractPathMatchingHttpSecurityPolicy pathMatchingPolicy = routingContext
+                .get(AbstractPathMatchingHttpSecurityPolicy.class.getName());
 
-        String pathSpecificMechanism = pathMatchingPolicy.isResolvable()
-                ? pathMatchingPolicy.get().getAuthMechanismName(routingContext)
+        String pathSpecificMechanism = pathMatchingPolicy != null
+                ? pathMatchingPolicy.getAuthMechanismName(routingContext)
                 : null;
         Uni<HttpAuthenticationMechanism> matchingMechUni = findBestCandidateMechanism(routingContext, pathSpecificMechanism);
         if (matchingMechUni == null) {

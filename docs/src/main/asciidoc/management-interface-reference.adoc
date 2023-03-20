@@ -178,3 +178,39 @@ Health probes (using HTTP actions) and Prometheus scrape URLs are configured usi
 ====
 Until https://github.com/knative/serving/issues/8471[KNative#8471] is resolved, you cannot use the management interface, as KNative does not support containers will multiple exposed ports.
 ====
+
+== Security
+
+You can enable _basic_ authentication using the following properties:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+# Enable basic authentication
+quarkus.management.auth.basic=true
+# Require all access to /q/* to be authenticated
+quarkus.management.auth.permission.all.policy=authenticated
+quarkus.management.auth.permission.all.paths=/q/*
+----
+
+You can also use different permissions for different paths or use role bindings:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+# Enable basic authentication
+quarkus.management.auth.basic=true
+# Configure a management policy if needed, here the policy `management-policy` requires users to have the role `management`.
+quarkus.management.auth.policy.management-policy.roles-allowed=management
+
+# For each endpoint you can configure the permissions
+# Health used the management-policy (so requires authentication + the `management` role)
+quarkus.management.auth.permission.health.paths=/q/health/*
+quarkus.management.auth.permission.health.policy=management-policy
+
+# Metrics just requires authentication
+quarkus.management.auth.permission.metrics.paths=/q/metrics/*
+quarkus.management.auth.permission.metrics.policy=authenticated
+----
+
+More details about Basic authentication in Quarkus can be found in the xref:security-basic-authentication-howto.adoc[Basic authentication guide].

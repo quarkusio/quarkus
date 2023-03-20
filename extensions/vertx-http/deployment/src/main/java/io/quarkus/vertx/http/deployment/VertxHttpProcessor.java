@@ -300,7 +300,9 @@ class VertxHttpProcessor {
     ServiceStartBuildItem finalizeRouter(
             VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer, CoreVertxBuildItem vertx,
             LaunchModeBuildItem launchMode,
-            List<DefaultRouteBuildItem> defaultRoutes, List<FilterBuildItem> filters,
+            List<DefaultRouteBuildItem> defaultRoutes,
+            List<FilterBuildItem> filters,
+            List<ManagementInterfaceFilterBuildItem> managementInterfacefilters,
             VertxWebRouterBuildItem httpRouteRouter,
             HttpRootPathBuildItem httpRootPathBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
@@ -334,6 +336,10 @@ class VertxHttpProcessor {
                 .filter(f -> f.getHandler() != null)
                 .map(FilterBuildItem::toFilter).collect(Collectors.toList());
 
+        List<Filter> listOfManagementInterfaceFilters = managementInterfacefilters.stream()
+                .filter(f -> f.getHandler() != null)
+                .map(ManagementInterfaceFilterBuildItem::toFilter).collect(Collectors.toList());
+
         //if the body handler is required then we know it is installed for all routes, so we don't need to register it here
         Handler<RoutingContext> bodyHandler = !requireBodyHandlerBuildItems.isEmpty() ? bodyHandlerBuildItem.getHandler()
                 : null;
@@ -361,7 +367,8 @@ class VertxHttpProcessor {
 
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
-                listOfFilters, vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
+                listOfFilters, listOfManagementInterfaceFilters,
+                vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
                 httpRouteRouter.getMutinyRouter(), httpRouteRouter.getFrameworkRouter(),
                 httpRouteRouter.getManagementRouter(),
                 httpRootPathBuildItem.getRootPath(),

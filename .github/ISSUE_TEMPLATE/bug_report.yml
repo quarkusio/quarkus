@@ -41,7 +41,7 @@ body:
   - type: input
     attributes:
       label: Output of `uname -a` or `ver`
-  - type: textarea
+  - type: input
     attributes:
       label:  Output of `java -version`
   - type: input
@@ -50,7 +50,7 @@ body:
   - type: input
     attributes:
       label:  Quarkus version or git rev
-  - type: textarea
+  - type: input
     attributes:
       label:  Build tool (ie. output of `mvnw --version` or `gradlew --version`)
   - type: textarea

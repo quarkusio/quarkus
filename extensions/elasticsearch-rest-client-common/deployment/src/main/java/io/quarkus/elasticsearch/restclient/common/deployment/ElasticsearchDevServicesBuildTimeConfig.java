@@ -30,7 +30,7 @@ public class ElasticsearchDevServicesBuildTimeConfig {
      * The Elasticsearch container image to use.
      * Defaults to the elasticsearch image provided by Elastic.
      */
-    @ConfigItem(defaultValue = "docker.elastic.co/elasticsearch/elasticsearch:7.17.0")
+    @ConfigItem(defaultValue = "docker.elastic.co/elasticsearch/elasticsearch:8.6.2")
     public String imageName;
 
     /**

@@ -372,18 +372,21 @@ public class SmallRyeOpenApiProcessor {
                         return new AutoBearerTokenSecurityFilter(
                                 config.securitySchemeName,
                                 config.securitySchemeDescription,
+                                config.getValidSecuritySchemeExtentions(),
                                 config.jwtSecuritySchemeValue,
                                 config.jwtBearerFormat);
                     case oauth2:
                         return new AutoBearerTokenSecurityFilter(
                                 config.securitySchemeName,
                                 config.securitySchemeDescription,
+                                config.getValidSecuritySchemeExtentions(),
                                 config.oauth2SecuritySchemeValue,
                                 config.oauth2BearerFormat);
                     case basic:
                         return new AutoBasicSecurityFilter(
                                 config.securitySchemeName,
                                 config.securitySchemeDescription,
+                                config.getValidSecuritySchemeExtentions(),
                                 config.basicSecuritySchemeValue);
                     case oidc:
                         return securityInformationBuildItem.getOpenIDConnectInformation()
@@ -396,6 +399,7 @@ public class SmallRyeOpenApiProcessor {
                                     return new OpenIDConnectSecurityFilter(
                                             config.securitySchemeName,
                                             config.securitySchemeDescription,
+                                            config.getValidSecuritySchemeExtentions(),
                                             openIdConnectUrl);
                                 })
                                 .orElse(null);

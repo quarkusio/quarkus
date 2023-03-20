@@ -48,6 +48,7 @@ public class SecurityConfigFilter implements OASFilter {
 
             SecurityScheme securityScheme = OASFactory.createSecurityScheme();
             securityScheme.setDescription(config.securitySchemeDescription);
+            config.getValidSecuritySchemeExtentions().forEach(securityScheme::addExtension);
 
             switch (securitySchemeOption) {
                 case basic:

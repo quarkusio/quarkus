@@ -14,7 +14,6 @@
     <description>Module that contains Liquibase related tests</description>
 
     <properties>
-        <skipTests>false</skipTests>
         <skipPMTests>${skipTests}</skipPMTests>
     </properties>
 

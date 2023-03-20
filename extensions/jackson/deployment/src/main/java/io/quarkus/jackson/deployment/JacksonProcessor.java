@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import com.fasterxml.jackson.databind.cfg.MapperBuilder;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -61,10 +62,12 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jackson.JacksonMixin;
+import io.quarkus.jackson.MapperBuilderType;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.jackson.runtime.JacksonBuildTimeConfig;
 import io.quarkus.jackson.runtime.JacksonSupport;
 import io.quarkus.jackson.runtime.JacksonSupportRecorder;
+import io.quarkus.jackson.runtime.MapperBuilderRecorder;
 import io.quarkus.jackson.runtime.MixinsRecorder;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
@@ -429,6 +432,31 @@ public class JacksonProcessor {
                 .configure(JacksonSupport.class)
                 .scope(Singleton.class)
                 .supplier(recorder.supplier(determinePropertyNamingStrategyClassName(jacksonBuildTimeConfig)))
+                .done();
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    public SyntheticBeanBuildItem mapperBuilder(MapperBuilderRecorder recorder,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            JacksonBuildTimeConfig config) {
+
+        Optional<MapperBuilderType> ot = config.mapperBuilderType;
+        if (ot.isPresent()) {
+            MapperBuilderType type = ot.get();
+            String mapperClass = type.getMapperClass();
+            if (!QuarkusClassLoader.isClassPresentAtRuntime(mapperClass)) {
+                throw new RuntimeException(
+                        String.format("Cannot use %s MapperBuilder type. Missing %s dependency?", type, type.getDependency()));
+            }
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(mapperClass).methods().build());
+        }
+
+        return SyntheticBeanBuildItem
+                .configure(MapperBuilder.class)
+                .scope(Singleton.class)
+                .defaultBean()
+                .supplier(recorder.supplier(config.mapperBuilderType))
                 .done();
     }
 

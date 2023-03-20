@@ -313,6 +313,33 @@ public class CustomJsonbConfig {
 }
 ----
 
+== Other data formats
+
+Jackson supports other data formats as well -- YAML, JavaProps, Toml, CBOR, Smile.
+With Quarkus you can easily configure such `ObjectMapper` instantiation -- either via configuration property or overriding default `MapperBuilder` CDI bean.
+
+[source,properties]
+----
+quarkus.jackson.mapper-builder-type=yaml
+----
+
+[source,java]
+----
+@ApplicationScoped
+public class Config {
+    @Singleton
+    @Produces
+    public MapperBuilder mapperBuilder() {
+        return YAMLMapper.builder();
+    }
+}
+----
+
+[NOTE]
+====
+This change of type will change the type of default `ObjectMapper` bean - from plain JSON to your configured type. Which also affects REST services, etc.
+====
+
 
 == Creating a frontend
 

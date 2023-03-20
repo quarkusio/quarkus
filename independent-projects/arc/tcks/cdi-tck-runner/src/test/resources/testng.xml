@@ -101,11 +101,6 @@
                     <exclude name="testExceptions"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.bindings.broken.InvalidTransitiveInterceptorBindingAnnotationsTest">
-                <methods>
-                    <exclude name="testInterceptorBindingsWithConflictingAnnotationMembersNotOk"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamConstructorTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
@@ -142,11 +137,6 @@
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamInitializerTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.bindings.broken.InvalidStereotypeInterceptorBindingAnnotationsTest">
-                <methods>
-                    <exclude name="testInterceptorBindingsWithConflictingAnnotationMembersNotOk"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptedBeanTypeParamConstructorTest">

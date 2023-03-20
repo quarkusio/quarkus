@@ -611,13 +611,21 @@ public class BeanInfo implements InjectionTargetInfo {
             Map<MethodInfo, InterceptionInfo> interceptedMethods = new HashMap<>();
             Map<MethodKey, Set<AnnotationInstance>> candidates = new HashMap<>();
 
+            ClassInfo targetClass = target.get().asClass();
             List<AnnotationInstance> classLevelBindings = new ArrayList<>();
-            addClassLevelBindings(target.get().asClass(), classLevelBindings);
+            addClassLevelBindings(targetClass, classLevelBindings, Set.of());
             if (!stereotypes.isEmpty()) {
-                for (StereotypeInfo stereotype : stereotypes) {
-                    addClassLevelBindings(stereotype.getTarget(), classLevelBindings);
+                // interceptor binding declared on a bean class replaces an interceptor binding of the same type
+                // declared by a stereotype that is applied to the bean class
+                Set<DotName> skip = classLevelBindings.stream()
+                        .map(AnnotationInstance::name)
+                        .collect(Collectors.toUnmodifiableSet());
+                for (StereotypeInfo stereotype : Beans.stereotypesWithTransitive(stereotypes,
+                        beanDeployment.getStereotypesMap())) {
+                    addClassLevelBindings(stereotype.getTarget(), classLevelBindings, skip);
                 }
             }
+            Interceptors.checkClassLevelInterceptorBindings(classLevelBindings, targetClass, beanDeployment);
 
             Set<MethodInfo> finalMethods = Methods.addInterceptedMethodCandidates(this, candidates, classLevelBindings,
                     bytecodeTransformerConsumer, transformUnproxyableClasses);
@@ -748,7 +756,7 @@ public class BeanInfo implements InjectionTargetInfo {
             Map<InterceptionType, InterceptionInfo> lifecycleInterceptors = new HashMap<>();
             Set<AnnotationInstance> classLevelBindings = new HashSet<>();
             Set<AnnotationInstance> constructorLevelBindings = new HashSet<>();
-            addClassLevelBindings(target.get().asClass(), classLevelBindings);
+            addClassLevelBindings(target.get().asClass(), classLevelBindings, Set.of());
             addConstructorLevelBindings(target.get().asClass(), constructorLevelBindings);
             putLifecycleInterceptors(lifecycleInterceptors, classLevelBindings, InterceptionType.POST_CONSTRUCT);
             putLifecycleInterceptors(lifecycleInterceptors, classLevelBindings, InterceptionType.PRE_DESTROY);
@@ -774,15 +782,17 @@ public class BeanInfo implements InjectionTargetInfo {
         }
     }
 
-    private void addClassLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings) {
+    // bindings whose class name is present in `skip` are ignored (this is used to ignore bindings on stereotypes
+    // when the original class has a binding of the same type)
+    private void addClassLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings, Set<DotName> skip) {
         beanDeployment.getAnnotations(classInfo).stream()
-                .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null
-                        && bindings.stream().noneMatch(e -> e.name().equals(a.name())))
+                .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null)
+                .filter(a -> !skip.contains(a.name()))
                 .forEach(bindings::add);
         if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {
             ClassInfo superClass = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClass != null) {
-                addClassLevelBindings(superClass, bindings);
+                addClassLevelBindings(superClass, bindings, skip);
             }
         }
     }

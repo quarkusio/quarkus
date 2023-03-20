@@ -2,16 +2,22 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
@@ -65,12 +71,61 @@ final class Interceptors {
             priority = 0;
         }
 
+        checkClassLevelInterceptorBindings(bindings, interceptorClass, beanDeployment);
         checkInterceptorFieldsAndMethods(interceptorClass, beanDeployment);
 
         return new InterceptorInfo(interceptorClass, beanDeployment,
                 bindings.size() == 1 ? Collections.singleton(bindings.iterator().next())
                         : Collections.unmodifiableSet(bindings),
                 Injection.forBean(interceptorClass, null, beanDeployment, transformer), priority);
+    }
+
+    // similar logic already exists in InterceptorResolver, but it doesn't validate
+    static void checkClassLevelInterceptorBindings(Collection<AnnotationInstance> bindings, ClassInfo targetClass,
+            BeanDeployment beanDeployment) {
+        // when called from `createInterceptor` above, `bindings` already include transitive bindings,
+        // but when called from outside, that isn't guaranteed
+        Set<AnnotationInstance> allBindings = new HashSet<>(bindings);
+        for (AnnotationInstance binding : bindings) {
+            Set<AnnotationInstance> transitive = beanDeployment.getTransitiveInterceptorBindings(binding.name());
+            if (transitive != null) {
+                allBindings.addAll(transitive);
+            }
+        }
+
+        IndexView index = beanDeployment.getBeanArchiveIndex();
+
+        Map<DotName, List<AnnotationValue>> seenBindings = new HashMap<>();
+        for (AnnotationInstance binding : allBindings) {
+            DotName name = binding.name();
+            if (beanDeployment.hasAnnotation(index.getClassByName(name), DotNames.REPEATABLE)) {
+                // don't validate @Repeatable interceptor bindings, repeatability is their entire point
+                continue;
+            }
+
+            List<AnnotationValue> seenValues = seenBindings.get(name);
+            if (seenValues != null) {
+                // interceptor binding of the same type already seen
+                // all annotation members (except nonbinding) must have equal values
+                ClassInfo declaration = beanDeployment.getInterceptorBinding(name);
+                Set<String> nonBindingMembers = beanDeployment.getInterceptorNonbindingMembers(name);
+
+                for (AnnotationValue value : seenValues) {
+                    if (declaration.method(value.name()).hasDeclaredAnnotation(DotNames.NONBINDING)
+                            || nonBindingMembers.contains(value.name())) {
+                        continue;
+                    }
+
+                    if (!value.equals(binding.valueWithDefault(index, value.name()))) {
+                        throw new DefinitionException("Multiple instances of non-repeatable interceptor binding annotation "
+                                + name + " with different member values on class " + targetClass);
+                    }
+                }
+            } else {
+                // interceptor binding of that type not seen yet, just remember it
+                seenBindings.put(name, binding.valuesWithDefaults(index));
+            }
+        }
     }
 
     private static void checkInterceptorFieldsAndMethods(ClassInfo interceptorClass, BeanDeployment beanDeployment) {

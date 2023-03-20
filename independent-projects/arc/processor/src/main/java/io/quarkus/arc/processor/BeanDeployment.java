@@ -1534,10 +1534,36 @@ public class BeanDeployment {
         }
     }
 
+    /**
+     * Returns the set of names of non-binding annotation members of given interceptor
+     * binding annotation that was registered through {@code InterceptorBindingRegistrar}.
+     * <p>
+     * Does <em>not</em> return non-binding members of interceptor bindings that were
+     * discovered based on the {@code @InterceptorBinding} annotation; in such case,
+     * one has to manually check presence of the {@code @NonBinding} annotation on
+     * the annotation member declaration.
+     *
+     * @param name name of the interceptor binding annotation that was registered through
+     *        {@code InterceptorBindingRegistrar}
+     * @return set of non-binding annotation members of the interceptor binding annotation
+     */
     public Set<String> getInterceptorNonbindingMembers(DotName name) {
         return interceptorNonbindingMembers.getOrDefault(name, Collections.emptySet());
     }
 
+    /**
+     * Returns the set of names of non-binding annotation members of given qualifier
+     * annotation that was registered through {@code QualifierRegistrar}.
+     * <p>
+     * Does <em>not</em> return non-binding members of interceptor bindings that were
+     * discovered based on the {@code @Qualifier} annotation; in such case, one has to
+     * manually check presence of the {@code @NonBinding} annotation on the annotation member
+     * declaration.
+     *
+     * @param name name of the qualifier annotation that was registered through
+     *        {@code QualifierRegistrar}
+     * @return set of non-binding annotation members of the qualifier annotation
+     */
     public Set<String> getQualifierNonbindingMembers(DotName name) {
         return qualifierNonbindingMembers.getOrDefault(name, Collections.emptySet());
     }

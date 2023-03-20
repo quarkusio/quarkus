@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.mapping;
+package io.quarkus.hibernate.orm.mapping.timezone;
 
 import java.time.LocalDateTime;
 import java.time.Month;

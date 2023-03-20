@@ -11,6 +11,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 
 import org.hibernate.annotations.TimeZoneStorageType;
+import org.hibernate.id.enhanced.StandardOptimizerDescriptor;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -381,8 +382,84 @@ public class HibernateOrmConfigPersistenceUnit {
         @ConfigItem(name = "timezone.default-storage", defaultValueDocumentation = "default")
         public Optional<TimeZoneStorageType> timeZoneDefaultStorage;
 
+        /**
+         * The optimizer to apply to identifier generators
+         * whose optimizer is not configured explicitly.
+         *
+         * Only relevant for table- and sequence-based identifier generators.
+         * Other generators, such as UUID-based generators, will ignore this setting.
+         *
+         * The optimizer is responsible for pooling new identifier values,
+         * in order to reduce the frequency of database calls to retrieve those values
+         * and thereby improve performance.
+         *
+         * @asciidoclet
+         */
+        @ConfigItem(name = "id.optimizer.default", defaultValueDocumentation = "pooled-lo")
+        // Note this needs to be a build-time property due to
+        // org.hibernate.boot.internal.InFlightMetadataCollectorImpl.handleIdentifierValueBinding
+        // which may call (indirectly) org.hibernate.id.enhanced.SequenceStructure.buildSequence
+        // whose output depends on org.hibernate.id.enhanced.SequenceStructure.applyIncrementSizeToSourceValues
+        // which is determined by the optimizer.
+        public Optional<IdOptimizerType> idOptimizerDefault;
+
         public boolean isAnyPropertySet() {
-            return timeZoneDefaultStorage.isPresent();
+            return timeZoneDefaultStorage.isPresent()
+                    || idOptimizerDefault.isPresent();
+        }
+
+    }
+
+    public enum IdOptimizerType {
+        /**
+         * Assumes the value retrieved from the table/sequence is the lower end of the pool.
+         *
+         * Upon retrieving value `N`, the new pool of identifiers will go from `N` to `N + <allocation size> - 1`, inclusive.
+         * `pooled`::
+         * Assumes the value retrieved from the table/sequence is the higher end of the pool.
+         * +
+         * Upon retrieving value `N`, the new pool of identifiers will go from `N - <allocation size>` to `N + <allocation size>
+         * - 1`, inclusive.
+         * +
+         * The first value, `1`, is handled differently to avoid negative identifiers.
+         * +
+         * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
+         * `none`::
+         * No optimizer, resulting in a database call each and every time an identifier value is needed from the generator.
+         * +
+         * Not recommended in production environments:
+         * may result in degraded performance and/or frequent gaps in identifier values.
+         *
+         * @asciidoclet
+         */
+        POOLED_LO(StandardOptimizerDescriptor.POOLED_LO),
+        /**
+         * Assumes the value retrieved from the table/sequence is the higher end of the pool.
+         *
+         * Upon retrieving value `N`, the new pool of identifiers will go from `N - <allocation size>` to `N + <allocation size>
+         * - 1`, inclusive.
+         *
+         * The first value, `1`, is handled differently to avoid negative identifiers.
+         *
+         * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
+         *
+         * @asciidoclet
+         */
+        POOLED(StandardOptimizerDescriptor.POOLED),
+        /**
+         * No optimizer, resulting in a database call each and every time an identifier value is needed from the generator.
+         *
+         * Not recommended in production environments:
+         * may result in degraded performance and/or frequent gaps in identifier values.
+         *
+         * @asciidoclet
+         */
+        NONE(StandardOptimizerDescriptor.NONE);
+
+        public final String configName;
+
+        IdOptimizerType(StandardOptimizerDescriptor delegate) {
+            configName = delegate.getExternalName();
         }
     }
 

@@ -1022,6 +1022,9 @@ public final class HibernateOrmProcessor {
             descriptor.getProperties().setProperty(AvailableSettings.TIMEZONE_DEFAULT_STORAGE,
                     persistenceUnitConfig.mapping.timeZoneDefaultStorage.get().name());
         }
+        descriptor.getProperties().setProperty(AvailableSettings.PREFERRED_POOLED_OPTIMIZER,
+                persistenceUnitConfig.mapping.idOptimizerDefault
+                        .orElse(HibernateOrmConfigPersistenceUnit.IdOptimizerType.POOLED_LO).configName);
 
         //charset
         descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME,

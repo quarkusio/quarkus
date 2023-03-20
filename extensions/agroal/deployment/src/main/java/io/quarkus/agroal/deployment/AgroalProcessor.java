@@ -111,8 +111,8 @@ class AgroalProcessor {
 
             if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().tracing) {
                 reflectiveClass
-                        .produce(new ReflectiveClassBuildItem(true, false,
-                                DataSources.TRACING_DRIVER_CLASSNAME));
+                        .produce(ReflectiveClassBuildItem.builder(DataSources.TRACING_DRIVER_CLASSNAME).methods()
+                                .build());
             }
 
             if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().telemetry) {
@@ -120,8 +120,8 @@ class AgroalProcessor {
             }
 
             reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, false,
-                            aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass()));
+                    .produce(ReflectiveClassBuildItem.builder(aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass())
+                            .methods().build());
 
             aggregatedConfig.produce(aggregatedDataSourceBuildTimeConfig);
         }
@@ -140,15 +140,14 @@ class AgroalProcessor {
         resource.produce(new NativeImageResourceBuildItem(
                 "META-INF/services/" + io.agroal.api.security.AgroalSecurityProvider.class.getName()));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                io.agroal.pool.ConnectionHandler[].class.getName(),
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(io.agroal.pool.ConnectionHandler[].class.getName(),
                 io.agroal.pool.ConnectionHandler.class.getName(),
                 io.agroal.api.security.AgroalDefaultSecurityProvider.class.getName(),
                 io.agroal.api.security.AgroalKerberosSecurityProvider.class.getName(),
                 java.sql.Statement[].class.getName(),
                 java.sql.Statement.class.getName(),
                 java.sql.ResultSet.class.getName(),
-                java.sql.ResultSet[].class.getName()));
+                java.sql.ResultSet[].class.getName()).build());
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.AGROAL.getName()));

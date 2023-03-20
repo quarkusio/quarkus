@@ -35,7 +35,7 @@ public final class H2JDBCReflections {
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal.
         final String driverName = "org.h2.Driver";
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, driverName));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(driverName).build());
     }
 
     @BuildStep

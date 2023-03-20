@@ -244,7 +244,8 @@ public class ResteasyReactiveJacksonProcessor {
                         }
                     }
                     reflectiveClassProducer.produce(
-                            new ReflectiveClassBuildItem(true, false, false, biFunctionType.name().toString()));
+                            ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
+                                    .build());
                     recorder.recordCustomSerialization(getMethodId(instance.target().asMethod()),
                             biFunctionType.name().toString());
                 }
@@ -255,7 +256,7 @@ public class ResteasyReactiveJacksonProcessor {
             jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_SERIALIZATION);
             String className = bi.getCustomSerializationProvider().getName();
             reflectiveClassProducer.produce(
-                    new ReflectiveClassBuildItem(true, false, false, className));
+                    ReflectiveClassBuildItem.builder(className).build());
             recorder.recordCustomSerialization(getMethodId(bi.getMethodInfo(), bi.getDeclaringClassInfo()), className);
         }
 

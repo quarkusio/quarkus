@@ -21,9 +21,8 @@ class ElasticsearchHighLevelClientProcessor {
 
     @BuildStep
     public ReflectiveClassBuildItem registerForReflection() {
-        return new ReflectiveClassBuildItem(true, false,
-                "org.apache.logging.log4j.message.ReusableMessageFactory",
-                "org.apache.logging.log4j.message.DefaultFlowMessageFactory");
+        return ReflectiveClassBuildItem.builder("org.apache.logging.log4j.message.ReusableMessageFactory",
+                "org.apache.logging.log4j.message.DefaultFlowMessageFactory").methods().build();
     }
 
 }

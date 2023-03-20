@@ -45,7 +45,8 @@ public class AvroProcessor {
         for (AnnotationInstance annotation : annotations) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                 String className = annotation.target().asClass().name().toString();
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, className));
+                reflectiveClass.produce(
+                        ReflectiveClassBuildItem.builder(className).methods().fields().build());
             }
         }
 

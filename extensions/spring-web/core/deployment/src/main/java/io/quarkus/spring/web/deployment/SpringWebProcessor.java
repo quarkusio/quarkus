@@ -196,7 +196,8 @@ public class SpringWebProcessor {
             }
 
             if (!RESPONSE_ENTITY.equals(returnTypeDotName)) {
-                reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, returnTypeDotName.toString()));
+                reflectiveClassProducer.produce(
+                        ReflectiveClassBuildItem.builder(returnTypeDotName.toString()).methods().fields().build());
             }
 
             // we need to generate one JAX-RS ExceptionMapper per Exception type

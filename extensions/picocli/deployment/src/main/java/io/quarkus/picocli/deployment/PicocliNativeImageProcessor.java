@@ -99,10 +99,12 @@ public class PicocliNativeImageProcessor {
                 nativeImageProxies
                         .produce(new NativeImageProxyDefinitionBuildItem(classInfo.name().toString()));
                 reflectiveClasses
-                        .produce(new ReflectiveClassBuildItem(false, true, false, classInfo.name().toString()));
+                        .produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).constructors(false).methods()
+                                .build());
             } else {
                 reflectiveClasses
-                        .produce(new ReflectiveClassBuildItem(true, true, false, classInfo.name().toString()));
+                        .produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).methods()
+                                .build());
             }
         });
         foundFields.forEach(fieldInfo -> reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo)));

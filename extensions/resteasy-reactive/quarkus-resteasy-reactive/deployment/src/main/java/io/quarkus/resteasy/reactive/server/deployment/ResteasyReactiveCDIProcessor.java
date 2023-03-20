@@ -113,7 +113,8 @@ public class ResteasyReactiveCDIProcessor {
                 additionalProviders.addBeanClass(dynamicFeature.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(new ReflectiveClassBuildItem(true, false, false, dynamicFeature.getClassName()));
+                        .produce(ReflectiveClassBuildItem.builder(dynamicFeature.getClassName())
+                                .build());
             }
         }
         for (JaxrsFeatureBuildItem feature : featureBuildItems) {
@@ -121,7 +122,8 @@ public class ResteasyReactiveCDIProcessor {
                 additionalProviders.addBeanClass(feature.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(new ReflectiveClassBuildItem(true, false, false, feature.getClassName()));
+                        .produce(ReflectiveClassBuildItem.builder(feature.getClassName())
+                                .build());
             }
         }
         additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());

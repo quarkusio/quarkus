@@ -104,7 +104,8 @@ public class SmallRyeGraphQLClientProcessor {
             proxies.produce(new NativeImageProxyDefinitionBuildItem(apiClass.getName()));
 
             // register the api class and all classes that it references for reflection
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, apiClassInfo.name().toString()));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(apiClassInfo.name().toString()).build());
             for (MethodInfo method : apiClassInfo.methods()) {
                 reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
                         .type(method.returnType())
@@ -126,9 +127,9 @@ public class SmallRyeGraphQLClientProcessor {
             syntheticBeans.produce(bean);
         }
         // needed to be able to convert config values to URI (performed by the GraphQL client code)
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.net.URI").methods(true).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.List").methods(true).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.Collection").methods(true).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.net.URI").methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.List").methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.Collection").methods().build());
     }
 
     /**

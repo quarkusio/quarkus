@@ -120,12 +120,14 @@ public class WebsocketClientProcessor {
             annotated.add(i.className);
         }
         reflection.produce(
-                new ReflectiveClassBuildItem(true, false, annotated.toArray(new String[annotated.size()])));
+                ReflectiveClassBuildItem.builder(annotated.toArray(new String[annotated.size()])).methods()
+                        .build());
 
         registerCodersForReflection(reflection, index.getAnnotations(CLIENT_ENDPOINT));
 
         reflection.produce(
-                new ReflectiveClassBuildItem(true, true, ClientEndpointConfig.Configurator.class.getName()));
+                ReflectiveClassBuildItem.builder(ClientEndpointConfig.Configurator.class.getName()).methods().fields()
+                        .build());
 
         RuntimeValue<WebSocketDeploymentInfo> deploymentInfo = recorder.createDeploymentInfo(annotated, endpoints, config,
                 websocketConfig.maxFrameSize,
@@ -157,7 +159,8 @@ public class WebsocketClientProcessor {
     static void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection, AnnotationValue types) {
         if (types != null && types.asClassArray() != null) {
             for (Type type : types.asClassArray()) {
-                reflection.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
+                reflection
+                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
             }
         }
     }

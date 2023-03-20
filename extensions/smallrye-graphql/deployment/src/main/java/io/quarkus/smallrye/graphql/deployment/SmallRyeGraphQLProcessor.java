@@ -294,10 +294,12 @@ public class SmallRyeGraphQLProcessor {
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
 
         // Make sure the complex object from the application can work in native mode
-        reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, getSchemaJavaClasses(schema)));
+        reflectiveClassProducer
+                .produce(ReflectiveClassBuildItem.builder(getSchemaJavaClasses(schema)).methods().fields().build());
 
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
-        reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, getGraphQLJavaClasses()));
+        reflectiveClassProducer
+                .produce(ReflectiveClassBuildItem.builder(getGraphQLJavaClasses()).methods().fields().build());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

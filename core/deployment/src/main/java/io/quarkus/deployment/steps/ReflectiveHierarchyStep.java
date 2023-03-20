@@ -212,8 +212,8 @@ public class ReflectiveHierarchyStep {
         reflectiveClass.produce(
                 ReflectiveClassBuildItem
                         .builder(name.toString())
-                        .methods(true)
-                        .fields(true)
+                        .methods()
+                        .fields()
                         .serialization(reflectiveHierarchyBuildItem.isSerialization())
                         .build());
 

@@ -44,7 +44,8 @@ public class OidcTokenPropagationReactiveBuildStep {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AccessTokenRequestReactiveFilter.class));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, AccessTokenRequestReactiveFilter.class));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(AccessTokenRequestReactiveFilter.class).methods().fields().build());
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(AccessTokenRequestReactiveFilter.class.getName()));
 

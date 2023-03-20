@@ -164,7 +164,8 @@ final class ConfigurationPropertiesUtil {
         // We need to register for reflection in case an implicit converter is required.
         if (!ConfigBuildStep.isHandledByProducers(type)) {
             if (type.kind() != Type.Kind.ARRAY) {
-                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
+                reflectiveClasses
+                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
             }
         }
     }

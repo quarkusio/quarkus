@@ -23,37 +23,45 @@ public class GrpcCommonProcessor {
         Collection<ClassInfo> messages = combinedIndex.getIndex()
                 .getAllKnownSubclasses(GrpcDotNames.GENERATED_MESSAGE_V3);
         for (ClassInfo message : messages) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, message.name().toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(message.name().toString()).methods()
+                    .fields().build());
         }
 
         // We also need to include enums.
         Collection<ClassInfo> enums = combinedIndex.getIndex()
                 .getAllKnownSubclasses(GrpcDotNames.PROTOCOL_MESSAGE_ENUM);
         for (ClassInfo en : enums) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, en.name().toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(en.name().toString()).methods()
+                    .fields().build());
         }
 
         Collection<ClassInfo> builders = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.MESSAGE_BUILDER);
         for (ClassInfo builder : builders) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, builder.name().toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(builder.name().toString()).methods()
+                    .fields().build());
         }
 
         Collection<ClassInfo> lbs = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.LOAD_BALANCER_PROVIDER);
         for (ClassInfo lb : lbs) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false, lb.name().toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(lb.name().toString()).methods()
+                    .build());
         }
 
         Collection<ClassInfo> nrs = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.NAME_RESOLVER_PROVIDER);
         for (ClassInfo nr : nrs) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false, nr.name().toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(nr.name().toString()).methods()
+                    .build());
         }
 
         // Built-In providers:
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false, DnsNameResolverProvider.class));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false, PickFirstLoadBalancerProvider.class));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
-                "io.grpc.util.SecretRoundRobinLoadBalancerProvider$Provider"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false, NettyChannelProvider.class));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DnsNameResolverProvider.class).methods()
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(PickFirstLoadBalancerProvider.class)
+                .methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.grpc.util.SecretRoundRobinLoadBalancerProvider$Provider")
+                .methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(NettyChannelProvider.class).methods()
+                .build());
     }
 
     @BuildStep

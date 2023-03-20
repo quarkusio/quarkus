@@ -311,10 +311,10 @@ public final class HibernateOrmProcessor {
     public void enrollBeanValidationTypeSafeActivatorForReflection(Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
-                    "org.hibernate.boot.beanvalidation.TypeSafeActivator"));
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, false,
-                    BeanValidationIntegrator.BV_CHECK_CLASS));
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder("org.hibernate.boot.beanvalidation.TypeSafeActivator")
+                    .methods().fields().build());
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(BeanValidationIntegrator.BV_CHECK_CLASS)
+                    .constructors(false).build());
         }
     }
 
@@ -537,7 +537,8 @@ public final class HibernateOrmProcessor {
             for (DotName name : HibernateOrmAnnotations.HIBERNATE_MAPPING_ANNOTATIONS) {
                 annotationClassNames.add(name.toString());
             }
-            reflective.produce(new ReflectiveClassBuildItem(true, true, true, annotationClassNames.toArray(new String[0])));
+            reflective.produce(ReflectiveClassBuildItem.builder(annotationClassNames.toArray(new String[0]))
+                    .methods().fields().build());
             for (String annotationClassName : annotationClassNames) {
                 proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(annotationClassName));
             }
@@ -818,7 +819,8 @@ public final class HibernateOrmProcessor {
                     .map(a -> a.target().asClass().name().toString())
                     .toArray(String[]::new);
 
-            reflective.produce(new ReflectiveClassBuildItem(false, false, true, metamodel));
+            reflective.produce(
+                    ReflectiveClassBuildItem.builder(metamodel).constructors(false).fields().build());
         }
     }
 
@@ -842,7 +844,8 @@ public final class HibernateOrmProcessor {
                 .forEach(classes::add);
 
         if (!classes.isEmpty()) {
-            reflective.produce(new ReflectiveClassBuildItem(false, true, false, classes.toArray(new String[0])));
+            reflective.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).constructors(false)
+                    .methods().build());
         }
     }
 

@@ -55,7 +55,8 @@ class YamlListObjectHandler {
         ClassInfo classInfo = validateType(member.type());
         validateClass(classInfo, member);
         // these need to be registered for reflection because SnakeYaml used reflection to instantiate them
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, classInfo.name().toString()));
+        reflectiveClasses
+                .produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).methods().fields().build());
 
         String wrapperClassName = classInfo.name().toString() + "_GeneratedListWrapper_" + configName;
 
@@ -79,7 +80,7 @@ class YamlListObjectHandler {
             setter.returnValue(null);
         }
         // we always generate getters and setters, so reflection is only needed on the methods
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, wrapperClassName));
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(wrapperClassName).methods().build());
 
         // generate an MP-Config converter which looks something like this
         // public class GeneratedInputsConverter extends io.quarkus.config.yaml.runtime.AbstractYamlObjectConverter<SomeClass_GeneratedListWrapper_fieldName> {

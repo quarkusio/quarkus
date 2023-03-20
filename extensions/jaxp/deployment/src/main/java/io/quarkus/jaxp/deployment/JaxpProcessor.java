@@ -13,20 +13,19 @@ class JaxpProcessor {
 
     @BuildStep
     void reflectiveClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl",
-                "com.sun.org.apache.xerces.internal.jaxp.datatype.DatatypeFactoryImpl",
-                "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl",
-                "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
-                "com.sun.org.apache.xerces.internal.parsers.SAXParser",
-                "com.sun.org.apache.xml.internal.utils.FastStringBuffer"));
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder("com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl",
+                        "com.sun.org.apache.xerces.internal.jaxp.datatype.DatatypeFactoryImpl",
+                        "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl",
+                        "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
+                        "com.sun.org.apache.xerces.internal.parsers.SAXParser",
+                        "com.sun.org.apache.xml.internal.utils.FastStringBuffer").build());
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                "com.sun.xml.internal.stream.XMLInputFactoryImpl",
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.sun.xml.internal.stream.XMLInputFactoryImpl",
                 "com.sun.xml.internal.stream.XMLOutputFactoryImpl",
                 "com.sun.org.apache.xpath.internal.functions.FuncNot",
                 "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl",
-                "javax.xml.namespace.QName"));
+                "javax.xml.namespace.QName").methods().build());
     }
 
     @BuildStep

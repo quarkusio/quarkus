@@ -43,9 +43,8 @@ public class LocaleProcessor {
 
     @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     ReflectiveClassBuildItem setupReflectionClasses() {
-        return new ReflectiveClassBuildItem(false, false,
-                "sun.util.resources.provider.SupplementaryLocaleDataProvider",
-                "sun.util.resources.provider.LocaleDataProvider");
+        return ReflectiveClassBuildItem.builder("sun.util.resources.provider.SupplementaryLocaleDataProvider",
+                "sun.util.resources.provider.LocaleDataProvider").build();
     }
 
     @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })

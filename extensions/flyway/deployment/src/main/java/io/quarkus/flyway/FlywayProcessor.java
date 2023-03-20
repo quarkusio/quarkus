@@ -149,7 +149,8 @@ class FlywayProcessor {
                 continue;
             }
             javaMigrationClasses.add((Class<JavaMigration>) context.classProxy(javaMigration.name().toString()));
-            reflectiveClassProducer.produce(new ReflectiveClassBuildItem(false, false, javaMigration.name().toString()));
+            reflectiveClassProducer.produce(
+                    ReflectiveClassBuildItem.builder(javaMigration.name().toString()).build());
         }
     }
 

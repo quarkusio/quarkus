@@ -74,8 +74,10 @@ class VertxCoreProcessor {
     @BuildStep
     NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, VertxLogDelegateFactory.class.getName()));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, LateBoundMDCProvider.class.getName()));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(VertxLogDelegateFactory.class.getName()).methods().build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(LateBoundMDCProvider.class.getName()).methods().fields().build());
         nativeImageResources.produce(new NativeImageResourceBuildItem("META-INF/services/org.jboss.logmanager.MDCProvider"));
         return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("io.vertx.core.buffer.impl.VertxByteBufAllocator")
@@ -245,7 +247,7 @@ class VertxCoreProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         for (ClassInfo ci : indexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple(AbstractVerticle.class.getName()))) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(ci.toString()).build());
         }
     }
 

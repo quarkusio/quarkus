@@ -1680,7 +1680,7 @@ public class QuteProcessor {
 
         for (String generatedType : generatedValueResolvers) {
             generatedResolvers.produce(new GeneratedValueResolverBuildItem(generatedType));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedType));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedType).build());
         }
 
         if (!templateGlobals.isEmpty()) {
@@ -1700,7 +1700,7 @@ public class QuteProcessor {
 
             for (String generatedType : globalGenerator.getGeneratedTypes()) {
                 generatedInitializers.produce(new GeneratedTemplateInitializerBuildItem(generatedType));
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedType));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedType).build());
             }
         }
     }

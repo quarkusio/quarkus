@@ -56,7 +56,7 @@ public class JaegerProcessor {
                         "io.jaegertracing.internal.samplers.http.ProbabilisticSamplingStrategy",
                         "io.jaegertracing.internal.samplers.http.RateLimitingSamplingStrategy",
                         "io.jaegertracing.internal.samplers.http.SamplingStrategyResponse")
-                .fields(true)
+                .fields()
                 .build();
     }
 }

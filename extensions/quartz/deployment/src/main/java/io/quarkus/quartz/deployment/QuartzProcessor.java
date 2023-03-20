@@ -152,23 +152,34 @@ public class QuartzProcessor {
             QuartzJDBCDriverDialectBuildItem driverDialect) {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
 
-        reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleThreadPool.class.getName()));
-        reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleInstanceIdGenerator.class.getName()));
-        reflectiveClasses.add(new ReflectiveClassBuildItem(false, false, CascadingClassLoadHelper.class.getName()));
-        reflectiveClasses.add(new ReflectiveClassBuildItem(true, true, config.storeType.clazz));
         reflectiveClasses
-                .add(new ReflectiveClassBuildItem(false, false, org.quartz.simpl.InitThreadContextClassLoadHelper.class));
+                .add(ReflectiveClassBuildItem.builder(SimpleThreadPool.class.getName()).methods().build());
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(SimpleInstanceIdGenerator.class.getName()).methods()
+                .build());
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(CascadingClassLoadHelper.class.getName())
+                .build());
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(config.storeType.clazz).methods().fields().build());
+        reflectiveClasses
+                .add(ReflectiveClassBuildItem.builder(org.quartz.simpl.InitThreadContextClassLoadHelper.class)
+                        .build());
 
         if (config.storeType.isDbStore()) {
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, JobStoreSupport.class.getName()));
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, true, Connection.class.getName()));
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, AbstractTrigger.class.getName()));
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleTriggerImpl.class.getName()));
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, driverDialect.getDriver().get()));
             reflectiveClasses
-                    .add(new ReflectiveClassBuildItem(true, true, "io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob"));
+                    .add(ReflectiveClassBuildItem.builder(JobStoreSupport.class.getName()).methods().build());
             reflectiveClasses
-                    .add(new ReflectiveClassBuildItem(true, false, QuarkusQuartzConnectionPoolProvider.class.getName()));
+                    .add(ReflectiveClassBuildItem.builder(Connection.class.getName()).methods().fields().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder(AbstractTrigger.class.getName()).methods().build());
+            reflectiveClasses.add(
+                    ReflectiveClassBuildItem.builder(SimpleTriggerImpl.class.getName()).methods().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder(driverDialect.getDriver().get()).methods().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob")
+                            .methods().fields().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder(QuarkusQuartzConnectionPoolProvider.class.getName()).methods()
+                            .build());
         }
 
         reflectiveClasses
@@ -192,7 +203,7 @@ public class QuartzProcessor {
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException(e);
             }
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, props.clazz));
+            reflectiveClasses.add(ReflectiveClassBuildItem.builder(props.clazz).methods().build());
         }
         return reflectiveClasses;
     }

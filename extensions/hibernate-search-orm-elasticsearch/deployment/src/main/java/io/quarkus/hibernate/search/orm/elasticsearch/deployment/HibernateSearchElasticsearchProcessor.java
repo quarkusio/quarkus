@@ -337,7 +337,7 @@ class HibernateSearchElasticsearchProcessor {
 
     private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, reflectiveClasses));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses).methods().fields().build());
     }
 
     @BuildStep

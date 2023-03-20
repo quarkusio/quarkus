@@ -60,7 +60,7 @@ public class JDBCDB2Processor {
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal,
         //for example when the driver is used with OpenTelemetry JDBC instrumentation.
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, DB2_DRIVER_CLASS));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DB2_DRIVER_CLASS).build());
     }
 
     @BuildStep

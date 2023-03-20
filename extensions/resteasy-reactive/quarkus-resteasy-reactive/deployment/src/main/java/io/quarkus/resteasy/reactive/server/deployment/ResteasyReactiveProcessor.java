@@ -326,8 +326,8 @@ public class ResteasyReactiveProcessor {
                     classOutput,
                     Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
             reflectiveClass.produce(
-                    new ReflectiveClassBuildItem(true, false, false, generationResult.values().toArray(
-                            EMPTY_STRING_ARRAY)));
+                    ReflectiveClassBuildItem.builder(generationResult.values().toArray(
+                            EMPTY_STRING_ARRAY)).build());
             Map<String, String> classMappers;
             DotName classDotName = methodInfo.declaringClass().name();
             if (resultingMappers.containsKey(classDotName)) {
@@ -513,8 +513,9 @@ public class ResteasyReactiveProcessor {
                             ClassInfo classInfoWithSecurity = consumeStandardSecurityAnnotations(method,
                                     entry.getActualEndpointInfo(), index, c -> c);
                             if (classInfoWithSecurity != null) {
-                                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(false, true, false,
-                                        entry.getActualEndpointInfo().name().toString()));
+                                reflectiveClassBuildItemBuildProducer.produce(
+                                        ReflectiveClassBuildItem.builder(entry.getActualEndpointInfo().name().toString())
+                                                .constructors(false).methods().build());
                             }
 
                             reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
@@ -546,14 +547,16 @@ public class ResteasyReactiveProcessor {
                                 }
                                 if (parameterType.name().equals(FILE)) {
                                     reflectiveClassBuildItemBuildProducer
-                                            .produce(new ReflectiveClassBuildItem(false, true, false,
-                                                    entry.getActualEndpointInfo().name().toString()));
+                                            .produce(ReflectiveClassBuildItem
+                                                    .builder(entry.getActualEndpointInfo().name().toString())
+                                                    .constructors(false).methods().build());
                                 }
                             }
 
                             if (filtersAccessResourceMethod) {
-                                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(false, true, false,
-                                        entry.getActualEndpointInfo().name().toString()));
+                                reflectiveClassBuildItemBuildProducer.produce(
+                                        ReflectiveClassBuildItem.builder(entry.getActualEndpointInfo().name().toString())
+                                                .constructors(false).methods().build());
                             }
                         }
 
@@ -889,8 +892,9 @@ public class ResteasyReactiveProcessor {
             }
         }
         if (!dateTimeFormatterProviderClassNames.isEmpty()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, false,
-                    dateTimeFormatterProviderClassNames.toArray(EMPTY_STRING_ARRAY)));
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(dateTimeFormatterProviderClassNames.toArray(EMPTY_STRING_ARRAY))
+                            .serialization(false).build());
         }
     }
 
@@ -999,13 +1003,15 @@ public class ResteasyReactiveProcessor {
             registerWriter(recorder, serialisers, builtinWriter.entityClass.getName(), builtinWriter.writerClass.getName(),
                     beanContainerBuildItem.getValue(),
                     builtinWriter.mediaType);
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinWriter.writerClass.getName()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(builtinWriter.writerClass.getName())
+                    .build());
         }
         for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
             registerReader(recorder, serialisers, builtinReader.entityClass.getName(), builtinReader.readerClass.getName(),
                     beanContainerBuildItem.getValue(),
                     builtinReader.mediaType, builtinReader.constraint);
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinReader.readerClass.getName()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(builtinReader.readerClass.getName())
+                    .build());
         }
 
         serverSerializersProducer.produce(new ServerSerialisersBuildItem(serialisers));
@@ -1062,8 +1068,8 @@ public class ResteasyReactiveProcessor {
         }
         if (serializersRequireResourceReflection) {
             producer.produce(ReflectiveClassBuildItem
-                    .builder(resourceClasses.stream().map(ResourceClass::getClassName).toArray(String[]::new)).fields(false)
-                    .constructors(false).methods(true).build());
+                    .builder(resourceClasses.stream().map(ResourceClass::getClassName).toArray(String[]::new))
+                    .constructors(false).methods().build());
         }
     }
 
@@ -1156,14 +1162,16 @@ public class ResteasyReactiveProcessor {
             String readerClass = additionalReader.getHandlerClass();
             registerReader(recorder, serialisers, additionalReader.getEntityClass(), readerClass,
                     beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClass));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(readerClass).build());
         }
 
         for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
             String writerClass = entry.getHandlerClass();
             registerWriter(recorder, serialisers, entry.getEntityClass(), writerClass,
                     beanContainerBuildItem.getValue(), entry.getMediaType());
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClass));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(writerClass).build());
         }
 
         BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,

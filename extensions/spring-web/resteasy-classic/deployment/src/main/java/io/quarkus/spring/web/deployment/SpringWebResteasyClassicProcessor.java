@@ -127,7 +127,8 @@ public class SpringWebResteasyClassicProcessor {
             }
         }));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, SpringResourceBuilder.class.getName()));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(SpringResourceBuilder.class.getName())
+                .build());
     }
 
     /**

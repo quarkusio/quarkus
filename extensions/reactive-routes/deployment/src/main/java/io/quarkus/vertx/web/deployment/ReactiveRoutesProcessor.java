@@ -449,7 +449,8 @@ class ReactiveRoutesProcessor {
                             businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
                             routeString, reflectiveHierarchy, produces.length > 0 ? produces[0] : null,
                             validatorAvailable, index);
-                    reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
+                    reflectiveClasses
+                            .produce(ReflectiveClassBuildItem.builder(handlerClass).build());
                     routeHandler = recorder.createHandler(handlerClass);
                     routeHandlers.put(routeString, routeHandler);
                 }
@@ -492,7 +493,7 @@ class ReactiveRoutesProcessor {
                             new String[0]),
                     filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations,
                     filterMethod.getRouteFilter().toString(true), reflectiveHierarchy, null, validatorAvailable, index);
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(handlerClass).build());
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
             AnnotationValue priorityValue = filterMethod.getRouteFilter().value();
             filterProducer.produce(new FilterBuildItem(routingHandler,

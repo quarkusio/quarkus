@@ -42,8 +42,8 @@ class VertxGraphqlProcessor {
     List<ReflectiveClassBuildItem> registerForReflection() {
         return Arrays.asList(
                 //new ReflectiveClassBuildItem(true, true, GraphQLInputDeserializer.class.getName()),
-                new ReflectiveClassBuildItem(true, true, GraphQLBatch.class.getName()),
-                new ReflectiveClassBuildItem(true, true, GraphQLQuery.class.getName()));
+                ReflectiveClassBuildItem.builder(GraphQLBatch.class.getName()).methods().fields().build(),
+                ReflectiveClassBuildItem.builder(GraphQLQuery.class.getName()).methods().fields().build());
     }
 
     @BuildStep

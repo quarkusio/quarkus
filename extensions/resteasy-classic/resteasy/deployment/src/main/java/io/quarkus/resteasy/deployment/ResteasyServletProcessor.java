@@ -106,12 +106,14 @@ public class ResteasyServletProcessor {
                         .addFilterServletNameMapping("default", DispatcherType.FORWARD)
                         .addFilterServletNameMapping("default", DispatcherType.INCLUDE).setAsyncSupported(true)
                         .build());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ResteasyFilter.class.getName()));
+                reflectiveClass.produce(
+                        ReflectiveClassBuildItem.builder(ResteasyFilter.class.getName()).build());
             } else {
                 String mappingPath = getMappingPath(path);
                 servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, ResteasyServlet.class.getName())
                         .setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true).build());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(HttpServlet30Dispatcher.class.getName())
+                        .build());
             }
 
             for (Entry<String, String> initParameter : resteasyServerConfig.get().getInitParameters().entrySet()) {

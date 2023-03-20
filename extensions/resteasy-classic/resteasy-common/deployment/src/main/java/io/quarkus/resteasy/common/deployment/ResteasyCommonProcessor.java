@@ -140,10 +140,9 @@ public class ResteasyCommonProcessor {
 
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(ResteasyConfigBuilder.class));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                ServletConfigSource.class,
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ServletConfigSource.class,
                 ServletContextConfigSource.class,
-                FilterConfigSource.class));
+                FilterConfigSource.class).build());
     }
 
     @BuildStep
@@ -273,8 +272,9 @@ public class ResteasyCommonProcessor {
 
         if (providersToRegister.contains("org.jboss.resteasy.plugins.providers.jsonb.JsonBindingProvider")) {
             // This abstract one is also accessed directly via reflection
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true,
-                    "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder("org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider")
+                            .methods().fields().build());
         }
 
         JaxrsProvidersToRegisterBuildItem result = new JaxrsProvidersToRegisterBuildItem(

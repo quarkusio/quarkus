@@ -140,7 +140,8 @@ class RestClientProcessor {
             resource.produce(new NativeImageResourceBuildItem(
                     "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
             reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, true, "io.smallrye.opentracing.SmallRyeRestClientListener"));
+                    .produce(ReflectiveClassBuildItem.builder("io.smallrye.opentracing.SmallRyeRestClientListener")
+                            .methods().fields().build());
         }
     }
 
@@ -157,17 +158,17 @@ class RestClientProcessor {
 
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                DefaultResponseExceptionMapper.class.getName(),
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DefaultResponseExceptionMapper.class.getName(),
                 AsyncInterceptorRxInvokerProvider.class.getName(),
                 ResteasyProviderFactoryImpl.class.getName(),
                 ProxyBuilderImpl.class.getName(),
                 ClientRequestFilter[].class.getName(),
                 ClientResponseFilter[].class.getName(),
-                jakarta.ws.rs.ext.ReaderInterceptor[].class.getName()));
+                jakarta.ws.rs.ext.ReaderInterceptor[].class.getName()).build());
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                ResteasyClientBuilder.class.getName(), NoopHostnameVerifier.class.getName()));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(ResteasyClientBuilder.class.getName(), NoopHostnameVerifier.class.getName())
+                        .methods().build());
     }
 
     @BuildStep
@@ -233,12 +234,13 @@ class RestClientProcessor {
             proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
             proxyDefinition.produce(
                     new NativeImageProxyDefinitionBuildItem(iName, RestClientProxy.class.getName(), Closeable.class.getName()));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(iName).methods().build());
         }
 
         // Incoming headers
         // required for the non-arg constructor of DCHFImpl to be included in the native image
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, DefaultClientHeadersFactoryImpl.class.getName()));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DefaultClientHeadersFactoryImpl.class.getName()).methods()
+                .build());
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
@@ -491,7 +493,7 @@ class RestClientProcessor {
 
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(providerToRegister).build());
         }
 
         // now we register all values of @RegisterProvider for constructor reflection
@@ -503,7 +505,8 @@ class RestClientProcessor {
         }
         for (AnnotationInstance annotationInstance : allInstances) {
             reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
+                    .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString())
+                            .build());
         }
 
         // Register @RegisterClientHeaders for reflection
@@ -511,17 +514,20 @@ class RestClientProcessor {
             AnnotationValue value = annotationInstance.value();
             if (value != null) {
                 reflectiveClass
-                        .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
+                        .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString())
+                                .build());
             }
         }
 
         // now retain all un-annotated implementations of ClientRequestFilter and ClientResponseFilter
         // in case they are programmatically registered by applications
         for (ClassInfo info : index.getAllKnownImplementors(CLIENT_REQUEST_FILTER)) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, info.name().toString()));
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
         }
         for (ClassInfo info : index.getAllKnownImplementors(CLIENT_RESPONSE_FILTER)) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, info.name().toString()));
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
         }
     }
 

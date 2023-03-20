@@ -99,7 +99,8 @@ public final class AmazonLambdaProcessor {
             final DotName name = info.name();
             final String lambda = name.toString();
             builder.addBeanClass(lambda);
-            reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, false, lambda));
+            reflectiveClassBuildItemBuildProducer
+                    .produce(ReflectiveClassBuildItem.builder(lambda).methods().build());
 
             String cdiName = null;
             AnnotationInstance named = info.classAnnotation(NAMED);
@@ -140,7 +141,8 @@ public final class AmazonLambdaProcessor {
         }
         additionalBeanBuildItemBuildProducer.produce(builder.build());
         reflectiveClassBuildItemBuildProducer
-                .produce(new ReflectiveClassBuildItem(true, true, true, FunctionError.class));
+                .produce(ReflectiveClassBuildItem.builder(FunctionError.class).methods().fields()
+                        .build());
         return ret;
     }
 
@@ -157,7 +159,7 @@ public final class AmazonLambdaProcessor {
         additionalBeanBuildItemBuildProducer.produce(builder.build());
 
         reflectiveClassBuildItemBuildProducer
-                .produce(new ReflectiveClassBuildItem(true, true, true, handlerClass));
+                .produce(ReflectiveClassBuildItem.builder(handlerClass).methods().fields().build());
 
         // TODO
         // This really isn't good enough.  We should recursively add reflection for all method and field types of the parameter
@@ -169,11 +171,13 @@ public final class AmazonLambdaProcessor {
                 Class<?>[] parameterTypes = method.getParameterTypes();
                 if (!parameterTypes[0].equals(Object.class)) {
                     reflectiveClassBuildItemBuildProducer
-                            .produce(new ReflectiveClassBuildItem(true, true, true, parameterTypes[0].getName()));
+                            .produce(ReflectiveClassBuildItem.builder(parameterTypes[0].getName())
+                                    .methods().fields().build());
                     reflectiveClassBuildItemBuildProducer
-                            .produce(new ReflectiveClassBuildItem(true, true, true, method.getReturnType().getName()));
-                    reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, true, true,
-                            DateTime.class));
+                            .produce(ReflectiveClassBuildItem.builder(method.getReturnType().getName())
+                                    .methods().fields().build());
+                    reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(DateTime.class)
+                            .methods().fields().build());
                     break;
                 }
             }
@@ -307,7 +311,8 @@ public final class AmazonLambdaProcessor {
             BuildProducer<ReflectiveClassBuildItem> registerForReflection,
             AmazonLambdaStaticRecorder recorder) {
         Set<Class<?>> classes = config.expectedExceptions.map(Set::copyOf).orElseGet(Set::of);
-        classes.stream().map(clazz -> new ReflectiveClassBuildItem(false, false, false, clazz))
+        classes.stream()
+                .map(clazz -> ReflectiveClassBuildItem.builder(clazz).constructors(false).build())
                 .forEach(registerForReflection::produce);
         recorder.setExpectedExceptionClasses(classes);
     }

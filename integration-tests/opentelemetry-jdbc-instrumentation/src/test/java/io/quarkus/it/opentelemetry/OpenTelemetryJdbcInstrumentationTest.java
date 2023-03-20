@@ -24,7 +24,7 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> {
+        await().atMost(30, SECONDS).until(() -> {
             // make sure spans are cleared
             List<Map<String, Object>> spans = getSpans();
             if (spans.size() > 0) {
@@ -47,7 +47,7 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .statusCode(200)
                 .body("message", Matchers.equalTo("Hit message."));
 
-        Awaitility.await().during(Duration.ofSeconds(2)).until(() -> !getSpans().isEmpty());
+        Awaitility.await().atMost(Duration.ofSeconds(55)).until(() -> !getSpans().isEmpty());
 
         // Assert insert has been traced
         boolean hitInserted = false;

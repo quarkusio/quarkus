@@ -9,8 +9,9 @@ import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalDataSourceMetrics;
 import io.agroal.api.AgroalPoolInterceptor;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
-import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.jdbc.datasource.OpenTelemetryDataSource;
+import io.quarkus.arc.Arc;
 
 /**
  * The {@link AgroalDataSource} wrapper that activates OpenTelemetry JDBC instrumentation.
@@ -20,7 +21,7 @@ public class OpenTelemetryAgroalDataSource extends OpenTelemetryDataSource imple
     private final AgroalDataSource delegate;
 
     public OpenTelemetryAgroalDataSource(AgroalDataSource delegate) {
-        super(delegate, GlobalOpenTelemetry.get());
+        super(delegate, Arc.container().instance(OpenTelemetry.class).get());
         this.delegate = delegate;
     }
 

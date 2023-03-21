@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
 public class MariaDBDevServicesProcessor {
@@ -53,6 +54,7 @@ public class MariaDBDevServicesProcessor {
                         .withDatabaseName(effectiveDbName)
                         .withReuse(true);
                 Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
 
                 if (containerConfig.getContainerProperties().containsKey(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME)) {
                     container.withConfigurationOverride(
@@ -62,7 +64,6 @@ public class MariaDBDevServicesProcessor {
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
                 containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
-
                 container.start();
 
                 LOG.info("Dev Services for MariaDB started.");

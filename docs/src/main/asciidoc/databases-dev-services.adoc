@@ -59,6 +59,58 @@ ibmcom/db2:11.5.0.0a
 mcr.microsoft.com/mssql/server:2017-CU12
 ----
 
+== Mapping volumes into Dev Services for Database
+
+Mapping volumes from the Docker host's filesystem to the containers is handy to provide files like scripts or configuration, but also to preserve database data and reuse it after an application restart.
+
+[NOTE]
+====
+Mapping volumes will only work in Dev Services with a container-based database like PostgreSQL. 
+====
+
+Dev Services volumes can be mapped to the filesystem or the classpath:
+
+[source,properties]
+----
+# Using a filesystem volume:
+quarkus.datasource.devservices.volumes."/path/from"=/container/to <1>
+# Using a classpath volume:
+quarkus.datasource.devservices.volumes."classpath:./file"=/container/to <2>
+----
+
+<1> The file or folder "/path/from" from the local machine will be accessible at "/container/to" in the container.
+<2> When using classpath volumes, the location has to start with "classpath:". The file or folder "./file" from the project's classpath will be accessible at "/container/to" in the container.
+
+IMPORTANT: when using a classpath volume, the container will only be granted read permission. On the other hand, when using a filesystem volume, the container will be granted read and write permission. 
+
+=== Example of mapping volumes to persist the database data
+
+Let's see an example using PostgreSQL where we'll map a file system volume to keep the database data permantently and use it:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/postgresql/data
+----
+
+The appropriate in-container location varies depending on the database vendor. For PostgresSQL is "/var/lib/postgresql/data", but for MySQL, you would need this configuration instead:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=mysql
+quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/mysql
+----
+
+When starting Dev Services (for example, in tests or in DEV mode), you will see that the folder "/local/test/data" will be created at your file sytem and that will contain all the database data. When rerunning again the same dev services, this data will contain all the data you might have created beforehand. 
+
+[IMPORTANT]
+====
+When using Dev Services with Hibernate ORM, by default Quarkus will wipe out the database on application startup, which will wipe out the database data on your Docker host's filesystem.
+Configure `quarkus.hibernate-orm.database.generation=none` or `quarkus.hibernate-orm.database.generation=validate` to avoid this behavior.
+
+Also, using Flyway to migrate your schema when starting the application will modify the database data on your Docker hosts's file system.
+====
+
 == Database Vendor Specific Configuration
 
 All services based on containers are run using Testcontainers but Quarkus is not using the Testcontainers JDBC driver.

@@ -266,6 +266,7 @@ public class DevServicesDatasourceProcessor {
                         + " (" + defaultDbKind.get() + ") starting:",
                 consoleInstalledBuildItem,
                 loggingSetupBuildItem);
+
         try {
             DevServicesDatasourceContainerConfig containerConfig = new DevServicesDatasourceContainerConfig(
                     dataSourceBuildTimeConfig.devservices.imageName,
@@ -276,7 +277,8 @@ public class DevServicesDatasourceProcessor {
                     dataSourceBuildTimeConfig.devservices.dbName,
                     dataSourceBuildTimeConfig.devservices.username,
                     dataSourceBuildTimeConfig.devservices.password,
-                    dataSourceBuildTimeConfig.devservices.initScriptPath);
+                    dataSourceBuildTimeConfig.devservices.initScriptPath,
+                    dataSourceBuildTimeConfig.devservices.volumes);
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(

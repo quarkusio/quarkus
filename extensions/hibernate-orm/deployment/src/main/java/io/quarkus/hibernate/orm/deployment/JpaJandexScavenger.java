@@ -105,20 +105,20 @@ public final class JpaJandexScavenger {
         Set<String> allModelClassNames = new HashSet<>(collector.entityTypes);
         allModelClassNames.addAll(collector.modelTypes);
         for (String className : allModelClassNames) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
         }
 
         if (!collector.enumTypes.isEmpty()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.lang.Enum"));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.lang.Enum").methods().build());
             for (String className : collector.enumTypes) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, className));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().build());
             }
         }
 
         // for the java types we collected (usually from java.time but it could be from other types),
         // we just register them for reflection
         for (String javaType : collector.javaTypes) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, javaType));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(javaType).methods().build());
         }
 
         // Converters need to be in the list of model types in order for @Converter#autoApply to work,

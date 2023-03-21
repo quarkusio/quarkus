@@ -162,8 +162,8 @@ class RestClientReactiveProcessor {
             resource.produce(new NativeImageResourceBuildItem(
                     "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
             reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, false, false,
-                            "io.smallrye.opentracing.SmallRyeRestClientListener"));
+                    .produce(ReflectiveClassBuildItem.builder("io.smallrye.opentracing.SmallRyeRestClientListener")
+                            .build());
         }
     }
 
@@ -514,7 +514,8 @@ class RestClientReactiveProcessor {
                         + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
             }
             generatedProviders.put(result.interfaceName, result);
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, false, result.generatedClassName));
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(result.generatedClassName)
+                    .serialization(false).build());
         }
     }
 
@@ -536,7 +537,8 @@ class RestClientReactiveProcessor {
                         + "Offending class is '" + result.interfaceName + "'");
             } else if (existing == null || existing.priority < result.priority) {
                 generatedProviders.put(result.interfaceName, result);
-                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, false, result.generatedClassName));
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(result.generatedClassName)
+                        .serialization(false).build());
             }
         }
     }

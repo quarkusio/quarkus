@@ -45,9 +45,11 @@ public class KotlinSerializationCommonProcessor {
             }
         }
         // the companion classes need to be registered for reflection so Kotlin can construct them and invoke methods reflectively
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false, supportClassNames.toArray(EMPTY_ARRAY)));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(supportClassNames.toArray(EMPTY_ARRAY))
+                .methods().build());
         // the serializable classes need to be registered for reflection, so they can be constructed and also Kotlin can determine the companion field at runtime
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, true, serializableClassNames.toArray(EMPTY_ARRAY)));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(serializableClassNames.toArray(EMPTY_ARRAY))
+                .fields().build());
     }
 
     @BuildStep

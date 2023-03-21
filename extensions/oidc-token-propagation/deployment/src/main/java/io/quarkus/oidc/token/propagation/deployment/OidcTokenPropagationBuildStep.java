@@ -33,8 +33,10 @@ public class OidcTokenPropagationBuildStep {
             BuildProducer<RestClientAnnotationProviderBuildItem> restAnnotationProvider) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AccessTokenRequestFilter.class));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(JsonWebTokenRequestFilter.class));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, AccessTokenRequestFilter.class));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, JsonWebTokenRequestFilter.class));
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder(AccessTokenRequestFilter.class).methods().fields().build());
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder(JsonWebTokenRequestFilter.class).methods().fields().build());
 
         if (config.registerFilter) {
             Class<?> filterClass = config.jsonWebToken ? JsonWebTokenRequestFilter.class : AccessTokenRequestFilter.class;

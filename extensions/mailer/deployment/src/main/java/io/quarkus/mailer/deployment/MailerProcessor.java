@@ -73,11 +73,10 @@ public class MailerProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         // We must register the auth provider used by the Vert.x mail clients
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true,
-                "io.vertx.ext.mail.impl.sasl.AuthCram",
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.vertx.ext.mail.impl.sasl.AuthCram",
                 "io.vertx.ext.mail.impl.sasl.AuthDigest",
                 "io.vertx.ext.mail.impl.sasl.AuthLogin",
-                "io.vertx.ext.mail.impl.sasl.AuthPlain"));
+                "io.vertx.ext.mail.impl.sasl.AuthPlain").methods().fields().build());
 
         // Register io.vertx.ext.mail.impl.sasl.NTLMEngineImpl to be initialized at runtime, it uses a static random.
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();

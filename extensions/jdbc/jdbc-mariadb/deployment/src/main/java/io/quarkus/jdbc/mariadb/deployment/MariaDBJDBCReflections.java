@@ -11,10 +11,12 @@ public final class MariaDBJDBCReflections {
         //Not strictly necessary when using Agroal, as it also registers
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal.
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "org.mariadb.jdbc.Driver"));
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder("org.mariadb.jdbc.Driver").build());
 
         //MariaDB's connection process requires reflective read to all fields of Configuration and its Builder:
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, true,
-                "org.mariadb.jdbc.Configuration", "org.mariadb.jdbc.Configuration$Builder"));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("org.mariadb.jdbc.Configuration", "org.mariadb.jdbc.Configuration$Builder")
+                        .fields().build());
     }
 }

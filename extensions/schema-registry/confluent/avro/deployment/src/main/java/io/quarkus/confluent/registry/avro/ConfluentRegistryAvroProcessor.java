@@ -41,9 +41,8 @@ public class ConfluentRegistryAvroProcessor {
     public void confluentRegistryAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
         reflectiveClass
-                .produce(new ReflectiveClassBuildItem(true, false,
-                        "io.confluent.kafka.serializers.KafkaAvroDeserializer",
-                        "io.confluent.kafka.serializers.KafkaAvroSerializer"));
+                .produce(ReflectiveClassBuildItem.builder("io.confluent.kafka.serializers.KafkaAvroDeserializer",
+                        "io.confluent.kafka.serializers.KafkaAvroSerializer").methods().build());
     }
 
     @BuildStep

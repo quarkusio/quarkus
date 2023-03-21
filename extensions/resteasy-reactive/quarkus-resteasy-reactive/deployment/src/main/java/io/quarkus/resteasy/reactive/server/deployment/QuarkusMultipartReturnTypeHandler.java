@@ -50,9 +50,11 @@ public class QuarkusMultipartReturnTypeHandler implements EndpointIndexer.Multip
                             applicationClassPredicate.test(className)),
                     index);
             reflectiveClassProducer.produce(
-                    new ReflectiveClassBuildItem(true, false, MultipartMessageBodyWriter.class.getName()));
-            reflectiveClassProducer.produce(new ReflectiveClassBuildItem(false, false, className));
-            reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, false, mapperClassName));
+                    ReflectiveClassBuildItem.builder(MultipartMessageBodyWriter.class.getName()).methods()
+                            .build());
+            reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(className).build());
+            reflectiveClassProducer
+                    .produce(ReflectiveClassBuildItem.builder(mapperClassName).methods().build());
             canHandle = true;
         }
 

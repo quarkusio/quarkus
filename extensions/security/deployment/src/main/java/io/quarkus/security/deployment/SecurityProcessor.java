@@ -144,7 +144,7 @@ public class SecurityProcessor {
             List<String> providerClasses = registerProvider(provider.getProviderName(), provider.getProviderConfig(),
                     additionalProviders);
             for (String className : providerClasses) {
-                classes.produce(new ReflectiveClassBuildItem(true, true, className));
+                classes.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
                 log.debugf("Register JCA class: %s", className);
             }
         }
@@ -159,9 +159,11 @@ public class SecurityProcessor {
         Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
         if (bouncyCastleJsseProvider.isPresent()) {
             reflection.produce(
-                    new ReflectiveClassBuildItem(true, true, SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
-            reflection.produce(new ReflectiveClassBuildItem(true, true, true,
-                    "org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers"));
+                    ReflectiveClassBuildItem.builder(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME).methods()
+                            .fields().build());
+            reflection.produce(
+                    ReflectiveClassBuildItem.builder("org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers")
+                            .methods().fields().build());
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem(
                             "org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers"));
@@ -179,14 +181,16 @@ public class SecurityProcessor {
     private static void prepareBouncyCastleProvider(CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized, boolean isFipsMode) {
-        reflection.produce(new ReflectiveClassBuildItem(true, true,
-                isFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
-                        : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME));
+        reflection
+                .produce(
+                        ReflectiveClassBuildItem
+                                .builder(isFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                                        : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME)
+                                .methods().fields().build());
 
         if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
                 x -> x.getGroupId().equals("org.bouncycastle") && x.getArtifactId().startsWith("bcprov-"))) {
-            reflection.produce(new ReflectiveClassBuildItem(true, true,
-                    "org.bouncycastle.jcajce.provider.symmetric.AES",
+            reflection.produce(ReflectiveClassBuildItem.builder("org.bouncycastle.jcajce.provider.symmetric.AES",
                     "org.bouncycastle.jcajce.provider.symmetric.AES$CBC",
                     "org.bouncycastle.crypto.paddings.PKCS7Padding",
                     "org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi",
@@ -198,19 +202,21 @@ public class SecurityProcessor {
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyFactorySpi",
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyPairGeneratorSpi",
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi",
-                    "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA"));
+                    "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA").methods().fields()
+                    .build());
         }
         runtimeReInitialized
                 .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.CryptoServicesRegistrar"));
         if (!isFipsMode) {
-            reflection.produce(new ReflectiveClassBuildItem(true, true, true,
-                    "org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
+            reflection.produce(ReflectiveClassBuildItem.builder("org.bouncycastle.jcajce.provider.drbg.DRBG$Default")
+                    .methods().fields().build());
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV"));
         } else {
-            reflection.produce(new ReflectiveClassBuildItem(true, true, true, "org.bouncycastle.crypto.general.AES"));
+            reflection.produce(ReflectiveClassBuildItem.builder("org.bouncycastle.crypto.general.AES")
+                    .methods().fields().build());
             runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.general.AES"));
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem(

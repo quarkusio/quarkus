@@ -120,7 +120,7 @@ public class EventBusCodecProcessor {
                 .forEach(new Consumer<String>() {
                     @Override
                     public void accept(String name) {
-                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, name));
+                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(name).methods().build());
                     }
                 });
     }

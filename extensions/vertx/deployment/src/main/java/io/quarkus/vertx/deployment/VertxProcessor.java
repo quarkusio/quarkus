@@ -83,7 +83,7 @@ class VertxProcessor {
                     annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
                             .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString())
                             .build(classOutput));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(invokerClass).build());
         }
 
         Map<Class<?>, Class<?>> codecByClass = new HashMap<>();
@@ -171,7 +171,7 @@ class VertxProcessor {
         // Mutiny Verticles
         for (ClassInfo ci : indexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple(io.smallrye.mutiny.vertx.core.AbstractVerticle.class.getName()))) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(ci.toString()).build());
         }
     }
 

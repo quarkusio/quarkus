@@ -153,7 +153,8 @@ public class ResteasyReactiveScanningProcessor {
                 beanBuilder.addBeanClass(additionalExceptionMapper.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(new ReflectiveClassBuildItem(true, false, false, additionalExceptionMapper.getClassName()));
+                        .produce(ReflectiveClassBuildItem.builder(additionalExceptionMapper.getClassName())
+                                .build());
             }
             int priority = Priorities.USER;
             if (additionalExceptionMapper.getPriority() != null) {
@@ -201,7 +202,8 @@ public class ResteasyReactiveScanningProcessor {
                 beanBuilder.addBeanClass(additionalParamConverter.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(new ReflectiveClassBuildItem(true, false, false, additionalParamConverter.getClassName()));
+                        .produce(ReflectiveClassBuildItem.builder(additionalParamConverter.getClassName())
+                                .build());
             }
             int priority = Priorities.USER;
             if (additionalParamConverter.getPriority() != null) {
@@ -263,7 +265,8 @@ public class ResteasyReactiveScanningProcessor {
                 beanBuilder.addBeanClass(i.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(new ReflectiveClassBuildItem(true, false, false, i.getClassName()));
+                        .produce(ReflectiveClassBuildItem.builder(i.getClassName())
+                                .build());
             }
             ResourceContextResolver resolver = new ResourceContextResolver();
             resolver.setClassName(i.getClassName());

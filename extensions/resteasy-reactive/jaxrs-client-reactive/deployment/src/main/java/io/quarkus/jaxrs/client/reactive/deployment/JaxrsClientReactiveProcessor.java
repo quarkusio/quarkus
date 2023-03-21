@@ -226,7 +226,8 @@ public class JaxrsClientReactiveProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(StorkClientRequestFilter.class));
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(StorkClientRequestFilter.class.getName()));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, StorkClientRequestFilter.class));
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder(StorkClientRequestFilter.class).methods().fields().build());
     }
 
     @BuildStep
@@ -267,9 +268,10 @@ public class JaxrsClientReactiveProcessor {
         for (ParameterContainersBuildItem parameterContainersBuildItem : parameterContainersBuildItems) {
             scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
         }
-        reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(false, true,
-                scannedParameterContainers.stream().map(name -> name.toString()).collect(Collectors.toSet())
-                        .toArray(new String[0])));
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
+                .builder(scannedParameterContainers.stream().map(name -> name.toString()).collect(Collectors.toSet())
+                        .toArray(new String[0]))
+                .fields().build());
 
         if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {
@@ -392,7 +394,8 @@ public class JaxrsClientReactiveProcessor {
             reader.setMediaTypeStrings(Collections.singletonList(additionalReader.getMediaType()));
             recorder.registerReader(serialisers, additionalReader.getEntityClass(), reader);
             reflectiveClassBuildItemBuildProducer
-                    .produce(new ReflectiveClassBuildItem(true, false, false, readerClass));
+                    .produce(ReflectiveClassBuildItem.builder(readerClass)
+                            .build());
         }
 
         for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
@@ -403,7 +406,8 @@ public class JaxrsClientReactiveProcessor {
             writer.setMediaTypeStrings(Collections.singletonList(entry.getMediaType()));
             recorder.registerWriter(serialisers, entry.getEntityClass(), writer);
             reflectiveClassBuildItemBuildProducer
-                    .produce(new ReflectiveClassBuildItem(true, false, false, writerClass));
+                    .produce(ReflectiveClassBuildItem.builder(writerClass)
+                            .build());
         }
 
         Map<String, RuntimeValue<MultipartResponseData>> responsesData = new HashMap<>();

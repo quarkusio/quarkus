@@ -14,6 +14,7 @@ public class JsonpProcessor {
     void build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JsonProviderImpl.class.getName()));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(JsonProviderImpl.class.getName()).build());
     }
 }

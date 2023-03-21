@@ -436,7 +436,7 @@ public final class TestProcessor {
             }
         }
         for (String className : providerClasses) {
-            classes.produce(new ReflectiveClassBuildItem(true, true, className));
+            classes.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
             log.debugf("Register SUN.provider class: %s", className);
         }
     }
@@ -445,8 +445,8 @@ public final class TestProcessor {
     void registerFinalFieldReflectionObject(BuildProducer<ReflectiveClassBuildItem> classes) {
         ReflectiveClassBuildItem finalField = ReflectiveClassBuildItem
                 .builder(FinalFieldReflectionObject.class.getName())
-                .methods(true)
-                .fields(true)
+                .methods()
+                .fields()
                 .build();
         classes.produce(finalField);
     }

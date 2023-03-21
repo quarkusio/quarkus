@@ -51,12 +51,16 @@ public class KotlinProcessor {
     void registerKotlinReflection(final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourcePatternsBuildItem> nativeResourcePatterns) {
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false,
-                "kotlin.reflect.jvm.internal.ReflectionFactoryImpl"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, "kotlin.KotlinVersion"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, false, "kotlin.KotlinVersion[]"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, false, "kotlin.KotlinVersion$Companion"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, false, "kotlin.KotlinVersion$Companion[]"));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.reflect.jvm.internal.ReflectionFactoryImpl")
+                .build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("kotlin.KotlinVersion").methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion[]").constructors(false)
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion$Companion").constructors(false)
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion$Companion[]").constructors(false)
+                .build());
 
         nativeResourcePatterns.produce(builder().includePatterns(
                 "META-INF/.*.kotlin_module$",

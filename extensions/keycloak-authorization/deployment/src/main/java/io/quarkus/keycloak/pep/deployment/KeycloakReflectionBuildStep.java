@@ -41,8 +41,7 @@ public class KeycloakReflectionBuildStep {
 
     @BuildStep
     public void registerReflectionItems(BuildProducer<ReflectiveClassBuildItem> reflectiveItems) {
-        reflectiveItems.produce(new ReflectiveClassBuildItem(true, true,
-                JsonWebToken.class.getName(),
+        reflectiveItems.produce(ReflectiveClassBuildItem.builder(JsonWebToken.class.getName(),
                 TokenIntrospectionResponse.class.getName(),
                 JWSHeader.class.getName(),
                 AccessToken.class.getName(),
@@ -67,7 +66,7 @@ public class KeycloakReflectionBuildStep {
                 StringListMapDeserializer.class.getName(),
                 StringOrArrayDeserializer.class.getName(),
                 MTLSEndpointAliases.class.getName(),
-                OIDCConfigurationRepresentation.class.getName()));
+                OIDCConfigurationRepresentation.class.getName()).methods().fields().build());
     }
 
     @BuildStep

@@ -491,7 +491,7 @@ public class MainClassBuildStep {
      */
     @BuildStep
     ReflectiveClassBuildItem applicationReflection() {
-        return new ReflectiveClassBuildItem(false, false, Application.APP_CLASS_NAME);
+        return ReflectiveClassBuildItem.builder(Application.APP_CLASS_NAME).build();
     }
 
 }

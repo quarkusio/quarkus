@@ -66,23 +66,31 @@ class KafkaStreamsProcessor {
     }
 
     private void registerCompulsoryClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, StreamsPartitionAssignor.class));
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(StreamsPartitionAssignor.class)
+                .build());
         if (QuarkusClassLoader.isClassPresentAtRuntime(DEFAULT_PARTITION_GROUPER)) {
             // Class DefaultPartitionGrouper deprecated in Kafka 2.8.x and removed in 3.0.0
             reflectiveClasses.produce(
-                    new ReflectiveClassBuildItem(true, false, false, DEFAULT_PARTITION_GROUPER));
+                    ReflectiveClassBuildItem.builder(DEFAULT_PARTITION_GROUPER)
+                            .build());
         }
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultProductionExceptionHandler.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, FailOnInvalidTimestamp.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
-                org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
-                org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
-                org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class));
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(DefaultProductionExceptionHandler.class)
+                .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(FailOnInvalidTimestamp.class)
+                .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class)
+                .methods().fields().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor.class)
+                .methods().fields().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class)
+                .methods().fields().build());
         // See https://github.com/quarkusio/quarkus/issues/23404
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
-                "org.apache.kafka.streams.processor.internals.StateDirectory$StateDirectoryProcessFile"));
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder("org.apache.kafka.streams.processor.internals.StateDirectory$StateDirectoryProcessFile")
+                .methods().fields().build());
     }
 
     private void registerClassesThatClientMaySpecify(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -105,7 +113,8 @@ class KafkaStreamsProcessor {
     }
 
     private void registerDefaultExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, LogAndFailExceptionHandler.class));
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(LogAndFailExceptionHandler.class)
+                .build());
     }
 
     private void registerDefaultSerdes(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -145,7 +154,8 @@ class KafkaStreamsProcessor {
     }
 
     private void registerClassName(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, String defaultKeySerdeClass) {
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, defaultKeySerdeClass));
+        reflectiveClasses.produce(
+                ReflectiveClassBuildItem.builder(defaultKeySerdeClass).build());
     }
 
     private boolean allDefaultSerdesAreDefinedInProperties(String defaultKeySerdeClass, String defaultValueSerdeClass) {
@@ -153,7 +163,8 @@ class KafkaStreamsProcessor {
     }
 
     private void registerDefaultSerde(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, ByteArraySerde.class));
+        reflectiveClasses.produce(
+                ReflectiveClassBuildItem.builder(ByteArraySerde.class).build());
     }
 
     @BuildStep

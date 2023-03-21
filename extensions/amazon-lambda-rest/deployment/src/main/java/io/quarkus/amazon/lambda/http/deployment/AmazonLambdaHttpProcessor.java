@@ -77,8 +77,7 @@ public class AmazonLambdaHttpProcessor {
     @BuildStep
     public void registerReflectionClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
         reflectiveClassBuildItemBuildProducer
-                .produce(new ReflectiveClassBuildItem(true, true, true,
-                        AlbContext.class,
+                .produce(ReflectiveClassBuildItem.builder(AlbContext.class,
                         ApiGatewayAuthorizerContext.class,
                         ApiGatewayRequestIdentity.class,
                         AwsProxyRequest.class,
@@ -87,7 +86,7 @@ public class AmazonLambdaHttpProcessor {
                         CognitoAuthorizerClaims.class,
                         ErrorModel.class,
                         Headers.class,
-                        MultiValuedTreeMap.class));
+                        MultiValuedTreeMap.class).methods().fields().build());
     }
 
     /**

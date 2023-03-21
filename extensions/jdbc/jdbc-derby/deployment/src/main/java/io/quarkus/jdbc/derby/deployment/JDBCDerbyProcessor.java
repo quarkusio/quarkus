@@ -53,7 +53,8 @@ public class JDBCDerbyProcessor {
         //Not strictly necessary when using Agroal, as it also registers
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal.
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, org.apache.derby.jdbc.ClientDriver.class.getName()));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(org.apache.derby.jdbc.ClientDriver.class.getName())
+                .build());
 
         nativeImageResourceBundles.produce(new NativeImageResourceBundleBuildItem("org/apache/derby/loc/clientmessages"));
     }

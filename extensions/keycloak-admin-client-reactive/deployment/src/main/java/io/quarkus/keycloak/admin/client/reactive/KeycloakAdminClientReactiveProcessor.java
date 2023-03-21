@@ -44,9 +44,7 @@ public class KeycloakAdminClientReactiveProcessor {
                 StringListMapDeserializer.class,
                 StringOrArrayDeserializer.class,
                 StringOrArraySerializer.class)
-                .constructors(true)
-                .methods(true)
-                .build());
+                .methods().build());
         reflectiveHierarchyProducer.produce(
                 new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
                         DotName.createSimple(MultivaluedHashMap.class.getName()))));

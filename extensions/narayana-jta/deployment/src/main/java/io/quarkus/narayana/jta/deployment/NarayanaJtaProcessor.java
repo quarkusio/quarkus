@@ -95,7 +95,7 @@ class NarayanaJtaProcessor {
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(JTAActionStatusServiceXAResourceOrphanFilter.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(AtomicActionExpiryScanner.class.getName()));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JTAEnvironmentBean.class.getName(),
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(JTAEnvironmentBean.class.getName(),
                 UserTransactionImple.class.getName(),
                 CheckedActionFactoryImple.class.getName(),
                 TransactionManagerImple.class.getName(),
@@ -109,7 +109,7 @@ class NarayanaJtaProcessor {
                 JTATransactionLogXAResourceOrphanFilter.class.getName(),
                 JTANodeNameXAResourceOrphanFilter.class.getName(),
                 JTAActionStatusServiceXAResourceOrphanFilter.class.getName(),
-                ExpiredTransactionStatusManagerScanner.class.getName()));
+                ExpiredTransactionStatusManagerScanner.class.getName()).build());
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClass(TransactionalInterceptorSupports.class);

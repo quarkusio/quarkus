@@ -310,10 +310,12 @@ public class SmallRyeMetricsProcessor {
             SmallRyeMetricsRecorder metrics,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         for (DotName metricsAnnotation : METRICS_ANNOTATIONS) {
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, metricsAnnotation.toString()));
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(metricsAnnotation.toString()).build());
         }
 
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, METRICS_BINDING.toString()));
+        reflectiveClasses
+                .produce(ReflectiveClassBuildItem.builder(METRICS_BINDING.toString()).build());
         metrics.createRegistries(beanContainerBuildItem.getValue());
     }
 

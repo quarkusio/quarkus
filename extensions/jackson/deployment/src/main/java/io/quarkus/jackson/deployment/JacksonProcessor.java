@@ -124,14 +124,14 @@ public class JacksonProcessor {
                         "com.fasterxml.jackson.databind.ser.std.SqlTimeSerializer",
                         "com.fasterxml.jackson.databind.deser.std.DateDeserializers$SqlDateDeserializer",
                         "com.fasterxml.jackson.databind.deser.std.DateDeserializers$TimestampDeserializer",
-                        "com.fasterxml.jackson.annotation.SimpleObjectIdResolver").methods(true).build());
+                        "com.fasterxml.jackson.annotation.SimpleObjectIdResolver").methods().build());
 
         if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
                 x -> x.getGroupId().equals("com.fasterxml.jackson.module")
                         && x.getArtifactId().equals("jackson-module-jaxb-annotations"))) {
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder("com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector")
-                            .methods(true).build());
+                            .methods().build());
         }
 
         IndexView index = combinedIndexBuildItem.getIndex();
@@ -207,7 +207,7 @@ public class JacksonProcessor {
         for (AnnotationInstance creatorInstance : index.getAnnotations(JSON_AUTO_DETECT)) {
             if (creatorInstance.target().kind() == CLASS) {
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(creatorInstance.target().asClass().name().toString())
-                        .methods(true).fields(true).build());
+                        .methods().fields().build());
             }
         }
 
@@ -221,7 +221,7 @@ public class JacksonProcessor {
             if (value != null) {
                 // Add the type-id-resolver class
                 reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(value.asClass().name().toString()).methods(true).fields(true)
+                        .produce(ReflectiveClassBuildItem.builder(value.asClass().name().toString()).methods().fields()
                                 .build());
                 if (resolverInstance.target().kind() == CLASS) {
                     // Add the whole hierarchy of the annotated class
@@ -242,7 +242,7 @@ public class JacksonProcessor {
             AnnotationValue strategyValue = jsonNamingInstance.value("value");
             if (strategyValue != null) {
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(strategyValue.asClass().name().toString())
-                        .methods(true).fields(true).build());
+                        .methods().fields().build());
             }
         }
 
@@ -252,15 +252,15 @@ public class JacksonProcessor {
             AnnotationValue resolverValue = jsonIdentityInfoInstance.value("resolver");
             if (generatorValue != null) {
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatorValue.asClass().name().toString())
-                        .methods(true).fields(true).build());
+                        .methods().fields().build());
             }
             if (resolverValue != null) {
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(resolverValue.asClass().name().toString())
-                        .methods(true).fields(true).build());
+                        .methods().fields().build());
             } else {
                 // Registering since SimpleObjectIdResolver is the default value of @JsonIdentityInfo.resolver
                 reflectiveClass.produce(
-                        ReflectiveClassBuildItem.builder(SimpleObjectIdResolver.class).methods(true).fields(true).build());
+                        ReflectiveClassBuildItem.builder(SimpleObjectIdResolver.class).methods().fields().build());
             }
         }
 
@@ -394,7 +394,7 @@ public class JacksonProcessor {
             }
             ClassInfo mixinClassInfo = instance.target().asClass();
             String mixinClassName = mixinClassInfo.name().toString();
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(mixinClassName).methods(true).fields(true).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(mixinClassName).methods().fields().build());
             try {
                 Type[] targetTypes = instance.value().asClassArray();
                 if ((targetTypes == null) || targetTypes.length == 0) {
@@ -404,7 +404,7 @@ public class JacksonProcessor {
                 for (Type targetType : targetTypes) {
                     String targetClassName = targetType.name().toString();
                     reflectiveClass
-                            .produce(ReflectiveClassBuildItem.builder(targetClassName).methods(true).fields(true).build());
+                            .produce(ReflectiveClassBuildItem.builder(targetClassName).methods().fields().build());
                     mixinsMap.put(Thread.currentThread().getContextClassLoader().loadClass(targetClassName),
                             mixinClass);
                 }

@@ -278,9 +278,9 @@ public final class LoggingResourceProcessor {
 
             DiscoveredLogComponents discoveredLogComponents = discoverLogComponents(combinedIndexBuildItem.getIndex());
             if (!discoveredLogComponents.getNameToFilterClass().isEmpty()) {
-                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, false, false,
-                        discoveredLogComponents.getNameToFilterClass().values().toArray(
-                                EMPTY_STRING_ARRAY)));
+                reflectiveClassBuildItemBuildProducer.produce(
+                        ReflectiveClassBuildItem.builder(discoveredLogComponents.getNameToFilterClass().values().toArray(
+                                EMPTY_STRING_ARRAY)).build());
                 serviceProviderBuildItemBuildProducer
                         .produce(ServiceProviderBuildItem.allProvidersFromClassPath(LogFilterFactory.class.getName()));
             }

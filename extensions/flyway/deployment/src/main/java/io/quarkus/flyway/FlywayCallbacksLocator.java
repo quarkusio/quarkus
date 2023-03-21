@@ -93,7 +93,8 @@ class FlywayCallbacksLocator {
             final Class<?> clazzType = Class.forName(callback, false, Thread.currentThread().getContextClassLoader());
             final Callback instance = (Callback) clazzType.getConstructors()[0].newInstance();
             instances.add(instance);
-            reflectiveClassProducer.produce(new ReflectiveClassBuildItem(false, false, clazz.name().toString()));
+            reflectiveClassProducer
+                    .produce(ReflectiveClassBuildItem.builder(clazz.name().toString()).build());
         }
         return instances;
     }

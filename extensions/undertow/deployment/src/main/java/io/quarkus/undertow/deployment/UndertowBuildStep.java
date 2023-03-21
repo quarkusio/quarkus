@@ -400,7 +400,8 @@ public class UndertowBuildStep {
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
                 ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
         substitutions.produce(new ObjectSubstitutionBuildItem(holder));
-        reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName()));
+        reflectiveClasses
+                .accept(ReflectiveClassBuildItem.builder(DefaultServlet.class.getName()).build());
 
         WebMetaData webMetaData = webMetadataBuildItem.getWebMetaData();
         final IndexView index = combinedIndexBuildItem.getIndex();
@@ -424,7 +425,8 @@ public class UndertowBuildStep {
         //add servlets
         if (webMetaData.getServlets() != null) {
             for (ServletMetaData servlet : webMetaData.getServlets()) {
-                reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, servlet.getServletClass()));
+                reflectiveClasses.accept(
+                        ReflectiveClassBuildItem.builder(servlet.getServletClass()).build());
                 RuntimeValue<ServletInfo> sref = recorder.registerServlet(deployment, servlet.getServletName(),
                         context.classProxy(servlet.getServletClass()),
                         servlet.isAsyncSupported(),
@@ -492,7 +494,8 @@ public class UndertowBuildStep {
         //filters
         if (webMetaData.getFilters() != null) {
             for (FilterMetaData filter : webMetaData.getFilters()) {
-                reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, filter.getFilterClass()));
+                reflectiveClasses
+                        .accept(ReflectiveClassBuildItem.builder(filter.getFilterClass()).build());
                 RuntimeValue<FilterInfo> sref = recorder.registerFilter(deployment,
                         filter.getFilterName(),
                         context.classProxy(filter.getFilterClass()),
@@ -571,7 +574,8 @@ public class UndertowBuildStep {
         //listeners
         if (webMetaData.getListeners() != null) {
             for (ListenerMetaData listener : webMetaData.getListeners()) {
-                reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, listener.getListenerClass()));
+                reflectiveClasses.accept(
+                        ReflectiveClassBuildItem.builder(listener.getListenerClass()).build());
                 recorder.registerListener(deployment, context.classProxy(listener.getListenerClass()), bc.getValue());
             }
         }
@@ -586,7 +590,8 @@ public class UndertowBuildStep {
         for (ServletBuildItem servlet : servlets) {
             String servletClass = servlet.getServletClass();
             if (servlet.getLoadOnStartup() == 0) {
-                reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, servlet.getServletClass()));
+                reflectiveClasses.accept(
+                        ReflectiveClassBuildItem.builder(servlet.getServletClass()).build());
             }
             RuntimeValue<ServletInfo> s = recorder.registerServlet(deployment, servlet.getName(),
                     context.classProxy(servletClass),
@@ -608,7 +613,7 @@ public class UndertowBuildStep {
 
         for (FilterBuildItem filter : filters) {
             String filterClass = filter.getFilterClass();
-            reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, filterClass));
+            reflectiveClasses.accept(ReflectiveClassBuildItem.builder(filterClass).build());
             RuntimeValue<FilterInfo> f = recorder.registerFilter(deployment, filter.getName(), context.classProxy(filterClass),
                     filter.isAsyncSupported(),
                     bc.getValue(), filter.getInstanceFactory());
@@ -633,7 +638,8 @@ public class UndertowBuildStep {
             recorder.addServletExtension(deployment, i.getValue());
         }
         for (ListenerBuildItem i : listeners) {
-            reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, i.getListenerClass()));
+            reflectiveClasses
+                    .accept(ReflectiveClassBuildItem.builder(i.getListenerClass()).build());
             recorder.registerListener(deployment, context.classProxy(i.getListenerClass()), bc.getValue());
         }
 

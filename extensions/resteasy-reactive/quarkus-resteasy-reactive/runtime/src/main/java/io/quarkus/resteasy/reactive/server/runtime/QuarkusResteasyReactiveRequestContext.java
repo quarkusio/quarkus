@@ -1,8 +1,13 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
 import jakarta.ws.rs.core.SecurityContext;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
+import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -57,8 +62,30 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
 
     @Override
     protected void handleUnrecoverableError(Throwable throwable) {
-        context.fail(throwable);
-        super.handleUnrecoverableError(throwable);
+        context.fail(effectiveThrowableForQuarkusLogging(throwable)); // this results in io.quarkus.vertx.http.runtime.QuarkusErrorHandler logging the error
+        endResponse(); // we just want to end the response, nothing more
+    }
+
+    // this is a massive hack to get QuarkusErrorHandler to log an IOException when it comes from user code
+    private Throwable effectiveThrowableForQuarkusLogging(Throwable throwable) {
+        if (!(throwable instanceof IOException)) {
+            return throwable;
+        }
+        StackTraceElement[] stackTrace = throwable.getStackTrace();
+        int depth = 0;
+        boolean convertException = false;
+        while ((depth < stackTrace.length) && (depth < 5)) { // only check a few of the top frames
+            StackTraceElement stackTraceElement = stackTrace[depth];
+            String className = stackTraceElement.getClassName();
+            if (className.contains(InvocationHandler.class.getSimpleName()) || className.contains(
+                    ResourceRequestFilterHandler.class.getSimpleName())) { // TODO: we may need more here
+                convertException = true;
+                break;
+            }
+            depth++;
+        }
+        return convertException ? new UncheckedIOException((IOException) throwable) : throwable;
+
     }
 
     @Override

@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.devconsole;
+package io.quarkus.hibernate.orm.dev;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -10,24 +10,24 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
-import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleInfoSupplier;
+import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevController;
+import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfo;
 
-@Path("/dev-console-info-supplier")
-public class DevConsoleInfoSupplierTestResource {
+@Path("/dev-info")
+public class HibernateOrmDevInfoServiceTestResource {
 
     @GET
     @Path("/check-pu-info-with-successful-ddl-generation")
     @Produces(MediaType.TEXT_PLAIN)
     public String checkPuInfoWithSuccessfulDDLGeneration() {
-        HibernateOrmDevConsoleInfoSupplier supplier = new HibernateOrmDevConsoleInfoSupplier();
-        HibernateOrmDevConsoleInfoSupplier.PersistenceUnitsInfo infos = supplier.get();
+        HibernateOrmDevInfo infos = HibernateOrmDevController.get().getInfo();
 
         assertThat(infos.getNumberOfEntities()).isEqualTo(1);
         assertThat(infos.getNumberOfNamedQueries()).isEqualTo(2);
 
-        Collection<HibernateOrmDevConsoleInfoSupplier.PersistenceUnitInfo> pus = infos.getPersistenceUnits();
+        Collection<HibernateOrmDevInfo.PersistenceUnit> pus = infos.getPersistenceUnits();
         assertThat(pus).hasSize(1);
-        HibernateOrmDevConsoleInfoSupplier.PersistenceUnitInfo pu = pus.iterator().next();
+        HibernateOrmDevInfo.PersistenceUnit pu = pus.iterator().next();
 
         assertThat(pu.getName()).isEqualTo(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
 
@@ -35,23 +35,23 @@ public class DevConsoleInfoSupplierTestResource {
                 .hasSize(1)
                 .element(0)
                 .returns(MyEntityWithSuccessfulDDLGeneration.class.getName(),
-                        HibernateOrmDevConsoleInfoSupplier.EntityInfo::getClassName)
+                        HibernateOrmDevInfo.Entity::getClassName)
                 .returns(MyEntityWithSuccessfulDDLGeneration.TABLE_NAME,
-                        HibernateOrmDevConsoleInfoSupplier.EntityInfo::getTableName);
+                        HibernateOrmDevInfo.Entity::getTableName);
 
         assertThat(pu.getNamedQueries())
                 .hasSize(1)
                 .element(0)
-                .returns("MyEntity.findAll", HibernateOrmDevConsoleInfoSupplier.QueryInfo::getName)
-                .returns("SELECT e FROM MyEntity e ORDER BY e.name", HibernateOrmDevConsoleInfoSupplier.QueryInfo::getQuery)
-                .returns(true, HibernateOrmDevConsoleInfoSupplier.QueryInfo::isCacheable);
+                .returns("MyEntity.findAll", HibernateOrmDevInfo.Query::getName)
+                .returns("SELECT e FROM MyEntity e ORDER BY e.name", HibernateOrmDevInfo.Query::getQuery)
+                .returns(true, HibernateOrmDevInfo.Query::isCacheable);
         assertThat(pu.getNamedNativeQueries())
                 .hasSize(1)
                 .element(0)
-                .returns("MyEntity.nativeFindAll", HibernateOrmDevConsoleInfoSupplier.QueryInfo::getName)
+                .returns("MyEntity.nativeFindAll", HibernateOrmDevInfo.Query::getName)
                 .returns("SELECT e FROM MyEntityTable e ORDER BY e.name",
-                        HibernateOrmDevConsoleInfoSupplier.QueryInfo::getQuery)
-                .returns(false, HibernateOrmDevConsoleInfoSupplier.QueryInfo::isCacheable);
+                        HibernateOrmDevInfo.Query::getQuery)
+                .returns(false, HibernateOrmDevInfo.Query::isCacheable);
 
         assertThat(pu.getCreateDDL())
                 .contains("create table MyEntityTable")
@@ -66,12 +66,11 @@ public class DevConsoleInfoSupplierTestResource {
     @Path("/check-pu-info-with-failing-ddl-generation")
     @Produces(MediaType.TEXT_PLAIN)
     public String checkPuInfoWithFailingDDLGeneration() {
-        HibernateOrmDevConsoleInfoSupplier supplier = new HibernateOrmDevConsoleInfoSupplier();
-        HibernateOrmDevConsoleInfoSupplier.PersistenceUnitsInfo infos = supplier.get();
+        HibernateOrmDevInfo infos = HibernateOrmDevController.get().getInfo();
 
-        Collection<HibernateOrmDevConsoleInfoSupplier.PersistenceUnitInfo> pus = infos.getPersistenceUnits();
+        Collection<HibernateOrmDevInfo.PersistenceUnit> pus = infos.getPersistenceUnits();
         assertThat(pus).hasSize(1);
-        HibernateOrmDevConsoleInfoSupplier.PersistenceUnitInfo pu = pus.iterator().next();
+        HibernateOrmDevInfo.PersistenceUnit pu = pus.iterator().next();
 
         // We have some information available
         assertThat(pu.getName()).isEqualTo(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
@@ -79,9 +78,9 @@ public class DevConsoleInfoSupplierTestResource {
                 .hasSize(1)
                 .element(0)
                 .returns(MyEntityWithFailingDDLGeneration.class.getName(),
-                        HibernateOrmDevConsoleInfoSupplier.EntityInfo::getClassName)
+                        HibernateOrmDevInfo.Entity::getClassName)
                 .returns(MyEntityWithFailingDDLGeneration.TABLE_NAME,
-                        HibernateOrmDevConsoleInfoSupplier.EntityInfo::getTableName);
+                        HibernateOrmDevInfo.Entity::getTableName);
 
         assertThat(pu.getCreateDDL())
                 .contains("Error creating SQL create commands for table : MyEntityTable")

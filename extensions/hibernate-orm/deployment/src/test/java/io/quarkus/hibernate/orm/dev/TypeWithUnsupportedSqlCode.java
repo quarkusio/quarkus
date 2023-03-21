@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.devconsole;
+package io.quarkus.hibernate.orm.dev;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;

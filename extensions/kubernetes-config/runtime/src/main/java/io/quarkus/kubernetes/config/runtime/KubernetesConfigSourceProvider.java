@@ -41,7 +41,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
 
     @Override
     public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
-        if (!config.configMaps.isPresent() && !config.secrets.isPresent()) {
+        if (config.configMaps.isEmpty() && config.secrets.isEmpty()) {
             log.debug("No ConfigMaps or Secrets were configured for config source lookup");
             return Collections.emptyList();
         }

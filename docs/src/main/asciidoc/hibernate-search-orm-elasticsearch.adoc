@@ -626,7 +626,7 @@ quarkus.datasource.db-kind=postgresql <2>
 
 quarkus.hibernate-orm.sql-load-script=import.sql <3>
 
-quarkus.hibernate-search-orm.elasticsearch.version=7 <4>
+quarkus.hibernate-search-orm.elasticsearch.version=8 <4>
 quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy=sync <5>
 
 %prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test <6>
@@ -786,7 +786,7 @@ quarkus.datasource.db-kind=h2
 quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
 
 quarkus.hibernate-search-orm.elasticsearch.hosts=es1.mycompany.com:9200
-quarkus.hibernate-search-orm.elasticsearch.version=7
+quarkus.hibernate-search-orm.elasticsearch.version=8
 ----
 
 Using a map based approach, it is also possible to configure named persistence units:
@@ -806,10 +806,10 @@ quarkus.hibernate-orm."inventory".datasource=inventory <4>
 quarkus.hibernate-orm."inventory".packages=org.acme.model.inventory
 
 quarkus.hibernate-search-orm."users".elasticsearch.hosts=es1.mycompany.com:9200 <5>
-quarkus.hibernate-search-orm."users".elasticsearch.version=7
+quarkus.hibernate-search-orm."users".elasticsearch.version=8
 
 quarkus.hibernate-search-orm."inventory".elasticsearch.hosts=es2.mycompany.com:9200 <6>
-quarkus.hibernate-search-orm."inventory".elasticsearch.version=7
+quarkus.hibernate-search-orm."inventory".elasticsearch.version=8
 ----
 <1> Define a datasource named `users`.
 <2> Define a datasource named `inventory`.

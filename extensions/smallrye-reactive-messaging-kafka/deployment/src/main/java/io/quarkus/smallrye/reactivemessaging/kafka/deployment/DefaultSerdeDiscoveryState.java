@@ -210,6 +210,13 @@ class DefaultSerdeDiscoveryState {
                 .collect(Collectors.toList());
     }
 
+    List<AnnotationInstance> findRepeatableAnnotationsOnMethods(DotName annotation) {
+        return index.getAnnotationsWithRepeatable(annotation, index)
+                .stream()
+                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD)
+                .collect(Collectors.toList());
+    }
+
     List<AnnotationInstance> findAnnotationsOnInjectionPoints(DotName annotation) {
         return index.getAnnotations(annotation)
                 .stream()

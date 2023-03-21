@@ -6,6 +6,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,9 @@ public class DefaultSerdeConfigTest {
     private static void doTest(Config customConfig, Tuple[] expectations, Class<?>... classesToIndex) {
         List<RunTimeConfigurationDefaultBuildItem> configs = new ArrayList<>();
 
-        DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classesToIndex)) {
+        List<Class<?>> classes = new ArrayList<>(Arrays.asList(classesToIndex));
+        classes.add(Incoming.class);
+        DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classes)) {
             @Override
             Config getConfig() {
                 return customConfig != null ? customConfig : super.getConfig();
@@ -89,7 +92,7 @@ public class DefaultSerdeConfigTest {
         }
     }
 
-    private static IndexView index(Class<?>... classes) {
+    private static IndexView index(List<Class<?>> classes) {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             try {
@@ -2695,5 +2698,25 @@ public class DefaultSerdeConfigTest {
         KafkaTransactions<String> kafkaTransactions;
 
     }
+
+    @Test
+    void repeatableIncomings() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+        };
+        doTest(expectations, RepeatableIncomingsChannels.class);
+    }
+
+
+    private static class RepeatableIncomingsChannels {
+
+        @Incoming("channel1")
+        @Incoming("channel2")
+        void method1(String msg) {
+
+        }
+    }
+
 
 }

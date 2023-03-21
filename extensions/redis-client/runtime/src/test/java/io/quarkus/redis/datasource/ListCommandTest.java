@@ -10,6 +10,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import io.quarkus.redis.datasource.list.KeyValue;
 import io.quarkus.redis.datasource.list.LPosArgs;
 import io.quarkus.redis.datasource.list.ListCommands;
@@ -352,4 +356,80 @@ public class ListCommandTest extends DatasourceTestBase {
         assertThat(commands.lpop("dest2", 100)).containsExactly("1", "2", "3", "4", "5", "5", "6", "7", "8", "9");
     }
 
+    @Test
+    void testJacksonPolymorphism() {
+        var cmd = ds.list(Animal.class);
+
+        var cat = new Cat();
+        cat.setId("1234");
+        cat.setName("the cat");
+
+        var rabbit = new Rabbit();
+        rabbit.setName("roxanne");
+        rabbit.setColor("grey");
+
+        cmd.lpush(key, cat, rabbit);
+
+        var shouldBeACat = cmd.rpop(key);
+        var shouldBeARabbit = cmd.rpop(key);
+
+        assertThat(shouldBeACat).isInstanceOf(Cat.class)
+                .satisfies(animal -> {
+                    assertThat(animal.getName()).isEqualTo("the cat");
+                    assertThat(((Cat) animal).getId()).isEqualTo("1234");
+                });
+
+        assertThat(shouldBeARabbit).isInstanceOf(Rabbit.class)
+                .satisfies(animal -> {
+                    assertThat(animal.getName()).isEqualTo("roxanne");
+                    assertThat(((Rabbit) animal).getColor()).isEqualTo("grey");
+                });
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = Cat.class, name = "Cat"),
+            @JsonSubTypes.Type(value = Rabbit.class, name = "Rabbit")
+    })
+    public static class Animal {
+
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public Animal setName(String name) {
+            this.name = name;
+            return this;
+        }
+    }
+
+    public static class Rabbit extends Animal {
+
+        private String color;
+
+        public String getColor() {
+            return color;
+        }
+
+        public Rabbit setColor(String color) {
+            this.color = color;
+            return this;
+        }
+    }
+
+    public static class Cat extends Animal {
+        private String id;
+
+        public String getId() {
+            return id;
+        }
+
+        public Cat setId(String id) {
+            this.id = id;
+            return this;
+        }
+    }
 }

@@ -67,6 +67,13 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         return execute(cmd);
     }
 
+    Uni<Response> _tsAdd(K key, double value, AddArgs args) {
+        nonNull(key, "key");
+        nonNull(args, "args");
+        RedisCommand cmd = RedisCommand.of(Command.TS_ADD).put(marshaller.encode(key)).put("*").put(value).putArgs(args);
+        return execute(cmd);
+    }
+
     Uni<Response> _tsAlter(K key, AlterArgs args) {
         nonNull(key, "key");
         nonNull(args, "args");

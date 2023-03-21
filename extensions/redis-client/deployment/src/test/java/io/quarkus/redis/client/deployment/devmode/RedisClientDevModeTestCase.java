@@ -3,10 +3,12 @@ package io.quarkus.redis.client.deployment.devmode;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -47,6 +49,10 @@ public class RedisClientDevModeTestCase {
                 return s.replace("INCREMENT = 1", "INCREMENT = 10");
             }
         });
+
+        Awaitility.await()
+                .untilAsserted(() -> Assertions.assertEquals("2", RestAssured.get("/inc/val").andReturn().asString()));
+
         RestAssured.get("/inc")
                 .then()
                 .statusCode(200)

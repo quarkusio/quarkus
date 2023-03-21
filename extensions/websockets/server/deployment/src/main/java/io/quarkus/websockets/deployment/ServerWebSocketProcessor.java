@@ -2,8 +2,12 @@ package io.quarkus.websockets.deployment;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import jakarta.websocket.Decoder;
+import jakarta.websocket.Encoder;
 import jakarta.websocket.server.ServerEndpoint;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -19,7 +23,10 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.websockets.client.deployment.AnnotatedWebsocketEndpointBuildItem;
 import io.quarkus.websockets.client.deployment.ServerWebSocketContainerBuildItem;
@@ -31,6 +38,17 @@ import io.quarkus.websockets.runtime.WebsocketServerRecorder;
 public class ServerWebSocketProcessor {
 
     private static final DotName SERVER_ENDPOINT = DotName.createSimple(ServerEndpoint.class.getName());
+
+    public static final Collection<DotName> CODECS = List.of(
+            Decoder.TextStream.class,
+            Decoder.Text.class,
+            Decoder.BinaryStream.class,
+            Decoder.Binary.class,
+            Encoder.TextStream.class,
+            Encoder.Text.class,
+            Encoder.BinaryStream.class,
+            Encoder.Binary.class).stream().map(Class::getName).map(DotName::createSimple)
+            .collect(Collectors.toList());
 
     @BuildStep
     void holdConfig(BuildProducer<FeatureBuildItem> feature) {
@@ -52,6 +70,24 @@ public class ServerWebSocketProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    void buildIndexDependencies(BuildProducer<IndexDependencyBuildItem> indexDependencyProduer) {
+        indexDependencyProduer.produce(new IndexDependencyBuildItem("jakarta.websocket", "jakarta.websocket-client-api"));
+    }
+
+    @BuildStep
+    void scanForCodecs(CombinedIndexBuildItem index,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyBuildItemProducer) {
+        CODECS.stream().forEach(
+                codec -> index.getIndex().getAllKnownImplementors(codec).stream()
+                        .filter(implementor -> !Modifier.isAbstract(implementor.flags()))
+                        .forEach(implementor -> JandexUtil.resolveTypeParameters(
+                                implementor.name(),
+                                codec, index.getIndex()).forEach(
+                                        typeParameter -> reflectiveHierarchyBuildItemProducer.produce(
+                                                new ReflectiveHierarchyBuildItem.Builder().type(typeParameter).build()))));
     }
 
     @BuildStep

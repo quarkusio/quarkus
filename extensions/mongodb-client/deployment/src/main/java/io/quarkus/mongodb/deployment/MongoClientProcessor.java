@@ -59,6 +59,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.mongodb.runtime.CodecsConventionsProducer;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientRecorder;
 import io.quarkus.mongodb.runtime.MongoClientSupport;
@@ -224,6 +225,9 @@ public class MongoClientProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(MongoClientName.class).build());
         // make MongoClients an unremovable bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(MongoClients.class).setUnremovable().build());
+        // make CodecsConventionsProducer an unremovable bean
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(CodecsConventionsProducer.class)
+                .setUnremovable().build());
     }
 
     @BuildStep

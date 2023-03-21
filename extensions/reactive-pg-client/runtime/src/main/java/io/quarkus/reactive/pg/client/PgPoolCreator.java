@@ -1,5 +1,7 @@
 package io.quarkus.reactive.pg.client;
 
+import java.util.List;
+
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.core.Vertx;
 import io.vertx.pgclient.PgConnectOptions;
@@ -25,6 +27,6 @@ public interface PgPoolCreator {
 
         PoolOptions poolOptions();
 
-        PgConnectOptions pgConnectOptions();
+        List<PgConnectOptions> pgConnectOptionsList();
     }
 }

@@ -1,5 +1,7 @@
 package io.quarkus.reactive.mssql.client;
 
+import java.util.List;
+
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.core.Vertx;
 import io.vertx.mssqlclient.MSSQLConnectOptions;
@@ -25,6 +27,6 @@ public interface MSSQLPoolCreator {
 
         PoolOptions poolOptions();
 
-        MSSQLConnectOptions msSQLConnectOptions();
+        List<MSSQLConnectOptions> msSQLConnectOptionsList();
     }
 }

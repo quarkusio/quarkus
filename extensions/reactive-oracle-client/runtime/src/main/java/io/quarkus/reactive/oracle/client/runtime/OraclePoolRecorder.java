@@ -112,7 +112,7 @@ public class OraclePoolRecorder {
             DataSourceReactiveOracleConfig dataSourceReactiveOracleConfig) {
         OracleConnectOptions oracleConnectOptions;
         if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
-            String url = dataSourceReactiveRuntimeConfig.url.get();
+            String url = dataSourceReactiveRuntimeConfig.url.get().get(0);
             // clean up the URL to make migrations easier
             if (url.startsWith("vertx-reactive:oracle:")) {
                 url = url.substring("vertx-reactive:".length());

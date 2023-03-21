@@ -2,6 +2,7 @@ package io.quarkus.reactive.datasource.runtime;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -23,10 +24,10 @@ public class DataSourceReactiveRuntimeConfig {
     public boolean cachePreparedStatements = false;
 
     /**
-     * The datasource URL.
+     * The datasource URLs.
      */
     @ConfigItem
-    public Optional<String> url = Optional.empty();
+    public Optional<List<String>> url = Optional.empty();
 
     /**
      * The datasource pool maximum size.

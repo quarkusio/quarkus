@@ -33,7 +33,7 @@ public class MultipleMySQLPoolCreatorsForSameDatasourceTest {
 
         @Override
         public MySQLPool create(Input input) {
-            return MySQLPool.pool(input.vertx(), input.mySQLConnectOptions(), input.poolOptions());
+            return MySQLPool.pool(input.vertx(), input.mySQLConnectOptionsList(), input.poolOptions());
         }
     }
 

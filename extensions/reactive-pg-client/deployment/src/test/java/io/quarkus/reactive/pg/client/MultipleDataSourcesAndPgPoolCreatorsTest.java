@@ -85,8 +85,9 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
         @Override
         public PgPool create(Input input) {
-            assertEquals(10, input.pgConnectOptions().getPipeliningLimit()); // validate that the bean has been called for the proper datasource
-            return PgPool.pool(input.vertx(), input.pgConnectOptions().setHost("localhost").setPort(5431), input.poolOptions());
+            assertEquals(10, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
+            return PgPool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
+                    input.poolOptions());
         }
     }
 
@@ -96,8 +97,9 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
         @Override
         public PgPool create(Input input) {
-            assertEquals(7, input.pgConnectOptions().getPipeliningLimit()); // validate that the bean has been called for the proper datasource
-            return PgPool.pool(input.vertx(), input.pgConnectOptions().setHost("localhost").setPort(5431), input.poolOptions());
+            assertEquals(7, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
+            return PgPool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
+                    input.poolOptions());
         }
     }
 }

@@ -2,15 +2,10 @@ package io.quarkus.hibernate.search.orm.elasticsearch.runtime.dev;
 
 import java.util.List;
 
-import jakarta.enterprise.context.ApplicationScoped;
-
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 
-import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Multi;
 
-@ApplicationScoped
-@IfBuildProfile("dev")
 public class HibernateSearchElasticsearchDevJsonRpcService {
 
     public HibernateSearchElasticsearchDevInfo getInfo() {

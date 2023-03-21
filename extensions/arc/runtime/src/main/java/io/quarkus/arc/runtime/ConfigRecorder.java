@@ -60,7 +60,7 @@ public class ConfigRecorder {
                 ConfigProducerUtil.getValue(property.getName(), effectivePropertyType, property.getDefaultValue(), config);
             } catch (Exception e) {
                 msg.append("Failed to load config value of type ").append(effectivePropertyType).append(" for: ")
-                        .append(property.getName());
+                        .append(property.getName()).append(System.lineSeparator());
                 problems.add(property.getName());
                 suppressed.add(e);
             }

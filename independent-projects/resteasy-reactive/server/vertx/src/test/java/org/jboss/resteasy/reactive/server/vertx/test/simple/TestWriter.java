@@ -26,7 +26,11 @@ public class TestWriter implements MessageBodyWriter<TestClass> {
     public void writeTo(TestClass t, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
-        entityStream.write("WRITER".getBytes(StandardCharsets.UTF_8));
+        if (genericType.getTypeName().equals(TestClass.class.getName())) {
+            entityStream.write("WRITER".getBytes(StandardCharsets.UTF_8));
+        } else {
+            entityStream.write("INCORRECT GENERIC TYPE".getBytes(StandardCharsets.UTF_8));
+        }
     }
 
 }

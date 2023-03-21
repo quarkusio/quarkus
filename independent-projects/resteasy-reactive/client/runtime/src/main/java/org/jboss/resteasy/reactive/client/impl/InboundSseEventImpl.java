@@ -14,6 +14,7 @@ import javax.ws.rs.sse.SseEvent;
 
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
 public class InboundSseEventImpl implements InboundSseEvent {
 
@@ -120,7 +121,7 @@ public class InboundSseEventImpl implements InboundSseEvent {
         InputStream in = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
         try {
             return (T) ClientSerialisers.invokeClientReader(null, type.getRawType(), type.getType(),
-                    mediaType, null, null, Serialisers.EMPTY_MULTI_MAP,
+                    mediaType, null, null, new QuarkusMultivaluedHashMap<>(),
                     serialisers, in, Serialisers.NO_READER_INTERCEPTOR, configuration);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

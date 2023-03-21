@@ -2,9 +2,13 @@ package io.quarkus.resteasy.reactive.server.test.simple;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
@@ -141,6 +145,42 @@ public class SimpleQuarkusRestResource {
     @Path("filters")
     public Response filters(@Context HttpHeaders headers, @RestHeader("filter-request") String header) {
         return Response.ok().header("filter-request", header).build();
+    }
+
+    @GET
+    @Path("header-param-list")
+    public Object headerParamWithList(@HeaderParam("header") List list) {
+        return collectionToString(list);
+    }
+
+    @GET
+    @Path("rest-header-list")
+    public Object restHeaderWithList(@RestHeader List header) {
+        return collectionToString(header);
+    }
+
+    @GET
+    @Path("header-param-set")
+    public Object headerParamWithSet(@HeaderParam("header") Set list) {
+        return collectionToString(list);
+    }
+
+    @GET
+    @Path("rest-header-set")
+    public Object restHeaderWithSet(@RestHeader Set header) {
+        return collectionToString(header);
+    }
+
+    @GET
+    @Path("header-param-sorted-set")
+    public Object headerParamWithSortedSet(@HeaderParam("header") SortedSet list) {
+        return collectionToString(list);
+    }
+
+    @GET
+    @Path("rest-header-sorted-set")
+    public String restHeaderWithSortedSet(@RestHeader SortedSet header) {
+        return collectionToString(header);
     }
 
     @GET
@@ -379,5 +419,9 @@ public class SimpleQuarkusRestResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String bigDecimalConverter(BigDecimal val) {
         return val.toString();
+    }
+
+    private String collectionToString(Collection list) {
+        return (String) list.stream().map(Object::toString).collect(Collectors.joining(", "));
     }
 }

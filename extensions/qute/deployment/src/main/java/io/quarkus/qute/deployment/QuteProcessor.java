@@ -647,6 +647,7 @@ public class QuteProcessor {
     @BuildStep
     void validateCheckedFragments(List<CheckedFragmentValidationBuildItem> validations,
             List<TemplateExpressionMatchesBuildItem> expressionMatches,
+            List<TemplateGlobalBuildItem> templateGlobals,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<ValidationErrorBuildItem> validationErrors) {
 
@@ -657,6 +658,8 @@ public class QuteProcessor {
         Map<DotName, AssignableInfo> assignableCache = new HashMap<>();
         String[] hintPrefixes = { LoopSectionHelper.Factory.HINT_PREFIX, WhenSectionHelper.Factory.HINT_PREFIX,
                 SetSectionHelper.Factory.HINT_PREFIX };
+        Set<String> globals = templateGlobals.stream().map(TemplateGlobalBuildItem::getName)
+                .collect(Collectors.toUnmodifiableSet());
 
         for (CheckedFragmentValidationBuildItem validation : validations) {
             Map<String, Type> paramNamesToTypes = new HashMap<>();
@@ -672,33 +675,40 @@ public class QuteProcessor {
             }
 
             for (Expression expression : validation.fragmentExpressions) {
-                // Note that we ignore literals and expressions with no type info and expressions with a hint referencing an expression from inside the fragment
-                if (expression.isLiteral()) {
+                // Note that we ignore:
+                // - literals,
+                // - globals,
+                // - expressions with no type info,
+                // - loop metadata; e.g. |java.lang.Integer|<loop-metadata>
+                // - expressions with a hint referencing an expression from inside the fragment
+                if (expression.isLiteral() || globals.contains(expression.getParts().get(0).getName())) {
                     continue;
                 }
-                if (expression.hasTypeInfo()) {
-                    Info info = TypeInfos.create(expression, index, null).get(0);
-                    if (info.isTypeInfo()) {
-                        // |org.acme.Foo|.name
-                        paramNamesToTypes.put(expression.getParts().get(0).getName(), info.asTypeInfo().resolvedType);
-                    } else if (info.hasHints()) {
-                        // foo<set#123>.name
-                        hintLoop: for (String helperHint : info.asHintInfo().hints) {
-                            for (String prefix : hintPrefixes) {
-                                if (helperHint.startsWith(prefix)) {
-                                    int generatedId = parseHintId(helperHint, prefix);
-                                    Expression localExpression = findExpression(generatedId, validation.fragmentExpressions);
-                                    if (localExpression == null) {
-                                        Match match = matchResults.getMatch(generatedId);
-                                        if (match == null) {
-                                            throw new IllegalStateException(
-                                                    "Match result not found for expression [" + expression.toOriginalString()
-                                                            + "] in: "
-                                                            + validation.templateId);
-                                        }
-                                        paramNamesToTypes.put(expression.getParts().get(0).getName(), match.type);
-                                        break hintLoop;
+                String typeInfo = expression.getParts().get(0).getTypeInfo();
+                if (typeInfo == null || (typeInfo != null && typeInfo.endsWith(LoopSectionHelper.Factory.HINT_METADATA))) {
+                    continue;
+                }
+                Info info = TypeInfos.create(expression, index, null).get(0);
+                if (info.isTypeInfo()) {
+                    // |org.acme.Foo|.name
+                    paramNamesToTypes.put(expression.getParts().get(0).getName(), info.asTypeInfo().resolvedType);
+                } else if (info.hasHints()) {
+                    // foo<set#123>.name
+                    hintLoop: for (String helperHint : info.asHintInfo().hints) {
+                        for (String prefix : hintPrefixes) {
+                            if (helperHint.startsWith(prefix)) {
+                                int generatedId = parseHintId(helperHint, prefix);
+                                Expression localExpression = findExpression(generatedId, validation.fragmentExpressions);
+                                if (localExpression == null) {
+                                    Match match = matchResults.getMatch(generatedId);
+                                    if (match == null) {
+                                        throw new IllegalStateException(
+                                                "Match result not found for expression [" + expression.toOriginalString()
+                                                        + "] in: "
+                                                        + validation.templateId);
                                     }
+                                    paramNamesToTypes.put(expression.getParts().get(0).getName(), match.type);
+                                    break hintLoop;
                                 }
                             }
                         }

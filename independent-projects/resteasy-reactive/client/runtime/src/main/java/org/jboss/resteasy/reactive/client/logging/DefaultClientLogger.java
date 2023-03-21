@@ -57,6 +57,8 @@ public class DefaultClientLogger implements ClientLogger {
     private String bodyToString(Buffer body) {
         if (body == null) {
             return "";
+        } else if (bodySize <= 0) {
+            return body.toString();
         } else {
             String bodyAsString = body.toString();
             return bodyAsString.substring(0, Math.min(bodySize, bodyAsString.length()));

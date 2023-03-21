@@ -187,10 +187,13 @@ public class CORSFilter implements Handler<RoutingContext> {
 
             boolean allowsOrigin = wildcardOrigin;
             if (!allowsOrigin) {
-                allowsOrigin = !corsConfig.origins.isEmpty()
-                        && (corsConfig.origins.get().contains(origin)
-                                || isOriginAllowedByRegex(allowedOriginsRegex, origin)
-                                || isSameOrigin(request, origin));
+                if (!corsConfig.origins.isEmpty()) {
+                    allowsOrigin = corsConfig.origins.get().contains(origin)
+                            || isOriginAllowedByRegex(allowedOriginsRegex, origin)
+                            || isSameOrigin(request, origin);
+                } else {
+                    allowsOrigin = isSameOrigin(request, origin);
+                }
             }
 
             if (allowsOrigin) {

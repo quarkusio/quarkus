@@ -23,6 +23,12 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
     private final ConfigMapConfigSourceUtil configMapConfigSourceUtil;
     private final SecretConfigSourceUtil secretConfigSourceUtil;
 
+    /**
+     * @param config Quarkus runtime Configuration of the extension
+     * @param buildTimeConfig Quarkus build-time Configuration of the extension
+     * @param client A Kubernetes Client that is specific to this extension - it must not be shared with any other parts of the
+     *        application
+     */
     public KubernetesConfigSourceProvider(KubernetesConfigSourceConfig config, KubernetesConfigBuildTimeConfig buildTimeConfig,
             KubernetesClient client) {
         this.config = config;
@@ -46,6 +52,11 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
         }
         if (buildTimeConfig.secretsEnabled && config.secrets.isPresent()) {
             result.addAll(getSecretConfigSources(config.secrets.get()));
+        }
+        try {
+            client.close(); // we no longer need the client, so we must close it to avoid resource leaks
+        } catch (Exception e) {
+            log.debug("Error in closing kubernetes client", e);
         }
         return result;
     }

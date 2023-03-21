@@ -1,5 +1,7 @@
 package io.quarkus.reactive.db2.client;
 
+import java.util.List;
+
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.core.Vertx;
 import io.vertx.db2client.DB2ConnectOptions;
@@ -25,6 +27,6 @@ public interface DB2PoolCreator {
 
         PoolOptions poolOptions();
 
-        DB2ConnectOptions db2ConnectOptions();
+        List<DB2ConnectOptions> db2ConnectOptionsList();
     }
 }

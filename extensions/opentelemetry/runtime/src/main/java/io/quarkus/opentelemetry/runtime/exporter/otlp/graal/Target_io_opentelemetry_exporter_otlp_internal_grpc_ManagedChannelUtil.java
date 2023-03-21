@@ -12,7 +12,6 @@ import com.oracle.svm.core.annotate.TargetClass;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
-import io.opentelemetry.exporter.internal.TlsUtil;
 
 /**
  * Replace the {@code setTrustedCertificatesPem()} method in native because the upstream code supports using
@@ -24,18 +23,11 @@ final class Target_io_opentelemetry_exporter_otlp_internal_grpc_ManagedChannelUt
     @Substitute
     public static void setClientKeysAndTrustedCertificatesPem(
             ManagedChannelBuilder<?> managedChannelBuilder,
-            byte[] privateKeyPem,
-            byte[] certificatePem,
-            byte[] trustedCertificatesPem)
+            X509TrustManager tmf,
+            X509KeyManager kmf)
             throws SSLException {
         requireNonNull(managedChannelBuilder, "managedChannelBuilder");
-        requireNonNull(trustedCertificatesPem, "trustedCertificatesPem");
-
-        X509TrustManager tmf = TlsUtil.trustManager(trustedCertificatesPem);
-        X509KeyManager kmf = null;
-        if (privateKeyPem != null && certificatePem != null) {
-            kmf = TlsUtil.keyManager(privateKeyPem, certificatePem);
-        }
+        requireNonNull(tmf, "X509TrustManager");
 
         // gRPC does not abstract TLS configuration so we need to check the implementation and act
         // accordingly.

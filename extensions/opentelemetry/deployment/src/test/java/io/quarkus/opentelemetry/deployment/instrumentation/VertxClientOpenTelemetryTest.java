@@ -9,6 +9,8 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_URL;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_NAME;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_PORT;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_PEER_NAME;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_PEER_PORT;
 import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.stream.Collectors.toSet;
@@ -79,6 +81,8 @@ public class VertxClientOpenTelemetryTest {
         assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
         assertEquals(uri.toString() + "hello", client.getAttributes().get(HTTP_URL));
+        assertEquals(uri.getHost(), client.getAttributes().get(NET_PEER_NAME));
+        assertEquals(uri.getPort(), client.getAttributes().get(NET_PEER_PORT));
 
         SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
         assertEquals(SERVER, server.getKind());
@@ -111,6 +115,8 @@ public class VertxClientOpenTelemetryTest {
         assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
         assertEquals(uri.toString() + "hello/naruto", client.getAttributes().get(HTTP_URL));
+        assertEquals(uri.getHost(), client.getAttributes().get(NET_PEER_NAME));
+        assertEquals(uri.getPort(), client.getAttributes().get(NET_PEER_PORT));
 
         SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
         assertEquals(SERVER, server.getKind());

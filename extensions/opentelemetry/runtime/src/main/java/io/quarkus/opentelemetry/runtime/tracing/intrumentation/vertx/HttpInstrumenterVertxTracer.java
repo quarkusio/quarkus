@@ -28,7 +28,9 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.net.NetClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesGetter;
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
@@ -127,6 +129,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
     private static Instrumenter<HttpRequest, HttpResponse> getClientInstrumenter(final OpenTelemetry openTelemetry) {
         ServerAttributesExtractor serverAttributesExtractor = new ServerAttributesExtractor();
         ClientAttributesExtractor clientAttributesExtractor = new ClientAttributesExtractor();
+        HttpClientNetAttributeGetter httpClientNetAttributeGetter = new HttpClientNetAttributeGetter();
 
         InstrumenterBuilder<HttpRequest, HttpResponse> clientBuilder = Instrumenter.builder(
                 openTelemetry,
@@ -135,7 +138,8 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
         return clientBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
-                .addAttributesExtractor(HttpClientAttributesExtractor.create(clientAttributesExtractor))
+                .addAttributesExtractor(HttpClientAttributesExtractor.create(
+                        clientAttributesExtractor, httpClientNetAttributeGetter))
                 .buildClientInstrumenter(new HttpRequestTextMapSetter());
     }
 
@@ -292,6 +296,25 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 return remoteHostPort.intValue();
             }
             return null;
+        }
+    }
+
+    private static class HttpClientNetAttributeGetter implements NetClientAttributesGetter<HttpRequest, HttpResponse> {
+        @Override
+        public String getTransport(HttpRequest httpClientRequest, HttpResponse httpClientResponse) {
+            return SemanticAttributes.NetTransportValues.IP_TCP;
+        }
+
+        @javax.annotation.Nullable
+        @Override
+        public String getPeerName(HttpRequest httpRequest) {
+            return httpRequest.remoteAddress().hostName();
+        }
+
+        @javax.annotation.Nullable
+        @Override
+        public Integer getPeerPort(HttpRequest httpRequest) {
+            return httpRequest.remoteAddress().port();
         }
     }
 

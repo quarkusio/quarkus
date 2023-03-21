@@ -110,21 +110,6 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         }
 
         @Override
-        public String getProtocol(final Message message) {
-            return null;
-        }
-
-        @Override
-        public String getProtocolVersion(final Message message) {
-            return "4.0";
-        }
-
-        @Override
-        public String getUrl(final Message message) {
-            return null;
-        }
-
-        @Override
         public String getConversationId(final Message message) {
             return message.replyAddress();
         }

@@ -150,12 +150,11 @@ public class BasicTest {
         Assertions.assertFalse((Boolean) initialServerSpan.get("parent_remote"));
 
         Assertions.assertEquals("POST", initialServerSpan.get("attr_http.method"));
-        Assertions.assertEquals("1.1", initialServerSpan.get("attr_http.flavor"));
         Assertions.assertEquals("/call-hello-client-trace", initialServerSpan.get("attr_http.target"));
         Assertions.assertEquals("http", initialServerSpan.get("attr_http.scheme"));
         Assertions.assertEquals("200", initialServerSpan.get("attr_http.status_code"));
         Assertions.assertNotNull(initialServerSpan.get("attr_http.client_ip"));
-        Assertions.assertNotNull(initialServerSpan.get("attr_http.user_agent"));
+        Assertions.assertNotNull(initialServerSpan.get("attr_user_agent.original"));
 
         spans = getClientSpans("POST", "http://localhost:8081/hello?count=3");
         Assertions.assertEquals(1, spans.size());
@@ -207,7 +206,6 @@ public class BasicTest {
         Assertions.assertTrue((Boolean) serverSpanClientSide.get("parent_remote"));
 
         Assertions.assertEquals("POST", serverSpanClientSide.get("attr_http.method"));
-        Assertions.assertEquals("1.1", serverSpanClientSide.get("attr_http.flavor"));
         Assertions.assertEquals("/hello?count=3", serverSpanClientSide.get("attr_http.target"));
         Assertions.assertEquals("http", serverSpanClientSide.get("attr_http.scheme"));
         Assertions.assertEquals("200", serverSpanClientSide.get("attr_http.status_code"));

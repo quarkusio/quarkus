@@ -9,12 +9,18 @@ public final class Constants {
     public static final String DEPLOYMENT = "Deployment";
     public static final String JOB = "Job";
     public static final String CRONJOB = "CronJob";
+    public static final String ROLE = "Role";
+    public static final String CLUSTER_ROLE = "ClusterRole";
+    public static final String ROLE_BINDING = "RoleBinding";
+    public static final String SERVICE_ACCOUNT = "ServiceAccount";
     public static final String DEPLOYMENT_GROUP = "apps";
     public static final String DEPLOYMENT_VERSION = "v1";
     public static final String INGRESS = "Ingress";
     public static final String BATCH_GROUP = "batch";
     public static final String BATCH_VERSION = "v1";
     public static final String JOB_API_VERSION = BATCH_GROUP + "/" + BATCH_VERSION;
+    public static final String RBAC_API_GROUP = "rbac.authorization.k8s.io";
+    public static final String RBAC_API_VERSION = RBAC_API_GROUP + "/v1";
 
     static final String DOCKER = "docker";
 

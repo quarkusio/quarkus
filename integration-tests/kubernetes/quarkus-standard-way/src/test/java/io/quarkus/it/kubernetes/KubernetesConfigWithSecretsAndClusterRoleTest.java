@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
-import io.fabric8.kubernetes.api.model.rbac.Role;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
@@ -19,9 +19,9 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesConfigWithSecretsTest {
+public class KubernetesConfigWithSecretsAndClusterRoleTest {
 
-    private static final String APP_NAME = "kubernetes-config-with-secrets";
+    private static final String APP_NAME = "kubernetes-config-with-secrets-and-cluster-role";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -42,10 +42,8 @@ public class KubernetesConfigWithSecretsTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"));
         List<HasMetadata> kubernetesList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
-        assertThat(kubernetesList).filteredOn(h -> "Role".equals(h.getKind())).hasSize(1);
-
         assertThat(kubernetesList).anySatisfy(res -> {
-            assertThat(res).isInstanceOfSatisfying(Role.class, role -> {
+            assertThat(res).isInstanceOfSatisfying(ClusterRole.class, role -> {
                 assertThat(role.getMetadata()).satisfies(m -> {
                     assertThat(m.getName()).isEqualTo("view-secrets");
                 });
@@ -64,30 +62,15 @@ public class KubernetesConfigWithSecretsTest {
                 .anySatisfy(res -> {
                     assertThat(res).isInstanceOfSatisfying(RoleBinding.class, roleBinding -> {
                         assertThat(roleBinding.getMetadata()).satisfies(m -> {
-                            assertThat(m.getName()).isEqualTo("kubernetes-config-with-secrets-view-secrets");
+                            assertThat(m.getName()).isEqualTo(APP_NAME + "-view-secrets");
                         });
 
-                        assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("Role");
+                        assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("ClusterRole");
                         assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view-secrets");
 
                         assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
                             assertThat(subject.getKind()).isEqualTo("ServiceAccount");
-                            assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
-                        });
-                    });
-                })
-                .anySatisfy(res -> {
-                    assertThat(res).isInstanceOfSatisfying(RoleBinding.class, roleBinding -> {
-                        assertThat(roleBinding.getMetadata()).satisfies(m -> {
-                            assertThat(m.getName()).isEqualTo("kubernetes-config-with-secrets-view");
-                        });
-
-                        assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("ClusterRole");
-                        assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view");
-
-                        assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
-                            assertThat(subject.getKind()).isEqualTo("ServiceAccount");
-                            assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
+                            assertThat(subject.getName()).isEqualTo(APP_NAME);
                         });
                     });
                 });

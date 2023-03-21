@@ -24,12 +24,14 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 public class KubernetesWithRbacAndNamespaceTest {
 
+    private static final String APP_NAME = "kubernetes-with-rbac-and-namespace";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-with-rbac-and-namespace")
+            .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-with-rbac-and-namespace.properties")
+            .withConfigurationResource(APP_NAME + ".properties")
             .setLogFileName("k8s.log")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
@@ -50,7 +52,7 @@ public class KubernetesWithRbacAndNamespaceTest {
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
                 assertThat(m.getLabels()).contains(entry("foo", "bar"));
-                assertThat(m.getName()).isEqualTo("kubernetes-with-rbac-and-namespace");
+                assertThat(m.getName()).isEqualTo(APP_NAME);
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {

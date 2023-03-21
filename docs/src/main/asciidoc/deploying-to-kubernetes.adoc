@@ -860,13 +860,68 @@ implementation("io.quarkus:quarkus-kubernetes-client")
 ----
 
 To access the API server from within a Kubernetes cluster, some RBAC related resources are required (e.g. a ServiceAccount, a RoleBinding).
-So, when the `kubernetes-client` extension is present, the `kubernetes` extension is going to create those resources automatically, so that application will be granted the `view` role.
-If more roles are required, they will have to be added manually.
+To ease the usage of the `kubernetes-client` extension, the `kubernetes` extension is going to generate a RoleBinding resource that binds a cluster role named "view" to the application ServiceAccount resource. It's important to note that the cluster role "view" won't be generated automatically, so it's expected that you have this cluster role with name "view" already installed in your cluster. 
+
+On the other hand, you can fully customize the roles, subjects and role bindings to generate using the properties under `quarkus.kubernetes.rbac.role-bindings`, and if present, the `kubernetes-client` extension will use it and hence won't generate any RoleBinding resource.
 
 [NOTE]
 ====
 You can disable the RBAC resources generation using the property `quarkus.kubernetes-client.generate-rbac=false`.
 ====
+
+=== Generating RBAC resources
+
+In some scenarios, it's necessary to generate additional https://kubernetes.io/docs/reference/access-authn-authz/rbac/[RBAC] resources that are used by Kubernetes to grant or limit access to other resources. For example, in our use case, we are building https://kubernetes.io/docs/concepts/extend-kubernetes/operator/#operators-in-kubernetes[a Kubernetes operator] that needs to read the list of the installed deployments. To do this, we would need to assign a service account to our operator and link this service account with a role that grants access to the Deployment resources. Let's see how to do this using the `quarkus.kubernetes.rbac` properties:
+
+[source,properties]
+----
+# Generate the Role resource with name "my-role" <1>
+quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.api-groups=extensions,apps
+quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.resources=deployments
+quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.verbs=list
+----
+
+<1> In this example, the role "my-role" will be generated with a policy rule to get the list of deployments.
+
+By default, if one role is configured, a RoleBinding resource will be generated as well to link this role with the ServiceAccount resource. 
+
+Moreover, you can have more control over the RBAC resources to be generated:
+
+[source,properties]
+----
+# Generate Role resource with name "my-role" <1>
+quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.api-groups=extensions,apps
+quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.resources=deployments
+quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.verbs=get,watch,list
+
+# Generate ServiceAccount resource with name "my-service-account" in namespace "my_namespace" <2>
+quarkus.kubernetes.rbac.service-accounts.my-service-account.namespace=my_namespace
+
+# Bind Role "my-role" with ServiceAccount "my-service-account" <3>
+quarkus.kubernetes.rbac.role-bindings.my-role-binding.subjects.my-service-account.kind=ServiceAccount
+quarkus.kubernetes.rbac.role-bindings.my-role-binding.subjects.my-service-account.namespace=my_namespace
+quarkus.kubernetes.rbac.role-bindings.my-role-binding.role-name=my-role
+----
+
+<1> In this example, the role "my-role" will be generated with the specified policy rules.
+<2> Also, the service account "my-service-account" will be generated.
+<3> And we can configure the generated RoleBinding resource by selecting the role to be used and the subject. 
+
+Finally, we can also generate the cluster wide role resource of "ClusterRole" kind as follows: 
+
+[source,properties]
+----
+# Generate ClusterRole resource with name "my-cluster-role" <1>
+quarkus.kubernetes.rbac.cluster-roles.my-cluster-role.policy-rules.0.api-groups=extensions,apps
+quarkus.kubernetes.rbac.cluster-roles.my-cluster-role.policy-rules.0.resources=deployments
+quarkus.kubernetes.rbac.cluster-roles.my-cluster-role.policy-rules.0.verbs=get,watch,list
+
+# Bind the ClusterRole "my-cluster-role" with the application service account
+quarkus.kubernetes.rbac.role-bindings.my-role-binding.role-name=my-cluster-role <2>
+----
+
+<1> In this example, the cluster role "my-cluster-role" will be generated with the specified policy rules.
+<2> As we have configured only one role, this property is not really necessary.
 
 === Deploying to Minikube
 

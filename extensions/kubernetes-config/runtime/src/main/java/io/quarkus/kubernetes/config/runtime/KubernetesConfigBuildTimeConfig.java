@@ -12,4 +12,9 @@ public class KubernetesConfigBuildTimeConfig {
      */
     @ConfigItem(name = "secrets.enabled", defaultValue = "false")
     public boolean secretsEnabled;
+
+    /**
+     * Role configuration to generate if the "secrets-enabled" property is true.
+     */
+    public SecretsRoleConfig secretsRoleConfig;
 }

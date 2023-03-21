@@ -13,6 +13,7 @@ import io.quarkus.arc.runtime.devconsole.InvocationsMonitor;
 import io.quarkus.arc.runtime.devmode.EventInfo;
 import io.quarkus.arc.runtime.devmode.EventsMonitor;
 import io.quarkus.arc.runtime.devmode.InvocationInfo;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 
 public class ArcJsonRPCService {
@@ -25,6 +26,7 @@ public class ArcJsonRPCService {
         return Multi.createFrom().empty();
     }
 
+    @NonBlocking
     public List<EventInfo> getLastEvents() {
         EventsMonitor eventsMonitor = Arc.container().instance(EventsMonitor.class).get();
         if (eventsMonitor != null) {
@@ -33,6 +35,7 @@ public class ArcJsonRPCService {
         return List.of();
     }
 
+    @NonBlocking
     public List<EventInfo> clearLastEvents() {
         EventsMonitor eventsMonitor = Arc.container().instance(EventsMonitor.class).get();
         if (eventsMonitor != null) {
@@ -42,6 +45,7 @@ public class ArcJsonRPCService {
         return List.of();
     }
 
+    @NonBlocking
     public List<InvocationInfo> getLastInvocations() {
         InvocationsMonitor invocationsMonitor = Arc.container().instance(InvocationsMonitor.class).get();
         if (invocationsMonitor != null) {
@@ -51,6 +55,7 @@ public class ArcJsonRPCService {
         return List.of();
     }
 
+    @NonBlocking
     public List<InvocationInfo> clearLastInvocations() {
         InvocationsMonitor invocationsMonitor = Arc.container().instance(InvocationsMonitor.class).get();
         if (invocationsMonitor != null) {

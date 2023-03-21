@@ -11,11 +11,13 @@ import org.jboss.resteasy.reactive.server.core.RuntimeExceptionMapper;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
+import io.smallrye.common.annotation.NonBlocking;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class ResteasyReactiveJsonRPCService {
 
+    @NonBlocking
     public JsonObject getEndpointScores() {
         JsonObject endpointScore = new JsonObject();
 
@@ -62,6 +64,7 @@ public class ResteasyReactiveJsonRPCService {
         return endpointScore;
     }
 
+    @NonBlocking
     public JsonArray getExceptionMappers() {
         JsonArray all = new JsonArray();
         var mappers = RuntimeExceptionMapper.getMappers();
@@ -75,6 +78,7 @@ public class ResteasyReactiveJsonRPCService {
         return all;
     }
 
+    @NonBlocking
     public JsonArray getParamConverterProviders() {
         JsonArray all = new JsonArray();
         var providers = ResteasyReactiveRecorder.getCurrentDeployment().getParamConverterProviders()

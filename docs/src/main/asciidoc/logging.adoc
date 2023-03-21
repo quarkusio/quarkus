@@ -176,7 +176,7 @@ opening the door to optimization opportunities.
 As an example, in native execution the minimum level enables lower level checks (e.g. `isTraceEnabled`) to be folded to `false`,
 resulting in dead code elimination for code that will never to be executed.
 
-All possible properties are listed in <<loggingConfigurationReference, the logging configuration reference>> section.
+All possible properties are listed in the <<loggingConfigurationReference,logging configuration reference>> section.
 
 NOTE: If you are adding these properties by using the command line, make sure `"` is escaped.
 For example `-Dquarkus.log.category.\"org.hibernate\".level=TRACE`.

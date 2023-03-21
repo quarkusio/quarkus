@@ -23,7 +23,7 @@ Please, check out the next compatibility table to use the right one according to
 |===
 |Extension |Hibernate | RESTEasy
 
-|<<hr-hibernate-orm, quarkus-hibernate-orm-rest-data-panache>>
+|<<hr-hibernate-orm,quarkus-hibernate-orm-rest-data-panache>>
 |`ORM`
 |`Classic and Reactive`
 
@@ -31,7 +31,7 @@ Please, check out the next compatibility table to use the right one according to
 |`Reactive`
 |`Reactive`
 
-|<<hr-mongodb, quarkus-mongodb-rest-data-panache>>
+|<<hr-mongodb,quarkus-mongodb-rest-data-panache>>
 |`ORM`
 |`Classic and Reactive`
 |===
@@ -162,7 +162,7 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache] guide.
-* Define the interfaces for generation as explained in the <<hr-generating-resources, resource generation>> section.
+* Define the interfaces for generation as explained in the <<hr-generating-resources,resource generation>> section.
 
 [[hr-generating-resources]]
 == Generating resources

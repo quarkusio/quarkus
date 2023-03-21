@@ -261,7 +261,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 === Test the application
 
-See the <<keycloak-dev-mode, Running the Application in Dev mode>> section above about testing your application in a dev mode.
+See the <<keycloak-dev-mode,Running the Application in Dev mode>> section above about testing your application in a dev mode.
 
 You can test the application launched in JVM or Native modes with `curl`.
 

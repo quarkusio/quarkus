@@ -267,7 +267,7 @@ It has one or more parts, where each part represents either a property accessor 
 
 When accessing the properties you can either use the dot notation or bracket notation.
 In the `object.property` (dot notation) syntax, the `property` must be a <<identifiers,valid identifier>>.
-In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null <<literals, literal>> value.
+In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null <<literals,literal>> value.
 
 An expression can start with an optional namespace followed by a colon (`:`).
 A valid namespace consist of alphanumeric characters and underscores.
@@ -287,7 +287,7 @@ Namespace expressions are resolved differently - see also <<expression_resolutio
 <4> namespace `global`, one part: `colors`
 
 A part of an expression can be a _virtual method_ in which case the name can be followed by a list of comma-separated parameters in parentheses. 
-A parameter of a virtual method can be either a nested expression or a <<literals, literal>> value.
+A parameter of a virtual method can be either a nested expression or a <<literals,literal>> value.
 We call these methods _"virtual"_ because they do not have to be backed by a real Java method.
 You can learn more about virtual methods in the <<virtual_methods,following section>>.
 
@@ -332,7 +332,7 @@ You can learn more about virtual methods in the <<virtual_methods,following sect
 [[expression_resolution]]
 ==== Resolution
 
-The first part of the expression is always resolved against the <<current_context_object, current context object>>.
+The first part of the expression is always resolved against the <<current_context_object,current context object>>.
 If no result is found for the first part it's resolved against the parent context object (if available).
 For an expression that starts with a namespace the current context object is found using all the available ``NamespaceResolver``s.
 For an expression that does not start with a namespace the current context object is *derived from the position* of the tag.
@@ -1667,7 +1667,7 @@ The type of a default value must be assignable to the type of the parameter decl
 TIP: The default value is actually an <<expressions,expression>>. So the default value does not have to be a literal (such as `42` or `true`). For example, you can leverage the `@TemplateEnum` and specify an enum constant as a default value of a parameter declaration: `{@org.acme.MyEnum myEnum=MyEnum:FOO}`.
 However, the infix notation is not supported in default values unless the parentheses are used for grouping, e.g. `{@org.acme.Foo foo=(foo1 ?: foo2)}``.
 
-IMPORTANT: The type of a default value is not validated in <<standalone, Qute standalone>>.
+IMPORTANT: The type of a default value is not validated in <<standalone,Qute standalone>>.
 
 .More Parameter Declarations Examples 
 [source]
@@ -2306,7 +2306,7 @@ Colors: {#each myColors}{it}{#if it_hasNext}, {/if}{/each} <3>
 <2> `age` resolves to `Globals#age`.
 <3> `myColors` resolves to `Globals#myColors()`.
 
-NOTE: Note that global variables implicitly add <<typesafe_expressions, parameter declarations>> to all templates and so any expression that references a global variable is validated during build.
+NOTE: Note that global variables implicitly add <<typesafe_expressions,parameter declarations>> to all templates and so any expression that references a global variable is validated during build.
 
 .The Output
 [source,html]

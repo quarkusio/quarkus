@@ -68,7 +68,7 @@
         <smallrye-reactive-types-converter.version>3.0.0</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>3.2.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.4.0</smallrye-reactive-messaging.version>
-        <smallrye-stork.version>1.4.2</smallrye-stork.version>
+        <smallrye-stork.version>2.0.1</smallrye-stork.version>
         <jakarta.activation.version>2.1.1</jakarta.activation.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
         <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
@@ -139,8 +139,8 @@
         <rest-assured.version>5.3.0</rest-assured.version>
         <junit.jupiter.version>5.9.2</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.6.Final</infinispan.version>
-        <infinispan.protostream.version>4.5.1.Final</infinispan.protostream.version>
+        <infinispan.version>14.0.7.Final</infinispan.version>
+        <infinispan.protostream.version>4.6.1.Final</infinispan.protostream.version>
         <caffeine.version>3.1.1</caffeine.version>
         <netty.version>4.1.87.Final</netty.version>
         <brotli4j.version>1.8.0</brotli4j.version>
@@ -182,7 +182,7 @@
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.4.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <mockito.version>5.1.1</mockito.version>
+        <mockito.version>5.2.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.10.1</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
         <quarkus-security.version>2.0.2.Final</quarkus-security.version>

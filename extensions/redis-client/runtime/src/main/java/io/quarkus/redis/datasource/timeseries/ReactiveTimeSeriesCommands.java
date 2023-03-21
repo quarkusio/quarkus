@@ -80,6 +80,20 @@ public interface ReactiveTimeSeriesCommands<K> extends ReactiveRedisCommands {
     Uni<Void> tsAdd(K key, double value);
 
     /**
+     * Execute the command <a href="https://redis.io/commands/ts.add/">TS.ADD</a>.
+     * Summary: Append a sample to a time series
+     * Group: time series
+     * <p>
+     * Unlike {@link #tsAdd(Object, long, double, AddArgs)}, set the timestamp according to the server clock.
+     *
+     * @param key the key name for the time series must not be {@code null}
+     * @param value the numeric data value of the sample.
+     * @param args the creation arguments.
+     * @return A uni emitting {@code null} when the operation completes
+     */
+    Uni<Void> tsAdd(K key, double value, AddArgs args);
+
+    /**
      * Execute the command <a href="https://redis.io/commands/ts.alter/">TS.ALTER</a>.
      * Summary: Update the retention, chunk size, duplicate policy, and labels of an existing time series
      * Group: time series

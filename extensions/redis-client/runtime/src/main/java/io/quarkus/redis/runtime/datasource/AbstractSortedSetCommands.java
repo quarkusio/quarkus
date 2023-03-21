@@ -734,7 +734,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
 
     final List<ScoredValue<V>> decodeAsListOfScoredValues(Response response) {
         List<ScoredValue<V>> list = new ArrayList<>();
-        if (!response.iterator().hasNext()) {
+        if (response == null || !response.iterator().hasNext()) {
             return Collections.emptyList();
         }
         if (response.iterator().next().type() == ResponseType.BULK) {

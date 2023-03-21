@@ -1,11 +1,5 @@
 package io.quarkus.hibernate.orm.runtime.dev;
 
-import jakarta.enterprise.context.ApplicationScoped;
-
-import io.quarkus.arc.profile.IfBuildProfile;
-
-@ApplicationScoped
-@IfBuildProfile("dev")
 public class HibernateOrmDevJsonRpcService {
 
     public HibernateOrmDevInfo getInfo() {

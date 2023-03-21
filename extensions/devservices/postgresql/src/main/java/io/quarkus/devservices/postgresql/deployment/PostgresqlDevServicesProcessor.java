@@ -5,12 +5,14 @@ import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DE
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -24,6 +26,7 @@ import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
 public class PostgresqlDevServicesProcessor {
@@ -57,6 +60,7 @@ public class PostgresqlDevServicesProcessor {
                         .withDatabaseName(effectiveDbName)
                         .withReuse(true);
                 Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
 
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
@@ -77,6 +81,10 @@ public class PostgresqlDevServicesProcessor {
     }
 
     private static class QuarkusPostgreSQLContainer extends PostgreSQLContainer {
+
+        private static final String READY_REGEX = ".*database system is ready to accept connections.*\\s";
+        private static final String SKIPPING_INITIALIZATION_REGEX = ".*PostgreSQL Database directory appears to contain a database; Skipping initialization:*\\s";
+
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
@@ -88,6 +96,15 @@ public class PostgresqlDevServicesProcessor {
                     .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            // Workaround for https://github.com/testcontainers/testcontainers-java/issues/4799.
+            // The motivation of this custom wait strategy is that Testcontainers fails to start a Postgresql database when it
+            // has been already initialized.
+            // This custom wait strategy will work fine regardless of the state of the Postgresql database.
+            // More information in the issue ticket in Testcontainers.
+            this.waitStrategy = new LogMessageWaitStrategy()
+                    .withRegEx("(" + READY_REGEX + ")?(" + SKIPPING_INITIALIZATION_REGEX + ")?")
+                    .withTimes(2)
+                    .withStartupTimeout(Duration.of(60L, ChronoUnit.SECONDS));
         }
 
         @Override

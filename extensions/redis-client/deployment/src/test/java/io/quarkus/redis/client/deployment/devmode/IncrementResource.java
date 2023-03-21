@@ -25,6 +25,12 @@ public class IncrementResource {
     }
 
     @GET
+    @Path("/val")
+    public int value() {
+        return commands.get("counter-dev-mode");
+    }
+
+    @GET
     @Path("/keys")
     public int verifyPreloading() {
         return keys.keys("*").size();

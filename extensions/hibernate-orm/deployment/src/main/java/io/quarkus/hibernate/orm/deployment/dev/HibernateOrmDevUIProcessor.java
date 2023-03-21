@@ -3,6 +3,8 @@ package io.quarkus.hibernate.orm.deployment.dev;
 import java.util.List;
 
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -45,6 +47,16 @@ public class HibernateOrmDevUIProcessor {
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(NAME, HibernateOrmDevJsonRpcService.class);
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem additionalBeans() {
+        return AdditionalBeanBuildItem
+                .builder()
+                .addBeanClass(HibernateOrmDevJsonRpcService.class)
+                .setUnremovable()
+                .setDefaultScope(DotNames.APPLICATION_SCOPED)
+                .build();
     }
 
     @BuildStep

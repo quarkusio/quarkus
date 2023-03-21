@@ -82,17 +82,23 @@ public class MavenModelBuilder implements ModelBuilder {
     }
 
     private void completeWorkspaceProjectBuildRequest(ModelBuildingRequest request) throws BootstrapMavenException {
-        final Set<String> addedProfiles = new HashSet<>();
+        final Set<String> addedProfiles;
         final List<Profile> profiles = request.getProfiles();
-        profiles.forEach(p -> addedProfiles.add(p.getId()));
+        if (profiles.isEmpty()) {
+            addedProfiles = Set.of();
+        } else {
+            addedProfiles = new HashSet<>(profiles.size());
+            for (Profile p : profiles) {
+                addedProfiles.add(p.getId());
+            }
+        }
 
-        final List<Profile> activeSettingsProfiles = ctx.getActiveSettingsProfiles();
-        activeSettingsProfiles.forEach(p -> {
+        for (Profile p : ctx.getActiveSettingsProfiles()) {
             if (!addedProfiles.contains(p.getId())) {
                 profiles.add(p);
                 request.getActiveProfileIds().add(p.getId());
             }
-        });
+        }
 
         final BootstrapMavenOptions cliOptions = ctx.getCliOptions();
         request.getActiveProfileIds().addAll(cliOptions.getActiveProfileIds());

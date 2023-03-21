@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -41,6 +43,16 @@ public class HibernateSearchElasticsearchDevUIProcessor {
                 .dynamicLabelJsonRPCMethodName("getNumberOfIndexedEntityTypes"));
 
         return card;
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem additionalBeans() {
+        return AdditionalBeanBuildItem
+                .builder()
+                .addBeanClass(HibernateSearchElasticsearchDevJsonRpcService.class)
+                .setUnremovable()
+                .setDefaultScope(DotNames.APPLICATION_SCOPED)
+                .build();
     }
 
     @BuildStep

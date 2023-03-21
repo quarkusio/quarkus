@@ -73,6 +73,15 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void testAdd() throws InterruptedException {
+        ts.tsAdd(key, 25.0);
+        Thread.sleep(10); // Make sure the timestamp is different
+        ts.tsAdd(key, 30.5, new AddArgs().label("foo", "bar"));
+        var list = ts.tsRange(key, TimeSeriesRange.fromTimeSeries());
+        assertThat(list).hasSize(2);
+    }
+
+    @Test
     void testCreationWhileAdding() {
         long timestamp = System.currentTimeMillis() - 1000;
         ts.tsAdd(key, timestamp, 26, new AddArgs().compressed().label("foo", "bar")

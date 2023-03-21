@@ -21,9 +21,11 @@ public class UpdateProject {
     public static final String APP_MODEL = "quarkus.update-project.app-model";
     public static final String LATEST_CATALOG = "quarkus.update-project.latest-catalog";
     public static final String PER_MODULE = "quarkus.update-project.per-module";
-
-    public static final String GENERATE_REWRITE_CONFIG = "quarkus.update-project.generate-update-config";
+    public static final String NO_REWRITE = "quarkus.update-project.rewrite.disabled";
     public static final String TARGET_PLATFORM_VERSION = "quarkus.update-project.target-platform-version";
+    public static final String REWRITE_PLUGIN_VERSION = "quarkus.update-project.rewrite.plugin-version";
+    public static final String REWRITE_UPDATE_RECIPES_VERSION = "quarkus.update-project.rewrite.update-recipes-version";
+    public static final String REWRITE_DRY_RUN = "quarkus.update-project.rewrite.dry-run";
 
     private final QuarkusCommandInvocation invocation;
     private final UpdateProjectCommandHandler handler = new UpdateProjectCommandHandler();
@@ -46,8 +48,24 @@ public class UpdateProject {
         return this;
     }
 
-    public UpdateProject generateRewriteConfig(boolean generateUpdateConfig) {
-        invocation.setValue(GENERATE_REWRITE_CONFIG, generateUpdateConfig);
+    public UpdateProject noRewrite(boolean noRewrite) {
+        invocation.setValue(NO_REWRITE, noRewrite);
+        return this;
+    }
+
+    public UpdateProject rewritePluginVersion(String rewritePluginVersion) {
+        invocation.setValue(REWRITE_PLUGIN_VERSION, requireNonNull(rewritePluginVersion, "rewritePluginVersion is required"));
+        return this;
+    }
+
+    public UpdateProject rewriteUpdateRecipesVersion(String rewriteUpdateRecipesVersion) {
+        invocation.setValue(REWRITE_UPDATE_RECIPES_VERSION,
+                requireNonNull(rewriteUpdateRecipesVersion, "rewriteUpdateRecipesVersion is required"));
+        return this;
+    }
+
+    public UpdateProject rewriteDryRun(boolean rewriteDryRun) {
+        invocation.setValue(REWRITE_DRY_RUN, rewriteDryRun);
         return this;
     }
 

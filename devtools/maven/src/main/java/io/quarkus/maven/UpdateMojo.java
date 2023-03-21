@@ -1,14 +1,21 @@
 package io.quarkus.maven;
 
+import static org.twdata.maven.mojoexecutor.MojoExecutor.*;
+
 import java.util.List;
 
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
+import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.update.QuarkusUpdateCommand;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -40,10 +47,41 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     private String platformVersion;
 
     /**
+     * The OpenRewrite plugin version
+     */
+    @Parameter(property = "rewritePluginVersion", required = true, defaultValue = QuarkusUpdateCommand.DEFAULT_MAVEN_REWRITE_PLUGIN_VERSION)
+    private String rewritePluginVersion;
+
+    /**
+     * Disable the rewrite feature.
+     */
+    @Parameter(property = "noRewrite", required = false, defaultValue = "false")
+    private Boolean noRewrite;
+
+    /**
+     * Rewrite in dry-mode.
+     */
+    @Parameter(property = "rewriteDryRun", required = false, defaultValue = "false")
+    private Boolean rewriteDryRun;
+
+    /**
+     * "The io.quarkus:quarkus-update-recipes version. This artifact contains the base recipes used by this tool to update a
+     * project.
+     */
+    @Parameter(property = "updateRecipesVersion", required = false)
+    private String rewriteUpdateRecipesVersion;
+
+    /**
      * Target stream (e.g: 2.0)
      */
     @Parameter(property = "stream", required = false)
     private String stream;
+
+    @Component
+    private MavenSession mavenSession;
+
+    @Component
+    private BuildPluginManager pluginManager;
 
     @Override
     protected void validateParameters() throws MojoExecutionException {
@@ -78,9 +116,21 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
         invoker.targetPlatformVersion(platformVersion);
         invoker.perModule(perModule);
         invoker.appModel(resolveApplicationModel());
+        if (rewritePluginVersion != null) {
+            invoker.rewritePluginVersion(rewritePluginVersion);
+        }
+        if (rewriteUpdateRecipesVersion != null) {
+            invoker.rewritePluginVersion(rewriteUpdateRecipesVersion);
+        }
+        invoker.rewriteDryRun(rewriteDryRun);
+        invoker.noRewrite(noRewrite);
 
         try {
-            invoker.execute();
+            final QuarkusCommandOutcome result = invoker.execute();
+            if (!result.isSuccess()) {
+                throw new MojoExecutionException(
+                        "The command did not succeed.");
+            }
         } catch (QuarkusCommandException e) {
             throw new MojoExecutionException("Failed to resolve the available updates", e);
         }

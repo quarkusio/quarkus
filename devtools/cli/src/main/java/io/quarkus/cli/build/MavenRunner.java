@@ -20,7 +20,9 @@ import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.registry.RegistryClientMixin;
+import io.quarkus.cli.update.RewriteGroup;
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.ListExtensions;
@@ -147,7 +149,7 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(String targetPlatformVersion, String targetPlatformStream, boolean perModule)
+    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
             throws Exception {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, true);
@@ -157,11 +159,25 @@ public class MavenRunner implements BuildSystemRunner {
                 QuarkusProjectHelper.artifactResolver(), MessageWriter.info());
         final Properties props = ToolsUtils.readQuarkusProperties(extensionCatalog);
         args.add(ToolsUtils.getPluginKey(props) + ":" + ToolsUtils.getMavenPluginVersion(props) + ":update");
-        if (targetPlatformVersion != null) {
-            args.add("-DplatformVersion=" + targetPlatformVersion);
+        args.add("-e");
+        args.add("-N");
+        if (targetQuarkusVersion.platformVersion != null) {
+            args.add("-DplatformVersion=" + targetQuarkusVersion.platformVersion);
         }
-        if (targetPlatformStream != null) {
-            args.add("-Dstream=" + targetPlatformStream);
+        if (targetQuarkusVersion.streamId != null) {
+            args.add("-Dstream=" + targetQuarkusVersion.streamId);
+        }
+        if (rewrite.noRewrite) {
+            args.add("-DnoRewrite");
+        }
+        if (rewrite.pluginVersion != null) {
+            args.add("-DrewritePluginVersion=" + rewrite.pluginVersion);
+        }
+        if (rewrite.updateRecipesVersion != null) {
+            args.add("-DupdateRecipesVersion=" + rewrite.updateRecipesVersion);
+        }
+        if (rewrite.dryRun) {
+            args.add("-DrewriteDryRun");
         }
         if (perModule) {
             args.add("-DperModule");

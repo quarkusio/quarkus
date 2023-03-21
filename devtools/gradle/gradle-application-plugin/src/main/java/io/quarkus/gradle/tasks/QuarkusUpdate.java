@@ -89,7 +89,7 @@ public class QuarkusUpdate extends QuarkusPlatformTask {
         invoker.targetPlatformVersion(targetPlatformVersion);
         invoker.perModule(perModule);
         // This is currently not supported with gradle
-        invoker.generateRewriteConfig(false);
+        invoker.noRewrite(true);
         invoker.appModel(extension().getApplicationModel());
         try {
             invoker.execute();

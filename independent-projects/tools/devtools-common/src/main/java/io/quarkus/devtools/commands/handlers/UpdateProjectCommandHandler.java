@@ -1,7 +1,5 @@
 package io.quarkus.devtools.commands.handlers;
 
-import static io.quarkus.devtools.project.update.QuarkusUpdateRecipe.RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,7 +11,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -23,11 +20,14 @@ import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.ProjectInfoCommandHandler.PlatformInfo;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.state.ExtensionProvider;
 import io.quarkus.devtools.project.state.ModuleState;
 import io.quarkus.devtools.project.state.ProjectState;
 import io.quarkus.devtools.project.state.TopExtensionDependency;
+import io.quarkus.devtools.project.update.QuarkusUpdateCommand;
+import io.quarkus.devtools.project.update.QuarkusUpdateException;
 import io.quarkus.devtools.project.update.QuarkusUpdates;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -45,6 +45,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
     public static final String REMOVE = "Remove:";
     public static final String UPDATE = "Update:";
     public static final String ITEM_FORMAT = "%-7s %s";
+    public static final String DEFAULT_UPDATE_RECIPES_VERSION = "LATEST";
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
@@ -53,12 +54,9 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         final String targetPlatformVersion = invocation.getValue(UpdateProject.TARGET_PLATFORM_VERSION);
 
         final boolean perModule = invocation.getValue(UpdateProject.PER_MODULE, false);
-        final boolean generateRewriteConfig = invocation.getValue(UpdateProject.GENERATE_REWRITE_CONFIG, true);
-
         final ProjectState currentState = ProjectInfoCommandHandler.resolveProjectState(appModel,
                 invocation.getQuarkusProject().getExtensionsCatalog());
         final ArtifactCoords projectQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
-
         if (projectQuarkusPlatformBom == null) {
             invocation.log().error("The project does not import any Quarkus platform BOM");
             return QuarkusCommandOutcome.failure();
@@ -68,41 +66,45 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         } else {
             invocation.log().info("Instructions to update this project from '%s' to '%s':",
                     projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
-            logUpdates(currentState, latestCatalog, false, perModule, invocation.getQuarkusProject().log());
+            final QuarkusProject quarkusProject = invocation.getQuarkusProject();
+            logUpdates(currentState, latestCatalog, false, perModule, quarkusProject.log());
+            final boolean noRewrite = invocation.getValue(UpdateProject.NO_REWRITE, false);
 
-            if (generateRewriteConfig) {
-                Set<String> additionalSourceFiles = Set.of("**/META-INF/services/**",
-                        "**/*.txt",
-                        "**/*.adoc",
-                        "**/*.md",
-                        "**/src/main/codestarts/**/*.java",
-                        "**/src/test/resources/__snapshots__/**/*.java",
-                        "**/*.kt");
-
+            if (!noRewrite) {
                 QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
                         projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
+                Path recipe = null;
                 try {
-                    final Path tempFile = Files.createTempFile("quarkus-project-recipe-", ".yaml");
-                    QuarkusUpdates.createRecipe(tempFile,
-                            QuarkusProjectHelper.artifactResolver(), request);
-                    invocation.log().info("Project update recipe has been created:\n%s", tempFile.toString());
-
-                    invocation.log().info("The commands to update this project: \n" +
-                            "./mvnw -e org.openrewrite.maven:rewrite-maven-plugin:4.41.0:run \\\n" +
-                            "    -D\"rewrite.configLocation=%s\" \\\n" +
-                            "    -D\"activeRecipes=%s\" \\\n" +
-                            "    -D\"plainTextMasks=%s\" \\\n" +
-                            "    -D\"rewrite.pomCacheEnabled=false\" \n" +
-                            "./mvnw process-sources",
-                            tempFile.toString(), RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS,
-                            String.join(",", additionalSourceFiles));
-
+                    recipe = Files.createTempFile("quarkus-project-recipe-", ".yaml");
+                    final String updateRecipesVersion = invocation.getValue(UpdateProject.REWRITE_UPDATE_RECIPES_VERSION,
+                            DEFAULT_UPDATE_RECIPES_VERSION);
+                    QuarkusUpdates.createRecipe(recipe,
+                            QuarkusProjectHelper.artifactResolver(), updateRecipesVersion, request);
+                    final String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION);
+                    final boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
+                    QuarkusUpdateCommand.handle(
+                            invocation.log(),
+                            quarkusProject.getExtensionManager().getBuildTool(),
+                            quarkusProject.getProjectDirPath(),
+                            rewritePluginVersion,
+                            recipe,
+                            rewriteDryRun);
                 } catch (IOException e) {
-                    throw new QuarkusCommandException("Failed to create project update recipe", e);
+                    throw new QuarkusCommandException("Error while generating the project update script", e);
+                } catch (QuarkusUpdateException e) {
+                    throw new QuarkusCommandException("Error while running the project update scrip", e);
+                } finally {
+                    if (recipe != null) {
+                        try {
+                            Files.deleteIfExists(recipe);
+                        } catch (IOException e) {
+                            // ignore
+                        }
+                    }
+
                 }
             }
         }
-
         return QuarkusCommandOutcome.success();
     }
 

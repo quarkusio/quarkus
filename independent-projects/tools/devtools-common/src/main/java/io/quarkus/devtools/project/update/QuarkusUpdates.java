@@ -13,9 +13,11 @@ public final class QuarkusUpdates {
     private QuarkusUpdates() {
     }
 
-    public static void createRecipe(Path target, MavenArtifactResolver artifactResolver, ProjectUpdateRequest request)
+    public static void createRecipe(Path target, MavenArtifactResolver artifactResolver, String updateRecipesVersion,
+            ProjectUpdateRequest request)
             throws IOException {
-        final List<String> recipes = QuarkusUpdatesRepository.fetchLatestRecipes(artifactResolver, request.currentVersion,
+        final List<String> recipes = QuarkusUpdatesRepository.fetchRecipes(artifactResolver, updateRecipesVersion,
+                request.currentVersion,
                 request.targetVersion);
         QuarkusUpdateRecipe recipe = new QuarkusUpdateRecipe()
                 .buildTool(request.buildTool)

@@ -20,13 +20,14 @@ public final class QuarkusUpdatesRepository {
     private QuarkusUpdatesRepository() {
     }
 
-    private static final String QUARKUS_RECIPE_GAV = "io.quarkus:quarkus-update-recipes:LATEST";
+    private static final String QUARKUS_RECIPE_GA = "io.quarkus:quarkus-update-recipes";
 
-    public static List<String> fetchLatestRecipes(MavenArtifactResolver artifactResolver, String currentVersion,
+    public static List<String> fetchRecipes(MavenArtifactResolver artifactResolver, String recipeVersion, String currentVersion,
             String targetVersion) {
+        final String gav = QUARKUS_RECIPE_GA + ":" + recipeVersion;
         try {
             final ResourceLoader resourceLoader = ResourceLoaders.resolveFileResourceLoader(
-                    artifactResolver.resolve(DependencyUtils.toArtifact(QUARKUS_RECIPE_GAV)).getArtifact().getFile());
+                    artifactResolver.resolve(DependencyUtils.toArtifact(gav)).getArtifact().getFile());
 
             return resourceLoader.loadResourceAsPath("quarkus-updates/core",
                     path -> {
@@ -44,9 +45,9 @@ public final class QuarkusUpdatesRepository {
                         }
                     });
         } catch (BootstrapMavenException e) {
-            throw new RuntimeException("Failed to resolve artifact " + QUARKUS_RECIPE_GAV, e);
+            throw new RuntimeException("Failed to resolve artifact: " + gav, e);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load recipes in artifact " + QUARKUS_RECIPE_GAV, e);
+            throw new RuntimeException("Failed to load recipes in artifact: " + gav, e);
         }
     }
 

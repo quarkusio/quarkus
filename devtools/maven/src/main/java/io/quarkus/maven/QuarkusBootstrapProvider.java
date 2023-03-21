@@ -15,13 +15,15 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 
@@ -45,20 +47,25 @@ import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.expression.Expression;
 
-@Component(role = QuarkusBootstrapProvider.class, instantiationStrategy = "singleton")
+@Singleton
+@Named
 public class QuarkusBootstrapProvider implements Closeable {
 
     private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
     private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
 
-    @Requirement(role = RepositorySystem.class, optional = false)
-    protected RepositorySystem repoSystem;
+    private final RepositorySystem repoSystem;
 
-    @Requirement(role = RemoteRepositoryManager.class, optional = false)
-    protected RemoteRepositoryManager remoteRepoManager;
+    private final RemoteRepositoryManager remoteRepoManager;
 
     private final Cache<String, QuarkusMavenAppBootstrap> appBootstrapProviders = CacheBuilder.newBuilder()
             .concurrencyLevel(4).softValues().initialCapacity(10).build();
+
+    @Inject
+    public QuarkusBootstrapProvider(RepositorySystem repoSystem, RemoteRepositoryManager remoteRepoManager) {
+        this.repoSystem = repoSystem;
+        this.remoteRepoManager = remoteRepoManager;
+    }
 
     static ArtifactKey getProjectId(MavenProject project) {
         return ArtifactKey.ga(project.getGroupId(), project.getArtifactId());

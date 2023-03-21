@@ -63,6 +63,12 @@ public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommand
     }
 
     @Override
+    public Uni<Void> tsAdd(K key, double value, AddArgs args) {
+        return super._tsAdd(key, value, args)
+                .replaceWithVoid();
+    }
+
+    @Override
     public Uni<Void> tsAdd(K key, long timestamp, double value) {
         return super._tsAdd(key, timestamp, value)
                 .replaceWithVoid();

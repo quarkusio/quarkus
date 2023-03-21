@@ -85,8 +85,8 @@ public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
 
         @Override
         public MSSQLPool create(Input input) {
-            assertEquals(12345, input.msSQLConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return MSSQLPool.pool(input.vertx(), input.msSQLConnectOptions().setHost("localhost").setPort(1435),
+            assertEquals(12345, input.msSQLConnectOptionsList().get(0).getPort()); // validate that the bean has been called for the proper datasource
+            return MSSQLPool.pool(input.vertx(), input.msSQLConnectOptionsList().get(0).setHost("localhost").setPort(1435),
                     input.poolOptions());
         }
     }
@@ -97,8 +97,8 @@ public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
 
         @Override
         public MSSQLPool create(Input input) {
-            assertEquals(55555, input.msSQLConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return MSSQLPool.pool(input.vertx(), input.msSQLConnectOptions().setHost("localhost").setPort(1435),
+            assertEquals(55555, input.msSQLConnectOptionsList().get(0).getPort()); // validate that the bean has been called for the proper datasource
+            return MSSQLPool.pool(input.vertx(), input.msSQLConnectOptionsList().get(0).setHost("localhost").setPort(1435),
                     input.poolOptions());
         }
     }

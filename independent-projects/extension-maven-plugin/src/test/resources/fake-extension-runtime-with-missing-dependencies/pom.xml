@@ -17,7 +17,9 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-core</artifactId>
-      <version>${project.version}</version>
+      <!-- The version in this dependency is arbitrary, but needs to be 'real' (downloadable from maven).
+      It should not be a snapshot build, to avoid introducing a build-order dependency into this test. -->
+      <version>2.12.0.Final</version>
     </dependency>
 
     <!-- Mirror of the deployment artifact's dependencies would be here, but is deliberately missing -->

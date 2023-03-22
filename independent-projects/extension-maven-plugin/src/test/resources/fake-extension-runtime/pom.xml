@@ -19,7 +19,7 @@
   </properties>
 
   <!-- The versions in these dependencies are arbitrary, but need to match
-  in the runtime and deployment poms. -->
+  in the runtime and deployment poms. They should not be a snapshot build, to avoid introducing a build-order dependency into this test. -->
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>

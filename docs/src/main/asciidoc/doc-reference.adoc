@@ -121,7 +121,8 @@ Quarkus documentation uses a flat hierarchy.
 The bulk of the file name should be some representation of its title.
 Use all lowercase letters, separate words with hyphens, and avoid symbols and special characters.
 
-Prefix:: Use a common prefix to group related documents. Documents related to writing and contributing to Quarkus docs share the `doc-` prefix, for example.
+Prefix:: Use a common prefix to group-related documents.
+Documents related to writing and contributing to Quarkus docs share the `doc-` prefix, for example.
 
 Suffix:: The file name should reflect the document type:
 
@@ -159,7 +160,8 @@ Minimally, each document should define and id and a title, and include common at
 The value of this attribute is used in tiles or other descriptions on the website and is not required in newer diataxis-styled docs, as outlined in <<abstracts-preamble>>. 
 If not present, the first sentence of the abstract is automatically used to generate the tile summary. 
 
-IMPORTANT: Take care with whitespace when working with document-scoped attributes. The document header ends with the first blank line. 
+IMPORTANT: Take care with whitespace when working with document-scoped attributes.
+The document header ends with the first blank line.
 
 [[abstracts-preamble]]
 === Abstracts (preamble)
@@ -194,7 +196,7 @@ Start a new line at the end of each sentence, and split sentences themselves at 
 
 === Using sections
 
-Section titles should be written in sentence case, rather than title case.
+Section titles should be written in sentence case rather than title case.
 
 All documents should start with a Title (a `= Level 0` heading), and should 
 be broken into subsections where appropriate
@@ -216,22 +218,23 @@ See xref:{doc-guides}/doc-concept.adoc[Quarkus documentation content types] for 
 
 === Links
 
-In general, prefer https://docs.asciidoctor.org/asciidoc/latest/macros/url-macro/[url macros] to bare or automatic links.
+In general, prefer link:https://docs.asciidoctor.org/asciidoc/latest/macros/url-macro/[url macros] to bare or automatic links.
 Provide human-readable text for the link, especially if it is included in the middle of other text.
 
 .A URL Macro link with attributes
 [NOTE]
 =====
-The URL macro also supports https://docs.asciidoctor.org/asciidoc/latest/macros/link-macro-ref/[additional attributes] that may be relevant, like opening a link in a different window.
+The URL macro also supports link:https://docs.asciidoctor.org/asciidoc/latest/macros/link-macro-ref/[additional attributes] that may be relevant, like opening a link in a different window.
 
 [source,asciidoc]
 ----
 https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference,window=_blank,opts=nofollow]
 ----
 
-The above source produces this link: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference,window=_blank,opts=nofollow].
+The above source produces this link:https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference,window=_blank,opts=nofollow].
 =====
 
+[[cross-references]]
 === Cross-references
 
 Quarkus documentation is built from source in a few different environments.
@@ -257,6 +260,50 @@ When cross-referencing content, always use the inter-document `xref:` syntax and
 xref:{doc-guides}/doc-concept.adoc[Quarkus Documentation concepts] <1>
 ----
 <1> The cross-reference starts with `xref:`, uses a cross-reference source attribute(`\{doc-guides}`), and provides a readable description: `[Quarkus Documentation concepts]`.
+
+[[anchors-reference]]
+==== Anchors for in-file and cross-file navigation
+
+* To create an anchored ID, use lower-case characters, separate each word with `-`, and enclose the ID in `[[]]` as in the example below.
++
+[source,asciidoc]
+----
+[[title-heading]]
+== Title heading
+----
+
+* To call an anchor created in the same file, insert the anchored ID in a `<<>>` xref macro.
++
+[source,asciidoc]
+----
+<<title-heading>>
+----
+
+* To create an anchor with a custom URL caption example, specify the anchored ID and desired name separated by `,` without white space.
++
+[source,asciidoc]
+----
+<<title-heading,Title heading description that fits the context of your content>>
+----
++
+WARNING: Do not use the `<<>>` format with the verbatim heading or section description, such as
+`\<<Title heading>>`.
+
+* To call an anchored ID from a different file, use the full file name and anchored ID separated by `#`,
+and specify the human-readable URL caption.
++
+[source,asciidoc]
+----
+xref:<other-file-name>.adoc#title-heading[Title heading]
+----
+
+* To refer to another file, use the xref macro with the full file name syntax and always specify the human-readable URL caption.
++
+[source,asciidoc]
+----
+xref:<name-of-the-file>.adoc[Human-readable label]
+----
+For more details about anchored IDs, see the xref:doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors] section.
 
 === Reference source code 
 

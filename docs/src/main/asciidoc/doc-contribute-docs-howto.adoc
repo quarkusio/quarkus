@@ -149,6 +149,68 @@ Where:
 
 |===
 
+[[anchors-howto]]
+== Use anchors to cross-reference in-file and cross-file content
+
+An anchor, also called an ID, can be defined almost anywhere in the document, including on a section title, discrete heading, paragraph, image, delimited block, inline phrase, etc.
+
+The callout functions for these anchors vary based on whether you call a local ID or the ID from another file, but the anchored ID creation remains the same.
+
+=== Create an anchored ID
+
+To create an ID for a new file or a section to which you want to refer, insert the anchor ID as follows:
+
+* Use lower-case characters.
+* Separate each word with a dash character.
+* Enclose the ID in double square brackets.
+
+.Anchored ID creation example
+
+In this section, we will use an anchor created above the level-2 heading for demonstration purposes.
+
+[source,asciidoc]
+----
+[[title-heading]]
+== Title heading
+----
+
+=== Call an anchored ID in the same file
+
+To call an anchor created in the same file, insert the anchored ID in a `<<>>` xref macro.
+
+.Inter-document anchored ID call example
+[source,asciidoc]
+----
+<<title-heading>>
+----
+
+This macro creates an URL with a name automatically sourced from the anchored heading, section, or table.
+
+WARNING: Do not use the `<<>>` format with the verbatim heading or section description, such as
+`\<<Title heading>>`.
+
+When you want to specify a non-default caption for your URL, specify the anchored ID and desired name separated by `,` without white space.
+
+.Anchor with a custom URL caption example
+[source,asciidoc]
+----
+<<title-heading,Title heading description that fits the context of your content>>
+----
+
+=== Call an anchored ID from a different file
+
+To call an anchor created in a different file, insert the anchor to an `xref` macro and specify the full name of the hosting file and the desired anchored ID.
+
+.Cross-document anchored ID call example
+[source,asciidoc]
+----
+xref:<other-file-name>.adoc#title-heading[Title heading]
+----
+
+Breaking this example apart, we are using the `xref` macro to refer to another file (`xref:<name-of-the-file>.adoc[Human-readable label]`) and inserting the anchor ID for the target section (`#title-heading`) just after the file name.
+
+See the xref:doc-reference.adoc#cross-references[Cross-references] section for path attributes that should be used in cross-document references.
+
 == Preview and build Quarkus documentation
 
 Before you submit a pull request, preview the HTML output of your AsciiDoc source by using one of the following build methods:

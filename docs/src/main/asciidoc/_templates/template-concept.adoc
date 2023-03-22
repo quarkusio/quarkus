@@ -32,13 +32,22 @@ include::{includes}/extension-status.adoc[]
 - xref:{doc-guides}/doc-concept.adoc#concept[Quarkus documentation content types: Concept guides]
 - xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines]
 
+=== Create cross-references
+
+To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
+
+* xref:{doc-guides}doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+
+* xref:{doc-guides}doc-reference.adoc#cross-references[Cross-references]
+
+
 == Guidelines for a good Concept doc
 
 Explanation/Concept documents should do things that the other parts of the documentation do not.
 
-- Make connections to other things, even to things outside the immediate topic, if that helps explain the concept.
-- Provide background and context in your explanation: explain why things are so - design decisions, historical reasons, technical constraints - draw implications, mention specific examples.
-- Consider alternatives, counter-examples or multiple different approaches to the same question.
+* Make connections to other things, even to something outside the immediate topic, if that helps explain the concept.
+* Provide background and context in your explanation: explain why things are so - design decisions, historical reasons, technical constraints - draw implications, mention specific examples.
+* Consider alternatives, counter-examples, or multiple different approaches to the same question.
 
 == Language tips:
 

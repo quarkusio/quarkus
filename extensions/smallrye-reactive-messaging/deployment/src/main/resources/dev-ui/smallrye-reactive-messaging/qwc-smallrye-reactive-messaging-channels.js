@@ -1,4 +1,4 @@
-import { LitElement, html} from 'lit';
+import { LitElement, html, css} from 'lit';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import '@vaadin/button';
@@ -12,6 +12,17 @@ import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 export class QwcSmallryeReactiveMessagingChannels extends LitElement {
 
     jsonRpc = new JsonRpc("SmallRyeReactiveMessaging");
+
+    static styles = css`
+        .datatable {
+            height: 100%;
+            padding-bottom: 10px;
+        }
+    
+        .smaller {
+            font-size: var(--lumo-font-size-s);
+        }
+    `;
 
     static properties = {
         "_channels": {state: true, type: Array}
@@ -62,7 +73,7 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
     }
 
     _channelNameRenderer(channel) {
-        return html`<strong>${ channel.name }</strong>`
+        return html`${ channel.name }`
     }
 
     _channelSubscriberRenderer(channel) {
@@ -72,7 +83,7 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
                 return this._renderComponent(consumers[0]);
             } else if (consumers.length > 1) {
                 return html`
-                  <ul>
+                  <ul class="smaller">
                     ${consumers.map(item => html`<li>${this._renderComponent(item)}</li>`)}
                   </ul>
                 `;
@@ -92,17 +103,17 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
     _renderComponent(component) {
         switch (component.type) {
             case "PUBLISHER":
-                return html`<vaadin-icon icon="font-awesome-solid:right-from-bracket" title="publisher"></vaadin-icon> ${unsafeHTML(component.description)}`
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:right-from-bracket" title="publisher"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "SUBSCRIBER":
-                return html`<vaadin-icon icon="font-awesome-solid:right-to-bracket" title="subscriber"></vaadin-icon> ${unsafeHTML(component.description)}`
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:right-to-bracket" title="subscriber"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "PROCESSOR":
-                return html`<vaadin-icon icon="font-awesome-solid:arrows-turn-to-dots" title="processor" />"></vaadin-icon> ${unsafeHTML(component.description)}`
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:arrows-turn-to-dots" title="processor"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "CONNECTOR":
-                return html`<vaadin-icon icon="font-awesome-solid:plug" title="connector"></vaadin-icon> ${unsafeHTML(component.description)}`
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:plug" title="connector"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "EMITTER":
-                return html`<vaadin-icon icon="font-awesome-solid:syringe" title="emitter"></vaadin-icon> ${unsafeHTML(component.description)}`
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:syringe" title="emitter"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "CHANNEL":
-                return html`<vaadin-icon icon="font-awesome-solid:syringe" title="channel"></vaadin-icon> ${unsafeHTML(component.description)}`
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:syringe" title="channel"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
         }
     }
 }

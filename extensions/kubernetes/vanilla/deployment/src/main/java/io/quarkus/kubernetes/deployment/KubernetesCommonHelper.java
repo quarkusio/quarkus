@@ -43,10 +43,12 @@ import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
 import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
+import io.dekorate.kubernetes.decorator.AddMetadataToTemplateDecorator;
 import io.dekorate.kubernetes.decorator.AddMountDecorator;
 import io.dekorate.kubernetes.decorator.AddPvcVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
+import io.dekorate.kubernetes.decorator.AddSelectorToDeploymentSpecDecorator;
 import io.dekorate.kubernetes.decorator.AddStartupProbeDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyArgsDecorator;
@@ -433,6 +435,10 @@ public class KubernetesCommonHelper {
             PlatformConfiguration config, List<KubernetesLabelBuildItem> labels) {
 
         List<DecoratorBuildItem> result = new ArrayList<>();
+
+        result.add(new DecoratorBuildItem(target, new AddMetadataToTemplateDecorator()));
+        result.add(new DecoratorBuildItem(target, new AddSelectorToDeploymentSpecDecorator()));
+
         labels.forEach(l -> {
             result.add(new DecoratorBuildItem(l.getTarget(),
                     new AddLabelDecorator(name, l.getKey(), l.getValue())));

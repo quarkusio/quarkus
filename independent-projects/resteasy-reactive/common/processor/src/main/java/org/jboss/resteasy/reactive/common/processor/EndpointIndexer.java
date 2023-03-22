@@ -662,15 +662,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 streamElementType = streamElementTypeInMethod;
             }
 
-            String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
-                    basicResourceClassInfo.getProduces());
+            String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES));
             if (((produces == null) || (produces.length == 0)) && (streamElementType != null)) {
                 // when @RestStreamElementType is used, we automatically determine SSE as the @Produces MediaType
-                produces = applyDefaultProducesAndAddCharsets(httpMethod, nonAsyncReturnType,
-                        new String[] { MediaType.SERVER_SENT_EVENTS });
-            } else {
-                produces = applyDefaultProducesAndAddCharsets(httpMethod, nonAsyncReturnType, produces);
+                produces = new String[] { MediaType.SERVER_SENT_EVENTS };
+            } else if (produces == null || produces.length == 0) {
+                // use the @Produces annotation at class level if exists
+                produces = basicResourceClassInfo.getProduces();
             }
+
+            produces = applyDefaultProducesAndAddCharsets(httpMethod, nonAsyncReturnType, produces);
 
             boolean returnsMultipart = false;
             if (produces != null && produces.length == 1) {

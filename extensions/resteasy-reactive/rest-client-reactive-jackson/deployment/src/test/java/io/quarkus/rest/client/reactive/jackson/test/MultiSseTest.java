@@ -16,6 +16,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -93,6 +95,23 @@ public class MultiSseTest {
                                 Map.of("name", "foo", "value", "test")));
     }
 
+    /**
+     * Test to reproduce the issue: https://github.com/quarkusio/quarkus/issues/32012.
+     */
+    @Test
+    void shouldRestStreamElementTypeOverwriteProducesAtClassLevel() {
+        var resultList = new CopyOnWriteArrayList<>();
+        RestClientBuilder.newBuilder().baseUri(uri)
+                .build(SeeWithRestStreamElementTypeClient.class)
+                .getJson()
+                .subscribe()
+                .with(resultList::add);
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> assertThat(resultList)
+                                .containsExactly(new Dto("foo", "bar"), new Dto("chocolate", "bar")));
+    }
+
     private SseClient createClient() {
         return RestClientBuilder.newBuilder().baseUri(uri).register(new JacksonBasicMessageBodyReader(new ObjectMapper()))
                 .build(SseClient.class);
@@ -154,6 +173,29 @@ public class MultiSseTest {
         public Multi<Dto> postAndReadAsMap(String entity) {
             return Multi.createBy().repeating().supplier(() -> new Dto("foo", entity)).atMost(3);
         }
+    }
+
+    @Path("/sse-rest-stream-element-type")
+    // The following annotation should be ignored because we're using `@RestStreamElementType(MediaType.APPLICATION_JSON)`.
+    @Produces(MediaType.APPLICATION_JSON)
+    public static class SseWithRestStreamElementTypeResource {
+        @GET
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        @Path("/json")
+        public Multi<Dto> getJson() {
+            return Multi.createFrom().items(new Dto("foo", "bar"), new Dto("chocolate", "bar"));
+        }
+    }
+
+    @RegisterRestClient
+    @Path("/sse-rest-stream-element-type")
+    // The following annotation should be ignored because we're using `@RestStreamElementType(MediaType.APPLICATION_JSON)`.
+    @Produces(MediaType.APPLICATION_JSON)
+    public interface SeeWithRestStreamElementTypeClient {
+        @GET
+        @Path("/json")
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        Multi<Dto> getJson();
     }
 
     public static class Dto {

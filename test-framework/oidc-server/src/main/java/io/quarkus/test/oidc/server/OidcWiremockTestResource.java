@@ -121,13 +121,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "  ]\n" +
                                         "}")));
 
-        server.stubFor(
-                get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/userinfo"))
-                        .willReturn(aResponse()
-                                .withHeader("Content-Type", "application/json")
-                                .withBody("{\n" +
-                                        "      \"preferred_username\": \"alice\""
-                                        + "}")));
+        defineUserInfoStubForOpaqueToken("alice");
+        defineUserInfoStubForOpaqueToken("admin");
+        defineUserInfoStubForJwt();
 
         // define the mock for the introspect endpoint
 
@@ -221,7 +217,30 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
         return conf;
     }
 
+    private void defineUserInfoStubForOpaqueToken(String user) {
+        server.stubFor(
+                get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/userinfo"))
+                        .withHeader("Authorization", matching("Bearer " + user))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "      \"preferred_username\": \"" + user + "\""
+                                        + "}")));
+    }
+
+    private void defineUserInfoStubForJwt() {
+        server.stubFor(
+                get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/userinfo"))
+                        .withHeader("Authorization", containing("Bearer ey"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "      \"preferred_username\": \"alice\""
+                                        + "}")));
+    }
+
     private void defineValidIntrospectionMockTokenStubForUserWithRoles(String user, Set<String> roles) {
+        long exp = now() + 300;
         server.stubFor(WireMock.post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
                 .withRequestBody(matching("token=" + user + "&token_type_hint=access_token"))
                 .willReturn(WireMock
@@ -230,7 +249,12 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                         .withBody(
                                 "{\"active\":true,\"scope\":\"" + roles.stream().collect(joining(" ")) + "\",\"username\":\""
                                         + user
-                                        + "\",\"iat\":1,\"exp\":999999999999,\"expires_in\":999999999999,\"client_id\":\"my_client_id\"}")));
+                                        + "\",\"iat\":1,\"exp\":" + exp + ",\"expires_in\":" + exp
+                                        + ",\"client_id\":\"my_client_id\"}")));
+    }
+
+    private static final long now() {
+        return System.currentTimeMillis();
     }
 
     private void defineInvalidIntrospectionMockTokenStubForUserWithRoles(String user, Set<String> roles) {

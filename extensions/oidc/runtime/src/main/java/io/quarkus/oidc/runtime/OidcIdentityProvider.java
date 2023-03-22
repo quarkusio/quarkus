@@ -132,7 +132,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         @Override
                         public Uni<SecurityIdentity> apply(TokenVerificationResult codeAccessTokenResult, Throwable t) {
                             if (t != null) {
-                                return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                                return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
+                                        : new AuthenticationFailedException(t));
                             }
                             if (codeAccessTokenResult != null) {
                                 if (tokenAutoRefreshPrepared(codeAccessTokenResult, vertxContext,

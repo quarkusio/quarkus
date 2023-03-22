@@ -40,6 +40,11 @@ public class BasicRestClientTest {
     }
 
     @Test
+    void shouldIgnoreNonBodyParams() {
+        assertThat(testBean.helloViaInjectedClientIgnoreParams("wor1d")).isEqualTo("hello, wor1d");
+    }
+
+    @Test
     void shouldHaveApplicationScopeByDefault() {
         BeanManager beanManager = Arc.container().beanManager();
         Set<Bean<?>> beans = beanManager.getBeans(HelloClient2.class, RestClient.LITERAL);

@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -197,6 +198,8 @@ public class JaxrsClientReactiveProcessor {
     private static final DotName PATH = DotName.createSimple(Path.class.getName());
     private static final DotName BUFFER = DotName.createSimple(Buffer.class.getName());
 
+    private static final DotName NOT_BODY = DotName.createSimple("io.quarkus.rest.client.reactive.NotBody");
+
     private static final Set<DotName> ASYNC_RETURN_TYPES = Set.of(COMPLETION_STAGE, UNI, MULTI);
     public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
     public static final MethodDescriptor MULTIPART_RESPONSE_DATA_ADD_FILLER = MethodDescriptor
@@ -300,6 +303,12 @@ public class JaxrsClientReactiveProcessor {
                 .setHasRuntimeConverters(false)
                 .setDefaultProduces(defaultProducesType)
                 .setSmartDefaultProduces(disableSmartDefaultProduces.isEmpty())
+                .setSkipMethodParameter(new Predicate<Map<DotName, AnnotationInstance>>() {
+                    @Override
+                    public boolean test(Map<DotName, AnnotationInstance> anns) {
+                        return anns.containsKey(NOT_BODY);
+                    }
+                })
                 .setResourceMethodCallback(new Consumer<>() {
                     @Override
                     public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {

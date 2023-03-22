@@ -282,6 +282,10 @@ public final class HibernateReactiveProcessor {
                         .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
         // Mapping
+        if (persistenceUnitConfig.mapping.timeZoneDefaultStorage.isPresent()) {
+            desc.getProperties().setProperty(AvailableSettings.TIMEZONE_DEFAULT_STORAGE,
+                    persistenceUnitConfig.mapping.timeZoneDefaultStorage.get().name());
+        }
         desc.getProperties().setProperty(AvailableSettings.PREFERRED_POOLED_OPTIMIZER,
                 persistenceUnitConfig.mapping.idOptimizerDefault
                         .orElse(HibernateOrmConfigPersistenceUnit.IdOptimizerType.POOLED_LO).configName);

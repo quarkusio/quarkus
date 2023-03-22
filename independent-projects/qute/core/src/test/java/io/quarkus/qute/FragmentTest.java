@@ -1,7 +1,11 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -17,10 +21,13 @@ public class FragmentTest {
                         Variant.forContentType(Variant.TEXT_PLAIN), "fragments.html");
         assertEquals("OK", template.getFragment("foo_and_bar").data("foo", "OK").render());
         assertEquals("NOK", template.getFragment("another").data("foo", "NOK").render());
+        assertFalse(template.isFragment());
         Fragment another = template.getFragment("another");
+        assertTrue(another.isFragment());
         assertEquals("another", another.getId());
         assertEquals(template.getFragment("another").getGeneratedId(), another.getGeneratedId());
         assertEquals("fragments.html", template.getFragment("another").getOriginalTemplate().getId());
+        assertEquals(Set.of("foo_and_bar", "another"), template.getFragmentIds());
     }
 
     @Test
@@ -32,6 +39,8 @@ public class FragmentTest {
         assertEquals("OKOK", template.getFragment("foo_and_bar").data("foo", "OK").render());
         assertEquals("NOK", template.getFragment("another").data("foo", "NOK").render());
         assertEquals("NOK", template.getFragment("foo_and_bar").getFragment("another").data("foo", "NOK").render());
+        assertEquals("NOKNOK", template.getFragment("foo_and_bar").getFragment("another").getFragment("foo_and_bar")
+                .data("foo", "NOK").render());
     }
 
     @Test

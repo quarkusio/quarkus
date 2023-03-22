@@ -645,7 +645,7 @@ public class QuteProcessor {
                 }
 
                 analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(),
-                        parameterDeclarations, path.getPath()));
+                        parameterDeclarations, path.getPath(), template.getFragmentIds()));
             }
         }
 
@@ -661,7 +661,8 @@ public class QuteProcessor {
             analysis.add(new TemplateAnalysis(messageBundleMethod.getTemplateId(), template.getGeneratedId(),
                     template.getExpressions(), paramDeclarations,
                     messageBundleMethod.getMethod().declaringClass().name() + "#" + messageBundleMethod.getMethod().name()
-                            + "()"));
+                            + "()",
+                    template.getFragmentIds()));
         }
 
         LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),

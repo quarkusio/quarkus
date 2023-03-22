@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -182,6 +183,14 @@ public class TemplateProducer {
                 return unambiguousTemplate.get().getFragment(identifier);
             }
             throw ambiguousTemplates("getFragment()");
+        }
+
+        @Override
+        public Set<String> getFragmentIds() {
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getFragmentIds();
+            }
+            throw ambiguousTemplates("getFragmentIds()");
         }
 
         private UnsupportedOperationException ambiguousTemplates(String method) {

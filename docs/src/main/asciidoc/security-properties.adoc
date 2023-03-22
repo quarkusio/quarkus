@@ -71,7 +71,8 @@ noadmin=n0Adm1n
 <1> User `scott` has password defined as `jb0ss`
 <2> User `jdoe` has password defined as `p4ssw0rd`
 
-This file has usernames and passwords stored in plain text, which is not recommended. If plain text is set to false (or omitted) in the config, then passwords must be stored in the form `MD5 ( username : realm : password )`. This can be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
+This file has usernames and passwords stored in plain text, which is not recommended. If plain text is set to false (or omitted) in the config, then passwords must be stored in the form `MD5 ( username : realm : password )`.
+This can be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
 
 ==== Roles.properties
 
@@ -89,7 +90,8 @@ noadmin=user
 
 === Embedded Realm Configuration
 
-The embedded realm also supports the mapping of users to passwords and users to roles. It uses the main `application.properties` Quarkus configuration file to embed this information. They are configured with properties starting with `quarkus.security.users.embedded`.
+The embedded realm also supports the mapping of users to passwords and users to roles. It uses the main `application.properties` Quarkus configuration file to embed this information.
+They are configured with properties starting with `quarkus.security.users.embedded`.
 
 The following is an example application.properties file section illustrating the embedded realm configuration:
 
@@ -114,7 +116,8 @@ This can be generated for the first example above by running the command `echo -
 
 ==== Embedded Users
 
-The user to password mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.users.<user>=<password>`. The following <<password-example>> illustrates the syntax with 4 user-to-password mappings:
+The user to password mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.users.<user>=<password>`.
+The following <<password-example>> illustrates the syntax with 4 user-to-password mappings:
 
 [#password-example]
 .Example of passwords
@@ -130,7 +133,8 @@ quarkus.security.users.embedded.users.noadmin=n0Adm1n
 
 ==== Embedded Roles
 
-The user to role mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<roles-example>> illustrates the syntax with 4 user-to-role mappings:
+The user to role mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.roles.<user>=role1[,role2[,role3[,...]]]`.
+The following <<roles-example>> illustrates the syntax with 4 user-to-role mappings:
 
 [#roles-example]
 .Example of roles

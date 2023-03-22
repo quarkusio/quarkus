@@ -178,7 +178,8 @@ For more information, see xref:security-openid-connect-oidc-configuration-proper
 
 === Start and configure the Keycloak server
 
-Before you start with configuration, put the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) to import it automatically when running in dev mode - unless you have already built a {quickstarts-tree-url}/security-openid-connect-quickstart[complete solution]. In this case, the realm file is added to the classpath during the build.
+Before you start with configuration, put the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) to import it automatically when running in dev mode - unless you have already built a {quickstarts-tree-url}/security-openid-connect-quickstart[complete solution].
+In this case, the realm file is added to the classpath during the build.
 
 [NOTE]
 ====

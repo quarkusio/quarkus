@@ -27,7 +27,7 @@ Please, check out the next compatibility table to use the right one according to
 |`ORM`
 |`Classic and Reactive`
 
-|<<hr-hibernate-reactive, quarkus-hibernate-reactive-rest-data-panache>>
+|<<hr-hibernate-reactive,quarkus-hibernate-reactive-rest-data-panache>>
 |`Reactive`
 |`Reactive`
 

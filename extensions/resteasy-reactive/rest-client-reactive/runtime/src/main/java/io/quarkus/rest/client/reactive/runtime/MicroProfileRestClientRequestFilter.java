@@ -44,7 +44,12 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
         // add headers from MP annotations
         if (headerFiller != null) {
             // add headers to a mutable headers collection
-            headerFiller.addHeaders(headers);
+            if (headerFiller instanceof ExtendedHeaderFiller) {
+                ((ExtendedHeaderFiller) headerFiller).addHeaders(headers, requestContext);
+            } else {
+                headerFiller.addHeaders(headers);
+            }
+
         }
 
         MultivaluedMap<String, String> incomingHeaders = MicroProfileRestClientRequestFilter.EMPTY_MAP;

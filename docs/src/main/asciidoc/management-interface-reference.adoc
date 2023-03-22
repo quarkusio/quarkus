@@ -84,7 +84,10 @@ The `quarkus.http.root-path` property is only applied to the main HTTP server an
 In addition, the `quarkus.http.non-application-root-path` property is not used for endpoint exposed on the management interface.
 ====
 
-== Create a management endpoint
+[[management-endpoint-extension]]
+== Create a management endpoint in an extension
+
+NOTE: To expose an endpoint on the management interface from the code of an application, refer to xref:#management-endpoint-application[the application section].
 
 SmallRye Health Checks, SmallRye Metrics, and Micrometer endpoints will be declared as management endpoints when the management interface is enabled.
 
@@ -113,6 +116,31 @@ If the management interface is enabled, the endpoint will be exposed on: `http:/
 Otherwise, it will be exposed on: `http://localhost:8080/q/my-path`.
 
 IMPORTANT: Management endpoints can only be declared by extensions and not from the application code.
+
+[[management-endpoint-application]]
+== Exposing an endpoint on the management interface (as an application)
+
+You can expose endpoints on the management interface by registering routes on the management router.
+To access the router use the following code:
+
+[source,java]
+----
+public void registerManagementRoutes(@Observes ManagementInterface mi) {
+       mi.router().get("/admin").handler(rc ->
+            rc.response().end("admin it is")
+       );
+}
+----
+
+The `io.quarkus.vertx.http.ManagementInterface` event is fired when the management interface is initialized.
+So, if the management interface is not enabled, the method won't be called.
+
+The `router()` method returns a `io.vertx.ext.web.Router` object which can be used to register routes.
+The paths are relative to `/`.
+For example, the previous snippet registers a route on `/admin`.
+This route is accessible on `http://0.0.0.0:9000/admin`, if you use the default host and port.
+
+More details about the `Router` API can be found on https://vertx.io/docs/vertx-web/java/[the Vert.x Web documentation].
 
 == Management Interface Configuration
 

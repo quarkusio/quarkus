@@ -12,6 +12,8 @@
 :gradle-version: ${gradle-wrapper.version}
 :elasticsearch-version: ${elasticsearch-server.version}
 :elasticsearch-image: ${elasticsearch.image}
+:infinispan-version: ${infinispan.version}
+:infinispan-protostream-version: ${infinispan.protostream.version}
 :logstash-image: ${logstash.image}
 :kibana-image: ${kibana.image}
 :keycloak-docker-image: ${keycloak.docker.image}

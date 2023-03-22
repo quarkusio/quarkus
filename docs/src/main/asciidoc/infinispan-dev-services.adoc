@@ -40,6 +40,8 @@ Infinispan Server provides a web console that can be accessed with a browser:
 . Open the xref:dev-ui.adoc[Dev UI]
 . You will see an *Infinispan Client* box. Click on  *Web Console* and enter the credentials above.
 
+image::dev-ui-infinispan.png[alt=Dev UI Infinispan,align=center,width=40%]
+
 If your environment does not support Docker, you will need to spin up an Infinispan Server manually, or connect to an already running server.
 
 == Overriding the Infinispan Server Image

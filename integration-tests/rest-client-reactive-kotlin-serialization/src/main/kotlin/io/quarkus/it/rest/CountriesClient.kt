@@ -18,10 +18,7 @@ interface CountriesClient {
     @Consumes(MediaType.APPLICATION_JSON)
     fun country(country: Country): Country
 
-    @GET
-    @Path("/countries")
-    @Produces(MediaType.APPLICATION_JSON)
-    fun countries(): List<Country>
+    @GET @Path("/countries") @Produces(MediaType.APPLICATION_JSON) fun countries(): List<Country>
 
     @GET
     @Path("/notFoundCountries")

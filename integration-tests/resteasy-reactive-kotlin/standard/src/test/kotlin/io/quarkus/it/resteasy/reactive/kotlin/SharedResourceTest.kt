@@ -16,12 +16,14 @@ class SharedResourceTest {
         Given {
             body("""{ "message": "will not be used" }""")
             contentType(ContentType.JSON)
-        } When {
-            post("/shared")
-        } Then {
-            statusCode(200)
-            body(CoreMatchers.`is`("""{"message": "canned+canned"}"""))
-        }
+        } When
+            {
+                post("/shared")
+            } Then
+            {
+                statusCode(200)
+                body(CoreMatchers.`is`("""{"message": "canned+canned"}"""))
+            }
     }
 
     @Test
@@ -30,11 +32,13 @@ class SharedResourceTest {
             body("""{ "message": "will not be used" }""")
             contentType(ContentType.TEXT)
             accept(ContentType.TEXT)
-        } When {
-            post("/shared")
-        } Then {
-            statusCode(200)
-            body(CoreMatchers.`is`("""{"message": "app+app"}"""))
-        }
+        } When
+            {
+                post("/shared")
+            } Then
+            {
+                statusCode(200)
+                body(CoreMatchers.`is`("""{"message": "app+app"}"""))
+            }
     }
 }

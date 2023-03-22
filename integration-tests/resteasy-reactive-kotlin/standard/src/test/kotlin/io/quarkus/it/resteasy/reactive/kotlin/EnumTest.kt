@@ -11,31 +11,28 @@ class EnumTest {
 
     @Test
     fun testNoStates() {
-        When {
-            get("/enum")
-        } Then {
-            statusCode(200)
-            body(equalTo("States: []"))
-        }
+        When { get("/enum") } Then
+            {
+                statusCode(200)
+                body(equalTo("States: []"))
+            }
     }
 
     @Test
     fun testSingleState() {
-        When {
-            get("/enum?state=State1")
-        } Then {
-            statusCode(200)
-            body(equalTo("States: [State1]"))
-        }
+        When { get("/enum?state=State1") } Then
+            {
+                statusCode(200)
+                body(equalTo("States: [State1]"))
+            }
     }
 
     @Test
     fun testMultipleStates() {
-        When {
-            get("/enum?state=State1&state=State2&state=State3")
-        } Then {
-            statusCode(200)
-            body(equalTo("States: [State1, State2, State3]"))
-        }
+        When { get("/enum?state=State1&state=State2&state=State3") } Then
+            {
+                statusCode(200)
+                body(equalTo("States: [State1, State2, State3]"))
+            }
     }
 }

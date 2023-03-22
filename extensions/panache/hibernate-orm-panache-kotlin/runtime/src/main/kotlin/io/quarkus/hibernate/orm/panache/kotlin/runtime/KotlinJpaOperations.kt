@@ -4,8 +4,12 @@ import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations
 import jakarta.persistence.EntityManager
 
 class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
-    override fun createPanacheQuery(em: EntityManager, query: String, orderBy: String?, paramsArrayOrMap: Any?) =
-        PanacheQueryImpl<Any>(em, query, orderBy, paramsArrayOrMap)
+    override fun createPanacheQuery(
+        em: EntityManager,
+        query: String,
+        orderBy: String?,
+        paramsArrayOrMap: Any?
+    ) = PanacheQueryImpl<Any>(em, query, orderBy, paramsArrayOrMap)
 
     override fun list(query: PanacheQueryImpl<*>) = query.list()
 
@@ -13,9 +17,9 @@ class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
 
     companion object {
         /**
-         * Provides the default implementations for quarkus to wire up. Should not be used by third party developers.
+         * Provides the default implementations for quarkus to wire up. Should not be used by third
+         * party developers.
          */
-        @JvmField
-        val INSTANCE = KotlinJpaOperations()
+        @JvmField val INSTANCE = KotlinJpaOperations()
     }
 }

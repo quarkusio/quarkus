@@ -12,17 +12,16 @@ class ReactiveClientTest {
 
     @Test
     fun testGetCountryByName() {
-        When {
-            get("/country/name/foo")
-        } Then {
-            statusCode(200)
-            contentType(ContentType.JSON)
-            body(
-                "$.size()",
-                CoreMatchers.`is`(1),
-                "[0].capital",
-                CoreMatchers.`is`("foo-capital")
-            )
-        }
+        When { get("/country/name/foo") } Then
+            {
+                statusCode(200)
+                contentType(ContentType.JSON)
+                body(
+                    "$.size()",
+                    CoreMatchers.`is`(1),
+                    "[0].capital",
+                    CoreMatchers.`is`("foo-capital")
+                )
+            }
     }
 }

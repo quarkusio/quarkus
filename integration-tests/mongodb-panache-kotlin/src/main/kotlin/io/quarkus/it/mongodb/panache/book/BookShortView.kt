@@ -11,6 +11,5 @@ class BookShortView {
     var title: String? = null
     var author: String? = null
 
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-    var creationDate: LocalDate? = null
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd") var creationDate: LocalDate? = null
 }

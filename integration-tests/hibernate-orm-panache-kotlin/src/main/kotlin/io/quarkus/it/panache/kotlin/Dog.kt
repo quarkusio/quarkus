@@ -17,20 +17,17 @@ open class Dog() : PanacheEntityBase {
         this.race = race
     }
 
-    @ManyToOne
-    var owner: Person? = null
+    @ManyToOne var owner: Person? = null
     var name: String? = null
     var race: String? = null
 
     /**
-     * The auto-generated ID field. This field is set by Hibernate ORM when this entity
-     * is persisted.
+     * The auto-generated ID field. This field is set by Hibernate ORM when this entity is
+     * persisted.
      *
      * @see [PanacheEntity.persist]
      */
-    @Id
-    @GeneratedValue
-    var id: Long? = null
+    @Id @GeneratedValue var id: Long? = null
 
     /**
      * Default toString() implementation

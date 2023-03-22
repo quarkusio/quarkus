@@ -22,7 +22,11 @@ import org.hibernate.annotations.ParamDef
 @XmlRootElement
 @Entity(name = "Person2")
 @FilterDefs(
-    FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = [ParamDef(name = "name", type = String::class)]),
+    FilterDef(
+        name = "Person.hasName",
+        defaultCondition = "name = :name",
+        parameters = [ParamDef(name = "name", type = String::class)]
+    ),
     FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'")
 )
 @Filters(Filter(name = "Person.isAlive"), Filter(name = "Person.hasName"))
@@ -33,15 +37,12 @@ open class Person : PanacheEntity() {
 
     var name: String? = null
 
-    @Column(unique = true)
-    var uniqueName: String? = null
+    @Column(unique = true) var uniqueName: String? = null
 
-    @ManyToOne(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
-    var address: Address? = null
+    @ManyToOne(cascade = [CascadeType.ALL], fetch = FetchType.LAZY) var address: Address? = null
 
     // FIXME: this isn't working
-    @Enumerated(EnumType.STRING)
-    var status: Status? = null
+    @Enumerated(EnumType.STRING) var status: Status? = null
 
     @OneToMany(mappedBy = "owner", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
     var dogs = mutableListOf<Dog>()

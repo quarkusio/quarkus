@@ -11,7 +11,12 @@ import java.util.stream.Stream
 class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
     private var delegate: CommonPanacheQueryImpl<Entity>
 
-    internal constructor(em: EntityManager?, query: String?, orderBy: String?, paramsArrayOrMap: Any?) {
+    internal constructor(
+        em: EntityManager?,
+        query: String?,
+        orderBy: String?,
+        paramsArrayOrMap: Any?
+    ) {
         delegate = CommonPanacheQueryImpl(em, query, orderBy, paramsArrayOrMap)
     }
 

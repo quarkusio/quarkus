@@ -8,8 +8,8 @@ import java.time.LocalDateTime
 import java.util.Date
 
 /**
- * An entity that have all the supported date format.
- * Asserting #6566 and possibility other date issues.
+ * An entity that have all the supported date format. Asserting #6566 and possibility other date
+ * issues.
  */
 class DateEntity(
     var dateDate: Date = Date(),

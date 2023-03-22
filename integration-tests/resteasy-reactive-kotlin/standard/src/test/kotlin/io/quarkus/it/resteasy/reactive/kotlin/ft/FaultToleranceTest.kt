@@ -10,30 +10,20 @@ import org.junit.jupiter.api.Test
 class FaultToleranceTest {
     @Test
     fun test() {
-        When {
-            post("/ft/hello/fail")
-        } Then {
-            statusCode(204)
-        }
+        When { post("/ft/hello/fail") } Then { statusCode(204) }
 
-        When {
-            get("/ft/client")
-        } Then {
-            statusCode(200)
-            body(equalTo("fallback"))
-        }
+        When { get("/ft/client") } Then
+            {
+                statusCode(200)
+                body(equalTo("fallback"))
+            }
 
-        When {
-            post("/ft/hello/heal")
-        } Then {
-            statusCode(204)
-        }
+        When { post("/ft/hello/heal") } Then { statusCode(204) }
 
-        When {
-            get("/ft/client")
-        } Then {
-            statusCode(200)
-            body(equalTo("Hello, world!"))
-        }
+        When { get("/ft/client") } Then
+            {
+                statusCode(200)
+                body(equalTo("Hello, world!"))
+            }
     }
 }

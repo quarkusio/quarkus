@@ -20,8 +20,7 @@ import java.net.URI
 class PersonEntityResource {
     @GET
     fun getPersons(@QueryParam("sort") sort: String?): List<PersonEntity> =
-        sort?.let { PersonEntity.listAll(Sort.ascending(sort)) }
-            ?: PersonEntity.listAll()
+        sort?.let { PersonEntity.listAll(Sort.ascending(sort)) } ?: PersonEntity.listAll()
 
     @GET
     @Path("/search/{name}")
@@ -68,9 +67,7 @@ class PersonEntityResource {
     @Path("/{id}")
     fun getPerson(@PathParam("id") id: String) = PersonEntity.findById(id.toLong())
 
-    @GET
-    @Path("/count")
-    fun countAll(): Long = PersonEntity.count()
+    @GET @Path("/count") fun countAll(): Long = PersonEntity.count()
 
     @DELETE
     fun deleteAll() {
@@ -79,9 +76,11 @@ class PersonEntityResource {
 
     @POST
     @Path("/rename")
-    fun rename(@QueryParam("previousName") previousName: String, @QueryParam("newName") newName: String): Response {
-        PersonEntity.update("lastname", newName)
-            .where("lastname", previousName)
+    fun rename(
+        @QueryParam("previousName") previousName: String,
+        @QueryParam("newName") newName: String
+    ): Response {
+        PersonEntity.update("lastname", newName).where("lastname", previousName)
         return Response.ok().build()
     }
 }

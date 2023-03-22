@@ -5,11 +5,11 @@ import jakarta.ws.rs.container.ContainerResponseContext
 import jakarta.ws.rs.container.ResourceInfo
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.UriInfo
+import java.security.SecureRandom
 import kotlinx.coroutines.delay
 import org.jboss.resteasy.reactive.server.ServerRequestFilter
 import org.jboss.resteasy.reactive.server.ServerResponseFilter
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo
-import java.security.SecureRandom
 
 class Filters {
 
@@ -34,7 +34,11 @@ class Filters {
     }
 
     @ServerResponseFilter
-    suspend fun addResponseHeader(context: ContainerResponseContext, simpleResourceInfo: SimpleResourceInfo, resourceInfo: ResourceInfo) {
+    suspend fun addResponseHeader(
+        context: ContainerResponseContext,
+        simpleResourceInfo: SimpleResourceInfo,
+        resourceInfo: ResourceInfo
+    ) {
         delay(100)
         context.headers.add("method", simpleResourceInfo.methodName)
         context.headers.add("method2", resourceInfo.resourceMethod.name)

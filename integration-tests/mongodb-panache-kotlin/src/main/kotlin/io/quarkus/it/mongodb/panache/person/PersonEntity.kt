@@ -6,8 +6,7 @@ import io.quarkus.panache.common.Sort
 import org.bson.codecs.pojo.annotations.BsonId
 
 class PersonEntity : PanacheMongoEntityBase() {
-    @BsonId
-    var id: Long? = null
+    @BsonId var id: Long? = null
     var firstname: String? = null
     var lastname: String? = null
     var status: Status = Status.ALIVE

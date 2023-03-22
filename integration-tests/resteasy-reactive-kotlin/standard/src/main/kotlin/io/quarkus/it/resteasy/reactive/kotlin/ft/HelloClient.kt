@@ -8,9 +8,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient
 @Path("/ft/hello")
 @RegisterRestClient(configKey = "ft-hello")
 interface HelloClient {
-    @GET
-    @Fallback(fallbackMethod = "fallback")
-    suspend fun hello(): String
+    @GET @Fallback(fallbackMethod = "fallback") suspend fun hello(): String
 
     suspend fun fallback() = "fallback"
 }

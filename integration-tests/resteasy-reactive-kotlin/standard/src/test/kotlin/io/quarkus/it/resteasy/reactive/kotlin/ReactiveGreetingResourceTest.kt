@@ -11,40 +11,33 @@ class ReactiveGreetingResourceTest {
 
     @Test
     fun testResource() {
-        When {
-            get("/test.txt")
-        } Then {
-            statusCode(200)
-        }
+        When { get("/test.txt") } Then { statusCode(200) }
     }
 
     @Test
     fun testHello() {
-        When {
-            get("/hello-resteasy-reactive/")
-        } Then {
-            statusCode(200)
-            body(`is`("Hello RestEASY Reactive"))
-        }
+        When { get("/hello-resteasy-reactive/") } Then
+            {
+                statusCode(200)
+                body(`is`("Hello RestEASY Reactive"))
+            }
     }
 
     @Test
     fun testStandard() {
-        When {
-            get("/hello-resteasy-reactive/standard")
-        } Then {
-            statusCode(200)
-            body(`is`("Hello RestEASY Reactive"))
-        }
+        When { get("/hello-resteasy-reactive/standard") } Then
+            {
+                statusCode(200)
+                body(`is`("Hello RestEASY Reactive"))
+            }
     }
 
     @Test
     fun testNamedHello() {
-        When {
-            get("/hello-resteasy-reactive/Bob")
-        } Then {
-            statusCode(200)
-            body(`is`("Hello Bob"))
-        }
+        When { get("/hello-resteasy-reactive/Bob") } Then
+            {
+                statusCode(200)
+                body(`is`("Hello Bob"))
+            }
     }
 }

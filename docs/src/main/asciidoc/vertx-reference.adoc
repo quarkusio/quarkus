@@ -1004,9 +1004,9 @@ if the connection to the quarkus service is established from the same host.
 This can happen if access to the service goes through a proxy which is often the case
 if you're setting up a service mesh with a proxy like Envoy.
 
-IMPORTANT: This will only work on platforms that support xref:native-transport[].
+IMPORTANT: This will only work on platforms that support <<native-transport>>.
 
-Enable the appropriate xref:native-transport[] and set the following environment property:
+Enable the appropriate <<native-transport>> and set the following environment property:
 
 ----
 quarkus.http.domain-socket=/var/run/io.quarkus.app.socket
@@ -1025,7 +1025,8 @@ quarkus.http.host-enabled=false
 These properties can be set through Java's `-D` command line parameter or
 on `application.properties`.
 
-IMPORTANT: Do not forget to add the native transport dependency. See <<native-transport>> for details.
+IMPORTANT: Do not forget to add the native transport dependency.
+See <<native-transport>> for details.
 
 IMPORTANT: Make sure your application has the right permissions to write to the socket.
 

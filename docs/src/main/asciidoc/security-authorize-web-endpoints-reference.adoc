@@ -248,10 +248,10 @@ s| @RolesAllowed | Specifies the list of security roles permitted to access meth
 As an equivalent to `@RolesAllowed("**")`, {project-name} also provides the `io.quarkus.security.Authenticated` annotation that permits any authenticated user to access the resource.
 |===
 
-<<subject-example>> featured in this chapter demonstrates an endpoint that uses both Jakarta REST and Common Security annotations to describe and secure its endpoints.
+xref:subject-example[SubjectExposingResource example] featured in this chapter demonstrates an endpoint that uses both Jakarta REST and Common Security annotations to describe and secure its endpoints.
 
-[#subject-example]
-.SubjectExposingResource Example
+[[subject-example]]
+.SubjectExposingResource example
 [source,java]
 ----
 import java.security.Principal;

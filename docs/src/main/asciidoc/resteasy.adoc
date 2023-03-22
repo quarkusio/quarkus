@@ -790,7 +790,7 @@ An explicit CDI scope annotation (`@RequestScoped`, `@ApplicationScoped`, etc.) 
 
 == Include/Exclude Jakarta REST classes with build time conditions
 
-Quarkus enables the inclusion or exclusion of JAX-RS Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
+Quarkus enables the inclusion or exclusion of Jakarta REST Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
 Thus, the various Jakarta REST classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these Jakarta REST classes should be included.
 
 In the following example, Quarkus includes the endpoint `sayHello` if and only if the build profile `app1` has been enabled.
@@ -808,7 +808,7 @@ public class ResourceForApp1Only {
 }
 ----
 
-Please note that if a Jakarta REST Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the JAX-RS Application.
+Please note that if a Jakarta REST Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the Jakarta REST Application.
 
 == Conclusion
 

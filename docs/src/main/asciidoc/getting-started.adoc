@@ -45,7 +45,7 @@ This guide also covers the testing of the endpoint.
 
 == Solution
 
-We recommend that you follow the instructions from xref:bootstrapping-the-project[Bootstrapping project] and onwards to create the application step by step.
+We recommend that you follow the instructions from <<bootstrapping-the-project,Bootstrapping the project>> and onwards to create the application step by step.
 
 However, you can go right to the completed example.
 

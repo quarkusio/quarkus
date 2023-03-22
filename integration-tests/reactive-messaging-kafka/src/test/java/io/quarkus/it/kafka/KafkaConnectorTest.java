@@ -8,7 +8,9 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.KafkaCompanionResource;
 import io.restassured.common.mapper.TypeRef;
@@ -46,6 +48,13 @@ public class KafkaConnectorTest {
     @Test
     public void testFruits() {
         await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/fruits").as(TYPE_REF).size(), 4));
+    }
+
+    @Test
+    @DisabledOnIntegrationTest
+    public void testPrices() {
+        KafkaRepeatableReceivers repeatableReceivers = Arc.container().instance(KafkaRepeatableReceivers.class).get();
+        await().untilAsserted(() -> Assertions.assertEquals(repeatableReceivers.getPrices().size(), 6));
     }
 
 }

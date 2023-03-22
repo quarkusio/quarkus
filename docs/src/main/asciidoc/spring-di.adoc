@@ -274,6 +274,14 @@ classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `or
 Regarding the dependency injection in particular, Quarkus uses a Dependency Injection mechanism (called ArC) based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it, we recommend you to read the xref:cdi.adoc[Quarkus introduction to CDI] and the xref:cdi-reference.adoc#arc-configuration-reference[CDI reference guide]
 The various Spring Boot test features are not supported by Quarkus. For testing purposes, please, check the xref:getting-started-testing.adoc[Quarkus testing guide].
 
+Some known limitations:
+
+* In case of ambiguity, Spring uses a fallback match of the bean name against the injection point field name or parameter name.
+ This is not supported, thus `@Named` annotation needs to be used to explicitly solve any ambiguity.
+* Injecting all beans of a particular type is limited to `List<Bean>`. Injecting `Set<Bean>` or `Map<String, Bean>` is not supported.
+* Optional injection using `@Autowired(required=false)` is not supported. Use `javax.enterprise.inject.Instance` and then test `Instance.isResolvable()`.
+* `@Conditional` is ignored, since dependency injection gets resolved at build time. An alternative is to use xref:cdi-reference.adoc#enable_build_profile[conditional build profiles].
+
 == Conversion Table
 
 The following table shows how Spring DI annotations can be converted to CDI and / or MicroProfile annotations.

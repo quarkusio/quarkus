@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.cdi;
 
-import static io.quarkus.opentelemetry.runtime.config.build.OtelBuildConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

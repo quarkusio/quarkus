@@ -11,9 +11,9 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.opentelemetry.runtime.config.build.OtelBuildConfig;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.OtelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpExporterProvider;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpRecorder;
@@ -23,13 +23,13 @@ public class OtlpExporterProcessor {
 
     static class OtlpExporterEnabled implements BooleanSupplier {
         OtlpExporterBuildConfig exportBuildConfig;
-        OtelBuildConfig otelBuildConfig;
+        OTelBuildConfig otelBuildConfig;
 
         public boolean getAsBoolean() {
-            return otelBuildConfig.enabled &&
-                    otelBuildConfig.traces.enabled.orElse(Boolean.TRUE) &&
-                    otelBuildConfig.traces.exporter.contains(CDI_VALUE) &&
-                    exportBuildConfig.enabled;
+            return otelBuildConfig.enabled() &&
+                    otelBuildConfig.traces().enabled().orElse(Boolean.TRUE) &&
+                    otelBuildConfig.traces().exporter().contains(CDI_VALUE) &&
+                    exportBuildConfig.enabled();
         }
     }
 
@@ -45,7 +45,7 @@ public class OtlpExporterProcessor {
     void installBatchSpanProcessorForOtlp(
             OtlpRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,
-            OtelRuntimeConfig otelRuntimeConfig,
+            OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
             BeanContainerBuildItem beanContainerBuildItem) {
         recorder.installBatchSpanProcessorForOtlp(otelRuntimeConfig,

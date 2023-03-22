@@ -26,7 +26,7 @@ public class OtlpExporterConfigTest {
 
     @Test
     void config() {
-        assertTrue(config.traces.legacyEndpoint.isPresent());
-        assertEquals("http://localhost", config.traces.legacyEndpoint.get().trim());
+        assertTrue(config.traces().legacyEndpoint().isPresent());
+        assertEquals("http://localhost", config.traces().legacyEndpoint().get().trim());
     }
 }

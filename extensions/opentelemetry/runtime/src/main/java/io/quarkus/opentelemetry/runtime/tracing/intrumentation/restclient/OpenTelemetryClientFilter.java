@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient;
 
-import static io.quarkus.opentelemetry.runtime.config.build.OtelBuildConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 

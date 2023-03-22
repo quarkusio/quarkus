@@ -1,12 +1,15 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig.Constants.DEFAULT_GRPC_BASE_URI;
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig.DEFAULT_GRPC_BASE_URI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
 
@@ -66,14 +69,48 @@ class OtlpRecorderTest {
                         null)));
     }
 
-    private OtlpExporterRuntimeConfig createOtlpExporterRuntimeConfig(String exporterGlobal,
-            String legacyTrace,
+    private OtlpExporterRuntimeConfig createOtlpExporterRuntimeConfig(String exporterGlobal, String legacyTrace,
             String newTrace) {
-        OtlpExporterRuntimeConfig otlpExporterRuntimeConfig = new OtlpExporterRuntimeConfig();
-        otlpExporterRuntimeConfig.endpoint = Optional.ofNullable(exporterGlobal);
-        otlpExporterRuntimeConfig.traces = new OtlpExporterTracesConfig();
-        otlpExporterRuntimeConfig.traces.legacyEndpoint = Optional.ofNullable(legacyTrace);
-        otlpExporterRuntimeConfig.traces.endpoint = Optional.ofNullable(newTrace);
-        return otlpExporterRuntimeConfig;
+        return new OtlpExporterRuntimeConfig() {
+            @Override
+            public Optional<String> endpoint() {
+                return Optional.ofNullable(exporterGlobal);
+            }
+
+            @Override
+            public OtlpExporterTracesConfig traces() {
+                return new OtlpExporterTracesConfig() {
+                    @Override
+                    public Optional<String> endpoint() {
+                        return Optional.ofNullable(newTrace);
+                    }
+
+                    @Override
+                    public Optional<String> legacyEndpoint() {
+                        return Optional.ofNullable(legacyTrace);
+                    }
+
+                    @Override
+                    public Optional<List<String>> headers() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<CompressionType> compression() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Duration timeout() {
+                        return null;
+                    }
+
+                    @Override
+                    public Optional<String> protocol() {
+                        return Optional.empty();
+                    }
+                };
+            }
+        };
     }
 }

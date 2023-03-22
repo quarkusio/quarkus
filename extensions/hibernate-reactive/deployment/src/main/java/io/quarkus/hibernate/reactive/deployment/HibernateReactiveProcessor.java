@@ -281,6 +281,11 @@ public final class HibernateReactiveProcessor {
                 namingStrategy -> desc.getProperties()
                         .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
+        // Mapping
+        desc.getProperties().setProperty(AvailableSettings.PREFERRED_POOLED_OPTIMIZER,
+                persistenceUnitConfig.mapping.idOptimizerDefault
+                        .orElse(HibernateOrmConfigPersistenceUnit.IdOptimizerType.POOLED_LO).configName);
+
         //charset
         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME,
                 persistenceUnitConfig.database.charset.name());

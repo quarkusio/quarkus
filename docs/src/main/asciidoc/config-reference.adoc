@@ -394,9 +394,57 @@ Then
 
 [WARNING]
 ====
-The configuration `quarkus.config.profile.parent` must be placed in the main `application.properties` file, passed as a system property, or passed as an environment variable.
-It does not work when the configuration is placed in the profile aware files. 
+Do not use Profile aware files to set `quarkus.config.profile.parent`. This will not work because the profile is
+required in advance to load the profile aware files.
 ====
+
+=== Multiple Profiles
+
+Multiple Profiles may be active at the same time. The configuration `quarkus.profile` accepts a comma-separated list
+of profile names: `quarkus.profile=common,dev`. Both `common` and `dev` are separate profiles.
+
+When multiple profiles are active, the rules for profile configuration are the same. If two profiles define the same
+configuration, then the last listed profile has priority. Consider:
+
+.application.properties
+[source,properties]
+----
+quarkus.profile=common,dev
+
+my.prop=1234
+%common.my.prop=1234
+%dev.my.prop=5678
+
+%common.commom.prop=common
+%dev.dev.prop=dev
+%test.test.prop=test
+----
+
+Then
+
+* `common.prop` value is `common`
+* `dev.prop` value is `dev`
+* `my.prop` value is `5678`
+* `test.prop` does not have a `value`
+
+It is also possible to define multiple profile properties, with a comma-separated list of profile names. If the same
+property name exists in multiple profile properties then, the property name with the most specific profile wins:
+
+.application.properties
+[source,properties]
+----
+quarkus.profile=dev
+
+%prod,dev.my.prop=1234
+%dev.my.prop=5678
+
+%prod,dev.another.prop=1234
+----
+
+Then
+
+* `my.prop` value is 5678.
+* `another.prop` value is 1234.
 
 === Default Runtime Profile
 
@@ -474,6 +522,23 @@ application.host=${HOST:${remote.host}}
 
 This will expand the `HOST` environment variable and use the value of the property `remote.host` as the default value
 if `HOST` is not set.
+
+== Secret Keys Expressions
+
+A secret configuration may be expressed as `${handler::value}`, where the `handler` is the name of a
+`io.smallrye.config.SecretKeysHandler` to decode or decrypt the `value`. Consider:
+
+.application.properties
+[source,properties]
+----
+my.secret=${aes-gcm-nopadding::DJNrZ6LfpupFv6QbXyXhvzD8eVDnDa_kTliQBpuzTobDZxlg}
+----
+
+A lookup to `my.secret` will use the `SecretKeysHandler` name `aes-gcm-nopadding` to decode the value
+`DJNrZ6LfpupFv6QbXyXhvzD8eVDnDa_kTliQBpuzTobDZxlg`.
+
+For more information, please check SmallRye Config
+link:https://smallrye.io/smallrye-config/Main/config/secret-keys/[Secret Keys] documentation.
 
 == Accessing a generating UUID
 
@@ -568,7 +633,9 @@ If you are in the rare situation that you need to change the build time configur
 == Additional Information
 
 * xref:config-yaml.adoc[YAML ConfigSource Extension]
+// Moved to Quarkiverse. There is a redirect to resolve the link
 * xref:vault.adoc[HashiCorp Vault ConfigSource Extension]
+// Moved to Quarkiverse. There is a redirect to resolve the link
 * xref:consul-config.adoc[Consul ConfigSource Extension]
 * xref:spring-cloud-config-client.adoc[Spring Cloud ConfigSource Extension]
 * xref:config-mappings.adoc[Mapping configuration to objects]
@@ -576,15 +643,13 @@ If you are in the rare situation that you need to change the build time configur
 
 Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Config] and inherits its features:
 
-* Additional ``ConfigSource``s
-* Additional ``Converter``s
-* Indexed properties
-* Parent profile
-* Interceptors for configuration value resolution
-* Relocate configuration properties
-* Fallback configuration properties
-* Logging
-* Hide secrets
+* link:https://smallrye.io/smallrye-config/Main/config-sources/custom/[Additional Config Sources]
+* link:https://smallrye.io/smallrye-config/Main/config-sources/factories/[Config Source Factories]
+* link:https://smallrye.io/smallrye-config/Main/converters/custom/[Additional Converters]
+* link:https://smallrye.io/smallrye-config/Main/extensions/interceptors/[Interceptors]
+* link:https://smallrye.io/smallrye-config/Main/extensions/relocate/[Relocate Configuration]
+* link:https://smallrye.io/smallrye-config/Main/extensions/fallback/[Fallback Configuration]
+* link:https://smallrye.io/smallrye-config/Main/config/secret-keys/[Secret Keys]
 
 For more information, please check the
 link:https://smallrye.io/smallrye-config/Main[SmallRye Config documentation].

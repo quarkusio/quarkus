@@ -2,7 +2,8 @@ package io.quarkus.awt.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Os.WINDOWS;
 
-import io.quarkus.awt.runtime.graal.AwtFeature;
+import java.util.stream.Stream;
+
 import io.quarkus.awt.runtime.graal.DarwinAwtFeature;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -13,6 +14,7 @@ import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -26,7 +28,6 @@ class AwtProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
-        nativeImageFeatures.produce(new NativeImageFeatureBuildItem(AwtFeature.class));
         nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DarwinAwtFeature.class));
     }
 
@@ -197,4 +198,21 @@ class AwtProcessor {
                 "sun.java2d.SunGraphics2D",
                 "sun.java2d.SurfaceData");
     }
+
+    @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitilizedPackages) {
+        /*
+         * Note that this initialization is not enough if user wants to deserialize actual images
+         * (e.g. from XML). AWT Extension must be loaded for decoding JDK supported image formats.
+         */
+        Stream.of("com.sun.imageio",
+                "java.awt",
+                "javax.imageio",
+                "sun.awt",
+                "sun.font",
+                "sun.java2d")
+                .map(RuntimeInitializedPackageBuildItem::new)
+                .forEach(runtimeInitilizedPackages::produce);
+    }
+
 }

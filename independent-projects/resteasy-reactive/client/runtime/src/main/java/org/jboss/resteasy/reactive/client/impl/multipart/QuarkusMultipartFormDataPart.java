@@ -20,7 +20,12 @@ public class QuarkusMultipartFormDataPart {
     private final Multi<Byte> multiByteContent;
 
     public QuarkusMultipartFormDataPart(String name, Buffer content, String mediaType, Class<?> type) {
+        this(name, null, content, mediaType, type);
+    }
+
+    public QuarkusMultipartFormDataPart(String name, String filename, Buffer content, String mediaType, Class<?> type) {
         this.name = name;
+        this.filename = filename;
         this.content = content;
         this.mediaType = mediaType;
         this.type = type;
@@ -37,7 +42,6 @@ public class QuarkusMultipartFormDataPart {
         }
         this.isObject = true;
         this.value = null;
-        this.filename = null;
         this.pathname = null;
         this.text = false;
     }

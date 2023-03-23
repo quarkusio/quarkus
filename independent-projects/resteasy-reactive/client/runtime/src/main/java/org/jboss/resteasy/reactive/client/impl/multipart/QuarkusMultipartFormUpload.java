@@ -68,8 +68,12 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
             if (formDataPart.isAttribute()) {
                 encoder.addBodyAttribute(formDataPart.name(), formDataPart.value());
             } else if (formDataPart.isObject()) {
-                MemoryFileUpload data = new MemoryFileUpload(formDataPart.name(), "", formDataPart.mediaType(),
-                        formDataPart.isText() ? null : "binary", null, formDataPart.content().length());
+                MemoryFileUpload data = new MemoryFileUpload(formDataPart.name(),
+                        formDataPart.filename() != null ? formDataPart.filename() : "",
+                        formDataPart.mediaType(),
+                        formDataPart.isText() ? null : "binary",
+                        null,
+                        formDataPart.content().length());
                 data.setContent(formDataPart.content().getByteBuf());
                 encoder.addBodyHttpData(data);
             } else if (formDataPart.multiByteContent() != null) {

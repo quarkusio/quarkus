@@ -8,13 +8,9 @@ import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_1;
 import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_256;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+import static org.bson.codecs.pojo.Conventions.ANNOTATION_CONVENTION;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -28,7 +24,6 @@ import javax.inject.Singleton;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.ClassModel;
-import org.bson.codecs.pojo.Conventions;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.codecs.pojo.PropertyCodecProvider;
 import org.jboss.logging.Logger;
@@ -331,14 +326,19 @@ public class MongoClients {
         // it always needs to be the last codec provided
         PojoCodecProvider.Builder pojoCodecProviderBuilder = PojoCodecProvider.builder()
                 .automatic(true)
-                .conventions(Conventions.DEFAULT_CONVENTIONS);
+                // Note ANNOTATION_CONVENTION is the convention I found that works for my use case of _id & id in Mongo record.
+                // However, I think the fix should be that Quarkus allow users to set any number of conventions per connection
+                // as everyone's use case may be different.
+                .conventions(Arrays.asList(ANNOTATION_CONVENTION));
         // register bson discriminators
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         for (String bsonDiscriminator : mongoClientSupport.getBsonDiscriminators()) {
             try {
                 pojoCodecProviderBuilder
-                        .register(ClassModel.builder(Class.forName(bsonDiscriminator, true, classLoader))
-                                .enableDiscriminator(true).build());
+                        .register(ClassModel
+                                .builder(Class.forName(bsonDiscriminator, true, classLoader))
+                                .enableDiscriminator(true)
+                                .build());
             } catch (ClassNotFoundException e) {
                 // Ignore
             }
@@ -348,9 +348,15 @@ public class MongoClients {
             pojoCodecProviderBuilder.register(propertyCodecProvider);
         }
 
-        CodecRegistry registry = !providers.isEmpty() ? fromRegistries(fromProviders(providers), defaultCodecRegistry,
-                fromProviders(pojoCodecProviderBuilder.build()))
-                : fromRegistries(defaultCodecRegistry, fromProviders(pojoCodecProviderBuilder.build()));
+        final PojoCodecProvider pojoCodecProvider = pojoCodecProviderBuilder.build();
+        final CodecRegistry codecRegistry = fromProviders(pojoCodecProvider);
+
+        CodecRegistry registry;
+        if (!providers.isEmpty()) {
+            registry = fromRegistries(fromProviders(providers), defaultCodecRegistry, codecRegistry);
+        } else {
+            registry = fromRegistries(defaultCodecRegistry, codecRegistry);
+        }
         settings.codecRegistry(registry);
     }
 

@@ -321,8 +321,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                                             if (!expired) {
                                                 LOG.errorf("ID token verification failure: %s", t.getCause());
-                                                return Uni.createFrom()
-                                                        .failure(new AuthenticationCompletionException(t.getCause()));
+                                                return removeSessionCookie(context, configContext.oidcConfig)
+                                                        .replaceWith(Uni.createFrom()
+                                                                .failure(t
+                                                                        .getCause() instanceof AuthenticationCompletionException
+                                                                                ? t.getCause()
+                                                                                : new AuthenticationCompletionException(
+                                                                                        t.getCause())));
                                             }
                                             // Token has expired, try to refresh
                                             if (session.getRefreshToken() == null) {

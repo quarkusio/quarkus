@@ -564,6 +564,22 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/web-app");
 
             assertEquals("alice", page.getBody().asNormalizedText());
+
+            Cookie sessionCookie = getSessionCookie(webClient, null);
+            assertNotNull(sessionCookie);
+            webClient.getCookieManager().clearCookies();
+            webClient.getCookieManager().addCookie(new Cookie(sessionCookie.getDomain(), sessionCookie.getName(),
+                    "1|2|3"));
+            sessionCookie = getSessionCookie(webClient, null);
+            assertEquals("1|2|3", sessionCookie.getValue());
+
+            try {
+                webClient.getPage("http://localhost:8081/web-app");
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                assertNull(getSessionCookie(webClient, null));
+            }
             webClient.getCookieManager().clearCookies();
         }
     }

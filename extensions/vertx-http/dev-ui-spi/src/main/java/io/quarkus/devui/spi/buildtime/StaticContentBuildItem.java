@@ -2,8 +2,8 @@ package io.quarkus.devui.spi.buildtime;
 
 import java.util.List;
 
-import io.quarkus.devui.deployment.spi.DevUIContent;
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.devui.spi.DevUIContent;
 
 /**
  * Static Content generated at build time

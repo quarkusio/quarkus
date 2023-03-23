@@ -1,4 +1,4 @@
-package io.quarkus.devui.deployment.spi;
+package io.quarkus.devui.spi;
 
 import java.util.HashMap;
 import java.util.Map;

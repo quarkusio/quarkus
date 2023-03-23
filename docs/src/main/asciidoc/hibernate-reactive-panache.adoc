@@ -710,7 +710,7 @@ It is not possible to have a HQL `select new` query and `.project(Class)` at the
 For example, this will fail:
 [source,java]
 ----
-PanacheQuery<RaceWeight> query = Person.find("select new MyView(d.race, AVG(d.weight)) from Dog d group by d.race).project(AnotherView.class);
+PanacheQuery<RaceWeight> query = Person.find("select new MyView(d.race, AVG(d.weight)) from Dog d group by d.race").project(AnotherView.class);
 ----
 ====
 

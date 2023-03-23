@@ -3,6 +3,7 @@ package io.quarkus.reactive.oracle.client.runtime;
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -112,7 +113,11 @@ public class OraclePoolRecorder {
             DataSourceReactiveOracleConfig dataSourceReactiveOracleConfig) {
         OracleConnectOptions oracleConnectOptions;
         if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
-            String url = dataSourceReactiveRuntimeConfig.url.get().get(0);
+            List<String> urls = dataSourceReactiveRuntimeConfig.url.get();
+            if (urls.size() > 1) {
+                log.warn("The Oracle driver does not support multiple URLs. This first is used, and others is ignored.");
+            }
+            String url = urls.get(0);
             // clean up the URL to make migrations easier
             if (url.startsWith("vertx-reactive:oracle:")) {
                 url = url.substring("vertx-reactive:".length());

@@ -34,11 +34,18 @@ public class Marshaller {
     Map<Class<?>, Codec<?>> codecs = new ConcurrentHashMap<>();
 
     public Marshaller(Class<?>... hints) {
-        doesNotContainNull(hints, "hints");
+        addAll(hints);
+    }
 
+    public void addAll(Class<?>... hints) {
+        doesNotContainNull(hints, "hints");
         for (Class<?> hint : hints) {
-            codecs.put(hint, Codecs.getDefaultCodecFor(hint));
+            codecs.computeIfAbsent(hint, h -> Codecs.getDefaultCodecFor(hint));
         }
+    }
+
+    public void add(Class<?> hint) {
+        codecs.computeIfAbsent(hint, h -> Codecs.getDefaultCodecFor(hint));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -78,7 +85,7 @@ public class Marshaller {
         return codec;
     }
 
-    final <T> T decode(Class<T> clazz, Response r) {
+    public final <T> T decode(Class<T> clazz, Response r) {
         if (r == null) {
             return null;
         }

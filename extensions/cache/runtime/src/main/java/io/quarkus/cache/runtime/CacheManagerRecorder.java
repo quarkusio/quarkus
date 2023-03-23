@@ -1,57 +1,105 @@
 package io.quarkus.cache.runtime;
 
-import static io.quarkus.cache.runtime.CacheConfig.CAFFEINE_CACHE_TYPE;
+import static io.quarkus.cache.runtime.CacheBuildConfig.CAFFEINE_CACHE_TYPE;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
 
 import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.CacheManagerInfo;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheManagerBuilder;
 import io.quarkus.cache.runtime.noop.NoOpCacheManagerBuilder;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class CacheManagerRecorder {
 
-    private final CacheConfig cacheConfig;
+    private final CacheBuildConfig cacheBuildConfig;
+    private final RuntimeValue<CacheConfig> cacheConfigRV;
 
-    public CacheManagerRecorder(CacheConfig cacheConfig) {
-        this.cacheConfig = cacheConfig;
+    public CacheManagerRecorder(CacheBuildConfig cacheBuildConfig, RuntimeValue<CacheConfig> cacheConfigRV) {
+        this.cacheBuildConfig = cacheBuildConfig;
+        this.cacheConfigRV = cacheConfigRV;
     }
 
-    public Supplier<CacheManager> getCacheManagerSupplierWithMicrometerMetrics(Set<String> cacheNames) {
-        Supplier<Supplier<CacheManager>> caffeineCacheManagerSupplier = new Supplier<Supplier<CacheManager>>() {
+    public Supplier<CacheManager> resolveCacheInfo(Collection<CacheManagerInfo> infos, Set<String> cacheNames,
+            boolean micrometerMetricsEnabled) {
+        CacheConfig cacheConfig = cacheConfigRV.getValue();
+        CacheManagerInfo.Context context = new CacheManagerInfo.Context() {
             @Override
-            public Supplier<CacheManager> get() {
-                return CaffeineCacheManagerBuilder.buildWithMicrometerMetrics(cacheNames, cacheConfig);
+            public boolean cacheEnabled() {
+                return cacheConfig.enabled();
+            }
+
+            @Override
+            public Metrics metrics() {
+                return micrometerMetricsEnabled ? Metrics.MICROMETER : Metrics.NONE;
+            }
+
+            @Override
+            public String cacheType() {
+                return cacheBuildConfig.type();
+            }
+
+            @Override
+            public Set<String> cacheNames() {
+                return cacheNames;
             }
         };
-        return getCacheManagerSupplier(cacheNames, caffeineCacheManagerSupplier);
-    }
-
-    public Supplier<CacheManager> getCacheManagerSupplierWithoutMetrics(Set<String> cacheNames) {
-        Supplier<Supplier<CacheManager>> caffeineCacheManagerSupplier = new Supplier<Supplier<CacheManager>>() {
-            @Override
-            public Supplier<CacheManager> get() {
-                return CaffeineCacheManagerBuilder.buildWithoutMetrics(cacheNames, cacheConfig);
+        for (CacheManagerInfo info : infos) {
+            if (info.supports(context)) {
+                return info.get(context);
             }
-        };
-        return getCacheManagerSupplier(cacheNames, caffeineCacheManagerSupplier);
-    }
-
-    private Supplier<CacheManager> getCacheManagerSupplier(Set<String> cacheNames,
-            Supplier<Supplier<CacheManager>> caffeineCacheManagerSupplier) {
-        if (cacheConfig.enabled) {
-            switch (cacheConfig.type) {
-                case CAFFEINE_CACHE_TYPE:
-                    return caffeineCacheManagerSupplier.get();
-                default:
-                    throw new DeploymentException("Unknown cache type: " + cacheConfig.type);
-            }
-        } else {
-            return NoOpCacheManagerBuilder.build(cacheNames);
         }
+        throw new DeploymentException("Unknown cache type: " + context.cacheType());
     }
+
+    public CacheManagerInfo noOpCacheManagerInfo() {
+        return new CacheManagerInfo() {
+            @Override
+            public boolean supports(Context context) {
+                return !context.cacheEnabled();
+            }
+
+            @Override
+            public Supplier<CacheManager> get(Context context) {
+                return NoOpCacheManagerBuilder.build(context.cacheNames());
+            }
+        };
+    }
+
+    public CacheManagerInfo getCacheManagerInfoWithMicrometerMetrics() {
+        return new CacheManagerInfo() {
+            @Override
+            public boolean supports(Context context) {
+                return context.cacheEnabled() && context.cacheType().equals(CAFFEINE_CACHE_TYPE)
+                        && (context.metrics() == Context.Metrics.MICROMETER);
+            }
+
+            @Override
+            public Supplier<CacheManager> get(Context context) {
+                return CaffeineCacheManagerBuilder.buildWithMicrometerMetrics(context.cacheNames(), cacheConfigRV.getValue());
+            }
+        };
+    }
+
+    public CacheManagerInfo getCacheManagerInfoWithoutMetrics() {
+        return new CacheManagerInfo() {
+            @Override
+            public boolean supports(Context context) {
+                return context.cacheEnabled() && context.cacheType().equals(CAFFEINE_CACHE_TYPE)
+                        && (context.metrics() == Context.Metrics.NONE);
+            }
+
+            @Override
+            public Supplier<CacheManager> get(Context context) {
+                return CaffeineCacheManagerBuilder.buildWithoutMetrics(context.cacheNames(), cacheConfigRV.getValue());
+            }
+        };
+    }
+
 }

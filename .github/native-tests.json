@@ -86,8 +86,8 @@
         },
         {
             "category": "Cache",
-            "timeout": 55,
-            "test-modules": "infinispan-cache-jpa, infinispan-client, cache",
+            "timeout": 60,
+            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache",
             "os-name": "ubuntu-latest"
         },
         {

@@ -10,60 +10,50 @@ import java.util.OptionalLong;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigRoot(phase = RUN_TIME)
-public class CacheConfig {
-
-    public static final String CAFFEINE_CACHE_TYPE = "caffeine";
+@ConfigMapping(prefix = "quarkus.cache")
+public interface CacheConfig {
 
     /**
      * Whether or not the cache extension is enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
-
-    /**
-     * Cache type.
-     */
-    @ConfigItem(defaultValue = CAFFEINE_CACHE_TYPE)
-    public String type;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * Caffeine configuration.
      */
-    @ConfigItem
-    public CaffeineConfig caffeine;
+    CaffeineConfig caffeine();
 
-    @ConfigGroup
-    public static class CaffeineConfig {
+    interface CaffeineConfig {
 
         /**
          * Default configuration applied to all Caffeine caches (lowest precedence)
          */
-        @ConfigItem(name = ConfigItem.PARENT)
+        @WithParentName
         @ConfigDocSection
-        public CaffeineCacheConfig defaultConfig;
+        CaffeineCacheConfig defaultConfig();
 
         /**
          * Additional configuration applied to a specific Caffeine cache (highest precedence)
          */
-        @ConfigItem(name = ConfigItem.PARENT)
+        @WithParentName
         @ConfigDocMapKey("cache-name")
         @ConfigDocSection
-        public Map<String, CaffeineCacheConfig> cachesConfig;
+        Map<String, CaffeineCacheConfig> cachesConfig();
 
-        @ConfigGroup
-        public static class CaffeineCacheConfig {
+        interface CaffeineCacheConfig {
 
             /**
              * Minimum total size for the internal data structures. Providing a large enough estimate at construction time
              * avoids the need for expensive resizing operations later, but setting this value unnecessarily high wastes memory.
              */
-            @ConfigItem
-            public OptionalInt initialCapacity;
+            OptionalInt initialCapacity();
 
             /**
              * Maximum number of entries the cache may contain. Note that the cache <b>may evict an entry before this limit is
@@ -71,29 +61,25 @@ public class CacheConfig {
              * the cache evicts entries that are less likely to be used again. For example, the cache may evict an entry because
              * it hasn't been used recently or very often.
              */
-            @ConfigItem
-            public OptionalLong maximumSize;
+            OptionalLong maximumSize();
 
             /**
              * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
              * the entry's creation, or the most recent replacement of its value.
              */
-            @ConfigItem
-            public Optional<Duration> expireAfterWrite;
+            Optional<Duration> expireAfterWrite();
 
             /**
              * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
              * the entry's creation, the most recent replacement of its value, or its last read.
              */
-            @ConfigItem
-            public Optional<Duration> expireAfterAccess;
+            Optional<Duration> expireAfterAccess();
 
             /**
              * Whether or not metrics are recorded if the application depends on the Micrometer extension. Setting this
              * value to {@code true} will enable the accumulation of cache stats inside Caffeine.
              */
-            @ConfigItem
-            public Optional<Boolean> metricsEnabled;
+            Optional<Boolean> metricsEnabled();
         }
     }
 }

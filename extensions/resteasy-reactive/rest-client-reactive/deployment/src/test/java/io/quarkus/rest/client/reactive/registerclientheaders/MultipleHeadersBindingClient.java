@@ -9,6 +9,7 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
+import io.quarkus.rest.client.reactive.ComputedParamContext;
 import io.quarkus.rest.client.reactive.NotBody;
 import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
 
@@ -23,4 +24,15 @@ public interface MultipleHeadersBindingClient {
     @Path("/describe-request")
     @ClientHeaderParam(name = "header-from-properties", value = "${header.value}")
     RequestData call(@HeaderParam("jaxrs-style-header") String headerValue, @NotBody String usedForComputingContentType);
+
+    @GET
+    @Path("/describe-request")
+    @ClientHeaderParam(name = "header-from-properties", value = "${header.value}")
+    @ClientHeaderParam(name = "Content-Type", value = "{calculateContentType}")
+    RequestData call(@HeaderParam("jaxrs-style-header") String headerValue, @NotBody String usedForComputingContentType,
+            String unusedBody);
+
+    default String calculateContentType(ComputedParamContext context) {
+        return "application/json;param2=" + context.methodParameters().get(1).value();
+    }
 }

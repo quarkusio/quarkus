@@ -57,6 +57,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public static final String INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
     public static final String INVOKED_METHOD_PARAMETERS_PROP = "io.quarkus.rest.client.invokedMethodParameters";
+    public static final String DEFAULT_CONTENT_TYPE_PROP = "io.quarkus.rest.client.defaultContentType";
     private static final String TMP_FILE_PATH_KEY = "tmp_file_path";
 
     private final HttpClient httpClient;

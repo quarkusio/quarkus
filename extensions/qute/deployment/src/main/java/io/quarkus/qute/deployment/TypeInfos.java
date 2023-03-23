@@ -81,6 +81,11 @@ final class TypeInfos {
                         rawClass = null;
                     } else {
                         rawClass = getClassInfo(classStr, index, templateIdToPathFun, expressionOrigin);
+                        // Comparable<Integer> -> java.lang.Comparable<Integer>
+                        if (rawClass.name().packagePrefix().equals("java.lang")
+                                && !classStr.contains(Types.JAVA_LANG_PREFIX)) {
+                            classStr = Types.JAVA_LANG_PREFIX + classStr;
+                        }
                         resolvedType = resolveType(classStr);
                     }
                 }

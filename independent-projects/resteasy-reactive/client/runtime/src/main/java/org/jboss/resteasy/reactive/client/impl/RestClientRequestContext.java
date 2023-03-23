@@ -241,6 +241,10 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     public Buffer writeEntity(Entity<?> entity, MultivaluedMap<String, String> headerMap, WriterInterceptor[] interceptors)
             throws IOException {
         Object entityObject = entity.getEntity();
+        if (entityObject == null) {
+            return AsyncInvokerImpl.EMPTY_BUFFER;
+        }
+
         Class<?> entityClass;
         Type entityType;
         if (entityObject instanceof GenericEntity) {

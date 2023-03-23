@@ -67,6 +67,7 @@ import io.quarkus.rest.client.reactive.runtime.ClientQueryParamSupport;
 import io.quarkus.rest.client.reactive.runtime.ComputedParamContextImpl;
 import io.quarkus.rest.client.reactive.runtime.ConfigUtils;
 import io.quarkus.rest.client.reactive.runtime.ExtendedHeaderFiller;
+import io.quarkus.rest.client.reactive.runtime.HeaderFillerUtil;
 import io.quarkus.rest.client.reactive.runtime.MicroProfileRestClientRequestFilter;
 import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
 import io.quarkus.runtime.util.HashUtil;
@@ -91,8 +92,10 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             Object.class);
     private static final MethodDescriptor MAP_PUT_METHOD = MethodDescriptor.ofMethod(Map.class, "put", Object.class,
             Object.class, Object.class);
-    private static final MethodDescriptor MAP_CONTAINS_KEY_METHOD = MethodDescriptor.ofMethod(Map.class, "containsKey",
-            boolean.class, Object.class);
+
+    private static final MethodDescriptor HEADER_FILLER_UTIL_SHOULD_ADD_HEADER = MethodDescriptor.ofMethod(
+            HeaderFillerUtil.class, "shouldAddHeader",
+            boolean.class, String.class, MultivaluedMap.class, ClientRequestContext.class);
     private static final MethodDescriptor WEB_TARGET_IMPL_QUERY_PARAMS = MethodDescriptor.ofMethod(WebTargetImpl.class,
             "queryParam", WebTargetImpl.class, String.class, Collection.class);
 
@@ -520,8 +523,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
         // if headers are set here, they were set with @HeaderParam, which should take precedence of MP ways
         BytecodeCreator fillHeaders = fillHeadersCreator
-                .ifFalse(fillHeadersCreator.invokeInterfaceMethod(MAP_CONTAINS_KEY_METHOD, headerMap,
-                        fillHeadersCreator.load(headerName)))
+                .ifTrue(fillHeadersCreator.invokeStaticMethod(HEADER_FILLER_UTIL_SHOULD_ADD_HEADER,
+                        fillHeadersCreator.load(headerName), headerMap, requestContext))
                 .trueBranch();
 
         if (values.length > 1 || !(values[0].startsWith("{") && values[0].endsWith("}"))) {

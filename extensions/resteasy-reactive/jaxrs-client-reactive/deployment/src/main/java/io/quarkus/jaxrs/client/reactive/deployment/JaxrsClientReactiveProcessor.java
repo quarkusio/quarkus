@@ -5,6 +5,7 @@ import static org.jboss.jandex.Type.Kind.ARRAY;
 import static org.jboss.jandex.Type.Kind.CLASS;
 import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
 import static org.jboss.jandex.Type.Kind.PRIMITIVE;
+import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.DEFAULT_CONTENT_TYPE_PROP;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.extractProducesConsumesValues;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
@@ -2026,6 +2027,15 @@ public class JaxrsClientReactiveProcessor {
             } else if (formParams != null) {
                 mediaTypeValue = multipart ? MediaType.MULTIPART_FORM_DATA : MediaType.APPLICATION_FORM_URLENCODED;
             }
+
+            if (mediaTypeValue.equals(defaultMediaType)) {
+                // we want to keep the default type around in order to ensure that Header manipulation code can override it without issue
+                tryBlock.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Invocation.Builder.class, "property", Invocation.Builder.class, String.class,
+                                Object.class),
+                        builder, tryBlock.load(DEFAULT_CONTENT_TYPE_PROP), tryBlock.load(mediaTypeValue));
+            }
+
             ResultHandle mediaType = tryBlock.invokeStaticMethod(
                     MethodDescriptor.ofMethod(MediaType.class, "valueOf", MediaType.class, String.class),
                     tryBlock.load(mediaTypeValue));

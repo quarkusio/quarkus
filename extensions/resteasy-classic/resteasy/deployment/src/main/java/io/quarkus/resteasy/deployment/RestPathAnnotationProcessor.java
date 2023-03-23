@@ -114,9 +114,9 @@ public class RestPathAnnotationProcessor {
                 } else {
                     // Fallback: look for @Path on interfaces
                     getAllClassInterfaces(index, List.of(classInfo), new ArrayList<>()).stream()
-                            .filter(interfaceClassInfo -> interfaceClassInfo.hasAnnotation(REST_PATH))
+                            .filter(interfaceClassInfo -> interfaceClassInfo.hasDeclaredAnnotation(REST_PATH))
                             .findFirst()
-                            .map(interfaceClassInfo -> interfaceClassInfo.annotation(REST_PATH).value())
+                            .map(interfaceClassInfo -> interfaceClassInfo.declaredAnnotation(REST_PATH).value())
                             .ifPresent(annotationValue -> stringBuilder.insert(0, slashify(annotationValue.asString())));
                 }
 

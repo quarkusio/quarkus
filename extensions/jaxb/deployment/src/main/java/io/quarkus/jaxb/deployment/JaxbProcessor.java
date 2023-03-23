@@ -316,14 +316,6 @@ public class JaxbProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupJaxbContextConfig(
-            FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
-            JaxbContextConfigRecorder jaxbContextConfig) {
-        jaxbContextConfig.addClassesToBeBound(filteredClassesToBeBound.getClasses());
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void validateDefaultJaxbContext(
             JaxbConfig config,
             FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
@@ -335,6 +327,7 @@ public class JaxbProcessor {
             final Set<BeanInfo> beans = beanResolver
                     .resolveBeans(Type.create(DotName.createSimple(JAXBContext.class), org.jboss.jandex.Type.Kind.CLASS));
             if (!beans.isEmpty()) {
+                jaxbContextConfig.addClassesToBeBound(filteredClassesToBeBound.getClasses());
                 final BeanInfo bean = beanResolver.resolveAmbiguity(beans);
                 if (bean.isDefaultBean()) {
                     /*

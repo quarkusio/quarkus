@@ -2,9 +2,11 @@ package io.quarkus.stork.deployment;
 
 import static java.util.Arrays.asList;
 
+import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -22,6 +24,8 @@ import io.quarkus.stork.SmallRyeStorkRecorder;
 import io.quarkus.stork.StorkConfigProvider;
 import io.quarkus.stork.StorkConfiguration;
 import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.smallrye.stork.spi.LoadBalancerProvider;
+import io.smallrye.stork.spi.ServiceDiscoveryProvider;
 import io.smallrye.stork.spi.internal.LoadBalancerLoader;
 import io.smallrye.stork.spi.internal.ServiceDiscoveryLoader;
 
@@ -37,6 +41,13 @@ public class SmallRyeStorkProcessor {
         for (Class<?> providerClass : asList(LoadBalancerLoader.class, ServiceDiscoveryLoader.class)) {
             services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(providerClass.getName()));
         }
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem unremoveableBeans() {
+        return UnremovableBeanBuildItem.beanTypes(
+                DotName.createSimple(ServiceDiscoveryProvider.class),
+                DotName.createSimple(LoadBalancerProvider.class));
     }
 
     /**

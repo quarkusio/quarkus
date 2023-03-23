@@ -26,7 +26,6 @@ import org.mvnpm.importmap.Aggregator;
 import org.mvnpm.importmap.Location;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
@@ -49,6 +48,7 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
+import io.vertx.core.json.jackson.DatabindCodec;
 
 /**
  * This creates static content that is used in dev UI. For example the index.html and any other data (json) available on build
@@ -60,8 +60,6 @@ public class BuildTimeContentProcessor {
     private static final String BUILD_TIME_PATH = "dev-ui-templates/build-time";
 
     final Config config = ConfigProvider.getConfig();
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Here we create references to internal dev ui files so that they can be imported by ref.
@@ -174,8 +172,7 @@ public class BuildTimeContentProcessor {
                 for (Map.Entry<String, Object> pageData : buildTimeConstBuildItem.getBuildTimeData().entrySet()) {
                     try {
                         String key = pageData.getKey();
-                        String value = objectMapper.writerWithDefaultPrettyPrinter()
-                                .writeValueAsString(pageData.getValue());
+                        String value = DatabindCodec.prettyMapper().writeValueAsString(pageData.getValue());
                         data.put(key, value);
                     } catch (JsonProcessingException ex) {
                         ex.printStackTrace();

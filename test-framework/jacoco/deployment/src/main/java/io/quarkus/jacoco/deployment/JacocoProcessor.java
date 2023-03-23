@@ -16,7 +16,6 @@ import org.jacoco.core.runtime.OfflineInstrumentationAccessGenerator;
 import org.jboss.jandex.ClassInfo;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsTest;
@@ -105,17 +104,7 @@ public class JacocoProcessor {
             info.classFiles = classes;
 
             Set<String> sources = new HashSet<>();
-            ApplicationModel model;
-            if (BuildToolHelper.isMavenProject(targetdir.toPath())) {
-                model = curateOutcomeBuildItem.getApplicationModel();
-            } else if (BuildToolHelper.isGradleProject(targetdir.toPath())) {
-                //this seems counter productive, but we want the dev mode model and not the test model
-                //as the test model will include the test classes that we don't want in the report
-                model = BuildToolHelper.enableGradleAppModelForDevMode(targetdir.toPath());
-            } else {
-                throw new RuntimeException("Cannot determine project type generating Jacoco report");
-            }
-
+            final ApplicationModel model = curateOutcomeBuildItem.getApplicationModel();
             if (model.getApplicationModule() != null) {
                 addProjectModule(model.getAppArtifact(), config, info, includes, excludes, classes, sources);
             }

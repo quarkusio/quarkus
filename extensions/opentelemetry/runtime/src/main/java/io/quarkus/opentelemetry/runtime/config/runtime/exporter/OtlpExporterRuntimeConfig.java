@@ -1,7 +1,5 @@
 package io.quarkus.opentelemetry.runtime.config.runtime.exporter;
 
-import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -25,64 +23,7 @@ public class OtlpExporterRuntimeConfig {
     public OtlpExporterTracesConfig traces;
     // TODO metrics();
     // TODO logs();
-
-    //    /**
-    //     * Sets the certificate chain to use for verifying servers when TLS is enabled. The {@code byte[]}
-    //     * should contain an X.509 certificate collection in PEM format. If not set, TLS connections will
-    //     * use the system default trusted certificates.
-    //     */
-    //    @ConfigItem()
-    //    public Optional<byte[]> certificate;
-
-    //    /**
-    //     * Sets ths client key and the certificate chain to use for verifying client when TLS is enabled.
-    //     * The key must be PKCS8, and both must be in PEM format.
-    //     */
-    //    @ConfigItem()
-    //    public Optional<ClientTlsConfig> client;
-
-    /**
-     * Add header to request. Optional.
-     */
-    @ConfigItem()
-    public Map<String, String> headers;
-
-    /**
-     * Sets the method used to compress payloads. If unset, compression is disabled. Currently
-     * supported compression methods include "gzip" and "none".
-     */
-    @ConfigItem()
-    public Optional<OtelConnectionRuntimeConfig.CompressionType> compression;
-
-    /**
-     * Sets the maximum time to wait for the collector to process an exported batch of spans. If
-     * unset, defaults to {@value OtelConnectionRuntimeConfig.Constants#DEFAULT_TIMEOUT_SECS}s.
-     */
-    @ConfigItem(defaultValue = OtelConnectionRuntimeConfig.Constants.DEFAULT_TIMEOUT_SECS)
-    public Duration timeout;
-
-    /**
-     * OTLP defines the encoding of telemetry data and the protocol used to exchange data between the client and the server.
-     * Depending on the exporter, the available protocols will be different.
-     */
-    @ConfigItem()
-    public Optional<String> protocol;
-
-    //    @ConfigGroup
-    //    public class ClientTlsConfig {
-    //
-    //        /**
-    //         * Key
-    //         */
-    //        @ConfigItem()
-    //        public byte[] key;
-    //
-    //        /**
-    //         * Certificate
-    //         */
-    //        @ConfigItem()
-    //        public byte[] certificate;
-    //    }
+    // TODO additional global exporter configuration
 
     /**
      * From <a href=

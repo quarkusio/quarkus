@@ -55,6 +55,8 @@ public class OtelConfigRelocateConfigSourceInterceptor extends RelocateConfigSou
                 "quarkus.otel.traces.suppress-non-application-uris");
         relocations.put("quarkus.opentelemetry.tracer.include-static-resources",
                 "quarkus.otel.traces.include-static-resources");
+        relocations.put("quarkus.opentelemetry.tracer.exporter.otlp.headers",
+                "quarkus.otel.exporter.otlp.traces.headers");
         return Collections.unmodifiableMap(relocations);
     }
 }

@@ -17,6 +17,11 @@ public interface HelloClient2 {
     @Path("/")
     String echo(String name);
 
+    @POST
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Path("/")
+    String echoIgnoreParams(String name, @NotBody String ignored, @NotBody String ignored2);
+
     @GET
     String bug18977();
 

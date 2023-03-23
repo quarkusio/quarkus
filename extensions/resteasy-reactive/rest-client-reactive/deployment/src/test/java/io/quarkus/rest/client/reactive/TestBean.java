@@ -25,6 +25,10 @@ public class TestBean {
         return client2.echo(name);
     }
 
+    String helloViaInjectedClientIgnoreParams(String name) {
+        return client2.echoIgnoreParams(name, "whatever", "whatever2");
+    }
+
     String helloViaBuiltClient(String name) {
         HelloClient helloClient = RestClientBuilder.newBuilder()
                 .baseUrl(url)

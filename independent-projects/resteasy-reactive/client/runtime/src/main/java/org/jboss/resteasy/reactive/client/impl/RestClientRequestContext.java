@@ -55,7 +55,8 @@ import io.vertx.core.http.HttpClientResponse;
  */
 public class RestClientRequestContext extends AbstractResteasyReactiveContext<RestClientRequestContext, ClientRestHandler> {
 
-    private static final String MP_INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
+    public static final String INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
+    public static final String INVOKED_METHOD_PARAMETERS_PROP = "io.quarkus.rest.client.invokedMethodParameters";
     private static final String TMP_FILE_PATH_KEY = "tmp_file_path";
 
     private final HttpClient httpClient;
@@ -157,7 +158,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     }
 
     public Method getInvokedMethod() {
-        Object o = properties.get(MP_INVOKED_METHOD_PROP);
+        Object o = properties.get(INVOKED_METHOD_PROP);
         if (o instanceof Method) {
             return (Method) o;
         }
@@ -170,7 +171,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         if (res instanceof WebApplicationException) {
             var webApplicationException = (WebApplicationException) res;
             var message = webApplicationException.getMessage();
-            var invokedMethodObject = properties.get(MP_INVOKED_METHOD_PROP);
+            var invokedMethodObject = properties.get(INVOKED_METHOD_PROP);
             if ((invokedMethodObject instanceof Method) && !disableContextualErrorMessages) {
                 var invokedMethod = (Method) invokedMethodObject;
                 message = "Received: '" + message + "' when invoking: Rest Client method: '"

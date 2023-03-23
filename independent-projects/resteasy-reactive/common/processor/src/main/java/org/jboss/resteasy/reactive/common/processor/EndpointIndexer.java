@@ -94,6 +94,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
@@ -228,6 +229,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
 
+    private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
+
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
         this.applicationIndex = builder.applicationIndex;
@@ -250,6 +253,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.multipartReturnTypeIndexerExtension = builder.multipartReturnTypeIndexerExtension;
         this.targetJavaVersion = builder.targetJavaVersion;
         this.isDisabledCreator = builder.isDisabledCreator;
+        this.skipMethodParameter = builder.skipMethodParameter;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -578,16 +582,34 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
+                PARAM parameterResult = null;
                 boolean encoded = anns.containsKey(ENCODED);
                 Type paramType = currentMethodInfo.parameterType(i);
                 String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
-                PARAM parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo, currentMethodInfo,
-                        existingConverters, additionalReaders,
-                        anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters,
-                        currentMethodInfo.parameterName(i),
-                        consumes,
-                        methodContext);
+                if (skipParameter(anns)) {
+                    parameterResult = createIndexedParam()
+                            .setCurrentClassInfo(currentClassInfo)
+                            .setActualEndpointInfo(actualEndpointInfo)
+                            .setExistingConverters(existingConverters)
+                            .setAdditionalReaders(additionalReaders)
+                            .setAnns(anns)
+                            .setParamType(paramType)
+                            .setErrorLocation(errorLocation)
+                            .setField(false)
+                            .setHasRuntimeConverters(hasRuntimeConverters)
+                            .setPathParameters(pathParameters)
+                            .setSourceName(currentMethodInfo.parameterName(i))
+                            .setType(ParameterType.SKIPPED);
+                } else {
+                    parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo, currentMethodInfo,
+                            existingConverters, additionalReaders,
+                            anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters,
+                            currentMethodInfo.parameterName(i),
+                            consumes,
+                            methodContext);
+                }
+
                 suspended |= parameterResult.isSuspended();
                 sse |= parameterResult.isSse();
                 String name = parameterResult.getName();
@@ -757,6 +779,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             throw new RuntimeException("Failed to process method '" + currentMethodInfo.declaringClass().name() + "#"
                     + currentMethodInfo.name() + "'", e);
         }
+    }
+
+    protected boolean skipParameter(Map<DotName, AnnotationInstance> anns) {
+        return skipMethodParameter != null && skipMethodParameter.test(anns);
     }
 
     private String[] applyDefaultProducesAndAddCharsets(DotName httpMethod, Type nonAsyncReturnType, String[] produces) {
@@ -1564,6 +1590,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
 
+        private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;
+
         public B setMultipartReturnTypeIndexerExtension(MultipartReturnTypeIndexerExtension multipartReturnTypeHandler) {
             this.multipartReturnTypeIndexerExtension = multipartReturnTypeHandler;
             return (B) this;
@@ -1677,6 +1705,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         public B setIsDisabledCreator(
                 Function<ClassInfo, Supplier<Boolean>> isDisabledCreator) {
             this.isDisabledCreator = isDisabledCreator;
+            return (B) this;
+        }
+
+        public B setSkipMethodParameter(
+                Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter) {
+            this.skipMethodParameter = skipMethodParameter;
             return (B) this;
         }
 

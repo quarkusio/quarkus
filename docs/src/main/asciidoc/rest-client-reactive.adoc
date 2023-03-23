@@ -820,7 +820,7 @@ public interface ExtensionsService {
 
 <1> There can be only one `ClientHeadersFactory` per class. With it, you can not only add custom headers, but you can also transform existing ones. See the `RequestUUIDHeaderFactory` class below for an example of the factory.
 <2> `@ClientHeaderParam` can be used on the client interface and on methods. It can specify a constant header value...
-<3> ... and a name of a method that should compute the value of the header. It can either be a static method or a default method in this interface
+<3> ... and a name of a method that should compute the value of the header. It can either be a static method or a default method in this interface. The method can take either no parameters, a single String parameter or a single `io.quarkus.rest.client.reactive.ComputedParamContext` parameter (which is very useful for code that needs to compute headers based on method parameters and naturally complements `@io.quarkus.rest.client.reactive.NotBody`).
 <4> ... as well as a value from your application's configuration
 <5> ... or as a normal Jakarta REST `@HeaderParam` annotated argument
 

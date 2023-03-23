@@ -19,6 +19,7 @@ public class ConfigUtils {
      * @param required whether the expression is required to be present in the configuration
      * @return null if the resulting expression is empty, otherwise the interpolated expression
      */
+    @SuppressWarnings("unused")
     public static String interpolate(String expression, boolean required) {
         StringBuilder sb = new StringBuilder(expression);
         int idx;

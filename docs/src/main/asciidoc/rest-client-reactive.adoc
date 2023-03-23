@@ -1090,6 +1090,39 @@ REST Client Reactive needs to know the classes used as multipart return types up
 
 WARNING: The files you download are not automatically removed and can take up a lot of disk space. Consider removing the files when you are done working with them.
 
+=== Multipart mixed / OData usage
+
+It is not uncommon that an application has to interact with enterprise systems (like CRM systems) using a special protocol called https://www.odata.org/documentation/odata-version-3-0/batch-processing/[OData].
+This protocol essentially uses a custom HTTP `Content-Type` which needs some glue code to work with the REST Client (creating the body is entirely up to the application - the REST Client can't do much to help).
+
+An example looks like the following:
+
+[source, java]
+----
+@Path("/crm")
+@RegisterRestClient
+public interface CRMService {
+
+    @POST
+    @ClientHeaderParam(name = "Content-Type", value = "{calculateContentType}")  // <1>
+    String performBatch(@HeaderParam("Authorization") String accessToken, @NotBody String batchId, String body); // <2>
+
+    default String calculateContentType(ComputedParamContext context) {
+        return "multipart/mixed;boundary=batch_" + context.methodParameters().get(1).value(); // <3>
+    }
+}
+----
+
+The code uses the following pieces:
+
+<1>  `@ClientHeaderParam(name = "Content-Type", value = "{calculateContentType}")` which ensures that the `Content-Type` header is created by calling the interface's `calculateContentType` default method.
+<2> The aforementioned parameter needs to be annotated with `@NotBody` because it is only used to aid the construction of HTTP headers.
+<3> `context.methodParameters().get(1).value()` which allows the `calculateContentType` method to obtain the proper method parameter passed to the REST Client method.
+
+
+As previously mentioned, the body parameter needs to be properly crafted by the application code to conform to the service's requirements.
+
+
 == Proxy support
 REST Client Reactive supports sending requests through a proxy.
 It honors the JVM settings for it but also allows to specify both:

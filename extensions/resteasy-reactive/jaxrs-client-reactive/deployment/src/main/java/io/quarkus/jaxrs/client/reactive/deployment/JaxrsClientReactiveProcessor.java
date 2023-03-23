@@ -17,6 +17,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.AbstractMap;
@@ -1649,6 +1650,9 @@ public class JaxrsClientReactiveProcessor {
         } else if (type.equals(Path.class.getName())) {
             // and so is path
             addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
+        } else if (type.equals(InputStream.class.getName())) {
+            // and so is path
+            addInputStream(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, type);
         } else if (type.equals(Buffer.class.getName())) {
             // and buffer
             addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, errorLocation);
@@ -1663,8 +1667,12 @@ public class JaxrsClientReactiveProcessor {
                     fieldValue);
             addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, buffer, errorLocation);
         } else if (parameterGenericType.equals(MULTI_BYTE_SIGNATURE)) {
-            addMultiAsFile(ifValueNotNull, multipartForm, formParamName, partType, fieldValue, errorLocation);
+            addMultiAsFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, errorLocation);
         } else if (partType != null) {
+            if (partFilename != null) {
+                log.warnf("Using the @PartFilename annotation is unsupported on the type '%s'. Problematic field is: '%s'",
+                        partType, formParamName);
+            }
             // assume POJO:
             addPojo(ifValueNotNull, multipartForm, formParamName, partType, fieldValue, type);
         } else {
@@ -1675,6 +1683,17 @@ public class JaxrsClientReactiveProcessor {
                     restClientInterfaceClassName, errorLocation);
             addString(parameterIsStringBranch, multipartForm, formParamName, null, partFilename, convertedFormParam);
         }
+    }
+
+    private void addInputStream(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
+            String partType, String partFilename, ResultHandle fieldValue, String type) {
+        methodCreator.assign(multipartForm,
+                methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "entity",
+                        QuarkusMultipartForm.class, String.class, String.class, Object.class, String.class, Class.class),
+                        multipartForm, methodCreator.load(formParamName), methodCreator.load(partFilename), fieldValue,
+                        methodCreator.load(partType),
+                        // FIXME: doesn't support generics
+                        methodCreator.loadClassFromTCCL(type)));
     }
 
     private void addPojo(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
@@ -1780,12 +1799,17 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void addMultiAsFile(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
-            String partType,
+            String partType, String partFilename,
             ResultHandle multi, String errorLocation) {
         // they all default to plain/text except buffers/byte[]/Multi<Byte>/File/Path
         if (partType == null) {
             partType = MediaType.APPLICATION_OCTET_STREAM;
         }
+        String filename = partFilename;
+        if (filename == null) {
+            filename = formParamName;
+        }
+
         if (partType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM)) {
             methodCreator.assign(multipartForm,
                     // MultipartForm#binaryFileUpload(String name, String filename,  Multi<Byte> content, String mediaType);
@@ -1794,7 +1818,7 @@ public class JaxrsClientReactiveProcessor {
                             MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "multiAsBinaryFileUpload",
                                     QuarkusMultipartForm.class, String.class, String.class, Multi.class,
                                     String.class),
-                            multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
+                            multipartForm, methodCreator.load(formParamName), methodCreator.load(filename),
                             multi, methodCreator.load(partType)));
         } else {
             methodCreator.assign(multipartForm,
@@ -1804,7 +1828,7 @@ public class JaxrsClientReactiveProcessor {
                             MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "multiAsTextFileUpload",
                                     QuarkusMultipartForm.class, String.class, String.class, Multi.class,
                                     String.class),
-                            multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
+                            multipartForm, methodCreator.load(formParamName), methodCreator.load(filename),
                             multi, methodCreator.load(partType)));
         }
     }

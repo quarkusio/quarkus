@@ -343,7 +343,8 @@ public class DevServicesKubernetesProcessor {
                 return getKubernetesClientConfigFromKubeConfig(
                         KubeConfigUtils.parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig(containerAddress.getUrl(),
                                 getFileContentFromContainer(KIND_KUBECONFIG))));
-            } else if (image.contains("k8s.gcr.io/kube-apiserver")) {
+            } else if (image.contains("k8s.gcr.io/kube-apiserver") ||
+                    image.contains("registry.k8s.io/kube-apiserver")) {
                 return getKubernetesClientConfigFromKubeConfig(getKubeconfigFromApiContainer(containerAddress.getUrl()));
             }
 

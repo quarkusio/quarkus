@@ -127,7 +127,7 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
                 this.routerType = RouteType.ABSOLUTE_ROUTE;
             }
 
-            BasicRoute basicRoute = new BasicRoute(this.path, -1);
+            BasicRoute basicRoute = new BasicRoute(this.path, order);
 
             super.routeFunction = basicRoute;
             return this;

@@ -6,10 +6,11 @@ import jakarta.persistence.Entity
 import jakarta.persistence.ManyToOne
 
 @Entity
-class Cat @JvmOverloads constructor(
+class Cat
+@JvmOverloads
+constructor(
     var name: String? = null,
-    @ManyToOne
-    var owner: CatOwner? = null,
+    @ManyToOne var owner: CatOwner? = null,
     var weight: Double? = null
 ) : PanacheEntity() {
     companion object : PanacheCompanion<Cat>

@@ -9,8 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension
 
 class DefaultPackageWithFastJarPMT {
 
-    @ProdBuildResults
-    private var prodModeTestResults: ProdModeTestResults? = null
+    @ProdBuildResults private var prodModeTestResults: ProdModeTestResults? = null
 
     @Test
     fun testJarCreated() {
@@ -21,14 +20,14 @@ class DefaultPackageWithFastJarPMT {
     companion object {
         @RegisterExtension
         @JvmField
-        val config = QuarkusProdModeTest()
-            .withApplicationRoot { jar: JavaArchive ->
-                jar
-                    .addClasses(PackagelessCat::class.java)
-            }
-            .setApplicationName("default-package")
-            .setApplicationVersion(Version.getVersion())
-            .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.package.type", "fast-jar")
+        val config =
+            QuarkusProdModeTest()
+                .withApplicationRoot { jar: JavaArchive ->
+                    jar.addClasses(PackagelessCat::class.java)
+                }
+                .setApplicationName("default-package")
+                .setApplicationVersion(Version.getVersion())
+                .withConfigurationResource("application.properties")
+                .overrideConfigKey("quarkus.package.type", "fast-jar")
     }
 }

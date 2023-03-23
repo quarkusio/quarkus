@@ -7,8 +7,7 @@ import org.hamcrest.Matchers
 import org.junit.jupiter.api.Test
 
 // Native tests
-@QuarkusIntegrationTest
-class ProjectionIT : ProjectionTest()
+@QuarkusIntegrationTest class ProjectionIT : ProjectionTest()
 
 // Quarkus/JVM tests
 @QuarkusTest

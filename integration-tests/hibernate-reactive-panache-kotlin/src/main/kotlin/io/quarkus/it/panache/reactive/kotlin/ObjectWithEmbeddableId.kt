@@ -12,8 +12,7 @@ import java.util.Objects
 class ObjectWithEmbeddableId : PanacheEntityBase {
     companion object : PanacheCompanionBase<ObjectWithEmbeddableId, ObjectKey>
 
-    @EmbeddedId
-    var key: ObjectKey? = null
+    @EmbeddedId var key: ObjectKey? = null
     var description: String? = null
 
     @Embeddable

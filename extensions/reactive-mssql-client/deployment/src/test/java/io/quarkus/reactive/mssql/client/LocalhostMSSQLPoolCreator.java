@@ -9,7 +9,7 @@ public class LocalhostMSSQLPoolCreator implements MSSQLPoolCreator {
 
     @Override
     public MSSQLPool create(Input input) {
-        return MSSQLPool.pool(input.vertx(), input.msSQLConnectOptionsList().get(0).setHost("localhost").setPort(1435),
+        return MSSQLPool.pool(input.vertx(), input.msSQLConnectOptions().setHost("localhost").setPort(1435),
                 input.poolOptions());
     }
 }

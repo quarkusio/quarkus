@@ -8,8 +8,8 @@ import io.quarkus.panache.common.impl.GenerateBridge
 import io.smallrye.common.annotation.CheckReturnValue
 import io.smallrye.mutiny.Uni
 import jakarta.persistence.LockModeType
-import org.hibernate.reactive.mutiny.Mutiny
 import java.util.stream.Stream
+import org.hibernate.reactive.mutiny.Mutiny
 
 /**
  * Defines methods to be used via the companion objects of entities.
@@ -32,8 +32,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param id the ID of the entity to find.
      * @return the entity found, or `null` if not found.
      */
-    @GenerateBridge
-    fun findById(id: Id): Uni<Entity?> = injectionMissing()
+    @GenerateBridge fun findById(id: Id): Uni<Entity?> = injectionMissing()
 
     /**
      * Find an entity of this type by ID and lock it.
@@ -67,7 +66,8 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, vararg params: Any): PanacheQuery<Entity> = injectionMissing()
+    fun find(query: String, sort: Sort, vararg params: Any): PanacheQuery<Entity> =
+        injectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -90,7 +90,8 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, params: Map<String, Any>): PanacheQuery<Entity> = injectionMissing()
+    fun find(query: String, sort: Sort, params: Map<String, Any>): PanacheQuery<Entity> =
+        injectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -113,7 +114,8 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, params: Parameters): PanacheQuery<Entity> = injectionMissing()
+    fun find(query: String, sort: Sort, params: Parameters): PanacheQuery<Entity> =
+        injectionMissing()
 
     /**
      * Find all entities of this type.
@@ -121,8 +123,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @return a new [PanacheQuery] instance to find all entities of this type.
      * @see [listAll] listAll
      */
-    @GenerateBridge
-    fun findAll(): PanacheQuery<Entity> = injectionMissing()
+    @GenerateBridge fun findAll(): PanacheQuery<Entity> = injectionMissing()
 
     /**
      * Find all entities of this type, in the given order.
@@ -131,12 +132,11 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @return a new [PanacheQuery] instance to find all entities of this type.
      * @see [listAll] listAll
      */
-    @GenerateBridge
-    fun findAll(sort: Sort): PanacheQuery<Entity> = injectionMissing()
+    @GenerateBridge fun findAll(sort: Sort): PanacheQuery<Entity> = injectionMissing()
 
     /**
-     * Find entities matching a query, with optional indexed parameters.
-     * This method is a shortcut for `find(query, params).list()`.
+     * Find entities matching a query, with optional indexed parameters. This method is a shortcut
+     * for `find(query, params).list()`.
      *
      * @param query a query string
      * @param params optional sequence of indexed parameters
@@ -162,8 +162,8 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
     fun list(query: String, sort: Sort, vararg params: Any): Uni<List<Entity>> = injectionMissing()
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for `find(query, params).list()`.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * `find(query, params).list()`.
      *
      * @param query a query string
      * @param params [Map] of named parameters
@@ -175,8 +175,8 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
     fun list(query: String, params: Map<String, Any>): Uni<List<Entity>> = injectionMissing()
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for `find(query, sort, params).list()`.
+     * Find entities matching a query and the given sort options, with named parameters. This method
+     * is a shortcut for `find(query, sort, params).list()`.
      *
      * @param query a query string
      * @param sort the sort strategy to use
@@ -186,11 +186,12 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun list(query: String, sort: Sort, params: Map<String, Any>): Uni<List<Entity>> = injectionMissing()
+    fun list(query: String, sort: Sort, params: Map<String, Any>): Uni<List<Entity>> =
+        injectionMissing()
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for `find(query, params).list()`.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * `find(query, params).list()`.
      *
      * @param query a query string
      * @param params [Parameters] of named parameters
@@ -202,8 +203,8 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
     fun list(query: String, params: Parameters): Uni<List<Entity>> = injectionMissing()
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for `find(query, sort, params).list()`.
+     * Find entities matching a query and the given sort options, with named parameters. This method
+     * is a shortcut for `find(query, sort, params).list()`.
      *
      * @param query a query string
      * @param sort the sort strategy to use
@@ -216,19 +217,16 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
     fun list(query: String, sort: Sort, params: Parameters): Uni<List<Entity>> = injectionMissing()
 
     /**
-     * Find all entities of this type.
-     * This method is a shortcut for `findAll().list()`.
+     * Find all entities of this type. This method is a shortcut for `findAll().list()`.
      *
      * @return a [List] containing all results, without paging
      * @see [findAll] findAll
      */
-    @CheckReturnValue
-    @GenerateBridge
-    fun listAll(): Uni<List<Entity>> = injectionMissing()
+    @CheckReturnValue @GenerateBridge fun listAll(): Uni<List<Entity>> = injectionMissing()
 
     /**
-     * Find all entities of this type, in the given order.
-     * This method is a shortcut for `findAll(sort).list()`.
+     * Find all entities of this type, in the given order. This method is a shortcut for
+     * `findAll(sort).list()`.
      *
      * @param sort the sort order to use
      * @return a [List] containing all results, without paging
@@ -243,12 +241,11 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      *
      * @return the number of this type of entity in the database.
      */
-    @CheckReturnValue
-    @GenerateBridge
-    fun count(): Uni<Long> = injectionMissing()
+    @CheckReturnValue @GenerateBridge fun count(): Uni<Long> = injectionMissing()
 
     /**
-     * Counts the number of this type of entity matching the given query, with optional indexed parameters.
+     * Counts the number of this type of entity matching the given query, with optional indexed
+     * parameters.
      *
      * @param query a query string
      * @param params optional sequence of indexed parameters
@@ -289,9 +286,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @return the number of entities deleted.
      * @see [delete] delete
      */
-    @CheckReturnValue
-    @GenerateBridge
-    fun deleteAll(): Uni<Long> = injectionMissing()
+    @CheckReturnValue @GenerateBridge fun deleteAll(): Uni<Long> = injectionMissing()
 
     /**
      * Delete an entity of this type by ID.
@@ -299,9 +294,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param id the ID of the entity to delete.
      * @return false if the entity was not deleted (not found).
      */
-    @CheckReturnValue
-    @GenerateBridge
-    fun deleteById(id: Any): Uni<Boolean> = injectionMissing()
+    @CheckReturnValue @GenerateBridge fun deleteById(id: Any): Uni<Boolean> = injectionMissing()
 
     /**
      * Delete all entities of this type matching the given query, with optional indexed parameters.
@@ -354,8 +347,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param entities the entities to persist
      * @return
      */
-    @CheckReturnValue
-    fun persist(entities: Iterable<Entity>) = INSTANCE.persist(entities)
+    @CheckReturnValue fun persist(entities: Iterable<Entity>) = INSTANCE.persist(entities)
 
     /**
      * Persist all given entities.
@@ -363,8 +355,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param entities the entities to persist
      * @return
      */
-    @CheckReturnValue
-    fun persist(entities: Stream<Entity>) = INSTANCE.persist(entities)
+    @CheckReturnValue fun persist(entities: Stream<Entity>) = INSTANCE.persist(entities)
 
     /**
      * Persist all given entities.

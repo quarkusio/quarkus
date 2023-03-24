@@ -18,37 +18,30 @@ import jakarta.persistence.NoResultException
 import jakarta.persistence.NonUniqueResultException
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.Path
+import java.util.function.Supplier
+import java.util.stream.Stream
 import org.hibernate.engine.spi.SelfDirtinessTracker
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
-import java.util.function.Supplier
-import java.util.stream.Stream
 
 @Path("test")
 class TestEndpoint {
 
-    @Inject
-    lateinit var bug5274EntityRepository: Bug5274EntityRepository
+    @Inject lateinit var bug5274EntityRepository: Bug5274EntityRepository
 
-    @Inject
-    lateinit var bug5885EntityRepository: Bug5885EntityRepository
+    @Inject lateinit var bug5885EntityRepository: Bug5885EntityRepository
 
-    @Inject
-    lateinit var personDao: PersonRepository
+    @Inject lateinit var personDao: PersonRepository
 
-    @Inject
-    lateinit var dogDao: DogDao
+    @Inject lateinit var dogDao: DogDao
 
-    @Inject
-    lateinit var addressDao: AddressDao
+    @Inject lateinit var addressDao: AddressDao
 
-    @Inject
-    lateinit var namedQueryRepository: NamedQueryRepository
+    @Inject lateinit var namedQueryRepository: NamedQueryRepository
 
-    @Inject
-    lateinit var namedQueryWith2QueriesRepository: NamedQueryWith2QueriesRepository
+    @Inject lateinit var namedQueryWith2QueriesRepository: NamedQueryWith2QueriesRepository
 
     @GET
     @Path("ignored-properties")
@@ -70,15 +63,13 @@ class TestEndpoint {
     @GET
     @Path("5274")
     fun testBug5274(): Uni<String> {
-        return bug5274EntityRepository.count()
-            .map { "OK" }
+        return bug5274EntityRepository.count().map { "OK" }
     }
 
     @GET
     @Path("5885")
     fun testBug5885(): Uni<String> {
-        return bug5885EntityRepository.findById(1L)
-            .map { "OK" }
+        return bug5885EntityRepository.findById(1L).map { "OK" }
     }
 
     @GET
@@ -86,9 +77,7 @@ class TestEndpoint {
     fun testBug7721(): Uni<String> {
         val entity = Bug7721Entity()
         return Panache.withTransaction {
-            entity.persist<Bug7721Entity>()
-                .flatMap { entity.delete() }
-                .map { "OK" }
+            entity.persist<Bug7721Entity>().flatMap { entity.delete() }.map { "OK" }
         }
     }
 
@@ -97,30 +86,40 @@ class TestEndpoint {
     @ReactiveTransactional
     fun testBug8254(): Uni<String> {
         val owner = CatOwner("8254")
-        return owner.persist<CatOwner>()
+        return owner
+            .persist<CatOwner>()
             .flatMap { Cat(owner).persist<Cat>() }
             .flatMap { Cat(owner).persist<Cat>() }
             .flatMap { Cat(owner).persist<Cat>() }
-            // This used to fail with an invalid query "SELECT COUNT(*) SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1"
-            // Should now result in a valid query "SELECT COUNT(DISTINCT cat.owner) FROM Cat cat WHERE cat.owner = ?1"
+            // This used to fail with an invalid query "SELECT COUNT(*) SELECT DISTINCT cat.owner
+            // FROM Cat cat WHERE cat.owner = ?1"
+            // Should now result in a valid query "SELECT COUNT(DISTINCT cat.owner) FROM Cat cat
+            // WHERE cat.owner = ?1"
             .flatMap {
-                CatOwner.find("SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1", owner).count()
-            }.flatMap { count ->
+                CatOwner.find("SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1", owner)
+                    .count()
+            }
+            .flatMap { count ->
                 assertEquals(1L, count)
                 CatOwner.find("SELECT cat.owner FROM Cat cat WHERE cat.owner = ?1", owner).count()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(3L, count)
                 Cat.find("SELECT cat FROM Cat cat WHERE cat.owner = ?1", owner).count()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(3L, count)
                 Cat.find("FROM Cat WHERE owner = ?1", owner).count()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(3L, count)
                 Cat.find("owner", owner).count()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(3L, count)
                 CatOwner.find("name = ?1", "8254").count()
-            }.map { count ->
+            }
+            .map { count ->
                 assertEquals(1L, count)
                 "OK"
             }
@@ -133,13 +132,10 @@ class TestEndpoint {
         val apple = Fruit("apple", "red")
         val orange = Fruit("orange", "orange")
         val banana = Fruit("banana", "yellow")
-        return Fruit.persist(apple, orange, banana)
-            .flatMap {
-                val query = Fruit.find("select name, color from Fruit").page(ofSize(1))
-                query.list()
-                    .flatMap { query.pageCount() }
-                    .map { "OK" }
-            }
+        return Fruit.persist(apple, orange, banana).flatMap {
+            val query = Fruit.find("select name, color from Fruit").page(ofSize(1))
+            query.list().flatMap { query.pageCount() }.map { "OK" }
+        }
     }
 
     @GET
@@ -153,43 +149,55 @@ class TestEndpoint {
                 deadPerson.name = "Stef"
                 deadPerson.status = Status.DECEASED
                 deadPerson.persist<PanacheEntityBase>()
-            }.flatMap {
+            }
+            .flatMap {
                 val livePerson = Person()
                 livePerson.name = "Stef"
                 livePerson.status = Status.LIVING
                 livePerson.persist<PanacheEntityBase>()
-            }.flatMap { Person.count() }
+            }
+            .flatMap { Person.count() }
             .flatMap { count ->
                 assertEquals(3, count)
                 Person.listAll()
-            }.flatMap { list ->
+            }
+            .flatMap { list ->
                 assertEquals(3, list.size)
                 Person.find("status", Status.LIVING).firstResult()
-            }.flatMap { livePerson ->
+            }
+            .flatMap { livePerson ->
                 // should be filtered
-                val query = Person.findAll(Sort.by("id"))
-                    .filter("Person.isAlive")
-                    .filter("Person.hasName", with("name", "Stef"))
-                query.count()
+                val query =
+                    Person.findAll(Sort.by("id"))
+                        .filter("Person.isAlive")
+                        .filter("Person.hasName", with("name", "Stef"))
+                query
+                    .count()
                     .flatMap { count ->
                         assertEquals(1, count)
                         query.list()
-                    }.flatMap { list ->
+                    }
+                    .flatMap { list ->
                         assertEquals(1, list.size)
                         query.firstResult()
-                    }.flatMap { result ->
+                    }
+                    .flatMap { result ->
                         assertEquals(livePerson, result)
                         query.singleResult()
-                    }.flatMap { result ->
+                    }
+                    .flatMap { result ->
                         assertEquals(livePerson, result)
                         Person.count()
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(3, count)
                         Person.listAll()
-                    }.flatMap { list ->
+                    }
+                    .flatMap { list ->
                         assertEquals(3, list.size)
                         Person.deleteAll()
-                    }.map { "OK" }
+                    }
+                    .map { "OK" }
             }
     }
 
@@ -201,245 +209,291 @@ class TestEndpoint {
         obj.part1 = "part1"
         obj.part2 = "part2"
         obj.description = "description"
-        return obj.persist<ObjectWithCompositeId>()
-            .flatMap {
-                val key = ObjectWithCompositeId.ObjectKey("part1", "part2")
-                ObjectWithCompositeId.findById(key)
-                    .flatMap { result ->
-                        Assertions.assertNotNull(result)
-                        ObjectWithCompositeId.deleteById(key)
-                    }.flatMap { deleted ->
-                        assertTrue(deleted)
-                        ObjectWithCompositeId.deleteById(key)
-                    }.flatMap { deleted ->
-                        assertFalse(deleted)
-                        val embeddedKey = ObjectWithEmbeddableId.ObjectKey("part1", "part2")
-                        val embeddable = ObjectWithEmbeddableId()
-                        embeddable.key = embeddedKey
-                        embeddable.description = "description"
-                        embeddable.persist<ObjectWithEmbeddableId>()
-                            .flatMap { ObjectWithEmbeddableId.findById(embeddedKey) }
-                            .flatMap { embeddableResult ->
-                                Assertions.assertNotNull(embeddableResult)
-                                ObjectWithEmbeddableId.deleteById(embeddedKey)
-                            }.flatMap { deleted2 ->
-                                assertTrue(deleted2)
-                                ObjectWithEmbeddableId.deleteById(
-                                    ObjectWithEmbeddableId.ObjectKey(
-                                        "notexist1",
-                                        "notexist2"
-                                    )
-                                )
-                            }.map { deleted2 ->
-                                assertFalse(deleted2)
-                                "OK"
-                            }
-                    }
-            }
+        return obj.persist<ObjectWithCompositeId>().flatMap {
+            val key = ObjectWithCompositeId.ObjectKey("part1", "part2")
+            ObjectWithCompositeId.findById(key)
+                .flatMap { result ->
+                    Assertions.assertNotNull(result)
+                    ObjectWithCompositeId.deleteById(key)
+                }
+                .flatMap { deleted ->
+                    assertTrue(deleted)
+                    ObjectWithCompositeId.deleteById(key)
+                }
+                .flatMap { deleted ->
+                    assertFalse(deleted)
+                    val embeddedKey = ObjectWithEmbeddableId.ObjectKey("part1", "part2")
+                    val embeddable = ObjectWithEmbeddableId()
+                    embeddable.key = embeddedKey
+                    embeddable.description = "description"
+                    embeddable
+                        .persist<ObjectWithEmbeddableId>()
+                        .flatMap { ObjectWithEmbeddableId.findById(embeddedKey) }
+                        .flatMap { embeddableResult ->
+                            Assertions.assertNotNull(embeddableResult)
+                            ObjectWithEmbeddableId.deleteById(embeddedKey)
+                        }
+                        .flatMap { deleted2 ->
+                            assertTrue(deleted2)
+                            ObjectWithEmbeddableId.deleteById(
+                                ObjectWithEmbeddableId.ObjectKey("notexist1", "notexist2")
+                            )
+                        }
+                        .map { deleted2 ->
+                            assertFalse(deleted2)
+                            "OK"
+                        }
+                }
+        }
     }
 
     @GET
     @Path("model")
     @ReactiveTransactional
     fun testModel(): Uni<String> {
-        return Person.findAll().list()
+        return Person.findAll()
+            .list()
             .flatMap { persons ->
                 assertEquals(0, persons.size)
                 Person.listAll()
-            }.flatMap { persons ->
+            }
+            .flatMap { persons ->
                 assertEquals(0, persons.size)
-                assertThrows(NoResultException::class.java) {
-                    Person.findAll().singleResult()
-                }
-            }.flatMap { result ->
+                assertThrows(NoResultException::class.java) { Person.findAll().singleResult() }
+            }
+            .flatMap { result ->
                 Assertions.assertNull(result)
                 makeSavedPerson()
-            }.flatMap { person ->
+            }
+            .flatMap { person ->
                 Assertions.assertNotNull(person.id)
                 person.id as Long
                 Person.count()
                     .flatMap { count ->
                         assertEquals(1, count)
                         Person.count("name = ?1", "stef")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         Person.count("name = :name", with("name", "stef").map())
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         Person.count("name = :name", with("name", "stef"))
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         Person.count("name", "stef")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         Dog.count()
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         // FIXME: fetch
                         assertEquals(1, person.dogs.size)
                         Person.findAll().list()
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.listAll()
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.findAll().firstResult()
-                    }.flatMap { personResult ->
+                    }
+                    .flatMap { personResult ->
                         assertEquals(person, personResult)
                         Person.findAll().singleResult()
-                    }.flatMap { personResult ->
+                    }
+                    .flatMap { personResult ->
                         assertEquals(person, personResult)
                         Person.find("name = ?1", "stef").list()
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.find("FROM Person2 WHERE name = ?1", "stef").list()
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.find("name = ?1", "stef")
-                            .withLock(LockModeType.PESSIMISTIC_READ).list()
-                    }.flatMap { persons ->
+                            .withLock(LockModeType.PESSIMISTIC_READ)
+                            .list()
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.list("name = ?1", "stef")
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.find("name = :name", with("name", "stef").map()).list()
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.find("name = :name", with("name", "stef")).list()
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.list("name = :name", with("name", "stef").map())
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.find("name = :name", with("name", "stef").map()).list()
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.list("name = :name", with("name", "stef"))
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.find("name", "stef").list()
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.find("name", "stef").firstResult()
-                    }.flatMap { personResult ->
+                    }
+                    .flatMap { personResult ->
                         assertEquals(person, personResult)
                         Person.find("name", "stef").singleResult()
-                    }.flatMap { personResult ->
+                    }
+                    .flatMap { personResult ->
                         assertEquals(person, personResult)
                         Person.find("name", "stef").singleResult()
-                    }.flatMap { personResult ->
+                    }
+                    .flatMap { personResult ->
                         assertEquals(person, personResult)
                         Person.list("#Person.getByName", with("name", "stef"))
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         assertThrows(PanacheQueryException::class.java) {
                             Person.find("#Person.namedQueryNotFound").list()
                         }
-                    }.flatMap {
+                    }
+                    .flatMap {
                         assertThrows(IllegalArgumentException::class.java) {
-                            Person.list(
-                                "#Person.getByName",
-                                Sort.by("name"),
-                                with("name", "stef")
-                            )
+                            Person.list("#Person.getByName", Sort.by("name"), with("name", "stef"))
                         }
                     }
                     .flatMap { NamedQueryEntity.list("#NamedQueryMappedSuperClass.getAll") }
                     .flatMap { NamedQueryEntity.list("#NamedQueryEntity.getAll") }
-                    .flatMap { NamedQueryWith2QueriesEntity.list("#NamedQueryWith2QueriesEntity.getAll1") }
-                    .flatMap { NamedQueryWith2QueriesEntity.list("#NamedQueryWith2QueriesEntity.getAll2") }
+                    .flatMap {
+                        NamedQueryWith2QueriesEntity.list("#NamedQueryWith2QueriesEntity.getAll1")
+                    }
+                    .flatMap {
+                        NamedQueryWith2QueriesEntity.list("#NamedQueryWith2QueriesEntity.getAll2")
+                    }
                     .flatMap { Person.find("").list() }
                     .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         Person.findById(person.id!!)
-                    }.flatMap { byId ->
+                    }
+                    .flatMap { byId ->
                         assertEquals(person, byId)
                         assertEquals("Person<" + person.id + ">", byId.toString())
                         Person.findById(person.id!!, LockModeType.PESSIMISTIC_READ)
-                    }.flatMap { byId ->
+                    }
+                    .flatMap { byId ->
                         assertEquals(person, byId)
                         assertEquals("Person<" + person.id + ">", byId.toString())
                         person.delete()
-                    }.flatMap { Person.count() }
+                    }
+                    .flatMap { Person.count() }
                     .flatMap { count ->
                         assertEquals(0, count)
                         makeSavedPerson()
                     }
-            }.flatMap { person ->
+            }
+            .flatMap { person ->
                 Person.count()
                     .flatMap { count ->
                         assertEquals(1, count)
                         Person.delete("name = ?1", "emmanuel")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(0, count)
                         Dog.delete("owner = ?1", person)
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         Person.delete("name", "stef")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         makeSavedPerson()
                     }
-            }.flatMap { person ->
+            }
+            .flatMap { person ->
                 Dog.delete("owner = :owner", with("owner", person).map())
                     .flatMap { count ->
                         assertEquals(1, count)
                         Person.delete("name", "stef")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         makeSavedPerson()
                     }
-            }.flatMap { person ->
+            }
+            .flatMap { person ->
                 Dog.delete("owner = :owner", with("owner", person))
                     .flatMap { count ->
                         assertEquals(1, count)
                         Person.delete("name", "stef")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         makeSavedPerson()
                     }
-            }.flatMap { person ->
+            }
+            .flatMap { person ->
                 Dog.delete("FROM Dog WHERE owner = :owner", with("owner", person))
                     .flatMap { count ->
                         assertEquals(1, count)
                         Person.delete("FROM Person2 WHERE name = ?1", "stef")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         makeSavedPerson()
                     }
-            }.flatMap { person ->
+            }
+            .flatMap { person ->
                 Dog.delete("DELETE FROM Dog WHERE owner = :owner", with("owner", person))
                     .flatMap { count ->
                         assertEquals(1, count)
                         Person.delete("DELETE FROM Person2 WHERE name = ?1", "stef")
-                    }.map { count ->
+                    }
+                    .map { count ->
                         assertEquals(1, count)
                         null
                     }
-            }.flatMap { Person.deleteAll() }
+            }
+            .flatMap { Person.deleteAll() }
             .flatMap { count ->
                 assertEquals(0, count)
                 makeSavedPerson()
-            }.flatMap {
+            }
+            .flatMap {
                 Dog.deleteAll()
                     .flatMap { count ->
                         assertEquals(1, count)
                         Person.deleteAll()
-                    }.map { count ->
+                    }
+                    .map { count ->
                         assertEquals(1, count)
                         null
                     }
@@ -472,12 +526,15 @@ class TestEndpoint {
             .flatMap { person ->
                 Assertions.assertNotNull(person)
                 Person.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(7, count)
                 testUpdate()
-            }.flatMap {
+            }
+            .flatMap {
                 Person.deleteById(666L) // not existing
-            }.flatMap { deleted ->
+            }
+            .flatMap { deleted ->
                 assertFalse(deleted)
 
                 // persistAndFlush
@@ -485,7 +542,8 @@ class TestEndpoint {
                 person1.name = "testFLush1"
                 person1.uniqueName = "unique"
                 person1.persist<Person>()
-            }.flatMap { Person.deleteAll() }
+            }
+            .flatMap { Person.deleteAll() }
             .map { "OK" }
     }
 
@@ -498,7 +556,8 @@ class TestEndpoint {
             .flatMap { count ->
                 assertEquals(0, count)
                 makeSavedPerson("")
-            }.flatMap { person ->
+            }
+            .flatMap { person ->
                 val trackingPerson = person as SelfDirtinessTracker
                 var dirtyAttributes = trackingPerson.`$$_hibernate_getDirtyAttributes`()
                 assertEquals(0, dirtyAttributes.size)
@@ -506,7 +565,8 @@ class TestEndpoint {
                 dirtyAttributes = trackingPerson.`$$_hibernate_getDirtyAttributes`()
                 assertEquals(1, dirtyAttributes.size)
                 Person.count()
-            }.map { count ->
+            }
+            .map { count ->
                 assertEquals(1, count)
                 "OK"
             }
@@ -520,7 +580,8 @@ class TestEndpoint {
             .flatMap { count ->
                 assertEquals(1, count)
                 Person.findAll().firstResult()
-            }.map { person ->
+            }
+            .map { person ->
                 assertEquals("1", person?.name)
                 person?.name = "2"
                 "OK"
@@ -534,43 +595,38 @@ class TestEndpoint {
         return Person.count()
             .flatMap { count ->
                 assertEquals(1, count)
-                Person.findAll().project(PersonName::class.java)
-                    .firstResult()
-            }.flatMap { person ->
+                Person.findAll().project(PersonName::class.java).firstResult()
+            }
+            .flatMap { person ->
                 assertEquals("2", person?.name)
-                Person.find("name", "2").project(PersonName::class.java)
-                    .firstResult()
-            }.flatMap { person ->
+                Person.find("name", "2").project(PersonName::class.java).firstResult()
+            }
+            .flatMap { person ->
                 assertEquals("2", person?.name)
-                Person.find("name = ?1", "2").project(PersonName::class.java)
-                    .firstResult()
-            }.flatMap { person ->
+                Person.find("name = ?1", "2").project(PersonName::class.java).firstResult()
+            }
+            .flatMap { person ->
                 assertEquals("2", person?.name)
-                Person.find(
-                    "name = :name",
-                    with("name", "2")
-                )
+                Person.find("name = :name", with("name", "2"))
                     .project(PersonName::class.java)
                     .firstResult()
-            }.flatMap { person ->
+            }
+            .flatMap { person ->
                 assertEquals("2", person?.name)
                 val query: PanacheQuery<PersonName> =
-                    Person.findAll()
-                        .project(
-                            PersonName::class.java
-                        )
-                        .page(0, 2)
-                query.list()
+                    Person.findAll().project(PersonName::class.java).page(0, 2)
+                query
+                    .list()
                     .flatMap { results ->
                         assertEquals(1, results.size)
                         query.nextPage()
                         query.list()
-                    }.flatMap { results ->
+                    }
+                    .flatMap { results ->
                         assertEquals(0, results.size)
-                        Person.findAll()
-                            .project(PersonName::class.java)
-                            .count()
-                    }.map { count ->
+                        Person.findAll().project(PersonName::class.java).count()
+                    }
+                    .map { count ->
                         assertEquals(1, count)
                         "OK"
                     }
@@ -585,74 +641,77 @@ class TestEndpoint {
         val catName = "Bubulle"
         val catWeight = 8.5
         val catOwner = CatOwner(ownerName)
-        return catOwner.persist<CatOwner>()
-            .flatMap {
-                Cat(catName, catOwner, catWeight)
-                    .persist<Cat>()
-            }.flatMap {
-                Cat.find("name", catName)
-                    .project(CatDto::class.java)
-                    .firstResult()
-            }.flatMap { cat ->
+        return catOwner
+            .persist<CatOwner>()
+            .flatMap { Cat(catName, catOwner, catWeight).persist<Cat>() }
+            .flatMap { Cat.find("name", catName).project(CatDto::class.java).firstResult() }
+            .flatMap { cat ->
                 assertEquals(catName, cat?.name)
                 assertEquals(ownerName, cat?.ownerName)
                 Cat.find(
-                    "select c.name, c.owner.name as ownerName from Cat c where c.name = :name",
-                    with("name", catName)
-                )
+                        "select c.name, c.owner.name as ownerName from Cat c where c.name = :name",
+                        with("name", catName)
+                    )
                     .project(CatProjectionBean::class.java)
                     .singleResult()
-            }.flatMap { catView ->
+            }
+            .flatMap { catView ->
                 assertEquals(catName, catView.name)
                 assertEquals(ownerName, catView.ownerName)
                 Assertions.assertNull(catView.weight)
                 Cat.find("select 'fake_cat', 'fake_owner', 12.5D from Cat c")
                     .project(CatProjectionBean::class.java)
                     .firstResult()
-            }.map { catView ->
+            }
+            .map { catView ->
                 assertEquals("fake_cat", catView?.name)
                 assertEquals("fake_owner", catView?.ownerName)
                 assertEquals(12.5, catView?.weight)
                 // The spaces at the beginning are intentional
                 Cat.find(
-                    "   SELECT c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
-                    with("name", catName)
-                )
+                        "   SELECT c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
+                        with("name", catName)
+                    )
                     .project(CatProjectionBean::class.java)
-            }.flatMap { projectionQuery: PanacheQuery<CatProjectionBean> ->
-                projectionQuery
-                    .firstResult()
-                    .map { catView: CatProjectionBean? ->
-                        assertEquals(catName, catView?.name)
-                        Assertions.assertNull(catView?.ownerName)
-                        assertEquals(catWeight, catView?.weight)
-                    }
+            }
+            .flatMap { projectionQuery: PanacheQuery<CatProjectionBean> ->
+                projectionQuery.firstResult().map { catView: CatProjectionBean? ->
+                    assertEquals(catName, catView?.name)
+                    Assertions.assertNull(catView?.ownerName)
+                    assertEquals(catWeight, catView?.weight)
+                }
                 projectionQuery.count()
-            }.map { count ->
+            }
+            .map { count ->
                 assertEquals(1L, count)
                 // The spaces at the beginning are intentional
                 Cat.find(
-                    "   SELECT   disTINct  c.name, cast(null as string), SUM(c.weight) from Cat c where " +
-                        "name = :name group by name  ",
-                    with("name", catName)
-                )
+                        "   SELECT   disTINct  c.name, cast(null as string), SUM(c.weight) from Cat c where " +
+                            "name = :name group by name  ",
+                        with("name", catName)
+                    )
                     .project(CatProjectionBean::class.java)
-            }.flatMap { projectionQuery ->
-                projectionQuery
-                    .firstResult()
-                    .map { catView ->
-                        assertEquals(catName, catView?.name)
-                        Assertions.assertNull(catView?.ownerName)
-                        assertEquals(catWeight, catView?.weight)
-                    }
-                projectionQuery.count()
-            }.map { count ->
-                assertEquals(1L, count)
-                val exception = Assertions.assertThrows(PanacheQueryException::class.java) {
-                    Cat.find("select new FakeClass('fake_cat', 'fake_owner', 12.5) from Cat c")
-                        .project(CatProjectionBean::class.java)
+            }
+            .flatMap { projectionQuery ->
+                projectionQuery.firstResult().map { catView ->
+                    assertEquals(catName, catView?.name)
+                    Assertions.assertNull(catView?.ownerName)
+                    assertEquals(catWeight, catView?.weight)
                 }
-                assertTrue(exception.message!!.startsWith("Unable to perform a projection on a 'select new' query"))
+                projectionQuery.count()
+            }
+            .map { count ->
+                assertEquals(1L, count)
+                val exception =
+                    Assertions.assertThrows(PanacheQueryException::class.java) {
+                        Cat.find("select new FakeClass('fake_cat', 'fake_owner', 12.5) from Cat c")
+                            .project(CatProjectionBean::class.java)
+                    }
+                assertTrue(
+                    exception.message!!.startsWith(
+                        "Unable to perform a projection on a 'select new' query"
+                    )
+                )
                 "OK"
             }
     }
@@ -665,10 +724,12 @@ class TestEndpoint {
             .flatMap { count ->
                 assertEquals(1, count)
                 Person.findAll().firstResult()
-            }.flatMap { person ->
+            }
+            .flatMap { person ->
                 assertEquals("2", person?.name)
                 Dog.deleteAll()
-            }.flatMap { Person.deleteAll() }
+            }
+            .flatMap { Person.deleteAll() }
             .flatMap { Address.deleteAll() }
             .flatMap { Person.count() }
             .map { count ->
@@ -681,24 +742,26 @@ class TestEndpoint {
     @Path("model-dao")
     @ReactiveTransactional
     fun testModelDao(): Uni<String> {
-        return personDao.findAll().list()
+        return personDao
+            .findAll()
+            .list()
             .flatMap { persons ->
                 assertEquals(0, persons.size)
                 personDao.listAll()
-            }.flatMap { persons ->
+            }
+            .flatMap { persons ->
                 assertEquals(0, persons.size)
-                assertThrows(NoResultException::class.java) {
-                    personDao.findAll().singleResult()
-                }
-            }.flatMap {
-                personDao.findAll().firstResult()
-            }.flatMap { result ->
+                assertThrows(NoResultException::class.java) { personDao.findAll().singleResult() }
+            }
+            .flatMap { personDao.findAll().firstResult() }
+            .flatMap { result ->
                 Assertions.assertNull(result)
                 makeSavedPersonDao()
             }
             .flatMap { person ->
                 Assertions.assertNotNull(person.id)
-                personDao.count()
+                personDao
+                    .count()
                     .flatMap { count ->
                         assertEquals(1, count)
                         personDao.count("name = ?1", "stef")
@@ -734,7 +797,8 @@ class TestEndpoint {
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         personDao.findAll().firstResult()
-                    }.flatMap { personResult ->
+                    }
+                    .flatMap { personResult ->
                         assertEquals(person, personResult)
                         personDao.findAll().singleResult()
                     }
@@ -745,7 +809,8 @@ class TestEndpoint {
                     .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
-                        personDao.find("name = ?1", "stef")
+                        personDao
+                            .find("name = ?1", "stef")
                             .withLock(LockModeType.PESSIMISTIC_READ)
                             .list()
                     }
@@ -757,14 +822,12 @@ class TestEndpoint {
                     .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
-                        personDao.find("name = :name", with("name", "stef").map())
-                            .list()
+                        personDao.find("name = :name", with("name", "stef").map()).list()
                     }
                     .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
-                        personDao.find("name = :name", with("name", "stef"))
-                            .list()
+                        personDao.find("name = :name", with("name", "stef")).list()
                     }
                     .flatMap { persons ->
                         assertEquals(1, persons.size)
@@ -774,8 +837,7 @@ class TestEndpoint {
                     .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
-                        personDao.find("name = :name", with("name", "stef").map())
-                            .list()
+                        personDao.find("name = :name", with("name", "stef").map()).list()
                     }
                     .flatMap { persons ->
                         assertEquals(1, persons.size)
@@ -791,229 +853,294 @@ class TestEndpoint {
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         personDao.find("name", "stef").firstResult()
-                    }.flatMap { personResult ->
+                    }
+                    .flatMap { personResult ->
                         assertEquals(person, personResult)
                         personDao.find("name", "stef").singleResult()
-                    }.flatMap { personResult ->
+                    }
+                    .flatMap { personResult ->
                         assertEquals(person, personResult)
                         personDao.find("name", "stef").singleResult()
                     }
                     .flatMap { personResult ->
                         assertEquals(person, personResult)
                         personDao.list("#Person.getByName", with("name", "stef"))
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         assertThrows(PanacheQueryException::class.java) {
                             personDao.find("#Person.namedQueryNotFound").list()
                         }
-                    }.flatMap {
+                    }
+                    .flatMap {
                         assertThrows(IllegalArgumentException::class.java) {
-                            personDao.list("#Person.getByName", Sort.by("name"), with("name", "stef"))
+                            personDao.list(
+                                "#Person.getByName",
+                                Sort.by("name"),
+                                with("name", "stef")
+                            )
                         }
-                    }.flatMap {
-                        namedQueryRepository.list("#NamedQueryMappedSuperClass.getAll")
-                    }.flatMap {
-                        namedQueryRepository.list("#NamedQueryEntity.getAll")
-                    }.flatMap {
-                        namedQueryWith2QueriesRepository.list("#NamedQueryWith2QueriesEntity.getAll1")
-                    }.flatMap {
-                        namedQueryWith2QueriesRepository.list("#NamedQueryWith2QueriesEntity.getAll2")
-                    }.flatMap {
-                        personDao.find("").list()
-                    }.flatMap { persons ->
+                    }
+                    .flatMap { namedQueryRepository.list("#NamedQueryMappedSuperClass.getAll") }
+                    .flatMap { namedQueryRepository.list("#NamedQueryEntity.getAll") }
+                    .flatMap {
+                        namedQueryWith2QueriesRepository.list(
+                            "#NamedQueryWith2QueriesEntity.getAll1"
+                        )
+                    }
+                    .flatMap {
+                        namedQueryWith2QueriesRepository.list(
+                            "#NamedQueryWith2QueriesEntity.getAll2"
+                        )
+                    }
+                    .flatMap { personDao.find("").list() }
+                    .flatMap { persons ->
                         assertEquals(1, persons.size)
                         assertEquals(person, persons[0])
                         personDao.findById(person.id!!)
-                    }.flatMap { byId ->
+                    }
+                    .flatMap { byId ->
                         assertEquals(person, byId)
                         assertEquals("Person<${person.id}>", byId.toString())
                         personDao.findById(person.id!!, LockModeType.PESSIMISTIC_READ)
-                    }.flatMap { byId ->
+                    }
+                    .flatMap { byId ->
                         assertEquals(person, byId)
                         assertEquals("Person<${person.id}>", byId.toString())
                         person.delete()
-                    }.flatMap { personDao.count() }
+                    }
+                    .flatMap { personDao.count() }
                     .flatMap { count ->
                         assertEquals(0, count)
                         makeSavedPersonDao()
-                    }.flatMap {
+                    }
+                    .flatMap {
                         Person.count("#Person.countAll")
                             .flatMap { count ->
                                 assertEquals(1, count)
                                 Person.count("#Person.countByName", with("name", "stef").map())
-                            }.flatMap { count ->
+                            }
+                            .flatMap { count ->
                                 assertEquals(1, count)
                                 Person.count("#Person.countByName", with("name", "stef"))
-                            }.flatMap { count ->
+                            }
+                            .flatMap { count ->
                                 assertEquals(1, count)
                                 Person.count("#Person.countByName.ordinal", "stef")
-                            }.flatMap { count ->
+                            }
+                            .flatMap { count ->
                                 assertEquals(1, count)
                                 Uni.createFrom().voidItem()
                             }
-                    }.flatMap {
+                    }
+                    .flatMap {
                         Person.update("#Person.updateAllNames", with("name", "stef2").map())
                             .flatMap { count ->
                                 assertEquals(1, count)
                                 Person.find("#Person.getByName", with("name", "stef2")).list()
-                            }.flatMap { persons ->
+                            }
+                            .flatMap { persons ->
                                 assertEquals(1, persons.size)
                                 Person.update("#Person.updateAllNames", with("name", "stef3"))
-                            }.flatMap { count ->
+                            }
+                            .flatMap { count ->
                                 assertEquals(1, count)
                                 Person.find("#Person.getByName", with("name", "stef3")).list()
-                            }.flatMap { persons ->
+                            }
+                            .flatMap { persons ->
                                 assertEquals(1, persons.size)
                                 Person.update(
                                     "#Person.updateNameById",
-                                    with("name", "stef2")
-                                        .and("id", persons[0].id).map()
+                                    with("name", "stef2").and("id", persons[0].id).map()
                                 )
-                            }.flatMap { count ->
+                            }
+                            .flatMap { count ->
                                 assertEquals(1, count)
                                 Person.find("#Person.getByName", with("name", "stef2")).list()
-                            }.flatMap { persons ->
+                            }
+                            .flatMap { persons ->
                                 assertEquals(1, persons.size)
                                 Person.update(
                                     "#Person.updateNameById",
-                                    with("name", "stef3")
-                                        .and("id", persons[0].id)
+                                    with("name", "stef3").and("id", persons[0].id)
                                 )
-                            }.flatMap { count ->
+                            }
+                            .flatMap { count ->
                                 assertEquals(1, count)
                                 Person.find("#Person.getByName", with("name", "stef3")).list()
-                            }.flatMap { persons ->
+                            }
+                            .flatMap { persons ->
                                 assertEquals(1, persons.size)
-                                Person.update("#Person.updateNameById.ordinal", "stef", persons[0].id!!)
-                            }.flatMap { count ->
+                                Person.update(
+                                    "#Person.updateNameById.ordinal",
+                                    "stef",
+                                    persons[0].id!!
+                                )
+                            }
+                            .flatMap { count ->
                                 assertEquals(1, count)
                                 Person.find("#Person.getByName", with("name", "stef")).list()
-                            }.flatMap { persons ->
+                            }
+                            .flatMap { persons ->
                                 assertEquals(1, persons.size)
                                 Uni.createFrom().voidItem()
                             }
-                    }.flatMap {
+                    }
+                    .flatMap {
                         Dog.deleteAll()
-                            .flatMap {
-                                Person.delete("#Person.deleteAll")
-                            }.flatMap { count ->
+                            .flatMap { Person.delete("#Person.deleteAll") }
+                            .flatMap { count ->
                                 assertEquals(1, count)
                                 Person.find("").list()
-                            }.flatMap { persons ->
+                            }
+                            .flatMap { persons ->
                                 assertEquals(0, persons.size)
                                 Uni.createFrom().voidItem()
                             }
-                    }.flatMap {
+                    }
+                    .flatMap {
                         makeSavedPerson().flatMap { personToDelete ->
                             Dog.deleteAll()
-                                .flatMap {
-                                    Person.find("").list()
-                                }.flatMap { persons ->
+                                .flatMap { Person.find("").list() }
+                                .flatMap { persons ->
                                     assertEquals(1, persons.size)
-                                    Person.delete("#Person.deleteById", with("id", personToDelete.id).map())
-                                }.flatMap { count ->
+                                    Person.delete(
+                                        "#Person.deleteById",
+                                        with("id", personToDelete.id).map()
+                                    )
+                                }
+                                .flatMap { count ->
                                     assertEquals(1, count)
                                     Person.find("").list()
-                                }.flatMap { persons ->
+                                }
+                                .flatMap { persons ->
                                     assertEquals(0, persons.size)
                                     Uni.createFrom().voidItem()
                                 }
                         }
-                    }.flatMap {
+                    }
+                    .flatMap {
                         makeSavedPerson().flatMap { personToDelete ->
                             Dog.deleteAll()
-                                .flatMap {
-                                    Person.find("").list()
-                                }.flatMap { persons ->
+                                .flatMap { Person.find("").list() }
+                                .flatMap { persons ->
                                     assertEquals(1, persons.size)
-                                    Person.delete("#Person.deleteById", with("id", personToDelete.id))
-                                }.flatMap { count ->
+                                    Person.delete(
+                                        "#Person.deleteById",
+                                        with("id", personToDelete.id)
+                                    )
+                                }
+                                .flatMap { count ->
                                     assertEquals(1, count)
                                     Person.find("").list()
-                                }.flatMap { persons ->
+                                }
+                                .flatMap { persons ->
                                     assertEquals(0, persons.size)
                                     Uni.createFrom().voidItem()
                                 }
                         }
-                    }.flatMap {
+                    }
+                    .flatMap {
                         makeSavedPerson().flatMap { personToDelete ->
                             Dog.deleteAll()
-                                .flatMap {
-                                    Person.find("").list()
-                                }.flatMap { persons ->
+                                .flatMap { Person.find("").list() }
+                                .flatMap { persons ->
                                     assertEquals(1, persons.size)
                                     Person.delete("#Person.deleteById.ordinal", personToDelete.id!!)
-                                }.flatMap { count ->
+                                }
+                                .flatMap { count ->
                                     assertEquals(1, count)
                                     Person.find("").list()
-                                }.flatMap { persons ->
+                                }
+                                .flatMap { persons ->
                                     assertEquals(0, persons.size)
                                     makeSavedPersonDao()
                                 }
                         }
                     }
-            }.flatMap { person ->
-                personDao.count()
+            }
+            .flatMap { person ->
+                personDao
+                    .count()
                     .flatMap { count ->
                         assertEquals(1, count)
                         personDao.delete("name = ?1", "emmanuel")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(0, count)
                         dogDao.delete("owner = ?1", person)
-                    }.flatMap { count ->
-                        assertEquals(1, count)
-                        personDao.delete("name", "stef")
-                    }.flatMap { count ->
-                        assertEquals(1, count)
-                        makeSavedPersonDao()
                     }
-            }.flatMap { person ->
-                dogDao.delete("owner = :owner", with("owner", person).map())
                     .flatMap { count ->
                         assertEquals(1, count)
                         personDao.delete("name", "stef")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         makeSavedPersonDao()
                     }
-            }.flatMap { person ->
-                dogDao.delete("owner = :owner", with("owner", person))
+            }
+            .flatMap { person ->
+                dogDao
+                    .delete("owner = :owner", with("owner", person).map())
                     .flatMap { count ->
                         assertEquals(1, count)
                         personDao.delete("name", "stef")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         makeSavedPersonDao()
                     }
-            }.flatMap { person ->
-                dogDao.delete("FROM Dog WHERE owner = :owner", with("owner", person))
+            }
+            .flatMap { person ->
+                dogDao
+                    .delete("owner = :owner", with("owner", person))
+                    .flatMap { count ->
+                        assertEquals(1, count)
+                        personDao.delete("name", "stef")
+                    }
+                    .flatMap { count ->
+                        assertEquals(1, count)
+                        makeSavedPersonDao()
+                    }
+            }
+            .flatMap { person ->
+                dogDao
+                    .delete("FROM Dog WHERE owner = :owner", with("owner", person))
                     .flatMap { count ->
                         assertEquals(1, count)
                         personDao.delete("FROM Person2 WHERE name = ?1", "stef")
-                    }.flatMap { count ->
+                    }
+                    .flatMap { count ->
                         assertEquals(1, count)
                         makeSavedPersonDao()
                     }
-            }.flatMap { person ->
-                dogDao.delete("DELETE FROM Dog WHERE owner = :owner", with("owner", person))
+            }
+            .flatMap { person ->
+                dogDao
+                    .delete("DELETE FROM Dog WHERE owner = :owner", with("owner", person))
                     .flatMap { count ->
                         assertEquals(1, count)
                         personDao.delete("DELETE FROM Person2 WHERE name = ?1", "stef")
-                    }.map { count ->
+                    }
+                    .map { count ->
                         assertEquals(1, count)
                         null
                     }
-            }.flatMap { v -> personDao.deleteAll() }
+            }
+            .flatMap { v -> personDao.deleteAll() }
             .flatMap { count ->
                 assertEquals(0, count)
                 makeSavedPersonDao()
-            }.flatMap { person ->
-                dogDao.deleteAll()
+            }
+            .flatMap { person ->
+                dogDao
+                    .deleteAll()
                     .flatMap { count ->
                         assertEquals(1, count)
                         personDao.deleteAll()
-                    }.map { count ->
+                    }
+                    .map { count ->
                         assertEquals(1, count)
                         null
                     }
@@ -1025,50 +1152,44 @@ class TestEndpoint {
             .flatMap { count ->
                 assertEquals(6, count)
                 testSorting()
-            }.flatMap {
-                makeSavedPersonDao("0")
-            }.flatMap {
-                makeSavedPersonDao("1")
-            }.flatMap {
-                makeSavedPersonDao("2")
-            }.flatMap {
-                makeSavedPersonDao("3")
-            }.flatMap {
-                makeSavedPersonDao("4")
-            }.flatMap {
-                makeSavedPersonDao("5")
-            }.flatMap {
-                makeSavedPersonDao("6")
-            }.flatMap {
-                testPaging(personDao.findAll())
-            }.flatMap { v -> testPaging(personDao.find("ORDER BY name")) } // range
+            }
+            .flatMap { makeSavedPersonDao("0") }
+            .flatMap { makeSavedPersonDao("1") }
+            .flatMap { makeSavedPersonDao("2") }
+            .flatMap { makeSavedPersonDao("3") }
+            .flatMap { makeSavedPersonDao("4") }
+            .flatMap { makeSavedPersonDao("5") }
+            .flatMap { makeSavedPersonDao("6") }
+            .flatMap { testPaging(personDao.findAll()) }
+            .flatMap { v -> testPaging(personDao.find("ORDER BY name")) } // range
             .flatMap { testRange(personDao.findAll()) }
             .flatMap { testRange(personDao.find("ORDER BY name")) }
             .flatMap {
                 assertThrows(NonUniqueResultException::class.java) {
                     personDao.findAll().singleResult()
                 }
-            }.flatMap {
-                personDao.findAll().firstResult()
-            }.flatMap { person ->
+            }
+            .flatMap { personDao.findAll().firstResult() }
+            .flatMap { person ->
                 Assertions.assertNotNull(person)
                 personDao.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(7, count)
                 testUpdateDao()
-            }.flatMap {
+            }
+            .flatMap {
                 // delete by id
                 val toRemove = Person()
                 toRemove.name = "testDeleteById"
                 toRemove.uniqueName = "testDeleteByIdUnique"
-                toRemove.persist<Person>()
-                    .flatMap {
-                        personDao.deleteById(toRemove.id!!)
-                    }
-            }.flatMap { deleted ->
+                toRemove.persist<Person>().flatMap { personDao.deleteById(toRemove.id!!) }
+            }
+            .flatMap { deleted ->
                 assertTrue(deleted)
                 personDao.deleteById(666L) // not existing
-            }.flatMap { deleted ->
+            }
+            .flatMap { deleted ->
                 assertFalse(deleted)
 
                 // persistAndFlush
@@ -1076,11 +1197,9 @@ class TestEndpoint {
                 person1.name = "testFLush1"
                 person1.uniqueName = "unique"
                 personDao.persistAndFlush(person1)
-            }.flatMap {
-                personDao.deleteAll()
-            }.map {
-                "OK"
             }
+            .flatMap { personDao.deleteAll() }
+            .map { "OK" }
     }
 
     @GET
@@ -1097,15 +1216,16 @@ class TestEndpoint {
                 josePerson.uniqueName = "jose"
                 Person.persist(stefPerson, josePerson)
             }
-            .flatMap {
-                Person.findAll(Sort.by("name", Sort.NullPrecedence.NULLS_FIRST)).list()
-            }.flatMap { list ->
+            .flatMap { Person.findAll(Sort.by("name", Sort.NullPrecedence.NULLS_FIRST)).list() }
+            .flatMap { list ->
                 assertEquals("jose", list[0].uniqueName)
                 Person.findAll(Sort.by("name", Sort.NullPrecedence.NULLS_LAST)).list()
-            }.flatMap { list ->
+            }
+            .flatMap { list ->
                 assertEquals("jose", list[list.size - 1].uniqueName)
                 Person.deleteAll()
-            }.map { "OK" }
+            }
+            .map { "OK" }
     }
 
     private fun makeSavedPerson(): Uni<Person> {
@@ -1114,8 +1234,7 @@ class TestEndpoint {
             val dog = Dog("octave", "dalmatian")
             dog.owner = person
             person.dogs.add(dog)
-            dog.persist<Dog>()
-                .map { person }
+            dog.persist<Dog>().map { person }
         }
     }
 
@@ -1127,20 +1246,22 @@ class TestEndpoint {
         person.status = Status.LIVING
         person.address = address
 
-        return person.address!!.persist<Address>()
-            .flatMap { person.persist() }
+        return person.address!!.persist<Address>().flatMap { person.persist() }
     }
 
     private fun assertThrows(exceptionClass: Class<out Throwable>, f: Supplier<Uni<*>>): Uni<Void> {
-        val uni = try {
-            f.get()
-        } catch (t: Throwable) {
-            Uni.createFrom().failure<Any>(t)
-        }
-        return uni
-            .onItemOrFailure()
-            .invoke { r: Any?, t: Throwable? -> System.err.println("Got back val: $r and exception $t") }
-            .onItem().invoke { _ -> Assertions.fail("Did not throw " + exceptionClass.name) }
+        val uni =
+            try {
+                f.get()
+            } catch (t: Throwable) {
+                Uni.createFrom().failure<Any>(t)
+            }
+        return uni.onItemOrFailure()
+            .invoke { r: Any?, t: Throwable? ->
+                System.err.println("Got back val: $r and exception $t")
+            }
+            .onItem()
+            .invoke { _ -> Assertions.fail("Did not throw " + exceptionClass.name) }
             .onFailure(exceptionClass)
             .recoverWithItem { null }
             .map { null }
@@ -1175,7 +1296,8 @@ class TestEndpoint {
         val person3 = Person()
         person3.name = "emmanuel"
         person3.status = Status.LIVING
-        return person1.persist<Person>()
+        return person1
+            .persist<Person>()
             .flatMap { person2.persist<Person>() }
             .flatMap { person3.persist<Person>() }
             .flatMap {
@@ -1183,34 +1305,39 @@ class TestEndpoint {
                 val order1 = listOf(person3, person2, person1)
                 val sort2 = Sort.descending("name", "status")
                 val order2 = listOf(person1, person2)
-                Person.findAll(sort1).list()
+                Person.findAll(sort1)
+                    .list()
                     .flatMap { list ->
                         assertEquals(order1, list)
                         Person.listAll(sort1)
-                    }.flatMap { list ->
+                    }
+                    .flatMap { list ->
                         assertEquals(order1, list)
                         Person.find("name", sort2, "stef").list()
-                    }.flatMap { list ->
+                    }
+                    .flatMap { list ->
                         assertEquals(order2, list)
                         Person.list("name", sort2, "stef")
-                    }.flatMap { list ->
+                    }
+                    .flatMap { list ->
                         assertEquals(order2, list)
-                        Person.find("name = :name", sort2, with("name", "stef").map())
-                            .list()
-                    }.flatMap { list ->
+                        Person.find("name = :name", sort2, with("name", "stef").map()).list()
+                    }
+                    .flatMap { list ->
                         assertEquals(order2, list)
                         Person.list("name = :name", sort2, with("name", "stef").map())
-                    }.flatMap { list ->
+                    }
+                    .flatMap { list ->
                         assertEquals(order2, list)
                         Person.find("name = :name", sort2, with("name", "stef")).list()
-                    }.flatMap { list ->
+                    }
+                    .flatMap { list ->
                         assertEquals(order2, list)
                         Person.list("name = :name", sort2, with("name", "stef"))
                     }
-            }.flatMap { Person.deleteAll() }
-            .map { count ->
-                assertEquals(3, count)
             }
+            .flatMap { Person.deleteAll() }
+            .map { count -> assertEquals(3, count) }
     }
 
     private fun testPaging(query: PanacheQuery<Person>): Uni<Void> {
@@ -1220,11 +1347,15 @@ class TestEndpoint {
         Assertions.assertThrows(UnsupportedOperationException::class.java) { query.nextPage() }
         Assertions.assertThrows(UnsupportedOperationException::class.java) { query.lastPage() }
         Assertions.assertThrows(UnsupportedOperationException::class.java) { query.hasNextPage() }
-        Assertions.assertThrows(UnsupportedOperationException::class.java) { query.hasPreviousPage() }
+        Assertions.assertThrows(UnsupportedOperationException::class.java) {
+            query.hasPreviousPage()
+        }
         Assertions.assertThrows(UnsupportedOperationException::class.java) { query.page() }
         Assertions.assertThrows(UnsupportedOperationException::class.java) { query.pageCount() }
 
-        return query.page(0, 3).list()
+        return query
+            .page(0, 3)
+            .list()
             .flatMap { persons: List<Person> ->
                 assertEquals(3, persons.size)
                 assertEquals("stef0", persons[0].name)
@@ -1311,15 +1442,14 @@ class TestEndpoint {
             .flatMap { persons: List<Person> ->
                 assertEquals(0, persons.size)
                 query.count()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(7, count)
                 query.pageCount()
             }
             .flatMap { count ->
                 assertEquals(3, count)
-                query.page(0, 3)
-                    .range(0, 1)
-                    .list()
+                query.page(0, 3).range(0, 1).list()
             }
             .map { persons: List<Person> ->
                 assertEquals(2, persons.size)
@@ -1330,7 +1460,9 @@ class TestEndpoint {
     }
 
     private fun testRange(query: PanacheQuery<Person>): Uni<Void> {
-        return query.range(0, 2).list()
+        return query
+            .range(0, 2)
+            .list()
             .flatMap { persons: List<Person> ->
                 assertEquals(3, persons.size)
                 assertEquals("stef0", persons[0].name)
@@ -1355,17 +1487,16 @@ class TestEndpoint {
 
                 // mix range with page
                 Assertions.assertThrows(UnsupportedOperationException::class.java) {
-                    query.range(0, 2)
-                        .nextPage()
+                    query.range(0, 2).nextPage()
                 }
                 Assertions.assertThrows(UnsupportedOperationException::class.java) {
-                    query.range(0, 2)
-                        .previousPage()
+                    query.range(0, 2).previousPage()
                 }
                 Assertions.assertThrows(UnsupportedOperationException::class.java) {
                     query.range(0, 2).pageCount()
                 }
-                //                    Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).lastPage());
+                //                    Assertions.assertThrows(UnsupportedOperationException.class,
+                // () -> query.range(0, 2).lastPage());
                 Assertions.assertThrows(UnsupportedOperationException::class.java) {
                     query.range(0, 2).firstPage()
                 }
@@ -1378,9 +1509,7 @@ class TestEndpoint {
                 Assertions.assertThrows(UnsupportedOperationException::class.java) {
                     query.range(0, 2).page()
                 }
-                query.range(0, 2)
-                    .page(0, 3)
-                    .list()
+                query.range(0, 2).page(0, 3).list()
             }
             .map { persons: List<Person> ->
                 assertEquals(3, persons.size)
@@ -1393,82 +1522,89 @@ class TestEndpoint {
 
     private fun testUpdate(): Uni<Void> {
         return makeSavedPerson("p1")
+            .flatMap { makeSavedPerson("p2") }
             .flatMap {
-                makeSavedPerson("p2")
-            }.flatMap {
-                Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
-            }.flatMap { updateByIndexParameter ->
+                Person.update(
+                    "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
+                    "stefp1"
+                )
+            }
+            .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                    with("pName", "stefp2")
-                        .map()
+                    with("pName", "stefp2").map()
                 )
-            }.flatMap { updateByNamedParameter ->
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 Person.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(2L, count)
                 makeSavedPerson("p1")
-            }.flatMap {
-                makeSavedPerson("p2")
-            }.flatMap {
+            }
+            .flatMap { makeSavedPerson("p2") }
+            .flatMap {
                 Person.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
-            }.flatMap { updateByIndexParameter ->
+            }
+            .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update(
                     "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
                     with("pName", "stefp2").map()
                 )
-            }.flatMap { updateByNamedParameter ->
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 Person.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(2, count)
                 makeSavedPerson("p1")
-            }.flatMap {
-                makeSavedPerson("p2")
-            }.flatMap {
-                Person.update("set name = 'stefNEW' where name = ?1", "stefp1")
-            }.flatMap { updateByIndexParameter ->
+            }
+            .flatMap { makeSavedPerson("p2") }
+            .flatMap { Person.update("set name = 'stefNEW' where name = ?1", "stefp1") }
+            .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update(
                     "set name = 'stefNEW' where name = :pName",
                     with("pName", "stefp2").map()
                 )
-            }.flatMap { updateByNamedParameter ->
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 Person.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(2, count)
                 makeSavedPerson("p1")
-            }.flatMap {
-                makeSavedPerson("p2")
-            }.flatMap {
-                Person.update("name = 'stefNEW' where name = ?1", "stefp1")
-            }.flatMap { updateByIndexParameter: Any ->
+            }
+            .flatMap { makeSavedPerson("p2") }
+            .flatMap { Person.update("name = 'stefNEW' where name = ?1", "stefp1") }
+            .flatMap { updateByIndexParameter: Any ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update("name = 'stefNEW' where name = :pName", with("pName", "stefp2").map())
-            }.flatMap { updateByNamedParameter ->
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 Person.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(2, count)
                 makeSavedPerson("p1")
-            }.flatMap { makeSavedPerson("p2") }
-            .flatMap {
-                Person.update("name = 'stefNEW' where name = ?1", "stefp1")
-            }.flatMap { updateByIndexParameter ->
+            }
+            .flatMap { makeSavedPerson("p2") }
+            .flatMap { Person.update("name = 'stefNEW' where name = ?1", "stefp1") }
+            .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update("name = 'stefNEW' where name = :pName", with("pName", "stefp2"))
-            }.flatMap { updateByNamedParameter ->
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 Person.deleteAll()
-            }.flatMap {
-                assertThrows(PanacheQueryException::class.java) {
-                    Person.update(" ")
-                }
             }
+            .flatMap { assertThrows(PanacheQueryException::class.java) { Person.update(" ") } }
     }
 
     private fun makeSavedPersonDao(): Uni<Person> {
@@ -1477,8 +1613,7 @@ class TestEndpoint {
             val dog = Dog("octave", "dalmatian")
             dog.owner = person
             person.dogs.add(dog)
-            dog.persist<Dog>()
-                .map { person }
+            dog.persist<Dog>().map { person }
         }
     }
 
@@ -1487,8 +1622,7 @@ class TestEndpoint {
         person.name = "stef$suffix"
         person.status = Status.LIVING
         person.address = Address("stef street")
-        return addressDao.persist(person.address!!)
-            .flatMap { personDao.persist(person) }
+        return addressDao.persist(person.address!!).flatMap { personDao.persist(person) }
     }
 
     private fun testPersistDao(persistTest: PersistTest): Uni<Void> {
@@ -1498,11 +1632,12 @@ class TestEndpoint {
         person2.name = "stef2"
         assertFalse(personDao.isPersistent(person1))
         assertFalse(personDao.isPersistent(person2))
-        val persist = when (persistTest) {
-            PersistTest.Iterable -> personDao.persist(listOf(person1, person2))
-            PersistTest.Stream -> personDao.persist(Stream.of(person1, person2))
-            PersistTest.Variadic -> personDao.persist(person1, person2)
-        }
+        val persist =
+            when (persistTest) {
+                PersistTest.Iterable -> personDao.persist(listOf(person1, person2))
+                PersistTest.Stream -> personDao.persist(Stream.of(person1, person2))
+                PersistTest.Variadic -> personDao.persist(person1, person2)
+            }
         return persist.map {
             assertTrue(personDao.isPersistent(person1))
             assertTrue(personDao.isPersistent(person2))
@@ -1512,93 +1647,103 @@ class TestEndpoint {
 
     private fun testUpdateDao(): Uni<Void> {
         return makeSavedPersonDao("p1")
+            .flatMap { makeSavedPersonDao("p2") }
             .flatMap {
-                makeSavedPersonDao("p2")
-            }.flatMap {
                 personDao.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
                     "stefp1"
                 )
-            }.flatMap { updateByIndexParameter ->
+            }
+            .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
                     with("pName", "stefp2").map()
                 )
-            }.flatMap { updateByNamedParameter ->
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 personDao.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(2, count)
                 makeSavedPersonDao("p1")
-            }.flatMap {
-                makeSavedPersonDao("p2")
-            }.flatMap {
-                personDao.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
-            }.flatMap { updateByIndexParameter ->
+            }
+            .flatMap { makeSavedPersonDao("p2") }
+            .flatMap {
+                personDao.update(
+                    "from Person2 p set p.name = 'stefNEW' where p.name = ?1",
+                    "stefp1"
+                )
+            }
+            .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
                     with("pName", "stefp2").map()
                 )
-            }.flatMap { updateByNamedParameter ->
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 personDao.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(2, count)
                 makeSavedPersonDao("p1")
-            }.flatMap {
-                makeSavedPersonDao("p2")
-            }.flatMap {
-                personDao.update("set name = 'stefNEW' where name = ?1", "stefp1")
-            }.flatMap { updateByIndexParameter ->
+            }
+            .flatMap { makeSavedPersonDao("p2") }
+            .flatMap { personDao.update("set name = 'stefNEW' where name = ?1", "stefp1") }
+            .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "set name = 'stefNEW' where name = :pName",
                     with("pName", "stefp2").map()
                 )
-            }.flatMap { updateByNamedParameter ->
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 personDao.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(2, count)
                 makeSavedPersonDao("p1")
-            }.flatMap {
-                makeSavedPersonDao("p2")
-            }.flatMap {
-                personDao.update("name = 'stefNEW' where name = ?1", "stefp1")
-            }.flatMap { updateByIndexParameter ->
+            }
+            .flatMap { makeSavedPersonDao("p2") }
+            .flatMap { personDao.update("name = 'stefNEW' where name = ?1", "stefp1") }
+            .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "name = 'stefNEW' where name = :pName",
                     with("pName", "stefp2").map()
                 )
-            }.flatMap { updateByNamedParameter ->
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 personDao.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(2, count)
                 makeSavedPersonDao("p1")
-            }.flatMap {
-                makeSavedPersonDao("p2")
-            }.flatMap {
-                personDao.update("name = 'stefNEW' where name = ?1", "stefp1")
-            }.flatMap { updateByIndexParameter ->
+            }
+            .flatMap { makeSavedPersonDao("p2") }
+            .flatMap { personDao.update("name = 'stefNEW' where name = ?1", "stefp1") }
+            .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
-                personDao.update(
-                    "name = 'stefNEW' where name = :pName",
-                    with("pName", "stefp2")
-                )
-            }.flatMap { updateByNamedParameter ->
+                personDao.update("name = 'stefNEW' where name = :pName", with("pName", "stefp2"))
+            }
+            .flatMap { updateByNamedParameter ->
                 assertEquals(1, updateByNamedParameter, "More than one Person updated")
                 personDao.deleteAll()
-            }.flatMap { count ->
+            }
+            .flatMap { count ->
                 assertEquals(2, count)
                 assertThrows(PanacheQueryException::class.java) { personDao.update(" ") }
             }
     }
 
     enum class PersistTest {
-        Iterable, Variadic, Stream
+        Iterable,
+        Variadic,
+        Stream
     }
 }

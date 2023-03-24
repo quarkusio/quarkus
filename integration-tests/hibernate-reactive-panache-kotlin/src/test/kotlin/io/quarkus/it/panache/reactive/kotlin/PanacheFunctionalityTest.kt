@@ -16,6 +16,7 @@ import io.restassured.http.ContentType
 import io.smallrye.mutiny.Uni
 import jakarta.json.bind.JsonbBuilder
 import jakarta.persistence.PersistenceException
+import java.util.function.Supplier
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -23,7 +24,6 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.util.function.Supplier
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -48,10 +48,15 @@ open class PanacheFunctionalityTest {
 
     @Test
     fun testPanacheSerialisation() {
-        given().accept(ContentType.JSON)
+        given()
+            .accept(ContentType.JSON)
             .`when`()["/test/ignored-properties"]
             .then()
-            .body(`is`("{\"id\":666,\"dogs\":[],\"name\":\"Eddie\",\"serialisationTrick\":1,\"status\":\"DECEASED\"}"))
+            .body(
+                `is`(
+                    "{\"id\":666,\"dogs\":[],\"name\":\"Eddie\",\"serialisationTrick\":1,\"status\":\"DECEASED\"}"
+                )
+            )
     }
 
     @Test
@@ -63,26 +68,22 @@ open class PanacheFunctionalityTest {
 
     @Test
     fun testBug5274() {
-        `when`()["/test/5274"]
-            .then()
-            .statusCode(`is`(200))
-            .body(`is`("OK"))
+        `when`()["/test/5274"].then().statusCode(`is`(200)).body(`is`("OK"))
     }
 
     @Test
     fun testBug5885() {
-        `when`()["/test/5885"]
-            .then()
-            .statusCode(`is`(200))
-            .body(`is`("OK"))
+        `when`()["/test/5885"].then().statusCode(`is`(200)).body(`is`("OK"))
     }
 
     /**
-     * _PanacheEntityBase_ has the method _isPersistent_. This method is used by Jackson to serialize the attribute *persistent*
-     * in the JSON which is not intended. This test ensures that the attribute *persistent* is not generated when using Jackson.
+     * _PanacheEntityBase_ has the method _isPersistent_. This method is used by Jackson to
+     * serialize the attribute *persistent* in the JSON which is not intended. This test ensures
+     * that the attribute *persistent* is not generated when using Jackson.
      *
-     * This test does not interact with the Quarkus application itself. It is just using the Jackson ObjectMapper with a
-     * PanacheEntity. Thus this test is disabled in native mode. The test code runs the JVM and not native.
+     * This test does not interact with the Quarkus application itself. It is just using the Jackson
+     * ObjectMapper with a PanacheEntity. Thus this test is disabled in native mode. The test code
+     * runs the JVM and not native.
      */
     @Test
     @DisabledOnIntegrationTest
@@ -99,7 +100,8 @@ open class PanacheFunctionalityTest {
     }
 
     /**
-     * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
+     * This test is disabled in native mode as there is no interaction with the quarkus integration
+     * test endpoint.
      */
     @Test
     @DisabledOnIntegrationTest
@@ -113,50 +115,32 @@ open class PanacheFunctionalityTest {
 
     @Test
     fun testCompositeKey() {
-        `when`()["/test/composite"]
-            .then()
-            .statusCode(`is`(200))
-            .body(`is`("OK"))
+        `when`()["/test/composite"].then().statusCode(`is`(200)).body(`is`("OK"))
     }
 
     @Test
     fun testBug7721() {
-        `when`()["/test/7721"]
-            .then()
-            .statusCode(`is`(200))
-            .body(`is`("OK"))
+        `when`()["/test/7721"].then().statusCode(`is`(200)).body(`is`("OK"))
     }
 
     @Test
     fun testBug8254() {
-        `when`()["/test/8254"]
-            .then()
-            .statusCode(`is`(200))
-            .body(`is`("OK"))
+        `when`()["/test/8254"].then().statusCode(`is`(200)).body(`is`("OK"))
     }
 
     @Test
     fun testBug9025() {
-        `when`()["/test/9025"]
-            .then()
-            .statusCode(`is`(200))
-            .body(`is`("OK"))
+        `when`()["/test/9025"].then().statusCode(`is`(200)).body(`is`("OK"))
     }
 
     @Test
     fun testBug9036() {
-        `when`()["/test/9036"]
-            .then()
-            .statusCode(`is`(200))
-            .body(`is`("OK"))
+        `when`()["/test/9036"].then().statusCode(`is`(200)).body(`is`("OK"))
     }
 
     @Test
     fun testSortByNullPrecedence() {
-        `when`()["/test/testSortByNullPrecedence"]
-            .then()
-            .statusCode(`is`(200))
-            .body(`is`("OK"))
+        `when`()["/test/testSortByNullPrecedence"].then().statusCode(`is`(200)).body(`is`("OK"))
     }
 
     @Test
@@ -184,12 +168,14 @@ open class PanacheFunctionalityTest {
                         .flatMap { person1: Person ->
                             assertEquals("pero", person1.name)
                             updateBug7102(person.id!!)
-                        }.flatMap { _ -> getBug7102(person.id!!) }
+                        }
+                        .flatMap { _ -> getBug7102(person.id!!) }
                         .map { person2: Person ->
                             assertEquals("jozo", person2.name)
                             null
                         }
-                }.flatMap { Panache.withSession { Person.deleteAll() } }
+                }
+                .flatMap { Panache.withSession { Person.deleteAll() } }
         }
     }
 
@@ -202,17 +188,15 @@ open class PanacheFunctionalityTest {
 
     @WithTransaction
     fun updateBug7102(id: Long): Uni<Void> {
-        return Person.findById(id)
-            .map { person: Person? ->
-                person?.name = "jozo"
-                null
-            }
+        return Person.findById(id).map { person: Person? ->
+            person?.name = "jozo"
+            null
+        }
     }
 
     @WithSession
     fun getBug7102(id: Long): Uni<Person> {
-        return Person.findById(id)
-            .map { it!! }
+        return Person.findById(id).map { it!! }
     }
 
     @Test
@@ -298,6 +282,9 @@ open class PanacheFunctionalityTest {
     @RunOnVertxContext
     @DisabledOnIntegrationTest
     fun testPersistenceException(asserter: UniAsserter) {
-        asserter.assertFailedWith({ Panache.withSession { Person().delete() } }, PersistenceException::class.java)
+        asserter.assertFailedWith(
+            { Panache.withSession { Person().delete() } },
+            PersistenceException::class.java
+        )
     }
 }

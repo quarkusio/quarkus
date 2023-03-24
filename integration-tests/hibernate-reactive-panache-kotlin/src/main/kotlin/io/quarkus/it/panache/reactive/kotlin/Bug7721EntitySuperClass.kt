@@ -6,7 +6,5 @@ import jakarta.persistence.MappedSuperclass
 
 @MappedSuperclass
 open class Bug7721EntitySuperClass : PanacheEntity() {
-    @JvmField
-    @Column(nullable = false)
-    var superField: String = "default"
+    @JvmField @Column(nullable = false) var superField: String = "default"
 }

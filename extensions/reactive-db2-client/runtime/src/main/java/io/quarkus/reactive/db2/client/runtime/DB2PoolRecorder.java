@@ -9,7 +9,6 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -73,16 +72,16 @@ public class DB2PoolRecorder {
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveDB2Config);
-        List<DB2ConnectOptions> connectOptionsList = toConnectOptions(dataSourceRuntimeConfig,
-                dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config);
+        DB2ConnectOptions connectOptions = toConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+                dataSourceReactiveDB2Config);
 
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with db2. and
         // the client_name as tag.
         // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
         // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
-        connectOptionsList.forEach(connectOptions -> connectOptions.setMetricsName("db2|" + dataSourceName));
+        connectOptions.setMetricsName("db2|" + dataSourceName);
 
-        return createPool(vertx, poolOptions, connectOptionsList, dataSourceName);
+        return createPool(vertx, poolOptions, connectOptions, dataSourceName);
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -115,73 +114,80 @@ public class DB2PoolRecorder {
         return poolOptions;
     }
 
-    private List<DB2ConnectOptions> toConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private DB2ConnectOptions toConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
-        List<DB2ConnectOptions> connectOptionsList = new ArrayList<>();
+        DB2ConnectOptions connectOptions;
 
         if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
             List<String> urls = dataSourceReactiveRuntimeConfig.url.get();
-            urls.forEach(url -> {
-                // clean up the URL to make migrations easier
-                if (url.matches("^vertx-reactive:db2://.*$")) {
-                    url = url.substring("vertx-reactive:".length());
-                }
-                connectOptionsList.add(DB2ConnectOptions.fromUri(url));
-            });
+            if (urls.size() > 1) {
+                log.warn("The Reactive DB2 client does not support multiple URLs. The first one will be used, and " +
+                        "others will be ignored.");
+            }
+            String url = urls.get(0);
+            // clean up the URL to make migrations easier
+            if (url.matches("^vertx-reactive:db2://.*$")) {
+                url = url.substring("vertx-reactive:".length());
+            }
+            connectOptions = DB2ConnectOptions.fromUri(url);
         } else {
-            connectOptionsList.add(new DB2ConnectOptions());
+            connectOptions = new DB2ConnectOptions();
         }
 
-        connectOptionsList.forEach(connectOptions -> {
-            dataSourceRuntimeConfig.username.ifPresent(connectOptions::setUser);
+        if (dataSourceRuntimeConfig.username.isPresent()) {
+            connectOptions.setUser(dataSourceRuntimeConfig.username.get());
+        }
 
-            dataSourceRuntimeConfig.password.ifPresent(connectOptions::setPassword);
+        if (dataSourceRuntimeConfig.password.isPresent()) {
+            connectOptions.setPassword(dataSourceRuntimeConfig.password.get());
+        }
 
-            // credentials provider
-            if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-                String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
-                CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-                String name = dataSourceRuntimeConfig.credentialsProvider.get();
-                Map<String, String> credentials = credentialsProvider.getCredentials(name);
-                String user = credentials.get(USER_PROPERTY_NAME);
-                String password = credentials.get(PASSWORD_PROPERTY_NAME);
-                if (user != null) {
-                    connectOptions.setUser(user);
-                }
-                if (password != null) {
-                    connectOptions.setPassword(password);
-                }
+        // credentials provider
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            String user = credentials.get(USER_PROPERTY_NAME);
+            String password = credentials.get(PASSWORD_PROPERTY_NAME);
+            if (user != null) {
+                connectOptions.setUser(user);
             }
+            if (password != null) {
+                connectOptions.setPassword(user);
+            }
+        }
 
-            connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
+        connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
 
-            connectOptions.setSsl(dataSourceReactiveDB2Config.ssl);
+        connectOptions.setSsl(dataSourceReactiveDB2Config.ssl);
 
-            connectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
+        connectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
 
-            configurePemTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
-            configureJksTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
-            configurePfxTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
+        configurePemTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
+        configureJksTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
+        configurePfxTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
 
-            configurePemKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
-            configureJksKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
-            configurePfxKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
+        configurePemKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
+        configureJksKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
+        configurePfxKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
 
-            connectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
+        connectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
 
-            connectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
+        connectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
 
-            dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.ifPresent(
-                    connectOptions::setHostnameVerificationAlgorithm);
+        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()) {
+            connectOptions.setHostnameVerificationAlgorithm(
+                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
+        }
 
-            dataSourceReactiveRuntimeConfig.additionalProperties.forEach(connectOptions::addProperty);
-        });
+        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(connectOptions::addProperty);
 
-        return connectOptionsList;
+        return connectOptions;
     }
 
-    private DB2Pool createPool(Vertx vertx, PoolOptions poolOptions, List<DB2ConnectOptions> dB2ConnectOptionsList,
+    private DB2Pool createPool(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions dB2ConnectOptions,
             String dataSourceName) {
         Instance<DB2PoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
@@ -191,21 +197,21 @@ public class DB2PoolRecorder {
                     new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
         }
         if (instance.isResolvable()) {
-            DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, dB2ConnectOptionsList);
+            DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, dB2ConnectOptions);
             return instance.get().create(input);
         }
-        return DB2Pool.pool(vertx, dB2ConnectOptionsList, poolOptions);
+        return DB2Pool.pool(vertx, dB2ConnectOptions, poolOptions);
     }
 
     private static class DefaultInput implements DB2PoolCreator.Input {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
-        private final List<DB2ConnectOptions> dB2ConnectOptionsList;
+        private final DB2ConnectOptions dB2ConnectOptions;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, List<DB2ConnectOptions> dB2ConnectOptionsList) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions dB2ConnectOptions) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
-            this.dB2ConnectOptionsList = dB2ConnectOptionsList;
+            this.dB2ConnectOptions = dB2ConnectOptions;
         }
 
         @Override
@@ -219,8 +225,8 @@ public class DB2PoolRecorder {
         }
 
         @Override
-        public List<DB2ConnectOptions> db2ConnectOptionsList() {
-            return dB2ConnectOptionsList;
+        public DB2ConnectOptions db2ConnectOptions() {
+            return dB2ConnectOptions;
         }
     }
 }

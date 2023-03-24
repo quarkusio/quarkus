@@ -115,7 +115,8 @@ public class OraclePoolRecorder {
         if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
             List<String> urls = dataSourceReactiveRuntimeConfig.url.get();
             if (urls.size() > 1) {
-                log.warn("The Oracle driver does not support multiple URLs. This first is used, and others is ignored.");
+                log.warn("The Reactive Oracle client does not support multiple URLs. The first one will be used, and " +
+                        "others will be ignored.");
             }
             String url = urls.get(0);
             // clean up the URL to make migrations easier

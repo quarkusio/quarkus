@@ -12,11 +12,9 @@ import java.io.Serializable
 class ObjectWithCompositeId : PanacheEntityBase {
     companion object : PanacheCompanionBase<ObjectWithCompositeId, ObjectKey>
 
-    @Id
-    var part1: String? = null
+    @Id var part1: String? = null
 
-    @Id
-    var part2: String? = null
+    @Id var part2: String? = null
     var description: String? = null
 
     internal class ObjectKey : Serializable {

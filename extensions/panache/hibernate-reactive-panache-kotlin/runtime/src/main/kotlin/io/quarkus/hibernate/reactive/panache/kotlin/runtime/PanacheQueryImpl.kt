@@ -11,7 +11,12 @@ import org.hibernate.reactive.mutiny.Mutiny
 class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
     private var delegate: CommonPanacheQueryImpl<Entity>
 
-    internal constructor(em: Uni<Mutiny.Session>, query: String?, orderBy: String?, paramsArrayOrMap: Any?) {
+    internal constructor(
+        em: Uni<Mutiny.Session>,
+        query: String?,
+        orderBy: String?,
+        paramsArrayOrMap: Any?
+    ) {
         delegate = CommonPanacheQueryImpl(em, query, orderBy, paramsArrayOrMap)
     }
 

@@ -1174,37 +1174,40 @@ class TestEndpoint {
     @Path("project")
     @Transactional
     fun testProject(): String {
-        @RegisterForReflection
-        data class MyProjection(
-            val projectedName: String
-        )
+        @RegisterForReflection data class MyProjection(val projectedName: String)
 
         val mark = Person()
         mark.name = "Mark"
         mark.persistAndFlush()
 
-        val hqlWithoutSpace = """
+        val hqlWithoutSpace =
+            """
             select
                 name as projectedName
             from
                 io.quarkus.it.panache.kotlin.Person
             where
                 name = ?1
-        """.trimIndent()
-        val withoutSpace = Person.find(hqlWithoutSpace, "Mark").project(MyProjection::class.java).firstResult()
+        """
+                .trimIndent()
+        val withoutSpace =
+            Person.find(hqlWithoutSpace, "Mark").project(MyProjection::class.java).firstResult()
         Assertions.assertNotNull(withoutSpace)
         Assertions.assertEquals(mark.name, withoutSpace?.projectedName)
 
         // There is a space behind "select "
-        val hqlWithSpace = """
+        val hqlWithSpace =
+            """
             select 
                 name as projectedName
             from
                 io.quarkus.it.panache.kotlin.Person
             where
                 name = ?1
-        """.trimIndent()
-        val withSpace = Person.find(hqlWithSpace, "Mark").project(MyProjection::class.java).firstResult()
+        """
+                .trimIndent()
+        val withSpace =
+            Person.find(hqlWithSpace, "Mark").project(MyProjection::class.java).firstResult()
         Assertions.assertNotNull(withSpace)
         Assertions.assertEquals(mark.name, withSpace?.projectedName)
 

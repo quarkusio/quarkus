@@ -14,10 +14,11 @@ interface PanacheQuery<Entity : Any> {
 
     // Builder
     /**
-     * Defines a projection class: the getters, and the public fields, will be used to restrict which fields should be
-     * retrieved from the database.
+     * Defines a projection class: the getters, and the public fields, will be used to restrict
+     * which fields should be retrieved from the database.
      *
-     * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...).
+     * @return a new query with the same state as the previous one (params, page, range, lockMode,
+     *   hints, ...).
      */
     fun <NewEntity : Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity>
 
@@ -79,8 +80,8 @@ interface PanacheQuery<Entity : Any> {
     fun lastPage(): Uni<PanacheQuery<Entity>>
 
     /**
-     * Returns true if there is another page to read after the current one.
-     * This will cause reading of the entity count.
+     * Returns true if there is another page to read after the current one. This will cause reading
+     * of the entity count.
      *
      * @return true if there is another page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
@@ -99,14 +100,13 @@ interface PanacheQuery<Entity : Any> {
     fun hasPreviousPage(): Boolean
 
     /**
-     * Returns the total number of pages to be read using the current page size.
-     * This will cause reading of the entity count.
+     * Returns the total number of pages to be read using the current page size. This will cause
+     * reading of the entity count.
      *
      * @return the total number of pages to be read using the current page size.
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      */
-    @CheckReturnValue
-    fun pageCount(): Uni<Int>
+    @CheckReturnValue fun pageCount(): Uni<Int>
 
     /**
      * Returns the current page.
@@ -118,8 +118,8 @@ interface PanacheQuery<Entity : Any> {
     fun page(): Page
 
     /**
-     * Switch the query to use a fixed range (start index - last index) instead of a page.
-     * As the range is fixed, subsequent pagination of the query is not possible.
+     * Switch the query to use a fixed range (start index - last index) instead of a page. As the
+     * range is fixed, subsequent pagination of the query is not possible.
      *
      * @param startIndex the index of the first element, starting at 0
      * @param lastIndex the index of the last element
@@ -146,13 +146,15 @@ interface PanacheQuery<Entity : Any> {
 
     /**
      * <p>
-     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
-     * with [FilterDef] on your entity or package, and enabled with [Filter] on your entity.
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be
+     * declared with [FilterDef] on your entity or package, and enabled with [Filter] on your
+     * entity.
+     *
      * <p>
      * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
-     * will modify the session's filters for the duration of obtaining the results (not while building
-     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
-     * preserve filters enabled on the session outside of this API.
+     * will modify the session's filters for the duration of obtaining the results (not while
+     * building the query). Enabled filters will be removed from the session afterwards, but no
+     * effort is made to preserve filters enabled on the session outside of this API.
      *
      * @param filterName The name of the filter to enable
      * @param parameters The set of parameters for the filter, if the filter requires parameters
@@ -162,13 +164,15 @@ interface PanacheQuery<Entity : Any> {
 
     /**
      * <p>
-     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
-     * with [FilterDef] on your entity or package, and enabled with [Filter] on your entity.
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be
+     * declared with [FilterDef] on your entity or package, and enabled with [Filter] on your
+     * entity.
+     *
      * <p>
      * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
-     * will modify the session's filters for the duration of obtaining the results (not while building
-     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
-     * preserve filters enabled on the session outside of this API.
+     * will modify the session's filters for the duration of obtaining the results (not while
+     * building the query). Enabled filters will be removed from the session afterwards, but no
+     * effort is made to preserve filters enabled on the session outside of this API.
      *
      * @param filterName The name of the filter to enable
      * @param parameters The set of parameters for the filter, if the filter requires parameters
@@ -178,13 +182,15 @@ interface PanacheQuery<Entity : Any> {
 
     /**
      * <p>
-     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
-     * with [FilterDef] on your entity or package, and enabled with [Filter] on your entity.
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be
+     * declared with [FilterDef] on your entity or package, and enabled with [Filter] on your
+     * entity.
+     *
      * <p>
      * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
-     * will modify the session's filters for the duration of obtaining the results (not while building
-     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
-     * preserve filters enabled on the session outside of this API.
+     * will modify the session's filters for the duration of obtaining the results (not while
+     * building the query). Enabled filters will be removed from the session afterwards, but no
+     * effort is made to preserve filters enabled on the session outside of this API.
      *
      * @param filterName The name of the filter to enable
      * @return this query, modified
@@ -200,8 +206,7 @@ interface PanacheQuery<Entity : Any> {
      *
      * @return the total number of entities this query operates on, cached.
      */
-    @CheckReturnValue
-    fun count(): Uni<Long>
+    @CheckReturnValue fun count(): Uni<Long>
 
     /**
      * Returns the current page of results as a [List].
@@ -209,18 +214,16 @@ interface PanacheQuery<Entity : Any> {
      * @return the current page of results as a [List].
      * @see [PanacheQuery.page]
      */
-    @CheckReturnValue
-    fun list(): Uni<List<Entity>>
+    @CheckReturnValue fun list(): Uni<List<Entity>>
 
     /**
-     * Returns the first result of the current page index. This ignores the current page size to fetch
-     * a single result.
+     * Returns the first result of the current page index. This ignores the current page size to
+     * fetch a single result.
      *
      * @return the first result of the current page index, or null if there are no results.
      * @see [PanacheQuery.singleResult]
      */
-    @CheckReturnValue
-    fun firstResult(): Uni<Entity?>
+    @CheckReturnValue fun firstResult(): Uni<Entity?>
 
     /**
      * Executes this query for the current page and return a single result.
@@ -230,6 +233,5 @@ interface PanacheQuery<Entity : Any> {
      * @throws NonUniqueResultException if there are more than one result
      * @see [PanacheQuery.firstResult]
      */
-    @CheckReturnValue
-    fun singleResult(): Uni<Entity>
+    @CheckReturnValue fun singleResult(): Uni<Entity>
 }

@@ -14,16 +14,13 @@ class Dog() : PanacheEntityBase {
         this.race = race
     }
 
-    @Id
-    @GeneratedValue
-    var id: Int? = null
+    @Id @GeneratedValue var id: Int? = null
 
     lateinit var name: String
 
     lateinit var race: String
 
-    @ManyToOne
-    lateinit var owner: Person
+    @ManyToOne lateinit var owner: Person
 
     companion object : PanacheCompanionBase<Dog, Int>
 }

@@ -316,35 +316,19 @@ public class JaxbProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void validateDefaultJaxbContext(
+    void bindClassesToJaxbContext(
             JaxbConfig config,
             FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
             SynthesisFinishedBuildItem beanContainerState,
             JaxbContextConfigRecorder jaxbContextConfig /* Force the build time container to invoke this method */) {
 
-        if (config.validateJaxbContext) {
-            final BeanResolver beanResolver = beanContainerState.getBeanResolver();
-            final Set<BeanInfo> beans = beanResolver
-                    .resolveBeans(Type.create(DotName.createSimple(JAXBContext.class), org.jboss.jandex.Type.Kind.CLASS));
-            if (!beans.isEmpty()) {
-                jaxbContextConfig.addClassesToBeBound(filteredClassesToBeBound.getClasses());
-                final BeanInfo bean = beanResolver.resolveAmbiguity(beans);
-                if (bean.isDefaultBean()) {
-                    /*
-                     * Validate the default JAXB context at build time and fail early.
-                     * Do this only if the user application actually requires the default JAXBContext bean
-                     */
-                    try {
-                        JAXBContext.newInstance(filteredClassesToBeBound.getClasses().toArray(new Class[0]));
-                    } catch (JAXBException e) {
-                        /*
-                         * Producing a ValidationErrorBuildItem would perhaps be more natural here,
-                         * but doing so causes a cycle between this and reactive JAXB extension
-                         * Throwing from here works well too
-                         */
-                        throw new DeploymentException("Failed to create or validate the default JAXBContext", e);
-                    }
-                }
+        final BeanResolver beanResolver = beanContainerState.getBeanResolver();
+        final Set<BeanInfo> beans = beanResolver
+                .resolveBeans(Type.create(DotName.createSimple(JAXBContext.class), org.jboss.jandex.Type.Kind.CLASS));
+        if (!beans.isEmpty()) {
+            jaxbContextConfig.addClassesToBeBound(filteredClassesToBeBound.getClasses());
+            if (config.validateJaxbContext) {
+                validateJaxbContext(filteredClassesToBeBound, beanResolver, beans);
             }
         }
     }
@@ -352,6 +336,27 @@ public class JaxbProcessor {
     @BuildStep
     void registerProduces(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(new AdditionalBeanBuildItem(JaxbContextProducer.class));
+    }
+
+    private void validateJaxbContext(FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound, BeanResolver beanResolver,
+            Set<BeanInfo> beans) {
+        final BeanInfo bean = beanResolver.resolveAmbiguity(beans);
+        if (bean.isDefaultBean()) {
+            /*
+             * Validate the default JAXB context at build time and fail early.
+             * Do this only if the user application actually requires the default JAXBContext bean
+             */
+            try {
+                JAXBContext.newInstance(filteredClassesToBeBound.getClasses().toArray(new Class[0]));
+            } catch (JAXBException e) {
+                /*
+                 * Producing a ValidationErrorBuildItem would perhaps be more natural here,
+                 * but doing so causes a cycle between this and reactive JAXB extension
+                 * Throwing from here works well too
+                 */
+                throw new DeploymentException("Failed to create or validate the default JAXBContext", e);
+            }
+        }
     }
 
     private void handleJaxbFile(Path p, BuildProducer<NativeImageResourceBuildItem> resource,

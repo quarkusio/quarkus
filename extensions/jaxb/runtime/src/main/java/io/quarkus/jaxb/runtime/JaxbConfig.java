@@ -13,7 +13,7 @@ public class JaxbConfig {
     /**
      * If enabled, it will validate the default JAXB context at build time.
      */
-    @ConfigItem(defaultValue = "true")
+    @ConfigItem(defaultValue = "false")
     public boolean validateJaxbContext;
 
     /**

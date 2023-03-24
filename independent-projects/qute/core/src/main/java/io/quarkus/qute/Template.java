@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -160,11 +161,22 @@ public interface Template {
      * Attempts to find the fragment with the specified identifier.
      * <p>
      * Note that fragment identifiers must be unique in a template.
+     * <p>
+     * If invoked upon a fragment instance then delegate to the defining template.
      *
      * @param id The fragment identifier
      * @return the fragment or {@code null}
      */
     Fragment getFragment(String id);
+
+    /**
+     * Returns an immutable set of identifiers of fragments defined in the template.
+     * <p>
+     * If invoked upon a fragment instance then delegate to the defining template.
+     *
+     * @return the set of fragment ids
+     */
+    Set<String> getFragmentIds();
 
     /**
      * @return {@code true} if this template is a fragment, {@code false} otherwise

@@ -15,7 +15,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 
-final class TemplateDataBuildItem extends MultiBuildItem {
+public final class TemplateDataBuildItem extends MultiBuildItem {
 
     private final ClassInfo targetClass;
     private final String namespace;
@@ -55,35 +55,36 @@ final class TemplateDataBuildItem extends MultiBuildItem {
         this.properties = propertiesValue != null ? propertiesValue.asBoolean() : false;
     }
 
-    boolean isTargetAnnotatedType() {
-        return targetClass.asClass().name().equals(ValueResolverGenerator.TEMPLATE_DATA);
+    public boolean isTargetAnnotatedType() {
+        AnnotationValue targetValue = annotationInstance.value(ValueResolverGenerator.TARGET);
+        return targetValue == null || targetValue.asClass().name().equals(ValueResolverGenerator.TEMPLATE_DATA);
     }
 
-    ClassInfo getTargetClass() {
+    public ClassInfo getTargetClass() {
         return targetClass;
     }
 
-    boolean hasNamespace() {
+    public boolean hasNamespace() {
         return namespace != null;
     }
 
-    String getNamespace() {
+    public String getNamespace() {
         return namespace;
     }
 
-    String[] getIgnore() {
+    public String[] getIgnore() {
         return ignore;
     }
 
-    boolean isIgnoreSuperclasses() {
+    public boolean isIgnoreSuperclasses() {
         return ignoreSuperclasses;
     }
 
-    boolean isProperties() {
+    public boolean isProperties() {
         return properties;
     }
 
-    AnnotationInstance getAnnotationInstance() {
+    public AnnotationInstance getAnnotationInstance() {
         return annotationInstance;
     }
 

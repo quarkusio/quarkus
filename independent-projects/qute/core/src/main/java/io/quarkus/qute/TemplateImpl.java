@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -96,6 +97,11 @@ class TemplateImpl implements Template {
     @Override
     public Fragment getFragment(String identifier) {
         return fragments != null ? fragments.get().get(Objects.requireNonNull(identifier)) : null;
+    }
+
+    @Override
+    public Set<String> getFragmentIds() {
+        return fragments != null ? Set.copyOf(fragments.get().keySet()) : Set.of();
     }
 
     private LazyValue<Map<String, Fragment>> initFragments(SectionNode section) {
@@ -273,6 +279,11 @@ class TemplateImpl implements Template {
         @Override
         public Fragment getFragment(String id) {
             return TemplateImpl.this.getFragment(id);
+        }
+
+        @Override
+        public Set<String> getFragmentIds() {
+            return TemplateImpl.this.getFragmentIds();
         }
 
         @Override

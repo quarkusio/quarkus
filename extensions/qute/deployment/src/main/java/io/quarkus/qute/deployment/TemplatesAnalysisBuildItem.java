@@ -2,6 +2,7 @@ package io.quarkus.qute.deployment;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.qute.Expression;
@@ -40,13 +41,16 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
         // File path, e.g. hello.html or ItemResource/items.html
         public final String path;
 
+        public final Set<String> fragmentIds;
+
         public TemplateAnalysis(String id, String generatedId, List<Expression> expressions,
-                List<ParameterDeclaration> parameterDeclarations, String path) {
+                List<ParameterDeclaration> parameterDeclarations, String path, Set<String> fragmentIds) {
             this.id = id;
             this.generatedId = generatedId;
             this.expressions = expressions;
             this.parameterDeclarations = parameterDeclarations;
             this.path = path;
+            this.fragmentIds = fragmentIds;
         }
 
         Expression findExpression(int id) {

@@ -44,7 +44,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
-import io.quarkus.deployment.builditem.InitalizationTaskCompletedBuildItem;
+import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -301,14 +301,14 @@ class LiquibaseProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     ServiceStartBuildItem startLiquibase(LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            BuildProducer<InitalizationTaskCompletedBuildItem> initializationCompleteBuildItem,
+            BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
 
         recorder.doStartActions();
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
         schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(getDataSourceNames(jdbcDataSourceBuildItems)));
-        initializationCompleteBuildItem.produce(new InitalizationTaskCompletedBuildItem("liquibase"));
+        initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("liquibase"));
 
         return new ServiceStartBuildItem("liquibase");
     }

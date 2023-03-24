@@ -51,7 +51,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
-import io.quarkus.deployment.builditem.InitalizationTaskCompletedBuildItem;
+import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -208,7 +208,7 @@ class FlywayProcessor {
     public ServiceStartBuildItem startActions(FlywayRecorder recorder,
             FlywayRuntimeConfig config,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
-            BuildProducer<InitalizationTaskCompletedBuildItem> initializationCompleteBuildItem,
+            BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
             MigrationStateBuildItem migrationsBuildItem) {
 
         recorder.doStartActions();
@@ -216,7 +216,7 @@ class FlywayProcessor {
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
         schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(migrationsBuildItem.hasMigrations));
-        initializationCompleteBuildItem.produce(new InitalizationTaskCompletedBuildItem("flyway"));
+        initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("flyway"));
         return new ServiceStartBuildItem("flyway");
     }
 

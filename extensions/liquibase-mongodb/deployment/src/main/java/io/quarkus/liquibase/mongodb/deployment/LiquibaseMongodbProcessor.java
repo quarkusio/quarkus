@@ -33,7 +33,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
-import io.quarkus.deployment.builditem.InitalizationTaskCompletedBuildItem;
+import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -246,10 +246,10 @@ class LiquibaseMongodbProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     ServiceStartBuildItem startLiquibase(LiquibaseMongodbRecorder recorder,
-            BuildProducer<InitalizationTaskCompletedBuildItem> initializationCompleteBuildItem) {
+            BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem) {
         // will actually run the actions at runtime
         recorder.doStartActions();
-        initializationCompleteBuildItem.produce(new InitalizationTaskCompletedBuildItem("liquibase-mongodb"));
+        initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("liquibase-mongodb"));
         return new ServiceStartBuildItem("liquibase-mongodb");
     }
 

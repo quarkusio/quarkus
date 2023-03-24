@@ -55,7 +55,7 @@
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>3.1</microprofile-openapi.version>
         <smallrye-common.version>2.1.0</smallrye-common.version>
-        <smallrye-config.version>3.1.3</smallrye-config.version>
+        <smallrye-config.version>3.2.0</smallrye-config.version>
         <smallrye-health.version>4.0.1</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.3.0</smallrye-open-api.version>
@@ -3811,6 +3811,11 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.config</groupId>
+                <artifactId>smallrye-config-core</artifactId>
+                <version>${smallrye-config.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.config</groupId>
                 <artifactId>smallrye-config-validator</artifactId>
                 <version>${smallrye-config.version}</version>
             </dependency>
@@ -3826,7 +3831,12 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.config</groupId>
-                <artifactId>smallrye-config-core</artifactId>
+                <artifactId>smallrye-config-source-keystore</artifactId>
+                <version>${smallrye-config.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.config</groupId>
+                <artifactId>smallrye-config-crypto</artifactId>
                 <version>${smallrye-config.version}</version>
             </dependency>
             <dependency>

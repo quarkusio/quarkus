@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -38,6 +37,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.JavaVersionUtil;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class QuarkusAugmentor {
 
@@ -177,8 +177,8 @@ public class QuarkusAugmentor {
             return buildResult;
         } finally {
             try {
-                ConfigProviderResolver.instance()
-                        .releaseConfig(ConfigProviderResolver.instance().getConfig(deploymentClassLoader));
+                ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance())
+                        .releaseConfig(deploymentClassLoader);
             } catch (Exception ignore) {
 
             }

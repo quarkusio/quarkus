@@ -42,9 +42,7 @@ public class KeycloakAdminClientProcessor {
                 StringListMapDeserializer.class,
                 StringOrArrayDeserializer.class,
                 StringOrArraySerializer.class)
-                .constructors(true)
-                .methods(true)
-                .build();
+                .methods().build();
     }
 
     @Record(ExecutionTime.STATIC_INIT)

@@ -21,12 +21,14 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 public class KubernetesConfigWithSecretsTest {
 
+    private static final String APP_NAME = "kubernetes-config-with-secrets";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-config-with-secrets")
+            .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-config-with-secrets.properties")
+            .withConfigurationResource(APP_NAME + ".properties")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-kubernetes-config", Version.getVersion())));
 
     @ProdBuildResults

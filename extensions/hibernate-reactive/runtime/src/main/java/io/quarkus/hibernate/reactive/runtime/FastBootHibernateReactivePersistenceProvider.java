@@ -169,6 +169,31 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 }
             }
 
+            if (!puConfig.unsupportedProperties.isEmpty()) {
+                log.warnf("Persistence-unit [%s] sets unsupported properties."
+                        + " These properties may not work correctly, and even if they do,"
+                        + " that may change when upgrading to a newer version of Quarkus (even just a micro/patch version)."
+                        + " Consider using a supported configuration property before falling back to unsupported ones."
+                        + " If there is no supported equivalent, make sure to file a feature request so that a supported configuration property can be added to Quarkus,"
+                        + " and more importantly so that the configuration property is tested regularly."
+                        + " Unsupported properties being set: %s",
+                        persistenceUnitName,
+                        puConfig.unsupportedProperties.keySet());
+            }
+            for (Map.Entry<String, String> entry : puConfig.unsupportedProperties.entrySet()) {
+                var key = entry.getKey();
+                if (runtimeSettingsBuilder.get(key) != null) {
+                    log.warnf("Persistence-unit [%s] sets property '%s' to a custom value through '%s',"
+                            + " but Quarkus already set that property independently."
+                            + " The custom value will be ignored.",
+                            persistenceUnitName, key,
+                            HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnit.getConfigurationName(),
+                                    "unsupported-properties.\"" + key + "\""));
+                    continue;
+                }
+                runtimeSettingsBuilder.put(entry.getKey(), entry.getValue());
+            }
+
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(

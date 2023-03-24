@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig.Constants.DEFAULT_GRPC_BASE_URI;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig.Protocol.HTTP_PROTOBUF;
 
 import java.util.function.Consumer;
@@ -20,15 +21,20 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class OtlpRecorder {
-    static String resolveEndpoint(final LaunchMode launchMode, final OtlpExporterRuntimeConfig runtimeConfig) {
+
+    static String resolveEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
         String endpoint = runtimeConfig.traces.legacyEndpoint
+                .filter(OtlpRecorder::excludeDefaultEndpoint)
                 .orElse(runtimeConfig.traces.endpoint
-                        .orElse(runtimeConfig.endpoint.orElse("")));
-        if (launchMode == LaunchMode.DEVELOPMENT && endpoint.isEmpty()) {
-            // Default the endpoint for development only
-            endpoint = OtlpExporterRuntimeConfig.Constants.DEFAULT_GRPC_BASE_URI;
-        }
+                        .filter(OtlpRecorder::excludeDefaultEndpoint)
+                        .orElse(runtimeConfig.endpoint
+                                .filter(OtlpRecorder::excludeDefaultEndpoint)
+                                .orElse(DEFAULT_GRPC_BASE_URI)));
         return endpoint.trim();
+    }
+
+    private static boolean excludeDefaultEndpoint(String endpoint) {
+        return !DEFAULT_GRPC_BASE_URI.equals(endpoint);
     }
 
     public void installBatchSpanProcessorForOtlp(
@@ -39,7 +45,7 @@ public class OtlpRecorder {
         if (otelRuntimeConfig.sdkDisabled) {
             return;
         }
-        String endpoint = resolveEndpoint(launchMode, exporterRuntimeConfig).trim();
+        String endpoint = resolveEndpoint(exporterRuntimeConfig).trim();
 
         // Only create the OtlpGrpcSpanExporter if an endpoint was set in runtime config
         if (endpoint.length() > 0) {

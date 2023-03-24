@@ -565,11 +565,13 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     private void setEntityRelatedHeaders(MultivaluedMap<String, String> headerMap, Entity<?> entity) {
         if (entity.getVariant() != null) {
             Variant v = entity.getVariant();
-            headerMap.putSingle(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
-            if (v.getLanguageString() != null) {
+            if (!headerMap.containsKey(HttpHeaders.CONTENT_TYPE)) {
+                headerMap.putSingle(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
+            }
+            if ((v.getLanguageString() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_LANGUAGE)) {
                 headerMap.putSingle(HttpHeaders.CONTENT_LANGUAGE, v.getLanguageString());
             }
-            if (v.getEncoding() != null) {
+            if ((v.getEncoding() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_ENCODING)) {
                 headerMap.putSingle(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
             }
         }

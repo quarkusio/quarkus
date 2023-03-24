@@ -327,6 +327,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
      */
     CronJobConfig cronJob;
 
+    /**
+     * RBAC configuration
+     */
+    RbacConfig rbac;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -595,6 +600,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public DeployStrategy getDeployStrategy() {
         return deployStrategy;
+    }
+
+    @Override
+    public RbacConfig getRbacConfig() {
+        return rbac;
     }
 
     public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {

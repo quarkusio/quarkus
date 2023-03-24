@@ -11,6 +11,7 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIEN
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.*;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
@@ -50,6 +51,7 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.spi.MissingMessageBodyReaderErrorMessageContextualizer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
@@ -89,6 +91,7 @@ import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
+import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -159,8 +162,8 @@ class RestClientReactiveProcessor {
             resource.produce(new NativeImageResourceBuildItem(
                     "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
             reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, false, false,
-                            "io.smallrye.opentracing.SmallRyeRestClientListener"));
+                    .produce(ReflectiveClassBuildItem.builder("io.smallrye.opentracing.SmallRyeRestClientListener")
+                            .build());
         }
     }
 
@@ -352,6 +355,7 @@ class RestClientReactiveProcessor {
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
             CustomScopeAnnotationsBuildItem scopes,
+            List<RestClientAnnotationsTransformerBuildItem> restClientAnnotationsTransformerBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             RestClientReactiveConfig clientConfig,
             RestClientRecorder recorder) {
@@ -359,6 +363,8 @@ class RestClientReactiveProcessor {
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
         Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
         Map<String, String> configKeys = new HashMap<>();
+        var annotationsStore = new AnnotationStore(restClientAnnotationsTransformerBuildItem.stream()
+                .map(RestClientAnnotationsTransformerBuildItem::getAnnotationsTransformer).collect(toList()));
         for (AnnotationInstance registerRestClient : registerRestClientAnnos) {
             ClassInfo jaxrsInterface = registerRestClient.target().asClass();
             // for each interface annotated with @RegisterRestClient, generate a $$CDIWrapper CDI bean that can be injected
@@ -410,7 +416,7 @@ class RestClientReactiveProcessor {
                     classCreator.addAnnotation(Typed.class.getName(), RetentionPolicy.RUNTIME)
                             .addValue("value", new org.objectweb.asm.Type[] { asmType });
 
-                    for (AnnotationInstance annotation : jaxrsInterface.classAnnotations()) {
+                    for (AnnotationInstance annotation : annotationsStore.getAnnotations(jaxrsInterface)) {
                         if (SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS.contains(annotation.name())) {
                             continue;
                         }
@@ -455,7 +461,7 @@ class RestClientReactiveProcessor {
                         methodCreator.setSignature(AsmUtil.getSignatureIfRequired(method));
 
                         // copy method annotations, there can be interceptors bound to them:
-                        for (AnnotationInstance annotation : method.annotations()) {
+                        for (AnnotationInstance annotation : annotationsStore.getAnnotations(method)) {
                             if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
                                     && !BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.containsKey(annotation.name())
                                     && !ResteasyReactiveDotNames.PATH.equals(annotation.name())) {
@@ -508,7 +514,8 @@ class RestClientReactiveProcessor {
                         + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
             }
             generatedProviders.put(result.interfaceName, result);
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, false, result.generatedClassName));
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(result.generatedClassName)
+                    .serialization(false).build());
         }
     }
 
@@ -530,7 +537,8 @@ class RestClientReactiveProcessor {
                         + "Offending class is '" + result.interfaceName + "'");
             } else if (existing == null || existing.priority < result.priority) {
                 generatedProviders.put(result.interfaceName, result);
-                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, false, result.generatedClassName));
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(result.generatedClassName)
+                        .serialization(false).build());
             }
         }
     }

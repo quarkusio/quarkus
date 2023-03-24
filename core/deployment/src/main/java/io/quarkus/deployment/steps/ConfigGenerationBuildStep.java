@@ -144,7 +144,8 @@ public class ConfigGenerationBuildStep {
             method.returnValue(configBuilder);
         }
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builderClassName));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(builderClassName).build());
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
     }
@@ -196,7 +197,8 @@ public class ConfigGenerationBuildStep {
             method.returnValue(configBuilder);
         }
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builderClassName));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(builderClassName).build());
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
     }
@@ -300,7 +302,8 @@ public class ConfigGenerationBuildStep {
         Set<String> runtimeConfigBuilderClassNames = runTimeConfigBuilders.stream()
                 .map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet());
         reflectiveClass
-                .produce(new ReflectiveClassBuildItem(false, false, runtimeConfigBuilderClassNames.toArray(new String[0])));
+                .produce(ReflectiveClassBuildItem.builder(runtimeConfigBuilderClassNames.toArray(new String[0]))
+                        .build());
 
         RunTimeConfigurationGenerator.GenerateOperation
                 .builder()
@@ -514,7 +517,8 @@ public class ConfigGenerationBuildStep {
             ctor.returnVoid();
         }
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, className));
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder(className).build());
     }
 
     private static void generateMappingsConfigBuilder(
@@ -542,7 +546,8 @@ public class ConfigGenerationBuildStep {
             method.returnValue(configBuilder);
         }
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, className));
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder(className).build());
     }
 
     private static Set<String> discoverService(
@@ -552,7 +557,8 @@ public class ConfigGenerationBuildStep {
         Set<String> services = new HashSet<>();
         for (String service : classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceClass.getName())) {
             services.add(service);
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, service));
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(service).build());
         }
         return services;
     }

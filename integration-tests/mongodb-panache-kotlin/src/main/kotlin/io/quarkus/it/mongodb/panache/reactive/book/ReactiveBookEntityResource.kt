@@ -16,12 +16,12 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.bson.types.ObjectId
-import org.jboss.logging.Logger
-import org.jboss.resteasy.reactive.RestStreamElementType
 import java.net.URI
 import java.time.LocalDate.parse
 import java.util.concurrent.Flow
+import org.bson.types.ObjectId
+import org.jboss.logging.Logger
+import org.jboss.resteasy.reactive.RestStreamElementType
 
 @Path("/reactive/books/entity")
 class ReactiveBookEntityResource {
@@ -58,7 +58,8 @@ class ReactiveBookEntityResource {
     }
 
     @PUT
-    fun updateBook(book: ReactiveBookEntity): Uni<Response> = book.update<ReactiveBookEntity>().map { Response.accepted().build() }
+    fun updateBook(book: ReactiveBookEntity): Uni<Response> =
+        book.update<ReactiveBookEntity>().map { Response.accepted().build() }
 
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
@@ -68,18 +69,18 @@ class ReactiveBookEntityResource {
     @DELETE
     @Path("/{id}")
     fun deleteBook(@PathParam("id") id: String?): Uni<Void> {
-        return ReactiveBookEntity.deleteById(ObjectId(id))
-            .map { d ->
-                if (d) {
-                    return@map null
-                }
-                throw NotFoundException()
+        return ReactiveBookEntity.deleteById(ObjectId(id)).map { d ->
+            if (d) {
+                return@map null
             }
+            throw NotFoundException()
+        }
     }
 
     @GET
     @Path("/{id}")
-    fun getBook(@PathParam("id") id: String?): Uni<ReactiveBookEntity?> = ReactiveBookEntity.findById(ObjectId(id))
+    fun getBook(@PathParam("id") id: String?): Uni<ReactiveBookEntity?> =
+        ReactiveBookEntity.findById(ObjectId(id))
 
     @GET
     @Path("/search/{author}")
@@ -96,13 +97,13 @@ class ReactiveBookEntityResource {
     ): Uni<ReactiveBookEntity?> {
         return if (author != null) {
             ReactiveBookEntity.find("{'author': ?1,'bookTitle': ?2}", author, title!!).firstResult()
-        } else ReactiveBookEntity
-            .find(
-                "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
-                parse(dateFrom),
-                parse(dateTo)
-            )
-            .firstResult()
+        } else
+            ReactiveBookEntity.find(
+                    "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
+                    parse(dateFrom),
+                    parse(dateTo)
+                )
+                .firstResult()
     }
 
     @GET
@@ -115,19 +116,19 @@ class ReactiveBookEntityResource {
     ): Uni<ReactiveBookEntity?> =
         if (author != null) {
             ReactiveBookEntity.find(
-                "{'author': :author,'bookTitle': :title}",
-                with("author", author).and("title", title)
-            ).firstResult()
+                    "{'author': :author,'bookTitle': :title}",
+                    with("author", author).and("title", title)
+                )
+                .firstResult()
         } else {
             ReactiveBookEntity.find(
-                "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
-                with("dateFrom", parse(dateFrom)).and("dateTo", parse(dateTo))
-            )
+                    "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
+                    with("dateFrom", parse(dateFrom)).and("dateTo", parse(dateTo))
+                )
                 .firstResult()
         }
 
-    @DELETE
-    fun deleteAll(): Uni<Void> = ReactiveBookEntity.deleteAll().map { null }
+    @DELETE fun deleteAll(): Uni<Void> = ReactiveBookEntity.deleteAll().map { null }
 
     companion object {
         private val LOGGER: Logger = Logger.getLogger(ReactiveBookEntityResource::class.java)

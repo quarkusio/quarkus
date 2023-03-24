@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import io.quarkus.arc.Arc;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.json.JsonObject;
 
@@ -13,10 +14,12 @@ import io.vertx.core.json.JsonObject;
  */
 public class LogStreamJsonRPCService {
 
+    @NonBlocking
     public String ping() {
         return "pong";
     }
 
+    @NonBlocking
     public List<JsonObject> history() {
         LogStreamBroadcaster logStreamBroadcaster = Arc.container().instance(LogStreamBroadcaster.class).get();
         LinkedBlockingQueue<JsonObject> history = logStreamBroadcaster.getHistory();

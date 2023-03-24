@@ -128,7 +128,8 @@ public class ConfigBuildStep {
         for (Type type : customBeanTypes) {
             if (type.kind() != Kind.ARRAY) {
                 // Implicit converters are most likely used
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
+                reflectiveClass
+                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
             }
             DotName implClazz = type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName())
                     : type.name();
@@ -208,7 +209,7 @@ public class ConfigBuildStep {
             Type requiredType = item.getPropertyType();
             String propertyType = requiredType.name().toString();
             if (requiredType.kind() != Kind.PRIMITIVE) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, propertyType));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(propertyType).build());
             }
         }
 
@@ -222,7 +223,8 @@ public class ConfigBuildStep {
                 for (Type argumentType : argumentTypes) {
                     actualTypeArgumentNames.add(argumentType.name().toString());
                     if (argumentType.kind() != Kind.PRIMITIVE) {
-                        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, argumentType.name().toString()));
+                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(argumentType.name().toString())
+                                .build());
                     }
                 }
 
@@ -385,7 +387,7 @@ public class ConfigBuildStep {
                 .toArray(String[]::new);
         if (valueTypes.length > 0) {
             producer.produce(
-                    ReflectiveClassBuildItem.builder(valueTypes).constructors(true).methods(false).fields(false).build());
+                    ReflectiveClassBuildItem.builder(valueTypes).build());
         }
     }
 

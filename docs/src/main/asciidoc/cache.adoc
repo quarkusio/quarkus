@@ -25,6 +25,13 @@ Since the weather forecast is updated once every twelve hours, caching the servi
 
 We'll do that using a single Quarkus annotation.
 
+[NOTE]
+====
+In this guide, we use the default Quarkus Cache backend (Caffeine).
+You can use Redis instead.
+Refer to the xref:cache-redis-reference.adoc[Redis cache backend reference] to configure the Redis backend.
+====
+
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -736,7 +743,7 @@ properties in the `application.properties` file. By default, caches do not perfo
 You need to replace `cache-name` in all the following properties with the real name of the cache you want to configure.
 ====
 
-include::{generated-dir}/config/quarkus-cache-config-group-cache-config-caffeine-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-cache-cache-config.adoc[opts=optional, leveloffset=+1]
 
 Here's what your cache configuration could look like:
 

@@ -31,7 +31,6 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.runtime.LaunchMode;
 
 /**
  * This goal downloads all the Maven artifact dependencies required to build, run, test and

@@ -15,6 +15,8 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheImpl;
+import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -27,6 +29,7 @@ public class CacheJsonRPCService {
     @Inject
     Logger logger;
 
+    @NonBlocking
     public JsonArray getAll() {
         Collection<String> names = manager.getCacheNames();
         List<CaffeineCache> allCaches = new ArrayList<>(names.size());
@@ -49,17 +52,16 @@ public class CacheJsonRPCService {
         return new JsonObject().put("name", cc.getName()).put("size", ((CaffeineCacheImpl) cc).getSize());
     }
 
-    public JsonObject clear(String name) {
+    public Uni<JsonObject> clear(String name) {
         Optional<Cache> cache = manager.getCache(name);
         if (cache.isPresent()) {
-            cache.get().invalidateAll().subscribe().asCompletionStage()
-                    .thenAccept(x -> logger.infof("Cache %s cleared", name));
-            return getJsonRepresentationForCache(cache.get());
+            return cache.get().invalidateAll().map((t) -> getJsonRepresentationForCache(cache.get()));
         } else {
-            return new JsonObject().put("name", name).put("size", -1);
+            return Uni.createFrom().item(new JsonObject().put("name", name).put("size", -1));
         }
     }
 
+    @NonBlocking
     public JsonObject refresh(String name) {
         Optional<Cache> cache = manager.getCache(name);
         if (cache.isPresent()) {

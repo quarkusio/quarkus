@@ -290,7 +290,7 @@ client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1").execute(Tuple.
 ----
 
 TIP: For PostgreSQL, the SQL string can refer to parameters by position, using `$1`, `$2`, ...etc.
-Please refer to the <<Database Clients details>> section for other databases.
+Please refer to the <<reactive-sql-clients-details>> section for other databases.
 
 Similar to the simple `query` method, `preparedQuery` returns an instance of `PreparedQuery<RowSet<Row>>`.
 Equipped with this tooling, we are able to safely use an `id` provided by the user to get the details of a particular fruit:

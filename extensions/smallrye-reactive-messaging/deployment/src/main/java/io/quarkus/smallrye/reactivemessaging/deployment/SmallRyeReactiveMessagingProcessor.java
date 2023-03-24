@@ -144,6 +144,9 @@ public class SmallRyeReactiveMessagingProcessor {
                                 ReactiveMessagingDotNames.INCOMING)),
                 new UnremovableBeanBuildItem(
                         new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.INCOMINGS)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
                                 ReactiveMessagingDotNames.OUTGOING)));
     }
 
@@ -251,7 +254,8 @@ public class SmallRyeReactiveMessagingProcessor {
                  * We could potentially lift this restriction with some extra CDI bean generation, but it's probably not worth
                  * it
                  */
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
+                reflectiveClass
+                        .produce(ReflectiveClassBuildItem.builder(generatedInvokerName).build());
                 mediatorConfiguration
                         .setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(generatedInvokerName));
             } catch (IllegalArgumentException e) {

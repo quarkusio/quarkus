@@ -46,6 +46,11 @@ public class BlockingTimeSeriesCommandsImpl<K> extends AbstractRedisCommandGroup
     }
 
     @Override
+    public void tsAdd(K key, double value, AddArgs args) {
+        reactive.tsAdd(key, value, args).await().atMost(timeout);
+    }
+
+    @Override
     public void tsAdd(K key, long timestamp, double value) {
         reactive.tsAdd(key, timestamp, value).await().atMost(timeout);
     }

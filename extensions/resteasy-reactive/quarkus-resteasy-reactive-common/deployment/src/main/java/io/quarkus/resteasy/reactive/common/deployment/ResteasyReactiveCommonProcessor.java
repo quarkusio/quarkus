@@ -123,7 +123,8 @@ public class ResteasyReactiveCommonProcessor {
                 .scanForApplicationClass(combinedIndexBuildItem.getComputingIndex(),
                         config.buildTimeConditionAware ? getExcludedClasses(buildTimeConditions) : Collections.emptySet());
         if (result.getSelectedAppClass() != null) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, result.getSelectedAppClass().name().toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(result.getSelectedAppClass().name().toString())
+                    .build());
         }
         return new ApplicationResultBuildItem(result);
     }
@@ -302,7 +303,8 @@ public class ResteasyReactiveCommonProcessor {
         for (var i : serializers.getReaders()) {
             messageBodyReaderBuildItemBuildProducer.produce(new MessageBodyReaderBuildItem(i.getClassName(),
                     i.getHandledClassName(), i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, i.getClassName()));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(i.getClassName()).build());
         }
         for (var i : serializers.getWriters()) {
             messageBodyWriterBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(i.getClassName(),

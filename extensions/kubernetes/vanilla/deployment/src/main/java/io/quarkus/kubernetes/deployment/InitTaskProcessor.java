@@ -16,6 +16,7 @@ import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.kubernetes.spi.PolicyRule;
 
 public class InitTaskProcessor {
 
@@ -54,7 +55,7 @@ public class InitTaskProcessor {
             });
 
             roles.produce(new KubernetesRoleBuildItem("view-jobs", Collections.singletonList(
-                    new KubernetesRoleBuildItem.PolicyRule(
+                    new PolicyRule(
                             Collections.singletonList("batch"),
                             Collections.singletonList("jobs"),
                             List.of("get"))),

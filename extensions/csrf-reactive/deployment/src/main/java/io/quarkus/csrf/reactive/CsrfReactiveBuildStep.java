@@ -19,7 +19,8 @@ public class CsrfReactiveBuildStep {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CsrfRequestResponseReactiveFilter.class));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, CsrfRequestResponseReactiveFilter.class));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(CsrfRequestResponseReactiveFilter.class).methods().fields().build());
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CsrfTokenParameterProvider.class));
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(CsrfRequestResponseReactiveFilter.class.getName()));

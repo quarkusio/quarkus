@@ -1798,6 +1798,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-cache-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-redis-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -2958,6 +2971,24 @@
                         <configuration>
                             <skip>${skipDocs}</skip>
                             <mainClass>io.quarkus.docs.generation.YamlMetadataGenerator</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/target/asciidoc/sources</argument>
+                                <argument>${project.basedir}/target</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-doc-reference-index</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <mainClass>io.quarkus.docs.generation.ReferenceIndexGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/target/asciidoc/sources</argument>
                                 <argument>${project.basedir}/target</argument>

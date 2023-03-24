@@ -87,7 +87,7 @@ public class ScoreSystem {
         }
 
         public static Diagnostic ExecutionNonBlocking = new Diagnostic("Dispatched on the IO thread", 100);
-        public static Diagnostic ExecutionBlocking = new Diagnostic("Needs a worker thread dispatch", 0);
+        public static Diagnostic ExecutionBlocking = new Diagnostic("Relies on a blocking worker thread", 0);
 
         public static Diagnostic ResourceSingleton = new Diagnostic("Single resource instance for all requests", 100);
         public static Diagnostic ResourcePerRequest = new Diagnostic("New resource instance for every request", 0);

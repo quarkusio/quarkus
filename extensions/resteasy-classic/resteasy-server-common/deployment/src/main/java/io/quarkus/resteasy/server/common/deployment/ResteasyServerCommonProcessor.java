@@ -304,7 +304,7 @@ public class ResteasyServerCommonProcessor {
                                 scannedResources.putIfAbsent(clazz.name(), clazz);
                             }
                         }
-                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
 
                         if (!clazz.hasNoArgsConstructor()) {
                             withoutDefaultCtor.put(clazz.name(), clazz);
@@ -321,7 +321,7 @@ public class ResteasyServerCommonProcessor {
             final Collection<ClassInfo> implementors = index.getAllKnownImplementors(iface);
             for (final ClassInfo implementor : implementors) {
                 String className = implementor.name().toString();
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
                 scannedResources.putIfAbsent(implementor.name(), implementor);
 
                 if (!implementor.hasNoArgsConstructor()) {
@@ -334,7 +334,7 @@ public class ResteasyServerCommonProcessor {
             final Collection<ClassInfo> implementors = index.getAllKnownSubclasses(cls);
             for (final ClassInfo implementor : implementors) {
                 String className = implementor.name().toString();
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
                 if (!Modifier.isAbstract(implementor.flags())) {
                     scannedResources.putIfAbsent(implementor.name(), implementor);
                 }
@@ -356,7 +356,8 @@ public class ResteasyServerCommonProcessor {
         Set<DotName> subresources = findSubresources(beanArchiveIndexBuildItem.getIndex(), scannedResources);
         if (!subresources.isEmpty()) {
             for (DotName locator : subresources) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, locator.toString()));
+                reflectiveClass
+                        .produce(ReflectiveClassBuildItem.builder(locator.toString()).methods().fields().build());
             }
             // Sub-resource locators are unremovable beans
             unremovableBeans.produce(
@@ -377,7 +378,8 @@ public class ResteasyServerCommonProcessor {
                 beanArchiveIndexBuildItem, additionalJaxRsResourceMethodAnnotations);
 
         for (ClassInfo implementation : index.getAllKnownImplementors(ResteasyDotNames.DYNAMIC_FEATURE)) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, implementation.name().toString()));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(implementation.name().toString()).build());
         }
 
         Map<String, String> resteasyInitParameters = new HashMap<>();
@@ -643,10 +645,9 @@ public class ResteasyServerCommonProcessor {
         }
 
         // special case: our config providers
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                ServletConfigSource.class,
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ServletConfigSource.class,
                 ServletContextConfigSource.class,
-                FilterConfigSource.class));
+                FilterConfigSource.class).build());
     }
 
     private static void generateDefaultConstructors(BuildProducer<BytecodeTransformerBuildItem> transformers,
@@ -809,7 +810,8 @@ public class ResteasyServerCommonProcessor {
         for (AnnotationInstance annotation : index.getAnnotations(JSONB_ANNOTATION)) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                 reflectiveClass
-                        .produce(new ReflectiveClassBuildItem(true, true, annotation.target().asClass().name().toString()));
+                        .produce(ReflectiveClassBuildItem.builder(annotation.target().asClass().name().toString()).methods()
+                                .fields().build());
             }
         }
 
@@ -829,8 +831,10 @@ public class ResteasyServerCommonProcessor {
         }
 
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder(ViolationReport.class.getName()).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ResteasyConstraintViolation.class.getName()).methods()
+                .fields().build());
     }
 
     private static void scanMethods(DotName annotationType,

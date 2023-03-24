@@ -1,7 +1,6 @@
 package io.quarkus.opentelemetry.deployment.exporter.otlp;
 
 import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constants.CDI_VALUE;
-import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constants.OTLP_VALUE;
 
 import java.util.function.BooleanSupplier;
 
@@ -23,16 +22,14 @@ import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpRecorder;
 public class OtlpExporterProcessor {
 
     static class OtlpExporterEnabled implements BooleanSupplier {
-        OtlpExporterBuildConfig exporBuildConfig;
+        OtlpExporterBuildConfig exportBuildConfig;
         OtelBuildConfig otelBuildConfig;
 
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled &&
                     otelBuildConfig.traces.enabled.orElse(Boolean.TRUE) &&
-                    (otelBuildConfig.traces.exporter.contains(OTLP_VALUE) ||
-                            otelBuildConfig.traces.exporter.contains(CDI_VALUE))
-                    &&
-                    exporBuildConfig.enabled;
+                    otelBuildConfig.traces.exporter.contains(CDI_VALUE) &&
+                    exportBuildConfig.enabled;
         }
     }
 

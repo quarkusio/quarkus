@@ -133,8 +133,10 @@ class InfinispanClientProcessor {
 
             // We use caffeine for bounded near cache - so register that reflection if we have a bounded near cache
             if (properties.containsKey(ConfigurationProperties.NEAR_CACHE_MAX_ENTRIES)) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.github.benmanes.caffeine.cache.SSMS"));
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.github.benmanes.caffeine.cache.PSMS"));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.github.benmanes.caffeine.cache.SSMS")
+                        .build());
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.github.benmanes.caffeine.cache.PSMS")
+                        .build());
             }
         }
 
@@ -205,21 +207,26 @@ class InfinispanClientProcessor {
         for (AnnotationInstance instance : listenerInstances) {
             AnnotationTarget target = instance.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, target.asClass().name().toString()));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(target.asClass().name().toString()).methods()
+                        .build());
             }
         }
 
         // This is required for netty to work properly
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel")
+                .build());
         // We use reflection to have continuous queries work
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                "org.infinispan.client.hotrod.event.impl.ContinuousQueryImpl$ClientEntryListener"));
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("org.infinispan.client.hotrod.event.impl.ContinuousQueryImpl$ClientEntryListener").methods()
+                .build());
         // We use reflection to allow for near cache invalidations
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                "org.infinispan.client.hotrod.near.NearCacheService$InvalidatedNearCacheListener"));
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("org.infinispan.client.hotrod.near.NearCacheService$InvalidatedNearCacheListener").methods()
+                .build());
         // This is required when a cache is clustered to tell us topology
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                "org.infinispan.client.hotrod.impl.consistenthash.SegmentConsistentHash"));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("org.infinispan.client.hotrod.impl.consistenthash.SegmentConsistentHash")
+                        .build());
 
         return new InfinispanPropertiesBuildItem(properties);
     }

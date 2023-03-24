@@ -42,6 +42,11 @@ triage:
       directories:
         - extensions/amazon-lambda
         - integration-tests/amazon-lambda
+    - id: persistence
+      labels: [area/persistence]
+      title: "persistence"
+      directories:
+        - extensions/jdbc/
     - id: db2
       labels: [area/persistence]
       title: "db2"
@@ -248,9 +253,9 @@ triage:
       notify: [cescoffier, jponge]
       directories:
         - extensions/mutiny/
-        - extensions/rest-client-mutiny/
-        - extensions/resteasy-mutiny-common/
-        - extensions/resteasy-mutiny/
+        - extensions/resteasy-classic/rest-client-mutiny/
+        - extensions/resteasy-classic/resteasy-mutiny-common/
+        - extensions/resteasy-classic/resteasy-mutiny
     - id: panache
       labels: [area/panache]
       title: "panache"
@@ -268,7 +273,7 @@ triage:
       notify: [mkouba]
       directories:
         - extensions/qute/
-        - extensions/resteasy-qute/
+        - extensions/resteasy-classic/resteasy-qute/
     - id: reactive-messaging
       labels: [area/reactive-messaging, area/smallrye]
       title: "reactive.messaging"
@@ -518,7 +523,7 @@ triage:
       title: "oidc"
       notify: [sberyozkin, pedroigor]
       directories:
-        - extensions/oidc/
+        - extensions/oidc
         - integration-tests/oidc/
         - integration-tests/oidc-code-flow/
     - id: keycloak
@@ -539,13 +544,14 @@ triage:
     - id: resteasy
       labels: [area/resteasy]
       directories:
-        - extensions/resteasy/
-        - extensions/resteasy-common/
-        - extensions/resteasy-jackson/
-        - extensions/resteasy-jsonb/
-        - extensions/resteasy-jaxb/
-        - extensions/resteasy-multipart/
-        - extensions/resteasy-server-common/
+        - extensions/resteasy-classic/
+        - extensions/resteasy-classic/resteasy
+        - extensions/resteasy-classic/resteasy-common/
+        - extensions/resteasy-classic/resteasy-jackson/
+        - extensions/resteasy-classic/resteasy-jsonb/
+        - extensions/resteasy-classic/resteasy-jaxb/
+        - extensions/resteasy-classic/resteasy-multipart/
+        - extensions/resteasy-classic/resteasy-server-common/
         - integration-tests/resteasy-jackson/
         - integration-tests/elytron-resteasy/
         - integration-tests/virtual-http-resteasy/

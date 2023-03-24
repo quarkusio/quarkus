@@ -68,15 +68,35 @@ public class RegisterClientHeadersTest {
     }
 
     @Test
-    public void shouldSetHeadersFromMultipleBindings() {
+    public void shouldSetHeadersFromMultipleBindingsAndNoBody() {
         String headerValue = "my-header-value";
-        Map<String, List<String>> headers = multipleHeadersBindingClient.call(headerValue).getHeaders();
+        Map<String, List<String>> headers = multipleHeadersBindingClient.call(headerValue, "test").getHeaders();
         // Verify: @RegisterClientHeaders(MyHeadersFactory.class)
         assertThat(headers.get("foo")).containsExactly("bar");
         // Verify: @ClientHeaderParam(name = "my-header", value = "constant-header-value")
         assertThat(headers.get("my-header")).containsExactly("constant-header-value");
         // Verify: @ClientHeaderParam(name = "computed-header", value = "{...ComputedHeader.get}")
         assertThat(headers.get("computed-header")).containsExactly("From " + ComputedHeader.class.getName());
+        // Verify: @ClientHeaderParam(name = "Content-Type", value = "{...ComputedHeader.contentType}")
+        assertThat(headers.get("Content-Type")).containsExactly("application/json;param=test");
+        // Verify: @ClientHeaderParam(name = "header-from-properties", value = "${header.value}")
+        assertThat(headers.get("header-from-properties")).containsExactly("from property file");
+        // Verify: @HeaderParam("jaxrs-style-header")
+        assertThat(headers.get("jaxrs-style-header")).containsExactly(headerValue);
+    }
+
+    @Test
+    public void shouldSetHeadersFromMultipleBindingsAndBody() {
+        String headerValue = "my-header-value";
+        Map<String, List<String>> headers = multipleHeadersBindingClient.call(headerValue, "test", "unused-body").getHeaders();
+        // Verify: @RegisterClientHeaders(MyHeadersFactory.class)
+        assertThat(headers.get("foo")).containsExactly("bar");
+        // Verify: @ClientHeaderParam(name = "my-header", value = "constant-header-value")
+        assertThat(headers.get("my-header")).containsExactly("constant-header-value");
+        // Verify: @ClientHeaderParam(name = "computed-header", value = "{...ComputedHeader.get}")
+        assertThat(headers.get("computed-header")).containsExactly("From " + ComputedHeader.class.getName());
+        // Verify: @ClientHeaderParam(name = "Content-Type", value = "{calculateContentType}")
+        assertThat(headers.get("Content-Type")).containsExactly("application/json;param2=test");
         // Verify: @ClientHeaderParam(name = "header-from-properties", value = "${header.value}")
         assertThat(headers.get("header-from-properties")).containsExactly("from property file");
         // Verify: @HeaderParam("jaxrs-style-header")

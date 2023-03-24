@@ -403,8 +403,8 @@ class HibernateValidatorProcessor {
         exceptionMapperProducer.produce(new ExceptionMapperBuildItem(ResteasyReactiveViolationExceptionMapper.class.getName(),
                 ValidationException.class.getName(), Priorities.USER + 1, true));
         reflectiveClassProducer.produce(
-                new ReflectiveClassBuildItem(true, true, ViolationReport.class,
-                        ViolationReport.Violation.class));
+                ReflectiveClassBuildItem.builder(ViolationReport.class,
+                        ViolationReport.Violation.class).methods().fields().build());
     }
 
     // We need to make sure that the standard process of obtaining a ValidationFactory is not followed,

@@ -125,6 +125,45 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
+    public void moduleWithDifferentParentPomRawModel() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("workspace-module-with-different-parent");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Path.of(moduleUrl.toURI());
+        assertNotNull(moduleUrl);
+
+        final LocalWorkspace ws = LocalProject.loadWorkspace(moduleDir).getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "acme-runtimes"));
+        assertNotNull(ws.getProject("org.acme", "acme-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-build-no-bom-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-build-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-dependencies-bom"));
+        assertEquals(5, ws.getProjects().size());
+    }
+
+    @Test
+    public void moduleWithDifferentParentPomEffectiveModel() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("workspace-module-with-different-parent");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Path.of(moduleUrl.toURI());
+        assertNotNull(moduleUrl);
+
+        final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setEffectiveModelBuilder(true)
+                .setCurrentProject(moduleDir.toString()))
+                .getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "acme-runtimes"));
+        assertNotNull(ws.getProject("org.acme", "acme-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-build-no-bom-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-build-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-dependencies-bom"));
+        assertEquals(5, ws.getProjects().size());
+    }
+
+    @Test
     public void nonParentAggregator() throws Exception {
         final URL moduleUrl = Thread.currentThread().getContextClassLoader()
                 .getResource("non-parent-aggregator/service-extension/deployment");
@@ -272,6 +311,26 @@ public class LocalWorkspaceDiscoveryTest {
         final Path projectDir = Paths.get(projectUrl.toURI());
         assertTrue(Files.exists(projectDir));
         final LocalProject project = LocalProject.loadWorkspace(projectDir);
+
+        assertEquals("acme", project.getArtifactId());
+        assertWorkspaceWithParentInChildDir(project);
+        assertParents(project, "acme-parent", "acme-dependencies");
+    }
+
+    @Test
+    public void loadWorkspaceFromRootDirWithParentInChildDirEffectiveModel() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-parent-is-not-root-dir");
+        assertNotNull(projectUrl);
+        final Path projectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(projectDir));
+
+        final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setEffectiveModelBuilder(true)
+                .setCurrentProject(projectDir.toString()))
+                .getCurrentProject();
+        final LocalWorkspace ws = module1.getWorkspace();
+        final LocalProject project = ws.getProject("org.acme", "acme");
+        assertNotNull(project);
 
         assertEquals("acme", project.getArtifactId());
         assertWorkspaceWithParentInChildDir(project);

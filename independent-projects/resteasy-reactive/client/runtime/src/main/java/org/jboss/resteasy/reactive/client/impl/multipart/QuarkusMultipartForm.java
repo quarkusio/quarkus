@@ -50,7 +50,11 @@ public class QuarkusMultipartForm implements Iterable<QuarkusMultipartFormDataPa
     }
 
     public QuarkusMultipartForm entity(String name, Object entity, String mediaType, Class<?> type) {
-        pojos.add(new PojoFieldData(name, entity, mediaType, type, parts.size()));
+        return entity(name, null, entity, mediaType, type);
+    }
+
+    public QuarkusMultipartForm entity(String name, String filename, Object entity, String mediaType, Class<?> type) {
+        pojos.add(new PojoFieldData(name, filename, entity, mediaType, type, parts.size()));
         parts.add(null); // make place for ^
         return this;
     }
@@ -132,19 +136,22 @@ public class QuarkusMultipartForm implements Iterable<QuarkusMultipartFormDataPa
                     break;
                 }
             }
-            parts.set(pojo.position, new QuarkusMultipartFormDataPart(pojo.name, value, pojo.mediaType, pojo.type));
+            parts.set(pojo.position,
+                    new QuarkusMultipartFormDataPart(pojo.name, pojo.filename, value, pojo.mediaType, pojo.type));
         }
     }
 
     public static class PojoFieldData {
         private final String name;
+        private final String filename;
         private final Object entity;
         private final String mediaType;
         private final Class<?> type;
         private final int position;
 
-        public PojoFieldData(String name, Object entity, String mediaType, Class<?> type, int position) {
+        public PojoFieldData(String name, String filename, Object entity, String mediaType, Class<?> type, int position) {
             this.name = name;
+            this.filename = filename;
             this.entity = entity;
             this.mediaType = mediaType;
             this.type = type;

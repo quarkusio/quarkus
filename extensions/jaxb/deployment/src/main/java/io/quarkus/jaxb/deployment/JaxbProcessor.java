@@ -204,7 +204,7 @@ public class JaxbProcessor {
                     .getAnnotations(jaxbRootAnnotation)) {
                 if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS) {
                     String className = jaxbRootAnnotationInstance.target().asClass().name().toString();
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
                     classesToBeBound.add(className);
                     jaxbRootAnnotationsDetected = true;
                 }
@@ -220,14 +220,15 @@ public class JaxbProcessor {
             if (xmlSchemaInstance.target().kind() == Kind.CLASS) {
                 String className = xmlSchemaInstance.target().asClass().name().toString();
 
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, className));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).build());
             }
         }
 
         // Register XML Java type adapters for reflection
         for (AnnotationInstance xmlJavaTypeAdapterInstance : index.getAnnotations(XML_JAVA_TYPE_ADAPTER)) {
             reflectiveClass.produce(
-                    new ReflectiveClassBuildItem(true, true, xmlJavaTypeAdapterInstance.value().asClass().name().toString()));
+                    ReflectiveClassBuildItem.builder(xmlJavaTypeAdapterInstance.value().asClass().name().toString())
+                            .methods().fields().build());
         }
 
         if (!index.getAnnotations(XML_ANY_ELEMENT).isEmpty()) {
@@ -315,14 +316,6 @@ public class JaxbProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupJaxbContextConfig(
-            FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
-            JaxbContextConfigRecorder jaxbContextConfig) {
-        jaxbContextConfig.addClassesToBeBound(filteredClassesToBeBound.getClasses());
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void validateDefaultJaxbContext(
             JaxbConfig config,
             FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
@@ -334,6 +327,7 @@ public class JaxbProcessor {
             final Set<BeanInfo> beans = beanResolver
                     .resolveBeans(Type.create(DotName.createSimple(JAXBContext.class), org.jboss.jandex.Type.Kind.CLASS));
             if (!beans.isEmpty()) {
+                jaxbContextConfig.addClassesToBeBound(filteredClassesToBeBound.getClasses());
                 final BeanInfo bean = beanResolver.resolveAmbiguity(beans);
                 if (bean.isDefaultBean()) {
                     /*
@@ -378,7 +372,7 @@ public class JaxbProcessor {
                     classesToBeBound.add(clazz);
 
                     while (cl != Object.class) {
-                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, cl));
+                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(cl).methods().fields().build());
                         cl = cl.getSuperclass();
                     }
                 }

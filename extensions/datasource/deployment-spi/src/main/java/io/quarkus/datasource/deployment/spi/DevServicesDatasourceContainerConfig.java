@@ -15,6 +15,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Optional<String> username;
     private final Optional<String> password;
     private final Optional<String> initScriptPath;
+    private final Map<String, String> volumes;
 
     public DevServicesDatasourceContainerConfig(Optional<String> imageName,
             Map<String, String> containerProperties,
@@ -24,7 +25,8 @@ public class DevServicesDatasourceContainerConfig {
             Optional<String> dbName,
             Optional<String> username,
             Optional<String> password,
-            Optional<String> initScriptPath) {
+            Optional<String> initScriptPath,
+            Map<String, String> volumes) {
         this.imageName = imageName;
         this.containerProperties = containerProperties;
         this.additionalJdbcUrlProperties = additionalJdbcUrlProperties;
@@ -34,6 +36,7 @@ public class DevServicesDatasourceContainerConfig {
         this.username = username;
         this.password = password;
         this.initScriptPath = initScriptPath;
+        this.volumes = volumes;
     }
 
     public Optional<String> getImageName() {
@@ -70,5 +73,9 @@ public class DevServicesDatasourceContainerConfig {
 
     public Optional<String> getInitScriptPath() {
         return initScriptPath;
+    }
+
+    public Map<String, String> getVolumes() {
+        return volumes;
     }
 }

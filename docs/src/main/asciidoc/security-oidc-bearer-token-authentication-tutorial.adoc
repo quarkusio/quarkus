@@ -21,7 +21,7 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this example, we build a very simple microservice which offers two endpoints:
+In this example, we build a simple microservice which offers two endpoints:
 
 * `/api/users/me`
 * `/api/admin`
@@ -169,7 +169,8 @@ quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 
 Where:
 
-* `%prod.quarkus.oidc.auth-server-url` sets the base URL of the OpenID Connect (OIDC) server. The `%prod.` profile prefix ensures that `Dev Services for Keycloak` launches a container when you run the application in dev mode. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
+* `%prod.quarkus.oidc.auth-server-url` sets the base URL of the OpenID Connect (OIDC) server. The `%prod.` profile prefix ensures that `Dev Services for Keycloak` launches a container when you run the application in dev mode.
+See xref:keycloak-dev-mode[Running the Application in Dev mode] section below for more information.
 * `quarkus.oidc.client-id` sets a client-id that identifies the application.
 * `quarkus.oidc.credentials.secret` sets the client secret, which is used by the `client_secret_basic` authentication method.
 
@@ -177,9 +178,16 @@ For more information, see xref:security-openid-connect-oidc-configuration-proper
 
 === Start and configure the Keycloak server
 
-NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information. Make sure to put the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode - unless you have already built a {quickstarts-tree-url}/security-openid-connect-quickstart[complete solution] in which case this realm file will be added to the classpath during the build.
+Before you start with configuration, put the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) to import it automatically when running in dev mode - unless you have already built a {quickstarts-tree-url}/security-openid-connect-quickstart[complete solution].
+In this case, the realm file is added to the classpath during the build.
 
-To start a Keycloak Server you can use Docker and just run the following command:
+[NOTE]
+====
+Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container.
+See the xref:keycloak-dev-mode[Running the Application in Dev mode] section below for more information.
+====
+
+To start a Keycloak Server, you can use Docker and just run the following command:
 
 [source,bash,subs=attributes+]
 ----
@@ -192,9 +200,10 @@ You should be able to access your Keycloak Server at http://localhost:8180[local
 
 Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
 
-Import the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
+Import the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
+For more details, see the Keycloak documentation about how to link:https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
-NOTE: If you want to use the Keycloak Admin Client to configure your server from your application you need to include the
+NOTE: If you want to use the Keycloak Admin Client to configure your server from your application, include the
 either `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
 See the xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client] guide for more information.
 
@@ -237,9 +246,7 @@ java -jar target/quarkus-app/quarkus-run.jar
 
 This same demo can be compiled into native code: no modifications required.
 
-This implies that you no longer need to install a JVM on your
-production environment, as the runtime technology is included in
-the produced binary, and optimized to run with minimal resource overhead.
+This implies that you no longer need to install a JVM on your production environment, as the runtime technology is included in the produced binary, and optimized to run with minimal resource overhead.
 
 Compilation will take a bit longer, so this step is disabled by default;
 let's build again by enabling the `native` profile:
@@ -255,12 +262,11 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 === Test the application
 
-See <<keycloak-dev-mode, Running the Application in Dev mode>> section above about testing your application in a dev mode.
+See the <<keycloak-dev-mode,Running the Application in Dev mode>> section above about testing your application in a dev mode.
 
 You can test the application launched in JVM or Native modes with `curl`.
 
-The application is using Bearer authentication and the first thing to do is obtain an access token from the Keycloak Server in
-order to access the application resources:
+The application is using Bearer authentication and the first thing to do is obtain an access token from the Keycloak Server in order to access the application resources:
 
 [source,bash]
 ----
@@ -274,9 +280,7 @@ export access_token=$(\
 
 The example above obtains an access token for user `alice`.
 
-Any user is allowed to access the
-`http://localhost:8080/api/users/me` endpoint
-which basically returns a JSON payload with details about the user.
+Any user is allowed to access the `http://localhost:8080/api/users/me` endpoint, which basically returns a JSON payload with details about the user.
 
 [source,bash]
 ----
@@ -285,9 +289,8 @@ curl -v -X GET \
   -H "Authorization: Bearer "$access_token
 ----
 
-The `http://localhost:8080/api/admin` endpoint can only be accessed by users with the `admin` role. If you try to access this endpoint with the
- previously issued access token, you should get a `403` response
- from the server.
+The `http://localhost:8080/api/admin` endpoint can only be accessed by users with the `admin` role.
+If you try to access this endpoint with the previously issued access token, you should get a `403` response from the server.
 
 [source,bash]
 ----
@@ -296,7 +299,7 @@ curl -v -X GET \
    -H "Authorization: Bearer "$access_token
 ----
 
-In order to access the admin endpoint you should obtain a token for the `admin` user:
+In order to access the admin endpoint, you should obtain a token for the `admin` user:
 
 [source,bash]
 ----
@@ -314,13 +317,12 @@ Please also see the xref:security-oidc-bearer-authentication-concept.adoc#integr
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
 * xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
-* xref:security-protect-service-applications-by-using-oidc-bearer-authentication-how-to.adoc[Protect service applications by using OIDC Bearer authentication]
-* https://www.keycloak.org/documentation.html[Keycloak Documentation]
-* https://openid.net/connect/[OpenID Connect]
-* https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* link:https://www.keycloak.org/documentation.html[Keycloak Documentation]
+* link:https://openid.net/connect/[OpenID Connect]
+* link:https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
+* xref:security-authentication-mechanisms-concept.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
 * xref:security-overview-concept.adoc[Quarkus Security]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

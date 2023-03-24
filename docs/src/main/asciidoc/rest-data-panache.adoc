@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :summary: Hibernate ORM REST Data with Panache simplifies the creation of CRUD applications based on Jakarta REST and Hibernate ORM.
 
 A lot of web applications are monotonous CRUD applications with REST APIs that are tedious to write.
-To streamline this task, REST Data with the Panache extension can generate the basic CRUD endpoints for your entities and repositories.
+To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
 
 While this extension is still experimental and provides a limited feature set, we hope to get an early feedback for it.
 Currently, this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
@@ -17,21 +17,21 @@ Currently, this extension supports Hibernate ORM and MongoDB with Panache and ca
 == Setting up REST Data with Panache
 
 Quarkus provides the following extensions to set up REST Data with Panache.
-Please, check out the next compatibility table to use the right one according to the technology you're using:
+Please, check out the next compatibility table to use the right one according to the technology you are using:
 
 .Compatibility Table
 |===
 |Extension |Hibernate | RESTEasy
 
-|xref:hr-hibernate-orm[quarkus-hibernate-orm-rest-data-panache]
+|<<hr-hibernate-orm,quarkus-hibernate-orm-rest-data-panache>>
 |`ORM`
 |`Classic and Reactive`
 
-|xref:hr-hibernate-reactive[quarkus-hibernate-reactive-rest-data-panache]
+|<<hr-hibernate-reactive,quarkus-hibernate-reactive-rest-data-panache>>
 |`Reactive`
 |`Reactive`
 
-|xref:hr-mongodb[quarkus-mongodb-rest-data-panache]
+|<<hr-mongodb,quarkus-mongodb-rest-data-panache>>
 |`ORM`
 |`Classic and Reactive`
 |===
@@ -85,7 +85,7 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] guide.
-* Define the interfaces for generation as explained in the xref:hr-generating-resources[] section.
+* Define the interfaces for generation as explained in the <<hr-generating-resources>> section.
 
 To see the Hibernate ORM REST Data with Panache in action, you can check out the {quickstarts-tree-url}/hibernate-orm-rest-data-panache-quickstart[hibernate-orm-rest-data-panache-quickstart] quickstart.
 
@@ -117,7 +117,7 @@ To see the Hibernate ORM REST Data with Panache in action, you can check out the
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] guide.
-* Define the interfaces for generation as explained in the xref:hr-generating-resources[] section.
+* Define the interfaces for generation as explained in the <<hr-generating-resources,resource generation>> section.
 
 [[hr-mongodb]]
 === MongoDB
@@ -162,14 +162,15 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache] guide.
-* Define the interfaces for generation as explained in the xref:hr-generating-resources[] section.
+* Define the interfaces for generation as explained in the <<hr-generating-resources,resource generation>> section.
 
 [[hr-generating-resources]]
 == Generating resources
 
 REST Data with Panache generates Jakarta REST resources based on the interfaces available in your application.
 For each entity and repository that you want to generate, provide a resource interface.
-_Do not implement these interfaces and don't provide custom methods because they will be ignored._ You can, however, override the methods from the extended interface in order to customize them (see the section at the end).
+_Do not implement these interfaces and don't provide custom methods because they will be ignored._
+You can, however, override the methods from the extended interface in order to customize them (see the section at the end).
 
 === PanacheEntityResource
 
@@ -290,6 +291,7 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
 == Resource customisation
 
 REST Data with Panache provides a `@ResourceProperties` and `@MethodProperties` annotations that can be used to customize certain features of the resource.
+
 It can be used in your resource interface:
 
 [source,java]
@@ -427,7 +429,7 @@ In this example, we have added a named query to list all the persons that contai
 
 Next, we can set a query param `namedQuery` when listing the entities using the generated resource with the name of the named query that we want to use, for example, calling `http://localhost:8080/people?namedQuery=Person.containsInName&name=ter` would return all the persons which name contains the text "ter".
 
-For more information about how named queries work, go to https://quarkus.io/guides/hibernate-orm-panache#named-queries[the Hibernate ORM guide] or to https://quarkus.io/guides/hibernate-reactive-panache#named-queries[the Hibernate Reactive guide].
+For more information about how named queries work, go to the xref:hibernate-orm-panache.adoc#named-queries[Hibernate ORM] guide or to the xref:hibernate-reactive-panache.adoc#named-queries[Hibernate Reactive] guide.
 
 == Resource Method Before/After Listeners
 

@@ -133,7 +133,7 @@ public class MicrometerProcessor {
                 .builder("org.HdrHistogram.Histogram",
                         "org.HdrHistogram.DoubleHistogram",
                         "org.HdrHistogram.ConcurrentHistogram")
-                .constructors(true).build());
+                .build());
 
         return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, NAMING_CONVENTION);
     }

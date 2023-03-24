@@ -14,21 +14,24 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.Response
-import org.bson.types.ObjectId
-import org.jboss.logging.Logger
 import java.net.URI
 import java.time.LocalDate
+import org.bson.types.ObjectId
+import org.jboss.logging.Logger
 
 @Path("/books/repository")
 class BookRepositoryResource {
-    @Inject
-    lateinit var bookRepository: BookRepository
+    @Inject lateinit var bookRepository: BookRepository
 
     @PostConstruct
     fun init() {
         val databaseName: String = bookRepository.mongoDatabase().name
         val collectionName: String = bookRepository.mongoCollection().namespace.collectionName
-        LOGGER.infov("Using BookRepository[database={0}, collection={1}]", databaseName, collectionName)
+        LOGGER.infov(
+            "Using BookRepository[database={0}, collection={1}]",
+            databaseName,
+            collectionName
+        )
     }
 
     @GET
@@ -85,13 +88,15 @@ class BookRepositoryResource {
     ): Book? {
         return if (author != null) {
             bookRepository.find("{'author': ?1,'bookTitle': ?2}", author, title!!).firstResult()
-        } else bookRepository
-            .find(
-                "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
-                LocalDate.parse(dateFrom),
-                LocalDate.parse(dateTo)
-            )
-            .firstResult() ?: throw NotFoundException()
+        } else
+            bookRepository
+                .find(
+                    "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
+                    LocalDate.parse(dateFrom),
+                    LocalDate.parse(dateTo)
+                )
+                .firstResult()
+                ?: throw NotFoundException()
     }
 
     @GET
@@ -103,14 +108,20 @@ class BookRepositoryResource {
         @QueryParam("dateTo") dateTo: String?
     ): Book? {
         return if (author != null) {
-            bookRepository.find(
-                "{'author': :author,'bookTitle': :title}",
-                Parameters.with("author", author).and("title", title)
-            ).firstResult()
-        } else bookRepository.find(
-            "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
-            Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))
-        ).firstResult()
+            bookRepository
+                .find(
+                    "{'author': :author,'bookTitle': :title}",
+                    Parameters.with("author", author).and("title", title)
+                )
+                .firstResult()
+        } else
+            bookRepository
+                .find(
+                    "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
+                    Parameters.with("dateFrom", LocalDate.parse(dateFrom))
+                        .and("dateTo", LocalDate.parse(dateTo))
+                )
+                .firstResult()
     }
 
     @DELETE

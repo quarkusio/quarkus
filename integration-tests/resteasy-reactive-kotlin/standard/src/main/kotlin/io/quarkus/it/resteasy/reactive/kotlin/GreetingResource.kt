@@ -19,14 +19,15 @@ class GreetingResource(val headers: HttpHeaders) {
         return Greeting("hello $firstName $lastName")
     }
 
-    @GET
-    @Path("noop")
-    suspend fun noop() {
-    }
+    @GET @Path("noop") suspend fun noop() {}
 
     @POST
     @Path("body/{name}")
-    suspend fun body(@PathParam(value = "name") name: String, greeting: Greeting, @Context uriInfo: UriInfo) = Response.ok(greeting).build()
+    suspend fun body(
+        @PathParam(value = "name") name: String,
+        greeting: Greeting,
+        @Context uriInfo: UriInfo
+    ) = Response.ok(greeting).build()
 }
 
 data class Greeting(val message: String)

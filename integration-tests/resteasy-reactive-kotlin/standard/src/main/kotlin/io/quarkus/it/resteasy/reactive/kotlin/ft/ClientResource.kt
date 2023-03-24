@@ -7,10 +7,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient
 
 @Path("/ft/client")
 class ClientResource {
-    @Inject
-    @RestClient
-    private lateinit var client: HelloClient
+    @Inject @RestClient private lateinit var client: HelloClient
 
-    @GET
-    suspend fun get() = client.hello()
+    @GET suspend fun get() = client.hello()
 }

@@ -18,17 +18,13 @@ import java.util.Date
 @Produces(MediaType.TEXT_PLAIN)
 @Consumes(MediaType.TEXT_PLAIN)
 class BugResource {
-    @Inject
-    lateinit var bug5274EntityRepository: Bug5274EntityRepository
+    @Inject lateinit var bug5274EntityRepository: Bug5274EntityRepository
 
-    @Inject
-    lateinit var bug5885EntityRepository: Bug5885EntityRepository
+    @Inject lateinit var bug5885EntityRepository: Bug5885EntityRepository
 
-    @Inject
-    lateinit var bug6324Repository: Bug6324Repository
+    @Inject lateinit var bug6324Repository: Bug6324Repository
 
-    @Inject
-    lateinit var bug6324ConcreteRepository: Bug6324ConcreteRepository
+    @Inject lateinit var bug6324ConcreteRepository: Bug6324ConcreteRepository
 
     @GET
     @Path("5274")
@@ -68,8 +64,7 @@ class BugResource {
         val localDateTomorrow: LocalDate = LocalDate.now().plus(1, ChronoUnit.DAYS)
         val localDateTimeTomorrow: LocalDateTime = LocalDateTime.now().plus(1, ChronoUnit.DAYS)
         val instantTomorrow: Instant = Instant.now().plus(1, ChronoUnit.DAYS)
-        DateEntity
-            .find(
+        DateEntity.find(
                 "dateDate < ?1 and localDate < ?2 and localDateTime < ?3 and instant < ?4",
                 dateTomorrow,
                 localDateTomorrow,

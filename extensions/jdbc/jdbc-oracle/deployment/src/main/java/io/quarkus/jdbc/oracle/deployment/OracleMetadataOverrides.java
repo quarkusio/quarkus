@@ -47,23 +47,39 @@ public final class OracleMetadataOverrides {
     @BuildStep
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         //This is to match the Oracle metadata (which we excluded so that we can apply fixes):
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false, "oracle.jdbc.internal.ACProxyable"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.jdbc.driver.T4CDriverExtension"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.jdbc.driver.T2CDriverExtension"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.jdbc.driver.ShardingDriverExtension"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.net.ano.Ano"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.net.ano.AuthenticationService"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.net.ano.DataIntegrityService"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.net.ano.EncryptionService"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.net.ano.SupervisorService"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.jdbc.driver.Message11"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, true, "oracle.sql.TypeDescriptor"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.sql.TypeDescriptorFactory"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "oracle.sql.AnyDataFactory"));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.internal.ACProxyable")
+                .methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.T4CDriverExtension")
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.T2CDriverExtension")
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.ShardingDriverExtension")
+                .build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("oracle.net.ano.Ano").build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.net.ano.AuthenticationService")
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.net.ano.DataIntegrityService")
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.net.ano.EncryptionService")
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.net.ano.SupervisorService")
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.Message11")
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.TypeDescriptor")
+                .fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.TypeDescriptorFactory")
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.AnyDataFactory")
+                .build());
         reflectiveClass
-                .produce(new ReflectiveClassBuildItem(true, false, false, "com.sun.rowset.providers.RIOptimisticProvider"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false, "oracle.jdbc.logging.annotations.Supports"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false, "oracle.jdbc.logging.annotations.Feature"));
+                .produce(ReflectiveClassBuildItem.builder("com.sun.rowset.providers.RIOptimisticProvider")
+                        .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Supports")
+                .methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Feature")
+                .methods().build());
     }
 
     @BuildStep

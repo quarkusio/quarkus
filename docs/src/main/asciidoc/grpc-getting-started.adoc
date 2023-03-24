@@ -84,7 +84,8 @@ You can also download the suitable binary and specify the location via
 `-Dquarkus.grpc.protoc-path=/path/to/protoc`.
 
 
-Alternatively to using the `generate-code` goal of the `quarkus-maven-plugin`, you can use `protobuf-maven-plugin` to generate these files, more in <<Generating Java files from proto with protobuf-maven-plugin>>
+Alternatively to using the `generate-code` goal of the `quarkus-maven-plugin`, you can use `protobuf-maven-plugin` to generate these files.
+See the <<protobuf-maven-plugin>> section for more information.
 
 Let's start with a simple _Hello_ service.
 Create the `src/main/proto/helloworld.proto` file with the following content:
@@ -355,6 +356,7 @@ Then, open http://localhost:8080/hello/quarkus in a browser, and you should get 
 Like any other Quarkus applications, you can package it with: `mvn package`.
 You can also package the application into a native executable with: `mvn package -Pnative`.
 
+[[protobuf-maven-plugin]]
 == Generating Java files from proto with protobuf-maven-plugin
 
 Alternatively to using Quarkus code generation to generate stubs for `proto` files, you can also use

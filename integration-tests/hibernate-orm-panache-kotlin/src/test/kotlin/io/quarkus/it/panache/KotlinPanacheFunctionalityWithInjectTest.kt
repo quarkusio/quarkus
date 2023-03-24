@@ -8,13 +8,10 @@ import jakarta.transaction.Transactional
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
-/**
- * Test Panache operations running in Quarkus using injected resources
- */
+/** Test Panache operations running in Quarkus using injected resources */
 @QuarkusTest
 open class KotlinPanacheFunctionalityWithInjectTest {
-    @Inject
-    lateinit var personDao: PersonRepository
+    @Inject lateinit var personDao: PersonRepository
 
     @Test
     @Transactional

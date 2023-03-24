@@ -13,7 +13,11 @@ import org.bson.conversions.Bson
 class ReactivePanacheQueryImpl<Entity> : ReactivePanacheQuery<Entity> {
     private val delegate: CommonReactivePanacheQueryImpl<Entity>
 
-    internal constructor(collection: ReactiveMongoCollection<out Entity>?, mongoQuery: Bson?, sort: Bson?) {
+    internal constructor(
+        collection: ReactiveMongoCollection<out Entity>?,
+        mongoQuery: Bson?,
+        sort: Bson?
+    ) {
         delegate = CommonReactivePanacheQueryImpl(collection, mongoQuery, sort)
     }
 

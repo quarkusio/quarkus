@@ -46,4 +46,8 @@ public class CompositeCacheKey {
     public String toString() {
         return "CompositeCacheKey" + Arrays.toString(keyElements);
     }
+
+    public Object[] getKeyElements() {
+        return keyElements;
+    }
 }

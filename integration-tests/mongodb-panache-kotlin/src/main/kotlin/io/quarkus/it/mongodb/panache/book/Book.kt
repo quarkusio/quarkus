@@ -3,10 +3,10 @@ package io.quarkus.it.mongodb.panache.book
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonFormat.Shape
 import io.quarkus.mongodb.panache.common.MongoEntity
+import java.time.LocalDate
 import org.bson.codecs.pojo.annotations.BsonIgnore
 import org.bson.codecs.pojo.annotations.BsonProperty
 import org.bson.types.ObjectId
-import java.time.LocalDate
 
 @MongoEntity(collection = "TheBook", clientName = "cl2")
 class Book {
@@ -21,8 +21,7 @@ class Book {
     var transientDescription: String? = null
         private set
 
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-    var creationDate: LocalDate? = null
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd") var creationDate: LocalDate? = null
     var categories = listOf<String>()
         private set
     private var details: BookDetail? = null

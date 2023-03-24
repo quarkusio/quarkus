@@ -3,6 +3,7 @@ package io.quarkus.rest.client.reactive.multipart;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +11,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.smallrye.mutiny.Multi;
 
 public class MultipartFilenameTest {
 
@@ -70,6 +73,39 @@ public class MultipartFilenameTest {
         ClientFormUsingString form = new ClientFormUsingString();
         form.file = "file content";
         assertThat(client.postMultipartWithPartFilenameUsingString(form)).isEqualTo("clientFile:file content");
+    }
+
+    @Test
+    void shouldUseFileNameFromAnnotationUsingByteArray() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+
+        ClientFormUsingByteArray form = new ClientFormUsingByteArray();
+        form.file = "file content".getBytes(StandardCharsets.UTF_8);
+        assertThat(client.postMultipartWithPartFilenameUsingByteArray(form)).isEqualTo("clientFile:file content");
+    }
+
+    @Test
+    void shouldUseFileNameFromAnnotationUsingInputStream() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+
+        ClientFormUsingInputStream form = new ClientFormUsingInputStream();
+        form.file = new ByteArrayInputStream("file content".getBytes(StandardCharsets.UTF_8));
+        assertThat(client.postMultipartWithPartFilenameUsingInputStream(form)).isEqualTo("clientFile:file content");
+    }
+
+    @Test
+    void shouldUseFileNameFromAnnotationUsingMultiByte() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+
+        var list = new ArrayList<Byte>();
+        var array = "file content".getBytes(StandardCharsets.UTF_8);
+        for (var b : array) {
+            list.add(b);
+        }
+
+        ClientFormUsingMultiByte form = new ClientFormUsingMultiByte();
+        form.file = Multi.createFrom().items(list.stream());
+        assertThat(client.postMultipartWithPartFilenameUsingMultiByte(form)).isEqualTo("clientFile:file content");
     }
 
     @Test
@@ -121,7 +157,7 @@ public class MultipartFilenameTest {
         }
 
         @POST
-        @Path("/using-string")
+        @Path("/using-form-data")
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         public String uploadWithFileContentUsingString(@MultipartForm FormData form) throws IOException {
             return form.myFile.fileName() + ":" + Files.readString(form.myFile.uploadedFile());
@@ -185,9 +221,24 @@ public class MultipartFilenameTest {
         String postMultipartWithPartFilename(@MultipartForm ClientFormUsingFile clientForm);
 
         @POST
-        @Path("/using-string")
+        @Path("/using-form-data")
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         String postMultipartWithPartFilenameUsingString(@MultipartForm ClientFormUsingString clientForm);
+
+        @POST
+        @Path("/using-form-data")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String postMultipartWithPartFilenameUsingByteArray(@MultipartForm ClientFormUsingByteArray clientForm);
+
+        @POST
+        @Path("/using-form-data")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String postMultipartWithPartFilenameUsingInputStream(@MultipartForm ClientFormUsingInputStream clientForm);
+
+        @POST
+        @Path("/using-form-data")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String postMultipartWithPartFilenameUsingMultiByte(@MultipartForm ClientFormUsingMultiByte clientForm);
 
         @POST
         @Path("/file-content")
@@ -227,5 +278,32 @@ public class MultipartFilenameTest {
         @PartType(MediaType.APPLICATION_OCTET_STREAM)
         @PartFilename(FILE_NAME)
         public String file;
+    }
+
+    public static class ClientFormUsingByteArray {
+        public static final String FILE_NAME = "clientFile";
+
+        @FormParam("myFile")
+        @PartType(MediaType.APPLICATION_OCTET_STREAM)
+        @PartFilename(FILE_NAME)
+        public byte[] file;
+    }
+
+    public static class ClientFormUsingInputStream {
+        public static final String FILE_NAME = "clientFile";
+
+        @FormParam("myFile")
+        @PartType(MediaType.APPLICATION_OCTET_STREAM)
+        @PartFilename(FILE_NAME)
+        public InputStream file;
+    }
+
+    public static class ClientFormUsingMultiByte {
+        public static final String FILE_NAME = "clientFile";
+
+        @FormParam("myFile")
+        @PartType(MediaType.APPLICATION_OCTET_STREAM)
+        @PartFilename(FILE_NAME)
+        public Multi<Byte> file;
     }
 }

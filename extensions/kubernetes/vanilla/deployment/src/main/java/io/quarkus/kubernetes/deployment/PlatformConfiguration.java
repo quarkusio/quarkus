@@ -88,6 +88,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Optional<String> getAppConfigMap();
 
+    RbacConfig getRbacConfig();
+
     SecurityContextConfig getSecurityContext();
 
     boolean isIdempotent();

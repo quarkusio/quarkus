@@ -53,17 +53,15 @@ class AwtProcessor {
 
     @BuildStep
     ReflectiveClassBuildItem setupReflectionClasses() {
-        return new ReflectiveClassBuildItem(false, false,
-                "sun.awt.X11.XToolkit",
+        return ReflectiveClassBuildItem.builder("sun.awt.X11.XToolkit",
                 "sun.awt.X11FontManager",
                 "sun.awt.X11GraphicsEnvironment",
-                "com.sun.imageio.plugins.common.I18N");
+                "com.sun.imageio.plugins.common.I18N").build();
     }
 
     @BuildStep
     ReflectiveClassBuildItem setupReflectionClassesWithMethods() {
-        return new ReflectiveClassBuildItem(true, false,
-                "sun.java2d.loops.SetDrawLineANY",
+        return ReflectiveClassBuildItem.builder("sun.java2d.loops.SetDrawLineANY",
                 "sun.java2d.loops.SetDrawPathANY",
                 "sun.java2d.loops.SetDrawPolygonsANY",
                 "sun.java2d.loops.SetDrawRectANY",
@@ -79,7 +77,7 @@ class AwtProcessor {
                 "javax.imageio.plugins.tiff.ExifTIFFTagSet",
                 "javax.imageio.plugins.tiff.FaxTIFFTagSet",
                 "javax.imageio.plugins.tiff.GeoTIFFTagSet",
-                "javax.imageio.plugins.tiff.TIFFTagSet");
+                "javax.imageio.plugins.tiff.TIFFTagSet").methods().build();
     }
 
     @BuildStep

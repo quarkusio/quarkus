@@ -18,7 +18,12 @@ import java.nio.charset.StandardCharsets
 @Consumes("text/plain")
 class AppSuppliedProvider : MessageBodyReader<Shared>, MessageBodyWriter<Shared> {
 
-    override fun isReadable(p0: Class<*>?, type: Type?, p2: Array<out Annotation>?, p3: MediaType?): Boolean {
+    override fun isReadable(
+        p0: Class<*>?,
+        type: Type?,
+        p2: Array<out Annotation>?,
+        p3: MediaType?
+    ): Boolean {
         return Shared::class.java == type
     }
 
@@ -33,7 +38,12 @@ class AppSuppliedProvider : MessageBodyReader<Shared>, MessageBodyWriter<Shared>
         return Shared("app")
     }
 
-    override fun isWriteable(p0: Class<*>?, type: Type?, p2: Array<out Annotation>?, p3: MediaType?): Boolean {
+    override fun isWriteable(
+        p0: Class<*>?,
+        type: Type?,
+        p2: Array<out Annotation>?,
+        p3: MediaType?
+    ): Boolean {
         return Shared::class.java == type
     }
 
@@ -47,7 +57,8 @@ class AppSuppliedProvider : MessageBodyReader<Shared>, MessageBodyWriter<Shared>
         entityStream: OutputStream?
     ) {
         entityStream?.write(
-            String.format("{\"message\": \"app+%s\"}", shared!!.message).toByteArray(StandardCharsets.UTF_8)
+            String.format("{\"message\": \"app+%s\"}", shared!!.message)
+                .toByteArray(StandardCharsets.UTF_8)
         )
     }
 }

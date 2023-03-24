@@ -599,7 +599,8 @@ public class ArcProcessor {
             public void registerClientProxy(DotName beanClassName, String clientProxyName) {
                 if (reflectiveBeanClassesNames.contains(beanClassName)) {
                     // Fields should never be registered for client proxies
-                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, clientProxyName));
+                    reflectiveClasses
+                            .produce(ReflectiveClassBuildItem.builder(clientProxyName).methods().build());
                 }
             }
 
@@ -607,7 +608,8 @@ public class ArcProcessor {
             public void registerSubclass(DotName beanClassName, String subclassName) {
                 if (reflectiveBeanClassesNames.contains(beanClassName)) {
                     // Fields should never be registered for subclasses
-                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, subclassName));
+                    reflectiveClasses
+                            .produce(ReflectiveClassBuildItem.builder(subclassName).methods().build());
                 }
             }
 
@@ -638,12 +640,14 @@ public class ArcProcessor {
 
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
         for (ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, qualifier.name().toString()));
+            reflectiveClasses
+                    .produce(ReflectiveClassBuildItem.builder(qualifier.name().toString()).methods().build());
         }
 
         // Register all interceptor bindings for reflection so that AnnotationLiteral.equals() works in a native image
         for (ClassInfo binding : beanProcessor.getBeanDeployment().getInterceptorBindings()) {
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, binding.name().toString()));
+            reflectiveClasses
+                    .produce(ReflectiveClassBuildItem.builder(binding.name().toString()).methods().build());
         }
 
         ArcContainer container = recorder.initContainer(shutdown,

@@ -54,7 +54,7 @@ import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
-import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
+import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class KubernetesClientProcessor {
@@ -69,6 +69,7 @@ public class KubernetesClientProcessor {
     private static final DotName KUBE_SCHEMA = DotName.createSimple(KubeSchema.class.getName());
     private static final DotName VISITABLE_BUILDER = DotName.createSimple(VisitableBuilder.class.getName());
     private static final DotName CUSTOM_RESOURCE = DotName.createSimple(CustomResource.class.getName());
+    private static final String SERVICE_ACCOUNT = "ServiceAccount";
 
     private static final DotName JSON_FORMAT = DotName.createSimple(JsonFormat.class.getName());
     private static final String[] EMPTY_STRINGS_ARRAY = new String[0];
@@ -106,13 +107,13 @@ public class KubernetesClientProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
             BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses,
-            BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer,
-            BuildProducer<ServiceProviderBuildItem> serviceProviderProducer) {
+            BuildProducer<ServiceProviderBuildItem> serviceProviderProducer,
+            BuildProducer<KubernetesClientCapabilityBuildItem> kubernetesClientCapabilityProducer) {
 
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
-        if (kubernetesClientConfig.generateRbac) {
-            roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));
-        }
+
+        kubernetesClientCapabilityProducer
+                .produce(new KubernetesClientCapabilityBuildItem(kubernetesClientConfig.generateRbac));
 
         // register fully (and not weakly) for reflection watchers, informers and custom resources
         final Set<DotName> watchedClasses = new HashSet<>();
@@ -167,12 +168,12 @@ public class KubernetesClientProcessor {
 
         if (!withFieldsRegistration.isEmpty()) {
             reflectiveClasses.produce(ReflectiveClassBuildItem
-                    .builder(withFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY)).weak(true).methods(true).fields(true)
+                    .builder(withFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY)).weak(true).methods().fields()
                     .build());
         }
         if (!withoutFieldsRegistration.isEmpty()) {
             reflectiveClasses.produce(ReflectiveClassBuildItem
-                    .builder(withoutFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY)).weak(true).methods(true).fields(false)
+                    .builder(withoutFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY)).weak(true).methods()
                     .build());
         }
 
@@ -191,7 +192,7 @@ public class KubernetesClientProcessor {
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses).methods(true).build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses).methods().build());
 
         final String[] serializerClasses = combinedIndexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
@@ -199,19 +200,19 @@ public class KubernetesClientProcessor {
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses).methods(true).build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses).methods().build());
 
         reflectiveClasses.produce(
                 ReflectiveClassBuildItem.builder(KubernetesClientImpl.class, DefaultKubernetesClient.class, VersionInfo.class)
-                        .methods(true).fields(true).build());
+                        .methods().fields().build());
         reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class).methods(true).build());
+                .builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class).methods().build());
 
         // exec credentials support
         reflectiveClasses
                 .produce(ReflectiveClassBuildItem.builder(Config.ExecCredential.class,
                         Config.ExecCredentialSpec.class,
-                        Config.ExecCredentialStatus.class).methods(true).fields(true).build());
+                        Config.ExecCredentialStatus.class).methods().fields().build());
 
         if (log.isDebugEnabled()) {
             final String watchedClassNames = watchedClasses

@@ -62,7 +62,7 @@ public class RuntimeExceptionMapper {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void mapException(Throwable throwable, ResteasyReactiveRequestContext context) {
         Class<?> klass = throwable.getClass();
-        //we don't thread WebApplicationException's thrown from the client as true 'WebApplicationException'
+        //we don't read WebApplicationException's thrown from the client as true 'WebApplicationException'
         //we consider it a security risk to transparently pass on the result to the calling server
         boolean isWebApplicationException = throwable instanceof WebApplicationException
                 && !(throwable instanceof ResteasyReactiveClientProblem);
@@ -101,7 +101,7 @@ public class RuntimeExceptionMapper {
         }
         if (isWebApplicationException) {
             context.setResult(response);
-            logBlockingErrorIfRequired(throwable, context);
+            log.debug("Application failed the request", throwable);
             return;
         }
         if (throwable instanceof IOException) {

@@ -10,19 +10,11 @@ class ScheduledEndpointTest {
 
     @Test
     fun testScheduledMethodWithNoArg() {
-        When {
-            get("/scheduled/num1")
-        } Then {
-            statusCode(201)
-        }
+        When { get("/scheduled/num1") } Then { statusCode(201) }
     }
 
     @Test
     fun testScheduledMethodWithScheduledExecution() {
-        When {
-            get("/scheduled/num2")
-        } Then {
-            statusCode(201)
-        }
+        When { get("/scheduled/num2") } Then { statusCode(201) }
     }
 }

@@ -91,13 +91,13 @@ public class ConfigMappingUtils {
                     new GeneratedClassBuildItem(isApplicationClass, mappingMetadata.getClassName(),
                             mappingMetadata.getClassBytes()));
             reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods(true).build());
+                    .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods().build());
             reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors(true)
-                            .methods(true).build());
+                    .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName())
+                            .methods().build());
 
             for (Class<?> parent : getHierarchy(mappingMetadata.getInterfaceType())) {
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(parent).methods(true).build());
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(parent).methods().build());
             }
 
             generatedClassesNames.add(mappingMetadata.getClassName());
@@ -117,7 +117,8 @@ public class ConfigMappingUtils {
                     // E.g. Optional<Foo>
                     type = type.asParameterizedType().arguments().get(0);
                 }
-                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
+                reflectiveClasses
+                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
             }
         }
 

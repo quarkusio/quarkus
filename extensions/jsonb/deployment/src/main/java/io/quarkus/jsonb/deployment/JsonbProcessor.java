@@ -63,8 +63,8 @@ public class JsonbProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             CombinedIndexBuildItem combinedIndexBuildItem) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                JsonBindingProvider.class.getName()));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(JsonBindingProvider.class.getName()).build());
 
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("yasson-messages"));
 
@@ -88,7 +88,8 @@ public class JsonbProcessor {
 
         // register String constructors for reflection as they may not have been properly registered by default
         // see https://github.com/quarkusio/quarkus/issues/10873
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "java.lang.String"));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("java.lang.String").build());
 
         // Necessary for Yasson versions using MethodHandles (2.0+)
         reflectiveMethod.produce(new ReflectiveMethodBuildItem("jdk.internal.misc.Unsafe", "putReference", Object.class,
@@ -101,7 +102,8 @@ public class JsonbProcessor {
             AnnotationValue value = instance.value();
             if (value != null) {
                 // the Deserializers are constructed internally by JSON-B using a no-args constructor
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, value.asClass().toString()));
+                reflectiveClass.produce(
+                        ReflectiveClassBuildItem.builder(value.asClass().toString()).build());
             }
         }
     }

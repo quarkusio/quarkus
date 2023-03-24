@@ -1,11 +1,14 @@
 package io.quarkus.rest.client.reactive.deployment;
 
 import static io.quarkus.arc.processor.DotNames.STRING;
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
+import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.INVOKED_METHOD_PARAMETERS_PROP;
+import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.INVOKED_METHOD_PROP;
 import static org.jboss.resteasy.reactive.common.processor.HashUtil.sha1;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
@@ -14,12 +17,14 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.core.Configurable;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -36,6 +41,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -55,9 +61,13 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
+import io.quarkus.rest.client.reactive.ComputedParamContext;
 import io.quarkus.rest.client.reactive.HeaderFiller;
 import io.quarkus.rest.client.reactive.runtime.ClientQueryParamSupport;
+import io.quarkus.rest.client.reactive.runtime.ComputedParamContextImpl;
 import io.quarkus.rest.client.reactive.runtime.ConfigUtils;
+import io.quarkus.rest.client.reactive.runtime.ExtendedHeaderFiller;
+import io.quarkus.rest.client.reactive.runtime.HeaderFillerUtil;
 import io.quarkus.rest.client.reactive.runtime.MicroProfileRestClientRequestFilter;
 import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
 import io.quarkus.runtime.util.HashUtil;
@@ -82,9 +92,10 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             Object.class);
     private static final MethodDescriptor MAP_PUT_METHOD = MethodDescriptor.ofMethod(Map.class, "put", Object.class,
             Object.class, Object.class);
-    private static final MethodDescriptor MAP_CONTAINS_KEY_METHOD = MethodDescriptor.ofMethod(Map.class, "containsKey",
-            boolean.class, Object.class);
-    public static final String INVOKED_METHOD = "org.eclipse.microprofile.rest.client.invokedMethod";
+
+    private static final MethodDescriptor HEADER_FILLER_UTIL_SHOULD_ADD_HEADER = MethodDescriptor.ofMethod(
+            HeaderFillerUtil.class, "shouldAddHeader",
+            boolean.class, String.class, MultivaluedMap.class, ClientRequestContext.class);
     private static final MethodDescriptor WEB_TARGET_IMPL_QUERY_PARAMS = MethodDescriptor.ofMethod(WebTargetImpl.class,
             "queryParam", WebTargetImpl.class, String.class, Collection.class);
 
@@ -378,7 +389,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         if (!headerFillersByName.isEmpty()) {
             GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
             try (ClassCreator headerFillerClass = ClassCreator.builder().className(fillerClassName)
-                    .interfaces(HeaderFiller.class)
+                    .interfaces(ExtendedHeaderFiller.class)
                     .classOutput(classOutput)
                     .build()) {
                 FieldCreator logField = headerFillerClass.getFieldCreator("log", Logger.class);
@@ -394,7 +405,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
                 MethodCreator fillHeaders = headerFillerClass
                         .getMethodCreator(
-                                MethodDescriptor.ofMethod(HeaderFiller.class, "addHeaders", void.class, MultivaluedMap.class));
+                                MethodDescriptor.ofMethod(HeaderFiller.class, "addHeaders", void.class,
+                                        MultivaluedMap.class, ResteasyReactiveClientRequestContext.class));
 
                 for (Map.Entry<String, HeaderData> headerEntry : headerFillersByName.entrySet()) {
                     addHeaderParam(method, fillHeaders, headerEntry.getValue(), generatedClasses,
@@ -415,6 +427,23 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         methodCreator.assign(invocationBuilder,
                 methodCreator.invokeInterfaceMethod(INVOCATION_BUILDER_PROPERTY_METHOD, invocationBuilder,
                         methodCreator.load(HeaderFiller.class.getName()), headerFillerAsObject));
+
+        ResultHandle parametersList = null;
+        if (method.parametersCount() == 0) {
+            parametersList = methodCreator.invokeStaticMethod(ofMethod(
+                    Collections.class, "emptyList", List.class));
+        } else {
+            ResultHandle parametersArray = methodCreator.newArray(Object.class,
+                    method.parametersCount());
+            for (int i = 0; i < method.parametersCount(); i++) {
+                methodCreator.writeArrayValue(parametersArray, i, methodCreator.getMethodParam(i));
+            }
+            parametersList = methodCreator.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(Arrays.class, "asList", List.class, Object[].class), parametersArray);
+        }
+        methodCreator.assign(invocationBuilder,
+                methodCreator.invokeInterfaceMethod(INVOCATION_BUILDER_PROPERTY_METHOD, invocationBuilder,
+                        methodCreator.load(INVOKED_METHOD_PARAMETERS_PROP), parametersList));
     }
 
     private void collectHeaderFillers(ClassInfo interfaceClass, MethodInfo method,
@@ -455,7 +484,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         ResultHandle javaMethodAsObject = methodCreator.checkCast(javaMethod, Object.class);
         methodCreator.assign(invocationBuilder,
                 methodCreator.invokeInterfaceMethod(INVOCATION_BUILDER_PROPERTY_METHOD, invocationBuilder,
-                        methodCreator.load(INVOKED_METHOD), javaMethodAsObject));
+                        methodCreator.load(INVOKED_METHOD_PROP), javaMethodAsObject));
     }
 
     private void putAllHeaderAnnotations(Map<String, HeaderData> headerMap, ClassInfo interfaceClass,
@@ -490,11 +519,12 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         }
 
         ResultHandle headerMap = fillHeadersCreator.getMethodParam(0);
+        ResultHandle requestContext = fillHeadersCreator.getMethodParam(1);
 
         // if headers are set here, they were set with @HeaderParam, which should take precedence of MP ways
         BytecodeCreator fillHeaders = fillHeadersCreator
-                .ifFalse(fillHeadersCreator.invokeInterfaceMethod(MAP_CONTAINS_KEY_METHOD, headerMap,
-                        fillHeadersCreator.load(headerName)))
+                .ifTrue(fillHeadersCreator.invokeStaticMethod(HEADER_FILLER_UTIL_SHOULD_ADD_HEADER,
+                        fillHeadersCreator.load(headerName), headerMap, requestContext))
                 .trueBranch();
 
         if (values.length > 1 || !(values[0].startsWith("{") && values[0].endsWith("}"))) {
@@ -546,6 +576,12 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                     headerValue = fillHeader.invokeStaticMethod(headerFillingMethod);
                 } else if (headerFillingMethod.parametersCount() == 1 && isString(headerFillingMethod.parameterType(0))) {
                     headerValue = fillHeader.invokeStaticMethod(headerFillingMethod, fillHeader.load(headerName));
+                } else if (headerFillingMethod.parametersCount() == 1
+                        && isComputedParamContext(headerFillingMethod.parameterType(0))) {
+                    ResultHandle fillerParam = fillHeader
+                            .newInstance(MethodDescriptor.ofConstructor(ComputedParamContextImpl.class, String.class,
+                                    ClientRequestContext.class), fillHeader.load(headerName), requestContext);
+                    headerValue = fillHeader.invokeStaticMethod(headerFillingMethod, fillerParam);
                 } else {
                     throw new RestClientDefinitionException(
                             "ClientHeaderParam method " + declaringClass.toString() + "#" + staticMethodName
@@ -568,6 +604,13 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 } else if (headerFillingMethod.parametersCount() == 1 && isString(headerFillingMethod.parameterType(0))) {
                     headerValue = fillHeader.invokeInterfaceMethod(headerFillingMethod, interfaceMock,
                             fillHeader.load(headerName));
+                } else if (headerFillingMethod.parametersCount() == 1
+                        && isComputedParamContext(headerFillingMethod.parameterType(0))) {
+                    ResultHandle fillerParam = fillHeader
+                            .newInstance(MethodDescriptor.ofConstructor(ComputedParamContextImpl.class, String.class,
+                                    ClientRequestContext.class), fillHeader.load(headerName), requestContext);
+                    headerValue = fillHeader.invokeInterfaceMethod(headerFillingMethod, interfaceMock,
+                            fillerParam);
                 } else {
                     throw new RestClientDefinitionException(
                             "ClientHeaderParam method " + declaringClass + "#" + methodName
@@ -625,6 +668,10 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
     private static boolean isString(Type type) {
         return type.kind() == Type.Kind.CLASS && type.name().toString().equals(String.class.getName());
+    }
+
+    private static boolean isComputedParamContext(Type type) {
+        return type.kind() == Type.Kind.CLASS && type.name().toString().equals(ComputedParamContext.class.getName());
     }
 
     private String mockInterface(ClassInfo declaringClass, BuildProducer<GeneratedClassBuildItem> generatedClass,

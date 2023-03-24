@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
 public class MySQLDevServicesProcessor {
@@ -52,6 +53,7 @@ public class MySQLDevServicesProcessor {
                         .withDatabaseName(effectiveDbName)
                         .withReuse(true);
                 Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
 
                 if (containerConfig.getContainerProperties().containsKey(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME)) {
                     container.withConfigurationOverride(

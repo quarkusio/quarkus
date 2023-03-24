@@ -161,13 +161,13 @@ public class MongoClientProcessor {
         reflectiveClassNames.addAll(commandListeners.getCommandListenerClassNames());
 
         List<ReflectiveClassBuildItem> reflectiveClass = reflectiveClassNames.stream()
-                .map(s -> ReflectiveClassBuildItem.builder(s).methods(true).build())
+                .map(s -> ReflectiveClassBuildItem.builder(s).methods().build())
                 .collect(Collectors.toCollection(ArrayList::new));
         // ChangeStreamDocument needs to be registered for reflection with its fields.
-        reflectiveClass.add(ReflectiveClassBuildItem.builder(ChangeStreamDocument.class).methods(true).fields(true).build());
-        reflectiveClass.add(ReflectiveClassBuildItem.builder(UpdateDescription.class).methods(true).build());
+        reflectiveClass.add(ReflectiveClassBuildItem.builder(ChangeStreamDocument.class).methods().fields().build());
+        reflectiveClass.add(ReflectiveClassBuildItem.builder(UpdateDescription.class).methods().build());
         // ObjectId is often used on identifier, so we also register it
-        reflectiveClass.add(ReflectiveClassBuildItem.builder(ObjectId.class).methods(true).fields(true).build());
+        reflectiveClass.add(ReflectiveClassBuildItem.builder(ObjectId.class).methods().fields().build());
         return reflectiveClass;
     }
 

@@ -63,7 +63,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     @BuildStep
     public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ProcessingState.class));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ProcessingState.class).methods().fields().build());
     }
 
     @BuildStep
@@ -106,7 +106,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             Capabilities capabilities) {
         if (hasStateStoreConfig(REDIS_STATE_STORE, ConfigProvider.getConfig())) {
             Optional<String> checkpointStateType = getConnectorProperty("checkpoint.state-type", ConfigProvider.getConfig());
-            checkpointStateType.ifPresent(s -> reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, s)));
+            checkpointStateType.ifPresent(
+                    s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s).methods().fields().build()));
             if (capabilities.isPresent(Capability.REDIS_CLIENT)) {
                 additionalBean.produce(new AdditionalBeanBuildItem(RedisStateStore.Factory.class));
                 additionalBean.produce(new AdditionalBeanBuildItem(DatabindProcessingStateCodec.Factory.class));
@@ -160,7 +161,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         if (launchMode.getLaunchMode().isDevOrTest()) {
             if (!runtimeConfig.enableGracefulShutdownInDevAndTestMode) {
-                List<AnnotationInstance> incomings = discoveryState.findAnnotationsOnMethods(DotNames.INCOMING);
+                List<AnnotationInstance> incomings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.INCOMING);
                 List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL);
                 List<AnnotationInstance> annotations = new ArrayList<>();
                 annotations.addAll(incomings);
@@ -187,7 +188,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflection) {
         Map<String, String> alreadyGeneratedSerializers = new HashMap<>();
         Map<String, String> alreadyGeneratedDeserializers = new HashMap<>();
-        for (AnnotationInstance annotation : discovery.findAnnotationsOnMethods(DotNames.INCOMING)) {
+        for (AnnotationInstance annotation : discovery.findRepeatableAnnotationsOnMethods(DotNames.INCOMING)) {
             String channelName = annotation.value().asString();
             if (!discovery.isKafkaConnector(channelsManagedByConnectors, true, channelName)) {
                 continue;
@@ -725,7 +726,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 clazz = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
                 // Deserializers are access by reflection.
-                reflection.produce(new ReflectiveClassBuildItem(true, true, false, clazz));
+                reflection.produce(
+                        ReflectiveClassBuildItem.builder(clazz).methods().build());
                 alreadyGeneratedSerializers.put(type.toString(), clazz);
             }
             result = Result.of(clazz);
@@ -751,7 +753,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 clazz = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
                 // Serializers are access by reflection.
-                reflection.produce(new ReflectiveClassBuildItem(true, true, false, clazz));
+                reflection.produce(
+                        ReflectiveClassBuildItem.builder(clazz).methods().build());
                 alreadyGeneratedSerializers.put(type.toString(), clazz);
             }
             result = Result.of(clazz);
@@ -860,7 +863,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     void produceReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, Type type) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, type.name().toString()));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(type.name().toString()).methods().fields().build());
     }
 
     // visible for testing

@@ -281,6 +281,7 @@
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
                 <module>redis-client</module>
+                <module>redis-cache</module>
                 <module>logging-gelf</module>
                 <module>cache</module>
                 <module>qute</module>

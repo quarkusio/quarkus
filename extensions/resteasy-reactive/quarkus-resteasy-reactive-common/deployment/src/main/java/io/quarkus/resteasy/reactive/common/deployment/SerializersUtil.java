@@ -60,7 +60,8 @@ public class SerializersUtil {
                 writer.setPriority(additionalWriter.getPriority());
             }
             recorder.registerWriter(serialisers, additionalWriter.getHandledClassName(), writer);
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClassName));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(writerClassName).build());
         }
 
         Map<String, MessageBodyReaderWriterOverrideData> readerOverrides = new HashMap<>();
@@ -90,7 +91,8 @@ public class SerializersUtil {
                 reader.setPriority(additionalReader.getPriority());
             }
             recorder.registerReader(serialisers, additionalReader.getHandledClassName(), reader);
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClassName));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(readerClassName).build());
         }
 
     }

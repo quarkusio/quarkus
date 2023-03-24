@@ -350,7 +350,7 @@ When the processing continues from a previously persisted offset, it seeks the K
 The checkpoint strategy holds locally the processing state associated with the latest offset, and persists it periodically to the state store (period specified by `auto.commit.interval.ms` (default: 5000)). 
 The connector will be marked as unhealthy if no processing state is persisted to the state store in `checkpoint.unsynced-state-max-age.ms` (default: 10000). 
 If `checkpoint.unsynced-state-max-age.ms` is set to less than or equal to 0, it does not perform any health check verification. 
-For more information, see <<Stateful processing with Checkpointing>>
+For more information, see <<stateful-processing-checkpointing>>
 
 - `latest` commits the record offset received by the Kafka consumer as soon as the associated message is acknowledged (if the offset is higher than the previously committed offset).
 This strategy provides at-least-once delivery if the channel processes the message without performing any asynchronous processing.
@@ -698,6 +698,7 @@ Quarkus autodetects batch types for incoming channels and sets batch configurati
 You can configure batch mode explicitly with `mp.messaging.incoming.$channel.batch` property.
 ====
 
+[[stateful-processing-checkpointing]]
 === Stateful processing with Checkpointing
 
 [IMPORTANT]

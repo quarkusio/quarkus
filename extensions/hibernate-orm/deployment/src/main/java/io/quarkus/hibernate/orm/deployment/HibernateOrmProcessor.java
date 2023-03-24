@@ -30,7 +30,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.xml.namespace.QName;
@@ -67,7 +66,6 @@ import org.jboss.logmanager.Level;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
-import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -85,7 +83,6 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -97,7 +94,6 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderConstantDefinitionBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -110,13 +106,10 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit.IdentifierQuotingStrategy;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
@@ -136,8 +129,7 @@ import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
-import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleCreateDDLSupplier;
-import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleIntegrator;
+import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevIntegrator;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
@@ -148,7 +140,6 @@ import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
@@ -221,40 +212,6 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
-    void handleMoveSql(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
-            BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer,
-            HibernateOrmConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem) {
-
-        DevConsoleRuntimeTemplateInfoBuildItem devConsoleRuntimeTemplateInfoBuildItem = new DevConsoleRuntimeTemplateInfoBuildItem(
-                "create-ddl." + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
-                new HibernateOrmDevConsoleCreateDDLSupplier(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME), this.getClass(),
-                curateOutcomeBuildItem);
-        runtimeInfoProducer.produce(devConsoleRuntimeTemplateInfoBuildItem);
-        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
-            handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
-                    entry.getValue().datasource.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME), curateOutcomeBuildItem);
-        }
-    }
-
-    private void handleGenerateSqlForPu(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
-            BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer, String puName,
-            String dsName, CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        DevConsoleRuntimeTemplateInfoBuildItem devConsoleRuntimeTemplateInfoBuildItem = new DevConsoleRuntimeTemplateInfoBuildItem(
-                "create-ddl." + puName, new HibernateOrmDevConsoleCreateDDLSupplier(puName), this.getClass(),
-                curateOutcomeBuildItem);
-        runtimeInfoProducer.produce(devConsoleRuntimeTemplateInfoBuildItem);
-        initialSQLGeneratorBuildItemBuildProducer.produce(new JdbcInitialSQLGeneratorBuildItem(dsName, new Supplier<String>() {
-            @Override
-            public String get() {
-                return DevConsoleManager.getTemplateInfo()
-                        .get(devConsoleRuntimeTemplateInfoBuildItem.getGroupId() + "."
-                                + devConsoleRuntimeTemplateInfoBuildItem.getArtifactId())
-                        .get(devConsoleRuntimeTemplateInfoBuildItem.getName()).toString();
-            }
-        }));
-    }
-
     @Record(RUNTIME_INIT)
     @Consume(ServiceStartBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -262,42 +219,6 @@ public final class HibernateOrmProcessor {
         for (var e : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
             if (e.getValue().validateInDevMode) {
                 recorder.doValidation(e.getKey());
-            }
-        }
-    }
-
-    @BuildStep(onlyIfNot = IsNormal.class)
-    void devServicesAutoGenerateByDefault(List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
-            HibernateOrmConfig config,
-            BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigProducer) {
-        Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
-                .collect(HashSet::new, Collection::addAll, Collection::addAll);
-
-        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
-            Optional<String> dataSourceName = entry.getValue().datasource;
-            List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil
-                    .dataSourcePropertyKeys(dataSourceName.orElse(null), "username");
-
-            if (!managedSources.contains(dataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
-                String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
-                        "database.generation");
-                if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
-                        && !ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
-                    devServicesAdditionalConfigProducer
-                            .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
-                                // Only force DB generation if the datasource is configured through dev services
-                                if (propertyKeysIndicatingDataSourceConfigured.stream()
-                                        .anyMatch(devServicesConfig::containsKey)) {
-                                    String forcedValue = "drop-and-create";
-                                    LOG.infof("Setting %s=%s to initialize Dev Services managed database",
-                                            databaseGenerationPropertyKey, forcedValue);
-                                    return Map.of(databaseGenerationPropertyKey, forcedValue);
-                                } else {
-                                    return Map.of();
-                                }
-                            }));
-                }
             }
         }
     }
@@ -311,10 +232,10 @@ public final class HibernateOrmProcessor {
     public void enrollBeanValidationTypeSafeActivatorForReflection(Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
-                    "org.hibernate.boot.beanvalidation.TypeSafeActivator"));
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, false,
-                    BeanValidationIntegrator.BV_CHECK_CLASS));
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder("org.hibernate.boot.beanvalidation.TypeSafeActivator")
+                    .methods().fields().build());
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(BeanValidationIntegrator.BV_CHECK_CLASS)
+                    .constructors(false).build());
         }
     }
 
@@ -537,7 +458,8 @@ public final class HibernateOrmProcessor {
             for (DotName name : HibernateOrmAnnotations.HIBERNATE_MAPPING_ANNOTATIONS) {
                 annotationClassNames.add(name.toString());
             }
-            reflective.produce(new ReflectiveClassBuildItem(true, true, true, annotationClassNames.toArray(new String[0])));
+            reflective.produce(ReflectiveClassBuildItem.builder(annotationClassNames.toArray(new String[0]))
+                    .methods().fields().build());
             for (String annotationClassName : annotationClassNames) {
                 proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(annotationClassName));
             }
@@ -592,7 +514,7 @@ public final class HibernateOrmProcessor {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            integratorClasses.add(HibernateOrmDevConsoleIntegrator.class);
+            integratorClasses.add(HibernateOrmDevIntegrator.class);
             integratorClasses.add(SchemaManagementIntegrator.class);
         }
 
@@ -818,7 +740,8 @@ public final class HibernateOrmProcessor {
                     .map(a -> a.target().asClass().name().toString())
                     .toArray(String[]::new);
 
-            reflective.produce(new ReflectiveClassBuildItem(false, false, true, metamodel));
+            reflective.produce(
+                    ReflectiveClassBuildItem.builder(metamodel).constructors(false).fields().build());
         }
     }
 
@@ -842,7 +765,8 @@ public final class HibernateOrmProcessor {
                 .forEach(classes::add);
 
         if (!classes.isEmpty()) {
-            reflective.produce(new ReflectiveClassBuildItem(false, true, false, classes.toArray(new String[0])));
+            reflective.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).constructors(false)
+                    .methods().build());
         }
     }
 

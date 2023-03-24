@@ -670,7 +670,8 @@ public class SmallRyeOpenApiProcessor {
 
                 AnnotationValue schemaNotClass = schema.value(OPENAPI_SCHEMA_NOT);
                 if (schemaNotClass != null) {
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, schemaNotClass.asString()));
+                    reflectiveClass.produce(
+                            ReflectiveClassBuildItem.builder(schemaNotClass.asString()).methods().fields().build());
                 }
 
                 produceReflectiveHierarchy(reflectiveHierarchy, schema.value(OPENAPI_SCHEMA_ONE_OF), source);

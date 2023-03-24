@@ -13,35 +13,30 @@ class GreetingResourceTest {
 
     @Test
     fun testDataClassAndCustomFilters() {
-        When {
-            get("/greeting")
-        } Then {
-            statusCode(200)
-            contentType(ContentType.JSON)
-            body("message", CoreMatchers.`is`("hello foo bar"))
-            header("method", "testSuspend")
-            header("method2", "testSuspend")
-        }
+        When { get("/greeting") } Then
+            {
+                statusCode(200)
+                contentType(ContentType.JSON)
+                body("message", CoreMatchers.`is`("hello foo bar"))
+                header("method", "testSuspend")
+                header("method2", "testSuspend")
+            }
     }
 
     @Test
     fun testAbortingCustomFilters() {
-        Given {
-            header("abort", "true")
-        } When {
-            get("/greeting")
-        } Then {
-            statusCode(204)
-            header("random", CoreMatchers.notNullValue())
-        }
+        Given { header("abort", "true") } When
+            {
+                get("/greeting")
+            } Then
+            {
+                statusCode(204)
+                header("random", CoreMatchers.notNullValue())
+            }
     }
 
     @Test
     fun testNoopCoroutine() {
-        When {
-            get("/greeting/noop")
-        } Then {
-            statusCode(204)
-        }
+        When { get("/greeting/noop") } Then { statusCode(204) }
     }
 }

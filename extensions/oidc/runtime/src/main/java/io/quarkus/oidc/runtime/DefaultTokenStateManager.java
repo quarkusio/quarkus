@@ -129,7 +129,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
     }
 
     private String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
-        if (oidcConfig.tokenStateManager.encryptionRequired.orElse(false)) {
+        if (oidcConfig.tokenStateManager.encryptionRequired) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
                 return OidcUtils.encryptString(token, configContext.getTokenEncSecretKey());
@@ -141,7 +141,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
     }
 
     private String decryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
-        if (oidcConfig.tokenStateManager.encryptionRequired.orElse(false)) {
+        if (oidcConfig.tokenStateManager.encryptionRequired) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
                 return OidcUtils.decryptString(token, configContext.getTokenEncSecretKey());

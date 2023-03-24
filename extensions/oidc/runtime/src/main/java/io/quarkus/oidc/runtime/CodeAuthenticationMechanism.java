@@ -287,10 +287,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         if (isBackChannelLogoutPendingAndValid(configContext, identity)
                                                 || isFrontChannelLogoutValid(context, configContext,
                                                         identity)) {
-                                            return OidcUtils
-                                                    .removeSessionCookie(context, configContext.oidcConfig,
-                                                            sessionCookie.getName(),
-                                                            resolver.getTokenStateManager())
+                                            return removeSessionCookie(context, configContext.oidcConfig)
                                                     .map(new Function<Void, Void>() {
                                                         @Override
                                                         public Void apply(Void t) {
@@ -742,7 +739,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             LOG.debugf("Starting the final redirect");
                                             return tInner;
                                         }
-                                        LOG.errorf("ID token verification has failed: %s", tInner.getMessage());
+                                        String message = tInner.getCause() != null ? tInner.getCause().getMessage()
+                                                : tInner.getMessage();
+                                        LOG.errorf("ID token verification has failed: %s", message);
                                         return new AuthenticationCompletionException(tInner);
                                     }
                                 });

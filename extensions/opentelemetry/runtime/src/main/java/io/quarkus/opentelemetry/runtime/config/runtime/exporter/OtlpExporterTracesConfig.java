@@ -53,11 +53,9 @@ public class OtlpExporterTracesConfig extends OtelConnectionRuntimeConfig {
     /**
      * Key-value pairs to be used as headers associated with gRPC requests.
      * The format is similar to the {@code OTEL_EXPORTER_OTLP_HEADERS} environment variable,
-     * a list of key-value pairs separated by the "=" character.
-     * See <a href=
-     * "https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#specifying-headers-via-environment-variables">
-     * Specifying headers</a> for more details.
+     * a list of key-value pairs separated by the "=" character. i.e.: key1=value1,key2=value2
      */
+    @ConfigItem(defaultValue = "${quarkus.opentelemetry.tracer.exporter.otlp.headers}")
     public Map<String, String> headers;
 
     /**

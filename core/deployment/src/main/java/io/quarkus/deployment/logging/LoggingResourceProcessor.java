@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.LogCategoryMinLevelDefaultsBuildItem;
 import io.quarkus.deployment.builditem.LogConsoleFormatBuildItem;
 import io.quarkus.deployment.builditem.LogFileFormatBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
+import io.quarkus.deployment.builditem.LogSyslogFormatBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
@@ -231,6 +232,7 @@ public final class LoggingResourceProcessor {
             List<NamedLogHandlersBuildItem> namedHandlerBuildItems,
             List<LogConsoleFormatBuildItem> consoleFormatItems,
             List<LogFileFormatBuildItem> fileFormatItems,
+            List<LogSyslogFormatBuildItem> syslogFormatItems,
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             List<LogStreamBuildItem> logStreamBuildItems,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
@@ -271,8 +273,13 @@ public final class LoggingResourceProcessor {
                 alwaysEnableLogStream = true;
             }
 
+            List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters = consoleFormatItems.stream()
+                    .map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList());
             List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters = fileFormatItems.stream()
                     .map(LogFileFormatBuildItem::getFormatterValue).collect(Collectors.toList());
+            List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters = syslogFormatItems.stream()
+                    .map(LogSyslogFormatBuildItem::getFormatterValue).collect(Collectors.toList());
+
             context.registerSubstitution(InheritableLevel.ActualLevel.class, String.class, InheritableLevel.Substitution.class);
             context.registerSubstitution(InheritableLevel.Inherited.class, String.class, InheritableLevel.Substitution.class);
 
@@ -289,9 +296,7 @@ public final class LoggingResourceProcessor {
                     recorder.initializeLogging(log, buildLog, discoveredLogComponents,
                             categoryMinLevelDefaults.content, alwaysEnableLogStream,
                             wsDevUiLogHandler, streamingDevUiLogHandler, handlers, namedHandlers,
-                            consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue)
-                                    .collect(Collectors.toList()),
-                            possibleFileFormatters,
+                            possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
                             possibleSupplier, launchModeBuildItem.getLaunchMode(), true)));
             LogConfig logConfig = new LogConfig();
             ConfigInstantiator.handleObject(logConfig);

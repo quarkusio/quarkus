@@ -14,7 +14,7 @@ import org.hibernate.service.spi.ServiceRegistryAwareService;
  * the same as Hibernate ORM's default one except it records the dialect
  * so that we can reuse it at runtime init.
  */
-public final class QuarkusStaticInitDialectFactory extends DialectFactoryImpl
+public class QuarkusStaticInitDialectFactory extends DialectFactoryImpl
         implements DialectFactory, ServiceRegistryAwareService {
 
     private Dialect dialect;

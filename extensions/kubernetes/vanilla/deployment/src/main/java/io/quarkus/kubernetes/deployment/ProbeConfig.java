@@ -24,7 +24,7 @@ public class ProbeConfig {
     Optional<String> httpActionPortName;
 
     /**
-     * The http path to use for the probe For this to work, the container port also
+     * The http path to use for the probe. For this to work, the container port also
      * needs to be set.
      *
      * Assuming the container port has been set (as per above comment), if
@@ -47,6 +47,12 @@ public class ProbeConfig {
      */
     @ConfigItem
     Optional<String> tcpSocketAction;
+
+    /**
+     * The gRPC port to use for the probe (the format is either port or port:service).
+     */
+    @ConfigItem
+    Optional<String> grpcAction;
 
     /**
      * The amount of time to wait before starting to probe.
@@ -79,6 +85,6 @@ public class ProbeConfig {
     Integer failureThreshold;
 
     public boolean hasUserSuppliedAction() {
-        return httpActionPath.isPresent() || tcpSocketAction.isPresent() || execAction.isPresent();
+        return httpActionPath.isPresent() || tcpSocketAction.isPresent() || execAction.isPresent() || grpcAction.isPresent();
     }
 }

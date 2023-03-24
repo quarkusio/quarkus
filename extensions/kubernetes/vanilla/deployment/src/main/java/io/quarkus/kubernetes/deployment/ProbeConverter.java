@@ -12,9 +12,10 @@ public class ProbeConverter {
 
     public static ProbeBuilder builder(ProbeConfig probe) {
         ProbeBuilder b = new ProbeBuilder();
-        probe.httpActionPath.ifPresent(v -> b.withHttpActionPath(v));
-        probe.execAction.ifPresent(v -> b.withExecAction(v));
-        probe.tcpSocketAction.ifPresent(v -> b.withTcpSocketAction(v));
+        probe.httpActionPath.ifPresent(b::withHttpActionPath);
+        probe.execAction.ifPresent(b::withExecAction);
+        probe.tcpSocketAction.ifPresent(b::withTcpSocketAction);
+        probe.grpcAction.ifPresent(b::withGrpcAction);
         b.withInitialDelaySeconds((int) probe.initialDelay.getSeconds());
         b.withPeriodSeconds((int) probe.period.getSeconds());
         b.withTimeoutSeconds((int) probe.timeout.getSeconds());

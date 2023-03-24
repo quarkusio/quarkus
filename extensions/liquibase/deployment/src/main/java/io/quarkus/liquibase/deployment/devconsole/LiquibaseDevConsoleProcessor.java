@@ -9,7 +9,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.liquibase.runtime.devconsole.LiquibaseDevConsoleRecorder;
-import io.quarkus.liquibase.runtime.devconsole.LiquibaseFactoriesSupplier;
+import io.quarkus.liquibase.runtime.devui.LiquibaseFactoriesSupplier;
 
 public class LiquibaseDevConsoleProcessor {
 

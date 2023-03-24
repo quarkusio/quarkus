@@ -1,4 +1,4 @@
-package io.quarkus.liquibase.runtime.devconsole;
+package io.quarkus.liquibase.runtime.devui;
 
 import java.util.Collection;
 import java.util.Collections;

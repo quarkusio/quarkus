@@ -33,7 +33,7 @@ public class MultiplePgPoolCreatorsForSameDatasourceTest {
 
         @Override
         public PgPool create(Input input) {
-            return PgPool.pool(input.vertx(), input.pgConnectOptions(), input.poolOptions());
+            return PgPool.pool(input.vertx(), input.pgConnectOptionsList(), input.poolOptions());
         }
     }
 

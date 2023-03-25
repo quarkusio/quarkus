@@ -2,6 +2,7 @@ package io.quarkus.reactive.datasource.runtime;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -23,10 +24,14 @@ public class DataSourceReactiveRuntimeConfig {
     public boolean cachePreparedStatements = false;
 
     /**
-     * The datasource URL.
+     * The datasource URLs.
+     * <p>
+     * If multiple values are set, this datasource will create a pool with a list of servers instead of a single server.
+     * The pool uses a round-robin load balancing when a connection is created to select different servers.
+     * Note: some driver may not support multiple values here.
      */
     @ConfigItem
-    public Optional<String> url = Optional.empty();
+    public Optional<List<String>> url = Optional.empty();
 
     /**
      * The datasource pool maximum size.

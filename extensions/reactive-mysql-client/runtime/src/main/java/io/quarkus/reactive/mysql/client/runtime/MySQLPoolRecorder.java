@@ -9,6 +9,8 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -72,16 +74,17 @@ public class MySQLPoolRecorder {
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMySQLConfig);
-        MySQLConnectOptions mysqlConnectOptions = toMySQLConnectOptions(dataSourceRuntimeConfig,
+        List<MySQLConnectOptions> mysqlConnectOptionsList = toMySQLConnectOptions(dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig);
 
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with mysql.
         // and the client_name as tag.
         // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
         // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
-        mysqlConnectOptions.setMetricsName("mysql|" + dataSourceName);
+        mysqlConnectOptionsList.forEach(
+                mysqlConnectOptions -> mysqlConnectOptions.setMetricsName("mysql|" + dataSourceName));
 
-        return createPool(vertx, poolOptions, mysqlConnectOptions, dataSourceName);
+        return createPool(vertx, poolOptions, mysqlConnectOptionsList, dataSourceName);
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -119,103 +122,93 @@ public class MySQLPoolRecorder {
         return poolOptions;
     }
 
-    private MySQLConnectOptions toMySQLConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private List<MySQLConnectOptions> toMySQLConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
-        MySQLConnectOptions mysqlConnectOptions;
+        List<MySQLConnectOptions> mysqlConnectOptionsList = new ArrayList<>();
         if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
-            String url = dataSourceReactiveRuntimeConfig.url.get();
-            // clean up the URL to make migrations easier
-            if (url.startsWith("vertx-reactive:mysql://")) {
-                url = url.substring("vertx-reactive:".length());
-            }
-            mysqlConnectOptions = MySQLConnectOptions.fromUri(url);
+            List<String> urls = dataSourceReactiveRuntimeConfig.url.get();
+            urls.forEach(url -> {
+                // clean up the URL to make migrations easier
+                if (url.startsWith("vertx-reactive:mysql://")) {
+                    url = url.substring("vertx-reactive:".length());
+                }
+                mysqlConnectOptionsList.add(MySQLConnectOptions.fromUri(url));
+            });
         } else {
-            mysqlConnectOptions = new MySQLConnectOptions();
+            mysqlConnectOptionsList.add(new MySQLConnectOptions());
         }
 
-        if (dataSourceRuntimeConfig.username.isPresent()) {
-            mysqlConnectOptions.setUser(dataSourceRuntimeConfig.username.get());
-        }
+        mysqlConnectOptionsList.forEach(mysqlConnectOptions -> {
+            dataSourceRuntimeConfig.username.ifPresent(mysqlConnectOptions::setUser);
 
-        if (dataSourceRuntimeConfig.password.isPresent()) {
-            mysqlConnectOptions.setPassword(dataSourceRuntimeConfig.password.get());
-        }
+            dataSourceRuntimeConfig.password.ifPresent(mysqlConnectOptions::setPassword);
 
-        // credentials provider
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
-            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
-            Map<String, String> credentials = credentialsProvider.getCredentials(name);
-            String user = credentials.get(USER_PROPERTY_NAME);
-            String password = credentials.get(PASSWORD_PROPERTY_NAME);
-            if (user != null) {
-                mysqlConnectOptions.setUser(user);
+            // credentials provider
+            if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+                String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+                CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+                String name = dataSourceRuntimeConfig.credentialsProvider.get();
+                Map<String, String> credentials = credentialsProvider.getCredentials(name);
+                String user = credentials.get(USER_PROPERTY_NAME);
+                String password = credentials.get(PASSWORD_PROPERTY_NAME);
+                if (user != null) {
+                    mysqlConnectOptions.setUser(user);
+                }
+                if (password != null) {
+                    mysqlConnectOptions.setPassword(password);
+                }
             }
-            if (password != null) {
-                mysqlConnectOptions.setPassword(password);
+
+            mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
+
+            dataSourceReactiveMySQLConfig.charset.ifPresent(mysqlConnectOptions::setCharset);
+            dataSourceReactiveMySQLConfig.collation.ifPresent(mysqlConnectOptions::setCollation);
+
+            if (dataSourceReactiveMySQLConfig.pipeliningLimit.isPresent()) {
+                mysqlConnectOptions.setPipeliningLimit(dataSourceReactiveMySQLConfig.pipeliningLimit.getAsInt());
             }
-        }
 
-        mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
+            dataSourceReactiveMySQLConfig.useAffectedRows.ifPresent(mysqlConnectOptions::setUseAffectedRows);
 
-        if (dataSourceReactiveMySQLConfig.charset.isPresent()) {
-            mysqlConnectOptions.setCharset(dataSourceReactiveMySQLConfig.charset.get());
-        }
-        if (dataSourceReactiveMySQLConfig.collation.isPresent()) {
-            mysqlConnectOptions.setCollation(dataSourceReactiveMySQLConfig.collation.get());
-        }
+            if (dataSourceReactiveMySQLConfig.sslMode.isPresent()) {
+                final SslMode sslMode = dataSourceReactiveMySQLConfig.sslMode.get();
+                mysqlConnectOptions.setSslMode(sslMode);
 
-        if (dataSourceReactiveMySQLConfig.pipeliningLimit.isPresent()) {
-            mysqlConnectOptions.setPipeliningLimit(dataSourceReactiveMySQLConfig.pipeliningLimit.getAsInt());
-        }
-
-        if (dataSourceReactiveMySQLConfig.useAffectedRows.isPresent()) {
-            mysqlConnectOptions.setUseAffectedRows(dataSourceReactiveMySQLConfig.useAffectedRows.get());
-        }
-
-        if (dataSourceReactiveMySQLConfig.sslMode.isPresent()) {
-            final SslMode sslMode = dataSourceReactiveMySQLConfig.sslMode.get();
-            mysqlConnectOptions.setSslMode(sslMode);
-
-            // If sslMode is verify-identity, we also need a hostname verification algorithm
-            if (sslMode == SslMode.VERIFY_IDENTITY && (!dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm
-                    .isPresent() || "".equals(dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get()))) {
-                throw new IllegalArgumentException(
-                        "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-identity sslmode");
+                // If sslMode is verify-identity, we also need a hostname verification algorithm
+                if (sslMode == SslMode.VERIFY_IDENTITY && (!dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm
+                        .isPresent() || "".equals(dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get()))) {
+                    throw new IllegalArgumentException(
+                            "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-identity sslmode");
+                }
             }
-        }
 
-        mysqlConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
+            mysqlConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
 
-        configurePemTrustOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
-        configureJksTrustOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
-        configurePfxTrustOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
+            configurePemTrustOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
+            configureJksTrustOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
+            configurePfxTrustOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
 
-        configurePemKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
-        configureJksKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
-        configurePfxKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
+            configurePemKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
+            configureJksKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
+            configurePfxKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
 
-        mysqlConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
+            mysqlConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
 
-        mysqlConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
+            mysqlConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
 
-        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()) {
-            mysqlConnectOptions.setHostnameVerificationAlgorithm(
-                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
-        }
+            dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.ifPresent(
+                    mysqlConnectOptions::setHostnameVerificationAlgorithm);
 
-        if (dataSourceReactiveMySQLConfig.authenticationPlugin.isPresent()) {
-            mysqlConnectOptions.setAuthenticationPlugin(dataSourceReactiveMySQLConfig.authenticationPlugin.get());
-        }
+            dataSourceReactiveMySQLConfig.authenticationPlugin.ifPresent(mysqlConnectOptions::setAuthenticationPlugin);
 
-        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(mysqlConnectOptions::addProperty);
+            dataSourceReactiveRuntimeConfig.additionalProperties.forEach(mysqlConnectOptions::addProperty);
+        });
 
-        return mysqlConnectOptions;
+        return mysqlConnectOptionsList;
     }
 
-    private MySQLPool createPool(Vertx vertx, PoolOptions poolOptions, MySQLConnectOptions mySQLConnectOptions,
+    private MySQLPool createPool(Vertx vertx, PoolOptions poolOptions, List<MySQLConnectOptions> mySQLConnectOptionsList,
             String dataSourceName) {
         Instance<MySQLPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
@@ -225,21 +218,21 @@ public class MySQLPoolRecorder {
                     new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
         }
         if (instance.isResolvable()) {
-            MySQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mySQLConnectOptions);
+            MySQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mySQLConnectOptionsList);
             return instance.get().create(input);
         }
-        return MySQLPool.pool(vertx, mySQLConnectOptions, poolOptions);
+        return MySQLPool.pool(vertx, mySQLConnectOptionsList, poolOptions);
     }
 
     private static class DefaultInput implements MySQLPoolCreator.Input {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
-        private final MySQLConnectOptions mySQLConnectOptions;
+        private final List<MySQLConnectOptions> mySQLConnectOptionsList;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, MySQLConnectOptions mySQLConnectOptions) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, List<MySQLConnectOptions> mySQLConnectOptionsList) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
-            this.mySQLConnectOptions = mySQLConnectOptions;
+            this.mySQLConnectOptionsList = mySQLConnectOptionsList;
         }
 
         @Override
@@ -253,8 +246,8 @@ public class MySQLPoolRecorder {
         }
 
         @Override
-        public MySQLConnectOptions mySQLConnectOptions() {
-            return mySQLConnectOptions;
+        public List<MySQLConnectOptions> mySQLConnectOptionsList() {
+            return mySQLConnectOptionsList;
         }
     }
 }

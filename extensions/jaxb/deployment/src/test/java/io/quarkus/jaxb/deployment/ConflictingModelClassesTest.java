@@ -25,6 +25,7 @@ public class ConflictingModelClassesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withConfigurationResource("application-enable-validation.properties")
             .withApplicationRoot((jar) -> jar
                     .addClasses(
                             io.quarkus.jaxb.deployment.one.Model.class,

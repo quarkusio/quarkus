@@ -99,11 +99,11 @@ export class QwcExtensions extends observeState(LitElement) {
     _renderCustomCardContent(extension){
         import(extension.card.componentRef);
         
-        // TODO: Pass description and links along ${this._renderCardLinks(extension)}
         let customCardCode = `<${extension.card.componentName} 
                                 class="card-content"
                                 slot="content"
-                                description="${extension.description}">
+                                description="${extension.description}"
+                                namespace="${extension.namespace}">
 
                              </${extension.card.componentName}>`;
         
@@ -123,13 +123,16 @@ export class QwcExtensions extends observeState(LitElement) {
         
         return html`${extension.cardPages.map(page => html`
                             <qwc-extension-link slot="link"
+                                namespace="${extension.namespace}"
                                 extensionName="${extension.name}"
                                 iconName="${page.icon}"
                                 displayName="${page.title}"
                                 staticLabel="${page.staticLabel}"
                                 dynamicLabel="${page.dynamicLabel}"
                                 streamingLabel="${page.streamingLabel}"
-                                path="${page.id}" 
+                                path="${page.id}"
+                                ?embed=${page.embed}
+                                externalUrl="${page.metadata.externalUrl}"
                                 webcomponent="${page.componentLink}" >
                             </qwc-extension-link>
                         `)}`;

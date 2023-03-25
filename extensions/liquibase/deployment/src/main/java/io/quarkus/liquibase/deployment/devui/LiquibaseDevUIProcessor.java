@@ -18,11 +18,9 @@ import liquibase.changelog.DatabaseChangeLog;
  */
 public class LiquibaseDevUIProcessor {
 
-    private static final String EXTENSION_NAME = "Liquibase";
-
     @BuildStep(onlyIf = IsDevelopment.class)
     void createCard(BuildProducer<CardPageBuildItem> cardPageBuildItemBuildProducer) {
-        final CardPageBuildItem card = new CardPageBuildItem(EXTENSION_NAME);
+        final CardPageBuildItem card = new CardPageBuildItem();
 
         // card
         card.setCustomCard("qwc-liquibase-card.js");
@@ -44,7 +42,7 @@ public class LiquibaseDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
-        return new JsonRPCProvidersBuildItem(EXTENSION_NAME, LiquibaseJsonRpcService.class);
+        return new JsonRPCProvidersBuildItem(LiquibaseJsonRpcService.class);
     }
 
     private static Manifest getManifest(Class<?> clz) {

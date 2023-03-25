@@ -7,8 +7,13 @@ public final class JsonRPCProvidersBuildItem extends AbstractDevUIBuildItem {
 
     private final Class jsonRPCMethodProviderClass;
 
-    public JsonRPCProvidersBuildItem(String extensionName, Class jsonRPCMethodProviderClass) {
-        super(extensionName);
+    public JsonRPCProvidersBuildItem(Class jsonRPCMethodProviderClass) {
+        super();
+        this.jsonRPCMethodProviderClass = jsonRPCMethodProviderClass;
+    }
+
+    public JsonRPCProvidersBuildItem(String customIdentifier, Class jsonRPCMethodProviderClass) {
+        super(customIdentifier);
         this.jsonRPCMethodProviderClass = jsonRPCMethodProviderClass;
     }
 

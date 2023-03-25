@@ -15,8 +15,13 @@ public final class StaticContentBuildItem extends AbstractDevUIBuildItem {
 
     private final List<DevUIContent> content;
 
-    public StaticContentBuildItem(String extensionName, List<DevUIContent> content) {
-        super(extensionName);
+    public StaticContentBuildItem(List<DevUIContent> content) {
+        super();
+        this.content = content;
+    }
+
+    public StaticContentBuildItem(String customIdentifier, List<DevUIContent> content) {
+        super(customIdentifier);
         this.content = content;
     }
 

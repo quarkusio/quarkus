@@ -20,7 +20,7 @@ public class SchedulerDevUIProcessor {
             BuildProducer<CardPageBuildItem> cardPages,
             BuildProducer<FooterPageBuildItem> footerPages) {
 
-        CardPageBuildItem pageBuildItem = new CardPageBuildItem("Scheduler");
+        CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         pageBuildItem.addPage(Page.webComponentPageBuilder()
                 .icon("font-awesome-solid:clock")
@@ -32,12 +32,12 @@ public class SchedulerDevUIProcessor {
                 .icon("font-awesome-solid:clock")
                 .title("Scheduler")
                 .componentLink("qwc-scheduler-log.js");
-        footerPages.produce(new FooterPageBuildItem("Scheduler", logPageBuilder));
+        footerPages.produce(new FooterPageBuildItem(logPageBuilder));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem rpcProvider() {
-        return new JsonRPCProvidersBuildItem("Scheduler", SchedulerJsonRPCService.class);
+        return new JsonRPCProvidersBuildItem(SchedulerJsonRPCService.class);
     }
 
 }

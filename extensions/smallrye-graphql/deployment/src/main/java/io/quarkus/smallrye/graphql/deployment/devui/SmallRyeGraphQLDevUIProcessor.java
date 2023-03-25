@@ -15,7 +15,7 @@ public class SmallRyeGraphQLDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     CardPageBuildItem createCard(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
-        CardPageBuildItem cardPageBuildItem = new CardPageBuildItem("SmallRye GraphQL");
+        CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
         // Generated GraphQL Schema
         PageBuilder schemaPage = Page.externalPageBuilder("GraphQL Schema")
@@ -28,8 +28,15 @@ public class SmallRyeGraphQLDevUIProcessor {
                 .icon("font-awesome-solid:table-columns")
                 .url(uiPath);
 
+        // Learn
+        PageBuilder learnLink = Page.externalPageBuilder("Learn more about GraphQL")
+                .icon("font-awesome-solid:graduation-cap")
+                .doNotEmbed()
+                .url("https://graphql.org/");
+
         cardPageBuildItem.addPage(schemaPage);
         cardPageBuildItem.addPage(uiPage);
+        cardPageBuildItem.addPage(learnLink);
 
         return cardPageBuildItem;
     }

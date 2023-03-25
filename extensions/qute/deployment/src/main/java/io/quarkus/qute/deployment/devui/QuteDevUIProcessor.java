@@ -36,7 +36,7 @@ public class QuteDevUIProcessor {
             List<TemplateDataBuildItem> templateDatas,
             BuildProducer<CardPageBuildItem> cardPages) {
 
-        CardPageBuildItem pageBuildItem = new CardPageBuildItem("Qute");
+        CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         List<TemplatePathBuildItem> sortedTemplatePaths = templatePaths.stream()
                 .sorted(Comparator.comparing(tp -> tp.getPath().toLowerCase())).collect(Collectors.toList());

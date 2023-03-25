@@ -23,6 +23,7 @@ public interface JsonRpcKeys {
     public static enum MessageType {
         Void,
         Response,
-        SubscriptionMessage
+        SubscriptionMessage,
+        HotReload
     }
 }

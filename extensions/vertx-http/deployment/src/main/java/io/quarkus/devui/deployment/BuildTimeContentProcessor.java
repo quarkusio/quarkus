@@ -43,7 +43,6 @@ import io.quarkus.devui.spi.DevUIContent;
 import io.quarkus.devui.spi.buildtime.QuteTemplateBuildItem;
 import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
-import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -72,7 +71,7 @@ public class BuildTimeContentProcessor {
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
-        internalImportMapBuildItem.add("devui/", contextRoot + "/");
+        internalImportMapBuildItem.add("devui/", contextRoot);
         // Quarkus Web Components
         internalImportMapBuildItem.add("qwc/", contextRoot + "qwc/");
         internalImportMapBuildItem.add("qwc-hot-reload-element", contextRoot + "qwc/qwc-hot-reload-element.js");
@@ -111,18 +110,21 @@ public class BuildTimeContentProcessor {
      */
     @BuildStep(onlyIf = IsDevelopment.class)
     void mapPageBuildTimeData(List<CardPageBuildItem> pageBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer) {
 
         for (CardPageBuildItem pageBuildItem : pageBuildItems) {
-            Map<String, Object> buildTimeData = getBuildTimeData(pageBuildItem);
+            String extensionPathName = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
+            Map<String, Object> buildTimeData = getBuildTimeData(curateOutcomeBuildItem, pageBuildItem);
             if (!buildTimeData.isEmpty()) {
                 buildTimeConstProducer.produce(
-                        new BuildTimeConstBuildItem(pageBuildItem.getExtensionName(), buildTimeData));
+                        new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
             }
         }
     }
 
-    private Map<String, Object> getBuildTimeData(CardPageBuildItem pageBuildItem) {
+    private Map<String, Object> getBuildTimeData(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            CardPageBuildItem pageBuildItem) {
         Map<String, Object> m = new HashMap<>();
         if (pageBuildItem.hasBuildTimeData()) {
             m.putAll(pageBuildItem.getBuildTimeData());
@@ -133,8 +135,9 @@ public class BuildTimeContentProcessor {
             List<Page> pages = new ArrayList<>();
             List<PageBuilder> pageBuilders = pageBuildItem.getPages();
             for (PageBuilder pageBuilder : pageBuilders) {
-                pageBuilder.extension(pageBuildItem.getExtensionName());
-                pageBuilder.namespace(pageBuildItem.getExtensionName());
+                String path = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
+                pageBuilder.namespace(path);
+                pageBuilder.extension(path);
                 pages.add(pageBuilder.build());
             }
 
@@ -153,7 +156,7 @@ public class BuildTimeContentProcessor {
      * @param internalImportMapProducer
      */
     @BuildStep(onlyIf = IsDevelopment.class)
-    void createBuildTimeConstJsTemplate(
+    void createBuildTimeConstJsTemplate(CurateOutcomeBuildItem curateOutcomeBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             List<BuildTimeConstBuildItem> buildTimeConstBuildItems,
             BuildProducer<QuteTemplateBuildItem> quteTemplateProducer,
@@ -182,7 +185,8 @@ public class BuildTimeContentProcessor {
             if (!data.isEmpty()) {
                 Map<String, Object> qutedata = new HashMap<>();
                 qutedata.put("buildTimeData", data);
-                String ref = buildTimeConstBuildItem.getExtensionPathName() + "-data";
+
+                String ref = buildTimeConstBuildItem.getExtensionPathName(curateOutcomeBuildItem) + "-data";
                 String file = ref + ".js";
                 quteTemplateBuildItem.add("build-time-data.js", file, qutedata);
                 internalImportMapBuildItem.add(ref, contextRoot + file);
@@ -260,33 +264,31 @@ public class BuildTimeContentProcessor {
 
             List<DevUIContent> contentPerExtension = new ArrayList<>();
 
-            if (template.isInternal()) {
-                List<QuteTemplateBuildItem.TemplateData> templatesWithData = template.getTemplateDatas();
-                for (QuteTemplateBuildItem.TemplateData e : templatesWithData) {
+            List<QuteTemplateBuildItem.TemplateData> templatesWithData = template.getTemplateDatas();
+            for (QuteTemplateBuildItem.TemplateData e : templatesWithData) {
 
-                    String templateName = e.getTemplateName(); // Relative to BUILD_TIME_PATH
-                    Map<String, Object> data = e.getData();
-                    String resourceName = BUILD_TIME_PATH + SLASH + templateName;
-                    String fileName = e.getFileName();
-                    // TODO: What if we find more than one ?
-                    try (InputStream templateStream = cl.getResourceAsStream(resourceName)) {
-                        if (templateStream != null) {
-                            byte[] templateContent = IoUtil.readBytes(templateStream);
-                            // Internal runs on "naked" namespace
-                            DevUIContent content = DevUIContent.builder()
-                                    .fileName(fileName)
-                                    .template(templateContent)
-                                    .addData(data)
-                                    .build();
-                            contentPerExtension.add(content);
-                        }
-                    } catch (IOException ioe) {
-                        throw new UncheckedIOException("An error occurred while processing " + resourceName, ioe);
+                String templateName = e.getTemplateName(); // Relative to BUILD_TIME_PATH
+                Map<String, Object> data = e.getData();
+                String resourceName = BUILD_TIME_PATH + SLASH + templateName;
+                String fileName = e.getFileName();
+                // TODO: What if we find more than one ?
+                try (InputStream templateStream = cl.getResourceAsStream(resourceName)) {
+                    if (templateStream != null) {
+                        byte[] templateContent = IoUtil.readBytes(templateStream);
+                        // Internal runs on "naked" namespace
+                        DevUIContent content = DevUIContent.builder()
+                                .fileName(fileName)
+                                .template(templateContent)
+                                .addData(data)
+                                .build();
+                        contentPerExtension.add(content);
                     }
+                } catch (IOException ioe) {
+                    throw new UncheckedIOException("An error occurred while processing " + resourceName, ioe);
                 }
-                buildTimeContentProducer.produce(new StaticContentBuildItem(
-                        StaticContentBuildItem.DEV_UI, contentPerExtension));
             }
+            buildTimeContentProducer.produce(new StaticContentBuildItem(
+                    StaticContentBuildItem.DEV_UI, contentPerExtension));
         }
     }
 
@@ -298,7 +300,6 @@ public class BuildTimeContentProcessor {
             BuildProducer<ThemeVarsBuildItem> themeVarsProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             ExtensionsBuildItem extensionsBuildItem,
-            List<MenuPageBuildItem> menuPageBuildItems,
             List<DevServiceDescriptionBuildItem> devServiceDescriptions,
             List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
@@ -350,9 +351,9 @@ public class BuildTimeContentProcessor {
         internalBuildTimeData.addBuildTimeData("devServices", devServiceDescriptions);
 
         Page buildSteps = Page.webComponentPageBuilder().internal()
-                .title("Build steps")
+                .title("Build information")
                 .icon("font-awesome-solid:hammer")
-                .componentLink("qwc-build-steps.js").build();
+                .componentLink("qwc-build-information.js").build();
 
         internalBuildTimeData.addBuildTimeData("buildSteps", "TODO: Build Steps");
 
@@ -370,11 +371,13 @@ public class BuildTimeContentProcessor {
 
         // Add the Footer tabs
         Page serverLog = Page.webComponentPageBuilder().internal()
+                .namespace("devui-logstream")
                 .title("Server")
                 .icon("font-awesome-solid:server")
                 .componentLink("qwc-server-log.js").build();
 
         Page devUiLog = Page.webComponentPageBuilder().internal()
+                .namespace("devui-jsonrpcstream")
                 .title("Dev UI")
                 .icon("font-awesome-solid:satellite-dish")
                 .componentLink("qwc-jsonrpc-messages.js").build();

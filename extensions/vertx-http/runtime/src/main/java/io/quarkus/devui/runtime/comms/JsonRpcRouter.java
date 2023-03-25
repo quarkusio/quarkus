@@ -3,13 +3,15 @@ package io.quarkus.devui.runtime.comms;
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.MessageType;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
@@ -19,6 +21,7 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcReader;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcWriter;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -30,13 +33,14 @@ import io.vertx.core.json.JsonObject;
 /**
  * Route JsonRPC message to the correct method
  */
-@ApplicationScoped
 public class JsonRpcRouter {
 
     private final Map<Integer, Cancellable> subscriptions = new ConcurrentHashMap<>();
 
     // Map json-rpc method to java
     private final Map<String, ReflectionInfo> jsonRpcToJava = new HashMap<>();
+
+    private static final List<ServerWebSocket> SESSIONS = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * This gets called on build to build into of the classes we are going to call in runtime
@@ -98,10 +102,32 @@ public class JsonRpcRouter {
     }
 
     public void addSocket(ServerWebSocket socket) {
+        SESSIONS.add(socket);
         socket.textMessageHandler((e) -> {
             JsonRpcReader jsonRpcRequest = JsonRpcReader.read(e);
             route(jsonRpcRequest, socket);
+        }).closeHandler((e) -> {
+            purge();
         });
+        purge();
+    }
+
+    void onStart(@Observes StartupEvent ev) {
+        purge();
+        for (ServerWebSocket s : new ArrayList<>(SESSIONS)) {
+            if (!s.isClosed()) {
+                s.writeTextMessage(
+                        JsonRpcWriter.writeResponse(-1, LocalDateTime.now().toString(), MessageType.HotReload).encode());
+            }
+        }
+    }
+
+    private void purge() {
+        for (ServerWebSocket s : new ArrayList<>(SESSIONS)) {
+            if (s.isClosed()) {
+                SESSIONS.remove(s);
+            }
+        }
     }
 
     @Inject

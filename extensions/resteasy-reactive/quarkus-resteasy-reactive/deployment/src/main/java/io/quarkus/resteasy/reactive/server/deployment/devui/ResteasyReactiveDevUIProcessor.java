@@ -10,12 +10,10 @@ import io.quarkus.resteasy.reactive.server.runtime.devui.ResteasyReactiveJsonRPC
 
 public class ResteasyReactiveDevUIProcessor {
 
-    private static final String EXTENSION_NAME = "RESTEasy Reactive";
-
     @BuildStep(onlyIf = IsDevelopment.class)
     public void createPages(BuildProducer<CardPageBuildItem> cardPageProducer) {
 
-        CardPageBuildItem cardPageBuildItem = new CardPageBuildItem(EXTENSION_NAME);
+        CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
         // Endpoint Scores
         cardPageBuildItem.addPage(Page.webComponentPageBuilder()
@@ -43,6 +41,6 @@ public class ResteasyReactiveDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public void createJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> jsonRPCServiceProducer) {
-        jsonRPCServiceProducer.produce(new JsonRPCProvidersBuildItem(EXTENSION_NAME, ResteasyReactiveJsonRPCService.class));
+        jsonRPCServiceProducer.produce(new JsonRPCProvidersBuildItem(ResteasyReactiveJsonRPCService.class));
     }
 }

@@ -10,8 +10,13 @@ public final class FooterPageBuildItem extends AbstractPageBuildItem {
 
     private final List<PageBuilder> pageBuilders;
 
-    public FooterPageBuildItem(String extensionName, PageBuilder... pageBuilder) {
-        super(extensionName);
+    public FooterPageBuildItem(PageBuilder... pageBuilder) {
+        super();
+        this.pageBuilders = Arrays.asList(pageBuilder);
+    }
+
+    public FooterPageBuildItem(String customIdentifier, PageBuilder... pageBuilder) {
+        super(customIdentifier);
         this.pageBuilders = Arrays.asList(pageBuilder);
     }
 

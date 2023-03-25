@@ -234,7 +234,7 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _renderTabBody(footerTab){
-        return html`${unsafeHTML('<' + footerTab.componentName + '></' + footerTab.componentName + '>')}`;
+        return html`${unsafeHTML('<' + footerTab.componentName + ' namespace="' + footerTab.namespace + '"></' + footerTab.componentName + '>')}`;
     }
 
     _tabSelected(index){

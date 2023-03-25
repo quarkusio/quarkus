@@ -161,7 +161,7 @@ public class ConfigEditorProcessor {
             updateConfig(values);
             return null;
         });
-        return new JsonRPCProvidersBuildItem("ConfigJsonRpcService", ConfigJsonRpcService.class);
+        return new JsonRPCProvidersBuildItem("configuration", ConfigJsonRpcService.class);
     }
 
     private Map<String, String> filterAndApplyProfile(Map<String, String> autoconfig, List<String> configFilter,

@@ -28,7 +28,7 @@ public class ContainerImageDevUiProcessor {
         JsonArray array = extensions.stream().map(AvailableContainerImageExtensionBuildItem::getName).sorted()
                 .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
 
-        CardPageBuildItem card = new CardPageBuildItem("Container Image");
+        CardPageBuildItem card = new CardPageBuildItem();
         card.addBuildTimeData("builderTypes", array);
         card.addPage(Page.webComponentPageBuilder()
                 .title("Build Container")
@@ -40,7 +40,7 @@ public class ContainerImageDevUiProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForContainerBuild() {
         DevConsoleManager.register("container-image-build-action", build());
-        return new JsonRPCProvidersBuildItem("ContainerImage", ContainerBuilderJsonRpcService.class);
+        return new JsonRPCProvidersBuildItem(ContainerBuilderJsonRpcService.class);
     }
 
     private Function<Map<String, String>, String> build() {

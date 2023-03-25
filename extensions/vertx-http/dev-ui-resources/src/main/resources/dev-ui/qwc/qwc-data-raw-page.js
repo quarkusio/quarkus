@@ -36,21 +36,17 @@ export class QwcDataRawPage extends observeState(LitElement) {
 
     connectedCallback() {
         super.connectedCallback();
-        var extensionId = RouterController.currentExtensionId();
-        if(extensionId){
+        
+        var page = RouterController.currentPage();
+        if(page && page.metadata){
+            this._buildTimeDataKey = page.metadata.buildTimeDataKey;
 
-            var metadata = RouterController.currentMetaData();
-            if(metadata){
+            let modulePath = page.namespace + "-data";
 
-                this._buildTimeDataKey = metadata.buildTimeDataKey;
-                
-                let modulePath = extensionId + "-data";
-
-                import(modulePath)
-                .then(obj => {
-                    this._buildTimeData = obj[this._buildTimeDataKey]; // TODO: Just use obj and allow multiple keys ?
-                });
-            }
+            import(modulePath)
+            .then(obj => {
+                this._buildTimeData = obj[this._buildTimeDataKey]; // TODO: Just use obj and allow multiple keys ?
+            });
         }
     }
     

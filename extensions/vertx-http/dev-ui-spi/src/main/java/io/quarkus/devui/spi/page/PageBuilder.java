@@ -79,9 +79,9 @@ public abstract class PageBuilder<T> {
     public T extension(String extension) {
         this.metadata.put("extensionName", extension);
         this.metadata.put("extensionId", extension.toLowerCase().replaceAll(SPACE, DASH));
-        if (this.namespace == null) {
-            this.namespace = extension.toLowerCase().replaceAll(SPACE, DASH);
-        }
+        //if (this.namespace == null) {
+        //    this.namespace = extension.toLowerCase().replaceAll(SPACE, DASH);
+        //}
         return (T) this;
     }
 
@@ -113,7 +113,10 @@ public abstract class PageBuilder<T> {
             this.title = n.substring(0, 1).toUpperCase() + n.substring(1); // Capitalize first letter
         }
 
-        return new Page(icon, title, staticLabel, dynamicLabel, streamingLabel, componentName, componentLink, metadata, embed,
+        Page page = new Page(icon, title, staticLabel, dynamicLabel, streamingLabel, componentName, componentLink, metadata,
+                embed,
                 internalComponent, namespace);
+
+        return page;
     }
 }

@@ -8,12 +8,10 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
 public class OpenApiDevUIProcessor {
 
-    private static final String NAME = "Smallrye Openapi";
-
     @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
-        CardPageBuildItem cardPageBuildItem = new CardPageBuildItem(NAME);
+        CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
         cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml")
                 .url(nonApplicationRootPathBuildItem.resolvePath("openapi"))

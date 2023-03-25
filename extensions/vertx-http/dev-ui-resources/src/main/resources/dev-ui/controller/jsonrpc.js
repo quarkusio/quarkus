@@ -1,6 +1,7 @@
 import { jsonRPCSubscriptions } from 'devui-jsonrpc-data';
 import { jsonRPCMethods } from 'devui-jsonrpc-data';
 import { connectionState } from 'connection-state';
+import { RouterController } from 'router-controller';
 
 class Level {
     static Info = new Level("info");
@@ -34,6 +35,7 @@ class MessageType {
     static Response = new MessageType("Response");
     static Void = new MessageType("Void");
     static SubscriptionMessage = new MessageType("SubscriptionMessage");
+    static HotReload = new MessageType("HotReload");
 
     constructor(messageType) {
         this.messageType = messageType;
@@ -84,8 +86,37 @@ export class JsonRpc {
 
     _extensionName;
     _logTraffic;
-    constructor(extensionName, logTraffic=true) {
-        this._extensionName = extensionName;
+    
+    
+    /**
+     * 
+     * @param {type} host the component using this.
+     *  In the case of full extension pages, the extension namespace will be used and can be found on the router. However, sometimes
+     *   extensions might have multiple services, in that case a serviceIdentifier can be used
+     *  In the case of Menu items, the menu id (what is registered in the router) is used. 
+     *   Again serviceIdentifier can allow multiple backends
+     *  In the case of cards or logs, the namespace will be passed in as an attribute (as this component is not registered with the router)
+     *   Again serviceIdentifier can allow multiple backends  
+     * @param {type} logTraffic - if traffic should be logged in the Dev UI Log (json-prc log)
+     * @param {type} serviceIdentifier - if needed, a backend service identifier
+     * @returns {Proxy}
+     */
+    constructor(host, logTraffic=true, serviceIdentifier=null) {
+        var page = RouterController.pageForComponent(host.tagName.toLowerCase());
+        
+        if (page){
+            if(page.namespace){
+                // For pages
+                this._setExtensionName(page.namespace, serviceIdentifier);
+            }else{
+                // For Menu items
+                this._setExtensionName(page.id, serviceIdentifier);
+            }
+        } else {
+            // For cards and logs
+            this._setExtensionName(host.getAttribute("namespace"), serviceIdentifier);
+        }
+        
         this._logTraffic = logTraffic;
         if (!JsonRpc.webSocket) {
             if (window.location.protocol === "https:") {
@@ -166,6 +197,14 @@ export class JsonRpc {
         })
     }
 
+    _setExtensionName(discoveredNamespace, serviceIdentifier){
+        if(serviceIdentifier){
+            this._extensionName = discoveredNamespace + "-" + serviceIdentifier;
+        }else {
+            this._extensionName = discoveredNamespace;
+        }
+    }
+
     static sendJsonRPCMessage(jsonrpcpayload, log=true) {
         if (JsonRpc.webSocket.readyState !== WebSocket.OPEN) {
             JsonRpc.initQueue.push(jsonrpcpayload);
@@ -206,9 +245,12 @@ export class JsonRpc {
                 var response = JSON.parse(event.data);
                 var devUiResponse = response.result;
                 var messageType = devUiResponse.messageType;
-
+                
                 if (messageType === MessageType.Void.toString()) { // Void response, typically used on initial subscription
                     // Do nothing
+                } else if (messageType === MessageType.HotReload.toString()){
+                    connectionState.hotreload(JsonRpc.serverUri);
+                    connectionState.connected(JsonRpc.serverUri)
                 } else if (messageType === MessageType.Response.toString()) { // Normal Request-Response
                     if (JsonRpc.promiseQueue.has(response.id)) {
                         var saved = JsonRpc.promiseQueue.get(response.id);

@@ -21,6 +21,19 @@ export class QwcDevServices extends LitElement {
       .dev-service-config {
         margin-left: 2em;
       }
+      .no-dev-services {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--lumo-contrast-20pct);
+        border-radius: 9px;
+        padding: 30px;
+        margin: 30px;
+      }
+      .no-dev-services a {
+        color: var(--lumo-contrast-90pct);
+      }
     `;
 
 
@@ -34,8 +47,7 @@ export class QwcDevServices extends LitElement {
     }
 
     render() {
-        console.log(this._services);
-        if (this._services) {
+        if (this._services && this._services.length>0) {
             const items = [];
             for (let i = 0; i < this._services.length; i++) {
                 const ds = this._services[i];
@@ -58,6 +70,12 @@ export class QwcDevServices extends LitElement {
             }
 
             return html`${items}`;
+        } else {
+            return html`<p class="no-dev-services">
+                    <span>You do not have any Dev Services running</span>
+                    <a href="https://quarkus.io/guides/dev-services" target="_blank">Read more about Dev Services</a>
+                </p>
+            `
         }
     }
 

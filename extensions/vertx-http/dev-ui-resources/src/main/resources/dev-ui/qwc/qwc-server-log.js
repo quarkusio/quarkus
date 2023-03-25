@@ -1,4 +1,4 @@
-import { LitElement, html, css} from 'lit';
+import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import { repeat } from 'lit/directives/repeat.js';
 import { LogController } from 'log-controller';
 import { JsonRpc } from 'jsonrpc';
@@ -13,10 +13,10 @@ import 'qui-badge';
 /**
  * This component represent the Server Log
  */
-export class QwcServerLog extends LitElement {
+export class QwcServerLog extends QwcHotReloadElement {
     
     logControl = new LogController(this);
-    jsonRpc = new JsonRpc("devui-logstream", false);
+    jsonRpc = new JsonRpc(this, false);
     
     static styles = css`
         .log {
@@ -440,6 +440,11 @@ export class QwcServerLog extends LitElement {
         }
     }
     
+    hotReload(){
+        this._toggleOnOffClicked(false);
+        this._toggleOnOffClicked(true);
+    }
+    
     _toggleFollowLog(e){
         this._followLog = e;
         this._scrollToBottom();   
@@ -464,7 +469,7 @@ export class QwcServerLog extends LitElement {
             
             if(last){
                 last.scrollIntoView({
-                     behavior: "smooth",
+                    behavior: "smooth",
                     block: "end"
                 });
             }

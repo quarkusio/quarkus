@@ -20,7 +20,7 @@ public class CaffeineDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void createCard(BuildProducer<CardPageBuildItem> cardPageBuildItemBuildProducer) {
-        final CardPageBuildItem card = new CardPageBuildItem("Caffeine");
+        final CardPageBuildItem card = new CardPageBuildItem();
 
         final PageBuilder versionPage = Page.externalPageBuilder("Version")
                 .icon("font-awesome-solid:mug-hot")

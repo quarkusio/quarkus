@@ -239,7 +239,7 @@ public class MicrometerProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem createCard(List<RegistryBuildItem> registries) {
-        var card = new CardPageBuildItem("Micrometer metrics");
+        var card = new CardPageBuildItem();
 
         var json = registries.stream().filter(r -> "JSON".equals(r.name())).map(RegistryBuildItem::path).findFirst();
         var prom = registries.stream().filter(r -> "Prometheus".equals(r.name())).map(RegistryBuildItem::path).findFirst();

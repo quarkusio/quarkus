@@ -79,6 +79,35 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <!-- include tags -->
+                            <groups>common,test</groups>
+                            <!-- exclude tags -->
+                            <excludedGroups>test-only</excludedGroups>
+                        </configuration>
+                    </execution>
+                    <!-- This configuration is used in order to test that 'quarkus.spring-cloud-config.profiles' is taken into account -->
+                    <execution>
+                        <id>profiles-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <quarkus.spring-cloud-config.profiles>test</quarkus.spring-cloud-config.profiles>
+                            </systemPropertyVariables>
+                            <!-- include tags -->
+                            <groups>test-only</groups>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

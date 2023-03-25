@@ -2,6 +2,7 @@ package io.quarkus.spring.cloud.config.client.runtime;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -109,6 +110,11 @@ public interface SpringCloudConfigClientConfig {
      * Custom headers to pass the Spring Cloud Config Server when performing the HTTP request
      */
     Map<String, String> headers();
+
+    /**
+     * The profiles to use for lookup
+     */
+    Optional<List<String>> profiles();
 
     /** */
     default boolean usernameAndPasswordSet() {

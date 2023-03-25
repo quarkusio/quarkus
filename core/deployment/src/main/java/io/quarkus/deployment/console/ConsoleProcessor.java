@@ -105,7 +105,7 @@ public class ConsoleProcessor {
         }
 
         context.reset(
-                new ConsoleCommand('x', "Opens last exception in IDE", new ConsoleCommand.HelpState(new Supplier<String>() {
+                new ConsoleCommand('x', "Open last exception in IDE", new ConsoleCommand.HelpState(new Supplier<String>() {
                     @Override
                     public String get() {
                         return MessageFormat.RED;
@@ -115,7 +115,7 @@ public class ConsoleProcessor {
                     public String get() {
                         StackTraceElement throwable = lastUserCode.get();
                         if (throwable == null) {
-                            return "None";
+                            return "none";
                         }
                         return throwable.getFileName() + ":" + throwable.getLineNumber();
                     }
@@ -179,7 +179,7 @@ public class ConsoleProcessor {
         return new ConsoleCommandBuildItem(new QuitCommand());
     }
 
-    @CommandDefinition(name = "quit", description = "Quits the console", aliases = { "q" })
+    @CommandDefinition(name = "quit", description = "Quit the console", aliases = { "q" })
     public static class QuitCommand implements Command {
 
         @Override
@@ -194,7 +194,7 @@ public class ConsoleProcessor {
         return new ConsoleCommandBuildItem(new HelpCommand());
     }
 
-    @CommandDefinition(name = "help", description = "Displays the command list", aliases = { "h" })
+    @CommandDefinition(name = "help", description = "Display the command list", aliases = { "h" })
     public static class HelpCommand implements Command {
 
         @Override

@@ -8,7 +8,19 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.RED;
 import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
 import static io.quarkus.deployment.dev.testing.MessageFormat.UNDERLINE;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,10 +43,12 @@ import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
+import io.quarkus.runtime.util.ContainerRuntimeUtil.ContainerRuntime;
 
 public class DevServicesProcessor {
 
-    private static final String EXEC_FORMAT = "docker exec -it %s /bin/bash";
+    private static final String EXEC_FORMAT = "%s exec -it %s /bin/bash";
 
     static volatile ConsoleStateManager.ConsoleContext context;
     static volatile boolean logForwardEnabled = false;
@@ -70,7 +84,7 @@ public class DevServicesProcessor {
             context = ConsoleStateManager.INSTANCE.createContext("Dev Services");
         }
         context.reset(
-                new ConsoleCommand('c', "Show dev services containers", null, () -> {
+                new ConsoleCommand('c', "Show Dev Services containers", null, () -> {
                     List<DevServiceDescriptionBuildItem> descriptions = buildServiceDescriptions(
                             dockerStatusBuildItem, devServicesResults, devServicesLauncherConfig);
                     StringBuilder builder = new StringBuilder();
@@ -83,7 +97,7 @@ public class DevServicesProcessor {
                     }
                     System.out.println(builder);
                 }),
-                new ConsoleCommand('g', "Follow dev services logs to the console",
+                new ConsoleCommand('g', "Follow Dev Services logs in the console",
                         new ConsoleCommand.HelpState(() -> logForwardEnabled ? GREEN : RED,
                                 () -> logForwardEnabled ? "enabled" : "disabled"),
                         this::toggleLogForwarders));
@@ -111,12 +125,12 @@ public class DevServicesProcessor {
         descriptions.sort(Comparator.comparing(DevServiceDescriptionBuildItem::getName));
         // Add description from other dev service configs as last
         if (devServicesLauncherConfig.isPresent()) {
-            Map<String, String> config = new HashMap<>(devServicesLauncherConfig.get().getConfig());
+            Map<String, String> config = new TreeMap<>(devServicesLauncherConfig.get().getConfig());
             for (String key : configKeysFromDevServices) {
                 config.remove(key);
             }
             if (!config.isEmpty()) {
-                descriptions.add(new DevServiceDescriptionBuildItem("Other Dev Services", null, config));
+                descriptions.add(new DevServiceDescriptionBuildItem("Additional Dev Services config", null, config));
             }
         }
         return descriptions;
@@ -191,12 +205,10 @@ public class DevServicesProcessor {
     }
 
     public static void printDevService(StringBuilder builder, DevServiceDescriptionBuildItem devService, boolean withStatus) {
+        builder.append(BOLD).append(devService.getName()).append(NO_BOLD);
+        builder.append("\n");
+
         if (devService.hasContainerInfo()) {
-            builder.append(BOLD).append(devService.getName()).append(NO_BOLD);
-            if (withStatus) {
-                builder.append(" - ").append(devService.getContainerInfo().getStatus());
-            }
-            builder.append("\n");
             builder.append(String.format("  %-18s", "Container: "))
                     .append(devService.getContainerInfo().getId(), 0, 12)
                     .append(devService.getContainerInfo().formatNames())
@@ -208,13 +220,30 @@ public class DevServicesProcessor {
                     .append(" - ")
                     .append(devService.getContainerInfo().formatPorts())
                     .append("\n");
-            builder.append(String.format("  %-18s", "Exec command: "))
-                    .append(String.format(EXEC_FORMAT, devService.getContainerInfo().getShortId()))
-                    .append("\n");
+
+            ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime(false);
+            if (containerRuntime != null) {
+                builder.append(String.format("  %-18s", "Exec command: "))
+                        .append(String.format(EXEC_FORMAT,
+                                containerRuntime.getExecutableName(),
+                                devService.getContainerInfo().getShortId()))
+                        .append("\n");
+            }
         }
-        builder.append(String.format("  %-18s", "Injected Config: "))
-                .append(devService.formatConfigs())
-                .append("\n");
+
+        if (!devService.getConfigs().isEmpty()) {
+            builder.append(String.format("  %-18s", "Injected config: "));
+            boolean indent = false;
+            for (Entry<String, String> devServiceConfigEntry : devService.getConfigs().entrySet()) {
+                if (indent) {
+                    builder.append(String.format("  %-18s", " "));
+                }
+                builder.append(
+                        String.format("- %s=%s\n",
+                                devServiceConfigEntry.getKey(), devServiceConfigEntry.getValue()));
+                indent = true;
+            }
+        }
     }
 
 }

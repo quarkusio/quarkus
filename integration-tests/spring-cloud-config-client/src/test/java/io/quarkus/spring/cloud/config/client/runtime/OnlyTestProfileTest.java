@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.Matchers.equalTo;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -11,7 +12,9 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 @QuarkusTestResource(SpringCloudConfigServerResource.class)
-public class SpringCloudConfigClientTest {
+@Tag("test")
+@Tag("test-only")
+public class OnlyTestProfileTest {
     @Test
     void config() {
         given()
@@ -35,15 +38,5 @@ public class SpringCloudConfigClientTest {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("value", equalTo("Sample"));
-    }
-
-    @Test
-    void multiple() {
-        given()
-                .get("/config/{name}", "common")
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body("value", equalTo("common"))
-                .body("sourceName", equalTo("common"));
     }
 }

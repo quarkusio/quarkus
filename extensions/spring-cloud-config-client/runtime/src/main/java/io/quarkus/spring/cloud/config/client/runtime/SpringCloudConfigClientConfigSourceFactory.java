@@ -46,7 +46,7 @@ public class SpringCloudConfigClientConfigSourceFactory
         VertxSpringCloudConfigGateway client = new VertxSpringCloudConfigGateway(config);
         try {
             List<Response> responses = new ArrayList<>();
-            for (String profile : context.getProfiles()) {
+            for (String profile : determineProfiles(context, config)) {
                 Response response;
                 if (connectionTimeoutIsGreaterThanZero || readTimeoutIsGreaterThanZero) {
                     response = client.exchange(applicationName.getValue(), profile).await()
@@ -86,6 +86,13 @@ public class SpringCloudConfigClientConfigSourceFactory
         } finally {
             client.close();
         }
+    }
+
+    private static List<String> determineProfiles(ConfigSourceContext context, SpringCloudConfigClientConfig config) {
+        if (config.profiles().isPresent()) {
+            return config.profiles().get();
+        }
+        return context.getProfiles();
     }
 
     private static class SpringCloudPropertySource extends MapBackedConfigSource {

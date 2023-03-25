@@ -387,13 +387,23 @@ public class GrpcServerProcessor {
             }
         }
 
-        ClassInfo classInfo;
+        ClassInfo classInfo = null;
         var classes = classHierarchy(service, index);
         if (isExtendingMutinyService) {
             classInfo = service;
         } else {
-            // Collect all gRPC methods from the *ImplBase class, if present
-            classInfo = classes.get(classes.size() - 1);
+            // Collect all gRPC methods from the *ImplBase's AsyncService interface, if present
+            // else use ImplBase's gRPC methods
+            ClassInfo ib = classes.get(classes.size() - 1);
+            for (DotName interfaceName : ib.interfaceNames()) {
+                if (interfaceName.toString().endsWith("$AsyncService")) {
+                    classInfo = index.getClassByName(interfaceName);
+                    break;
+                }
+            }
+            if (classInfo == null) {
+                classInfo = ib;
+            }
         }
 
         List<MethodInfo> implBaseMethods = classInfo.methods();

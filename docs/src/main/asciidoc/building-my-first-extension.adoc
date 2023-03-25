@@ -170,7 +170,7 @@ Your extension is a multi-module project. So let's start by checking out the par
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.version>{quarkus-version}</quarkus.version>
-    <surefire-plugin.version>3.0.0-M9</surefire-plugin.version>
+    <surefire-plugin.version>3.0.0</surefire-plugin.version>
   </properties>
   <dependencyManagement>
     <dependencies>

@@ -53,6 +53,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BuildExclusionsBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -308,13 +309,31 @@ public class SmallRyeOpenApiProcessor {
 
     @BuildStep
     OpenApiFilteredIndexViewBuildItem smallryeOpenApiIndex(CombinedIndexBuildItem combinedIndexBuildItem,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
-        CompositeIndex compositeIndex = CompositeIndex.create(combinedIndexBuildItem.getIndex(),
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            BuildExclusionsBuildItem buildExclusionsBuildItem) {
+
+        CompositeIndex compositeIndex = CompositeIndex.create(
+                combinedIndexBuildItem.getIndex(),
                 beanArchiveIndexBuildItem.getIndex());
-        return new OpenApiFilteredIndexViewBuildItem(
-                new FilteredIndexView(
-                        compositeIndex,
-                        new OpenApiConfigImpl(ConfigProvider.getConfig())));
+
+        OpenApiConfig config = OpenApiConfig.fromConfig(ConfigProvider.getConfig());
+        Set<DotName> buildTimeClassExclusions = buildExclusionsBuildItem.getExcludedDeclaringClasses()
+                .stream()
+                .map(DotName::createSimple)
+                .collect(Collectors.toSet());
+
+        FilteredIndexView indexView = new FilteredIndexView(compositeIndex, config) {
+            @Override
+            public boolean accepts(DotName className) {
+                if (super.accepts(className)) {
+                    return !buildTimeClassExclusions.contains(className);
+                }
+
+                return false;
+            }
+        };
+
+        return new OpenApiFilteredIndexViewBuildItem(indexView);
     }
 
     @BuildStep

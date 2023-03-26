@@ -18,8 +18,13 @@ import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 public final class QuteTemplateBuildItem extends AbstractDevUIBuildItem {
     private final List<TemplateData> templateDatas;
 
-    public QuteTemplateBuildItem(String extensionName) {
-        super(extensionName);
+    public QuteTemplateBuildItem() {
+        super();
+        this.templateDatas = new ArrayList<>();
+    }
+
+    public QuteTemplateBuildItem(String customIdentifier) {
+        super(customIdentifier);
         this.templateDatas = new ArrayList<>();
     }
 

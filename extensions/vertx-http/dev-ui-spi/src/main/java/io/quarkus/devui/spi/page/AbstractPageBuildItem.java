@@ -12,8 +12,13 @@ public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
 
     protected final Map<String, Object> buildTimeData;
 
-    public AbstractPageBuildItem(String extensionName) {
-        super(extensionName);
+    public AbstractPageBuildItem() {
+        super();
+        this.buildTimeData = new HashMap<>();
+    }
+
+    public AbstractPageBuildItem(String customIdentifier) {
+        super(customIdentifier);
         this.buildTimeData = new HashMap<>();
     }
 

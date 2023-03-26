@@ -25,6 +25,7 @@ class ConnectionState extends LitState {
         newState.isConnected = false;
         newState.isDisconnected = true;
         newState.isConnecting = false;
+        newState.isHotreloading = false;
         connectionState.current = newState;
     }
     
@@ -38,6 +39,21 @@ class ConnectionState extends LitState {
         newState.isConnected = false;
         newState.isDisconnected = true;
         newState.isConnecting = true;
+        newState.isHotreloading = false;
+        connectionState.current = newState;
+    }
+    
+    hotreload(serverUri){
+        const newState = new Object();
+        newState.name = "hotreload";
+        newState.icon = "plug-circle-bolt";
+        newState.color = "var(--lumo-primary-color)";
+        newState.message = "Hot reloading " + serverUri;
+        newState.serverUri = serverUri;
+        newState.isConnected = false;
+        newState.isDisconnected = false;
+        newState.isConnecting = false;
+        newState.isHotreloading = true;
         connectionState.current = newState;
     }
     
@@ -51,7 +67,7 @@ class ConnectionState extends LitState {
         newState.isConnected = true;
         newState.isDisconnected = false;
         newState.isConnecting = false;
-        
+        newState.isHotreloading = false;
         connectionState.current = newState;
     }
 }

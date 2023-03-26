@@ -23,7 +23,7 @@ public class SmallRyeHealthDevUiProcessor {
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
             SmallRyeHealthRecorder unused) {
-        CardPageBuildItem pageBuildItem = new CardPageBuildItem("Smallrye Health");
+        CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.rootPath,
                 managementInterfaceBuildTimeConfig, launchModeBuildItem);

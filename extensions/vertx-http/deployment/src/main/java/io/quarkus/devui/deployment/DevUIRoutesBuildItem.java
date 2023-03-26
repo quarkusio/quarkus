@@ -10,19 +10,25 @@ import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
  */
 public final class DevUIRoutesBuildItem extends MultiBuildItem {
 
-    private final String path;
+    private final String namespace;
+    private final String contextRoot;
     private final String finalDestination;
     private final List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations;
 
-    public DevUIRoutesBuildItem(String path, String finalDestination,
+    public DevUIRoutesBuildItem(String namespace, String contextRoot, String finalDestination,
             List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations) {
-        this.path = path;
+        this.namespace = namespace;
+        this.contextRoot = contextRoot;
         this.finalDestination = finalDestination;
         this.webRootConfigurations = webRootConfigurations;
     }
 
-    public String getPath() {
-        return path;
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public String getContextRoot() {
+        return contextRoot;
     }
 
     public String getFinalDestination() {
@@ -31,5 +37,9 @@ public final class DevUIRoutesBuildItem extends MultiBuildItem {
 
     public List<FileSystemStaticHandler.StaticWebRootConfiguration> getWebRootConfigurations() {
         return webRootConfigurations;
+    }
+
+    public String getPath() {
+        return contextRoot + "/" + namespace;
     }
 }

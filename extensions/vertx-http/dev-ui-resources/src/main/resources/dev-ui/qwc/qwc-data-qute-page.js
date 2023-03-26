@@ -15,9 +15,9 @@ export class QwcDataQutePage extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        var metadata = RouterController.currentMetaData();
-        if(metadata){
-            this._htmlFragment = metadata.htmlFragment;
+        var page = RouterController.currentPage();
+        if(page && page.metadata){
+            this._htmlFragment = page.metadata.htmlFragment;
         }
     }
     

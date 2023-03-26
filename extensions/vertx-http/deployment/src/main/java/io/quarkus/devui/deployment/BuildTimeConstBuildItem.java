@@ -12,12 +12,21 @@ public final class BuildTimeConstBuildItem extends AbstractDevUIBuildItem {
 
     private final Map<String, Object> buildTimeData;
 
-    public BuildTimeConstBuildItem(String extensionName) {
-        this(extensionName, new HashMap<>());
+    public BuildTimeConstBuildItem() {
+        this(new HashMap<>());
     }
 
-    public BuildTimeConstBuildItem(String extensionName, Map<String, Object> buildTimeData) {
-        super(extensionName);
+    public BuildTimeConstBuildItem(Map<String, Object> buildTimeData) {
+        super();
+        this.buildTimeData = buildTimeData;
+    }
+
+    public BuildTimeConstBuildItem(String customIdentifier) {
+        this(customIdentifier, new HashMap<>());
+    }
+
+    public BuildTimeConstBuildItem(String customIdentifier, Map<String, Object> buildTimeData) {
+        super(customIdentifier);
         this.buildTimeData = buildTimeData;
     }
 

@@ -4,11 +4,10 @@ let pageNode = document.querySelector('#page');
 pageNode.textContent = '';
 
 export class RouterController {
-    
 
     static router = new Router(pageNode);
-    static pathContext = new Map(); // deprecated
-    static pageMap = new Map(); // deprecated
+    static pageMap = new Map(); // We use this to lookup page for a path
+    static componentMap = new Map(); // We use this to lookup page for a component
     
     /**
      * Parse the event change event
@@ -19,8 +18,6 @@ export class RouterController {
         var name = event.detail.location.route.name;
         var title = RouterController.currentTitle();
         var subMenu = RouterController.currentSubMenu();
-
-        
 
         return {
             'component': component,
@@ -116,6 +113,17 @@ export class RouterController {
     }
 
     /**
+     * Get the page for the current path
+     */
+    static currentPage() {
+        var currentRoutePath = RouterController.currentRoutePath();
+        if (currentRoutePath) {
+            return RouterController.pageForPath(currentRoutePath);
+        }
+        return null;
+    }
+    
+    /**
      * Get the metadata for the current path
      */
     static currentMetaData() {
@@ -147,17 +155,29 @@ export class RouterController {
      */
     static metaDataForPath(path) {
         if (RouterController.existingPath(path)) {
-            return RouterController.pathContext.get(path);
-        }else{
-            return null;
+            var page = RouterController.pageForPath(path);       
+            if(page){
+                return page.metadata;
+            }
         }
+        return null;
     }
 
+    /**
+     * Get the page for a certain path
+     */
+    static pageForPath(path){
+        if (RouterController.existingPath(path)) {
+            return RouterController.pageMap.get(path);
+        }
+        return null;
+    }
+    
     /**
      * Check if we already know about this path
      */
     static existingPath(path) {
-        if (RouterController.pathContext && RouterController.pathContext.size > 0 && RouterController.pathContext.has(path)) {
+        if (RouterController.pageMap && RouterController.pageMap.size > 0 && RouterController.pageMap.has(path)) {
             return true;
         }
         return false;
@@ -192,7 +212,7 @@ export class RouterController {
      */
     static addMenuRoute(page, defaultSelection){
         var pageref = RouterController.pageRef(page.componentName);
-        RouterController.addRoute(pageref, page.componentName, page.title, page, defaultSelection);
+        RouterController.addRoute(page.id, page.componentName, page.title, page, defaultSelection);
     }
 
     static basePath(){
@@ -208,6 +228,10 @@ export class RouterController {
         return RouterController.basePath() + '/' + RouterController.pageRef(pageName);
     }
 
+    static pageForComponent(component){
+        return RouterController.componentMap.get(component);
+    }
+
     /**
      * Add a route to the routes
      */
@@ -216,8 +240,8 @@ export class RouterController {
         path = base + '/' + path;
 
         if (!RouterController.existingPath(path)) {
-            RouterController.pathContext.set(path, page.metadata); // deprecated
-            RouterController.pageMap.set(path, page)
+            RouterController.pageMap.set(path, page);
+            RouterController.componentMap.set(component, page);
             var routes = [];
             var route = {};
             route.path = path;

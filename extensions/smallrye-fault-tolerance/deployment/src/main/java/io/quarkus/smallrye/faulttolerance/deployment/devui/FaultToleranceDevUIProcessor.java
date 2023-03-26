@@ -8,11 +8,10 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.faulttolerance.runtime.devui.FaultToleranceJsonRpcService;
 
 public class FaultToleranceDevUIProcessor {
-    private static final String NAME = "SmallRye Fault Tolerance";
 
     @BuildStep(onlyIf = IsDevelopment.class)
     CardPageBuildItem cardPage(FaultToleranceInfoBuildItem faultToleranceInfo) {
-        CardPageBuildItem pageBuildItem = new CardPageBuildItem(NAME);
+        CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         pageBuildItem.addPage(Page.webComponentPageBuilder()
                 .title("Guarded Methods")
@@ -25,6 +24,6 @@ public class FaultToleranceDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem jsonRPCService() {
-        return new JsonRPCProvidersBuildItem(NAME, FaultToleranceJsonRpcService.class);
+        return new JsonRPCProvidersBuildItem(FaultToleranceJsonRpcService.class);
     }
 }

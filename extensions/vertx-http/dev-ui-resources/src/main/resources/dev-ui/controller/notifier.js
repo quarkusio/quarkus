@@ -1,5 +1,6 @@
 import { Notification } from '@vaadin/notification';
 import { html} from 'lit';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import '@vaadin/icon';
 import '@vaadin/horizontal-layout';
 
@@ -62,7 +63,7 @@ class Notifier {
         let d = duration * 1000;
 
         const notification = Notification.show(html`<vaadin-horizontal-layout theme="spacing" style="align-items: center;color:${color};">
-                                                        <vaadin-icon icon="${icon}"></vaadin-icon> <span>${message}</span>
+                                                        <vaadin-icon icon="${icon}"></vaadin-icon> <span>${unsafeHTML(message)}</span>
                                                     </vaadin-horizontal-layout>`, {
             position: position,
             duration: d,

@@ -13,8 +13,8 @@ public final class CardPageBuildItem extends AbstractPageBuildItem {
     private final List<PageBuilder> pageBuilders;
     private Optional<Card> optionalCard = Optional.empty();
 
-    public CardPageBuildItem(String extensionName) {
-        super(extensionName);
+    public CardPageBuildItem() {
+        super();
         this.pageBuilders = new ArrayList<>();
     }
 

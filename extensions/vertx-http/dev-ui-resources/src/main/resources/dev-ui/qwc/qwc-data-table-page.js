@@ -23,27 +23,22 @@ export class QwcDataTablePage extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        var extensionId = RouterController.currentExtensionId();
-        if(extensionId){
+        var page = RouterController.currentPage();
+        if(page && page.metadata){
+            this._buildTimeDataKey = page.metadata.buildTimeDataKey;
 
-            var metadata = RouterController.currentMetaData();
-            if(metadata){
+            let modulePath = page.namespace + "-data";
 
-                this._buildTimeDataKey = metadata.buildTimeDataKey;
-                
-                let modulePath = extensionId + "-data";
-
-                import(modulePath)
+            import(modulePath)
                 .then(obj => {
                     this._buildTimeData = obj[this._buildTimeDataKey];
 
-                    if(metadata.cols){
-                        this._cols = metadata.cols.split(',');
+                    if(page.metadata.cols){
+                        this._cols = page.metadata.cols.split(',');
                     }else{
                         this._autodetectCols();
                     }
                 });
-            }
         }
     }
     

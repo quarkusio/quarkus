@@ -18,13 +18,11 @@ import io.quarkus.devui.spi.page.Page;
 
 public class ArcDevUIProcessor {
 
-    private static final String NAME = "ArC";
-
     @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem pages(ArcBeanInfoBuildItem arcBeanInfoBuildItem, ArcConfig config) {
         DevBeanInfos beanInfos = arcBeanInfoBuildItem.getBeanInfos();
 
-        CardPageBuildItem pageBuildItem = new CardPageBuildItem(NAME);
+        CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         List<DevBeanInfo> beans = beanInfos.getBeans();
         if (!beans.isEmpty()) {
@@ -93,7 +91,7 @@ public class ArcDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
-        return new JsonRPCProvidersBuildItem(NAME, ArcJsonRPCService.class);
+        return new JsonRPCProvidersBuildItem(ArcJsonRPCService.class);
     }
 
     private List<DevBeanWithInterceptorInfo> toDevBeanWithInterceptorInfo(List<DevBeanInfo> beans, DevBeanInfos devBeanInfos) {

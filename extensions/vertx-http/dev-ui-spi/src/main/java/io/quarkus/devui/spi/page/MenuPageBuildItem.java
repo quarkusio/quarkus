@@ -10,8 +10,13 @@ public final class MenuPageBuildItem extends AbstractPageBuildItem {
 
     private final List<PageBuilder> pageBuilders;
 
-    public MenuPageBuildItem(String extensionName, PageBuilder... pageBuilder) {
-        super(extensionName);
+    public MenuPageBuildItem(PageBuilder... pageBuilder) {
+        super();
+        this.pageBuilders = Arrays.asList(pageBuilder);
+    }
+
+    public MenuPageBuildItem(String customIdentifier, PageBuilder... pageBuilder) {
+        super(customIdentifier);
         this.pageBuilders = Arrays.asList(pageBuilder);
     }
 

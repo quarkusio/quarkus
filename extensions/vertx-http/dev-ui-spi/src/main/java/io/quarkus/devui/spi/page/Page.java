@@ -21,7 +21,7 @@ public class Page {
     private final Map<String, String> metadata; // Key value Metadata
 
     private final boolean embed; // if the component is embeded in the page. true in all cases except maybe external pages
-    private final boolean internalComponent; // True f this component is provided by dev-ui (usually provided by the extension)
+    private final boolean internalComponent; // True if this component is provided by dev-ui (usually provided by the extension)
 
     private String namespace = null; // The namespace can be the extension path or, if internal, qwc
 
@@ -110,7 +110,8 @@ public class Page {
 
     @Override
     public String toString() {
-        return "Page {\n\ticon=" + icon
+        return "Page {\n\tid=" + getId()
+                + ", \n\ticon=" + icon
                 + ", \n\ttitle=" + title
                 + ", \n\tstaticLabel=" + staticLabel
                 + ", \n\tdynamicLabel=" + dynamicLabel

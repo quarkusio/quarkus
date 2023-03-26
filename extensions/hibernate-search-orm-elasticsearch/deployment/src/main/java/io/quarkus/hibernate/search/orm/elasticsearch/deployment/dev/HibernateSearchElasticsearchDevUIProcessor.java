@@ -23,7 +23,6 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.dev.HibernateSearch
 
 @BuildSteps(onlyIf = { HibernateSearchEnabled.class, IsDevelopment.class })
 public class HibernateSearchElasticsearchDevUIProcessor {
-    private static final String NAME = "Hibernate Search + Elasticsearch";
 
     @BuildStep
     @Record(RUNTIME_INIT)
@@ -35,7 +34,7 @@ public class HibernateSearchElasticsearchDevUIProcessor {
                 .collect(Collectors.toSet());
         recorder.initController(runtimeConfig, persistenceUnitNames);
 
-        CardPageBuildItem card = new CardPageBuildItem(NAME);
+        CardPageBuildItem card = new CardPageBuildItem();
         card.addPage(Page.webComponentPageBuilder()
                 .title("Indexed Entity Types")
                 .componentLink("hibernate-search-orm-elasticsearch-indexed-entity-types.js")
@@ -57,6 +56,6 @@ public class HibernateSearchElasticsearchDevUIProcessor {
 
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
-        return new JsonRPCProvidersBuildItem(NAME, HibernateSearchElasticsearchDevJsonRpcService.class);
+        return new JsonRPCProvidersBuildItem(HibernateSearchElasticsearchDevJsonRpcService.class);
     }
 }

@@ -44,6 +44,8 @@ export class QwcExtensionLink extends LitElement {
         streamingLabel: {type: String},
         path:  {type: String},
         webcomponent: {type: String},
+        embed: {type: Boolean},
+        externalUrl: {type: String},
         _effectiveLabel: {state: true},
         _observer: {state: false},
     };
@@ -51,12 +53,12 @@ export class QwcExtensionLink extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         if(this.streamingLabel){
-            this.jsonRpc = new JsonRpc(this.extensionName);
+            this.jsonRpc = new JsonRpc(this);
             this._observer = this.jsonRpc[this.streamingLabel]().onNext(jsonRpcResponse => {
                 this._effectiveLabel = jsonRpcResponse.result;
             });
         }else if(this.dynamicLabel){
-            this.jsonRpc = new JsonRpc(this.extensionName);
+            this.jsonRpc = new JsonRpc(this);
             this.jsonRpc[this.dynamicLabel]().then(jsonRpcResponse => {
                 this._effectiveLabel = jsonRpcResponse.result;
             });
@@ -74,11 +76,16 @@ export class QwcExtensionLink extends LitElement {
 
     render() {
         let routerIgnore = false;
-        if(this.webcomponent === ""){
+        
+        let p = this.path;
+        let t = "_self";
+        if(!this.embed){
             routerIgnore = true;
+            p = this.externalUrl;
+            t = "_blank";
         }
         return html`
-        <a class="extensionLink" href="${this.path}" ?router-ignore=${routerIgnore}>
+        <a class="extensionLink" href="${p}" ?router-ignore=${routerIgnore} target="${t}">
             <span class="iconAndName">
                 <vaadin-icon class="icon" icon="${this.iconName}"></vaadin-icon>
                 ${this.displayName} 

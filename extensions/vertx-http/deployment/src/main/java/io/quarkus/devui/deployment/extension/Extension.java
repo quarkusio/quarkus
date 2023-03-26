@@ -59,9 +59,9 @@ public class Extension {
         this.name = name;
     }
 
-    public String getPathName() {
-        return name.toLowerCase().replaceAll(SPACE, DASH);
-    }
+    //    public String getPathName() {
+    //        return name.toLowerCase().replaceAll(SPACE, DASH);
+    //    }
 
     public String getShortName() {
         return shortName;

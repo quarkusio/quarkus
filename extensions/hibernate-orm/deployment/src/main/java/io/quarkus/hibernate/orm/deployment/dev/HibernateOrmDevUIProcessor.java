@@ -20,11 +20,10 @@ import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevJsonRpcService;
 
 @BuildSteps(onlyIf = { HibernateOrmEnabled.class, IsDevelopment.class })
 public class HibernateOrmDevUIProcessor {
-    private static final String NAME = "Hibernate ORM";
 
     @BuildStep
     public CardPageBuildItem create() {
-        CardPageBuildItem card = new CardPageBuildItem(NAME);
+        CardPageBuildItem card = new CardPageBuildItem();
         card.addPage(Page.webComponentPageBuilder()
                 .title("Persistence Units")
                 .componentLink("hibernate-orm-persistence-units.js")
@@ -46,7 +45,7 @@ public class HibernateOrmDevUIProcessor {
 
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
-        return new JsonRPCProvidersBuildItem(NAME, HibernateOrmDevJsonRpcService.class);
+        return new JsonRPCProvidersBuildItem(HibernateOrmDevJsonRpcService.class);
     }
 
     @BuildStep

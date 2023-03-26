@@ -38,7 +38,7 @@ public class DevUIDatasourceProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     CardPageBuildItem create(DataSourcesBuildTimeConfig dataSourceBuildTimeConfig) {
-        CardPageBuildItem card = new CardPageBuildItem("Datasources");
+        CardPageBuildItem card = new CardPageBuildItem();
 
         List<String> names = new ArrayList<>();
         names.add("<default>");
@@ -54,7 +54,7 @@ public class DevUIDatasourceProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
-        return new JsonRPCProvidersBuildItem("Datasources", DatasourceJsonRpcService.class);
+        return new JsonRPCProvidersBuildItem(DatasourceJsonRpcService.class);
     }
 
 }

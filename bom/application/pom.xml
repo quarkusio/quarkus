@@ -143,7 +143,7 @@
         <infinispan.protostream.version>4.6.1.Final</infinispan.protostream.version>
         <caffeine.version>3.1.1</caffeine.version>
         <netty.version>4.1.87.Final</netty.version>
-        <brotli4j.version>1.8.0</brotli4j.version>
+        <brotli4j.version>1.11.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <mutiny.version>2.1.0</mutiny.version>

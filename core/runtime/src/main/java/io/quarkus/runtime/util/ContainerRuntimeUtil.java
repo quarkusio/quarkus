@@ -77,7 +77,8 @@ public final class ContainerRuntimeUtil {
             dockerAvailable = dockerVersionOutput.contains("Docker version");
             if (dockerAvailable) {
                 // Check if "docker" is an alias to "podman"
-                if (dockerVersionOutput.startsWith("podman version")) {
+                if (dockerVersionOutput.startsWith("podman version") ||
+                        dockerVersionOutput.startsWith("podman.exe version")) {
                     storeContainerRuntimeInSystemProperty(ContainerRuntime.PODMAN);
                     return ContainerRuntime.PODMAN;
                 }
@@ -85,7 +86,8 @@ public final class ContainerRuntimeUtil {
                 return ContainerRuntime.DOCKER;
             }
             podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
-            podmanAvailable = podmanVersionOutput.startsWith("podman version");
+            podmanAvailable = podmanVersionOutput.startsWith("podman version") ||
+                    podmanVersionOutput.startsWith("podman.exe version");
             if (podmanAvailable) {
                 storeContainerRuntimeInSystemProperty(ContainerRuntime.PODMAN);
                 return ContainerRuntime.PODMAN;

@@ -16,12 +16,16 @@ import jakarta.inject.Inject;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.cli.plugin.Plugin;
 import io.quarkus.cli.plugin.PluginCommandFactory;
 import io.quarkus.cli.plugin.PluginManager;
 import io.quarkus.cli.plugin.PluginManagerSettings;
 import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.cli.utils.Registries;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.utils.Prompt;
 import io.quarkus.runtime.QuarkusApplication;
 import picocli.CommandLine;
@@ -79,8 +83,9 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
         //When running tests the cli should not prompt for user input.
         boolean interactiveMode = Arrays.stream(args).noneMatch(arg -> arg.equals("--cli-test"));
+        Optional<String> testDir = Arrays.stream(args).dropWhile(arg -> !arg.equals("--cli-test-dir")).skip(1).findFirst();
         PluginCommandFactory pluginCommandFactory = new PluginCommandFactory(output);
-        PluginManager pluginManager = pluginManager(output, interactiveMode);
+        PluginManager pluginManager = pluginManager(output, testDir, interactiveMode);
         pluginManager.syncIfNeeded();
         Map<String, Plugin> plugins = new HashMap<>(pluginManager.getInstalledPlugins());
         pluginCommandFactory.populateCommands(cmd, plugins);
@@ -220,20 +225,34 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         }
     }
 
-    private static Optional<Path> getProjectRoot(OutputOptionMixin output) {
-        Path projectRoot = output != null ? output.getTestDirectory() : null;
+    private Optional<Path> getProjectRoot(Optional<String> testDir) {
+        Path projectRoot = testDir.map(Paths::get).orElse(null);
+
         if (projectRoot == null) {
             projectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
         }
         return Optional.ofNullable(projectRoot);
     }
 
-    private PluginManager pluginManager(OutputOptionMixin output, boolean interactiveMode) {
+    private Optional<QuarkusProject> quarkusProject(Optional<String> testDir) {
+        try {
+            Path root = getProjectRoot(testDir).orElseThrow();
+            BuildTool buildTool = QuarkusProjectHelper.detectExistingBuildTool(root);
+            if (buildTool == null) {
+                return Optional.empty();
+            }
+            return Optional
+                    .ofNullable(registryClient.createQuarkusProject(root, new TargetQuarkusPlatformGroup(), buildTool, output));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    private PluginManager pluginManager(OutputOptionMixin output, Optional<String> testDir, boolean interactiveMode) {
         PluginManagerSettings settings = PluginManagerSettings.defaultSettings()
                 .withCatalogs(Registries.getRegistries(registryClient, "quarkusio"))
                 .withInteractivetMode(interactiveMode); // Why not just getting it from output.isClieTest ? Cause args have not been parsed yet.
-
         return new PluginManager(settings, output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
-                getProjectRoot(output), Optional.empty(), p -> true);
+                getProjectRoot(testDir), quarkusProject(testDir), p -> true);
     }
 }

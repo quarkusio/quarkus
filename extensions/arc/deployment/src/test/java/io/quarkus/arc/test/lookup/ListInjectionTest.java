@@ -23,6 +23,7 @@ import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Priority;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ListInjectionTest {
@@ -31,7 +32,8 @@ public class ListInjectionTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class, ServiceAlpha.class, ServiceBravo.class, ServiceCharlie.class, Service.class,
-                            Counter.class, Converter.class, ConverterAlpha.class, ConverterBravo.class, MyQualifier.class));
+                            Counter.class, Converter.class, ConverterAlpha.class, ConverterBravo.class, MyQualifier.class,
+                            Some.class, SomeInt.class, SomeStringA.class, SomeStringB.class, BeanA.class, BeanB.class));
 
     @Inject
     Foo foo;
@@ -87,6 +89,18 @@ public class ListInjectionTest {
         assertTrue(bravo.getInjectionPoint().isPresent());
         // Empty injection point
         assertEquals(Object.class, bravo.getInjectionPoint().get().getType());
+    }
+
+    @Test
+    public void testWildcardInBeanType() {
+        BeanA beanA = Arc.container().instance(BeanA.class).get();
+        assertEquals(3, beanA.somes.size());
+        assertEquals(2, beanA.somesExtends.size());
+        assertEquals(2, beanA.somesSuper.size());
+        BeanB beanB = Arc.container().instance(BeanB.class).get();
+        assertEquals(3, beanB.somes.size());
+        assertEquals(2, beanB.somesExtends.size());
+        assertEquals(2, beanB.somesSuper.size());
     }
 
     @Singleton
@@ -215,6 +229,63 @@ public class ListInjectionTest {
             DESTROYED.set(true);
         }
 
+    }
+
+    @Singleton
+    @Unremovable
+    public static class BeanA {
+
+        final List<Some<?>> somes;
+
+        @Inject
+        @All
+        List<Some<? extends String>> somesExtends;
+
+        @Inject
+        @All
+        List<Some<? super String>> somesSuper;
+
+        public BeanA(@All List<Some<?>> somes) {
+            this.somes = somes;
+        }
+
+    }
+
+    @Singleton
+    @Unremovable
+    // this bean is, in its functionality, copy of BeanA but it was required to reproduce the problem
+    // see https://github.com/quarkusio/quarkus/issues/32080 for details
+    public static class BeanB {
+
+        final List<Some<?>> somes;
+
+        @Inject
+        @All
+        List<Some<? extends String>> somesExtends;
+
+        @Inject
+        @All
+        List<Some<? super String>> somesSuper;
+
+        public BeanB(@All List<Some<?>> somes) {
+            this.somes = somes;
+        }
+
+    }
+
+    public interface Some<K> {
+    }
+
+    @Singleton
+    public static class SomeStringA implements Some<String> {
+    }
+
+    @Singleton
+    public static class SomeStringB implements Some<String> {
+    }
+
+    @Singleton
+    public static class SomeInt implements Some<Integer> {
     }
 
 }

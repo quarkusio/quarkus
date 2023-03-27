@@ -31,12 +31,15 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.WildcardType;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ArcContainer;
@@ -923,11 +926,18 @@ public class ArcProcessor {
                             : elementType,
                     qualifiers));
 
+            // by default, we keep the type of the injection point
+            // we only need to inspect and change this in case of param. type with a wildcard
+            Type syntheticBeanType = injectionPoint.getRequiredType();
+            if (syntheticBeanType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                ParameterizedType paramType = syntheticBeanType.asParameterizedType();
+                syntheticBeanType = removeWildcardFromParamType(paramType.name(), paramType.arguments(), paramType.owner());
+            }
             BeanConfigurator<?> configurator = beanRegistrationPhase.getContext()
                     .configure(List.class)
                     .forceApplicationClass()
                     .scope(BuiltinScope.DEPENDENT.getInfo())
-                    .addType(injectionPoint.getRequiredType());
+                    .addType(syntheticBeanType);
 
             injectionPoint.getRequiredQualifiers().forEach(configurator::addQualifier);
 
@@ -994,6 +1004,33 @@ public class ArcProcessor {
                 }
             }));
         }
+    }
+
+    private ParameterizedType removeWildcardFromParamType(DotName name, List<Type> typeArgs, Type owner) {
+        Type[] typeArray = new Type[typeArgs.size()];
+        for (int i = 0; i < typeArgs.size(); i++) {
+            Type t = typeArgs.get(i);
+            if (t.kind() == Type.Kind.WILDCARD_TYPE) {
+                // detect wildcard and replace with upper/lower bound or Object type
+                WildcardType wildcard = t.asWildcardType();
+                if (wildcard.extendsBound() != null && !wildcard.extendsBound().equals(ClassType.OBJECT_TYPE)) {
+                    typeArray[i] = wildcard.extendsBound();
+                } else if (wildcard.superBound() != null && !wildcard.superBound().equals(ClassType.OBJECT_TYPE)) {
+                    typeArray[i] = wildcard.superBound();
+                } else {
+                    typeArray[i] = ClassType.OBJECT_TYPE;
+                }
+            } else if (t.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                // recursively search parameterized types
+                ParameterizedType parameterizedArg = t.asParameterizedType();
+                typeArray[i] = removeWildcardFromParamType(parameterizedArg.name(), parameterizedArg.arguments(),
+                        parameterizedArg.owner());
+            } else {
+                // all else stays the same
+                typeArray[i] = t;
+            }
+        }
+        return ParameterizedType.create(name, typeArray, owner);
     }
 
     private boolean isListAllInjectionPoint(InjectionPointInfo injectionPoint) {

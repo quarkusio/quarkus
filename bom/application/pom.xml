@@ -210,6 +210,7 @@
         <aesh.version>2.7</aesh.version>
         <aesh-readline.version>2.4</aesh-readline.version>
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
+        <jgit.version>6.5.0.202303070854-r</jgit.version>
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.12.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.31</strimzi-oauth.nimbus.version>
@@ -2867,6 +2868,27 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-opentelemetry</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-info-deployment-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-info-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-info-runtime-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-info</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -6087,6 +6109,12 @@
                 <groupId>org.hdrhistogram</groupId>
                 <artifactId>HdrHistogram</artifactId>
                 <version>${hdrhistogram.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit</artifactId>
+                <version>${jgit.version}</version>
             </dependency>
 
             <!-- Quarkus build related dependencies -->

@@ -9,6 +9,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -119,7 +120,12 @@ public class DB2PoolRecorder {
         DB2ConnectOptions connectOptions;
 
         if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
-            String url = dataSourceReactiveRuntimeConfig.url.get();
+            List<String> urls = dataSourceReactiveRuntimeConfig.url.get();
+            if (urls.size() > 1) {
+                log.warn("The Reactive DB2 client does not support multiple URLs. The first one will be used, and " +
+                        "others will be ignored.");
+            }
+            String url = urls.get(0);
             // clean up the URL to make migrations easier
             if (url.matches("^vertx-reactive:db2://.*$")) {
                 url = url.substring("vertx-reactive:".length());

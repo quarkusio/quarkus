@@ -688,6 +688,23 @@ In `application.properties` add:
 quarkus.datasource.reactive.url=mysql:///quarkus_test?host=/var/run/mysqld/mysqld.sock
 ----
 
+== Load-balancing connections
+
+The reactive PostgreSQL and MariaDB/MySQL clients support defining several connections.
+
+A typical configuration with several connections would look like:
+
+[source,properties]
+----
+quarkus.datasource.reactive.url=postgresql://host1:5432/default,postgresql://host2:5432/default,postgresql://host3:5432/default
+----
+This can also be written with indexed property syntax:
+----
+quarkus.datasource.reactive.url[0]=postgresql://host1:5432/default
+quarkus.datasource.reactive.url[1]=postgresql://host2:5432/default
+quarkus.datasource.reactive.url[2]=postgresql://host3:5432/default
+----
+
 == Pooled Connection `idle-timeout`
 
 Reactive datasources can be configured with an `idle-timeout` (in milliseconds).

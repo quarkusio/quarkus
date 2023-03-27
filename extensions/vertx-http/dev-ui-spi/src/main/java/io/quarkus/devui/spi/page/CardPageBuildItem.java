@@ -18,6 +18,16 @@ public final class CardPageBuildItem extends AbstractPageBuildItem {
         this.pageBuilders = new ArrayList<>();
     }
 
+    /**
+     * Create a new card page
+     *
+     * @param customIdentifier The custom identifier for this Card page
+     */
+    public CardPageBuildItem(String customIdentifier) {
+        super(customIdentifier);
+        this.pageBuilders = new ArrayList<>();
+    }
+
     public void addPage(PageBuilder page) {
         this.pageBuilders.add(page);
     }

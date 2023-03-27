@@ -18,6 +18,10 @@ public class LoggingJsonRecorder {
         return getFormatter(config.fileJson);
     }
 
+    public RuntimeValue<Optional<Formatter>> initializeSyslogJsonLogging(JsonLogConfig config) {
+        return getFormatter(config.syslogJson);
+    }
+
     private RuntimeValue<Optional<Formatter>> getFormatter(JsonConfig config) {
         if (!config.enable) {
             return new RuntimeValue<>(Optional.empty());

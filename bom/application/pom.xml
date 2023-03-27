@@ -83,7 +83,7 @@
         <jakarta.websocket-api.version>2.1.0</jakarta.websocket-api.version>
         <jakarta.xml.bind-api.version>4.0.0</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>4.0.2</jaxb-runtime.version>
-        <asm.version>9.4</asm.version>
+        <asm.version>9.5</asm.version>
         <commons-io.version>2.11.0</commons-io.version>
         <jboss-metadata-web.version>15.4.0</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>

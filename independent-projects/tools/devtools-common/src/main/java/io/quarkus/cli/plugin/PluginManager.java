@@ -194,6 +194,11 @@ public class PluginManager {
             addPlugin(plugin);
         });
         state.invalidate();
+        if (!catalogModified) {
+            PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
+            PluginCatalog catalog = state.getPluginCatalog();
+            pluginCatalogService.writeCatalog(catalog);
+        }
         return catalogModified;
     }
 

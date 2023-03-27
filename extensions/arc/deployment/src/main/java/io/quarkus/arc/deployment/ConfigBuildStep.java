@@ -5,6 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.MAPPING;
 import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.PROPERTIES;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.CONFIG_MAPPING_NAME;
+import static io.quarkus.deployment.configuration.ConfigMappingUtils.processConfigClasses;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -67,13 +68,11 @@ import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.configuration.ConfigMappingUtils;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
-import io.smallrye.config.WithConverter;
 import io.smallrye.config.inject.ConfigProducer;
 
 /**
@@ -89,7 +88,6 @@ public class ConfigBuildStep {
 
     private static final DotName SR_CONFIG = DotName.createSimple(io.smallrye.config.SmallRyeConfig.class.getName());
     private static final DotName SR_CONFIG_VALUE_NAME = DotName.createSimple(io.smallrye.config.ConfigValue.class.getName());
-    private static final DotName SR_WITH_CONVERTER = DotName.createSimple(WithConverter.class.getName());
 
     private static final DotName MAP_NAME = DotName.createSimple(Map.class.getName());
     private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
@@ -277,17 +275,13 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
-    void generateConfigClasses(
+    void generateConfigProperties(
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ConfigClassBuildItem> configClasses) {
 
-        // TODO - Generation of Mapping interface classes can be done in core because they don't require CDI
-        ConfigMappingUtils.generateConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses,
-                CONFIG_MAPPING_NAME);
-        ConfigMappingUtils.generateConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses,
-                MP_CONFIG_PROPERTIES_NAME);
+        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses, MP_CONFIG_PROPERTIES_NAME);
     }
 
     @BuildStep
@@ -375,19 +369,6 @@ public class ConfigBuildStep {
                             .creator(ConfigMappingCreator.class)
                             .param("type", configClass.getConfigClass())
                             .param("prefix", configClass.getPrefix())));
-        }
-    }
-
-    @BuildStep
-    void registerConfigMappingConverters(CombinedIndexBuildItem indexBuildItem,
-            BuildProducer<ReflectiveClassBuildItem> producer) {
-
-        String[] valueTypes = indexBuildItem.getIndex().getAnnotations(SR_WITH_CONVERTER).stream()
-                .map(i -> i.value().asClass().name().toString())
-                .toArray(String[]::new);
-        if (valueTypes.length > 0) {
-            producer.produce(
-                    ReflectiveClassBuildItem.builder(valueTypes).build());
         }
     }
 

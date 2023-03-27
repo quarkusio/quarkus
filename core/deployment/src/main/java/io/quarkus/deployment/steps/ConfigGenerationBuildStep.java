@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.configuration.ConfigMappingUtils.CONFIG_MAPPING_NAME;
+import static io.quarkus.deployment.configuration.ConfigMappingUtils.processConfigClasses;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.processExtensionConfigMapping;
 import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
@@ -202,6 +204,16 @@ public class ConfigGenerationBuildStep {
                 ReflectiveClassBuildItem.builder(builderClassName).build());
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
+    }
+
+    @BuildStep
+    void mappings(
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConfigClassBuildItem> configClasses) {
+
+        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses, CONFIG_MAPPING_NAME);
     }
 
     @BuildStep

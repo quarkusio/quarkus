@@ -339,6 +339,8 @@
                              General recap: Anything that is directly set in <configuration> cannot be redefined via '-D...'!
                              See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
                         <configuration>
+                            <!-- these metadata file can't affect the build -->
+                            <excludePathsMatching>\.sdkmanrc</excludePathsMatching>
                             <!-- pointless to attempt incremental build if something like mvnw was changed
                                  (and also potentially wrong, given that independent-projects might not be built) -->
                             <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>

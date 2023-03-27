@@ -184,7 +184,7 @@ public class PluginManager {
      */
     public boolean sync() {
         boolean catalogModified = reconcile();
-        Map<String, Plugin> installedPlugins = getInstallablePlugins();
+        Map<String, Plugin> installedPlugins = getInstalledPlugins();
         Map<String, Plugin> extensionPlugins = state.getExtensionPlugins();
         Map<String, Plugin> pluginsToInstall = extensionPlugins.entrySet().stream()
                 .filter(e -> !installedPlugins.containsKey(e.getKey()))

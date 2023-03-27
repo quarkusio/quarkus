@@ -206,11 +206,10 @@ public class PluginManager {
             //syncing may require user interaction, so just return false
             return false;
         }
-
         PluginCatalog catalog = state.getCombinedCatalog();
         if (PluginUtil.shouldSync(state.getProjectRoot(), catalog)) {
             output.info("Plugin catalog last updated on: " + catalog.getLastUpdate() + ". Syncing!");
-            return true;
+            return sync();
         }
         return false;
     }

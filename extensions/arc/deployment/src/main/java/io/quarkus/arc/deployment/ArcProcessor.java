@@ -4,7 +4,6 @@ import static io.quarkus.arc.processor.KotlinUtils.isKotlinClass;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,14 +27,12 @@ import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -49,35 +46,29 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AlternativePriorities;
-import io.quarkus.arc.processor.AnnotationLiteralProcessor;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
-import io.quarkus.arc.processor.BeanGenerator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BeanResolver;
 import io.quarkus.arc.processor.Beans;
-import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.BytecodeTransformer;
 import io.quarkus.arc.processor.ContextConfigurator;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
-import io.quarkus.arc.processor.MethodDescriptors;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.processor.StereotypeInfo;
 import io.quarkus.arc.processor.StereotypeRegistrar;
-import io.quarkus.arc.processor.Transformation;
-import io.quarkus.arc.processor.Types;
 import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -113,13 +104,10 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSControlPointBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.test.TestApplicationClassPredicate;
-import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.context.deployment.spi.ThreadContextProviderBuildItem;
 
 /**
@@ -507,7 +495,7 @@ public class ArcProcessor {
             }
         }
         if (!listAll.isEmpty()) {
-            registerListInjectionPointsBeans(beanRegistrationPhase, listAll, reflectiveMethods, reflectiveFields,
+            registerUnremovableListBeans(beanRegistrationPhase, listAll, reflectiveMethods, reflectiveFields,
                     unremovableBeans);
         }
 
@@ -776,64 +764,6 @@ public class ArcProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem transformListAllInjectionPoints() {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public int getPriority() {
-                return Integer.MIN_VALUE;
-            }
-
-            @Override
-            public boolean appliesTo(Kind kind) {
-                return kind == Kind.FIELD || kind == Kind.METHOD;
-            }
-
-            @Override
-            public void transform(TransformationContext ctx) {
-                if (Annotations.contains(ctx.getAnnotations(), DotNames.ALL)) {
-                    // For each injection point annotated with @All add a synthetic qualifier
-                    AnnotationTarget target = ctx.getTarget();
-                    if (target.kind() == Kind.FIELD) {
-                        // Identifier is a hash of "type + field annotations"
-                        String id = HashUtil
-                                .sha1(target.asField().type().toString() + target.asField().annotations().toString());
-                        ctx.transform().add(DotNames.IDENTIFIED,
-                                AnnotationValue.createStringValue("value", id)).done();
-                    } else {
-                        MethodInfo method = target.asMethod();
-                        Set<AnnotationInstance> alls = Annotations.getAnnotations(Kind.METHOD_PARAMETER, DotNames.ALL,
-                                ctx.getAnnotations());
-                        Set<AnnotationInstance> paramsAnnotations = Annotations.getAnnotations(Kind.METHOD_PARAMETER,
-                                ctx.getAnnotations());
-                        List<AnnotationInstance> toAdd = new ArrayList<>();
-                        for (AnnotationInstance annotation : alls) {
-                            short position = annotation.target().asMethodParameter().position();
-                            Set<AnnotationInstance> paramAnnotations = new HashSet<>();
-                            for (AnnotationInstance paramAnnotation : paramsAnnotations) {
-                                if (paramAnnotation.target().asMethodParameter().position() == position) {
-                                    paramAnnotations.add(paramAnnotation);
-                                }
-                            }
-                            // Identifier is a hash of "type + method param annotations"
-                            String id = HashUtil.sha1(method.parameterType(position) + paramAnnotations.toString());
-                            toAdd.add(
-                                    AnnotationInstance.create(DotNames.IDENTIFIED,
-                                            MethodParameterInfo.create(method,
-                                                    annotation.target().asMethodParameter().position()),
-                                            new AnnotationValue[] { AnnotationValue.createStringValue("value", id) }));
-                        }
-                        Transformation transform = ctx.transform();
-                        toAdd.forEach(transform::add);
-                        transform.done();
-                    }
-                }
-            }
-
-        });
-    }
-
-    @BuildStep
     UnremovableBeanBuildItem unremovableAsyncObserverExceptionHandlers() {
         // Make all classes implementing AsyncObserverExceptionHandler unremovable
         return UnremovableBeanBuildItem.beanTypes(Set.of(ASYNC_OBSERVER_EXCEPTION_HANDLER));
@@ -863,13 +793,11 @@ public class ArcProcessor {
         }
     }
 
-    private void registerListInjectionPointsBeans(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+    private void registerUnremovableListBeans(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             List<InjectionPointInfo> injectionPoints, BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         BeanDeployment beanDeployment = beanRegistrationPhase.getBeanProcessor().getBeanDeployment();
-        AnnotationLiteralProcessor annotationLiterals = beanRegistrationPhase.getBeanProcessor()
-                .getAnnotationLiteralProcessor();
         ReflectionRegistration reflectionRegistration = new ReflectionRegistration() {
             @Override
             public void registerMethod(MethodInfo methodInfo) {
@@ -884,29 +812,13 @@ public class ArcProcessor {
         };
 
         List<TypeAndQualifiers> unremovables = new ArrayList<>();
-        Set<String> ids = new HashSet<>();
 
         for (InjectionPointInfo injectionPoint : injectionPoints) {
-
-            // The injection point must be registered immediately and NOT inside the creator callback
-            if (injectionPoint.isField()) {
-                reflectionRegistration.registerField(injectionPoint.getTarget().asField());
-            } else {
-                reflectionRegistration.registerMethod(injectionPoint.getTarget().asMethod());
-            }
-
-            AnnotationInstance identifiedAnnotation = injectionPoint.getRequiredQualifier(DotNames.IDENTIFIED);
-            if (identifiedAnnotation == null
-                    // The id is a hash of "type + all annotations" - if there's an exact match then we don't need to add another bean
-                    || !ids.add(identifiedAnnotation.value().asString())) {
-                continue;
-            }
-
-            // All qualifiers but @All and @Identified
+            // All qualifiers but @All
             Set<AnnotationInstance> qualifiers = new HashSet<>(injectionPoint.getRequiredQualifiers());
             for (Iterator<AnnotationInstance> it = qualifiers.iterator(); it.hasNext();) {
                 AnnotationInstance qualifier = it.next();
-                if (DotNames.ALL.equals(qualifier.name()) || DotNames.IDENTIFIED.equals(qualifier.name())) {
+                if (DotNames.ALL.equals(qualifier.name())) {
                     it.remove();
                 }
             }
@@ -917,65 +829,12 @@ public class ArcProcessor {
 
             Type elementType = injectionPoint.getType().asParameterizedType().arguments().get(0);
 
+            // make note of all types inside @All List<X> to make sure they are unremovable
             unremovables.add(new TypeAndQualifiers(
                     elementType.name().equals(DotNames.INSTANCE_HANDLE)
                             ? elementType.asParameterizedType().arguments().get(0)
                             : elementType,
                     qualifiers));
-
-            BeanConfigurator<?> configurator = beanRegistrationPhase.getContext()
-                    .configure(List.class)
-                    .forceApplicationClass()
-                    .scope(BuiltinScope.DEPENDENT.getInfo())
-                    .addType(injectionPoint.getRequiredType());
-
-            injectionPoint.getRequiredQualifiers().forEach(configurator::addQualifier);
-
-            if (injectionPoint.getTargetBean().isPresent()) {
-                // Generate the bean class in the same package as the target bean
-                configurator.targetPackageName(injectionPoint.getTargetBean().get().getTargetPackageName());
-            }
-
-            configurator.creator(mc -> {
-                ResultHandle injectionPointType = Types.getTypeHandle(mc, injectionPoint.getType());
-
-                // List<T> or List<InstanceHandle<T>
-                ResultHandle requiredType;
-                MethodDescriptor instancesMethod;
-                if (elementType.name().equals(DotNames.INSTANCE_HANDLE)) {
-                    requiredType = Types.getTypeHandle(mc, elementType.asParameterizedType().arguments().get(0));
-                    instancesMethod = MethodDescriptors.INSTANCES_LIST_OF_HANDLES;
-                } else {
-                    requiredType = Types.getTypeHandle(mc, elementType);
-                    instancesMethod = MethodDescriptors.INSTANCES_LIST_OF;
-                }
-
-                ResultHandle requiredQualifiers = BeanGenerator.collectQualifiers(null, null,
-                        beanDeployment, mc, annotationLiterals, qualifiers);
-                ResultHandle injectionPointAnnotations = BeanGenerator.collectInjectionPointAnnotations(null, null,
-                        beanDeployment,
-                        mc, injectionPoint, annotationLiterals,
-                        beanRegistrationPhase.getBeanProcessor().getInjectionPointAnnotationsPredicate());
-                ResultHandle javaMember = BeanGenerator.getJavaMemberHandle(mc, injectionPoint,
-                        ReflectionRegistration.NOOP);
-                ResultHandle container = mc
-                        .invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
-                ResultHandle targetBean = mc.invokeInterfaceMethod(
-                        MethodDescriptors.ARC_CONTAINER_BEAN,
-                        container,
-                        injectionPoint.getTargetBean().isPresent()
-                                ? mc.load(injectionPoint.getTargetBean().get().getIdentifier())
-                                : mc.loadNull());
-                boolean isTransient = injectionPoint.isField()
-                        && Modifier.isTransient(injectionPoint.getTarget().asField().flags());
-
-                ResultHandle ret = mc.invokeStaticMethod(instancesMethod, targetBean,
-                        injectionPointType, requiredType, requiredQualifiers, mc.getMethodParam(0),
-                        injectionPointAnnotations,
-                        javaMember, mc.load(injectionPoint.getPosition()), mc.load(isTransient));
-                mc.returnValue(ret);
-            });
-            configurator.done();
         }
         if (!unremovables.isEmpty()) {
             // New beans were registered - we need to re-init the type -> bean map

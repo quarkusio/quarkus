@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.exceptions.verification.SmartNullPointerException;
 
 import io.quarkus.it.mongodb.panache.person.MockablePersonRepository;
 import io.quarkus.it.mongodb.panache.person.PersonEntity;
@@ -95,7 +96,10 @@ public class MongodbPanacheMockingTest {
         PersonEntity p = new PersonEntity();
         Mockito.when(mockablePersonRepository.findById(12L)).thenReturn(p);
         Assertions.assertSame(p, mockablePersonRepository.findById(12L));
-        Assertions.assertNull(mockablePersonRepository.findById(42L));
+        Assertions.assertThrows(SmartNullPointerException.class, () -> {
+            PersonEntity person = mockablePersonRepository.findById(42l);
+            Long id = person.id;
+        });
 
         mockablePersonRepository.persist(p);
         Assertions.assertNull(p.id);

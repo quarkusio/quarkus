@@ -45,14 +45,14 @@ class GreetingResourceTest {
 
     @Test
     public void testMocksNotSet() {
-        // when mocks are not configured, they return the Mockito default response
-        Assertions.assertNull(messageService.getMessage());
-        Assertions.assertNull(suffixService.getSuffix());
+        // when mocks are not configured, they return Mockito.RETURNS_SMART_NULLS
+        Assertions.assertEquals("", messageService.getMessage());
+        Assertions.assertEquals("", suffixService.getSuffix());
 
         given()
                 .when().get("/greeting")
                 .then()
                 .statusCode(200)
-                .body(is("NULLNULL"));
+                .body(is(""));
     }
 }

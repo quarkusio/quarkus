@@ -77,7 +77,7 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
             if (mockConfiguration.useDeepMocks) {
                 mock = Mockito.mock(beanClass, Mockito.RETURNS_DEEP_STUBS);
             } else {
-                mock = Mockito.mock(beanClass);
+                mock = Mockito.mock(beanClass, Mockito.RETURNS_SMART_NULLS); // let's use smart nulls as the default as it provides a contextual error message when something is not mocked properly
             }
             isNew = true;
         }

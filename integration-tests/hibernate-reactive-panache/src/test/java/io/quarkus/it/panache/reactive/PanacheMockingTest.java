@@ -22,6 +22,7 @@ import io.quarkus.test.junit.mockito.InjectMock;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
+import org.mockito.exceptions.verification.SmartNullPointerException;
 
 @QuarkusTest
 public class PanacheMockingTest {
@@ -99,6 +100,9 @@ public class PanacheMockingTest {
     public void testPanacheRepositoryMocking(UniAsserter asserter) throws Throwable {
         String key = "person";
 
+        asserter.execute(() -> {
+            Assertions.assertThrows(SmartNullPointerException.class, () -> mockablePersonRepository.count().await());
+        });
         asserter.assertEquals(() -> mockablePersonRepository.count(), 0l);
 
         asserter.execute(() -> Mockito.when(mockablePersonRepository.count()).thenReturn(Uni.createFrom().item(23l)));

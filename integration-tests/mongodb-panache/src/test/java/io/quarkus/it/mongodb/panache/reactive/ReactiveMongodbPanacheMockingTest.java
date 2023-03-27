@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.exceptions.verification.SmartNullPointerException;
 
 import io.quarkus.it.mongodb.panache.reactive.person.MockableReactivePersonRepository;
 import io.quarkus.it.mongodb.panache.reactive.person.ReactivePersonEntity;
@@ -78,7 +79,7 @@ public class ReactiveMongodbPanacheMockingTest {
 
     @Test
     public void testPanacheRepositoryMocking() throws Throwable {
-        Assertions.assertEquals(0, mockablePersonRepository.count().await().atMost(timeout));
+        Assertions.assertThrows(SmartNullPointerException.class, () -> mockablePersonRepository.count().await());
 
         Uni<Long> uni23 = Uni.createFrom().item(23L);
         Mockito.when(mockablePersonRepository.count()).thenReturn(uni23);

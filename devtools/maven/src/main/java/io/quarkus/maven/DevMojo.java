@@ -81,7 +81,6 @@ import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.fusesource.jansi.internal.Kernel32;
-import org.fusesource.jansi.internal.WindowsSupport;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.ConfiguredClassLoading;
@@ -484,11 +483,13 @@ public class DevMojo extends AbstractMojo {
      */
     private void saveTerminalState() {
         try {
-            windowsAttributes = WindowsSupport.getConsoleMode();
-            windowsAttributesSet = true;
             if (windowsAttributes > 0) {
                 long hConsole = Kernel32.GetStdHandle(Kernel32.STD_INPUT_HANDLE);
                 if (hConsole != (long) Kernel32.INVALID_HANDLE_VALUE) {
+                    int[] mode = new int[1];
+                    windowsAttributes = Kernel32.GetConsoleMode(hConsole, mode) == 0 ? -1 : mode[0];
+                    windowsAttributesSet = true;
+
                     final int VIRTUAL_TERMINAL_PROCESSING = 0x0004; //enable color on the windows console
                     if (Kernel32.SetConsoleMode(hConsole, windowsAttributes | VIRTUAL_TERMINAL_PROCESSING) != 0) {
                         windowsColorSupport = true;
@@ -511,7 +512,10 @@ public class DevMojo extends AbstractMojo {
 
     private void restoreTerminalState() {
         if (windowsAttributesSet) {
-            WindowsSupport.setConsoleMode(windowsAttributes);
+            long hConsole = Kernel32.GetStdHandle(Kernel32.STD_INPUT_HANDLE);
+            if (hConsole != (long) Kernel32.INVALID_HANDLE_VALUE) {
+                Kernel32.SetConsoleMode(hConsole, windowsAttributes);
+            }
         } else {
             if (attributes == null || pty == null) {
                 return;

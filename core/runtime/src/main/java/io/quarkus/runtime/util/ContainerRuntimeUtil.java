@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.smallrye.common.os.OS;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class ContainerRuntimeUtil {
@@ -192,18 +193,24 @@ public final class ContainerRuntimeUtil {
      * Supported Container runtimes
      */
     public enum ContainerRuntime {
-        DOCKER,
-        PODMAN,
-        UNAVAILABLE;
+        DOCKER("docker" + (OS.current() == OS.WINDOWS ? ".exe" : "")),
+        PODMAN("podman" + (OS.current() == OS.WINDOWS ? ".exe" : "")),
+        UNAVAILABLE(null);
 
         private Boolean rootless;
+
+        private String executableName;
+
+        ContainerRuntime(String executableName) {
+            this.executableName = executableName;
+        }
 
         public String getExecutableName() {
             if (this == UNAVAILABLE) {
                 throw new IllegalStateException("Cannot get an executable name when no container runtime is available");
             }
 
-            return this.name().toLowerCase();
+            return executableName;
         }
 
         public boolean isRootless() {

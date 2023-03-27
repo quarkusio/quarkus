@@ -50,6 +50,7 @@ class VertxGraphqlProcessor {
     void registerI18nResources(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Execution"));
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/General"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Parsing"));
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Validation"));
     }
 

@@ -20,7 +20,7 @@ public class DevConsolePreviewTest {
     @Test
     public void testLoopPreview() {
         RestAssured.with().formParam("template-select", "loop.txt").formParam("template-data", "{\"total\": [1 ,2 ,3]}")
-                .post("q/dev/io.quarkus.quarkus-qute/preview")
+                .post("q/dev-v1/io.quarkus.quarkus-qute/preview")
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("1:2:3:"));

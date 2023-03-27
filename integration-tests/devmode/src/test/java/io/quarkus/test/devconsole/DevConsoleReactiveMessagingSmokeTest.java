@@ -25,7 +25,7 @@ public class DevConsoleReactiveMessagingSmokeTest {
 
     @Test
     public void testProcessor() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-smallrye-reactive-messaging/channels")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-smallrye-reactive-messaging/channels")
                 .then()
                 .statusCode(200).body(Matchers.containsString("io.quarkus.test.devconsole.MyProcessor#process"));
     }

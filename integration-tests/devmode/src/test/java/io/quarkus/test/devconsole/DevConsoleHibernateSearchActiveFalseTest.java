@@ -27,7 +27,7 @@ public class DevConsoleHibernateSearchActiveFalseTest {
 
     @Test
     public void testLegacyPages() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-hibernate-search-orm-elasticsearch/entity-types")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-search-orm-elasticsearch/entity-types")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("No indexed entities were found"));

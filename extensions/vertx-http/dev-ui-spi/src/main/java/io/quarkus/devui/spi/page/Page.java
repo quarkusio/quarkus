@@ -20,7 +20,7 @@ public class Page {
     private final String componentLink; // This is a link to the component, excluding namespace
     private final Map<String, String> metadata; // Key value Metadata
 
-    private final boolean embed; // if the component is embeded in the page. true in all cases except maybe external pages
+    private final boolean embed; // if the component is embedded in the page. true in all cases except maybe external pages
     private final boolean internalComponent; // True if this component is provided by dev-ui (usually provided by the extension)
 
     private String namespace = null; // The namespace can be the extension path or, if internal, qwc

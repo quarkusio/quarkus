@@ -20,12 +20,12 @@ public class DevConsoleDevServicesSmokeTest {
     @Test
     public void testDevConsoleNotBroken() {
         RestAssured.with()
-                .get("q/dev")
+                .get("q/dev-v1")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Dev Services"));
 
         RestAssured.with()
-                .get("q/dev/io.quarkus.quarkus-vertx-http/dev-services")
+                .get("q/dev-v1/io.quarkus.quarkus-vertx-http/dev-services")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Dev Services"));
 

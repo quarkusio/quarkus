@@ -26,7 +26,7 @@ public class DevConsoleGrpcSmokeTest {
 
     @Test
     public void testServices() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-grpc/services")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-grpc/services")
                 .then()
                 .statusCode(200).body(Matchers.containsString("helloworld.Greeter"));
     }

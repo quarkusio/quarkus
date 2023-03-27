@@ -22,7 +22,7 @@ public class DevConsoleCacheSmokeTest {
 
     @Test
     public void testCaches() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-cache/caches")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-cache/caches")
                 .then()
                 .statusCode(200).body(Matchers.containsString("myCache"));
     }

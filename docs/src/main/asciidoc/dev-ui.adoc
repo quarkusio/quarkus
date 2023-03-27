@@ -6,12 +6,19 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev UI
 include::_attributes.adoc[]
 :categories: writing-extensions
-:summary: Learn how to get your extension contribute features to the Dev UI.
+:summary: Learn how to get your extension contribute features to the Dev UI (v1).
+
+[IMPORTANT]
+.Dev UI v1
+====
+This guide covers the Dev UI v1, which has been replaced in Quarkus 3.
+You can still access the Dev UI v1 using http://localhost/q/dev-v1/
+====
 
 This guide covers the Quarkus Dev UI for xref:building-my-first-extension.adoc[extension authors].
 
-Quarkus now ships with a new experimental Dev UI, which is available in dev mode (when you start
-quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev[/q/dev] by default. It will show you something like
+Quarkus ships with a new experimental Dev UI, which is available in dev mode (when you start
+quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev-v1[/q/dev-v1] by default. It will show you something like
 this:
 
 image::dev-ui-overview.png[alt=Dev UI overview,role="center",width=90%]
@@ -191,7 +198,7 @@ xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`deploy
 
 Full-page templates for extensions live under a pre-defined `{devRootAppend}/{groupId}.{artifactId}/` directory
 that is referenced using the `urlbase` template parameter. Using configuration defaults, that would resolve to
-`/q/dev/io.quarkus.quarkus-cache/`, as an example.
+`/q/dev-v1/io.quarkus.quarkus-cache/`, as an example.
 
 Use the `{urlbase}` template parameter to reference this folder in `embedded.html`:
 

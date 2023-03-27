@@ -22,10 +22,10 @@ public class DevConsoleSchedulerSmokeTest {
 
     @Test
     public void testScheduler() {
-        RestAssured.get("q/dev")
+        RestAssured.get("q/dev-v1")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Scheduled Methods"));
-        RestAssured.get("q/dev/io.quarkus.quarkus-scheduler/schedules")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-scheduler/schedules")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Scheduler is running"));
     }

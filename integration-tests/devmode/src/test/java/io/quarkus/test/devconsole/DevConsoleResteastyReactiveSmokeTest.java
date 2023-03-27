@@ -19,10 +19,10 @@ public class DevConsoleResteastyReactiveSmokeTest {
 
     @Test
     public void testTemplates() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-resteasy-reactive/endpoints")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-resteasy-reactive/endpoints")
                 .then()
                 .statusCode(200).body(Matchers.containsString("GET /me/message"));
-        RestAssured.get("q/dev/io.quarkus.quarkus-resteasy-reactive/scores")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-resteasy-reactive/scores")
                 .then()
                 .statusCode(200).body(Matchers.containsString("GET /me/message"));
     }

@@ -35,7 +35,7 @@ This mightily important feature needs no introduction and has already been menti
 
 === Dev UI
 
-Quarkus provides a very useful xref:dev-ui.adoc[UI] accessible from the browser at `/q/dev`. This UI allows a developer to see the state of the application, but
+Quarkus provides a very useful xref:dev-ui.adoc[UI] accessible from the browser at `/q/dev-ui`. This UI allows a developer to see the state of the application, but
 also provides access to various actions that can change that state (depending on the extensions that are present).
 Examples of such operations are:
 
@@ -44,6 +44,13 @@ Examples of such operations are:
 * Clearing of caches
 * Running scheduled operations
 * Building a container
+
+[TIP]
+====
+A new Dev UI has been implemented in Quarkus 3.x.
+Not all the features are available yet.
+You can still access the previous version of the Dev UI using: http://localhost:8080/q/dev-v1/.
+====
 
 === Error pages
 

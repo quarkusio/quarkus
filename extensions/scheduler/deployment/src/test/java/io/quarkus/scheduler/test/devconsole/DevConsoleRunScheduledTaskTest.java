@@ -22,7 +22,7 @@ public class DevConsoleRunScheduledTaskTest {
                 .body(Matchers.equalTo("true"));
         RestAssured.with().formParam("name", "io.quarkus.scheduler.test.devconsole.NeverRunTask#run")
                 .redirects().follow(false)
-                .post("q/dev/io.quarkus.quarkus-scheduler/schedules")
+                .post("q/dev-v1/io.quarkus.quarkus-scheduler/schedules")
                 .then()
                 .statusCode(303);
         RestAssured.with()

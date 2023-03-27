@@ -27,25 +27,25 @@ public class DevConsoleArcSmokeTest {
     @Test
     public void testPages() {
         RestAssured
-                .get("q/dev/io.quarkus.quarkus-arc/beans")
+                .get("q/dev-v1/io.quarkus.quarkus-arc/beans")
                 .then()
                 .statusCode(200).body(Matchers.containsString("io.quarkus.test.devconsole.DevConsoleArcSmokeTest$Foo"));
         RestAssured
-                .get("q/dev/io.quarkus.quarkus-arc/observers")
+                .get("q/dev-v1/io.quarkus.quarkus-arc/observers")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString(
                         "<span class=\"class-candidate\">io.quarkus.test.devconsole.DevConsoleArcSmokeTest$Foo</span>#onStr"));
         RestAssured
-                .get("q/dev/io.quarkus.quarkus-arc/events")
+                .get("q/dev-v1/io.quarkus.quarkus-arc/events")
                 .then()
                 .statusCode(200).body(Matchers.containsString("io.quarkus.runtime.StartupEvent"));
         RestAssured
-                .get("q/dev/io.quarkus.quarkus-arc/invocations")
+                .get("q/dev-v1/io.quarkus.quarkus-arc/invocations")
                 .then()
                 .statusCode(200);
         RestAssured
-                .get("q/dev/io.quarkus.quarkus-arc/removed-beans")
+                .get("q/dev-v1/io.quarkus.quarkus-arc/removed-beans")
                 .then()
                 .statusCode(200).body(Matchers.containsString("org.jboss.logging.Logger"));
     }

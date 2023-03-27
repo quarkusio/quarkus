@@ -355,11 +355,11 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
     @Test
     public void testThatInstrumentationBasedReloadWorks() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic-inst", "projects/project-intrumentation-reload");
+        testDir = initProject("projects/classic-inst", "projects/project-instrumentation-reload");
         runAndCheck();
 
         // Enable instrumentation based reload to begin with
-        RestAssured.post("/q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
+        RestAssured.post("/q/dev-v1/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
 
         //if there is an instrumentation based reload this will stay the same
         String firstUuid = DevModeTestUtils.getHttpResponse("/app/uuid");
@@ -392,7 +392,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         //now disable instrumentation based restart, and try again
         //change it back to hello
-        RestAssured.post("/q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
+        RestAssured.post("/q/dev-v1/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
         source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
 
@@ -407,7 +407,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         //now re-enable
         //and repeat
-        RestAssured.post("/q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
+        RestAssured.post("/q/dev-v1/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
         source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
 

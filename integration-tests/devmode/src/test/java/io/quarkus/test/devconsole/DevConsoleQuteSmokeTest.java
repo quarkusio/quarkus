@@ -22,10 +22,10 @@ public class DevConsoleQuteSmokeTest {
 
     @Test
     public void testTemplates() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-qute/templates")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-qute/templates")
                 .then()
                 .statusCode(200).body(Matchers.containsString("hello.txt"));
-        RestAssured.get("q/dev/io.quarkus.quarkus-qute/preview")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-qute/preview")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Test JSON data"));
     }

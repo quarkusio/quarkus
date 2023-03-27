@@ -26,17 +26,17 @@ public class DevConsoleHibernateOrmActiveFalseTest {
 
     @Test
     public void testLegacyPages() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-hibernate-orm/persistence-units")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-orm/persistence-units")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("No persistence units found"));
 
-        RestAssured.get("q/dev/io.quarkus.quarkus-hibernate-orm/managed-entities")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-orm/managed-entities")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("No persistence units were found"));
 
-        RestAssured.get("q/dev/io.quarkus.quarkus-hibernate-orm/named-queries")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-orm/named-queries")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("No persistence units were found"));

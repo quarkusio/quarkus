@@ -24,17 +24,17 @@ public class DevConsoleHibernateOrmSmokeTest {
 
     @Test
     public void testLegacyPages() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-hibernate-orm/persistence-units")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-orm/persistence-units")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("Persistence Unit <i class=\"badge badge-info\">&lt;default&gt;</i>"));
 
-        RestAssured.get("q/dev/io.quarkus.quarkus-hibernate-orm/managed-entities")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-orm/managed-entities")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("io.quarkus.test.devconsole.MyEntity"));
 
-        RestAssured.get("q/dev/io.quarkus.quarkus-hibernate-orm/named-queries")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-orm/named-queries")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("No named queries were found."));

@@ -6,7 +6,7 @@ language:
   base:
     data:
       gradle:
-        version: 8.0.1
+        version: 8.0.2
     shared-data:
       buildtool:
         cli: ./gradlew

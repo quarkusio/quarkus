@@ -1382,7 +1382,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             handlePathSegmentParam(builder);
             typeHandled = true;
         } else if (SUPPORT_TEMPORAL_PARAMS.contains(paramType.name())
-                && (type == ParameterType.PATH || type == ParameterType.QUERY || type == ParameterType.FORM)) {
+                && (type == ParameterType.PATH || type == ParameterType.QUERY || type == ParameterType.FORM
+                        || type == ParameterType.COOKIE || type == ParameterType.HEADER)) {
             elementType = paramType.name().toString();
             handleTemporalParam(builder, paramType.name(), anns, currentMethodInfo);
             typeHandled = true;

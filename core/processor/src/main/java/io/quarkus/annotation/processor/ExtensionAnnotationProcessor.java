@@ -1,5 +1,6 @@
 package io.quarkus.annotation.processor;
 
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_MAPPING;
 import static javax.lang.model.util.ElementFilter.constructorsIn;
 import static javax.lang.model.util.ElementFilter.fieldsIn;
 import static javax.lang.model.util.ElementFilter.methodsIn;
@@ -415,7 +416,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         String className = clazz.getQualifiedName().toString();
         if (!generatedJavaDocs.add(className))
             return;
-        final Properties javadocProps = new Properties();
+        Properties javadocProps = new Properties();
         for (Element e : clazz.getEnclosedElements()) {
             switch (e.getKind()) {
                 case FIELD: {
@@ -455,7 +456,12 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         String className = clazz.getQualifiedName().toString();
         if (!generatedJavaDocs.add(className))
             return;
-        final Properties javadocProps = new Properties();
+        if (!isAnnotationPresent(clazz, ANNOTATION_CONFIG_MAPPING)) {
+            if (generateDocs) {
+                configDocItemScanner.addConfigGroups(clazz);
+            }
+        }
+        Properties javadocProps = new Properties();
         recordMappingJavadoc(clazz, javadocProps);
         writeJavadocProperties(clazz, javadocProps);
     }
@@ -476,6 +482,20 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 default:
             }
         }
+    }
+
+    private boolean isEnclosedByMapping(Element clazz) {
+        if (clazz.getKind().equals(ElementKind.INTERFACE)) {
+            Element enclosingElement = clazz.getEnclosingElement();
+            if (enclosingElement.getKind().equals(ElementKind.INTERFACE)) {
+                if (isAnnotationPresent(enclosingElement, ANNOTATION_CONFIG_MAPPING)) {
+                    return true;
+                } else {
+                    isEnclosedByMapping(enclosingElement);
+                }
+            }
+        }
+        return false;
     }
 
     private void writeJavadocProperties(final TypeElement clazz, final Properties javadocProps) {
@@ -535,7 +555,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         for (TypeElement i : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
             if (groupClassNames.add(i.getQualifiedName().toString())) {
                 generateAccessor(i);
-                recordConfigJavadoc(i);
+                if (isEnclosedByMapping(i) || i.getKind().equals(ElementKind.INTERFACE)) {
+                    recordMappingJavadoc(i);
+                } else {
+                    recordConfigJavadoc(i);
+                }
                 if (generateDocs) {
                     configDocItemScanner.addConfigGroups(i);
                 }
@@ -561,7 +585,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             final String binaryName = processingEnv.getElementUtils().getBinaryName(clazz).toString();
             if (rootClassNames.add(binaryName)) {
                 // new class
-                if (isAnnotationPresent(clazz, Constants.ANNOTATION_CONFIG_MAPPING)) {
+                if (isAnnotationPresent(clazz, ANNOTATION_CONFIG_MAPPING)) {
                     recordMappingJavadoc(clazz);
                 } else if (isAnnotationPresent(clazz, Constants.ANNOTATION_CONFIG_ROOT)) {
                     recordConfigJavadoc(clazz);
@@ -572,7 +596,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     final FileObject itemResource = processingEnv.getFiler().createResource(
                             StandardLocation.SOURCE_OUTPUT,
                             pkg.getQualifiedName().toString(),
-                            rbn.toString() + ".cr",
+                            rbn + ".cr",
                             clazz);
                     writeResourceFile(binaryName, itemResource);
                 } catch (IOException e1) {

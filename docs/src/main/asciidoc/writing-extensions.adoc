@@ -1113,7 +1113,6 @@ IMPORTANT: _Bootstrap_ configuration steps are executed during runtime-init *bef
 
 [source%nowrap,java]
 ----
-import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -1135,7 +1134,6 @@ public interface LogConfiguration {
      */
     FileConfig file();
 
-    @ConfigGroup // <3>
     interface FileConfig {
         /**
          * Enable logging to a file.
@@ -1172,7 +1170,7 @@ public class LoggingProcessor {
     /*
      * Logging configuration.
      */
-    LogConfiguration config; // <4>
+    LogConfiguration config; // <3>
 }
 ----
 
@@ -1182,15 +1180,12 @@ A configuration property name can be split into segments. For example, a propert
 * `quarkus` - a namespace claimed by Quarkus which is a prefix for `@ConfigMapping` interfaces,
 * `log` - a name segment which corresponds to the prefix set in the interface annotated with `@ConfigMapping`,
 * `file` - a name segment which corresponds to the `file` field in this class,
-* `enabled` - a name segment which corresponds to `enable` field in `FileConfig` class annotated with `@ConfigGroup`.
+* `enable` - a name segment which corresponds to `enable` field in `FileConfig`.
 
 <1> The `@ConfigMapping` annotation indicates that the interface is a configuration mapping, in this case one which
 corresponds to a `quarkus.log` segment.
 <2> The `@ConfigRoot` annotation indicated to which Config phase, the configuration applies to.
-<3> The `FileConfig` class is annotated with `@ConfigGroup` to indicate that this is an aggregate
-configuration object containing a collection of configurable properties, rather than being a simple configuration
-key type.
-<4> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot`
+<3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot`
 annotation.
 
 A corresponding `application.properties` for the above example could be:

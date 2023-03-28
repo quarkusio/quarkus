@@ -168,7 +168,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up OpenShift
-        uses: manusa/actions-setup-openshift@v1.1.4
+        uses: manusa/actions-setup-openshift@v1.1.5
         with:
           oc version: ${{ matrix.openshift }}
           github token: ${{ secrets.GITHUB_TOKEN }}

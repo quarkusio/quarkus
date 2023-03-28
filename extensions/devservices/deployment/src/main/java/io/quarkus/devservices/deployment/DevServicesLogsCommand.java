@@ -60,7 +60,7 @@ public class DevServicesLogsCommand implements Command {
             }
             return CommandResult.SUCCESS;
         } else {
-            commandInvocation.println("Could not find dev service with name " + this.devService);
+            commandInvocation.println("Could not find Dev Service with name " + this.devService);
             return CommandResult.FAILURE;
         }
     }

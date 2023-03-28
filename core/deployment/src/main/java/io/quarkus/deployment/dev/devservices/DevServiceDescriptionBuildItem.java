@@ -1,6 +1,8 @@
 package io.quarkus.deployment.dev.devservices;
 
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -16,7 +18,7 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
     public DevServiceDescriptionBuildItem(String name, ContainerInfo containerInfo, Map<String, String> configs) {
         this.name = name;
         this.containerInfo = containerInfo;
-        this.configs = configs;
+        this.configs = configs instanceof SortedMap ? configs : new TreeMap<>(configs);
     }
 
     public boolean hasContainerInfo() {

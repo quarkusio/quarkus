@@ -128,12 +128,12 @@ public class ConsoleStateManager {
                 ConsoleStateManager.this::toggleLogLevel));
         commands.add(new ConsoleCommand((char) 12, null, null, 10002, null, this::clearScreen));
         commands.add(new ConsoleCommand((char) 13, null, null, 10001, null, this::printBlankLine));
-        commands.add(new ConsoleCommand('h', "Shows this help", "for more options", 10000, null, this::printHelp));
+        commands.add(new ConsoleCommand('h', "Show this help", "for more options", 10000, null, this::printHelp));
         if (QuarkusConsole.INSTANCE instanceof AeshConsole) {
-            commands.add(new ConsoleCommand(':', "Enters terminal mode", "for the terminal", 9000, null, () -> {
+            commands.add(new ConsoleCommand(':', "Enter terminal mode", "for the terminal", 9000, null, () -> {
             }));
         }
-        commands.add(new ConsoleCommand('q', "Quits the application", null, this::exitQuarkus));
+        commands.add(new ConsoleCommand('q', "Quit the application", null, this::exitQuarkus));
         context.reset(commands.toArray(new ConsoleCommand[0]));
     }
 
@@ -198,7 +198,7 @@ public class ConsoleStateManager {
     }
 
     private void printHelp() {
-        System.out.println("\nThe following commands are currently available:");
+        System.out.println("\nThe following commands are available:");
         Set<ConsoleContext> contexts = new HashSet<>();
         for (Holder i : commands.values()) {
             contexts.add(i.context);

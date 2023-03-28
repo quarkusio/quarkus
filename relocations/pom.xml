@@ -16,56 +16,10 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>quarkus-vertx-web</module>
-        <module>quarkus-vertx-web-deployment</module>
-        <module>quarkus-tika</module>
-        <module>quarkus-tika-deployment</module>
-        <module>quarkus-jgit</module>
-        <module>quarkus-jgit-deployment</module>
-        <module>quarkus-jsch</module>
-        <module>quarkus-jsch-deployment</module>
-        <module>quarkus-amazon-alexa</module>
-        <module>quarkus-amazon-alexa-deployment</module>
-        <module>quarkus-hibernate-search-orm-elasticsearch-aws</module>
-        <module>quarkus-hibernate-search-orm-elasticsearch-aws-deployment</module>
-        <module>quarkus-amazon-dynamodb</module>
-        <module>quarkus-amazon-dynamodb-deployment</module>
-        <module>quarkus-amazon-iam</module>
-        <module>quarkus-amazon-iam-deployment</module>
-        <module>quarkus-amazon-kms</module>
-        <module>quarkus-amazon-kms-deployment</module>
-        <module>quarkus-amazon-s3</module>
-        <module>quarkus-amazon-s3-deployment</module>
-        <module>quarkus-amazon-secretsmanager</module>
-        <module>quarkus-amazon-secretsmanager-deployment</module>
-        <module>quarkus-amazon-ses</module>
-        <module>quarkus-amazon-ses-deployment</module>
-        <module>quarkus-amazon-sns</module>
-        <module>quarkus-amazon-sns-deployment</module>
-        <module>quarkus-amazon-sqs</module>
-        <module>quarkus-amazon-sqs-deployment</module>
-        <module>quarkus-amazon-ssm</module>
-        <module>quarkus-amazon-ssm-deployment</module>
-        <module>quarkus-artemis-core</module>
-        <module>quarkus-artemis-core-deployment</module>
-        <module>quarkus-artemis-jms</module>
-        <module>quarkus-artemis-jms-deployment</module>
-        <module>quarkus-test-artemis</module>
-        <module>quarkus-consul-config</module>
-        <module>quarkus-consul-config-deployment</module>
-        <module>quarkus-logging-sentry</module>
-        <module>quarkus-logging-sentry-deployment</module>
-        <module>quarkus-neo4j</module>
-        <module>quarkus-neo4j-deployment</module>
         <module>quarkus-opentelemetry-exporter-jaeger</module>
         <module>quarkus-opentelemetry-exporter-jaeger-deployment</module>
         <module>quarkus-opentelemetry-exporter-otlp</module>
         <module>quarkus-opentelemetry-exporter-otlp-deployment</module>
-        <module>quarkus-vault</module>
-        <module>quarkus-vault-deployment</module>
-        <module>quarkus-reactive-messaging-http</module>
-        <module>quarkus-reactive-messaging-http-deployment</module>
-        <module>quarkus-test-vault</module>
     </modules>
 
 </project>

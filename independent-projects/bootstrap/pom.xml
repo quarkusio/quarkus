@@ -90,7 +90,6 @@
         <module>app-model</module>
         <module>maven-resolver</module>
         <module>core</module>
-        <module>maven-plugin</module>
         <module>runner</module>
         <module>gradle-resolver</module>
     </modules>

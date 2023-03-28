@@ -7,11 +7,12 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.InitalizationTaskCompletedBuildItem;
+import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
 import io.quarkus.runtime.init.InitializationTaskRecorder;
 
 /**
- * A processor that is used to track all {@link InitalizationTaskCompletedBuildItem} in order to exit once they are completed if
+ * A processor that is used to track all {@link io.quarkus.deployment.builditem.InitTaskCompletedBuildItem} in order to exit
+ * once they are completed if
  * needed.
  */
 public class InitializtionTaskProcessor {
@@ -20,7 +21,7 @@ public class InitializtionTaskProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void startApplicationInitializer(InitializationTaskRecorder recorder,
-            List<InitalizationTaskCompletedBuildItem> initalizationCompletedBuildItems) {
+            List<InitTaskCompletedBuildItem> initTaskCompletedBuildItems) {
         recorder.exitIfNeeded();
     }
 }

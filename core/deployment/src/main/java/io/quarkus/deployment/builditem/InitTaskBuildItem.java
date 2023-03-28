@@ -8,9 +8,9 @@ import java.util.Optional;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Represents an initalization task for the application.
+ * Represents an initialization task for the application.
  * Often extension perform some sort of initialization as part of the application startup.
- * There are cases where we we want to externalize the initialization (e.g. in a pipeline).
+ * There are cases where we want to externalize the initialization (e.g. in a pipeline).
  *
  * Often the task is run using the same artifact as the application but using a different command or
  * arguments. In the later case it might be deseriable to pass additional environment variable to both the

@@ -33,7 +33,7 @@ public class FlywayDevConsoleRecorder {
     public Handler<RoutingContext> datasourcesHandler() {
         return new DevConsolePostHandler() {
             @Override
-            protected void handlePost(RoutingContext event, MultiMap form) throws Exception {
+            protected void handlePost(RoutingContext event, MultiMap form) {
                 String datasource = form.get("datasource");
                 String operation = form.get("operation");
                 Collection<FlywayContainer> flywayContainers = new FlywayContainersSupplier().get();
@@ -80,7 +80,6 @@ public class FlywayDevConsoleRecorder {
                     flashMessage(event, "Datasource has no locations configured");
                     return;
                 }
-                System.out.println(found.get());
 
                 List<Path> resourcesDir = DevConsoleManager.getHotReplacementContext().getResourcesDir();
                 if (resourcesDir.isEmpty()) {

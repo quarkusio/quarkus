@@ -10,7 +10,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedTestModeMain;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
-public class QuarkusTest extends QuarkusDev {
+public abstract class QuarkusTest extends QuarkusDev {
 
     @Inject
     public QuarkusTest(Configuration quarkusDevConfiguration, QuarkusPluginExtension extension) {

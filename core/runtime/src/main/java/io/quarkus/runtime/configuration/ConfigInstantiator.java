@@ -54,6 +54,10 @@ public class ConfigInstantiator {
 
     public static void handleObject(Object o) {
         final SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        handleObject(o, config);
+    }
+
+    public static void handleObject(Object o, SmallRyeConfig config) {
         final String clsNameSuffix = getClassNameSuffix(o);
         if (clsNameSuffix == null) {
             // unsupported object type
@@ -190,7 +194,11 @@ public class ConfigInstantiator {
         } else if (rawType == Optional.class) {
             return Converters.newOptionalConverter(getConverterFor(typeOfParameter(type, 0), config));
         } else if (rawType == List.class) {
-            return Converters.newCollectionConverter(getConverterFor(typeOfParameter(type, 0), config), ArrayList::new);
+            return Converters.newCollectionConverter(getConverterFor(typeOfParameter(type, 0), config),
+                    ConfigUtils.listFactory());
+        } else if (rawType == Set.class) {
+            return Converters.newCollectionConverter(getConverterFor(typeOfParameter(type, 0), config),
+                    ConfigUtils.setFactory());
         } else {
             return config.requireConverter(rawTypeOf(type));
         }

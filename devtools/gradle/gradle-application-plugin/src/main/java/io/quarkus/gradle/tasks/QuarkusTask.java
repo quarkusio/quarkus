@@ -1,12 +1,20 @@
 package io.quarkus.gradle.tasks;
 
-import java.util.Map;
-import java.util.Properties;
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
+import javax.inject.Inject;
+
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
+import org.gradle.process.JavaForkOptions;
+import org.gradle.workers.ProcessWorkerSpec;
+import org.gradle.workers.WorkerExecutor;
 
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
-import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.utilities.OS;
 
 public abstract class QuarkusTask extends DefaultTask {
 
@@ -17,6 +25,9 @@ public abstract class QuarkusTask extends DefaultTask {
         setGroup("quarkus");
     }
 
+    @Inject
+    protected abstract WorkerExecutor getWorkerExecutor();
+
     QuarkusPluginExtension extension() {
         if (extension == null) {
             extension = getProject().getExtensions().findByType(QuarkusPluginExtension.class);
@@ -24,25 +35,40 @@ public abstract class QuarkusTask extends DefaultTask {
         return extension;
     }
 
-    protected Properties getBuildSystemProperties(ResolvedDependency appArtifact) {
-        final Map<String, ?> properties = getProject().getProperties();
-        final Properties realProperties = new Properties();
-        for (Map.Entry<String, ?> entry : properties.entrySet()) {
-            final String key = entry.getKey();
-            final Object value = entry.getValue();
-            if (key != null && value instanceof String && key.startsWith("quarkus.")) {
-                realProperties.setProperty(key, (String) value);
-            }
+    void configureProcessWorkerSpec(ProcessWorkerSpec processWorkerSpec, EffectiveConfig effectiveConfig,
+            List<Action<? super JavaForkOptions>> customizations) {
+        JavaForkOptions forkOptions = processWorkerSpec.getForkOptions();
+
+        customizations.forEach(a -> a.execute(forkOptions));
+
+        if (OS.determineOS() == OS.WINDOWS) {
+            // On Windows, gRPC code generation is sometimes(?) unable to find "java.exe". Feels (not proven) that
+            // the grpc code generation tool looks up "java.exe" instead of consulting the 'JAVA_HOME' environment.
+            // Might be, that Gradle's process isolation "loses" some information down to the worker process, so add
+            // both JAVA_HOME and updated PATH environment from the 'java' executable chosen by Gradle (could be from
+            // a different toolchain than the one running the build, in theory at least).
+            // Linux is fine though, so no need to add a hack for Linux.
+            String java = forkOptions.getExecutable();
+            Path javaBinPath = Paths.get(java).getParent().toAbsolutePath();
+            String javaBin = javaBinPath.toString();
+            String javaHome = javaBinPath.getParent().toString();
+            forkOptions.environment("JAVA_HOME", javaHome);
+            forkOptions.environment("PATH", javaBin + File.pathSeparator + System.getenv("PATH"));
         }
-        Map<String, String> quarkusBuildProperties = extension().getQuarkusBuildProperties().get();
-        if (!quarkusBuildProperties.isEmpty()) {
-            quarkusBuildProperties.entrySet().stream().filter(entry -> entry.getKey().startsWith("quarkus."))
-                    .forEach(entry -> {
-                        realProperties.put(entry.getKey(), entry.getValue());
-                    });
-        }
-        realProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
-        realProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
-        return realProperties;
+
+        // It's kind of a "very big hammer" here, but this way we ensure that all 'quarkus.*' properties from
+        // all configuration sources are (forcefully) used in the Quarkus build - even properties defined on the
+        // QuarkusPluginExtension.
+        // This prevents that settings from e.g. a application.properties takes precedence over an explicit
+        // setting in Gradle project properties, the Quarkus extension or even via the environment or system
+        // properties.
+        // Note that we MUST NOT mess with the system properties of the JVM running the build! And that is the
+        // main reason why build and code generation happen in a separate process.
+        effectiveConfig.configMap().entrySet().stream().filter(e -> e.getKey().startsWith("quarkus."))
+                .forEach(e -> forkOptions.systemProperty(e.getKey(), e.getValue()));
+
+        // populate worker classpath with additional content?
+        // or maybe remove some dependencies from the plugin and make those exclusively available to the worker?
+        // processWorkerSpec.getClasspath().from();
     }
 }

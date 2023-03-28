@@ -9,7 +9,7 @@ import org.gradle.api.tasks.options.Option;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.project.QuarkusProject;
 
-public class QuarkusListExtensions extends QuarkusPlatformTask {
+public abstract class QuarkusListExtensions extends QuarkusPlatformTask {
 
     private static final String DEFAULT_FORMAT = "concise";
 

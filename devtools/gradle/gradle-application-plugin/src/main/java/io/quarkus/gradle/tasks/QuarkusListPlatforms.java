@@ -8,7 +8,7 @@ import org.gradle.api.tasks.options.Option;
 import io.quarkus.devtools.commands.ListPlatforms;
 import io.quarkus.registry.Constants;
 
-public class QuarkusListPlatforms extends QuarkusPlatformTask {
+public abstract class QuarkusListPlatforms extends QuarkusPlatformTask {
 
     private boolean installed = false;
 

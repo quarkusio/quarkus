@@ -1,37 +1,33 @@
 package io.quarkus.gradle.tasks;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.workers.WorkQueue;
 
-import io.quarkus.bootstrap.BootstrapException;
-import io.quarkus.bootstrap.app.CuratedApplication;
-import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.deployment.CodeGenerator;
-import io.quarkus.paths.PathCollection;
-import io.quarkus.paths.PathList;
+import io.quarkus.gradle.tasks.worker.CodeGenWorker;
 import io.quarkus.runtime.LaunchMode;
 
-public class QuarkusGenerateCode extends QuarkusTask {
+@CacheableTask
+public abstract class QuarkusGenerateCode extends QuarkusTask {
 
     public static final String QUARKUS_GENERATED_SOURCES = "quarkus-generated-sources";
     public static final String QUARKUS_TEST_GENERATED_SOURCES = "quarkus-test-generated-sources";
@@ -39,11 +35,8 @@ public class QuarkusGenerateCode extends QuarkusTask {
     public static final String[] CODE_GENERATION_PROVIDER = new String[] { "grpc", "avdl", "avpr", "avsc" };
     public static final String[] CODE_GENERATION_INPUT = new String[] { "proto", "avro" };
 
-    public static final String INIT_AND_RUN = "initAndRun";
     private Set<Path> sourcesDirectories;
     private Configuration compileClasspath;
-    private Consumer<Path> sourceRegistrar = (p) -> {
-    };
     private boolean test = false;
     private boolean devMode = false;
 
@@ -66,6 +59,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
     }
 
     @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
     public Set<File> getInputDirectory() {
         Set<File> inputDirectories = new HashSet<>();
 
@@ -90,62 +84,43 @@ public class QuarkusGenerateCode extends QuarkusTask {
     }
 
     @TaskAction
-    public void prepareQuarkus() {
+    public void generateCode() {
         LaunchMode launchMode = test ? LaunchMode.TEST : devMode ? LaunchMode.DEVELOPMENT : LaunchMode.NORMAL;
-        final ApplicationModel appModel = extension().getApplicationModel(launchMode);
-        final Properties realProperties = getBuildSystemProperties(appModel.getAppArtifact());
+        ApplicationModel appModel = extension().getApplicationModel(launchMode);
+        EffectiveConfig effectiveConfig = extension().buildEffectiveConfiguration(appModel.getAppArtifact());
 
-        Path buildDir = getProject().getBuildDir().toPath();
-        try (CuratedApplication appCreationContext = QuarkusBootstrap.builder()
-                .setBaseClassLoader(getClass().getClassLoader())
-                .setExistingModel(appModel)
-                .setTargetDirectory(buildDir)
-                .setBaseName(extension().finalName())
-                .setBuildSystemProperties(realProperties)
-                .setAppArtifact(appModel.getAppArtifact())
-                .setLocalProjectDiscovery(false)
-                .setIsolateDeployment(true)
-                .build().bootstrap()) {
-
-            SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
-            final String generateSourcesDir = test ? QUARKUS_TEST_GENERATED_SOURCES : QUARKUS_GENERATED_SOURCES;
-            final SourceSet generatedSources = sourceSets.getByName(generateSourcesDir);
-            List<Path> paths = new ArrayList<>();
-            generatedSources.getOutput()
-                    .filter(f -> f.getName().equals(generateSourcesDir))
-                    .forEach(f -> paths.add(f.toPath()));
-            if (paths.isEmpty()) {
-                throw new GradleException("Failed to create quarkus-generated-sources");
-            }
-
-            getLogger().debug("Will trigger preparing sources for source directory: {} buildDir: {}",
-                    sourcesDirectories, getProject().getBuildDir().getAbsolutePath());
-
-            QuarkusClassLoader deploymentClassLoader = appCreationContext.createDeploymentClassLoader();
-            Class<?> codeGenerator = deploymentClassLoader.loadClass(CodeGenerator.class.getName());
-
-            Method initAndRun;
-            try {
-                initAndRun = codeGenerator.getMethod(INIT_AND_RUN, QuarkusClassLoader.class, PathCollection.class,
-                        Path.class, Path.class,
-                        Consumer.class, ApplicationModel.class, Properties.class, String.class,
-                        boolean.class);
-            } catch (Exception e) {
-                throw new GradleException("Quarkus code generation phase has failed", e);
-            }
-
-            initAndRun.invoke(null, deploymentClassLoader,
-                    PathList.from(sourcesDirectories),
-                    paths.get(0),
-                    buildDir,
-                    sourceRegistrar,
-                    appCreationContext.getApplicationModel(),
-                    realProperties,
-                    launchMode.name(),
-                    test);
-        } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {
-            throw new GradleException("Failed to generate sources in the QuarkusPrepare task", e);
+        SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
+        final String generateSourcesDir = test ? QUARKUS_TEST_GENERATED_SOURCES : QUARKUS_GENERATED_SOURCES;
+        final SourceSet generatedSources = sourceSets.getByName(generateSourcesDir);
+        List<File> paths = new ArrayList<>();
+        generatedSources.getOutput()
+                .filter(f -> f.getName().equals(generateSourcesDir))
+                .forEach(paths::add);
+        if (paths.isEmpty()) {
+            throw new GradleException("Failed to create quarkus-generated-sources");
         }
+        File outputPath = paths.get(0);
+
+        getLogger().debug("Will trigger preparing sources for source directory: {} buildDir: {}",
+                sourcesDirectories, getProject().getBuildDir().getAbsolutePath());
+
+        WorkQueue workQueue = getWorkerExecutor()
+                .processIsolation(processWorkerSpec -> configureProcessWorkerSpec(processWorkerSpec, effectiveConfig,
+                        extension().codeGenForkOptions));
+
+        workQueue.submit(CodeGenWorker.class, params -> {
+            params.getBuildSystemProperties().putAll(effectiveConfig.configMap());
+            params.getBaseName().set(extension().finalName());
+            params.getTargetDirectory().set(getProject().getBuildDir());
+            params.getAppModel().set(appModel);
+            params.getSourceDirectories().setFrom(sourcesDirectories.stream().map(Path::toFile).collect(Collectors.toList()));
+            params.getOutputPath().set(outputPath);
+            params.getLaunchMode().set(launchMode);
+            params.getTest().set(test);
+        });
+
+        workQueue.await();
+
     }
 
     public void setSourcesDirectories(Set<Path> sourcesDirectories) {

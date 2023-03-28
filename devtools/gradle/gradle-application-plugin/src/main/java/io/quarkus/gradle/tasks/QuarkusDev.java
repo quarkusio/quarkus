@@ -72,7 +72,7 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
-public class QuarkusDev extends QuarkusTask {
+public abstract class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";
 

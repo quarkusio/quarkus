@@ -22,7 +22,7 @@ import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 public final class WrapperRunner {
 
     public enum Wrapper {
-        GRADLE("gradlew", "gradlew.bat", new String[] { "--no-daemon", "build", "-i" }),
+        GRADLE("gradlew", "gradlew.bat", new String[] { "--no-daemon", "build", "--info", "--stacktrace" }),
         MAVEN("mvnw", "mvnw.cmd", new String[] { "package" });
 
         private final String execUnix;

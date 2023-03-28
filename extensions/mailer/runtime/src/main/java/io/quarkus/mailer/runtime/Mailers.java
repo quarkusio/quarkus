@@ -1,16 +1,21 @@
 package io.quarkus.mailer.runtime;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.mailer.Mailer;
+import io.quarkus.mailer.MockMailbox;
+import io.quarkus.mailer.reactive.ReactiveMailer;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.Vertx;
@@ -25,39 +30,96 @@ import io.vertx.ext.mail.MailClient;
 import io.vertx.ext.mail.StartTLSOptions;
 
 /**
- * Beans producing the Vert.x Mail clients.
+ * This class is a sort of producer for mailer instances.
+ * <p>
+ * It isn't a CDI producer in the literal sense, but it creates a synthetic bean
+ * from {@code MailerProcessor}.
  */
-@ApplicationScoped
-public class MailClientProducer {
+@Singleton
+public class Mailers {
 
-    private static final Logger LOGGER = Logger.getLogger(MailClientProducer.class);
+    private static final Logger LOGGER = Logger.getLogger(Mailers.class);
 
-    private final io.vertx.mutiny.ext.mail.MailClient mutinyClient;
-    private final MailClient client;
+    public static final String DEFAULT_MAILER_NAME = "<default>";
 
-    public MailClientProducer(Vertx vertx, MailConfig config, TlsConfig globalTlsConfig) {
-        this.client = mailClient(vertx, config, globalTlsConfig);
-        this.mutinyClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(this.client);
+    private final Map<String, MailClient> clients;
+    private final Map<String, io.vertx.mutiny.ext.mail.MailClient> mutinyClients;
+    private final Map<String, MockMailboxImpl> mockMailboxes;
+    private final Map<String, MutinyMailerImpl> mutinyMailers;
+
+    public Mailers(Vertx vertx, io.vertx.mutiny.core.Vertx mutinyVertx, MailersRuntimeConfig mailersRuntimeConfig,
+            TlsConfig globalTlsConfig, LaunchMode launchMode, MailerSupport mailerSupport) {
+        Map<String, MailClient> localClients = new HashMap<>();
+        Map<String, io.vertx.mutiny.ext.mail.MailClient> localMutinyClients = new HashMap<>();
+        Map<String, MockMailboxImpl> localMockMailboxes = new HashMap<>();
+        Map<String, MutinyMailerImpl> localMutinyMailers = new HashMap<>();
+
+        if (mailerSupport.hasDefaultMailer) {
+            MailClient mailClient = createMailClient(vertx, mailersRuntimeConfig.defaultMailer, globalTlsConfig);
+            io.vertx.mutiny.ext.mail.MailClient mutinyMailClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(mailClient);
+            MockMailboxImpl mockMailbox = new MockMailboxImpl();
+            localClients.put(DEFAULT_MAILER_NAME, mailClient);
+            localMutinyClients.put(DEFAULT_MAILER_NAME, mutinyMailClient);
+            localMockMailboxes.put(DEFAULT_MAILER_NAME, mockMailbox);
+            localMutinyMailers.put(DEFAULT_MAILER_NAME,
+                    new MutinyMailerImpl(mutinyVertx, mutinyMailClient, mockMailbox,
+                            mailersRuntimeConfig.defaultMailer.from.orElse(null),
+                            mailersRuntimeConfig.defaultMailer.bounceAddress.orElse(null),
+                            mailersRuntimeConfig.defaultMailer.mock.orElse(launchMode.isDevOrTest())));
+        }
+
+        for (String name : mailerSupport.namedMailers) {
+            MailerRuntimeConfig namedMailerRuntimeConfig = mailersRuntimeConfig.namedMailers
+                    .getOrDefault(name, new MailerRuntimeConfig());
+
+            MailClient namedMailClient = createMailClient(vertx, namedMailerRuntimeConfig, globalTlsConfig);
+            io.vertx.mutiny.ext.mail.MailClient namedMutinyMailClient = io.vertx.mutiny.ext.mail.MailClient
+                    .newInstance(namedMailClient);
+            MockMailboxImpl namedMockMailbox = new MockMailboxImpl();
+            localClients.put(name, namedMailClient);
+            localMutinyClients.put(name, namedMutinyMailClient);
+            localMockMailboxes.put(name, namedMockMailbox);
+            localMutinyMailers.put(name,
+                    new MutinyMailerImpl(mutinyVertx, namedMutinyMailClient, namedMockMailbox,
+                            namedMailerRuntimeConfig.from.orElse(null),
+                            namedMailerRuntimeConfig.bounceAddress.orElse(null),
+                            namedMailerRuntimeConfig.mock.orElse(false)));
+        }
+
+        this.clients = Collections.unmodifiableMap(localClients);
+        this.mutinyClients = Collections.unmodifiableMap(localMutinyClients);
+        this.mockMailboxes = Collections.unmodifiableMap(localMockMailboxes);
+        this.mutinyMailers = Collections.unmodifiableMap(localMutinyMailers);
     }
 
-    @Singleton
-    @Produces
-    public MailClient mailClient() {
-        return client;
+    public MailClient mailClientFromName(String name) {
+        return clients.get(name);
     }
 
-    @Singleton
-    @Produces
-    public io.vertx.mutiny.ext.mail.MailClient mutinyClient() {
-        return mutinyClient;
+    public io.vertx.mutiny.ext.mail.MailClient reactiveMailClientFromName(String name) {
+        return mutinyClients.get(name);
+    }
+
+    public Mailer mailerFromName(String name) {
+        return new BlockingMailerImpl(reactiveMailerFromName(name));
+    }
+
+    public ReactiveMailer reactiveMailerFromName(String name) {
+        return mutinyMailers.get(name);
+    }
+
+    public MockMailbox mockMailboxFromName(String name) {
+        return mockMailboxes.get(name);
     }
 
     @PreDestroy
     public void stop() {
-        client.close();
+        for (MailClient client : clients.values()) {
+            client.close();
+        }
     }
 
-    private MailClient mailClient(Vertx vertx, MailConfig config, TlsConfig tlsConfig) {
+    private MailClient createMailClient(Vertx vertx, MailerRuntimeConfig config, TlsConfig tlsConfig) {
         io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config, tlsConfig);
         return MailClient.createShared(vertx, cfg);
     }
@@ -124,7 +186,7 @@ public class MailClientProducer {
         return vertxDkimOptions;
     }
 
-    private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailConfig config, TlsConfig tlsConfig) {
+    private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailerRuntimeConfig config, TlsConfig tlsConfig) {
         io.vertx.ext.mail.MailConfig cfg = new io.vertx.ext.mail.MailConfig();
         if (config.authMethods.isPresent()) {
             cfg.setAuthMethods(config.authMethods.get());
@@ -179,7 +241,7 @@ public class MailClientProducer {
         return cfg;
     }
 
-    private void applyTruststore(MailConfig config, io.vertx.ext.mail.MailConfig cfg) {
+    private void applyTruststore(MailerRuntimeConfig config, io.vertx.ext.mail.MailConfig cfg) {
         // Handle deprecated config
         if (config.keyStore.isPresent()) {
             LOGGER.warn("`quarkus.mailer.key-store` is deprecated, use `quarkus.mailer.trust-store.path` instead");

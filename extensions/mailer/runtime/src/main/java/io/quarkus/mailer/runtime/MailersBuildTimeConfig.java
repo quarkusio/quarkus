@@ -5,7 +5,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(name = "mailer", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class MailBuildTimeConfig {
+public class MailersBuildTimeConfig {
 
     /**
      * Caches data from attachment's Stream to a temporary file.
@@ -13,5 +13,4 @@ public class MailBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean cacheAttachments;
-
 }

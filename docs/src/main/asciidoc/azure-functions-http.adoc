@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: cloud
-:summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as an Azure Function.
+:summary: Deploy Vert.x Web, Servlet, or RESTEasy microservices as a Microsoft Azure Function.
 
 The `quarkus-azure-functions-http` extension allows you to write microservices with RESTEasy Reactive (our Jakarta REST implementation),
 Undertow (servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] and make these microservices deployable to the Azure Functions runtime.

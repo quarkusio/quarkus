@@ -612,7 +612,8 @@ To make it easier to showcase some capabilities of Hibernate ORM with Panache on
 
 [source,sql]
 ----
-INSERT INTO person (id, birth, name, status) VALUES (nextval('hibernate_sequence'), '1995-09-12', 'Emily Brown', 0);
+INSERT INTO person (id, birth, name, status) VALUES (1, '1995-09-12', 'Emily Brown', 0);
+ALTER SEQUENCE person_seq RESTART WITH 2;
 ----
 
 NOTE: If you would like to initialize the DB when you start the Quarkus app in your production environment, add `quarkus.hibernate-orm.database.generation=drop-and-create` to the Quarkus startup options in addition to `import.sql`.

@@ -20,6 +20,7 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
     private final String deployment;
     private final String container;
     private final Integer port;
+    private final String scheme;
     private final String probeKind;
 
     public ApplyHttpGetActionPortDecorator(Integer port) {
@@ -43,10 +44,15 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
     }
 
     public ApplyHttpGetActionPortDecorator(String deployment, String container, Integer port, String probeKind) {
+        this(deployment, container, port, probeKind, port != null && (port == 443 || port == 8443) ? "HTTPS" : "HTTP"); // this is the original convention coming from dekorate
+    }
+
+    public ApplyHttpGetActionPortDecorator(String deployment, String container, Integer port, String probeKind, String scheme) {
         this.deployment = deployment;
         this.container = container;
         this.port = port;
         this.probeKind = probeKind;
+        this.scheme = scheme;
     }
 
     @Override
@@ -89,6 +95,12 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
             action.withNewPort((String) null);
         } else {
             action.withNewPort(port);
+        }
+
+        if (scheme == null) {
+            action.withScheme((String) null);
+        } else {
+            action.withScheme(scheme);
         }
     }
 

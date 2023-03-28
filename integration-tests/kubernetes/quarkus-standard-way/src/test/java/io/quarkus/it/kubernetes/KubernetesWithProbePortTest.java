@@ -55,6 +55,7 @@ public class KubernetesWithProbePortTest {
                                 .satisfies(container -> {
                                     assertThat(container.getReadinessProbe()).isNotNull().satisfies(p -> {
                                         assertEquals(p.getHttpGet().getPort().getIntVal(), 9191);
+                                        assertEquals(p.getHttpGet().getScheme(), "HTTP");
                                     });
                                 });
                     });

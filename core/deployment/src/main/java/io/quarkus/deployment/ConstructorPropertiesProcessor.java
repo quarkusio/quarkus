@@ -37,6 +37,6 @@ public class ConstructorPropertiesProcessor {
     }
 
     private ReflectiveClassBuildItem asReflectiveClassBuildItem(String annotatedClass) {
-        return ReflectiveClassBuildItem.builder(annotatedClass).methods().build();
+        return ReflectiveClassBuildItem.builder(annotatedClass).constructors().methods().build();
     }
 }

@@ -237,6 +237,40 @@ then the mode will be `DEVELOPMENT`, if you are running a JUnit test it will be 
 Your application can get the launch mode by injecting the `io.quarkus.runtime.LaunchMode` enum into a CDI bean,
 or by invoking the static method `io.quarkus.runtime.LaunchMode.current()`.
 
+== Initialization Tasks
+Often an application requires initialization tasks to run before the actual application starts up (before the StartupEvent is fired).
+Some extensions (e.g. xref:flyway.adoc[Flyway] and xref:liquibase.adoc[Liquibase]) perform such initialization tasks. There are cases
+where users need provide custom initialization tasks.
+
+=== User provided Initialization Tasks
+
+User provided initialization tasks are `Runnable` annotated with the `@Initialization` annotation that indicates that
+the run method should be executed as part of the application initialization. An example:
+
+[source,java]
+----
+package com.acme;
+
+import io.quarkus.runtime.annotations.Initialization;
+
+@Initialization  <1>
+public class UserInitTask implements Runnable { <2>
+
+    public void run() {
+       //User init code
+    }
+}
+----
+<1> The task is annotated with `@Initialization`
+<2> The task implements Runnable
+
+
+=== Exit after initialization
+
+In some cases users may choose to only run the initialization code. By setting the configuration options `quarkus.init-and-exit` to `true`.
+The execution will stop right after initialization.
+
+
 == Graceful Shutdown
 
 Quarkus includes support for graceful shutdown, this allows Quarkus to wait for running requests to finish, up

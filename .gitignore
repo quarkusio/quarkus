@@ -38,6 +38,5 @@ nbactions.xml
 nb-configuration.xml
 .cache
 /lsp/
-.sdkmanrc
 .envrc
 .jekyll-cache

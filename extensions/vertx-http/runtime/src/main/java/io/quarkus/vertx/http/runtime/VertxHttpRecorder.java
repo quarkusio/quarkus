@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.Default;
 
 import org.crac.Resource;
 import org.jboss.logging.Logger;
@@ -60,6 +61,7 @@ import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+import io.quarkus.vertx.http.ManagementInterface;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
 import io.quarkus.vertx.http.runtime.devmode.VertxHttpHotReplacementSetup;
@@ -380,7 +382,7 @@ public class VertxHttpRecorder {
         filterList.addAll(filters.getFilters());
 
         // Then, fire the resuming router
-        event.select(Router.class).fire(httpRouteRouter);
+        event.select(Router.class, Default.Literal.INSTANCE).fire(httpRouteRouter);
         // Also fires the Mutiny one
         event.select(io.vertx.mutiny.ext.web.Router.class).fire(mutinyRouter.getValue());
 
@@ -549,6 +551,8 @@ public class VertxHttpRecorder {
 
             Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr);
             handler = HttpServerCommonHandlers.applyProxy(managementConfiguration.getValue().proxy, handler, vertx);
+
+            event.select(ManagementInterface.class).fire(new ManagementInterfaceImpl(managementRouter.getValue()));
 
             VertxHttpRecorder.managementRouter = handler;
         }

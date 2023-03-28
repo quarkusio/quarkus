@@ -128,6 +128,11 @@ public class MockHttpEventServer extends MockEventServer {
                         }
                     }
                 }
+                if (res.getCookies() != null) {
+                    for (String cookie : res.getCookies()) {
+                        response.headers().add("set-cookie", cookie);
+                    }
+                }
                 response.setStatusCode(res.getStatusCode());
                 String body = res.getBody();
                 if (body != null) {

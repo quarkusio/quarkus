@@ -19,7 +19,9 @@ import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.registry.RegistryClientMixin;
+import io.quarkus.cli.update.RewriteGroup;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.registry.config.RegistriesConfigLocator;
@@ -136,7 +138,7 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(String targetPlatformVersion, String targetPlatformStream, boolean perModule)
+    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
             throws Exception {
         MessageWriter.info().error(
                 "quarkus update is not yet available for Gradle projects. See https://github.com/quarkusio/quarkus/issues/31658 for more information.");

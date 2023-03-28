@@ -19,7 +19,9 @@ import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.registry.RegistryClientMixin;
+import io.quarkus.cli.update.RewriteGroup;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
@@ -102,7 +104,8 @@ public interface BuildSystemRunner {
 
     Integer projectInfo(boolean perModule) throws Exception;
 
-    Integer updateProject(String targetPlatformVersion, String targetPlatformStream, boolean perModule) throws Exception;
+    Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+            throws Exception;
 
     BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 

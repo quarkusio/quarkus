@@ -3,40 +3,44 @@ package io.quarkus.opentelemetry.runtime.config.runtime;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 @ConfigGroup
-public class SpanConfig {
+public interface SpanConfig {
 
     /**
-     * The maximum length of span attribute values. Takes precedence over otel.attribute.value.length.limit.
+     * The maximum length of span attribute values. Takes precedence over <code>otel.attribute.value.length.limit</code>.
      * <p>
-     * By default there is no limit.
+     * By default, there is no limit.
      */
-    @ConfigItem(name = "attribute.value.length.limit")
-    Optional<Integer> attributeValueLengthLimit;
+    @WithName("attribute.value.length.limit")
+    Optional<Integer> attributeValueLengthLimit();
 
     /**
-     * The maximum number of attributes per span. Takes precedence over otel.attribute.count.limit.
+     * The maximum number of attributes per span. Takes precedence over <code>otel.attribute.count.limit</code>.
      * <p>
-     * Default is 128.
+     * Default is `128`.
      */
-    @ConfigItem(name = "attribute.count.limit", defaultValue = "128")
-    Integer attributeCountLimit;
+    @WithName("attribute.count.limit")
+    @WithDefault("128")
+    Integer attributeCountLimit();
 
     /**
      * The maximum number of events per span.
      * <p>
-     * Default is 128.
+     * Default is `128`.
      */
-    @ConfigItem(name = "event.count.limit", defaultValue = "128")
-    Integer eventCountLimit;
+    @WithName("event.count.limit")
+    @WithDefault("128")
+    Integer eventCountLimit();
 
     /**
      * The maximum number of links per span.
      * <p>
-     * Default is 128.
+     * Default is `128`.
      */
-    @ConfigItem(name = "link.count.limit", defaultValue = "128")
-    Integer linkCountLimit;
+    @WithName("link.count.limit")
+    @WithDefault("128")
+    Integer linkCountLimit();
 }

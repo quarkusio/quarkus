@@ -3,40 +3,45 @@ package io.quarkus.opentelemetry.runtime.config.runtime;
 import java.time.Duration;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 @ConfigGroup
-public class BatchSpanProcessorConfig {
+public interface BatchSpanProcessorConfig {
 
     /**
      * The interval, in milliseconds, between two consecutive exports.
      * <p>
-     * Default is 5000.
+     * Default is `5000`.
      */
-    @ConfigItem(name = "schedule.delay", defaultValue = "5s")
-    public Duration scheduleDelay;
+    @WithName("schedule.delay")
+    @WithDefault("5s")
+    Duration scheduleDelay();
 
     /**
      * The maximum queue size.
      * <p>
-     * Default is 2048.
+     * Default is `2048`.
      */
-    @ConfigItem(name = "max.queue.size", defaultValue = "2048")
-    public Integer maxQueueSize;
+    @WithName("max.queue.size")
+    @WithDefault("2048")
+    Integer maxQueueSize();
 
     /**
      * The maximum batch size.
      * <p>
-     * Default is 512.
+     * Default is `512`.
      */
-    @ConfigItem(name = "max.export.batch.size", defaultValue = "512")
-    public Integer maxExportBatchSize;
+    @WithName("max.export.batch.size")
+    @WithDefault("512")
+    Integer maxExportBatchSize();
 
     /**
      * The maximum allowed time, in milliseconds, to export data.
      * <p>
-     * Default is 30_000.
+     * Default is `30s`.
      */
-    @ConfigItem(name = "export.timeout", defaultValue = "30s")
-    public Duration exportTimeout;
+    @WithName("export.timeout")
+    @WithDefault("30s")
+    Duration exportTimeout();
 }

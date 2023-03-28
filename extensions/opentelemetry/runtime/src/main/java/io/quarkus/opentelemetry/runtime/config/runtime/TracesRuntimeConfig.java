@@ -3,10 +3,11 @@ package io.quarkus.opentelemetry.runtime.config.runtime;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 @ConfigGroup
-public class TracesRuntimeConfig {
+public interface TracesRuntimeConfig {
 
     /**
      * Suppress non-application uris from trace collection.
@@ -15,31 +16,35 @@ public class TracesRuntimeConfig {
      * Providing a custom {@code io.opentelemetry.sdk.trace.samplers.Sampler} CDI Bean
      * will ignore this setting.
      * <p>
-     * This is a Quarkus specific property.
-     * The legacy property was: quarkus.opentelemetry.tracer.suppress-non-application-uris
+     * This is a Quarkus specific property. Suppressing non-application uris is enabled by default.
      * <p>
-     * Suppressing non-application uris is enabled by default.
+     * Fallbacks to the legacy property <code>quarkus.opentelemetry.tracer.suppress-non-application-uris</code>
+     * or defaults to `true`.
      */
-    @ConfigItem(name = "suppress-non-application-uris", defaultValue = "${opentelemetry.tracer.suppress-non-application-uris:true}")
-    public Boolean suppressNonApplicationUris;
+    @WithName("suppress-non-application-uris")
+    @WithDefault("true")
+    Boolean suppressNonApplicationUris();
 
     /**
      * Include static resources from trace collection.
      * <p>
-     * This is a Quarkus specific property.
-     * Providing a custom {@code io.opentelemetry.sdk.trace.samplers.Sampler} CDI Bean
-     * will ignore this setting.
+     * This is a Quarkus specific property. Include static resources is disabled by default. Providing a
+     * custom {@code io.opentelemetry.sdk.trace.samplers.Sampler} CDI Bean will ignore this setting.
      * <p>
-     * Include static resources is disabled by default.
+     * Fallbacks to the legacy property <code>quarkus.opentelemetry.tracer.include-static-resources</code>
+     * or defaults to `false`.
      */
-    @ConfigItem(name = "include-static-resources", defaultValue = "${quarkus.opentelemetry.tracer.include-static-resources:false}")
-    public Boolean includeStaticResources;
+    @WithName("include-static-resources")
+    @WithDefault("false")
+    Boolean includeStaticResources();
 
     /**
      * An argument to the configured tracer if supported, for example a ratio.
      * <p>
-     * Default ratio is 1.0 or the legacy quarkus.opentelemetry.tracer.sampler.ratio property
+     * Fallbacks to the legacy property <code>quarkus.opentelemetry.tracer.sampler.ratio</code>
+     * or defaults to `1.0`.
      */
-    @ConfigItem(name = "sampler.arg", defaultValue = "${quarkus.opentelemetry.tracer.sampler.ratio:1.0d}")
-    public Optional<Double> samplerArg;
+    @WithName("sampler.arg")
+    @WithDefault("1.0d")
+    Optional<Double> samplerArg();
 }

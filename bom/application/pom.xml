@@ -178,10 +178,10 @@
         <okio.version>1.17.2</okio.version><!-- keep in sync with okhttp -->
         <hibernate-quarkus-local-cache.version>0.2.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.6.2</flapdoodle.mongo.version>
-        <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
-        <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
-        <quarkus-spring-security-api.version>5.4.Final</quarkus-spring-security-api.version>
-        <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
+        <quarkus-spring-api.version>6.0.Final-SNAPSHOT</quarkus-spring-api.version>
+        <quarkus-spring-data-api.version>3.0.Final-SNAPSHOT</quarkus-spring-data-api.version>
+        <quarkus-spring-security-api.version>6.0.Final-SNAPSHOT</quarkus-spring-security-api.version>
+        <quarkus-spring-boot-api.version>3.0.Final-SNAPSHOT</quarkus-spring-boot-api.version>
         <mockito.version>5.2.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.10.1</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->

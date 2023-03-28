@@ -27,6 +27,8 @@ import org.springframework.data.domain.Auditable;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.repository.ListPagingAndSortingRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.QueryByExampleExecutor;
@@ -80,7 +82,9 @@ public class SpringDataJPAProcessor {
         additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
                 Repository.class.getName(),
                 CrudRepository.class.getName(),
+                ListCrudRepository.class.getName(),
                 PagingAndSortingRepository.class.getName(),
+                ListPagingAndSortingRepository.class.getName(),
                 JpaRepository.class.getName(),
                 QueryByExampleExecutor.class.getName()));
     }

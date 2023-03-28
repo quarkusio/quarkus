@@ -323,17 +323,17 @@ The former is used by default, but it is highly recommended to specify which one
 ==== Exposing many entities
 
 If a database contains many entities, it might not be a great idea to return them all at once.
-`PagingAndSortingRepository` allows the `spring-data-rest` extension to access data in chunks.
+`JpaRepository` allows the `spring-data-rest` extension to access data in chunks.
 
-Replace the `CrudRepository` with `PagingAndSortingRepository` in the `FruitsRepository`:
+Replace the `CrudRepository` with `JpaRepository` in the `FruitsRepository`:
 
 [source,java]
 ----
 package org.acme.spring.data.rest;
 
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.JpaRepository;
 
-public interface FruitsRepository extends PagingAndSortingRepository<Fruit, Long> {
+public interface FruitsRepository extends JpaRepository<Fruit, Long> {
 }
 ----
 
@@ -394,7 +394,7 @@ public interface FruitsRepository extends CrudRepository<Fruit, Long> {
 It is important to annotate the correct method in order to customize its REST endpoint:
 
 |===
-|REST operation |CrudRepository |PagingAndSortingRepository and JpaRepository
+|REST operation |CrudRepository |JpaRepository
 
 |Get by ID
 |`Optional<T> findById(ID id)`

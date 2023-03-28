@@ -7,6 +7,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -104,6 +105,10 @@ public final class ExtensionProcessor {
 
     public static List<String> getKeywords(Extension extension) {
         return getMetadataValue(extension, MD_KEYWORDS).asStringList();
+    }
+
+    public static Set<String> getCliPlugins(Extension extension) {
+        return new HashSet<>(getMetadataValue(extension, MD_CLI_PLUGINS).asStringList());
     }
 
     /**
@@ -220,6 +225,10 @@ public final class ExtensionProcessor {
      */
     public Set<String> getExtendedKeywords() {
         return getExtendedKeywords(extension);
+    }
+
+    public Set<String> getCliPlugins() {
+        return getCliPlugins(extension);
     }
 
     public Map<String, Collection<String>> getSyntheticMetadata() {

@@ -37,7 +37,7 @@ Choose the alternative that is the most practical for you:
 [role="primary asciidoc-tabs-sync-jbang"]
 .JBang
 ****
-The Quarkus CLI is available as a jar installable using https://jbang.dev[JBang]. 
+The Quarkus CLI is available as a jar installable using https://jbang.dev[JBang].
 
 JBang will use your existing Java or install one for you if needed.
 
@@ -415,7 +415,7 @@ The Quarkus CLI can be used to list Quarkus extensions.
 quarkus ext ls
 ----
 
-The format of the result can be controlled with one of four options: 
+The format of the result can be controlled with one of four options:
 
 - `--name`    Display the name (artifactId) only
 - `--concise` Display the name (artifactId) and description
@@ -604,3 +604,162 @@ The `image push` command is similar to `image build`, and surfaces some basic op
 ----
 quarkus image push --registry=<image registry> --registry-username=<registry username> --registry-password-stdin
 ----
+
+
+== Extending the CLI
+The pull request introduces a plugin mechanism for the Quarkus CLI. This allows to dynamically add commands / subcommand to the CLI.
+
+=== What is a Plugin
+A plugin can be any executable, jar or java command that can be found locally or obtained remotely.
+So plugins are classified in the following types:
+
+* Plugins executed via shell
+  * *executable* (any executable prefixed with `quarkus-` found locally)
+* Plugins executed via jbang
+  * *jar* (any runnable jar found locally)
+  * *jbang alias* (any jbang alias prefixed with `quarkus-` installed locally or through the quarkusio catalog)
+  * *maven* (any maven coordinate in GACTV form pointing to a runnable jar)
+
+=== How to obtain plugins
+Plugins can be found via multiple sources that are described below.
+
+==== Extension(s)
+A quarkus extension may define list of `cli-plugins` as part of its metadata. The list may contains GACTV string pointing to executable jars.
+
+*Limitations*: At the moment the cli is able to obtain the list of available extensions, without being very accurate on the exact version of the extension (it uses the version found in the extension catalog).
+
+==== Local path scanning
+Scan the path item for executable files prefixed with `quarkus`.
+==== Using JBang aliases
+Scan the local or project jbang catalog for aliases prefixed with `quarkus-`.
+==== Using the JBang quarkusio catalog
+Scan the quarkusio catalog for aliases prefixed wtih `quarkus-`.
+*Note:* uses the jbang binary. If missing it will be automatically installed unser `.jbang`.
+==== Explicitly using the plugin commands
+See `quarkus plugin add` below
+
+=== Managing plugins
+Plugins are managed using the following commands:
+
+==== Listing plugins
+
+The following command lists the installed add plugins.
+
+[source, shell]
+----
+quarkus plug list
+No plugins installed!
+To include the installable plugins in the list, append --installable to the command.
+----
+
+To list available / installable plugins:
+
+[source, shell]
+----
+❯ quarkus plug list --installable
+    Name    	 Type       	 Scope 	 Location                          	 Description
+    kill    	 jbang      	 user  	 quarkus-kill@quarkusio
+ *  fmt     	 jbang      	 user  	 quarkus-fmt@quarkusio
+    greeter 	 executable 	 user  	 /home/iocanel/bin/quarkus-greeter
+
+   Use the 'plugin add' sub command and pass the location of any plugin listed above, or any remote location in the form of URL / GACTV pointing to a remote plugin.
+
+----
+
+The output of the `list` command may be filtered by `type` using `-t` or by name using `-s` flag and a search pattern.
+*Example:* To list all installable plugins that start with the letter `k`:
+
+
+[source, shell]
+----
+quarkus plug list --installable -s "k*"
+    Name    	 Type       	 Scope 	 Location                          	 Description
+    kill    	 jbang      	 user  	 quarkus-kill@quarkusio
+
+Use the 'plugin add' sub command and pass the location of any plugin listed above, or any remote location in the form of URL / GACTV pointing to a remote plugin.
+
+----
+
+==== Adding plugins
+
+To add any of the installable plugins, use `quarkus plug add <name or location>`:
+
+
+[source, shell]
+----
+quarkus plug add kill
+Added plugin:
+    Name    	 Type       	 Scope 	 Location                          	 Description
+ *  kill    	 jbang      	 user  	 quarkus-kill@quarkusio
+
+----
+
+The command above installed a plugin by `name` using the name as listed by `quarkus plug list --installable`.
+
+The command can be now executed using `quarkus kill`.
+
+*Note*: Users are not limited to the plugins discovered by `quarkus plug list --installable`. Users may install plugins as long as the provide the URL or the Maven coordinates pointing to an executable jar or java file.
+
+*Example*: Installing an executable jar as a plugin via maven coordinates
+For this example will use: `io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0` which is a a real executable jar that provide a cli utility for the `quarkus-authzed` extension.
+
+
+[source, shell]
+----
+quarkus plug add io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0 -d "Authzed CLI"
+Added plugin:
+    Name    	 Type  	 Location                                                    	 Description
+ *  authzed 	 maven 	 io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0 	 Authzed CLI
+
+----
+*Note*: It's also possible to set a description that will appear to the help messages.
+
+
+[source, shell]
+----
+quarkus --help
+
+Usage: quarkus [-ehv] [--verbose] [-D=<String=String>]... [COMMAND]
+...
+Commands:
+...
+  plugin, plug            Configure plugins of the Quarkus CLI.
+    list, ls              List CLI plugins.
+    add                   Add plugin(s) to the Quarkus CLI.
+    remove                Remove plugin(s) to the Quarkus CLI.
+    sync                  Sync (discover / purge) CLI Plugins.
+  completion              bash/zsh completion:  source <(quarkus completion)
+  authzed                 Authzed CLI
+...
+----
+
+==== Where are the plugins added?
+Plugins are added in the plugin catalog that lives at: `<user home>/.quakrus/cli/plugins/quarkus-cli-catalog.json`.
+
+There is a second plugin catalog that is relative to the current project (if available): `<project root>/.quarkus/cli/plugins/quarkus-cli-catalog.json`.
+
+The effective catalog is the combination of both the `user` and `project` catalogs with the latter being able to override entries of the former (e.g. use a different version or location for a plugin).
+
+If the project catalog is available it will allways be prefered, unless explicitly specified with the user of `--user` flag.
+
+The column `scope` the plugin table indicates where the plugin is/will be added.
+
+==== Removing plugins
+Plugins are removed using `quarkus plug remove <plugin name>`.
+
+[source, shell]
+----
+quarkus plug remove kill
+Removed plugin:
+    Name 	 Type  	 Scope 	 Location               	 Description
+    kill 	 jbang 	 user  	 quarkus-kill@quarkusio
+----
+
+==== Syncing plugins
+To remove stale plugins or discover new plugins provided by extensions the `quarkus plugin sync` is available.
+With this command binaries and jbang aliases that are added to the catalog but are not longer available will be purged.
+*Note*: Remote plugins that are explicitly added by the user using URL / Maven coordinates are excluded.
+
+The command is also executed implicitly through any of the CLI commands:
+* Weekly
+* If the project files have been updated since the last catalog update (limited to the module).

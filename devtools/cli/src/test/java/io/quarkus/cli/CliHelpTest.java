@@ -335,4 +335,50 @@ public class CliHelpTest {
         assertThat(result.stdout).contains("--namespace");
     }
 
+    @Order(105)
+    public void testPluginHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "plug", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+
+        CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "plugin", "--help");
+        assertThat(result.stdout).isEqualTo(result2.stdout);
+        CliDriver.println("-- same as above\n\n");
+    }
+
+    @Test
+    @Order(106)
+    public void testPlugnListHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "plug", "list", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+
+        CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "plugin", "list", "--help");
+        assertThat(result.stdout).isEqualTo(result2.stdout);
+        CliDriver.println("-- same as above\n\n");
+    }
+
+    @Test
+    @Order(107)
+    public void testPlugnAddHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "plug", "add", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+
+        CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "plugin", "add", "--help");
+        assertThat(result.stdout).isEqualTo(result2.stdout);
+        CliDriver.println("-- same as above\n\n");
+    }
+
+    @Test
+    @Order(108)
+    public void testPlugnRemoveHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "plug", "remove", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+
+        CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "plugin", "remove", "--help");
+        assertThat(result.stdout).isEqualTo(result2.stdout);
+        CliDriver.println("-- same as above\n\n");
+    }
 }

@@ -1,6 +1,8 @@
 package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
+import static io.quarkus.devtools.utils.Patterns.isExpression;
+import static io.quarkus.devtools.utils.Patterns.toRegex;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getExtendedKeywords;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
@@ -12,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -175,64 +176,6 @@ final class QuarkusCommandHandlers {
             matches = matches || pattern.matcher(label.toLowerCase()).matches();
         }
         return matches;
-    }
-
-    private static Pattern toRegex(final String str) {
-        try {
-            String wildcardToRegex = wildcardToRegex(str);
-            if (wildcardToRegex != null && !wildcardToRegex.isEmpty()) {
-                return Pattern.compile(wildcardToRegex);
-            }
-        } catch (PatternSyntaxException e) {
-            //ignore it
-        }
-        return null;
-    }
-
-    private static String wildcardToRegex(String wildcard) {
-        // don't try with file match char in pattern
-        if (!isExpression(wildcard)) {
-            return null;
-        }
-        StringBuffer s = new StringBuffer(wildcard.length());
-        s.append("^.*");
-        for (int i = 0, is = wildcard.length(); i < is; i++) {
-            char c = wildcard.charAt(i);
-            switch (c) {
-                case '*':
-                    s.append(".*");
-                    break;
-                case '?':
-                    s.append(".");
-                    break;
-                case '^': // escape character in cmd.exe
-                    s.append("\\");
-                    break;
-                // escape special regexp-characters
-                case '(':
-                case ')':
-                case '[':
-                case ']':
-                case '$':
-                case '.':
-                case '{':
-                case '}':
-                case '|':
-                case '\\':
-                    s.append("\\");
-                    s.append(c);
-                    break;
-                default:
-                    s.append(c);
-                    break;
-            }
-        }
-        s.append(".*$");
-        return (s.toString());
-    }
-
-    private static boolean isExpression(String s) {
-        return s == null || s.isEmpty() ? false : s.contains("*") || s.contains("?");
     }
 
     private static boolean matchesShortName(Extension extension, String q) {

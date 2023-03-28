@@ -135,6 +135,8 @@ public class QuarkusUnitTest
 
     private List<Object> testMethodInvokers;
 
+    private List<Consumer<QuarkusBootstrap.Builder>> bootstrapCustomizers = new ArrayList<>();
+
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return setExpectedException(expectedException, false);
     }
@@ -325,6 +327,15 @@ public class QuarkusUnitTest
      */
     public QuarkusUnitTest setAllowTestClassOutsideDeployment(boolean allowTestClassOutsideDeployment) {
         this.allowTestClassOutsideDeployment = allowTestClassOutsideDeployment;
+        return this;
+    }
+
+    /**
+     * An advanced option that allows tests to customize the {@link QuarkusBootstrap.Builder} that will be used to create the
+     * {@link CuratedApplication}
+     */
+    public QuarkusUnitTest addBootstrapCustomizer(Consumer<QuarkusBootstrap.Builder> consumer) {
+        this.bootstrapCustomizers.add(consumer);
         return this;
     }
 
@@ -631,6 +642,10 @@ public class QuarkusUnitTest
                                             .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build());
                 }
                 builder.addClassLoaderEventListeners(this.classLoadListeners);
+
+                for (Consumer<QuarkusBootstrap.Builder> bootstrapCustomizer : bootstrapCustomizers) {
+                    bootstrapCustomizer.accept(builder);
+                }
                 curatedApplication = builder.build().bootstrap();
 
                 StartupActionImpl startupAction = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)

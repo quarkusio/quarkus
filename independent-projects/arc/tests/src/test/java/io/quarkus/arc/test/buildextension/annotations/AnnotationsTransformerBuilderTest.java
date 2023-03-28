@@ -1,11 +1,5 @@
 package io.quarkus.arc.test.buildextension.annotations;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.AbstractList;
-
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.inject.Vetoed;
@@ -13,16 +7,12 @@ import jakarta.inject.Inject;
 
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.PrimitiveType;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class AnnotationsTransformerBuilderTest {
+public class AnnotationsTransformerBuilderTest extends AbstractTransformerBuilderTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
@@ -57,74 +47,15 @@ public class AnnotationsTransformerBuilderTest {
                                     .equals(PrimitiveType.INT.name()))
                             .transform(context -> {
                                 context.transform().add(Produces.class).done();
-                            }))
+                            }),
+
+                    AnnotationsTransformer.appliedToMethod()
+                            .whenContainsNone(Simple.class)
+                            .whenMethod(m -> m.returnType().name().equals(PrimitiveType.INT.name()))
+                            .transform(context -> context.transform().add(Produces.class).done())
+
+            )
+
             .build();
-
-    @Test
-    public void testVetoed() {
-        ArcContainer arc = Arc.container();
-        assertTrue(arc.instance(Seven.class).isAvailable());
-        // One is vetoed
-        assertFalse(arc.instance(One.class).isAvailable());
-        assertEquals(Integer.valueOf(7), Integer.valueOf(arc.instance(Seven.class).get().size()));
-
-        // Scope annotation and @Inject are added by transformer
-        InstanceHandle<IWantToBeABean> iwant = arc.instance(IWantToBeABean.class);
-        assertTrue(iwant.isAvailable());
-        assertEquals(Integer.valueOf(7), Integer.valueOf(iwant.get().size()));
-
-        assertEquals(Integer.valueOf(7), arc.select(int.class).get());
-    }
-
-    // => add @Dependent here
-    static class IWantToBeABean {
-
-        // => add @Inject here
-        Seven seven;
-
-        // => add @Produces here
-        public int size() {
-            return seven.size();
-        }
-
-        // => do not add @Produces here
-        @Simple
-        public int anotherSize() {
-            return seven.size();
-        }
-
-    }
-
-    @Dependent
-    static class Seven extends AbstractList<Integer> {
-
-        @Override
-        public Integer get(int index) {
-            return Integer.valueOf(7);
-        }
-
-        @Simple
-        @Override
-        public int size() {
-            return 7;
-        }
-
-    }
-
-    // => add @Vetoed here
-    @Dependent
-    static class One extends AbstractList<Integer> {
-
-        @Override
-        public Integer get(int index) {
-            return Integer.valueOf(1);
-        }
-
-        @Override
-        public int size() {
-            return 1;
-        }
-
-    }
 
 }

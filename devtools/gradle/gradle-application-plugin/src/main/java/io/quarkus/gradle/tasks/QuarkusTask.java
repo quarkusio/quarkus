@@ -1,5 +1,8 @@
 package io.quarkus.gradle.tasks;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -11,6 +14,7 @@ import org.gradle.workers.ProcessWorkerSpec;
 import org.gradle.workers.WorkerExecutor;
 
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
+import io.quarkus.utilities.OS;
 
 public abstract class QuarkusTask extends DefaultTask {
 
@@ -36,6 +40,21 @@ public abstract class QuarkusTask extends DefaultTask {
         JavaForkOptions forkOptions = processWorkerSpec.getForkOptions();
 
         customizations.forEach(a -> a.execute(forkOptions));
+
+        if (OS.determineOS() == OS.WINDOWS) {
+            // On Windows, gRPC code generation is sometimes(?) unable to find "java.exe". Feels (not proven) that
+            // the grpc code generation tool looks up "java.exe" instead of consulting the 'JAVA_HOME' environment.
+            // Might be, that Gradle's process isolation "loses" some information down to the worker process, so add
+            // both JAVA_HOME and updated PATH environment from the 'java' executable chosen by Gradle (could be from
+            // a different toolchain than the one running the build, in theory at least).
+            // Linux is fine though, so no need to add a hack for Linux.
+            String java = forkOptions.getExecutable();
+            Path javaBinPath = Paths.get(java).getParent().toAbsolutePath();
+            String javaBin = javaBinPath.toString();
+            String javaHome = javaBinPath.getParent().toString();
+            forkOptions.environment("JAVA_HOME", javaHome);
+            forkOptions.environment("PATH", javaBin + File.pathSeparator + System.getenv("PATH"));
+        }
 
         // It's kind of a "very big hammer" here, but this way we ensure that all 'quarkus.*' properties from
         // all configuration sources are (forcefully) used in the Quarkus build - even properties defined on the

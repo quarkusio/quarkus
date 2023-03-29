@@ -9,7 +9,7 @@ import io.quarkus.arc.AbstractAnnotationLiteral;
 import io.quarkus.arc.ArcInvocationContext;
 
 /**
- * 
+ *
  * @see ArcInvocationContext#getInterceptorBindings()
  */
 public final class InterceptorBindings {

@@ -20,7 +20,7 @@ import io.quarkus.arc.ManagedContext;
  */
 public class ArcContextProvider implements ThreadContextProvider {
 
-    protected static final ThreadContextController NOOP_CONTROLLER = new ThreadContextController() {
+    private static final ThreadContextController NOOP_CONTROLLER = new ThreadContextController() {
         @Override
         public void endContext() throws IllegalStateException {
         }

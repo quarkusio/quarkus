@@ -114,7 +114,9 @@ public class JarResultBuildStep {
         @Override
         public boolean test(String path) {
             return "META-INF/io.netty.versions.properties".equals(path) ||
-                    (path.startsWith("META-INF/services/") && path.length() > 18);
+                    (path.startsWith("META-INF/services/") && path.length() > 18) ||
+            // needed to initialize the CLI bootstrap Maven resolver
+                    "META-INF/sisu/javax.inject.Named".equals(path);
         }
     };
 

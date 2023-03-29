@@ -1,7 +1,5 @@
 package io.quarkus.reactive.pg.client.runtime;
 
-import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
-import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksTrustOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertOptions;
@@ -11,7 +9,6 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -36,6 +33,7 @@ import io.vertx.core.Vertx;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.pgclient.SslMode;
+import io.vertx.pgclient.spi.PgDriver;
 import io.vertx.sqlclient.PoolOptions;
 
 @Recorder
@@ -73,8 +71,7 @@ public class PgPoolRecorder {
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
-        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
-                dataSourceReactivePostgreSQLConfig);
+        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         List<PgConnectOptions> pgConnectOptionsList = toPgConnectOptions(dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig);
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with postgresql.
@@ -83,13 +80,11 @@ public class PgPoolRecorder {
         // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
         pgConnectOptionsList.forEach(pgConnectOptions -> pgConnectOptions.setMetricsName("postgresql|" + dataSourceName));
 
-        return createPool(vertx, poolOptions, pgConnectOptionsList, dataSourceName);
+        return createPool(vertx, poolOptions, pgConnectOptionsList, dataSourceName, dataSourceRuntimeConfig);
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
@@ -139,22 +134,6 @@ public class PgPoolRecorder {
 
             dataSourceRuntimeConfig.password.ifPresent(pgConnectOptions::setPassword);
 
-            // credentials provider
-            if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-                String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
-                CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-                String name = dataSourceRuntimeConfig.credentialsProvider.get();
-                Map<String, String> credentials = credentialsProvider.getCredentials(name);
-                String user = credentials.get(USER_PROPERTY_NAME);
-                String password = credentials.get(PASSWORD_PROPERTY_NAME);
-                if (user != null) {
-                    pgConnectOptions.setUser(user);
-                }
-                if (password != null) {
-                    pgConnectOptions.setPassword(password);
-                }
-            }
-
             pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
 
             if (dataSourceReactivePostgreSQLConfig.pipeliningLimit.isPresent()) {
@@ -197,7 +176,7 @@ public class PgPoolRecorder {
     }
 
     private PgPool createPool(Vertx vertx, PoolOptions poolOptions, List<PgConnectOptions> pgConnectOptionsList,
-            String dataSourceName) {
+            String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Instance<PgPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
             instance = Arc.container().select(PgPoolCreator.class);
@@ -209,7 +188,17 @@ public class PgPoolRecorder {
             PgPoolCreator.Input input = new DefaultInput(vertx, poolOptions, pgConnectOptionsList);
             return instance.get().create(input);
         }
-        return PgPool.pool(vertx, pgConnectOptionsList, poolOptions);
+
+        // credentials provider
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            PgDriver pgDriver = new CredentialsProviderPgDriver(credentialsProvider, name);
+            return (PgPool) pgDriver.createPool(vertx, pgConnectOptionsList, poolOptions);
+        } else {
+            return PgPool.pool(vertx, pgConnectOptionsList, poolOptions);
+        }
     }
 
     private static class DefaultInput implements PgPoolCreator.Input {

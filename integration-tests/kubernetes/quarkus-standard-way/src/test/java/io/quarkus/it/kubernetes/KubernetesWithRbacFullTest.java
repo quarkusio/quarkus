@@ -5,9 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -40,9 +43,16 @@ public class KubernetesWithRbacFullTest {
 
     @Test
     public void assertGeneratedResources() throws IOException {
-        final Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
-        List<HasMetadata> kubernetesList = DeserializationUtil
-                .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
+        final Path kubernetesFile = prodModeTestResults.getBuildDir().resolve("kubernetes").resolve("kubernetes.yml");
+
+        // ensure rbac resources are generated in order: having the RoleBinding resource at the end:
+        String kubernetesFileContent = Files.readString(kubernetesFile);
+        int lastIndexOfRoleRefKind = lastIndexOfKind(kubernetesFileContent, "Role", "ClusterRole", "ServiceAccount");
+        int firstIndexOfRoleBinding = kubernetesFileContent.indexOf("kind: RoleBinding");
+        assertTrue(lastIndexOfRoleRefKind < firstIndexOfRoleBinding, "RoleBinding resource is created before "
+                + "the Role/ClusterRole/ServiceAccount resource!");
+
+        List<HasMetadata> kubernetesList = DeserializationUtil.deserializeAsList(kubernetesFile);
 
         Deployment deployment = getDeploymentByName(kubernetesList, APP_NAME);
         assertEquals(APP_NAMESPACE, deployment.getMetadata().getNamespace());
@@ -82,6 +92,21 @@ public class KubernetesWithRbacFullTest {
         assertEquals("ServiceAccount", subject.getKind());
         assertEquals("user", subject.getName());
         assertEquals("projectc", subject.getNamespace());
+    }
+
+    private int lastIndexOfKind(String content, String... kinds) {
+        int index = Integer.MIN_VALUE;
+        for (String kind : kinds) {
+            Matcher matcher = Pattern.compile("(?m)^kind: " + kind).matcher(content);
+            if (matcher.find()) {
+                int lastIndexOfKind = matcher.end();
+                if (lastIndexOfKind > index) {
+                    index = lastIndexOfKind;
+                }
+            }
+        }
+
+        return index;
     }
 
     private Deployment getDeploymentByName(List<HasMetadata> kubernetesList, String name) {

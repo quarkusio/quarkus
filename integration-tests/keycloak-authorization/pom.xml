@@ -15,6 +15,7 @@
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
+        <nashorn-core.version>15.3</nashorn-core.version>
     </properties>
 
     <dependencies>
@@ -110,20 +111,37 @@
             <artifactId>htmlunit</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.openjdk.nashorn</groupId>
+            <artifactId>nashorn-core</artifactId>
+            <version>${nashorn-core.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables>
+                        <keycloak.image.version>${keycloak.image.version}</keycloak.image.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables>
+                        <keycloak.image.version>${keycloak.image.version}</keycloak.image.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -134,6 +152,23 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies-quarkus</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+                            <includeArtifactIds>nashorn-core,asm,asm-util,asm-commons</includeArtifactIds>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

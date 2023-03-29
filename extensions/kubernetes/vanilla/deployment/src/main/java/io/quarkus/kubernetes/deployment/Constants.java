@@ -59,6 +59,10 @@ public final class Constants {
     public static final int MIN_NODE_PORT_VALUE = 30000;
     public static final int MAX_NODE_PORT_VALUE = 31999;
 
+    public static final String LIVENESS_PROBE = "livenessProbe";
+    public static final String READINESS_PROBE = "readinessProbe";
+    public static final String STARTUP_PROBE = "startupProbe";
+
     private Constants() {
     }
 }

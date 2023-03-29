@@ -2,10 +2,13 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
+import static io.quarkus.kubernetes.deployment.Constants.LIVENESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_NODE_PORT_VALUE;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_PORT_NUMBER;
 import static io.quarkus.kubernetes.deployment.Constants.MIN_NODE_PORT_VALUE;
 import static io.quarkus.kubernetes.deployment.Constants.MIN_PORT_NUMBER;
+import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
+import static io.quarkus.kubernetes.deployment.Constants.STARTUP_PROBE;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -128,15 +131,15 @@ public class DevClusterHelper {
 
         //Probe port handling
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, "livenessProbe", config.livenessProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, LIVENESS_PROBE, config.livenessProbe,
                         portName,
                         ports));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, "readinessProbe", config.readinessProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, READINESS_PROBE, config.readinessProbe,
                         portName,
                         ports));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, "startupProbe", config.startupProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, STARTUP_PROBE, config.startupProbe,
                         portName,
                         ports));
 

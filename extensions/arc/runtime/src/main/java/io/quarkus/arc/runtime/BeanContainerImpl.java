@@ -11,13 +11,13 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 
-public class BeanContainerImpl implements BeanContainer {
+class BeanContainerImpl implements BeanContainer {
 
     private static final Logger LOGGER = Logger.getLogger(BeanContainerImpl.class.getName());
 
     private final ArcContainer container;
 
-    public BeanContainerImpl(ArcContainer container) {
+    BeanContainerImpl(ArcContainer container) {
         this.container = container;
     }
 
@@ -64,9 +64,9 @@ public class BeanContainerImpl implements BeanContainer {
         return container.requestContext();
     }
 
-    static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
+    private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
 
-        final Class<T> type;
+        private final Class<T> type;
 
         DefaultInstanceFactory(Class<T> type) {
             this.type = type;

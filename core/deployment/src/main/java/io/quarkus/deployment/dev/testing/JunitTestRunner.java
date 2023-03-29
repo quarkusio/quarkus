@@ -751,7 +751,6 @@ public class JunitTestRunner {
         private TestType testType = TestType.ALL;
         private TestState testState;
         private long runId = -1;
-        private DevModeContext devModeContext;
         private CuratedApplication testApplication;
         private ClassScanResult classScanResult;
         private TestClassUsages testClassUsages;
@@ -777,11 +776,6 @@ public class JunitTestRunner {
 
         public Builder setTestType(TestType testType) {
             this.testType = testType;
-            return this;
-        }
-
-        public Builder setDevModeContext(DevModeContext devModeContext) {
-            this.devModeContext = devModeContext;
             return this;
         }
 
@@ -846,7 +840,6 @@ public class JunitTestRunner {
         }
 
         public JunitTestRunner build() {
-            Objects.requireNonNull(devModeContext, "devModeContext");
             Objects.requireNonNull(testClassUsages, "testClassUsages");
             Objects.requireNonNull(testApplication, "testApplication");
             Objects.requireNonNull(testState, "testState");

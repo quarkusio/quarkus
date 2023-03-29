@@ -65,11 +65,11 @@ export class QwcConfiguration extends LitElement {
       }
       
       .lock-icon {
-        color: var(--lumo-error-color-50pct);
+        color: var(--lumo-contrast-60pct);
         font-size: small;
       }
       .unlock-icon {
-        color: var(--lumo-success-color-50pct);
+        color: var(--lumo-contrast-60pct);
         font-size: small;
       }
     `;
@@ -156,12 +156,6 @@ export class QwcConfiguration extends LitElement {
             return html`
                 <vaadin-icon theme="small" class="lock-icon" id="icon-lock-${prop.name}" icon="font-awesome-solid:lock"></vaadin-icon>
                 <vaadin-tooltip for="icon-lock-${prop.name}" text="Fixed at build time (not overridable at runtime)"
-                                position="top-start"></vaadin-tooltip>
-            `
-        } else {
-            return html`
-                <vaadin-icon theme="small" class="unlock-icon" id="icon-lock-${prop.name}" icon="font-awesome-solid:lock-open"></vaadin-icon>
-                <vaadin-tooltip for="icon-lock-${prop.name}" text="Overridable at runtime"
                                 position="top-start"></vaadin-tooltip>
             `
         }

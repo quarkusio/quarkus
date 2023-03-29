@@ -645,10 +645,10 @@ public class JaxrsClientReactiveProcessor {
         Config mpConfig = ConfigProvider.getConfig();
 
         return new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
-                getEffectivePropertyValue("input-buffer-size", config.inputBufferSize.asLongValue(), Long.class, mpConfig),
-                getEffectivePropertyValue("output-buffer-size", config.outputBufferSize, Integer.class, mpConfig),
-                getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces, Boolean.class, mpConfig),
-                getEffectivePropertyValue("default-produces", config.defaultProduces, Boolean.class, mpConfig));
+                getEffectivePropertyValue("input-buffer-size", config.inputBufferSize().asLongValue(), Long.class, mpConfig),
+                getEffectivePropertyValue("output-buffer-size", config.outputBufferSize(), Integer.class, mpConfig),
+                getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces(), Boolean.class, mpConfig),
+                getEffectivePropertyValue("default-produces", config.defaultProduces(), Boolean.class, mpConfig));
     }
 
     private <T> T getEffectivePropertyValue(String legacyPropertyName, T newPropertyValue, Class<T> propertyType,

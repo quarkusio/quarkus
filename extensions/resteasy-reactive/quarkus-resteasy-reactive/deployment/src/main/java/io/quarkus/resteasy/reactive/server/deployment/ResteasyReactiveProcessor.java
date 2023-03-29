@@ -1177,7 +1177,7 @@ public class ResteasyReactiveProcessor {
         BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
                 beanContainerBuildItem.getValue());
 
-        String applicationPath = determineApplicationPath(appResult, getAppPath(serverConfig.path));
+        String applicationPath = determineApplicationPath(appResult, getAppPath(serverConfig.path()));
         // spec allows the path contain encoded characters
         if ((applicationPath != null) && applicationPath.contains("%")) {
             applicationPath = Encode.decodePath(applicationPath);
@@ -1302,7 +1302,7 @@ public class ResteasyReactiveProcessor {
                 .filter(Objects::nonNull)
                 .collect(Collectors.joining());
         if (message.length() > 0) {
-            if (config.failOnDuplicate) {
+            if (config.failOnDuplicate()) {
                 throw new ConfigurationError(message);
             }
             log.warn(message);
@@ -1369,10 +1369,10 @@ public class ResteasyReactiveProcessor {
         Config mpConfig = ConfigProvider.getConfig();
 
         return new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
-                getEffectivePropertyValue("input-buffer-size", config.inputBufferSize.asLongValue(), Long.class, mpConfig),
-                getEffectivePropertyValue("output-buffer-size", config.outputBufferSize, Integer.class, mpConfig),
-                getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces, Boolean.class, mpConfig),
-                getEffectivePropertyValue("default-produces", config.defaultProduces, Boolean.class, mpConfig));
+                getEffectivePropertyValue("input-buffer-size", config.inputBufferSize().asLongValue(), Long.class, mpConfig),
+                getEffectivePropertyValue("output-buffer-size", config.outputBufferSize(), Integer.class, mpConfig),
+                getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces(), Boolean.class, mpConfig),
+                getEffectivePropertyValue("default-produces", config.defaultProduces(), Boolean.class, mpConfig));
     }
 
     private <T> T getEffectivePropertyValue(String legacyPropertyName, T newPropertyValue, Class<T> propertyType,

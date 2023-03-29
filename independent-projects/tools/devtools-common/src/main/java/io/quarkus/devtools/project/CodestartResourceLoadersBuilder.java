@@ -30,7 +30,7 @@ public final class CodestartResourceLoadersBuilder {
 
     private static final String BASE_CODESTARTS_ARTIFACT_COORDS = retrieveBaseCodestartsArtifactCoords();
     private ExtensionCatalog catalog = null;
-    private MavenArtifactResolver artifactResolver = QuarkusProjectHelper.artifactResolver();
+    private MavenArtifactResolver artifactResolver;
     private String baseCodestartsArtifactCoords = BASE_CODESTARTS_ARTIFACT_COORDS;
     private Collection<String> extraCodestartsArtifactCoords = new ArrayList<>();
 
@@ -94,7 +94,7 @@ public final class CodestartResourceLoadersBuilder {
 
     public List<ResourceLoader> build() {
         return getCodestartResourceLoaders(baseCodestartsArtifactCoords, extraCodestartsArtifactCoords, catalog,
-                artifactResolver);
+                artifactResolver == null ? QuarkusProjectHelper.artifactResolver() : artifactResolver);
     }
 
     private static List<ResourceLoader> getCodestartResourceLoaders(String baseCodestartsArtifactCoords,

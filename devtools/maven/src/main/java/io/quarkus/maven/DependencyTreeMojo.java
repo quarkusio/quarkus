@@ -20,9 +20,10 @@ import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
  * Displays Quarkus application build dependency tree including the deployment ones.
@@ -31,7 +32,7 @@ import io.quarkus.maven.dependency.GACTV;
 public class DependencyTreeMojo extends AbstractMojo {
 
     @Component
-    protected QuarkusBootstrapProvider bootstrapProvider;
+    protected QuarkusWorkspaceProvider workspaceProvider;
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
@@ -102,7 +103,8 @@ public class DependencyTreeMojo extends AbstractMojo {
     private void logTree(final Consumer<String> log) throws MojoExecutionException {
         log.accept("Quarkus application " + mode.toUpperCase() + " mode build dependency tree:");
 
-        final GACTV appArtifact = new GACTV(project.getGroupId(), project.getArtifactId(), null, "pom", project.getVersion());
+        final ArtifactCoords appArtifact = ArtifactCoords.pom(project.getGroupId(), project.getArtifactId(),
+                project.getVersion());
         final BootstrapAppModelResolver modelResolver;
         try {
             modelResolver = new BootstrapAppModelResolver(resolver());
@@ -125,19 +127,17 @@ public class DependencyTreeMojo extends AbstractMojo {
         }
     }
 
-    protected MavenArtifactResolver resolver() throws BootstrapMavenException {
+    protected MavenArtifactResolver resolver() {
         return resolver == null
-                ? resolver = MavenArtifactResolver.builder()
-                        .setRemoteRepositoryManager(bootstrapProvider.remoteRepositoryManager())
+                ? resolver = workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
                         // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
                         // e.g. -Dquarkus.platform.version=xxx
-                        //.setRepositorySystem(bootstrapProvider.repositorySystem())
+                        //.setRepositorySystem(repoSystem)
                         // The session should be initialized with the loaded workspace
                         //.setRepositorySystemSession(repoSession)
                         .setRemoteRepositories(repos)
                         // To support multi-module projects that haven't been installed
-                        .setPreferPomsFromWorkspace(true)
-                        .build()
+                        .setPreferPomsFromWorkspace(true))
                 : resolver;
     }
 }

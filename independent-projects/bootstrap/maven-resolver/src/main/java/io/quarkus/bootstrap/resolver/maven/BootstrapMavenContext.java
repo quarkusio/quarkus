@@ -53,10 +53,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
-import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
-import org.eclipse.aether.internal.impl.DefaultRemoteRepositoryManager;
 import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
@@ -65,12 +62,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
-import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
-import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transfer.TransferListener;
-import org.eclipse.aether.transport.wagon.WagonConfigurator;
-import org.eclipse.aether.transport.wagon.WagonProvider;
-import org.eclipse.aether.transport.wagon.WagonTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
 import org.eclipse.aether.util.repository.DefaultAuthenticationSelector;
 import org.eclipse.aether.util.repository.DefaultMirrorSelector;
@@ -83,6 +75,9 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.smallrye.beanbag.BeanSupplier;
+import io.smallrye.beanbag.Scope;
+import io.smallrye.beanbag.maven.MavenFactory;
 
 public class BootstrapMavenContext {
 
@@ -116,7 +111,6 @@ public class BootstrapMavenContext {
     private String localRepo;
     private Path currentPom;
     private Boolean currentProjectExists;
-    private DefaultServiceLocator serviceLocator;
     private String alternatePomName;
     private Path rootProjectDir;
     private boolean preferPomsFromWorkspace;
@@ -263,6 +257,10 @@ public class BootstrapMavenContext {
 
     public RepositorySystem getRepositorySystem() throws BootstrapMavenException {
         return repoSystem == null ? repoSystem = newRepositorySystem() : repoSystem;
+    }
+
+    public RemoteRepositoryManager getRemoteRepositoryManager() {
+        return remoteRepoManager == null ? remoteRepoManager = newRemoteRepositoryManager() : remoteRepoManager;
     }
 
     public RepositorySystemSession getRepositorySystemSession() throws BootstrapMavenException {
@@ -512,6 +510,10 @@ public class BootstrapMavenContext {
             session.setTransferListener(transferListener);
         }
 
+        for (var e : System.getProperties().entrySet()) {
+            session.setSystemProperty(e.getKey().toString(), e.getValue().toString());
+        }
+
         return session;
     }
 
@@ -737,34 +739,35 @@ public class BootstrapMavenContext {
     }
 
     private RepositorySystem newRepositorySystem() throws BootstrapMavenException {
-        final DefaultServiceLocator locator = getServiceLocator();
-        if (!isOffline()) {
-            locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
-            locator.addService(TransporterFactory.class, WagonTransporterFactory.class);
-            locator.setServices(WagonConfigurator.class, new BootstrapWagonConfigurator());
-            locator.setServices(WagonProvider.class, new BootstrapWagonProvider());
+        initRepoSystemAndManager();
+        return repoSystem;
+    }
+
+    public RemoteRepositoryManager newRemoteRepositoryManager() {
+        initRepoSystemAndManager();
+        return remoteRepoManager;
+    }
+
+    private void initRepoSystemAndManager() {
+        final MavenFactory factory = configureMavenFactory();
+        if (repoSystem == null) {
+            repoSystem = factory.getRepositorySystem();
         }
-        locator.setServices(ModelBuilder.class, new MavenModelBuilder(this));
-        locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
-            @Override
-            public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                log.error("Failed to initialize " + impl.getName() + " as a service implementing " + type.getName(), exception);
-            }
+        if (remoteRepoManager == null) {
+            remoteRepoManager = factory.getContainer().requireBean(RemoteRepositoryManager.class);
+        }
+    }
+
+    protected MavenFactory configureMavenFactory() {
+        final MavenFactory factory = MavenFactory.create(RepositorySystem.class.getClassLoader(), builder -> {
+            builder.addBean(ModelBuilder.class).setSupplier(new BeanSupplier<ModelBuilder>() {
+                @Override
+                public ModelBuilder get(Scope scope) {
+                    return new MavenModelBuilder(BootstrapMavenContext.this);
+                }
+            }).setPriority(100).build();
         });
-        return locator.getService(RepositorySystem.class);
-    }
-
-    public RemoteRepositoryManager getRemoteRepositoryManager() {
-        if (remoteRepoManager != null) {
-            return remoteRepoManager;
-        }
-        final DefaultRemoteRepositoryManager remoteRepoManager = new DefaultRemoteRepositoryManager();
-        remoteRepoManager.initService(getServiceLocator());
-        return this.remoteRepoManager = remoteRepoManager;
-    }
-
-    private DefaultServiceLocator getServiceLocator() {
-        return serviceLocator == null ? serviceLocator = MavenRepositorySystemUtils.newServiceLocator() : serviceLocator;
+        return factory;
     }
 
     private static String getUserAgent() {

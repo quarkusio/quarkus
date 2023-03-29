@@ -68,6 +68,7 @@
         <gradle-wrapper.version>8.0.1</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
+        <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
 
         <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
 
@@ -728,6 +729,22 @@
                         <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
                         <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-plugin-plugin</artifactId>
+                    <version>${maven-plugin-plugin.version}</version>
+                    <configuration>
+                        <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>help-goal</id>
+                            <goals>
+                                <goal>helpmojo</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>

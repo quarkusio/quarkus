@@ -251,7 +251,7 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
                 newMojoExecution("extension-descriptor"));
         mojo.repoSystem = mvn.getSystem();
         mojo.repoSession = mvn.getSession();
-        mojo.workspaceProvider = new BootstrapWorkspaceProvider(basedir.getAbsolutePath());
+        mojo.workspaceProvider = BootstrapWorkspaceProvider.newInstance(basedir.getAbsolutePath());
         return mojo;
     }
 

@@ -109,9 +109,8 @@ public class LocalProject {
         if (currentProjectPom == null) {
             return null;
         }
-        final Path rootProjectBaseDir = ctx.getRootProjectBaseDir();
         final WorkspaceLoader wsLoader = new WorkspaceLoader(ctx, currentProjectPom, modelProvider);
-
+        final Path rootProjectBaseDir = ctx.getRootProjectBaseDir();
         if (rootProjectBaseDir != null && !rootProjectBaseDir.equals(currentProjectPom.getParent())) {
             wsLoader.setWorkspaceRootPom(rootProjectBaseDir.resolve(POM_XML));
         }

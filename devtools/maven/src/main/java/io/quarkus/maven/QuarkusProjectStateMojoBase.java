@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.apache.maven.cli.transfer.QuietMavenTransferListener;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -27,9 +28,13 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
 public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase {
+
+    @Component
+    QuarkusWorkspaceProvider workspaceProvider;
 
     /**
      * If true, the information will be logged per each relevant module of the project
@@ -134,24 +139,19 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
 
     @Override
     protected MavenArtifactResolver initArtifactResolver() throws MojoExecutionException {
-        try {
-            return MavenArtifactResolver.builder()
-                    .setRemoteRepositoryManager(remoteRepositoryManager)
-                    // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
-                    // e.g. -Dquarkus.platform.version=xxx
-                    //.setRepositorySystem(bootstrapProvider.repositorySystem())
-                    // The session should be initialized with the loaded workspace
-                    //.setRepositorySystemSession(repoSession)
-                    .setRemoteRepositories(repos)
-                    // To support multi-module projects that haven't been installed
-                    .setPreferPomsFromWorkspace(true)
-                    // to support profiles
-                    .setEffectiveModelBuilder(true)
-                    // to initialize WorkspaceModule parents and BOM modules
-                    .setWorkspaceModuleParentHierarchy(true)
-                    .build();
-        } catch (BootstrapMavenException e) {
-            throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
-        }
+        return workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
+                .setRemoteRepositoryManager(remoteRepositoryManager)
+                // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
+                // e.g. -Dquarkus.platform.version=xxx
+                //.setRepositorySystem(workspaceProvider.getRepositorySystem())
+                // The session should be initialized with the loaded workspace
+                //.setRepositorySystemSession(repoSession)
+                .setRemoteRepositories(repos)
+                // To support multi-module projects that haven't been installed
+                .setPreferPomsFromWorkspace(true)
+                // to support profiles
+                .setEffectiveModelBuilder(true)
+                // to initialize WorkspaceModule parents and BOM modules
+                .setWorkspaceModuleParentHierarchy(true));
     }
 }

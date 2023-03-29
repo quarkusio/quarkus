@@ -120,7 +120,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.ClientProxyUnwrapper;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -1194,7 +1193,7 @@ public class ResteasyReactiveProcessor {
                 .setExceptionMapping(exceptionMapping)
                 .setCtxResolvers(contextResolvers)
                 .setFeatures(feats)
-                .setClientProxyUnwrapper(new ClientProxyUnwrapper())
+                .setClientProxyUnwrapper(recorder.clientProxyUnwrapper())
                 .setApplicationSupplier(recorder.handleApplication(applicationClass, singletonClasses.isEmpty()))
                 .setFactoryCreator(recorder.factoryCreator(beanContainerBuildItem.getValue()))
                 .setDynamicFeatures(dynamicFeats)

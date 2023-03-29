@@ -2,37 +2,34 @@ package io.quarkus.resteasy.reactive.server.runtime;
 
 import java.nio.charset.Charset;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "resteasy-reactive", phase = ConfigPhase.RUN_TIME)
-public class ResteasyReactiveServerRuntimeConfig {
+@ConfigMapping(prefix = "quarkus.resteasy-reactive")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface ResteasyReactiveServerRuntimeConfig {
 
     /**
      * Input part configuration.
      */
-    @ConfigItem
-    public MultipartConfigGroup multipart;
+    MultipartConfigGroup multipart();
 
-    @ConfigGroup
-    public static class MultipartConfigGroup {
+    interface MultipartConfigGroup {
 
         /**
          * Input part configuration.
          */
-        @ConfigItem
-        public InputPartConfigGroup inputPart;
+        InputPartConfigGroup inputPart();
     }
 
-    @ConfigGroup
-    public static class InputPartConfigGroup {
+    interface InputPartConfigGroup {
 
         /**
          * Default charset.
          */
-        @ConfigItem(defaultValue = "UTF-8")
-        public Charset defaultCharset;
+        @WithDefault("UTF-8")
+        Charset defaultCharset();
     }
 }

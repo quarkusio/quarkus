@@ -120,7 +120,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.ClientProxyUnwrapper;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -1177,7 +1176,7 @@ public class ResteasyReactiveProcessor {
         BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
                 beanContainerBuildItem.getValue());
 
-        String applicationPath = determineApplicationPath(appResult, getAppPath(serverConfig.path));
+        String applicationPath = determineApplicationPath(appResult, getAppPath(serverConfig.path()));
         // spec allows the path contain encoded characters
         if ((applicationPath != null) && applicationPath.contains("%")) {
             applicationPath = Encode.decodePath(applicationPath);
@@ -1194,7 +1193,7 @@ public class ResteasyReactiveProcessor {
                 .setExceptionMapping(exceptionMapping)
                 .setCtxResolvers(contextResolvers)
                 .setFeatures(feats)
-                .setClientProxyUnwrapper(new ClientProxyUnwrapper())
+                .setClientProxyUnwrapper(recorder.clientProxyUnwrapper())
                 .setApplicationSupplier(recorder.handleApplication(applicationClass, singletonClasses.isEmpty()))
                 .setFactoryCreator(recorder.factoryCreator(beanContainerBuildItem.getValue()))
                 .setDynamicFeatures(dynamicFeats)
@@ -1302,7 +1301,7 @@ public class ResteasyReactiveProcessor {
                 .filter(Objects::nonNull)
                 .collect(Collectors.joining());
         if (message.length() > 0) {
-            if (config.failOnDuplicate) {
+            if (config.failOnDuplicate()) {
                 throw new ConfigurationError(message);
             }
             log.warn(message);
@@ -1369,10 +1368,10 @@ public class ResteasyReactiveProcessor {
         Config mpConfig = ConfigProvider.getConfig();
 
         return new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
-                getEffectivePropertyValue("input-buffer-size", config.inputBufferSize.asLongValue(), Long.class, mpConfig),
-                getEffectivePropertyValue("output-buffer-size", config.outputBufferSize, Integer.class, mpConfig),
-                getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces, Boolean.class, mpConfig),
-                getEffectivePropertyValue("default-produces", config.defaultProduces, Boolean.class, mpConfig));
+                getEffectivePropertyValue("input-buffer-size", config.inputBufferSize().asLongValue(), Long.class, mpConfig),
+                getEffectivePropertyValue("output-buffer-size", config.outputBufferSize(), Integer.class, mpConfig),
+                getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces(), Boolean.class, mpConfig),
+                getEffectivePropertyValue("default-produces", config.defaultProduces(), Boolean.class, mpConfig));
     }
 
     private <T> T getEffectivePropertyValue(String legacyPropertyName, T newPropertyValue, Class<T> propertyType,

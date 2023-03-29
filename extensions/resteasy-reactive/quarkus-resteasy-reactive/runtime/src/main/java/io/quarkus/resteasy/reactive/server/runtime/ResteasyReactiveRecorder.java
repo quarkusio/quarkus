@@ -42,6 +42,7 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.reactive.common.runtime.ArcBeanFactory;
 import io.quarkus.resteasy.reactive.common.runtime.ArcThreadSetupAction;
@@ -344,6 +345,10 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 return new ArcBeanFactory<>(aClass, container);
             }
         };
+    }
+
+    public Function<Object, Object> clientProxyUnwrapper() {
+        return ClientProxy::unwrap;
     }
 
     public Supplier<Boolean> disableIfPropertyMatches(String propertyName, String propertyValue, boolean disableIfMissing) {

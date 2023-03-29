@@ -1,20 +1,22 @@
 package io.quarkus.resteasy.reactive.common.runtime;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.common.annotation.Experimental;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED, name = "resteasy-reactive")
-public class ResteasyReactiveConfig {
+@ConfigMapping(prefix = "quarkus.resteasy-reactive")
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public interface ResteasyReactiveConfig {
 
     /**
      * The amount of memory that can be used to buffer input before switching to
      * blocking IO.
      */
-    @ConfigItem(defaultValue = "10k")
-    public MemorySize inputBufferSize;
+    @WithDefault("10k")
+    MemorySize inputBufferSize();
 
     /**
      * The size of the output stream response buffer. If a response is larger than this and no content-length
@@ -22,8 +24,8 @@ public class ResteasyReactiveConfig {
      *
      * Larger values may give slight performance increases for large responses, at the expense of more memory usage.
      */
-    @ConfigItem(defaultValue = "8191")
-    public int outputBufferSize;
+    @WithDefault("8191")
+    int outputBufferSize();
 
     /**
      * By default, we assume a default produced media type of "text/plain"
@@ -31,8 +33,8 @@ public class ResteasyReactiveConfig {
      * produced media type will be "[text/plain, *&sol;*]" which is more
      * expensive due to negotiation.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean singleDefaultProduces;
+    @WithDefault("true")
+    boolean singleDefaultProduces();
 
     /**
      * When one of the quarkus-resteasy-reactive-jackson or quarkus-resteasy-reactive-jsonb extension are active
@@ -40,20 +42,20 @@ public class ResteasyReactiveConfig {
      * {@code Map},
      * we assume the default return type is "application/json" if this configuration is enabled.
      */
-    @ConfigItem(defaultValue = "true")
+    @WithDefault("true")
     @Experimental("This flag has a high probability of going away in the future")
-    public boolean defaultProduces;
+    boolean defaultProduces();
 
     /**
      * Whether annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
      * into account when used on JAX-RS classes.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean buildTimeConditionAware;
+    @WithDefault("true")
+    boolean buildTimeConditionAware();
 
     /**
      * Whether duplicate endpoints should trigger error at startup
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean failOnDuplicate;
+    @WithDefault("true")
+    boolean failOnDuplicate();
 }

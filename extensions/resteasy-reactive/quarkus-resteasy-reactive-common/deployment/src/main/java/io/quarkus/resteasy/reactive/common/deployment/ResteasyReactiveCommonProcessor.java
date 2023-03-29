@@ -121,7 +121,7 @@ public class ResteasyReactiveCommonProcessor {
             ResteasyReactiveConfig config) {
         ApplicationScanningResult result = ResteasyReactiveScanner
                 .scanForApplicationClass(combinedIndexBuildItem.getComputingIndex(),
-                        config.buildTimeConditionAware ? getExcludedClasses(buildTimeConditions) : Collections.emptySet());
+                        config.buildTimeConditionAware() ? getExcludedClasses(buildTimeConditions) : Collections.emptySet());
         if (result.getSelectedAppClass() != null) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(result.getSelectedAppClass().name().toString())
                     .build());

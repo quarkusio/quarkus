@@ -5,6 +5,9 @@ import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.INGRESS;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
+import static io.quarkus.kubernetes.deployment.Constants.LIVENESS_PROBE;
+import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
+import static io.quarkus.kubernetes.deployment.Constants.STARTUP_PROBE;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
 
 import java.util.ArrayList;
@@ -252,15 +255,15 @@ public class VanillaKubernetesProcessor {
 
         // Probe port handling
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, "livenessProbe", config.livenessProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, LIVENESS_PROBE, config.livenessProbe,
                         portName,
                         ports));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, "readinessProbe", config.readinessProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, READINESS_PROBE, config.readinessProbe,
                         portName,
                         ports));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, "startupProbe", config.startupProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, STARTUP_PROBE, config.startupProbe,
                         portName,
                         ports));
 

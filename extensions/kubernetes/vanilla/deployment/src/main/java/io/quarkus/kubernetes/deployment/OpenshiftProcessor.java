@@ -2,10 +2,13 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_S2I_IMAGE_NAME;
+import static io.quarkus.kubernetes.deployment.Constants.LIVENESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
+import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.ROUTE;
+import static io.quarkus.kubernetes.deployment.Constants.STARTUP_PROBE;
 import static io.quarkus.kubernetes.deployment.OpenshiftConfig.OpenshiftFlavor.v3;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
@@ -310,15 +313,15 @@ public class OpenshiftProcessor {
         }
 
         // Probe port handling
-        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, "livenssProbe", config.livenessProbe,
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, LIVENESS_PROBE, config.livenessProbe,
                 portName,
                 ports));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, "readinessProbe", config.readinessProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, READINESS_PROBE, config.readinessProbe,
                         portName,
                         ports));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, "startupProbe", config.startupProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, STARTUP_PROBE, config.startupProbe,
                         portName,
                         ports));
 

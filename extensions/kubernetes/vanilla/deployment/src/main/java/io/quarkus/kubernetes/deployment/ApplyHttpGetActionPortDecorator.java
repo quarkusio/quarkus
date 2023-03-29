@@ -6,8 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
-import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
+import io.dekorate.kubernetes.decorator.AbstractAddProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
@@ -106,7 +105,6 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class,
-                AddLivenessProbeDecorator.class, AddReadinessProbeDecorator.class };
+        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class, AbstractAddProbeDecorator.class };
     }
 }

@@ -97,7 +97,7 @@ public class CodeFlowDevModeTestCase {
 
             assertEquals("alice", page.getBody().asText());
 
-            assertEquals("custom", page.getWebClient().getCookieManager().getCookie("q_session").getValue().split("\\|")[3]);
+            assertEquals("custom", page.getWebClient().getCookieManager().getCookie("q_session").getValue().split("\\|")[1]);
 
             webClient.getOptions().setRedirectEnabled(false);
             WebResponse webResponse = webClient

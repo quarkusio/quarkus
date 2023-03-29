@@ -176,13 +176,16 @@ public class CodeFlowAuthorizationTest {
     private JsonObject decryptIdToken(WebClient webClient, String tenantId) throws Exception {
         Cookie sessionCookie = getSessionCookie(webClient, tenantId);
         assertNotNull(sessionCookie);
-        String encryptedIdToken = sessionCookie.getValue().split("\\|")[0];
 
         SecretKey key = new SecretKeySpec(OidcUtils
                 .getSha256Digest("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
                         .getBytes(StandardCharsets.UTF_8)),
                 "AES");
-        String encodedIdToken = OidcUtils.decryptString(encryptedIdToken, key);
+
+        String decryptedSessionCookie = OidcUtils.decryptString(sessionCookie.getValue(), key);
+
+        String encodedIdToken = decryptedSessionCookie.split("\\|")[0];
+
         return OidcUtils.decodeJwtContent(encodedIdToken);
     }
 

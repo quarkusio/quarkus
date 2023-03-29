@@ -70,6 +70,9 @@ public class TenantConfigContext {
         if (config.tokenStateManager.encryptionRequired) {
             String encSecret = config.tokenStateManager.encryptionSecret
                     .orElse(OidcCommonUtils.clientSecret(config.credentials));
+            if (encSecret == null) {
+                encSecret = OidcCommonUtils.jwtSecret(config.credentials);
+            }
             try {
                 if (encSecret == null) {
                     LOG.warn("Secret key for encrypting tokens is missing, auto-generating it");

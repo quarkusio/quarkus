@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: cloud
-:summary: This guide explains how you can integrate Quarkus with any Azure Functions you write.
+:summary: Integrate Quarkus with the Microsoft Azure functions that you have written.
 
 The `quarkus-azure-functions` extension is a simple integration point between Azure Functions
 and Quarkus.  It interacts with Azure Functions runtime to bootstrap quarkus and turns any

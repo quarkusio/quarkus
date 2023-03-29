@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Deploying to Microsoft Azure Cloud
 include::_attributes.adoc[]
 :categories: cloud
-:summary: This guide explains how to deploy a Quarkus application to Microsoft Azure Cloud.
+:summary: Deploy a Quarkus application to the Microsoft Azure cloud platform.
 
 This guide covers:
 
@@ -30,7 +30,7 @@ Make sure you have the getting-started application at hand, or clone the Git rep
 
 == Change Quarkus HTTP Port
 
-If you correctly followed the xref:building-native-image.adoc[building native image guide], you should have a local container image named `quarkus-quickstart/getting-started`. 
+If you correctly followed the xref:building-native-image.adoc[building native image guide], you should have a local container image named `quarkus-quickstart/getting-started`.
 
 While Quarkus by default runs on port 8080, most Azure services expect web applications to be running on port 80. Before we continue, go back to your quickstart code and open the file `src/main/docker/Dockerfile.native`.
 
@@ -124,7 +124,7 @@ $ az acr repository list -n <registry-name>
 
 == Deploy to Azure Container Instances
 
-The simplest way to start this container in the cloud is with the Azure Container Instances service. It simply creates a container on Azure infrastructure. 
+The simplest way to start this container in the cloud is with the Azure Container Instances service. It simply creates a container on Azure infrastructure.
 
 There are different approaches for using ACI. Check the documentation for details. The quickest way to get a container up and running goes as it follows.
 

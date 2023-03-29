@@ -84,8 +84,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuild
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleWebjarBuildItem;
@@ -221,8 +221,10 @@ public class KafkaProcessor {
             CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServiceProviderBuildItem> serviceProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
-            Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> beans,
-            BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig,
+            Capabilities capabilities,
+            NativeImageRunnerBuildItem nativeImageRunner,
+            BuildProducer<UnremovableBeanBuildItem> beans,
+            BuildProducer<NativeImageResourceBuildItem> nativeLibs,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
         final Set<DotName> toRegister = new HashSet<>();
 
@@ -285,19 +287,20 @@ public class KafkaProcessor {
         handleOpenTracing(reflectiveClass, capabilities);
         handleStrimziOAuth(curateOutcomeBuildItem, reflectiveClass);
         if (config.snappyEnabled) {
-            handleSnappy(reflectiveClass, nativeLibs, nativeConfig);
+            handleSnappy(nativeImageRunner, reflectiveClass, nativeLibs);
         }
 
     }
 
-    private void handleSnappy(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig) {
+    private void handleSnappy(NativeImageRunnerBuildItem nativeImageRunner,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageResourceBuildItem> nativeLibs) {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.xerial.snappy.SnappyInputStream",
                 "org.xerial.snappy.SnappyOutputStream").methods().fields().build());
 
         String root = "org/xerial/snappy/native/";
         // add linux64 native lib when targeting containers
-        if (nativeConfig.isContainerBuild()) {
+        if (nativeImageRunner.isContainerBuild()) {
             String dir = "Linux/x86_64";
             String snappyNativeLibraryName = "libsnappyjava.so";
             String path = root + dir + "/" + snappyNativeLibraryName;

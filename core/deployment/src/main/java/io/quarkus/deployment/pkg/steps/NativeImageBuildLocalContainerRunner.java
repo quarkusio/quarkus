@@ -17,8 +17,8 @@ import io.quarkus.deployment.util.FileUtil;
 
 public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContainerRunner {
 
-    public NativeImageBuildLocalContainerRunner(NativeConfig nativeConfig, Path outputDir) {
-        super(nativeConfig, outputDir);
+    public NativeImageBuildLocalContainerRunner(NativeConfig nativeConfig) {
+        super(nativeConfig);
         if (SystemUtils.IS_OS_LINUX) {
             final ArrayList<String> containerRuntimeArgs = new ArrayList<>(Arrays.asList(baseContainerRuntimeArgs));
             if (containerRuntime == DOCKER && containerRuntime.isRootless()) {
@@ -39,13 +39,11 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
     }
 
     @Override
-    protected List<String> getContainerRuntimeBuildArgs() {
-        final List<String> containerRuntimeArgs = super.getContainerRuntimeBuildArgs();
-        final String volumeOutputPath;
+    protected List<String> getContainerRuntimeBuildArgs(Path outputDir) {
+        final List<String> containerRuntimeArgs = super.getContainerRuntimeBuildArgs(outputDir);
+        String volumeOutputPath = outputDir.toAbsolutePath().toString();
         if (SystemUtils.IS_OS_WINDOWS) {
-            volumeOutputPath = FileUtil.translateToVolumePath(outputPath);
-        } else {
-            volumeOutputPath = outputPath;
+            volumeOutputPath = FileUtil.translateToVolumePath(volumeOutputPath);
         }
 
         final String selinuxBindOption;

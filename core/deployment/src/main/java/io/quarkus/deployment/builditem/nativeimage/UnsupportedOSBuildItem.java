@@ -5,7 +5,6 @@ import static io.quarkus.dev.console.QuarkusConsole.IS_MAC;
 import static io.quarkus.dev.console.QuarkusConsole.IS_WINDOWS;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.deployment.pkg.NativeConfig;
 
 /**
  * Native-image might not be supported for a particular
@@ -32,14 +31,14 @@ public final class UnsupportedOSBuildItem extends MultiBuildItem {
         this.error = error;
     }
 
-    public boolean triggerError(NativeConfig nativeConfig) {
+    public boolean triggerError(boolean isContainerBuild) {
         return
         // When the host OS is unsupported, it could have helped to
         // run in a Linux builder image (e.g. an extension unsupported on Windows).
-        (os.active && !nativeConfig.isContainerBuild()) ||
+        (os.active && !isContainerBuild) ||
         // If Linux is the OS the extension does not support,
         // it fails in a container build regardless the host OS,
         // because we have only Linux based builder images.
-                (nativeConfig.isContainerBuild() && os == Os.LINUX);
+                (isContainerBuild && os == Os.LINUX);
     }
 }

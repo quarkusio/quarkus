@@ -205,7 +205,7 @@ public class NativeConfig {
     @ConfigItem
     public boolean remoteContainerBuild;
 
-    public boolean isContainerBuild() {
+    public boolean isExplicitContainerBuild() {
         return containerBuild.orElse(containerRuntime.isPresent() || remoteContainerBuild);
     }
 

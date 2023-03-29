@@ -117,7 +117,6 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationSt
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
-import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
@@ -589,7 +588,6 @@ public final class HibernateOrmProcessor {
         }
 
         List<Class<?>> unremovableClasses = new ArrayList<>();
-        unremovableClasses.add(JPAConfig.class);
         if (capabilities.isPresent(Capability.TRANSACTIONS)) {
             unremovableClasses.add(TransactionManager.class);
             unremovableClasses.add(TransactionSessions.class);

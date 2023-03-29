@@ -10,20 +10,16 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
 
-@Singleton
 public class JPAConfig {
 
     private static final Logger LOGGER = Logger.getLogger(JPAConfig.class.getName());
@@ -126,25 +122,18 @@ public class JPAConfig {
         return deactivatedPersistenceUnitNames;
     }
 
-    /**
-     * Need to shut down all instances of Hibernate ORM before the actual destroy event,
-     * as it might need to use the datasources during shutdown.
-     *
-     * @param event ignored
-     */
-    void destroy(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event) {
-        for (LazyPersistenceUnit factory : persistenceUnits.values()) {
-            try {
-                factory.close();
-            } catch (Exception e) {
-                LOGGER.warn("Unable to close the EntityManagerFactory: " + factory, e);
+    public static class Destroyer implements BeanDestroyer<JPAConfig> {
+        @Override
+        public void destroy(JPAConfig instance, CreationalContext<JPAConfig> creationalContext, Map<String, Object> params) {
+            for (LazyPersistenceUnit factory : instance.persistenceUnits.values()) {
+                try {
+                    factory.close();
+                } catch (Exception e) {
+                    LOGGER.warn("Unable to close the EntityManagerFactory: " + factory, e);
+                }
             }
+            instance.persistenceUnits.clear();
         }
-    }
-
-    @PreDestroy
-    void destroy() {
-        persistenceUnits.clear();
     }
 
     static final class LazyPersistenceUnit {

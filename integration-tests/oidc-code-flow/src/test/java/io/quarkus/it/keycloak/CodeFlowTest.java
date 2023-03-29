@@ -279,12 +279,12 @@ public class CodeFlowTest {
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
             assertNotNull(sessionCookie);
 
-            String encryptedIdToken = sessionCookie.getValue().split("\\|")[0];
-
             SecretKey key = new SecretKeySpec(OidcUtils
                     .getSha256Digest("secret".getBytes(StandardCharsets.UTF_8)),
                     "AES");
-            String encodedIdToken = OidcUtils.decryptString(encryptedIdToken, key);
+            String sessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
+
+            String encodedIdToken = sessionCookieValue.split("\\|")[0];
 
             JsonObject idToken = OidcUtils.decodeJwtContent(encodedIdToken);
             String expiresAt = idToken.getInteger("exp").toString();
@@ -891,17 +891,19 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-id-refresh-token");
             assertEquals("tenant-id-refresh-token:RT injected", page.getBody().asNormalizedText());
 
-            Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-id-refresh-token");
+            Cookie sessionCookie = getSessionCookie(page.getWebClient(), "tenant-id-refresh-token");
 
             SecretKey key = new SecretKeySpec(OidcUtils
                     .getSha256Digest("secret".getBytes(StandardCharsets.UTF_8)),
                     "AES");
 
-            String[] parts = idTokenCookie.getValue().split("\\|");
+            String sessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
+
+            String[] parts = sessionCookieValue.split("\\|");
             assertEquals(3, parts.length);
-            assertEquals("ID", OidcUtils.decodeJwtContent(OidcUtils.decryptString(parts[0], key)).getString("typ"));
+            assertEquals("ID", OidcUtils.decodeJwtContent(parts[0]).getString("typ"));
             assertEquals("", parts[1]);
-            assertEquals("Refresh", OidcUtils.decodeJwtContent(OidcUtils.decryptString(parts[2], key)).getString("typ"));
+            assertEquals("Refresh", OidcUtils.decodeJwtContent(parts[2]).getString("typ"));
 
             assertNull(getSessionAtCookie(webClient, "tenant-id-refresh-token"));
             assertNull(getSessionRtCookie(webClient, "tenant-id-refresh-token"));

@@ -74,7 +74,7 @@ public class KubernetesDevConsoleProcessor {
         }
     }
 
-    private static final class Manifest {
+    public static final class Manifest {
         private final String name;
         private final String content;
 

@@ -11,6 +11,8 @@ import jakarta.ws.rs.Path;
 
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.DateFormat;
+import org.jboss.resteasy.reactive.RestCookie;
+import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
@@ -55,6 +57,20 @@ public class LocalDateTimeParamTest {
                 .then().statusCode(200).body(Matchers.equalTo("hello:22"));
     }
 
+    @Test
+    public void localDateTimeAsHeader() {
+        RestAssured.with().header("date", "1984-08-08 01:02:03")
+                .get("/hello/header")
+                .then().statusCode(200).body(Matchers.equalTo("hello=1984-08-08T01:02:03"));
+    }
+
+    @Test
+    public void localDateTimeAsCookie() {
+        RestAssured.with().cookie("date", "1984-08-08 01:02:03")
+                .get("/hello/cookie")
+                .then().statusCode(200).body(Matchers.equalTo("hello/1984-08-08T01:02:03"));
+    }
+
     @Path("hello")
     public static class HelloResource {
 
@@ -79,6 +95,18 @@ public class LocalDateTimeParamTest {
         public String helloForm(
                 @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDateTime date) {
             return "hello:" + date.getDayOfMonth();
+        }
+
+        @Path("cookie")
+        @GET
+        public String helloCookie(@RestCookie @DateFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime date) {
+            return "hello/" + date;
+        }
+
+        @Path("header")
+        @GET
+        public String helloHeader(@RestHeader @DateFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime date) {
+            return "hello=" + date;
         }
     }
 

@@ -24,6 +24,7 @@ class PluginMangerState {
             Optional<QuarkusProject> quarkusProject,
             Predicate<Plugin> pluginFilter) {
         this.settings = settings;
+        this.output = output;
         this.userHome = userHome;
         this.quarkusProject = quarkusProject;
         this.pluginFilter = pluginFilter;
@@ -38,6 +39,7 @@ class PluginMangerState {
     }
 
     private final PluginManagerSettings settings;
+    private final MessageWriter output;
     private final PluginManagerUtil util;
     private final Optional<Path> userHome;
     private final Optional<Path> projectRoot;
@@ -186,8 +188,8 @@ class PluginMangerState {
                         .filter(e -> installed.contains(e.getArtifact().getKey()))
                         .map(ExtensionProcessor::getCliPlugins).flatMap(Collection::stream).map(util::from)
                         .collect(Collectors.toMap(p -> p.getName(), p -> p.inProjectCatalog())));
-            } catch (Exception e) {
-                throw new RuntimeException("Error reading the extension catalog", e);
+            } catch (Exception ignore) {
+                output.warn("Failed to read the extension catalog. Ignoring extension plugins.");
             }
         });
         return extensionPlugins;

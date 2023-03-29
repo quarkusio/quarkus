@@ -16,7 +16,7 @@ import com.mongodb.ReadPreference;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.internal.MongoClientImpl;
 
-import io.quarkus.arc.runtime.ClientProxyUnwrapper;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.test.QuarkusUnitTest;
@@ -34,8 +34,6 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
     @Inject
     ReactiveMongoClient reactiveClient;
 
-    private final ClientProxyUnwrapper unwrapper = new ClientProxyUnwrapper();
-
     @AfterEach
     void cleanup() {
         if (reactiveClient != null) {
@@ -48,7 +46,7 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
 
     @Test
     public void testClientConfiguration() {
-        MongoClientImpl clientImpl = (MongoClientImpl) unwrapper.apply(client);
+        MongoClientImpl clientImpl = (MongoClientImpl) ClientProxy.unwrap(client);
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMaxSize()).isEqualTo(2);
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMinSize()).isEqualTo(1);
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMaxConnectionIdleTime(TimeUnit.SECONDS))
@@ -73,7 +71,7 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
 
     @Test
     public void testReactiveClientConfiuration() {
-        ReactiveMongoClientImpl reactiveMongoClientImpl = (ReactiveMongoClientImpl) unwrapper.apply(reactiveClient);
+        ReactiveMongoClientImpl reactiveMongoClientImpl = (ReactiveMongoClientImpl) ClientProxy.unwrap(reactiveClient);
         com.mongodb.reactivestreams.client.internal.MongoClientImpl clientImpl = (com.mongodb.reactivestreams.client.internal.MongoClientImpl) reactiveMongoClientImpl
                 .unwrap();
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMaxSize()).isEqualTo(2);

@@ -23,6 +23,7 @@ public abstract class PageBuilder<T> {
     protected boolean embed = true; // default
     protected boolean internalComponent = false; // default
     protected String namespace = null;
+    protected String extensionId = null;
     protected Class preprocessor = null;
 
     @SuppressWarnings("unchecked")
@@ -77,11 +78,9 @@ public abstract class PageBuilder<T> {
 
     @SuppressWarnings("unchecked")
     public T extension(String extension) {
+        this.extensionId = extension.toLowerCase().replaceAll(SPACE, DASH);
         this.metadata.put("extensionName", extension);
-        this.metadata.put("extensionId", extension.toLowerCase().replaceAll(SPACE, DASH));
-        //if (this.namespace == null) {
-        //    this.namespace = extension.toLowerCase().replaceAll(SPACE, DASH);
-        //}
+        this.metadata.put("extensionId", extensionId); // TODO: Remove ?
         return (T) this;
     }
 
@@ -115,7 +114,7 @@ public abstract class PageBuilder<T> {
 
         Page page = new Page(icon, title, staticLabel, dynamicLabel, streamingLabel, componentName, componentLink, metadata,
                 embed,
-                internalComponent, namespace);
+                internalComponent, namespace, extensionId);
 
         return page;
     }

@@ -10,7 +10,8 @@ import 'qwc/qwc-extension-link.js';
  * This component create cards of all the extensions
  */
 export class QwcExtensions extends observeState(LitElement) {
-
+    routerController = new RouterController(this);
+    
     static styles = css`
         .grid {
             display: flex;
@@ -40,14 +41,6 @@ export class QwcExtensions extends observeState(LitElement) {
         }
     `;
 
-    constructor() {
-        super();
-        // TODO: Change this to use state
-        window.addEventListener('vaadin-router-location-changed', (event) => {
-            var pageDetails = RouterController.parseLocationChangedEvent(event);
-        });
-    }
-
     render() {
         return html`<div class="grid">
             ${devuiState.cards.active.map(extension => this._renderActive(extension))}            
@@ -59,7 +52,7 @@ export class QwcExtensions extends observeState(LitElement) {
         extension.cardPages.forEach(page => {   
             if(page.embed){ // we need to register with the router
                 import(page.componentRef);
-                RouterController.addExtensionRoute(page);
+                this.routerController.addRouteForExtension(page);
             }
         });
         

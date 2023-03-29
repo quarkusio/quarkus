@@ -9,6 +9,7 @@ import '@vanillawc/wc-codemirror/mode/javascript/javascript.js';
  * This component renders build time data in raw json format
  */
 export class QwcDataRawPage extends observeState(LitElement) {
+    routerController = new RouterController(this);
     
     static styles = css`
         .codeBlock {
@@ -37,7 +38,7 @@ export class QwcDataRawPage extends observeState(LitElement) {
     connectedCallback() {
         super.connectedCallback();
         
-        var page = RouterController.currentPage();
+        var page = this.routerController.getCurrentPage();
         if(page && page.metadata){
             this._buildTimeDataKey = page.metadata.buildTimeDataKey;
 

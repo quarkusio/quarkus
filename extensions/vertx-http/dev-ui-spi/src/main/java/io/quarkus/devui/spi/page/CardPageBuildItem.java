@@ -1,7 +1,5 @@
 package io.quarkus.devui.spi.page;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -10,26 +8,16 @@ import java.util.Optional;
  */
 public final class CardPageBuildItem extends AbstractPageBuildItem {
 
-    private final List<PageBuilder> pageBuilders;
     private Optional<Card> optionalCard = Optional.empty();
 
     public CardPageBuildItem() {
         super();
-        this.pageBuilders = new ArrayList<>();
-    }
-
-    public void addPage(PageBuilder page) {
-        this.pageBuilders.add(page);
     }
 
     public void setCustomCard(String cardComponent) {
         if (cardComponent != null) {
             this.optionalCard = Optional.of(new Card(cardComponent));
         }
-    }
-
-    public List<PageBuilder> getPages() {
-        return this.pageBuilders;
     }
 
     public Optional<Card> getOptionalCard() {

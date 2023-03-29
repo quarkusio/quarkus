@@ -6,6 +6,7 @@ import { RouterController } from 'router-controller';
  * This component renders build time data using qute
  */
 export class QwcDataQutePage extends LitElement {
+    routerController = new RouterController(this);
     
     static styles = css``;
 
@@ -15,7 +16,7 @@ export class QwcDataQutePage extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        var page = RouterController.currentPage();
+        var page = this.routerController.getCurrentPage();
         if(page && page.metadata){
             this._htmlFragment = page.metadata.htmlFragment;
         }

@@ -41,6 +41,11 @@
       <artifactId>quarkus-smallrye-context-propagation</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.smallrye.common</groupId>
+      <artifactId>smallrye-common-cpu</artifactId>
+      <version>1.13.2</version>
+    </dependency>
+    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.6</version>

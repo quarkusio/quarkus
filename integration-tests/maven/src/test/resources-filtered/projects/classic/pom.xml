@@ -44,6 +44,11 @@
       <artifactId>quarkus-websockets</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.smallrye.common</groupId>
+      <artifactId>smallrye-common-cpu</artifactId>
+      <version>1.13.2</version>
+    </dependency>
+    <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>jquery-ui</artifactId>
       <version>${webjar.jquery-ui.version}</version>

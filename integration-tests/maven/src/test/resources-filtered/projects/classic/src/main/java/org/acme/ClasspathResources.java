@@ -72,7 +72,7 @@ public class ClasspathResources {
         try {
             //this class is only present in multi release jars
             //for fast-jar we need to make sure it is loaded correctly
-            Class<?> clazz = this.getClass().getClassLoader().loadClass("io.smallrye.context.Jdk9CompletableFutureWrapper");
+            Class<?> clazz = this.getClass().getClassLoader().loadClass("io.smallrye.common.cpu.ProcessorInfo");
             if (clazz.getClassLoader() == getClass().getClassLoader()) {
                 return SUCCESS;
             }

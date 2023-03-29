@@ -25,6 +25,8 @@ public class Page {
 
     private String namespace = null; // The namespace can be the extension path or, if internal, qwc
 
+    private String extensionId = null; // If this originates from an extension, then id. For internal this will be null;
+
     protected Page(String icon,
             String title,
             String staticLabel,
@@ -35,7 +37,8 @@ public class Page {
             Map<String, String> metadata,
             boolean embed,
             boolean internalComponent,
-            String namespace) {
+            String namespace,
+            String extensionId) {
 
         this.icon = icon;
         this.title = title;
@@ -48,11 +51,12 @@ public class Page {
         this.embed = embed;
         this.internalComponent = internalComponent;
         this.namespace = namespace;
+        this.extensionId = extensionId;
     }
 
     public String getId() {
         String id = this.title.toLowerCase().replaceAll(SPACE, DASH);
-        if (this.namespace != null) {
+        if (!this.isInternal() && this.namespace != null) {
             id = this.namespace + SLASH + id;
         }
         return id;
@@ -102,6 +106,14 @@ public class Page {
 
     public boolean isEmbed() {
         return embed;
+    }
+
+    public boolean isInternal() {
+        return this.internalComponent && this.extensionId == null;
+    }
+
+    public String getExtensionId() {
+        return extensionId;
     }
 
     public Map<String, String> getMetadata() {

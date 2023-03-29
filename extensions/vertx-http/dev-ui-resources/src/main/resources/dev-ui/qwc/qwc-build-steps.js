@@ -2,9 +2,9 @@ import { LitElement, html, css} from 'lit';
 import { buildSteps } from 'devui-data';
 
 /**
- * This component shows the Build Information Page
+ * This component shows the Build Steps
  */
-export class QwcBuildInformation extends LitElement {
+export class QwcBuildSteps extends LitElement {
   static styles = css`
         .todo {
             padding-left: 10px;
@@ -26,4 +26,4 @@ export class QwcBuildInformation extends LitElement {
     }
   }
 }
-customElements.define('qwc-build-information', QwcBuildInformation);
+customElements.define('qwc-build-steps', QwcBuildSteps);

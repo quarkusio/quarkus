@@ -324,19 +324,28 @@ public class BuildTimeContentProcessor {
 
         // Sections Menu
         Page extensions = Page.webComponentPageBuilder().internal()
+                .namespace("devui-extensions")
                 .title("Extensions")
                 .icon("font-awesome-solid:puzzle-piece")
                 .componentLink("qwc-extensions.js").build();
 
         Page configuration = Page.webComponentPageBuilder().internal()
+                .namespace("devui-configuration")
                 .title("Configuration")
                 .icon("font-awesome-solid:sliders")
                 .componentLink("qwc-configuration.js").build();
+
+        Page configurationSourceEditor = Page.webComponentPageBuilder().internal()
+                .namespace("devui-configuration")
+                .title("Config Editor")
+                .icon("font-awesome-solid:code")
+                .componentLink("qwc-configuration-editor.js").build();
 
         internalBuildTimeData.addBuildTimeData("allConfiguration",
                 getAllConfig(configDescriptionBuildItems, devServicesLauncherConfig));
 
         Page continuousTesting = Page.webComponentPageBuilder().internal()
+                .namespace("devui-continuous-testing")
                 .title("Continuous Testing")
                 .icon("font-awesome-solid:flask-vial")
                 .componentLink("qwc-continuous-testing.js").build();
@@ -344,6 +353,7 @@ public class BuildTimeContentProcessor {
         internalBuildTimeData.addBuildTimeData("continuousTesting", "TODO: Continuous Testing");
 
         Page devServices = Page.webComponentPageBuilder().internal()
+                .namespace("devui-dev-services")
                 .title("Dev services")
                 .icon("font-awesome-solid:wand-magic-sparkles")
                 .componentLink("qwc-dev-services.js").build();
@@ -351,15 +361,24 @@ public class BuildTimeContentProcessor {
         internalBuildTimeData.addBuildTimeData("devServices", devServiceDescriptions);
 
         Page buildSteps = Page.webComponentPageBuilder().internal()
-                .title("Build information")
+                .namespace("devui-build-information")
+                .title("Build Steps")
                 .icon("font-awesome-solid:hammer")
-                .componentLink("qwc-build-information.js").build();
-
+                .componentLink("qwc-build-steps.js").build();
         internalBuildTimeData.addBuildTimeData("buildSteps", "TODO: Build Steps");
+
+        Page buildItems = Page.webComponentPageBuilder().internal()
+                .namespace("devui-build-information")
+                .title("Build Items")
+                .icon("font-awesome-solid:trowel")
+                .componentLink("qwc-build-items.js").build();
+        internalBuildTimeData.addBuildTimeData("buildItems", "TODO: Build Items");
 
         // Add default menu items
         @SuppressWarnings("unchecked")
-        List<Page> sectionMenu = new ArrayList(List.of(extensions, configuration, continuousTesting, devServices, buildSteps));
+        List<Page> sectionMenu = new ArrayList(
+                List.of(extensions, configuration, configurationSourceEditor, continuousTesting, devServices,
+                        buildSteps, buildItems));
 
         // Add any Menus from extensions
         for (Extension e : extensionsBuildItem.getSectionMenuExtensions()) {

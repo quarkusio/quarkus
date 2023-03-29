@@ -13,6 +13,7 @@ import '@vaadin/tabs';
 export class QwcHeader extends observeState(LitElement) {
     
     storageControl = new StorageController(this);
+    routerController = new RouterController(this);
     
     static styles = css`
         
@@ -225,17 +226,14 @@ export class QwcHeader extends observeState(LitElement) {
     }
 
     _updateHeader(event){
-        var pageDetails = RouterController.parseLocationChangedEvent(event);
-        
-        this._title = pageDetails.title;
-        var subMenu = pageDetails.subMenu;
-
+        this._title = this.routerController.getCurrentTitle();
+        var subMenu = this.routerController.getCurrentSubMenu();
         if(subMenu){
             this._rightSideNav = html`<vaadin-tabs selected="${subMenu.index}">
-                                        ${subMenu.links.map(link =>
-                                            html`<vaadin-tab><a href="${link.path}">${link.name}</a></vaadin-tab>`
-                                        )}
-                                    </vaadin-tabs>`;
+                                    ${subMenu.links.map(link =>
+                                        html`<vaadin-tab><a title="${link.path}" href="${link.path}">${link.name}</a></vaadin-tab>`
+                                    )}
+                                </vaadin-tabs>`;
         }else{
             this._rightSideNav = html`<div class="app-info">${devuiState.applicationInfo.applicationName} ${devuiState.applicationInfo.applicationVersion}</div>`; // default
         }

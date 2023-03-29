@@ -30,7 +30,7 @@ public class QuteDataPageBuilder extends PageBuilder<QuteDataPageBuilder> {
     }
 
     public String getTemplatePath() {
-        return "/dev-ui/" + super.namespace + "/" + this.templateLink;
+        return "/dev-ui/" + this.templateLink;
     }
 
 }

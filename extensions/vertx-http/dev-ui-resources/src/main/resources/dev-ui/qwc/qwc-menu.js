@@ -12,6 +12,7 @@ import '@vaadin/icon';
 export class QwcMenu extends observeState(LitElement) {
     
     storageControl = new StorageController(this);
+    routerController = new RouterController(this);
     
     static styles = css`
             .left {
@@ -88,6 +89,7 @@ export class QwcMenu extends observeState(LitElement) {
         _selectedPage: {attribute: false},
         _selectedPageLabel: {attribute: false},
         _width: {state: true},
+        _customMenuNamespaces: {state: true},
     };
     
     constructor() {
@@ -96,11 +98,12 @@ export class QwcMenu extends observeState(LitElement) {
         window.addEventListener('vaadin-router-location-changed', (event) => {
             this._updateSelection(event);
         });
+        this._customMenuNamespaces = [];
     }
     
     connectedCallback() {
         super.connectedCallback();
-        this._selectedPage = "qwc-extensions"; // default
+        this._selectedPage = "devui-extensions"; // default
         this._selectedPageLabel = "Extensions"; // default
         this._restoreState();
     }
@@ -115,12 +118,13 @@ export class QwcMenu extends observeState(LitElement) {
     }
     
     _updateSelection(event){
-        var pageDetails = RouterController.parseLocationChangedEvent(event);
-        this._selectedPage = pageDetails.component;
-        this._selectedPageLabel = pageDetails.title;
+        let currentPage = this.routerController.getCurrentPage();
+        this._selectedPageLabel = currentPage.title;
+        this._selectedPage = currentPage.namespace;
     }
 
     render() {
+        this._customMenuNamespaces = [];
         return html`
             <div class="left">
                 <div class="menu" style="width: ${this._width}px;" @dblclick=${this._doubleClicked}>
@@ -145,30 +149,33 @@ export class QwcMenu extends observeState(LitElement) {
 
     _renderItem(page, index){
         
-        var pagename = page.componentName;
         var defaultSelection = false;
         if(index===0)defaultSelection = true;
         import(page.componentRef);
-        RouterController.addMenuRoute(page, defaultSelection);
-        
-        let displayName = "";
-        if(this._show){
-            displayName = page.title;
-        }
-        let pageRef = RouterController.pageRefWithBase(page.componentName);
-        
-        const selected = this._selectedPage == page.componentName;
-        let classnames = "item";
-        if(selected){
-            classnames = "item selected";
-        }
+        this.routerController.addRouteForMenu(page, defaultSelection);
 
-        return html`
-        <a class="${classnames}" href="${pageRef}">
-            <vaadin-icon icon="${page.icon}"></vaadin-icon>
-            <span class="item-text" data-page="${page.componentName}">${displayName}</span>
-        </a>
-        `;        
+        // Each namespace has one place on the menu
+        if(!this._customMenuNamespaces.includes(page.namespace)){
+            this._customMenuNamespaces.push(page.namespace);
+            let displayName = "";
+            if(this._show){
+                displayName = page.title;
+            }
+        
+            let pageRef = this.routerController.getPageUrlFor(page);
+            const selected = this._selectedPage == page.namespace;
+            let classnames = "item";
+            if(selected){
+                classnames = "item selected";
+            }
+
+            return html`
+            <a class="${classnames}" href="${pageRef}">
+                <vaadin-icon icon="${page.icon}"></vaadin-icon>
+                <span class="item-text" data-page="${page.componentName}">${displayName}</span>
+            </a>
+            `;        
+        }
     }
 
     _renderIcon(icon, action){

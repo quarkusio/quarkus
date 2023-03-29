@@ -87,7 +87,6 @@ export class JsonRpc {
     _extensionName;
     _logTraffic;
     
-    
     /**
      * 
      * @param {type} host the component using this.
@@ -102,19 +101,26 @@ export class JsonRpc {
      * @returns {Proxy}
      */
     constructor(host, logTraffic=true, serviceIdentifier=null) {
-        var page = RouterController.pageForComponent(host.tagName.toLowerCase());
         
-        if (page){
-            if(page.namespace){
-                // For pages
-                this._setExtensionName(page.namespace, serviceIdentifier);
-            }else{
-                // For Menu items
-                this._setExtensionName(page.id, serviceIdentifier);
+        // First check if host is a String
+        if (typeof host === 'string' || host instanceof String){
+            this._setExtensionName(host, serviceIdentifier);
+        }else {
+        
+            var page = RouterController.componentMap.get(host.tagName.toLowerCase());
+
+            if (page){
+                // Internal Menu
+                if(page.internal){
+                    this._setExtensionName(page.id, serviceIdentifier);
+                }else {
+                    // For pages
+                    this._setExtensionName(page.namespace, serviceIdentifier);
+                }
+            } else {
+                // For cards and logs
+                this._setExtensionName(host.getAttribute("namespace"), serviceIdentifier);
             }
-        } else {
-            // For cards and logs
-            this._setExtensionName(host.getAttribute("namespace"), serviceIdentifier);
         }
         
         this._logTraffic = logTraffic;

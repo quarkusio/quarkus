@@ -13,6 +13,7 @@ import '@vaadin/icon';
  * This component loads an external page
  */
 export class QwcExternalPage extends observeState(LitElement)  {
+    routerController = new RouterController(this);
     
     static styles = css`
         .codeBlock {
@@ -38,7 +39,7 @@ export class QwcExternalPage extends observeState(LitElement)  {
 
     connectedCallback() {
         super.connectedCallback();
-        var metadata = RouterController.currentMetaData();
+        var metadata = this.routerController.getCurrentMetaData();
         if(metadata){
             this._externalUrl = metadata.externalUrl;
             if(metadata.mimeType){

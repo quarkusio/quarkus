@@ -7,6 +7,7 @@ import '@vaadin/grid/vaadin-grid-sort-column.js';
  * This component renders build time data in a table
  */
 export class QwcDataTablePage extends LitElement {
+    routerController = new RouterController(this);
     
     static styles = css`
         .datatable {
@@ -23,7 +24,7 @@ export class QwcDataTablePage extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        var page = RouterController.currentPage();
+        var page = this.routerController.getCurrentPage();
         if(page && page.metadata){
             this._buildTimeDataKey = page.metadata.buildTimeDataKey;
 

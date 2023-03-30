@@ -80,7 +80,7 @@ class HibernateSearchOutboxPollingProcessor {
         if (puConfig == null) {
             return false;
         }
-        Optional<String> configuredStrategy = puConfig.coordination.strategy;
+        Optional<String> configuredStrategy = puConfig.coordination().strategy();
         return configuredStrategy.isPresent()
                 && configuredStrategy.get().equals(HibernateOrmMapperOutboxPollingSettings.COORDINATION_STRATEGY_NAME);
     }

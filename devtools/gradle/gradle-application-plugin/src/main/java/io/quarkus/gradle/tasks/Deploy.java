@@ -47,11 +47,6 @@ public abstract class Deploy extends QuarkusBuildTask {
         }
     }
 
-    @Inject
-    public Deploy() {
-        super("Deploy");
-    }
-
     @Input
     Optional<String> deployer = Optional.empty();
     boolean imageBuild = false;
@@ -73,8 +68,9 @@ public abstract class Deploy extends QuarkusBuildTask {
         this.imageBuild = true;
     }
 
-    public Deploy(String description) {
-        super(description);
+    @Inject
+    public Deploy() {
+        super("Deploy");
         extension().forcedPropertiesProperty().convention(
                 getProject().provider(() -> {
                     Map<String, String> props = new HashMap<>();

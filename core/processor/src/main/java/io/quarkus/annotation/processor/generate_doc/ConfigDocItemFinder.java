@@ -1,5 +1,6 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_DEFAULT;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_ENUM_VALUE;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_MAP_KEY;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_SECTION;
@@ -223,14 +224,13 @@ class ConfigDocItemFinder {
                 }
 
                 // Mappings
-                for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
-                        .getElementValues().entrySet()) {
-                    Object value = entry.getValue().getValue();
-                    if (annotationName.equals(ANNOTATION_CONFIG_WITH_NAME)) {
-                        name = parentName + DOT + value;
-                    } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_DEFAULT)) {
-                        defaultValue = value.toString();
-                    }
+                if (annotationName.equals(ANNOTATION_CONFIG_WITH_NAME)) {
+                    name = parentName + DOT + annotationMirror.getElementValues().values().iterator().next().getValue();
+                } else if (annotationName.equals(ANNOTATION_CONFIG_DOC_DEFAULT)) {
+                    defaultValue = annotationMirror.getElementValues().values().iterator().next().getValue().toString();
+                } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_DEFAULT)
+                        && defaultValue == null) {
+                    defaultValue = annotationMirror.getElementValues().values().iterator().next().getValue().toString();
                 }
             }
 

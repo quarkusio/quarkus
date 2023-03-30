@@ -5,9 +5,9 @@ import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import '@vanillawc/wc-codemirror';
 import '@vanillawc/wc-codemirror/mode/yaml/yaml.js';
-import '@vanillawc/wc-codemirror/mode/properties/properties.js';
-import '@vanillawc/wc-codemirror/mode/javascript/javascript.js';
 import '@vaadin/icon';
+import '@vaadin/tabs';
+import '@vaadin/tabsheet';
 
 export class QwcKubernetesManifest extends observeState(LitElement)  {
 
@@ -27,7 +27,8 @@ export class QwcKubernetesManifest extends observeState(LitElement)  {
     // Component properties
     static properties = {
         // Name -> Content
-        "_manifests": {state: true, type: Map}
+        _manifests: {state: true, type: Map},
+        _message: {state: true}
     }
 
     // Components callbacks
@@ -37,14 +38,15 @@ export class QwcKubernetesManifest extends observeState(LitElement)  {
      */
     connectedCallback() {
         super.connectedCallback();
+        this._message = "Generating Kubernetes manifests...";
         this.jsonRpc.generateManifests().then(jsonRpcResponse => {
-            console.log(jsonRpcResponse.result);
-            const  data = JSON.parse(jsonRpcResponse.result);
-            this._manifests = new Map();
+            const data = JSON.parse(jsonRpcResponse.result);
+            var m = new Map();
             for (const key in data) {
-                this._manifests.set(key, data[key]);
+                m.set(key, data[key]);
             }
-            this.requestUpdate();
+            this._manifests = m;
+            this._message = "No manifests generated";
         });
     }
 
@@ -53,32 +55,46 @@ export class QwcKubernetesManifest extends observeState(LitElement)  {
      * @returns {*}
      */
     render() {
-        return html`${until(this._renderManifests(), html`<span>Generating Kubernetes manifests...</span>`)}`;
+        if (this._manifests) {
+            return html`
+                <vaadin-tabsheet>
+                    <vaadin-tabs slot="tabs">
+                        ${this._renderFileName()}
+                    </vaadin-tabs>
+                    ${this._renderContent()}
+                </vaadin-tabsheet>
+              `;
+        }else{
+            return html`<span>${this._message}</span>`;
+        }
     }
 
-    // View / Templates
+    _renderFileName(){
+        let keys = Array.from( this._manifests.keys() );
+        return html`${keys.map((key) =>
+                    html`<vaadin-tab id="${key}">${key}</vaadin-tab>`
+                )}`;
+    }
 
-    _renderManifests() {
-        if (this._manifests) {
-            let full = [];
-            for (let [filename, content] of this._manifests) {
-                console.log("rendering ", filename, content)
-                full.push(html`
-                    <div class="manifest">
-                        <h3>${filename}</h3>
-                        <div class="codeBlock">
+    _renderContent(){
+        let keys = Array.from( this._manifests.keys() );
+        return html`${keys.map((key) =>
+                    html`<div tab="${key}">${this._renderYaml(key)}</div>`
+                )}`;
+    }
+
+    _renderYaml(key){
+        let yaml = this._manifests.get(key);
+        
+        return html`<div class="codeBlock">
                             <wc-codemirror mode='yaml'
                                            theme='base16-${themeState.theme.name}'
                                            readonly>
                                 <link rel="stylesheet"
                                       href="/_static/wc-codemirror/theme/base16-${themeState.theme.name}.css">
-                                ${content}
+                                <script type="wc-content">${yaml}</script>
                             </wc-codemirror>
-                        </div>
-                    </div>`);
-            }
-            return full;
-        }
+                        </div>`;
     }
 
 }

@@ -184,7 +184,7 @@ public class PluginManager {
      */
     public boolean sync() {
         boolean catalogModified = reconcile();
-        Map<String, Plugin> installedPlugins = getInstallablePlugins();
+        Map<String, Plugin> installedPlugins = getInstalledPlugins();
         Map<String, Plugin> extensionPlugins = state.getExtensionPlugins();
         Map<String, Plugin> pluginsToInstall = extensionPlugins.entrySet().stream()
                 .filter(e -> !installedPlugins.containsKey(e.getKey()))
@@ -194,6 +194,11 @@ public class PluginManager {
             addPlugin(plugin);
         });
         state.invalidate();
+        if (!catalogModified) {
+            PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
+            PluginCatalog catalog = state.getPluginCatalog();
+            pluginCatalogService.writeCatalog(catalog);
+        }
         return catalogModified;
     }
 
@@ -206,11 +211,10 @@ public class PluginManager {
             //syncing may require user interaction, so just return false
             return false;
         }
-
         PluginCatalog catalog = state.getCombinedCatalog();
         if (PluginUtil.shouldSync(state.getProjectRoot(), catalog)) {
             output.info("Plugin catalog last updated on: " + catalog.getLastUpdate() + ". Syncing!");
-            return true;
+            return sync();
         }
         return false;
     }

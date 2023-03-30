@@ -4,10 +4,12 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -34,7 +36,17 @@ public class PluginCatalog implements Catalog<PluginCatalog> {
         Map<String, Plugin> plugins = new HashMap<>();
         plugins.putAll(userCatalog.map(PluginCatalog::getPlugins).orElse(Collections.emptyMap()));
         plugins.putAll(projectCatalog.map(PluginCatalog::getPlugins).orElse(Collections.emptyMap()));
-        return new PluginCatalog(plugins);
+
+        Optional<LocalDateTime> projectCatalogDate = projectCatalog.map(c -> c.getLastUpdateDate());
+        Optional<LocalDateTime> userCatalogDate = projectCatalog.map(c -> c.getLastUpdateDate());
+
+        LocalDateTime lastUpdated = Stream.of(projectCatalogDate, userCatalogDate)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .max(Comparator.naturalOrder())
+                .orElse(LocalDateTime.now());
+
+        return new PluginCatalog(VERSION, lastUpdated, plugins, Optional.empty());
     }
 
     public PluginCatalog() {

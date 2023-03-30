@@ -54,7 +54,7 @@ public class TestIdentityController {
         private TestIdentity(String username, String password, Permission... permissions) {
             this.username = username;
             this.password = password;
-            this.roles = Set.of();
+            this.roles = Set.of(username);
             this.permissionCheckers = createPermissionCheckers(Arrays.asList(permissions));
         }
 

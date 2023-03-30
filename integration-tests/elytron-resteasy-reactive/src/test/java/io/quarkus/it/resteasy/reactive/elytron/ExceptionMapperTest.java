@@ -1,6 +1,7 @@
 package io.quarkus.it.resteasy.reactive.elytron;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Map;
 
@@ -24,6 +25,24 @@ public class ExceptionMapperTest {
                 .then()
                 .statusCode(401)
                 .body(Matchers.equalTo("customized"));
+    }
+
+    @Test
+    void testCustomPermission() {
+        // test HTTP policy granting permissions with disabled proactive auth
+        given()
+                .auth().preemptive().basic("mary", Users.password("mary"))
+                .when()
+                .get("/manager-permission")
+                .then()
+                .statusCode(200)
+                .body(is("mary"));
+        given()
+                .auth().preemptive().basic("john", Users.password("john"))
+                .when()
+                .get("/manager-permission")
+                .then()
+                .statusCode(403);
     }
 
     public static class ExceptionMapperTestProfile implements QuarkusTestProfile {

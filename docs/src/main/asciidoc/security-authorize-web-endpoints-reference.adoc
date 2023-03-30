@@ -20,6 +20,7 @@ Authorization is based on user roles that the security provider provides.
 To customize these roles, a `SecurityIdentityAugmentor` can be created, see
 xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
 
+[[authorization-using-configuration]]
 == Authorization using configuration
 
 Permissions are defined in the Quarkus configuration using permission sets, with each permission set specifying a policy for access control.
@@ -85,6 +86,7 @@ The request is rejected if a request matches one or more permission sets based o
 TIP: Given the above permission set, `GET /public/foo` would match both the path and method and thus be allowed,
 whereas `POST /public/foo` would match the path but not the method and would therefore be rejected.
 
+[[matching-multiple-paths]]
 === Matching multiple paths: longest path wins
 
 Matching is always done on the "longest path wins" basis.
@@ -389,12 +391,14 @@ It is possible to use multiple expressions in the role definition.
 === Permission annotation
 
 Quarkus also provides the `io.quarkus.security.PermissionsAllowed` annotation that will permit any authenticated user with given permission to access the resource.
-The annotation is extension of the common security annotations and has no relation to configuration permissions defined with the configuration property `quarkus.http.auth.permission`.
+The annotation is extension of the common security annotations and check permissions granted to `SecurityIdentity`.
 
 .Example of endpoints secured with the `@PermissionsAllowed` annotation
 
 [source,java]
 ----
+package org.acme.crud;
+
 import io.quarkus.arc.Arc;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.GET;
@@ -404,6 +408,7 @@ import jakarta.ws.rs.QueryParam;
 
 import io.quarkus.security.PermissionsAllowed;
 
+import java.security.BasicPermission;
 import java.security.Permission;
 import java.util.Collection;
 import java.util.Collections;
@@ -414,12 +419,14 @@ public class CRUDResource {
     @PermissionsAllowed("create") <1>
     @PermissionsAllowed("update")
     @POST
+    @Path("/modify/repeated")
     public String createOrUpdate() {
         return "modified";
     }
 
     @PermissionsAllowed(value = {"create", "update"}, inclusive=true) <2>
     @POST
+    @Path("/modify/inclusive")
     public String createOrUpdate(Long id) {
         return id + " modified";
     }
@@ -432,13 +439,14 @@ public class CRUDResource {
     }
 
     @PermissionsAllowed(value = "list", permission = CustomPermission.class) <4>
+    @Path("/list")
     @GET
     public Collection<String> list(@QueryParam("query-options") String queryOptions) {
         // your business logic comes here
         return Collections.emptySet();
     }
 
-    public static class CustomPermission extends Permission {
+    public static class CustomPermission extends BasicPermission {
 
         public CustomPermission(String name) {
             super(name);
@@ -451,8 +459,6 @@ public class CRUDResource {
             var hasPermission = getName().equals(permission.getName());
             return hasPermission && publicContent;
         }
-
-        ...
     }
 }
 ----
@@ -465,8 +471,33 @@ By default, string-based permission is performed by the `io.quarkus.security.Str
 <5> Permissions are not beans, therefore only way to obtain bean instances is programmatically via the `Arc.container()`.
 
 CAUTION: If you plan to use the `@PermissionsAllowed` on the IO thread, review the information in xref:security-proactive-authentication-concept.adoc[Proactive Authentication].
+
 NOTE: The `@PermissionsAllowed` is not repeatable on class-level due to limitations of Quarkus interceptors.
 Please find well-argued explanation in the xref:cdi-reference.adoc#repeatable-interceptor-bindings[Repeatable interceptor bindings] section of the CDI reference.
+
+Provided `SecurityIdentity` contains roles, the easiest to add permissions to `SecurityIdentity` is to create a roles to permissions mapping.
+<<authorization-using-configuration,HTTP role-based policies>> can be used to grant `SecurityIdentity` permissions required by `CRUDResource` endpoints to authenticated requests like this:
+
+[source,properties]
+----
+quarkus.http.auth.policy.role-policy1.permissions.user=see:all                                      <1>
+quarkus.http.auth.policy.role-policy1.permissions.admin=create,update,read                          <2>
+quarkus.http.auth.permission.roles1.paths=/crud/modify/*,/crud/id/*                                 <3>
+quarkus.http.auth.permission.roles1.policy=role-policy1
+
+quarkus.http.auth.policy.role-policy2.permissions.user=list
+quarkus.http.auth.policy.role-policy2.permission-class=org.acme.crud.CRUDResource.CustomPermission  <4>
+quarkus.http.auth.permission.roles2.paths=/crud/list
+quarkus.http.auth.permission.roles2.policy=role-policy2
+----
+<1> Add permission `see` with action `all` to `SecurityIdentity` that holds role `user`.
+Similarly as for `@PermissionsAllowed` annotation, `io.quarkus.security.StringPermission` is used by default.
+<2> Permissions `create`, `update` and `read` are mapped to the role `admin`.
+<3> The role policy `role-policy1` only allows authenticated requests to access `/crud/modify` and `/crud/id` sub-paths.
+Please see <<matching-multiple-paths, Matching multiple paths>> section of this guide for more information on path matching algorithm.
+<4> You can also specify your own implementation of the `java.security.Permission` class.
+The class you provide must define exactly one constructor that accepts permission name and optionally actions (as `String` array).
+Here, permission `list` will be added to `SecurityIdentity` as `new CustomPermission("list")`.
 
 You can also create a custom `java.security.Permission` with additional constructor parameters.
 These additional parameters will be matched with arguments of the method annotated with the `@PermissionsAllowed` annotation.
@@ -597,9 +628,42 @@ Instead, Quarkus will pass `null` for the argument `library`.
 That gives you option to reuse your custom Permission when the method argument (like `library`) is optional.
 <2> Argument `library` will be passed to the `LibraryPermission` constructor as the `LibraryService#updateLibrary` method is not an endpoint.
 
-Currently, there is only one way to add permissions, and that is xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
+Similarly to the `CRUDResource` example, we can use permission to role mapping and grant user with role `admin` right to
+update `MediaLibrary`:
 
-.Example of Adding the `LibraryPermission` to the `SecurityIdentity`
+[source,java]
+----
+package org.acme.library;
+
+import java.security.Permission;
+import java.util.Arrays;
+import java.util.Set;
+
+public class MediaLibraryPermission extends LibraryPermission {
+
+    public MediaLibraryPermission(String libraryName, String[] actions) {
+        super(libraryName, actions, new MediaLibrary());    <1>
+    }
+
+}
+----
+<1> We want to pass `MediaLibrary` instance to the `LibraryPermission` constructor.
+
+[source,properties]
+----
+quarkus.http.auth.policy.role-policy3.permissions.admin=media-library:list,media-library:read,media-library:write   <1>
+quarkus.http.auth.policy.role-policy3.permission-class=org.acme.library.MediaLibraryPermission
+quarkus.http.auth.permission.roles3.paths=/library/*
+quarkus.http.auth.permission.roles3.policy=role-policy3
+----
+<1> Grants permission `media-library` that is allowed to perform actions `read`, `write` and `list`.
+Considering `MediaLibrary` is the `TvLibrary` class parent, we know that administrator is also going to be allowed to modify television library.
+
+All the examples above leveraged role to permission mapping, but you can also add permissions to the `SecurityIdentity` programmatically.
+In the example below, we use xref:security-customization.adoc#security-identity-customization[Security Identity Customization] to add
+the same permission as we previously granted with the HTTP role-based policy.
+
+.Example of adding the `LibraryPermission` programmatically to the `SecurityIdentity`
 
 [source,java]
 ----
@@ -630,8 +694,8 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
     }
 
     SecurityIdentity build(SecurityIdentity identity) {
-        Permission possessedPermission = new LibraryPermission("media-library",
-                new String[] { "read", "write", "list"}, new MediaLibrary()); <1>
+        Permission possessedPermission = new MediaLibraryPermission("media-library",
+                new String[] { "read", "write", "list"}); <1>
         return QuarkusSecurityIdentity.builder(identity)
                 .addPermissionChecker(new Function<Permission, Uni<Boolean>>() { <2>
                     @Override

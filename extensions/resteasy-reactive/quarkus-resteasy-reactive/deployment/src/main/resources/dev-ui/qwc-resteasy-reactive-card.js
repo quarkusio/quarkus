@@ -20,9 +20,14 @@ export class QwcResteasyReactiveCard extends QwcHotReloadElement {
         .extensionLink:hover {
             filter: brightness(80%);
         }
+        a, a:link, a:visited, a:hover, a:active{
+            color: var(--lumo-primary-color);
+        }
     `;
     
     static properties = {
+        description: {attribute: true},
+        guide: {attribute: true},
         _pages: {state: false},
         _latestScores: {state: true},
     };
@@ -43,14 +48,20 @@ export class QwcResteasyReactiveCard extends QwcHotReloadElement {
     render() {
         
         if(this._latestScores){
-            return html`<div class="graph" @click=${this.hotReload}>
-                <echarts-gauge-grade 
-                            percentage="${this._latestScores.score}"
-                            percentageFontSize="14"
-                            sectionColors="--lumo-error-color,--lumo-warning-color,--lumo-success-color">
-                        </echarts-gauge-grade>
-            </div>
+            if(this._latestScores.endpoints){
+                return html`<div class="graph" @click=${this.hotReload}>
+                                <echarts-gauge-grade 
+                                    percentage="${this._latestScores.score}"
+                                    percentageFontSize="14"
+                                    sectionColors="--lumo-error-color,--lumo-warning-color,--lumo-success-color">
+                                </echarts-gauge-grade>
+                            </div>
             ${this._renderPagesLinks()}`;
+            }else{
+                return html`${this.description}
+                            <p>No endpoints detected. 
+                            <a href="${this.guide}" target="_blank">Learn how you can add Endpoints</a></p>`;
+            }
         }
     }
     

@@ -94,9 +94,13 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
 
     render() {
         if(this._latestScores){
-            return html`${this._latestScores.endpoints.map(endpoint=>{
-                return html`${this._renderEndpoint(endpoint)}`;
-            })}`;
+            if(this._latestScores.endpoints){
+                return html`${this._latestScores.endpoints.map(endpoint=>{
+                    return html`${this._renderEndpoint(endpoint)}`;
+                })}`;
+            }else{
+                return html`<p>No endpoints detected</p>`;
+            }
         }
     }
 

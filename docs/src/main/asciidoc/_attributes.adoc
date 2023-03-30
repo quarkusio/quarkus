@@ -55,4 +55,8 @@
 // .
 :create-app-group-id: org.acme
 // .
+// Devtools snippet's attribute and context
+:upstream:
+:note-quarkus-cli-support: * _For more information about how to install the Quarkus CLI and use it, please refer to xref:cli-tooling.adoc[the Quarkus CLI guide]._
+// .
 include::_attributes-local.adoc[]

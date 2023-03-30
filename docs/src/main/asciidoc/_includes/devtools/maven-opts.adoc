@@ -1,13 +1,39 @@
-[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+[role="primary asciidoc-tabs-sync-cli"]
+ifdef::upstream[]
 .CLI
+endif::[]
+ifdef::downstream[]
+* Using Quarkus CLI:
++
+endif::[]
+****
+[source, bash, subs=attributes+]
 ----
 MAVEN_OPTS='--enable-preview' quarkus build
 ----
 ifndef::devtools-no-maven[]
 ifdef::devtools-wrapped[+]
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+
+ifdef::upstream[]
+
+endif::[]
+ifdef::downstream[]
+* {note-quarkus-cli-support}
+endif::[]
+****
+
+[role="secondary asciidoc-tabs-sync-maven"]
+ifdef::upstream[]
 .Maven
+endif::[]
+ifdef::downstream[]
+* Using Maven:
++
+endif::[]
+****
+[source, bash, subs=attributes+]
 ----
 MAVEN_OPTS='--enable-preview' ./mvnw install
 ----
 endif::[]
+****

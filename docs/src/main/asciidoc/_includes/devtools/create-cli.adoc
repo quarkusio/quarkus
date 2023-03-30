@@ -1,5 +1,11 @@
 [role="primary asciidoc-tabs-sync-cli"]
+ifdef::upstream[]
 .CLI
+endif::[]
+ifdef::downstream[]
+* Using Quarkus CLI:
++
+endif::[]
 ****
 [source,bash,subs=attributes+]
 ----
@@ -50,13 +56,19 @@ cd {create-cli-artifact-id}
 endif::[]
 ----
 
-To create a Gradle project, add the `--gradle` or `--gradle-kotlin-dsl` option.
+* To create a Gradle project, add the `--gradle` or `--gradle-kotlin-dsl` option.
 
-_For more information about how to install the Quarkus CLI and use it, please refer to xref:cli-tooling.adoc[the Quarkus CLI guide]._
+* _{note-quarkus-cli-support}_
 ****
 
 [role="secondary asciidoc-tabs-sync-maven"]
+ifdef::upstream[]
 .Maven
+endif::[]
+ifdef::downstream[]
+* Using Maven:
++
+endif::[]
 ****
 [source,bash,subs=attributes+]
 ----

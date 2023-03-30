@@ -1,21 +1,57 @@
-[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+[role="primary asciidoc-tabs-sync-cli"]
+ifdef::upstream[]
 .CLI
+endif::[]
+ifdef::downstream[]
+* Using Quarkus CLI:
++
+endif::[]
+****
+[source, bash, subs=attributes+]
 ----
 quarkus build --native -Dquarkus.native.container-build=true {build-additional-parameters}
 ----
 ifndef::devtools-no-maven[]
 ifdef::devtools-wrapped[+]
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+
+ifdef::upstream[]
+
+endif::[]
+ifdef::downstream[]
+* {note-quarkus-cli-support}
+endif::[]
+****
+
+[role="secondary asciidoc-tabs-sync-maven"]
+ifdef::upstream[]
 .Maven
+endif::[]
+ifdef::downstream[]
+* Using Maven:
++
+endif::[]
+****
+[source, bash, subs=attributes+]
 ----
 ./mvnw install -Dnative -Dquarkus.native.container-build=true {build-additional-parameters}
 ----
 endif::[]
 ifndef::devtools-no-gradle[]
 ifdef::devtools-wrapped[+]
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+****
+
+[role="secondary asciidoc-tabs-sync-gradle"]
+ifdef::upstream[]
 .Gradle
+endif::[]
+ifdef::downstream[]
+* Using Gradle:
++
+endif::[]
+****
+[source, bash, subs=attributes+]
 ----
 ./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true {build-additional-parameters}
 ----
 endif::[]
+****

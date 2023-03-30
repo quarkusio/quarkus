@@ -1,5 +1,11 @@
 [role="primary asciidoc-tabs-sync-cli"]
+ifdef::upstream[]
 .CLI
+endif::[]
+ifdef::downstream[]
+* Using Quarkus CLI:
++
+endif::[]
 ****
 [source,bash,subs=attributes+]
 ----
@@ -56,7 +62,13 @@ _For more information about how to install the Quarkus CLI and use it, please re
 ****
 
 [role="secondary asciidoc-tabs-sync-maven"]
+ifdef::upstream[]
 .Maven
+endif::[]
+ifdef::downstream[]
+* Using Maven:
++
+endif::[]
 ****
 [source,bash,subs=attributes+]
 ----

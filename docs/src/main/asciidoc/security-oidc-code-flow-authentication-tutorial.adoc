@@ -14,10 +14,10 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this example, we build a very simple web application with a single page:
+In this example, we build a simple web application with a single page:
 
 * `/index.html`
-
++
 This page is protected and can only be accessed by authenticated users.
 
 == Solution

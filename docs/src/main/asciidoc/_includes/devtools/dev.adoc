@@ -1,5 +1,13 @@
-[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+[role="primary asciidoc-tabs-sync-cli"]
+ifdef::upstream[]
 .CLI
+endif::[]
+ifdef::downstream[]
+* Using Quarkus CLI:
++
+endif::[]
+****
+[source, bash, subs=attributes+]
 ----
 ifdef::dev-additional-parameters[]
 quarkus dev {dev-additional-parameters}
@@ -10,8 +18,25 @@ endif::[]
 ----
 ifdef::devtools-wrapped[+]
 ifndef::devtools-no-maven[]
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+
+ifdef::upstream[]
+
+endif::[]
+ifdef::downstream[]
+* {note-quarkus-cli-support}
+endif::[]
+****
+
+[role="secondary asciidoc-tabs-sync-maven"]
+ifdef::upstream[]
 .Maven
+endif::[]
+ifdef::downstream[]
+* Using Maven:
++
+endif::[]
+****
+[source, bash, subs=attributes+]
 ----
 ifdef::dev-additional-parameters[]
 ./mvnw quarkus:dev {dev-additional-parameters}
@@ -23,8 +48,18 @@ endif::[]
 endif::[]
 ifdef::devtools-wrapped[+]
 ifndef::devtools-no-gradle[]
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+****
+
+[role="secondary asciidoc-tabs-sync-gradle"]
+ifdef::upstream[]
 .Gradle
+endif::[]
+ifdef::downstream[]
+* Using Gradle:
++
+endif::[]
+****
+[source, bash, subs=attributes+]
 ----
 ifdef::dev-additional-parameters[]
 ./gradlew --console=plain quarkusDev {dev-additional-parameters}
@@ -34,3 +69,4 @@ ifndef::dev-additional-parameters[]
 endif::[]
 ----
 endif::[]
+****

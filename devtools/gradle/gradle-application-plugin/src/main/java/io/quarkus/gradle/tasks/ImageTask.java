@@ -37,8 +37,10 @@ public abstract class ImageTask extends QuarkusBuildTask {
         super(description);
     }
 
-    Optional<Builder> builder() {
-        return builderFromSystemProperties();
+    public Builder builder() {
+        return builderFromSystemProperties()
+                .or(() -> availableBuilders().stream().findFirst())
+                .orElse(Builder.docker);
     }
 
     Optional<Builder> builderFromSystemProperties() {

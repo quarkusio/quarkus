@@ -12,12 +12,15 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.json.stream.JsonParsingException;
 
 import org.jboss.logging.Logger;
 
 import graphql.ErrorType;
 import graphql.ExecutionResult;
+import graphql.ExecutionResultImpl;
 import graphql.GraphQLError;
+import graphql.GraphqlErrorBuilder;
 import graphql.execution.AbortExecutionException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
@@ -122,6 +125,8 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex);
+        } catch (JsonParsingException ex) {
+            sendError("Unparseable request", response, ctx, requestedCharset);
         }
     }
 
@@ -297,6 +302,21 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         } else {
             return "POST, OPTIONS";
         }
+    }
+
+    private void sendError(String errorMessage, HttpServerResponse response,
+            RoutingContext ctx, String requestedCharset) {
+        VertxExecutionResponseWriter writer = new VertxExecutionResponseWriter(response, ctx, requestedCharset);
+        GraphQLError error = GraphqlErrorBuilder
+                .newError()
+                .message(errorMessage)
+                .build();
+        ExecutionResult executionResult = ExecutionResultImpl
+                .newExecutionResult()
+                .addError(error)
+                .build();
+        ExecutionResponse executionResponse = new ExecutionResponse(executionResult);
+        writer.write(executionResponse);
     }
 
     private void doRequest(JsonObject jsonInput, HttpServerResponse response, RoutingContext ctx,

@@ -15,7 +15,7 @@ import '@vaadin/horizontal-layout';
  */
 export class QwcBuildSteps extends LitElement {
 
-  jsonRpc = new JsonRpc(this);
+  jsonRpc = new JsonRpc(this, true, 'build-metrics');
 
   static styles = css`
       .build-steps {

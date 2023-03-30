@@ -19,18 +19,18 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.devui.runtime.build.BuildStepsDevUIController.DependencyGraph.Link;
-import io.quarkus.devui.runtime.build.BuildStepsDevUIController.DependencyGraph.Node;
+import io.quarkus.devui.runtime.build.BuildMetricsDevUIController.DependencyGraph.Link;
+import io.quarkus.devui.runtime.build.BuildMetricsDevUIController.DependencyGraph.Node;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-public class BuildStepsDevUIController {
+public class BuildMetricsDevUIController {
 
-    private static final Logger LOG = Logger.getLogger(BuildStepsDevUIController.class.getName());
+    private static final Logger LOG = Logger.getLogger(BuildMetricsDevUIController.class.getName());
 
-    private static final BuildStepsDevUIController INSTANCE = new BuildStepsDevUIController();
+    private static final BuildMetricsDevUIController INSTANCE = new BuildMetricsDevUIController();
 
-    public static BuildStepsDevUIController get() {
+    public static BuildMetricsDevUIController get() {
         return INSTANCE;
     }
 
@@ -38,7 +38,7 @@ public class BuildStepsDevUIController {
 
     private volatile Map<String, Object> buildStepsMetrics;
 
-    private BuildStepsDevUIController() {
+    private BuildMetricsDevUIController() {
     }
 
     void setBuildMetricsPath(Path buildMetricsPath) {

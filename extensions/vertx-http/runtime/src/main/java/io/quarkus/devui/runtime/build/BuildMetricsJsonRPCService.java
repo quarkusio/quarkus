@@ -5,9 +5,9 @@ import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class BuildStepsJsonRPCService {
+public class BuildMetricsJsonRPCService {
 
     public Map<String, Object> getBuildStepsMetrics() {
-        return BuildStepsDevUIController.get().getBuildStepsMetrics();
+        return BuildMetricsDevUIController.get().getBuildStepsMetrics();
     }
 }

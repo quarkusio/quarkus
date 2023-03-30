@@ -9,16 +9,16 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
-import io.quarkus.devui.runtime.build.BuildStepsDevUIRecorder;
-import io.quarkus.devui.runtime.build.BuildStepsJsonRPCService;
+import io.quarkus.devui.runtime.build.BuildMetricsDevUIRecorder;
+import io.quarkus.devui.runtime.build.BuildMetricsJsonRPCService;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 
 @BuildSteps(onlyIf = { IsDevelopment.class })
-public class BuildStepsDevUIProcessor {
+public class BuildMetricsDevUIProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void create(BuildStepsDevUIRecorder recorder,
+    public void create(BuildMetricsDevUIRecorder recorder,
             BuildSystemTargetBuildItem buildSystemTarget) {
         recorder.setBuildMetricsPath(buildSystemTarget.getOutputDirectory().resolve("build-metrics.json").toString());
     }
@@ -27,7 +27,7 @@ public class BuildStepsDevUIProcessor {
     AdditionalBeanBuildItem additionalBeans() {
         return AdditionalBeanBuildItem
                 .builder()
-                .addBeanClass(BuildStepsJsonRPCService.class)
+                .addBeanClass(BuildMetricsJsonRPCService.class)
                 .setUnremovable()
                 .setDefaultScope(DotNames.APPLICATION_SCOPED)
                 .build();
@@ -35,6 +35,6 @@ public class BuildStepsDevUIProcessor {
 
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
-        return new JsonRPCProvidersBuildItem("build-steps", BuildStepsJsonRPCService.class);
+        return new JsonRPCProvidersBuildItem("build-metrics", BuildMetricsJsonRPCService.class);
     }
 }

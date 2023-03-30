@@ -126,11 +126,5 @@ public abstract class Deploy extends QuarkusBuildTask {
                 .or(() -> imageBuild ? Arrays.stream(getDeployer().requiresOneOf).findFirst() : Optional.empty());
     }
 
-    private void abort(String message, Object... args) {
-        getProject().getLogger().warn(message, args);
-        getProject().getTasks().stream().filter(t -> t != this).forEach(t -> {
-            t.setEnabled(false);
-        });
-        throw new StopExecutionException();
     }
 }

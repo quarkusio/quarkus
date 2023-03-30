@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -44,7 +46,7 @@ public class AbstractDeploymentMojo extends BuildMojo {
         }
     }
 
-    Deployer deployer = Deployer.kubernetes;
+    Optional<String> deployer = Optional.empty();
 
     @Parameter(property = "quarkus.deployment.dry-run")
     boolean dryRun;
@@ -74,7 +76,11 @@ public class AbstractDeploymentMojo extends BuildMojo {
     }
 
     public Deployer getDeployer() {
-        return DeploymentUtil.getEnabledDeployer().map(d -> Deployer.valueOf(d)).orElse(Deployer.kubernetes);
+        return deployer
+                .or(() -> DeploymentUtil.getEnabledDeployer())
+                .or(() -> getProjectDeployers().stream().findFirst())
+                .map(Deployer::valueOf)
+                .orElse(Deployer.kubernetes);
     }
 
     @Override
@@ -95,6 +101,13 @@ public class AbstractDeploymentMojo extends BuildMojo {
                         io.quarkus.maven.dependency.ArtifactCoords.TYPE_JAR,
                         d.getVersion()))
                 .findFirst();
+    }
+
+    public Set<String> getProjectDeployers() {
+        return mavenProject().getDependencies().stream()
+                .filter(d -> "io.quarkus".equals(d.getGroupId()) && Arrays.stream(Deployer.values()).map(Deployer::getExtension).anyMatch(e -> d.getArtifactId().equals(e)))
+                .map(d -> d.getArtifactId().replaceAll("^quarkus\\-", ""))
+                .collect(Collectors.toSet());
     }
 
     /**

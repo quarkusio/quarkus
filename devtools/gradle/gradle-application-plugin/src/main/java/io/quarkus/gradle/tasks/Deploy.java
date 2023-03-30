@@ -5,12 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
@@ -92,6 +92,7 @@ public abstract class Deploy extends QuarkusBuildTask {
         List<String> projectDependencies = getProject().getConfigurations().stream().flatMap(c -> c.getDependencies().stream())
                 .map(d -> d.getName())
                 .collect(Collectors.toList());
+
         if (!projectDependencies.contains(requiredDeployerExtension)) {
             abort("Task: {} requires extensions: {}\n" +
                     "To add the extensions to the project you can run the following command:\n" +
@@ -114,7 +115,11 @@ public abstract class Deploy extends QuarkusBuildTask {
     }
 
     public Deployer getDeployer() {
-        return deployer.or(() -> DeploymentUtil.getEnabledDeployer()).map(d -> Deployer.valueOf(d)).orElse(Deployer.kubernetes);
+        return deployer
+                .or(() -> DeploymentUtil.getEnabledDeployer())
+                .or(() -> getProjectDeployers().stream().findFirst())
+                .map(Deployer::valueOf)
+                .orElse(Deployer.kubernetes);
     }
 
     public Optional<String> requiredContainerImageExtension() {
@@ -122,5 +127,12 @@ public abstract class Deploy extends QuarkusBuildTask {
                 .or(() -> imageBuild ? Arrays.stream(getDeployer().requiresOneOf).findFirst() : Optional.empty());
     }
 
+    private Set<String> getProjectDeployers() {
+        return getProject().getConfigurations().stream().flatMap(c -> c.getDependencies().stream())
+                .map(d -> d.getName())
+                .filter(d -> Arrays.stream(Deployer.values()).map(Deployer::getExtension).anyMatch(e -> d.equals(e)))
+                .map(d -> d.replaceAll("^quarkus\\-", ""))
+                .collect(Collectors.toSet());
     }
+
 }

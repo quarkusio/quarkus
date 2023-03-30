@@ -3864,6 +3864,11 @@
                 <version>${smallrye-config.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.smallrye.config</groupId>
+                <artifactId>smallrye-config-jasypt</artifactId>
+                <version>${smallrye-config.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-health</artifactId>
                 <version>${smallrye-health.version}</version>

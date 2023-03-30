@@ -80,12 +80,4 @@ public abstract class ImageTask extends QuarkusBuildTask {
             abort("Aborting.");
         }
     }
-
-    void abort(String message, Object... args) {
-        getProject().getLogger().warn(message, args);
-        getProject().getTasks().stream().filter(t -> t != this).forEach(t -> {
-            t.setEnabled(false);
-        });
-        throw new StopExecutionException();
-    }
 }

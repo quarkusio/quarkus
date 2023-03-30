@@ -22,12 +22,6 @@ public abstract class ImageBuild extends ImageTask {
         super("Perform an image build");
         MapProperty<String, String> forcedProperties = extension().forcedPropertiesProperty();
         forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
-        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, getProject().provider(() -> builder().orElseThrow().name()));
-    }
-
-    public Optional<Builder> builder() {
-        return builder
-                .or(() -> builderFromSystemProperties())
-                .or(() -> availableBuilders().stream().findFirst());
+        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, getProject().provider(() -> builder().name()));
     }
 }

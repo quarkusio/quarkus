@@ -16,9 +16,12 @@ import io.quarkus.cache.CompositeCacheKey;
 import io.quarkus.cache.runtime.AbstractCache;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.runtime.datasource.Marshaller;
+import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.mutiny.unchecked.UncheckedFunction;
+import io.smallrye.mutiny.vertx.MutinyHelper;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisConnection;
@@ -41,6 +44,7 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
             "double", Double.class,
             "boolean", Boolean.class);
 
+    private final Vertx vertx;
     private final Redis redis;
 
     private final RedisCacheInfo cacheInfo;
@@ -49,9 +53,12 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
 
     private final Marshaller marshaller;
 
+    private final Supplier<Boolean> blockingAllowedSupplier;
+
     public RedisCacheImpl(RedisCacheInfo cacheInfo, Optional<String> redisClientName) {
 
-        this(cacheInfo, determineRedisClient(redisClientName));
+        this(cacheInfo, Arc.container().select(Vertx.class).get(), determineRedisClient(redisClientName),
+                BlockingOperationControl::isBlockingAllowed);
     }
 
     private static Redis determineRedisClient(Optional<String> redisClientName) {
@@ -64,8 +71,10 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
     }
 
     @SuppressWarnings("unchecked")
-    public RedisCacheImpl(RedisCacheInfo cacheInfo, Redis redis) {
+    public RedisCacheImpl(RedisCacheInfo cacheInfo, Vertx vertx, Redis redis, Supplier<Boolean> blockingAllowedSupplier) {
+        this.vertx = vertx;
         this.cacheInfo = cacheInfo;
+        this.blockingAllowedSupplier = blockingAllowedSupplier;
 
         try {
             this.classOfKey = (Class<K>) loadClass(this.cacheInfo.keyType);
@@ -127,6 +136,7 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
         // val = deserialize(GET K)
         // if (val == null) => SET K computation.apply(K)
         byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(key)));
+        boolean isWorkerThread = blockingAllowedSupplier.get();
         return withConnection(new Function<RedisConnection, Uni<V>>() {
             @Override
             public Uni<V> apply(RedisConnection connection) {
@@ -138,17 +148,39 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
                                 if (cached != null) {
                                     return Uni.createFrom().item(new StaticSupplier<>(cached));
                                 } else {
-                                    V value = valueLoader.apply(key);
-                                    if (value == null) {
-                                        throw new IllegalArgumentException("Cannot cache `null` value");
-                                    }
-                                    byte[] encodedValue = marshaller.encode(value);
-                                    if (cacheInfo.useOptimisticLocking) {
-                                        return multi(connection, set(connection, encodedKey, encodedValue))
-                                                .replaceWith(value);
+                                    Uni<V> uni;
+                                    if (isWorkerThread) {
+                                        uni = Uni.createFrom().item(new Supplier<V>() {
+                                            @Override
+                                            public V get() {
+                                                return valueLoader.apply(key);
+                                            }
+                                        }).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate()));
                                     } else {
-                                        return set(connection, encodedKey, encodedValue).replaceWith(value);
+                                        uni = Uni.createFrom().item(valueLoader.apply(key));
                                     }
+
+                                    return uni.onItem().call(new Function<V, Uni<?>>() {
+                                        @Override
+                                        public Uni<?> apply(V value) {
+                                            if (value == null) {
+                                                throw new IllegalArgumentException("Cannot cache `null` value");
+                                            }
+                                            byte[] encodedValue = marshaller.encode(value);
+                                            Uni<V> result;
+                                            if (cacheInfo.useOptimisticLocking) {
+                                                result = multi(connection, set(connection, encodedKey, encodedValue))
+                                                        .replaceWith(value);
+                                            } else {
+                                                result = set(connection, encodedKey, encodedValue).replaceWith(value);
+                                            }
+                                            if (isWorkerThread) {
+                                                return result
+                                                        .runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate()));
+                                            }
+                                            return result;
+                                        }
+                                    });
                                 }
                             }
                         }));

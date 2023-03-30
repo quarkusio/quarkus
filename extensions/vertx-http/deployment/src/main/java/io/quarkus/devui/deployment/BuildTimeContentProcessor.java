@@ -365,7 +365,6 @@ public class BuildTimeContentProcessor {
                 .title("Build Steps")
                 .icon("font-awesome-solid:hammer")
                 .componentLink("qwc-build-steps.js").build();
-        internalBuildTimeData.addBuildTimeData("buildSteps", "TODO: Build Steps");
 
         Page buildItems = Page.webComponentPageBuilder().internal()
                 .namespace("devui-build-information")

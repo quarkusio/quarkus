@@ -1,18 +1,22 @@
 import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import { pages } from 'build-time-data';
 import { JsonRpc } from 'jsonrpc';
-import 'echarts-gauge-grade';
 import '@vaadin/icon';
+import 'qwc/qwc-extension-link.js';
 
 export class QwcResteasyReactiveCard extends QwcHotReloadElement {
     jsonRpc = new JsonRpc(this);
     
     static styles = css`
-        .graph {
-            height: 200px;
+        .score {
+            font-size: 4em;
+            text-align: center;
+            color: var(--lumo-primary-text-color);
+            text-shadow: 2px 1px 0 var(--lumo-contrast-10pct);
         }
+    
         .extensionLink {
-            color: var(--lumo-contrast);
+            color: var(--lumo-contrast) !important;
             font-size: small;
             cursor: pointer;
             text-decoration: none;
@@ -26,8 +30,10 @@ export class QwcResteasyReactiveCard extends QwcHotReloadElement {
     `;
     
     static properties = {
+        extensionName: {attribute: true},
         description: {attribute: true},
         guide: {attribute: true},
+        namespace: {attribute: true},
         _pages: {state: false},
         _latestScores: {state: true},
     };
@@ -49,12 +55,8 @@ export class QwcResteasyReactiveCard extends QwcHotReloadElement {
         
         if(this._latestScores){
             if(this._latestScores.endpoints){
-                return html`<div class="graph" @click=${this.hotReload}>
-                                <echarts-gauge-grade 
-                                    percentage="${this._latestScores.score}"
-                                    percentageFontSize="14"
-                                    sectionColors="--lumo-error-color,--lumo-warning-color,--lumo-success-color">
-                                </echarts-gauge-grade>
+                return html`<div class="score" @click=${this.hotReload}>
+                                ${this._latestScores.score} %
                             </div>
             ${this._renderPagesLinks()}`;
             }else{
@@ -66,10 +68,21 @@ export class QwcResteasyReactiveCard extends QwcHotReloadElement {
     }
     
     _renderPagesLinks(){
-        return html`<a class="extensionLink" href="${this._pages[0].id}">
-                <vaadin-icon class="icon" icon="${this._pages[0].icon}"></vaadin-icon>
-                ${this._pages[0].title}
-            </a>`;
+        return html`${this._pages.map(page => html`
+                            <qwc-extension-link slot="link"
+                                namespace="${this.namespace}"
+                                extensionName="${this.name}"
+                                iconName="${page.icon}"
+                                displayName="${page.title}"
+                                staticLabel="${page.staticLabel}"
+                                dynamicLabel="${page.dynamicLabel}"
+                                streamingLabel="${page.streamingLabel}"
+                                path="${page.id}"
+                                ?embed=${page.embed}
+                                externalUrl="${page.metadata.externalUrl}"
+                                webcomponent="${page.componentLink}" >
+                            </qwc-extension-link>
+                        `)}`;
     }
     
     hotReload(){

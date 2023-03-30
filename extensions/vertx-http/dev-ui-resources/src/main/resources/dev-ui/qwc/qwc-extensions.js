@@ -94,6 +94,7 @@ export class QwcExtensions extends observeState(LitElement) {
         let customCardCode = `<${extension.card.componentName} 
                                 class="card-content"
                                 slot="content"
+                                extensionName="${extension.name}"
                                 description="${extension.description}"
                                 guide="${extension.guide}"
                                 namespace="${extension.namespace}">

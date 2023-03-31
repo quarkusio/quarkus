@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -26,6 +27,7 @@ public class NamedBeanIterableReturnTypeTest {
                                     "{@java.lang.String field}"
                                             + "{#if cdi:validation.hasViolations(field)}"
                                             + "{#each cdi:validation.getViolations(field)}{it}{/each}"
+                                            + "{#each cdi:violations}:{it.toUpperCase}{/each}"
                                             + "{/if}"),
                             "templates/validate.html"));
 
@@ -34,7 +36,7 @@ public class NamedBeanIterableReturnTypeTest {
 
     @Test
     public void testResult() {
-        assertEquals("Foo!", validate.data("field", "foo").render());
+        assertEquals("Foo!:BAR:BAZ", validate.data("field", "foo").render());
     }
 
     @ApplicationScoped
@@ -47,6 +49,12 @@ public class NamedBeanIterableReturnTypeTest {
 
         public List<String> getViolations(String field) {
             return List.of("Foo!");
+        }
+
+        @Named("violations")
+        @Produces
+        public List<String> getViolations() {
+            return List.of("bar", "baz");
         }
     }
 

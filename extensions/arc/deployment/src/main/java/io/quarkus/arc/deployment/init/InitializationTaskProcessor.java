@@ -15,7 +15,7 @@ import io.quarkus.runtime.init.InitializationTaskRecorder;
  * once they are completed if
  * needed.
  */
-public class InitializtionTaskProcessor {
+public class InitializationTaskProcessor {
 
     @BuildStep
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)

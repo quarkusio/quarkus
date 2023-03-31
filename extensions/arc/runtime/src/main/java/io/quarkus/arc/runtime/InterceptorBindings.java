@@ -8,7 +8,11 @@ import jakarta.interceptor.InvocationContext;
 import io.quarkus.arc.AbstractAnnotationLiteral;
 import io.quarkus.arc.ArcInvocationContext;
 
-public class InterceptorBindings {
+/**
+ *
+ * @see ArcInvocationContext#getInterceptorBindings()
+ */
+public final class InterceptorBindings {
 
     @SuppressWarnings("unchecked")
     public static Set<Annotation> getInterceptorBindings(InvocationContext invocationContext) {

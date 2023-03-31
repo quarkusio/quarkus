@@ -37,7 +37,7 @@ public class InjectionPointImpl implements InjectionPoint {
             InjectableBean<?> bean, Set<Annotation> annotations, Member javaMember,
             int position, boolean isTransient) {
         this.requiredType = requiredType;
-        this.qualifiers = Set.copyOf(qualifiers);
+        this.qualifiers = CollectionHelpers.toImmutableSmallSet(qualifiers);
         this.bean = bean;
         if (javaMember instanceof Executable) {
             this.annotated = new InjectionPointImpl.AnnotatedParameterImpl<>(injectionPointType, annotations, position,

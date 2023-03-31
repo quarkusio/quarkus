@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Optional;
 
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Priorities;
@@ -59,9 +60,29 @@ public class StorkClientRequestFilter implements ResteasyReactiveClientRequestFi
                                     port = 80;
                                 }
                             }
+                            // Service instance can also contain an optional path.
+                            Optional<String> path = instance.getPath();
+                            String actualPath = uri.getPath();
+                            if (path.isPresent()) {
+                                var p = path.get();
+                                if (!p.startsWith("/")) {
+                                    p = "/" + p;
+                                }
+                                if (actualPath == null) {
+                                    actualPath = p;
+                                } else {
+                                    // Append both.
+                                    if (actualPath.startsWith("/") || p.endsWith("/")) {
+                                        actualPath = p + actualPath;
+                                    } else {
+                                        actualPath = p + "/" + actualPath;
+                                    }
+                                }
+                            }
+
                             URI newUri = new URI(scheme,
                                     uri.getUserInfo(), host, port,
-                                    uri.getPath(), uri.getQuery(), uri.getFragment());
+                                    actualPath, uri.getQuery(), uri.getFragment());
                             requestContext.setUri(newUri);
                             if (measureTime && instance.gatherStatistics()) {
                                 requestContext.setCallStatsCollector(instance);

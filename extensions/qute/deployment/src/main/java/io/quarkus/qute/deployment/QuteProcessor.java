@@ -1049,6 +1049,8 @@ public class QuteProcessor {
                 BeanInfo bean = findBean(expression, index, incorrectExpressions, namedBeans);
                 if (bean != null) {
                     rootClazz = bean.getImplClazz();
+                    // Skip the first part - the name of the bean, e.g. for {inject:foo.name} we start validation with "name"
+                    match.setValues(rootClazz, bean.getProviderType());
                 } else {
                     // Bean not found
                     return putResult(match, results, expression);
@@ -1197,8 +1199,15 @@ public class QuteProcessor {
             }
         } else {
             if (INJECT_NAMESPACE.equals(namespace) || CDI_NAMESPACE.equals(namespace)) {
-                // Skip the first part - the name of the bean, e.g. for {inject:foo.name} we start validation with "name"
-                match.setValues(rootClazz, Type.create(rootClazz.name(), org.jboss.jandex.Type.Kind.CLASS));
+                if (root.hasHints()) {
+                    // Root is not a type info but a property with hint
+                    // E.g. 'it<loop#123>' and 'STATUS<when#123>'
+                    if (processHints(templateAnalysis, root.asHintInfo().hints, match, index, expression,
+                            generatedIdsToMatches, incorrectExpressions)) {
+                        // In some cases it's necessary to reset the iterator
+                        iterator = parts.iterator();
+                    }
+                }
             } else if (templateData != null) {
                 // Set the root type and reset the iterator
                 match.setValues(rootClazz, Type.create(rootClazz.name(), org.jboss.jandex.Type.Kind.CLASS));

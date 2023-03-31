@@ -217,7 +217,7 @@ public class LoggingSetupRecorder {
                 ? createNamedHandlers(config, consoleRuntimeConfig.getValue(), additionalNamedHandlers,
                         possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
                         errorManager, cleanupFiler, namedFilters, launchMode,
-                        shutdownNotifier, false)
+                        shutdownNotifier, includeFilters)
                 : Collections.emptyMap();
         if (!categories.isEmpty()) {
             Map<String, Handler> additionalNamedHandlersMap;
@@ -327,7 +327,7 @@ public class LoggingSetupRecorder {
 
         Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, Collections.emptyList(),
                 Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), errorManager, logCleanupFilter,
-                Collections.emptyMap(), launchMode, dummy, true);
+                Collections.emptyMap(), launchMode, dummy, false);
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final String categoryName = entry.getKey();

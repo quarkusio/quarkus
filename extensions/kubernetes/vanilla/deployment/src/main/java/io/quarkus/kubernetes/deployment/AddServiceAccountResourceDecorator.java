@@ -5,6 +5,7 @@ import static io.quarkus.kubernetes.deployment.Constants.SERVICE_ACCOUNT;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -42,5 +43,10 @@ public class AddServiceAccountResourceDecorator extends ResourceProvidingDecorat
                 .withLabels(saLabels)
                 .endMetadata()
                 .endServiceAccountItem();
+    }
+
+    @Override
+    public Class<? extends Decorator>[] before() {
+        return new Class[] { AddRoleBindingResourceDecorator.class };
     }
 }

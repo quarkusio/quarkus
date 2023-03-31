@@ -145,6 +145,7 @@ public abstract class ResteasyReactiveRequestContext
 
     public abstract ServerHttpRequest serverRequest();
 
+    @Override
     public abstract ServerHttpResponse serverResponse();
 
     public Deployment getDeployment() {
@@ -286,6 +287,7 @@ public abstract class ResteasyReactiveRequestContext
         return result;
     }
 
+    @Override
     public Throwable getThrowable() {
         return throwable;
     }
@@ -618,6 +620,7 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    @Override
     protected void handleUnrecoverableError(Throwable throwable) {
         log.error("Request failed", throwable);
         endResponse();
@@ -632,6 +635,7 @@ public abstract class ResteasyReactiveRequestContext
         close();
     }
 
+    @Override
     protected void handleRequestScopeActivation() {
         CurrentRequestManager.set(this);
     }
@@ -707,6 +711,7 @@ public abstract class ResteasyReactiveRequestContext
         return inputStream != null;
     }
 
+    @Override
     public InputStream getInputStream() {
         if (inputStream == null) {
             inputStream = serverRequest().createInputStream();
@@ -809,8 +814,12 @@ public abstract class ResteasyReactiveRequestContext
         }
     }
 
-    @Override
     public Object getQueryParameter(String name, boolean single, boolean encoded) {
+        return getQueryParameter(name, single, encoded, null);
+    }
+
+    @Override
+    public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
             if (encoded && val != null) {
@@ -818,6 +827,7 @@ public abstract class ResteasyReactiveRequestContext
             }
             return val;
         }
+
         // empty collections must not be turned to null
         List<String> strings = serverRequest().getAllQueryParams(name);
         if (encoded) {
@@ -825,9 +835,19 @@ public abstract class ResteasyReactiveRequestContext
             for (String i : strings) {
                 newStrings.add(Encode.encodeQueryParam(i));
             }
-            return newStrings;
+            strings = newStrings;
         }
-        return strings;
+
+        if (separator != null) {
+            List<String> result = new ArrayList<>(strings.size());
+            for (int i = 0; i < strings.size(); i++) {
+                String[] parts = strings.get(i).split(separator);
+                result.addAll(Arrays.asList(parts));
+            }
+            return result;
+        } else {
+            return strings;
+        }
     }
 
     @Override
@@ -920,6 +940,7 @@ public abstract class ResteasyReactiveRequestContext
         return value;
     }
 
+    @Override
     public <T> T unwrap(Class<T> type) {
         return serverRequest().unwrap(type);
     }
@@ -957,6 +978,7 @@ public abstract class ResteasyReactiveRequestContext
         return outputStream;
     }
 
+    @Override
     public OutputStream getOrCreateOutputStream() {
         if (outputStream == null) {
             return outputStream = underlyingOutputStream = serverResponse().createResponseOutputStream();

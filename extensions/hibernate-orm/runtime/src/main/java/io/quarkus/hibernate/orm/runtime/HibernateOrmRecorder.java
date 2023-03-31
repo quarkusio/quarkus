@@ -93,6 +93,10 @@ public class HibernateOrmRecorder {
         };
     }
 
+    public Supplier<JPAConfig> jpaConfigSupplier(HibernateOrmRuntimeConfig config) {
+        return () -> new JPAConfig(config);
+    }
+
     public void startAllPersistenceUnits(BeanContainer beanContainer) {
         beanContainer.beanInstance(JPAConfig.class).startAll();
     }

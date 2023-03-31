@@ -13,7 +13,7 @@ public final class ExtendedCharactersSupport {
     @Record(STATIC_INIT)
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     public void preinitializeCharacterSets(NativeConfig config, OracleInitRecorder recorder) {
-        recorder.setupCharSets(config.addAllCharsets);
+        recorder.setupCharSets(config.addAllCharsets());
     }
 
 }

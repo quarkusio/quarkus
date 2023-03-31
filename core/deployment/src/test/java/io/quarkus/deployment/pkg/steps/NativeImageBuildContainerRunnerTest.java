@@ -3,12 +3,12 @@ package io.quarkus.deployment.pkg.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.pkg.TestNativeConfig;
 import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 class NativeImageBuildContainerRunnerTest {
@@ -19,13 +19,11 @@ class NativeImageBuildContainerRunnerTest {
     void testBuilderImageBeingPickedUp() {
         ContainerRuntimeUtil.ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime(true);
 
-        NativeConfig nativeConfig = new NativeConfig();
-        nativeConfig.containerRuntime = Optional.empty();
+        NativeConfig nativeConfig = new TestNativeConfig("graalvm");
         boolean found;
         NativeImageBuildLocalContainerRunner localRunner;
         String[] command;
 
-        nativeConfig.builderImage = "graalvm";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig);
         command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
                 Collections.emptyList());
@@ -38,7 +36,7 @@ class NativeImageBuildContainerRunnerTest {
         }
         assertThat(found).isTrue();
 
-        nativeConfig.builderImage = "mandrel";
+        nativeConfig = new TestNativeConfig("mandrel");
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig);
         command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
                 Collections.emptyList());
@@ -51,7 +49,7 @@ class NativeImageBuildContainerRunnerTest {
         }
         assertThat(found).isTrue();
 
-        nativeConfig.builderImage = "RandomString";
+        nativeConfig = new TestNativeConfig("RandomString");
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig);
         command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
                 Collections.emptyList());
@@ -64,4 +62,5 @@ class NativeImageBuildContainerRunnerTest {
         }
         assertThat(found).isTrue();
     }
+
 }

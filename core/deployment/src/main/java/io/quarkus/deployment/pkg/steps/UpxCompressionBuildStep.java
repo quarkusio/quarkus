@@ -39,7 +39,7 @@ public class UpxCompressionBuildStep {
             NativeImageBuildItem image,
             BuildProducer<UpxCompressedBuildItem> upxCompressedProducer,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
-        if (nativeConfig.compression.level.isEmpty()) {
+        if (nativeConfig.compression().level().isEmpty()) {
             log.debug("UPX compression disabled");
             return;
         }
@@ -66,8 +66,8 @@ public class UpxCompressionBuildStep {
     }
 
     private boolean runUpxFromHost(File upx, File executable, NativeConfig nativeConfig) {
-        String level = getCompressionLevel(nativeConfig.compression.level.getAsInt());
-        List<String> extraArgs = nativeConfig.compression.additionalArgs.orElse(Collections.emptyList());
+        String level = getCompressionLevel(nativeConfig.compression().level().getAsInt());
+        List<String> extraArgs = nativeConfig.compression().additionalArgs().orElse(Collections.emptyList());
         List<String> args = Stream.concat(
                 Stream.concat(Stream.of(upx.getAbsolutePath(), level), extraArgs.stream()),
                 Stream.of(executable.getAbsolutePath()))
@@ -100,11 +100,11 @@ public class UpxCompressionBuildStep {
 
     private boolean runUpxInContainer(NativeImageBuildItem nativeImage, NativeConfig nativeConfig,
             String effectiveBuilderImage) {
-        String level = getCompressionLevel(nativeConfig.compression.level.getAsInt());
-        List<String> extraArgs = nativeConfig.compression.additionalArgs.orElse(Collections.emptyList());
+        String level = getCompressionLevel(nativeConfig.compression().level().getAsInt());
+        List<String> extraArgs = nativeConfig.compression().additionalArgs().orElse(Collections.emptyList());
 
         List<String> commandLine = new ArrayList<>();
-        ContainerRuntimeUtil.ContainerRuntime containerRuntime = nativeConfig.containerRuntime
+        ContainerRuntimeUtil.ContainerRuntime containerRuntime = nativeConfig.containerRuntime()
                 .orElseGet(ContainerRuntimeUtil::detectContainerRuntime);
         commandLine.add(containerRuntime.getExecutableName());
 

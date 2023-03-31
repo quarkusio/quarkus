@@ -28,7 +28,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     protected NativeImageBuildContainerRunner(NativeConfig nativeConfig) {
         this.nativeConfig = nativeConfig;
-        containerRuntime = nativeConfig.containerRuntime.orElseGet(ContainerRuntimeUtil::detectContainerRuntime);
+        containerRuntime = nativeConfig.containerRuntime().orElseGet(ContainerRuntimeUtil::detectContainerRuntime);
 
         this.baseContainerRuntimeArgs = new String[] { "--env", "LANG=C", "--rm" };
 
@@ -112,8 +112,8 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     protected List<String> getContainerRuntimeBuildArgs(Path outputDir) {
         List<String> containerRuntimeArgs = new ArrayList<>();
-        nativeConfig.containerRuntimeOptions.ifPresent(containerRuntimeArgs::addAll);
-        if (nativeConfig.debugBuildProcess && nativeConfig.publishDebugBuildProcessPort) {
+        nativeConfig.containerRuntimeOptions().ifPresent(containerRuntimeArgs::addAll);
+        if (nativeConfig.debugBuildProcess() && nativeConfig.publishDebugBuildProcessPort()) {
             // publish the debug port onto the host if asked for
             containerRuntimeArgs.add("--publish=" + NativeImageBuildStep.DEBUG_BUILD_PROCESS_PORT + ":"
                     + NativeImageBuildStep.DEBUG_BUILD_PROCESS_PORT);

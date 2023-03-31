@@ -27,9 +27,7 @@ class NativeConfigTest {
         assertThat(createConfig("aRandomString").getEffectiveBuilderImage()).isEqualTo("aRandomString");
     }
 
-    private NativeConfig createConfig(String configValue) {
-        NativeConfig nativeConfig = new NativeConfig();
-        nativeConfig.builderImage = configValue;
-        return nativeConfig;
+    private NativeConfig createConfig(String builderImage) {
+        return new TestNativeConfig(builderImage);
     }
 }

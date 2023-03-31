@@ -183,7 +183,7 @@ public class NativeImageBuildStep {
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             NativeImageRunnerBuildItem nativeImageRunner) {
-        if (nativeConfig.debug.enabled) {
+        if (nativeConfig.debug().enabled()) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
             copySourcesToSourceCache(outputTargetBuildItem);
         }
@@ -204,7 +204,7 @@ public class NativeImageBuildStep {
         String resultingExecutableName = getResultingExecutableName(nativeImageName, nativeImageRunner.isContainerBuild());
         Path generatedExecutablePath = outputDir.resolve(resultingExecutableName);
         Path finalExecutablePath = outputTargetBuildItem.getOutputDirectory().resolve(resultingExecutableName);
-        if (nativeConfig.reuseExisting) {
+        if (nativeConfig.reuseExisting()) {
             if (Files.exists(finalExecutablePath)) {
                 return new NativeImageBuildItem(finalExecutablePath,
                         NativeImageBuildItem.GraalVMVersion.unknown());
@@ -223,7 +223,7 @@ public class NativeImageBuildStep {
         }
 
         try {
-            if (nativeConfig.cleanupServer) {
+            if (nativeConfig.cleanupServer()) {
                 log.warn(
                         "Your application is setting the deprecated 'quarkus.native.cleanup-server' configuration key"
                                 + " to true. Please consider removing this configuration key as it is ignored"
@@ -257,14 +257,14 @@ public class NativeImageBuildStep {
             NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs,
                     nativeImageName,
                     resultingExecutableName, outputDir,
-                    graalVMVersion, nativeConfig.debug.enabled,
+                    graalVMVersion, nativeConfig.debug().enabled(),
                     processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
             if (buildNativeResult.getExitCode() != 0) {
                 throw imageGenerationFailed(buildNativeResult.getExitCode(), isContainerBuild);
             }
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
-            if (nativeConfig.debug.enabled) {
+            if (nativeConfig.debug().enabled()) {
                 final String symbolsName = String.format("%s.debug", nativeImageName);
                 Path generatedSymbols = outputDir.resolve(symbolsName);
                 if (generatedSymbols.toFile().exists()) {
@@ -285,7 +285,7 @@ public class NativeImageBuildStep {
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
         } finally {
-            if (nativeConfig.debug.enabled) {
+            if (nativeConfig.debug().enabled()) {
                 removeJarSourcesFromLib(outputTargetBuildItem);
                 IoUtils.recursiveDelete(outputDir.resolve(Paths.get(APP_SOURCES)));
             }
@@ -310,8 +310,8 @@ public class NativeImageBuildStep {
      */
     @BuildStep
     public NativeImageRunnerBuildItem resolveNativeImageBuildRunner(NativeConfig nativeConfig) {
-        boolean isExplicitContainerBuild = nativeConfig.containerBuild
-                .orElse(nativeConfig.containerRuntime.isPresent() || nativeConfig.remoteContainerBuild);
+        boolean isExplicitContainerBuild = nativeConfig.containerBuild()
+                .orElse(nativeConfig.containerRuntime().isPresent() || nativeConfig.remoteContainerBuild());
         if (!isExplicitContainerBuild) {
             NativeImageBuildLocalRunner localRunner = getNativeImageBuildLocalRunner(nativeConfig);
             if (localRunner != null) {
@@ -326,7 +326,7 @@ public class NativeImageBuildStep {
             }
             log.warn(errorMessage + " Attempting to fall back to container build.");
         }
-        if (nativeConfig.remoteContainerBuild) {
+        if (nativeConfig.remoteContainerBuild()) {
             return new NativeImageRunnerBuildItem(new NativeImageBuildRemoteContainerRunner(nativeConfig));
         }
         return new NativeImageRunnerBuildItem(new NativeImageBuildLocalContainerRunner(nativeConfig));
@@ -439,14 +439,14 @@ public class NativeImageBuildStep {
 
     private static NativeImageBuildLocalRunner getNativeImageBuildLocalRunner(NativeConfig nativeConfig) {
         String executableName = getNativeImageExecutableName();
-        if (nativeConfig.graalvmHome.isPresent()) {
-            File file = Paths.get(nativeConfig.graalvmHome.get(), "bin", executableName).toFile();
+        if (nativeConfig.graalvmHome().isPresent()) {
+            File file = Paths.get(nativeConfig.graalvmHome().get(), "bin", executableName).toFile();
             if (file.exists()) {
                 return new NativeImageBuildLocalRunner(file.getAbsolutePath());
             }
         }
 
-        File javaHome = nativeConfig.javaHome;
+        File javaHome = nativeConfig.javaHome();
         if (javaHome == null) {
             // try system property first - it will be the JAVA_HOME used by the current JVM
             String home = System.getProperty(JAVA_HOME_SYS);
@@ -639,9 +639,9 @@ public class NativeImageBuildStep {
             public NativeImageInvokerInfo build() {
                 List<String> nativeImageArgs = new ArrayList<>();
                 boolean enableSslNative = false;
-                boolean inlineBeforeAnalysis = nativeConfig.inlineBeforeAnalysis;
-                boolean addAllCharsets = nativeConfig.addAllCharsets;
-                boolean enableHttpsUrlHandler = nativeConfig.enableHttpsUrlHandler;
+                boolean inlineBeforeAnalysis = nativeConfig.inlineBeforeAnalysis();
+                boolean addAllCharsets = nativeConfig.addAllCharsets();
+                boolean enableHttpsUrlHandler = nativeConfig.enableHttpsUrlHandler();
                 for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
                     //todo: this should be specific build items
                     if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
@@ -682,7 +682,7 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:IncludeLocales=" + includeLocales);
                 }
 
-                nativeImageArgs.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding);
+                nativeImageArgs.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding());
 
                 if (enableSslNative) {
                     enableHttpsUrlHandler = true;
@@ -713,7 +713,7 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:-ParseOnce");
                 }
 
-                if (nativeConfig.debug.enabled && graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
+                if (nativeConfig.debug().enabled() && graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
                     /*
                      * Instruct GraalVM / Mandrel to keep more accurate information about source locations when generating
                      * debug info for debugging and monitoring tools. This parameter may break compatibility with Truffle.
@@ -743,7 +743,7 @@ public class NativeImageBuildStep {
                 // required by camel-quarkus-xstream
                 nativeImageArgs.add("-J--add-opens=java.base/java.util=ALL-UNNAMED");
 
-                if (nativeConfig.enableReports) {
+                if (nativeConfig.enableReports()) {
                     nativeImageArgs.add("-H:PrintAnalysisCallTreeType=CSV");
                 }
 
@@ -768,11 +768,11 @@ public class NativeImageBuildStep {
 
                 nativeImageArgs.add("-H:+AllowFoldMethods");
 
-                if (nativeConfig.headless) {
+                if (nativeConfig.headless()) {
                     nativeImageArgs.add("-J-Djava.awt.headless=true");
                 }
 
-                if (nativeConfig.enableFallbackImages) {
+                if (nativeConfig.enableFallbackImages()) {
                     nativeImageArgs.add("--auto-fallback");
                 } else {
                     //Default: be strict as those fallback images aren't very useful
@@ -784,17 +784,17 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--link-at-build-time");
                 }
 
-                if (nativeConfig.reportErrorsAtRuntime) {
+                if (nativeConfig.reportErrorsAtRuntime()) {
                     nativeImageArgs.add("--report-unsupported-elements-at-runtime");
                 }
-                if (nativeConfig.reportExceptionStackTraces) {
+                if (nativeConfig.reportExceptionStackTraces()) {
                     nativeImageArgs.add("-H:+ReportExceptionStackTraces");
                 }
-                if (nativeConfig.debug.enabled) {
+                if (nativeConfig.debug().enabled()) {
                     nativeImageArgs.add("-g");
                     nativeImageArgs.add("-H:DebugInfoSourceSearchPath=" + APP_SOURCES);
                 }
-                if (nativeConfig.debugBuildProcess) {
+                if (nativeConfig.debugBuildProcess()) {
                     String debugBuildProcessHost;
                     if (containerBuild) {
                         debugBuildProcessHost = "0.0.0.0";
@@ -805,14 +805,14 @@ public class NativeImageBuildStep {
                             .add("-J-Xrunjdwp:transport=dt_socket,address=" + debugBuildProcessHost + ":"
                                     + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
                 }
-                if (nativeConfig.dumpProxies) {
+                if (nativeConfig.dumpProxies()) {
                     nativeImageArgs.add("-Dsun.misc.ProxyGenerator.saveGeneratedFiles=true");
                 }
-                if (nativeConfig.nativeImageXmx.isPresent()) {
-                    nativeImageArgs.add("-J-Xmx" + nativeConfig.nativeImageXmx.get());
+                if (nativeConfig.nativeImageXmx().isPresent()) {
+                    nativeImageArgs.add("-J-Xmx" + nativeConfig.nativeImageXmx().get());
                 }
                 List<String> protocols = new ArrayList<>(2);
-                if (nativeConfig.enableHttpUrlHandler) {
+                if (nativeConfig.enableHttpUrlHandler()) {
                     protocols.add("http");
                 }
                 if (enableHttpsUrlHandler) {
@@ -833,47 +833,47 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:NativeLinkerOption=" + noPIE);
                 }
 
-                if (!nativeConfig.enableIsolates) {
+                if (!nativeConfig.enableIsolates()) {
                     nativeImageArgs.add("-H:-SpawnIsolates");
                 }
-                if (!nativeConfig.enableJni) {
+                if (!nativeConfig.enableJni()) {
                     log.warn(
                             "Your application is setting the deprecated 'quarkus.native.enable-jni' configuration key to false."
                                     + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
                                     + " will be removed in a future Quarkus version.");
                 }
-                if (nativeConfig.enableServer) {
+                if (nativeConfig.enableServer()) {
                     log.warn(
                             "Your application is setting the deprecated 'quarkus.native.enable-server' configuration key to true."
                                     + " Please consider removing this configuration key as it is ignored"
                                     + " (The Native image build server is always disabled) and it"
                                     + " will be removed in a future Quarkus version.");
                 }
-                if (nativeConfig.enableVmInspection) {
+                if (nativeConfig.enableVmInspection()) {
                     nativeImageArgs.add("-H:+AllowVMInspection");
                 }
 
-                if (nativeConfig.monitoring.isPresent()) {
-                    List<NativeConfig.MonitoringOption> monitoringOptions = nativeConfig.monitoring.get();
+                if (nativeConfig.monitoring().isPresent()) {
+                    List<NativeConfig.MonitoringOption> monitoringOptions = nativeConfig.monitoring().get();
                     if (!monitoringOptions.isEmpty()) {
                         nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
                                 .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
                     }
                 }
-                if (nativeConfig.autoServiceLoaderRegistration) {
+                if (nativeConfig.autoServiceLoaderRegistration()) {
                     nativeImageArgs.add("-H:+UseServiceLoaderFeature");
                     //When enabling, at least print what exactly is being added:
                     nativeImageArgs.add("-H:+TraceServiceLoaderFeature");
                 } else {
                     nativeImageArgs.add("-H:-UseServiceLoaderFeature");
                 }
-                if (nativeConfig.fullStackTraces) {
+                if (nativeConfig.fullStackTraces()) {
                     nativeImageArgs.add("-H:+StackTrace");
                 } else {
                     nativeImageArgs.add("-H:-StackTrace");
                 }
 
-                if (nativeConfig.enableDashboardDump) {
+                if (nativeConfig.enableDashboardDump()) {
                     nativeImageArgs.add("-H:DashboardDump=" + outputTargetBuildItem.getBaseName() + "_dashboard.dump");
                     nativeImageArgs.add("-H:+DashboardAll");
                 }
@@ -941,8 +941,8 @@ public class NativeImageBuildStep {
             }
 
             private void handleAdditionalProperties(List<String> command) {
-                if (nativeConfig.additionalBuildArgs.isPresent()) {
-                    List<String> strings = nativeConfig.additionalBuildArgs.get();
+                if (nativeConfig.additionalBuildArgs().isPresent()) {
+                    List<String> strings = nativeConfig.additionalBuildArgs().get();
                     for (String buildArg : strings) {
                         String trimmedBuildArg = buildArg.trim();
                         if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && containerBuild) {

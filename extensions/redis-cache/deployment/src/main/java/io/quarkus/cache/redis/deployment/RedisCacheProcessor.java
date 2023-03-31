@@ -34,7 +34,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.redis.client.deployment.RequestedRedisClientBuildItem;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
@@ -60,11 +59,6 @@ public class RedisCacheProcessor {
     @BuildStep
     RequestedRedisClientBuildItem requestedRedisClientBuildItem(RedisCachesBuildTimeConfig buildConfig) {
         return new RequestedRedisClientBuildItem(buildConfig.clientName.orElse(RedisConfig.DEFAULT_CLIENT_NAME));
-    }
-
-    @BuildStep
-    RunTimeConfigurationDefaultBuildItem redisCacheByDefault() {
-        return new RunTimeConfigurationDefaultBuildItem("quarkus.cache.type", "redis");
     }
 
     @BuildStep

@@ -3,7 +3,6 @@ package io.quarkus.arc.test.config;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -304,8 +303,8 @@ public class ConfigMappingTest {
         assertEquals("bar", defaults.bar());
         assertEquals("foo", config.getValue("defaults.foo", String.class));
 
-        final List<String> propertyNames = stream(config.getPropertyNames().spliterator(), false).collect(toList());
-        assertFalse(propertyNames.contains("defaults.foo"));
+        List<String> propertyNames = stream(config.getPropertyNames().spliterator(), false).collect(toList());
+        assertTrue(propertyNames.contains("defaults.foo"));
     }
 
     @ConfigMapping(prefix = "converters")

@@ -42,8 +42,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     @Override
     public void setup(boolean processInheritIODisabled) {
-        if (containerRuntime == ContainerRuntimeUtil.ContainerRuntime.DOCKER
-                || containerRuntime == ContainerRuntimeUtil.ContainerRuntime.PODMAN) {
+        if (containerRuntime != ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE) {
             log.infof("Using %s to run the native image builder", containerRuntime.getExecutableName());
             // we pull the docker image in order to give users an indication of which step the process is at
             // it's not strictly necessary we do this, however if we don't the subsequent version command

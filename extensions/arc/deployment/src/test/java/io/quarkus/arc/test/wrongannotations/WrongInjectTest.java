@@ -31,9 +31,6 @@ public class WrongInjectTest {
                         "@com.oracle.svm.core.annotate.Inject declared on io.quarkus.arc.test.wrongannotations.BeanWithIncorrectInject.bm3, use @jakarta.inject.Inject instead"),
                         t.toString());
                 assertTrue(rootCause.getMessage().contains(
-                        "@org.gradle.internal.impldep.javax.inject.Inject declared on io.quarkus.arc.test.wrongannotations.BeanWithIncorrectInject.bm4, use @jakarta.inject.Inject instead"),
-                        t.toString());
-                assertTrue(rootCause.getMessage().contains(
                         "@javax.inject.Inject declared on io.quarkus.arc.test.wrongannotations.WrongInjectTest.beanManager, use @jakarta.inject.Inject instead"),
                         t.toString());
             });

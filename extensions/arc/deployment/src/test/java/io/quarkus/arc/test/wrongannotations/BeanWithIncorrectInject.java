@@ -15,7 +15,4 @@ public class BeanWithIncorrectInject {
     @com.oracle.svm.core.annotate.Inject
     BeanManager bm3;
 
-    @org.gradle.internal.impldep.javax.inject.Inject
-    BeanManager bm4;
-
 }

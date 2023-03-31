@@ -9,6 +9,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
@@ -44,7 +45,7 @@ public class InfoRecorder {
             HttpServerResponse resp = ctx.response();
             resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
             JsonObject jsonObject = new JsonObject(finalBuildInfo);
-            ctx.json(jsonObject);
+            ctx.end(Json.encodePrettily(jsonObject));
         }
     }
 }

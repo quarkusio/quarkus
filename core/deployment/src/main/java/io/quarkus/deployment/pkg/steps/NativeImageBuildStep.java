@@ -142,15 +142,27 @@ public class NativeImageBuildStep {
                 .setNativeImageFeatures(nativeImageFeatures)
                 .build();
         List<String> command = nativeImageArgs.getArgs();
-        try (FileOutputStream commandFOS = new FileOutputStream(outputDir.resolve("native-image.args").toFile())) {
+        try (FileOutputStream commandFOS = new FileOutputStream(outputDir.resolve("native-image.args").toFile());
+                FileOutputStream dockerImageNameFOS = new FileOutputStream(outputDir.resolve("graalvm.version").toFile())) {
             String commandStr = String.join(" ", command);
             commandFOS.write(commandStr.getBytes(StandardCharsets.UTF_8));
 
-            log.info("The sources for a subsequent native-image run along with the necessary arguments can be found in "
-                    + outputDir);
+            dockerImageNameFOS.write(GraalVM.Version.CURRENT.version.toString().getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image sources", e);
         }
+
+        if (nativeConfig.isContainerBuild()) {
+            try (FileOutputStream dockerImageNameFOS = new FileOutputStream(
+                    outputDir.resolve("native-builder.image").toFile())) {
+                dockerImageNameFOS.write(nativeConfig.getEffectiveBuilderImage().getBytes(StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to build native image sources", e);
+            }
+        }
+
+        log.info("The sources for a subsequent native-image run along with the necessary arguments can be found in "
+                + outputDir);
 
         // drop the original output to avoid confusion
         IoUtils.recursiveDelete(nativeImageSourceJarBuildItem.getPath().getParent());

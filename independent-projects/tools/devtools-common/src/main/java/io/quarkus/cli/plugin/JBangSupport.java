@@ -37,7 +37,7 @@ public class JBangSupport {
     private final MessageWriter output;
     private Path workingDirectory;
 
-    private boolean promptForInstallation = true;
+    private Optional<Boolean> installed = Optional.empty();
 
     public JBangSupport(boolean interactiveMode, MessageWriter output) {
         this(interactiveMode, output, Paths.get(System.getProperty("user.dir")));
@@ -73,22 +73,16 @@ public class JBangSupport {
     }
 
     public Optional<File> getOptionalExecutable() {
+        return getOptionalExecutable(true);
+    }
+
+    public Optional<File> getOptionalExecutable(boolean shouldEnsureInstallation) {
         return findWrapper()
                 .or(() -> findExecutableInPath())
                 .or(() -> findExecutableInLocalJbang())
-                .or(() -> {
-                    try {
-                        // We don't want to prompt users for input when running tests.
-                        if (interactiveMode && promptForInstallation && Prompt.yesOrNo(true,
-                                "JBang is needed to list / run jbang plugins, would you like to install it now ?")) {
-                            installJBang();
-                            return findExecutableInLocalJbang();
-                        } else
-                            return Optional.empty();
-                    } finally {
-                        promptForInstallation = false;
-                    }
-                }).map(e -> {
+                .or(() -> shouldEnsureInstallation && ensureJBangIsInstalled() ? findExecutableInLocalJbang()
+                        : Optional.empty())
+                .map(e -> {
                     if (!e.canExecute()) {
                         e.setExecutable(true);
                     }
@@ -149,11 +143,52 @@ public class JBangSupport {
     }
 
     public boolean isAvailable() {
-        return getOptionalExecutable().isPresent() && version().isPresent();
+        return getOptionalExecutable(false).isPresent() && version().isPresent();
     }
 
     public boolean isInstallable() {
         return interactiveMode; //installation requires interaction
+    }
+
+    public boolean promptForInstallation() {
+        // We don't want to prompt users for input when running tests.
+        if (interactiveMode
+                && Prompt.yesOrNo(true, "JBang is needed to list / run jbang plugins, would you like to install it now ?")) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks id jbang is installed and prompot user for installation.
+     * Remembers choice so that we don't prompt user multiple times per action.
+     */
+    public boolean ensureJBangIsInstalled() {
+        if (!installed.isPresent()) {
+            installed = Optional.of(doEnsureJBangIsInstalledInternal());
+        }
+        return installed.orElseThrow();
+    }
+
+    private boolean doEnsureJBangIsInstalledInternal() {
+        if (isAvailable()) {
+            return true;
+        }
+        if (!isInstallable()) {
+            output.warn("JBang is not installable!");
+            return false;
+        }
+        if (promptForInstallation()) {
+            try {
+                installJBang();
+                return true;
+            } catch (Exception e) {
+                output.warn("Failed to install jbang!");
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 
     private Path getInstallationDir() {

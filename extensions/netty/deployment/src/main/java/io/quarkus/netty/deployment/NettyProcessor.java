@@ -31,7 +31,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
@@ -78,11 +77,10 @@ class NettyProcessor {
         return new SystemPropertyBuildItem("io.netty.machineId", nettyMachineId);
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     NativeImageConfigBuildItem build(
             NettyBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel")
@@ -99,8 +97,6 @@ class NettyProcessor {
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, false);
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
-                // disable unsafe usage to allow io.netty.internal.PlarformDependent0 to be reinitialized without issues
-                .addNativeImageSystemProperty("io.netty.noUnsafe", "true")
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
@@ -116,13 +112,7 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
                 // The default channel id uses the process id, it should not be cached in the native image.
                 .addRuntimeInitializedClass("io.netty.channel.DefaultChannelId")
-                // Make sure to re-initialize platform dependent classes/values at runtime
-                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent")
-                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
-
-        // Also set io.netty.noUnsafe at runtime
-        systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http.HttpObjectEncoder")) {
             builder
@@ -172,7 +162,8 @@ class NettyProcessor {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }
 
-        return builder.build();
+        return builder //TODO: make configurable
+                .build();
     }
 
     @BuildStep

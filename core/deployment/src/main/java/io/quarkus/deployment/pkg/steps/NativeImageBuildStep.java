@@ -1,10 +1,8 @@
 package io.quarkus.deployment.pkg.steps;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -142,23 +140,15 @@ public class NativeImageBuildStep {
                 .setNativeImageFeatures(nativeImageFeatures)
                 .build();
         List<String> command = nativeImageArgs.getArgs();
-        try (FileOutputStream commandFOS = new FileOutputStream(outputDir.resolve("native-image.args").toFile());
-                FileOutputStream dockerImageNameFOS = new FileOutputStream(outputDir.resolve("graalvm.version").toFile())) {
-            String commandStr = String.join(" ", command);
-            commandFOS.write(commandStr.getBytes(StandardCharsets.UTF_8));
 
-            dockerImageNameFOS.write(GraalVM.Version.CURRENT.version.toString().getBytes(StandardCharsets.UTF_8));
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to build native image sources", e);
-        }
-
-        if (nativeConfig.isContainerBuild()) {
-            try (FileOutputStream dockerImageNameFOS = new FileOutputStream(
-                    outputDir.resolve("native-builder.image").toFile())) {
-                dockerImageNameFOS.write(nativeConfig.getEffectiveBuilderImage().getBytes(StandardCharsets.UTF_8));
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to build native image sources", e);
+        try {
+            Files.writeString(outputDir.resolve("native-image.args"), String.join(" ", command));
+            Files.writeString(outputDir.resolve("graalvm.version"), GraalVM.Version.CURRENT.version.toString());
+            if (nativeConfig.isContainerBuild()) {
+                Files.writeString(outputDir.resolve("native-builder.image"), nativeConfig.getEffectiveBuilderImage());
             }
+        } catch (IOException | RuntimeException e) {
+            throw new RuntimeException("Failed to build native image sources", e);
         }
 
         log.info("The sources for a subsequent native-image run along with the necessary arguments can be found in "

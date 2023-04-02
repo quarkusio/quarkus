@@ -389,10 +389,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private boolean isBackChannelLogoutPendingAndValid(TenantConfigContext configContext, SecurityIdentity identity) {
-        TokenVerificationResult backChannelLogoutTokenResult = resolver.getBackChannelLogoutTokens()
-                .remove(configContext.oidcConfig.getTenantId().get());
-        if (backChannelLogoutTokenResult != null) {
+
+        BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
+                .get(configContext.oidcConfig.getTenantId().get());
+        if (tokens != null) {
             JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+
+            String logoutTokenKeyValue = idTokenJson.getString(configContext.oidcConfig.logout.backchannel.getLogoutTokenKey());
+
+            TokenVerificationResult backChannelLogoutTokenResult = tokens.removeTokenVerification(logoutTokenKeyValue);
+            if (backChannelLogoutTokenResult == null) {
+                return false;
+            }
+
             String idTokenIss = idTokenJson.getString(Claims.iss.name());
             String logoutTokenIss = backChannelLogoutTokenResult.localVerificationResult.getString(Claims.iss.name());
             if (logoutTokenIss != null && !logoutTokenIss.equals(idTokenIss)) {
@@ -412,7 +421,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 LOG.debugf("Logout token session id does not match the ID token session id");
                 return false;
             }
-            LOG.debugf("Frontchannel logout request for the tenant %s has been completed",
+            LOG.debugf("Backchannel logout request for the tenant %s has been completed",
                     configContext.oidcConfig.tenantId.get());
 
             fireEvent(SecurityEvent.Type.OIDC_BACKCHANNEL_LOGOUT_COMPLETED, identity);
@@ -495,7 +504,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         if (context.get(NO_OIDC_COOKIES_AVAILABLE) != null
                                 && isRedirectFromProvider(context, configContext)) {
-                            LOG.debug(
+                            LOG.warn(
                                     "The state cookie is missing after the redirect from OpenId Connect Provider, authentication has failed");
                             return Uni.createFrom().item(new ChallengeData(401, "WWW-Authenticate", "OIDC"));
                         }

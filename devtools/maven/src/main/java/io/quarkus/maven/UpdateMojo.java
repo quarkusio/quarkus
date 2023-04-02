@@ -77,7 +77,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     @Parameter(property = "stream", required = false)
     private String stream;
 
-    @Component
+    @Parameter(defaultValue = "${session}", readonly = true)
     private MavenSession mavenSession;
 
     @Component

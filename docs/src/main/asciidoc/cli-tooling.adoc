@@ -630,11 +630,14 @@ A quarkus extension may define list of `cli-plugins` as part of its metadata. Th
 
 ==== Local path scanning
 Scan the path item for executable files prefixed with `quarkus`.
+
 ==== Using JBang aliases
 Scan the local or project jbang catalog for aliases prefixed with `quarkus-`.
+
 ==== Using the JBang quarkusio catalog
 Scan the quarkusio catalog for aliases prefixed wtih `quarkus-`.
 *Note:* uses the jbang binary. If missing it will be automatically installed unser `.jbang`.
+
 ==== Explicitly using the plugin commands
 See `quarkus plugin add` below
 
@@ -698,10 +701,11 @@ The command above installed a plugin by `name` using the name as listed by `quar
 
 The command can be now executed using `quarkus kill`.
 
-*Note*: Users are not limited to the plugins discovered by `quarkus plug list --installable`. Users may install plugins as long as the provide the URL or the Maven coordinates pointing to an executable jar or java file.
+NOTE: Users are not limited to the plugins discovered by `quarkus plug list --installable`. Users may install plugins as long as they provide the URL or the Maven coordinates pointing to an executable jar or java file.
 
 *Example*: Installing an executable jar as a plugin via maven coordinates
-For this example will use: `io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0` which is a a real executable jar that provide a cli utility for the `quarkus-authzed` extension.
+
+For this example, we will use `io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0` which is a real executable jar that provides a CLI utility for the `quarkus-authzed` extension.
 
 
 [source, shell]
@@ -712,7 +716,8 @@ Added plugin:
  *  authzed 	 maven 	 io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0 	 Authzed CLI
 
 ----
-*Note*: It's also possible to set a description that will appear to the help messages.
+
+NOTE: It is also possible to set a description that will appear in the help messages.
 
 
 [source, shell]
@@ -740,7 +745,7 @@ There is a second plugin catalog that is relative to the current project (if ava
 
 The effective catalog is the combination of both the `user` and `project` catalogs with the latter being able to override entries of the former (e.g. use a different version or location for a plugin).
 
-If the project catalog is available it will allways be prefered, unless explicitly specified with the user of `--user` flag.
+If the project catalog is available it will always be preferred, unless explicitly specified with the user of `--user` flag.
 
 The column `scope` the plugin table indicates where the plugin is/will be added.
 
@@ -758,8 +763,10 @@ Removed plugin:
 ==== Syncing plugins
 To remove stale plugins or discover new plugins provided by extensions the `quarkus plugin sync` is available.
 With this command binaries and jbang aliases that are added to the catalog but are not longer available will be purged.
-*Note*: Remote plugins that are explicitly added by the user using URL / Maven coordinates are excluded.
+
+NOTE: Remote plugins that are explicitly added by the user using URL / Maven coordinates are excluded.
 
 The command is also executed implicitly through any of the CLI commands:
+
 * Weekly
 * If the project files have been updated since the last catalog update (limited to the module).

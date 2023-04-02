@@ -15,11 +15,12 @@ import '@vaadin/horizontal-layout';
  */
 export class QwcBuildSteps extends LitElement {
 
-  jsonRpc = new JsonRpc(this, true, 'build-metrics');
+  jsonRpc = new JsonRpc("devui-build-metrics", true);
 
   static styles = css`
       .build-steps {
         height: 100%;
+        width: 100%;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -36,6 +37,10 @@ export class QwcBuildSteps extends LitElement {
 
       .summary {
         margin-bottom: 15px;
+      }
+
+      .datatable {
+        width: 100%;
       }`;
 
   static properties = {
@@ -52,7 +57,11 @@ export class QwcBuildSteps extends LitElement {
   }
 
   render() {
-    return html`${until(this._render(), html`<span>Loading build steps...</span>`)}`;
+      if (this._buildStepsMetrics && this._filtered) {
+        return this._render();
+      }else {
+        return html`<span>Loading build steps...</span>`;
+      }
   }
 
   _match(value, term) {
@@ -75,7 +84,6 @@ export class QwcBuildSteps extends LitElement {
   }
 
   _render() {
-    if (this._buildStepsMetrics && this._filtered) {
       return html`<div class="build-steps">
             <div class="summary">Executed <strong>${this._buildStepsMetrics.records.length}</strong> build steps on <strong>${Object.keys(this._buildStepsMetrics.threadSlotRecords).length}</strong> threads in <strong>${this._buildStepsMetrics.duration} ms</strong>.</div>
             <vaadin-text-field
@@ -84,8 +92,8 @@ export class QwcBuildSteps extends LitElement {
                     @value-changed="${(e) => this._filter(e)}">
                 <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
             </vaadin-text-field>
-            <vaadin-grid .items="${this._filtered}" style="width: 100%;" class="datatable" theme="row-stripes">
-                <vaadin-grid-sort-column auto-width resizable flex-grow="0"
+            <vaadin-grid .items="${this._filtered}" class="datatable" theme="row-stripes">
+                <vaadin-grid-sort-column resizable
                                     header="Build step"
                                     path="stepId"
                                     class="cell"
@@ -113,7 +121,6 @@ export class QwcBuildSteps extends LitElement {
                                     ${columnBodyRenderer(this._threadRenderer, [])}>
                 </vaadin-grid-column>
             </vaadin-grid></div>`;
-    }
   }
 
   _stepIdRenderer(record) {

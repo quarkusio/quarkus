@@ -205,7 +205,7 @@ export class JsonRpc {
 
     _setExtensionName(discoveredNamespace, serviceIdentifier){
         if(serviceIdentifier){
-            this._extensionName = serviceIdentifier;
+            this._extensionName = discoveredNamespace + "-" + serviceIdentifier;
         }else {
             this._extensionName = discoveredNamespace;
         }

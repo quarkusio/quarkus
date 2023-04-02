@@ -15,11 +15,12 @@ import '@vaadin/horizontal-layout';
  */
 export class QwcBuildItems extends LitElement {
 
-  jsonRpc = new JsonRpc(this, true, 'build-metrics');
+  jsonRpc = new JsonRpc("devui-build-metrics", true);
 
   static styles = css`
       .build-items {
         height: 100%;
+        width: 100%;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -36,6 +37,10 @@ export class QwcBuildItems extends LitElement {
 
       .summary {
         margin-bottom: 15px;
+      }
+
+      .datatable {
+        width: 100%;
       }`;
 
   static properties = {
@@ -52,7 +57,11 @@ export class QwcBuildItems extends LitElement {
   }
 
   render() {
-    return html`${until(this._render(), html`<span>Loading build items...</span>`)}`;
+      if (this._buildStepsMetrics && this._filtered) {
+          return this._render();
+      }else {
+          return html`<span>Loading build items...</span>`;
+      }
   }
 
   _match(value, term) {
@@ -75,8 +84,7 @@ export class QwcBuildItems extends LitElement {
   }
 
   _render() {
-    if (this._buildStepsMetrics && this._filtered) {
-      return html`<div class="build-items">
+    return html`<div class="build-items">
             <div class="summary">Produced <strong>${this._buildStepsMetrics.itemsCount}</strong> build items.</div>
             <vaadin-text-field
                     placeholder="Filter"
@@ -84,8 +92,8 @@ export class QwcBuildItems extends LitElement {
                     @value-changed="${(e) => this._filter(e)}">
                 <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
             </vaadin-text-field>
-            <vaadin-grid .items="${this._filtered}" style="width: 100%;" class="datatable" theme="row-stripes">
-                <vaadin-grid-sort-column auto-width resizable flex-grow="0"
+            <vaadin-grid .items="${this._filtered}" class="datatable" theme="row-stripes">
+                <vaadin-grid-sort-column resizable
                                     header="Build item"
                                     path="class"
                                     class="cell"
@@ -99,7 +107,6 @@ export class QwcBuildItems extends LitElement {
                                     ${columnBodyRenderer(this._countRenderer, [])}>
                 </vaadin-grid-sort-column>
             </vaadin-grid></div>`;
-    }
   }
 
   _classRenderer(item) {

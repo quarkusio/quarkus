@@ -35,6 +35,6 @@ public class BuildMetricsDevUIProcessor {
 
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
-        return new JsonRPCProvidersBuildItem("build-metrics", BuildMetricsJsonRPCService.class);
+        return new JsonRPCProvidersBuildItem("devui-build-metrics", BuildMetricsJsonRPCService.class);
     }
 }

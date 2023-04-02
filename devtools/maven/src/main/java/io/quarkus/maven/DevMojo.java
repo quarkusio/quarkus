@@ -789,10 +789,17 @@ public class DevMojo extends AbstractMojo {
         Set<Path> testResourcePaths;
         List<Profile> activeProfiles = Collections.emptyList();
 
-        final MavenProject mavenProject = module.getClassifier().isEmpty()
-                ? session.getProjectMap()
-                        .get(String.format("%s:%s:%s", module.getGroupId(), module.getArtifactId(), module.getVersion()))
-                : null;
+        MavenProject mavenProject = null;
+        if (module.getClassifier().isEmpty()) {
+            for (MavenProject p : session.getAllProjects()) {
+                if (module.getArtifactId().equals(p.getArtifactId())
+                        && module.getGroupId().equals(p.getGroupId())
+                        && module.getVersion().equals(p.getVersion())) {
+                    mavenProject = p;
+                    break;
+                }
+            }
+        }
         final ArtifactSources sources = module.getSources();
         if (mavenProject == null) {
             if (sources == null) {

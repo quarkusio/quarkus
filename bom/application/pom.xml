@@ -33,6 +33,7 @@
         <micrometer.version>1.10.2</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
+        <graphql-java.version>19.4</graphql-java.version>
         <microprofile-config-api.version>2.0.1</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0.1</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.2</microprofile-context-propagation.version>
@@ -47,7 +48,7 @@
         <smallrye-health.version>3.3.1</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
         <smallrye-open-api.version>3.1.1</smallrye-open-api.version>
-        <smallrye-graphql.version>1.9.4</smallrye-graphql.version>
+        <smallrye-graphql.version>1.9.5</smallrye-graphql.version>
         <smallrye-opentracing.version>2.1.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.6.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.6.0</smallrye-jwt.version>
@@ -5934,6 +5935,13 @@
                 <groupId>org.hdrhistogram</groupId>
                 <artifactId>HdrHistogram</artifactId>
                 <version>${hdrhistogram.version}</version>
+            </dependency>
+
+            <!-- GraphQL-java -->
+            <dependency>
+                <groupId>com.graphql-java</groupId>
+                <artifactId>graphql-java</artifactId>
+                <version>${graphql-java.version}</version>
             </dependency>
 
             <!-- Quarkus build related dependencies -->

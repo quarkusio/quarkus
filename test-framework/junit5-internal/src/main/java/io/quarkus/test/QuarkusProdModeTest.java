@@ -110,7 +110,7 @@ public class QuarkusProdModeTest
     private String logFileName;
     private Map<String, String> runtimeProperties;
     // by default, we use these lower heap settings
-    private List<String> jvmArgs = Collections.singletonList("-Xmx128m");
+    private List<String> jvmArgs = Collections.singletonList("-Xmx192m");
     private Map<String, String> testResourceProperties = new HashMap<>();
     // these will be used to create a directory that can then be obtained by the buildChainCustomizersProducer function
     // values are meant to be resources that exist on the test classpath

@@ -32,7 +32,7 @@ public class CliPlugins implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        output.info("Listing plguins (default action, see --help).");
+        output.info("Listing plugins (default action, see --help).");
         ParseResult result = spec.commandLine().getParseResult();
         List<String> args = result.originalArgs().stream().filter(x -> !"plugin".equals(x) && !"plug".equals(x))
                 .collect(Collectors.toList());

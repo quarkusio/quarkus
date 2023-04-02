@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 :summary: Use the Quarkus CLI to create, build, run, and manage extensions for Quarkus projects.
 
 The `quarkus` command lets you create projects, manage extensions and
-do essential build and dev commands using the underlying project build tool.
+do essential build and development tasks using the underlying project build tool.
 
 include::{includes}/extension-status.adoc[]
 
@@ -256,14 +256,16 @@ Use `--help` to display help information with all the available commands:
 [source,shell]
 ----
 quarkus --help
-Usage: quarkus [-ehv] [--verbose] [-D=<String=String>]... [COMMAND]
-
+Usage: quarkus [-ehv] [--refresh] [--verbose] [--config=CONFIG]
+               [-D=<String=String>]... [COMMAND]
 Options:
-  -D=<String=String>    Java properties
+      --refresh         Refresh the local Quarkus extension registry cache
+      --config=CONFIG   Configuration file
+  -h, --help            Display this help message.
+  -v, --version         Print CLI version information and exit.
   -e, --errors          Display error messages.
-  -h, --help            Show this help message and exit.
-  -v, --version         Print version information and exit.
       --verbose         Verbose mode.
+  -D=<String=String>    Java properties
 
 Commands:
   create                  Create a new project.
@@ -272,23 +274,39 @@ Commands:
     extension             Create a Quarkus extension project
   build                   Build the current project.
   dev                     Run the current project in dev (live coding) mode.
+  test                    Run the current project in continuous testing mode.
   extension, ext          Configure extensions of an existing project.
     list, ls              List platforms and extensions.
     categories, cat       List extension categories.
     add                   Add extension(s) to this project.
     remove, rm            Remove extension(s) from this project.
-  registry                Configure Quarkus registry client
-    list                  List enabled Quarkus registries
-    add                   Add a Quarkus extension registry
-    remove                Remove a Quarkus extension registry
-  version                 Display version information.
-  image                   Perform a container image operation.
+  image                   Build or push project container image.
     build                 Build a container image.
       docker              Build a container image using Docker.
       buildpack           Build a container image using Buildpack.
       jib                 Build a container image using Jib.
       openshift           Build a container image using Openshift.
     push                  Push a container image.
+  deploy                  Deploy application.
+    kubernetes            Perform the deploy action on kubernetes.
+    openshift             Perform the deploy action on openshift.
+    knative               Perform the deploy action on knative.
+    kind                  Perform the deploy action on minikube.
+    minikube              Perform the deploy action on minikube.
+  registry                Configure Quarkus registry client
+    list                  List enabled Quarkus registries
+    add                   Add a Quarkus extension registry
+    remove                Remove a Quarkus extension registry
+  info                    Display project information and verify versions
+                            health (platform and extensions).
+  update, up, upgrade     Suggest recommended project updates with the
+                            possibility to apply them.
+  version                 Display CLI version information.
+  plugin, plug            Configure plugins of the Quarkus CLI.
+    list, ls              List CLI plugins.
+    add                   Add plugin(s) to the Quarkus CLI.
+    remove                Remove plugin(s) to the Quarkus CLI.
+    sync                  Sync (discover / purge) CLI Plugins.
   completion              bash/zsh completion:  source <(quarkus completion)
 ----
 
@@ -302,7 +320,7 @@ If you don't see the output you expect, use `--help` to verify that you are invo
 [[project-creation]]
 === Creating a new project
 
-To create a new project we use the `create` command
+To create a new project, use the `create` command
 (the `app` subcommand is implied when not specified):
 
 [source,shell]
@@ -324,12 +342,13 @@ applying codestarts...
 --> /<output-dir>/code-with-quarkus
 ----
 
-This will create a folder called 'code-with-quarkus' in your current working directory using default groupId, artifactId and version values
-(groupId='org.acme', artifactId='code-with-quarkus' and version='1.0.0-SNAPSHOT').
+This will create a folder called `code-with-quarkus` in your current working directory using default `groupId`, `artifactId` and `version` values
+(`groupId='org.acme'`, `artifactId='code-with-quarkus'` and `version='1.0.0-SNAPSHOT'`).
 
-Note: the emoji shown above may not match precisely. The appearance of emoji can vary by font, and terminal/environment. IntelliJ IDEA, for example, has several long-running issues open regarding the behavior/rendering of emoji in the terminal.
+NOTE: The emojis shown above may not match precisely. The appearance of emojis can vary with the font used or the terminal/environment. IntelliJ IDEA, for example, has several long-running issues open regarding the behavior/rendering of emojis in the terminal.
 
-As of 2.0.2.Final, you should specify the groupId, artifactId and version using group:artifactId:version coordinate syntax directly on the command line. You can selectively omit segments to use default values:
+You can specify the `groupId`, `artifactId` and `version` using the `group:artifactId:version` coordinates syntax directly from the command line.
+You can selectively omit segments to use the default values:
 
 [source,shell]
 ----
@@ -364,18 +383,13 @@ applying codestarts...
 -----------
 ----
 
-Use the help option to display options for creating projects:
+Use the `--help` option to display the options for creating projects:
 
 [source,shell]
 ----
 quarkus create app --help
 quarkus create cli --help
 ----
-
-[WARNING]
-====
-Previous versions of the CLI used options `--group-id` (`-g`),`--artifact-id` (`-a`) and `--version` (`-v`) to specify the groupId, artifactId, and version. If the output isn't what you expect, double-check your client version `quarkus version` and help `quarkus create app --help`.
-====
 
 [[specifying-quarkus-version]]
 === Specifying the Quarkus version
@@ -386,12 +400,9 @@ Both `quarkus create` and `quarkus extension list` allow you to explicitly speci
 +
 A https://quarkus.io/guides/platform#quarkus-platform-bom[Quarkus Platform release BOM] is identified by `groupId:artifactId:version` (GAV) coordinates. When specifying a platform release BOM, you may use empty segments to fall back to default values (shown with `quarkus create app --help`). If you specify only one segment (no `:`), it is assumed to be a version.
 +
-For example:
+`io.quarkus.platform` is the default `groupId`. Specifying `-P :quarkus-bom:` is equivalent to `-P io.quarkus.platform:quarkus-bom:{quarkus-version}`. Note that you need to specify the `groupId` to work with a snapshot, e.g. `-P io.quarkus::999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`.
 +
-- With the `2.0.0.Final` version of the CLI, specifying `-P :quarkus-bom:` is equivalent to `-P io.quarkus:quarkus-bom:2.0.0.Final`. Specifying `-P 999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`.
-- With the `2.1.0.Final` version of the CLI, `io.quarkus.platform` is the default group id. Specifying `-P :quarkus-bom:` is equivalent to `-P io.quarkus.platform:quarkus-bom:2.1.0.Final`. Note that you need to specify the group id to work with a snapshot, e.g. `-P io.quarkus::999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`.
-+
-Note: default values are subject to change. Using the `--dry-run` option will show you the computed value.
+Default values are subject to change. Use the `--dry-run` option to see the computed value.
 
 2. Specify a Platform Stream
 +
@@ -424,15 +435,15 @@ The format of the result can be controlled with one of four options:
 
 The behavior of `quarkus ext ls` will vary depending on context.
 
-===== Listing Extensions for a Quarkus release
+===== Listing extensions for a Quarkus release
 
 If you invoke the Quarkus CLI from outside of a project, Quarkus will list all the extensions available for the Quarkus release used by the CLI itself.
 
-You can also list extensions for a specific release of Quarkus using `-P` or `-S`, as described in <<specifying-quarkus-version,Specifying the Quarkus version>>.
+You can also list extensions for a specific release of Quarkus using `-P` or `-S`, as described in <<specifying-quarkus-version>>.
 
 This mode uses the `--origins` format by default.
 
-===== Listing Extensions for a Quarkus project
+===== Listing extensions for a Quarkus project
 
 When working with a Quarkus project, the CLI will list the extensions the current project has installed, using the `--name` format by default.
 
@@ -455,11 +466,10 @@ Elytron Security JDBC                              quarkus-elytron-security-jdbc
 Agroal - Database connection pool                  quarkus-agroal
 ----
 
+==== Adding extensions
 
-==== Adding extension(s)
-
-The Quarkus CLI can add Quarkus one or more extensions to your project with the 'add'
-command:
+The Quarkus CLI can add one or more extensions to your project with the `add`
+subcommand:
 
 [source,shell]
 ----
@@ -468,10 +478,10 @@ quarkus ext add kubernetes health
 [SUCCESS] ✅ Extension io.quarkus:quarkus-smallrye-health has been installed
 ----
 
-==== Removing extension(s)
+==== Removing extensions
 
-The Quarkus CLI can remove one or more extensions from your project with the 'remove'
-command:
+The Quarkus CLI can remove one or more extensions from your project with the `remove`/`rm`
+subcommand:
 
 [source,shell]
 ----
@@ -481,7 +491,8 @@ quarkus ext rm kubernetes
 
 === Build your project
 
-To build your project using the Quarkus CLI (using the default configuration in this example):
+To build your project using the Quarkus CLI (using the default configuration in this example),
+use the `build` command:
 
 [source,shell]
 ----
@@ -507,12 +518,7 @@ NOTE: Run `quarkus build --clean` to perform clean as part of the build.
 
 === Development mode
 
-[source,shell]
-----
-quarkus dev --help
-----
-
-To start dev mode from the Quarkus CLI do:
+To start dev mode from the Quarkus CLI, use the `dev` command:
 
 [source,shell]
 ----
@@ -541,13 +547,6 @@ NOTE: Output will vary depending on the build tool your project is using (Maven,
 
 NOTE: Run `quarkus dev --clean` to perform clean as part of the build.
 
-[[quarkus-version-compatibility]]
-[WARNING]
-.Compatibility with Quarkus 1.x
-====
-The version 2 Quarkus CLI can not be used with 1.x Quarkus projects or releases. Use the Maven/Gradle plugins when working with Quarkus 1.x projects.
-====
-
 == Shell autocomplete and aliases
 
 Automatic command completion is available for Bash and Zsh:
@@ -558,7 +557,7 @@ Automatic command completion is available for Bash and Zsh:
 source <(quarkus completion)
 ----
 
-If you choose to use an alias for the quarkus command, adjust command completion with the following commands:
+If you choose to use an alias for the `quarkus` command, adjust the command completion with the following commands:
 
 [source,shell]
 ----
@@ -567,7 +566,6 @@ alias q=quarkus
 # Add q to list of commands included in quarkus autocompletion
 complete -F _complete_quarkus q
 ----
-
 
 === Container images
 
@@ -595,7 +593,6 @@ For example, to use a https://buildpacks.io/[Cloud Native Buildpack] with a cust
 quarkus image build buildpack --builder-image <your builder image>
 ----
 
-
 ==== Pushing
 
 The `image push` command is similar to `image build`, and surfaces some basic options required to push images to a target container registry.
@@ -605,13 +602,15 @@ The `image push` command is similar to `image build`, and surfaces some basic op
 quarkus image push --registry=<image registry> --registry-username=<registry username> --registry-password-stdin
 ----
 
-
 == Extending the CLI
-The pull request introduces a plugin mechanism for the Quarkus CLI. This allows to dynamically add commands / subcommand to the CLI.
 
-=== What is a Plugin
-A plugin can be any executable, jar or java command that can be found locally or obtained remotely.
-So plugins are classified in the following types:
+The Quarkus CLI embeds a plugin system that can be used to dynamically add commands and subcommands to the CLI.
+
+=== What is a plugin
+
+A plugin can be any executable, jar or Java command that can be found locally or obtained remotely.
+
+Plugins are classified as follows:
 
 * Plugins executed via shell
   * *executable* (any executable prefixed with `quarkus-` found locally)
@@ -621,110 +620,119 @@ So plugins are classified in the following types:
   * *maven* (any maven coordinate in GACTV form pointing to a runnable jar)
 
 === How to obtain plugins
+
 Plugins can be found via multiple sources that are described below.
 
-==== Extension(s)
-A quarkus extension may define list of `cli-plugins` as part of its metadata. The list may contains GACTV string pointing to executable jars.
+==== Extensions
 
-*Limitations*: At the moment the cli is able to obtain the list of available extensions, without being very accurate on the exact version of the extension (it uses the version found in the extension catalog).
+A Quarkus extension may define a list of `cli-plugins` as part of its metadata.
+The list may contain GACTV string pointing to executable jars.
+
+[WARNING]
+====
+At the moment, the CLI is able to obtain the list of available extensions,
+but is not very accurate on the exact version of the extension (it uses the version found in the extension catalog).
+====
 
 ==== Local path scanning
-Scan the path item for executable files prefixed with `quarkus`.
+
+Scan the path elements for executable files prefixed with `quarkus-`.
 
 ==== Using JBang aliases
+
 Scan the local or project jbang catalog for aliases prefixed with `quarkus-`.
 
 ==== Using the JBang quarkusio catalog
-Scan the quarkusio catalog for aliases prefixed wtih `quarkus-`.
-*Note:* uses the jbang binary. If missing it will be automatically installed unser `.jbang`.
+
+Scan the `quarkusio` catalog for aliases prefixed with `quarkus-`.
+
+NOTE: Uses the JBang binary. If missing, it will be automatically installed under `.jbang`.
 
 ==== Explicitly using the plugin commands
+
 See `quarkus plugin add` below
 
 === Managing plugins
-Plugins are managed using the following commands:
+
+Plugins are managed using the following commands.
 
 ==== Listing plugins
 
-The following command lists the installed add plugins.
+The following command lists the installed plugins:
 
 [source, shell]
 ----
-quarkus plug list
+quarkus plugin list
 No plugins installed!
 To include the installable plugins in the list, append --installable to the command.
 ----
 
-To list available / installable plugins:
+To list the available/installable plugins:
 
 [source, shell]
 ----
-❯ quarkus plug list --installable
+quarkus plugin list --installable
     Name    	 Type       	 Scope 	 Location                          	 Description
     kill    	 jbang      	 user  	 quarkus-kill@quarkusio
  *  fmt     	 jbang      	 user  	 quarkus-fmt@quarkusio
     greeter 	 executable 	 user  	 /home/iocanel/bin/quarkus-greeter
 
-   Use the 'plugin add' sub command and pass the location of any plugin listed above, or any remote location in the form of URL / GACTV pointing to a remote plugin.
-
+   Use the 'plugin add' subcommand and pass the location of any plugin listed above, or any remote location in the form of URL / GACTV pointing to a remote plugin.
 ----
 
 The output of the `list` command may be filtered by `type` using `-t` or by name using `-s` flag and a search pattern.
-*Example:* To list all installable plugins that start with the letter `k`:
 
+For instance, to list all the installable plugins starting with the letter `k`, use the following command:
 
 [source, shell]
 ----
-quarkus plug list --installable -s "k*"
+quarkus plugin list --installable -s "k*"
     Name    	 Type       	 Scope 	 Location                          	 Description
     kill    	 jbang      	 user  	 quarkus-kill@quarkusio
 
-Use the 'plugin add' sub command and pass the location of any plugin listed above, or any remote location in the form of URL / GACTV pointing to a remote plugin.
-
+Use the 'plugin add' subcommand and pass the location of any plugin listed above, or any remote location in the form of URL / GACTV pointing to a remote plugin.
 ----
 
 ==== Adding plugins
 
-To add any of the installable plugins, use `quarkus plug add <name or location>`:
-
+To add any of the installable plugins, use `quarkus plugin add <name or location>`:
 
 [source, shell]
 ----
-quarkus plug add kill
+quarkus plugin add kill
 Added plugin:
     Name    	 Type       	 Scope 	 Location                          	 Description
  *  kill    	 jbang      	 user  	 quarkus-kill@quarkusio
 
 ----
 
-The command above installed a plugin by `name` using the name as listed by `quarkus plug list --installable`.
+The command above installed a plugin by `name` using the name as listed by `quarkus plugin list --installable`.
 
-The command can be now executed using `quarkus kill`.
+The installed command can be now executed using `quarkus kill`.
 
-NOTE: Users are not limited to the plugins discovered by `quarkus plug list --installable`. Users may install plugins as long as they provide the URL or the Maven coordinates pointing to an executable jar or java file.
+NOTE: Users are not limited to the plugins discovered by `quarkus plug list --installable`.
+Users may install plugins as long as they provide the URL or the Maven coordinates pointing to an executable jar or Java file.
 
-*Example*: Installing an executable jar as a plugin via maven coordinates
+You can install an executable jar as a plugin via Maven coordinates.
 
-For this example, we will use `io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0` which is a real executable jar that provides a CLI utility for the `quarkus-authzed` extension.
-
+For instance, let's use `io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0` which is a real executable jar that provides a CLI utility for the `quarkus-authzed` extension.
 
 [source, shell]
 ----
-quarkus plug add io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0 -d "Authzed CLI"
+quarkus plugin add io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0 -d "Authzed CLI"
 Added plugin:
     Name    	 Type  	 Location                                                    	 Description
  *  authzed 	 maven 	 io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0 	 Authzed CLI
-
 ----
 
-NOTE: It is also possible to set a description that will appear in the help messages.
-
+NOTE: It is also possible to set a description that will appear in the help output.
 
 [source, shell]
 ----
 quarkus --help
 
-Usage: quarkus [-ehv] [--verbose] [-D=<String=String>]... [COMMAND]
+Usage: quarkus [-ehv] [--refresh] [--verbose] [--config=CONFIG]
+               [-D=<String=String>]... [COMMAND]
 ...
 Commands:
 ...
@@ -739,32 +747,35 @@ Commands:
 ----
 
 ==== Where are the plugins added?
+
 Plugins are added in the plugin catalog that lives at: `<user home>/.quakrus/cli/plugins/quarkus-cli-catalog.json`.
 
 There is a second plugin catalog that is relative to the current project (if available): `<project root>/.quarkus/cli/plugins/quarkus-cli-catalog.json`.
 
 The effective catalog is the combination of both the `user` and `project` catalogs with the latter being able to override entries of the former (e.g. use a different version or location for a plugin).
 
-If the project catalog is available it will always be preferred, unless explicitly specified with the user of `--user` flag.
+If the project catalog is available, it will always be preferred, unless explicitly specified with the `--user` flag.
 
-The column `scope` the plugin table indicates where the plugin is/will be added.
+The column `scope` of the plugins table indicates where the plugin is/will be added.
 
 ==== Removing plugins
-Plugins are removed using `quarkus plug remove <plugin name>`.
+
+Plugins are removed using `quarkus plugin remove <plugin name>`.
 
 [source, shell]
 ----
-quarkus plug remove kill
+quarkus plugin remove kill
 Removed plugin:
     Name 	 Type  	 Scope 	 Location               	 Description
     kill 	 jbang 	 user  	 quarkus-kill@quarkusio
 ----
 
 ==== Syncing plugins
-To remove stale plugins or discover new plugins provided by extensions the `quarkus plugin sync` is available.
-With this command binaries and jbang aliases that are added to the catalog but are not longer available will be purged.
 
-NOTE: Remote plugins that are explicitly added by the user using URL / Maven coordinates are excluded.
+To remove stale plugins or discover new plugins provided by extensions, the `quarkus plugin sync` command is available.
+With this command binaries and JBang aliases that are added to the catalog but are no longer available will be purged.
+
+NOTE: Remote plugins that are explicitly added by the user using URL/Maven coordinates are excluded from the removal.
 
 The command is also executed implicitly through any of the CLI commands:
 

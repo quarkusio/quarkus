@@ -4,6 +4,7 @@ package io.quarkus.container.image.docker.deployment;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
+import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -87,9 +88,10 @@ public class DockerProcessor {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
         }
 
-        var dockerfilePaths = getDockerfilePaths(dockerConfig, false, packageConfig, out);
-        var dockerFileBaseInformationProvider = DockerFileBaseInformationProvider.impl();
-        var dockerFileBaseInformation = dockerFileBaseInformationProvider.determine(dockerfilePaths.getDockerfilePath());
+        DockerfilePaths dockerfilePaths = getDockerfilePaths(dockerConfig, false, packageConfig, out);
+        DockerFileBaseInformationProvider dockerFileBaseInformationProvider = DockerFileBaseInformationProvider.impl();
+        Optional<DockerFileBaseInformationProvider.DockerFileBaseInformation> dockerFileBaseInformation = dockerFileBaseInformationProvider
+                .determine(dockerfilePaths.getDockerfilePath());
 
         if ((compiledJavaVersion.getJavaVersion().isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE)
                 && dockerFileBaseInformation.isPresent() && (dockerFileBaseInformation.get().getJavaVersion() < 17)) {
@@ -168,11 +170,11 @@ public class DockerProcessor {
             boolean pushContainerImage,
             PackageConfig packageConfig) {
 
-        var useBuildx = dockerConfig.buildx.useBuildx();
+        boolean useBuildx = dockerConfig.buildx.useBuildx();
 
-        // useBuildx: Whether or not any of the buildx parameters are set
+        // useBuildx: Whether any of the buildx parameters are set
         //
-        // pushImages: Whether or not the user requested the built images to be pushed to a registry
+        // pushImages: Whether the user requested the built images to be pushed to a registry
         // Pushing images is different based on if you're using buildx or not.
         // If not using any of the buildx params (useBuildx == false), then the flow is as it was before:
         //
@@ -196,12 +198,13 @@ public class DockerProcessor {
         }
 
         if (buildContainerImage) {
-            log.infof("Executing the following command to build docker image: '%s %s'", dockerConfig.executableName,
+            final String executableName = dockerConfig.executableName.orElse(detectContainerRuntime(true).getExecutableName());
+            log.infof("Executing the following command to build docker image: '%s %s'", executableName,
                     String.join(" ", dockerArgs));
-            boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, dockerConfig.executableName,
+            boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, executableName,
                     dockerArgs);
             if (!buildSuccessful) {
-                throw dockerException(dockerArgs);
+                throw dockerException(executableName, dockerArgs);
             }
 
             dockerConfig.buildx.platform
@@ -234,7 +237,7 @@ public class DockerProcessor {
 
     private void loginToRegistryIfNeeded(ContainerImageConfig containerImageConfig,
             ContainerImageInfoBuildItem containerImageInfo, DockerConfig dockerConfig) {
-        var registry = containerImageInfo.getRegistry()
+        String registry = containerImageInfo.getRegistry()
                 .orElseGet(() -> {
                     log.info("No container image registry was set, so 'docker.io' will be used");
                     return "docker.io";
@@ -242,11 +245,13 @@ public class DockerProcessor {
 
         // Check if we need to login first
         if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
-            boolean loginSuccessful = ExecUtil.exec(dockerConfig.executableName, "login", registry, "-u",
+            final String executableName = dockerConfig.executableName.orElse(detectContainerRuntime(true).getExecutableName());
+            boolean loginSuccessful = ExecUtil.exec(executableName, "login", registry, "-u",
                     containerImageConfig.username.get(),
                     "-p" + containerImageConfig.password.get());
             if (!loginSuccessful) {
-                throw dockerException(new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });
+                throw dockerException(executableName,
+                        new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });
             }
         }
     }
@@ -254,15 +259,17 @@ public class DockerProcessor {
     private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, ContainerImageConfig containerImageConfig,
             DockerConfig dockerConfig, ContainerImageInfoBuildItem containerImageInfo, boolean pushImages) {
         List<String> dockerArgs = new ArrayList<>(6 + dockerConfig.buildArgs.size());
-        var useBuildx = dockerConfig.buildx.useBuildx();
+        boolean useBuildx = dockerConfig.buildx.useBuildx();
 
         if (useBuildx) {
+            final String executableName = dockerConfig.executableName.orElse(detectContainerRuntime(true).getExecutableName());
             // Check the executable. If not 'docker', then fail the build
-            if (!DOCKER.equals(dockerConfig.executableName)) {
+            if (!DOCKER.equals(executableName)) {
                 throw new IllegalArgumentException(
                         String.format(
-                                "The 'buildx' properties are specific to 'executable-name=docker' and can not be used with the '%s' executable name. Either remove the `buildx` properties or the `executable-name` property.",
-                                dockerConfig.executableName));
+                                "The 'buildx' properties are specific to 'executable-name=docker' and can not be used with " +
+                                        "the '%s' executable name. Either remove the `buildx` properties or the `executable-name` property.",
+                                executableName));
             }
 
             dockerArgs.add("buildx");
@@ -315,27 +322,30 @@ public class DockerProcessor {
     }
 
     private void createAdditionalTags(String image, List<String> additionalImageTags, DockerConfig dockerConfig) {
+        final String executableName = dockerConfig.executableName.orElse(detectContainerRuntime(true).getExecutableName());
         for (String additionalTag : additionalImageTags) {
             String[] tagArgs = { "tag", image, additionalTag };
-            boolean tagSuccessful = ExecUtil.exec(dockerConfig.executableName, tagArgs);
+            boolean tagSuccessful = ExecUtil.exec(executableName, tagArgs);
             if (!tagSuccessful) {
-                throw dockerException(tagArgs);
+                throw dockerException(executableName, tagArgs);
             }
         }
     }
 
     private void pushImage(String image, DockerConfig dockerConfig) {
+        final String executableName = dockerConfig.executableName.orElse(detectContainerRuntime(true).getExecutableName());
         String[] pushArgs = { "push", image };
-        boolean pushSuccessful = ExecUtil.exec(dockerConfig.executableName, pushArgs);
+        boolean pushSuccessful = ExecUtil.exec(executableName, pushArgs);
         if (!pushSuccessful) {
-            throw dockerException(pushArgs);
+            throw dockerException(executableName, pushArgs);
         }
         log.info("Successfully pushed docker image " + image);
     }
 
-    private RuntimeException dockerException(String[] dockerArgs) {
+    private RuntimeException dockerException(String executableName, String[] dockerArgs) {
         return new RuntimeException(
-                "Execution of 'docker " + String.join(" ", dockerArgs) + "' failed. See docker output for more details");
+                "Execution of '" + executableName + " " + String.join(" ", dockerArgs)
+                        + "' failed. See docker output for more details");
     }
 
     private DockerfilePaths getDockerfilePaths(DockerConfig dockerConfig, boolean forNative,
@@ -464,7 +474,7 @@ public class DockerProcessor {
                     : mainSourcesRoot.getValue().resolve(dockerfilePath);
             if (!effectiveDockerfilePath.toFile().exists()) {
                 throw new IllegalArgumentException(
-                        "Specified Dockerfile path " + effectiveDockerfilePath.toAbsolutePath().toString() + " does not exist");
+                        "Specified Dockerfile path " + effectiveDockerfilePath.toAbsolutePath() + " does not exist");
             }
             return new ProvidedDockerfile(
                     effectiveDockerfilePath,

@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
@@ -51,6 +52,7 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PathTestHelper;
@@ -63,8 +65,6 @@ public final class IntegrationTestUtil {
     public static final int DEFAULT_PORT = 8081;
     public static final int DEFAULT_HTTPS_PORT = 8444;
     public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
-
-    private static final String DOCKER_BINARY = "docker";
 
     private IntegrationTestUtil() {
     }
@@ -336,9 +336,13 @@ public final class IntegrationTestUtil {
     private static void createNetworkIfNecessary(
             final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
         if (devServicesLaunchResult.manageNetwork() && (devServicesLaunchResult.networkId() != null)) {
+            ContainerRuntimeUtil.ContainerRuntime containerRuntime = detectContainerRuntime(true);
+
             try {
                 int networkCreateResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
-                        .command(DOCKER_BINARY, "network", "create", devServicesLaunchResult.networkId()).start().waitFor();
+                        .command(containerRuntime.getExecutableName(), "network", "create",
+                                devServicesLaunchResult.networkId())
+                        .start().waitFor();
                 if (networkCreateResult > 0) {
                     throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
                             + "' completed unsuccessfully");
@@ -349,7 +353,9 @@ public final class IntegrationTestUtil {
                     public void run() {
                         try {
                             new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
-                                    .command(DOCKER_BINARY, "network", "rm", devServicesLaunchResult.networkId()).start()
+                                    .command(containerRuntime.getExecutableName(), "network", "rm",
+                                            devServicesLaunchResult.networkId())
+                                    .start()
                                     .waitFor();
                         } catch (InterruptedException | IOException ignored) {
                             System.out.println(

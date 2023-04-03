@@ -9,6 +9,8 @@ import org.keycloak.adapters.authorization.cip.ClaimsInformationPointProviderFac
 import org.keycloak.adapters.authorization.cip.HttpClaimInformationPointProviderFactory;
 import org.keycloak.authorization.client.representation.ServerConfiguration;
 import org.keycloak.authorization.client.representation.TokenIntrospectionResponse;
+import org.keycloak.common.crypto.CryptoProvider;
+import org.keycloak.crypto.def.DefaultCryptoProvider;
 import org.keycloak.jose.jwk.JSONWebKeySet;
 import org.keycloak.jose.jwk.JWK;
 import org.keycloak.jose.jws.JWSHeader;
@@ -79,7 +81,8 @@ public class KeycloakReflectionBuildStep {
         serviceProvider.produce(new ServiceProviderBuildItem(ClaimInformationPointProviderFactory.class.getName(),
                 HttpClaimInformationPointProviderFactory.class.getName(),
                 ClaimsInformationPointProviderFactory.class.getName()));
-
+        serviceProvider.produce(new ServiceProviderBuildItem(CryptoProvider.class.getName(),
+                DefaultCryptoProvider.class.getName()));
     }
 
     @BuildStep

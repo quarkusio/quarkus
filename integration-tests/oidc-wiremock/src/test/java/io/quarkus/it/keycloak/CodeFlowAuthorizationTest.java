@@ -214,6 +214,30 @@ public class CodeFlowAuthorizationTest {
         doTestCodeFlowUserInfoCashedInIdToken();
     }
 
+    @Test
+    public void testCodeFlowTokenIntrospection() throws Exception {
+        defineCodeFlowTokenIntrospectionStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-token-introspection");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            page = form.getInputByValue("login").click();
+
+            assertEquals("alice", page.getBody().asNormalizedText());
+
+            // refresh
+            Thread.sleep(3000);
+            page = webClient.getPage("http://localhost:8081/code-flow-token-introspection");
+            assertEquals("admin", page.getBody().asNormalizedText());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
     private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime) throws IOException {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
@@ -295,6 +319,28 @@ public class CodeFlowAuthorizationTest {
                                         + OidcWiremockTestResource.getAccessToken("bob", Set.of()) + "\""
                                         + "}")));
 
+    }
+
+    private void defineCodeFlowTokenIntrospectionStub() {
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/access_token")
+                        .withHeader("X-Custom", matching("XTokenIntrospection"))
+                        .withRequestBody(containing("authorization_code"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \"alice\","
+                                        + "  \"refresh_token\": \"refresh5678\""
+                                        + "}")));
+
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/access_token")
+                        .withRequestBody(containing("refresh_token=refresh5678"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \"admin\""
+                                        + "}")));
     }
 
     private void defineCodeFlowLogoutStub() {

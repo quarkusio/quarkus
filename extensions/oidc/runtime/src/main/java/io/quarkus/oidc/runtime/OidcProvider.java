@@ -227,16 +227,10 @@ public class OidcProvider implements Closeable {
                         }
                         if (!Boolean.TRUE.equals(introspectionResult.getBoolean(OidcConstants.INTROSPECTION_TOKEN_ACTIVE))) {
                             LOG.debugf("Token issued to client %s is not active", oidcConfig.clientId.get());
+                            verifyTokenExpiry(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP));
                             throw new AuthenticationFailedException();
                         }
-                        if (isTokenExpired(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP))) {
-                            String error = String.format("Token issued to client %s has expired",
-                                    oidcConfig.clientId.get());
-                            LOG.debugf(error);
-                            throw new AuthenticationFailedException(
-                                    new InvalidJwtException(error,
-                                            List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null));
-                        }
+                        verifyTokenExpiry(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP));
                         try {
                             verifyTokenAge(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_IAT));
                         } catch (InvalidJwtException ex) {
@@ -244,6 +238,17 @@ public class OidcProvider implements Closeable {
                         }
 
                         return introspectionResult;
+                    }
+
+                    private void verifyTokenExpiry(Long exp) {
+                        if (isTokenExpired(exp)) {
+                            String error = String.format("Token issued to client %s has expired",
+                                    oidcConfig.clientId.get());
+                            LOG.debugf(error);
+                            throw new AuthenticationFailedException(
+                                    new InvalidJwtException(error,
+                                            List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null));
+                        }
                     }
 
                 });

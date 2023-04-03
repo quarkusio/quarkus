@@ -11,12 +11,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.maven.model.Dependency;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CurationResult;
@@ -74,9 +72,9 @@ public class BootstrapAppModelFactory {
     private MavenArtifactResolver mavenArtifactResolver;
 
     private BootstrapMavenContext mvnContext;
-    Set<ArtifactKey> reloadableModules = Collections.emptySet();
+    Set<ArtifactKey> reloadableModules = Set.of();
 
-    private Collection<io.quarkus.maven.dependency.Dependency> forcedDependencies = Collections.emptyList();
+    private Collection<io.quarkus.maven.dependency.Dependency> forcedDependencies = List.of();
 
     private BootstrapAppModelFactory() {
     }
@@ -306,9 +304,23 @@ public class BootstrapAppModelFactory {
     }
 
     private LocalProject loadWorkspace() throws AppModelResolverException {
-        return projectRoot == null || !Files.isDirectory(projectRoot)
-                ? null
-                : createBootstrapMavenContext().getCurrentProject();
+        if (projectRoot == null || !Files.isDirectory(projectRoot)) {
+            return null;
+        }
+        LocalProject project = createBootstrapMavenContext().getCurrentProject();
+        if (project == null) {
+            return null;
+        }
+        if (project.getDir().equals(projectRoot)) {
+            return project;
+        }
+        for (LocalProject p : project.getWorkspace().getProjects().values()) {
+            if (p.getDir().equals(projectRoot)) {
+                return p;
+            }
+        }
+        log.warnf("Expected project directory %s does not match current project directory %s", projectRoot, project.getDir());
+        return project;
     }
 
     private CurationResult createAppModelForJar(Path appArtifactPath) {
@@ -321,7 +333,7 @@ public class BootstrapAppModelFactory {
             }
             modelResolver.relink(appArtifact, appArtifactPath);
             //we need some way to figure out dependencies here
-            appModel = modelResolver.resolveManagedModel(appArtifact, Collections.emptyList(), managingProject,
+            appModel = modelResolver.resolveManagedModel(appArtifact, List.of(), managingProject,
                     reloadableModules);
         } catch (AppModelResolverException | IOException e) {
             throw new RuntimeException("Failed to resolve initial application dependencies", e);

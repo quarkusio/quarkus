@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 class NativeImageBuildContainerRunnerTest {
 
@@ -17,6 +18,8 @@ class NativeImageBuildContainerRunnerTest {
     @DisabledIfSystemProperty(named = "avoid-containers", matches = "true")
     @Test
     void testBuilderImageBeingPickedUp() {
+        ContainerRuntimeUtil.ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime(true);
+
         NativeConfig nativeConfig = new NativeConfig();
         nativeConfig.containerRuntime = Optional.empty();
         boolean found;
@@ -25,33 +28,39 @@ class NativeImageBuildContainerRunnerTest {
 
         nativeConfig.builderImage = "graalvm";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
-        command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
+        command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
+                Collections.emptyList());
         found = false;
         for (String part : command) {
             if (part.contains("ubi-quarkus-graalvmce-builder-image")) {
                 found = true;
+                break;
             }
         }
         assertThat(found).isTrue();
 
         nativeConfig.builderImage = "mandrel";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
-        command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
+        command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
+                Collections.emptyList());
         found = false;
         for (String part : command) {
             if (part.contains("ubi-quarkus-mandrel-builder-image")) {
                 found = true;
+                break;
             }
         }
         assertThat(found).isTrue();
 
         nativeConfig.builderImage = "RandomString";
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
-        command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
+        command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
+                Collections.emptyList());
         found = false;
         for (String part : command) {
             if (part.equals("RandomString")) {
                 found = true;
+                break;
             }
         }
         assertThat(found).isTrue();

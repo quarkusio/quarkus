@@ -50,9 +50,10 @@ public class DockerConfig {
 
     /**
      * Name of binary used to execute the docker commands.
+     * This setting can override the global container runtime detection.
      */
-    @ConfigItem(defaultValue = "docker")
-    public String executableName;
+    @ConfigItem
+    public Optional<String> executableName;
 
     /**
      * Configuration for Docker Buildx options

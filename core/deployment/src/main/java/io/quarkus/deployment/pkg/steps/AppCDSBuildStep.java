@@ -1,6 +1,7 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
+import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.utilities.JavaBinFinder;
 
 public class AppCDSBuildStep {
@@ -201,8 +203,10 @@ public class AppCDSBuildStep {
     // generate the classes file on the host
     private List<String> dockerRunCommands(OutputTargetBuildItem outputTarget, String containerImage,
             String containerWorkingDir) {
+        ContainerRuntime containerRuntime = detectContainerRuntime(true);
+
         List<String> command = new ArrayList<>(10);
-        command.add("docker");
+        command.add(containerRuntime.getExecutableName());
         command.add("run");
         command.add("-v");
         command.add(outputTarget.getOutputDirectory().toAbsolutePath().toString() + ":" + CONTAINER_IMAGE_BASE_BUILD_DIR

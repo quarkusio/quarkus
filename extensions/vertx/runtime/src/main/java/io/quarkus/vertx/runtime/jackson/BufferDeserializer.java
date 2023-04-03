@@ -34,7 +34,7 @@ class BufferDeserializer extends JsonDeserializer<Buffer> {
         try {
             return Buffer.buffer(BASE64_DECODER.decode(text));
         } catch (IllegalArgumentException e) {
-            throw new InvalidFormatException(p, "Expected a base64 encoded byte array", text, Instant.class);
+            throw new InvalidFormatException(p, "Expected a base64 encoded byte array", text, Buffer.class);
         }
     }
 }

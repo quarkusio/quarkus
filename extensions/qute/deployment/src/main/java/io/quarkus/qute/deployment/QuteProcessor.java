@@ -2940,7 +2940,7 @@ public class QuteProcessor {
         if (expression.isLiteral()) {
             return;
         }
-        if (includeNamespaceExpression(expression, namespace)) {
+        if (namespace.equals(expression.getNamespace())) {
             // The expression itself has namespace
             namespaceExpressions.add(expression);
         }
@@ -2952,14 +2952,6 @@ public class QuteProcessor {
                 }
             }
         }
-    }
-
-    private static boolean includeNamespaceExpression(Expression expression, String namespace) {
-        if (namespace.equals(expression.getNamespace())) {
-            return true;
-        }
-        String typeInfo = expression.getParts().get(0).getTypeInfo();
-        return typeInfo != null ? typeInfo.startsWith(namespace) : false;
     }
 
     public static String getName(InjectionPointInfo injectionPoint) {

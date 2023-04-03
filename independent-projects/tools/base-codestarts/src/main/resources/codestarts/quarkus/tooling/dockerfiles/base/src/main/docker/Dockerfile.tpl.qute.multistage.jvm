@@ -1,0 +1,39 @@
+####
+# This Multistage Dockerfile is used in order to build a container that runs the Quarkus application in JVM mode
+#
+# Build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.multistage.jvm -t quarkus/{project.artifact-id} .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 8080:8080 quarkus/{project.artifact-id}
+#
+###
+
+## Stage 1 : build with Maven builder image
+FROM {dockerfile.builder.from} AS build
+ARG MAVEN_BUILD_EXTRA_ARGS=
+COPY --chown=quarkus:quarkus src mvnw pom.xml /code/
+COPY --chown=quarkus:quarkus .mvn/ /code/.mvn/
+USER quarkus
+WORKDIR /code
+RUN ./mvnw -B -ntp org.apache.maven.plugins:maven-dependency-plugin:3.5.0:go-offline
+RUN ./mvnw -ntp package -DskipTests $MAVEN_BUILD_EXTRA_ARGS
+
+## Stage 2 : create the Docker final image
+FROM registry.access.redhat.com/ubi8/openjdk-{java.version}:1.15
+
+ENV LANGUAGE='en_US:en'
+
+# We make four distinct layers so if there are application changes the library layers can be re-used
+COPY --from=build --chown=185 /code/{buildtool.build-dir}/quarkus-app/lib/ /deployments/lib/
+COPY --from=build --chown=185 /code/{buildtool.build-dir}/quarkus-app/*.jar /deployments/
+COPY --from=build --chown=185 /code/{buildtool.build-dir}/quarkus-app/app/ /deployments/app/
+COPY --from=build --chown=185 /code/{buildtool.build-dir}/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 8080
+USER 185
+
+ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"

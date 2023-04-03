@@ -8,3 +8,5 @@ language:
           from: registry.access.redhat.com/ubi8/ubi-minimal:8.6
         native-micro:
           from: quay.io/quarkus/quarkus-micro-image:2.0
+        builder:
+          from: quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17

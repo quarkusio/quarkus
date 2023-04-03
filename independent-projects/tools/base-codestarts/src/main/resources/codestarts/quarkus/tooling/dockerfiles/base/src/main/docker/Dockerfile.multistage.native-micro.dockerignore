@@ -1,0 +1,12 @@
+*
+!pom.xml
+!mvnw
+!.mvn/*
+!gradle.properties
+!build.gradle
+!settings.gradle
+!build.gradle.kts
+!settings.gradle.kts
+!src
+!gradlew
+!gradle/*

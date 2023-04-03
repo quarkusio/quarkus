@@ -746,16 +746,17 @@ After compilation has finished, you find the build artifact in `target/native-so
 ----
 $ cd target/native-sources
 $ ls
-native-image.args  getting-started-1.0.0-SNAPSHOT-runner.jar lib
+getting-started-1.0.0-SNAPSHOT-runner.jar  graalvm.version  lib  native-image.args
 ----
 
 From the output above one can see that, in addition to the produced jar file and the associated lib directory, a text file named `native-image.args` was created.
 This file holds all parameters (including the name of the JAR to compile) to pass along to GraalVM's `native-image` command.
-If you have GraalVM installed, you can start the native compilation by executing:
+A text file named `graalvm.version` was also created and holds the GraalVM version that should be used.
+If you have GraalVM installed and it matches this version, you can start the native compilation by executing:
 
 [source,bash]
 ----
-$ cd target/native-source
+$ cd target/native-sources
 $ native-image $(cat native-image.args)
 ...
 $ ls
@@ -769,22 +770,29 @@ The process for Gradle is analogous.
 
 Running the build process in a container is also possible:
 
+[source,bash]
+----
+$ ./mvnw clean package -Dquarkus.package.type=native-sources -Dquarkus.native.container-build=true
+----
+
+`-Dquarkus.native.container-build=true` will produce an additional text file named `native-builder.image` holding the docker image name to be used to build the native image.
+
 [source,bash,subs=attributes+]
 ----
-cd target/native-image
+cd target/native-sources
 docker run \
   -it \
   --rm \
-  --v $(pwd):/work <1>
-  -w /work <2>
+  --v $(pwd):/work \# <1>
+  -w /work \# <2>
   --entrypoint bin/sh \
-  quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} \ <3>
-  -c "native-image $(cat native-image.args) -J-Xmx4g" <4>
+  $(cat native-builder.image) \# <3>
+  -c "native-image $(cat native-image.args) -J-Xmx4g"# <4>
 ----
 
 <1> Mount the host's directory `target/native-image` to the container's `/work`. Thus, the generated binary will also be written to this directory.
 <2> Switch the working directory to `/work`, which we have mounted in <1>.
-<3> Use the `quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor}` docker image introduced in <<#multistage-docker,Using a multi-stage Docker build>> to build the native image.
+<3> Use the docker image from the file `native-builder.image`.
 <4> Call `native-image` with the content of file `native-image.args` as arguments. We also supply an additional argument to limit the process's maximum memory to 4 Gigabytes (this may vary depending on the project being built and the machine building it).
 
 [WARNING]

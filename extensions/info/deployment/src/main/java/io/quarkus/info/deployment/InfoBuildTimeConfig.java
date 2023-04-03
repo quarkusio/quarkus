@@ -51,6 +51,17 @@ public interface InfoBuildTimeConfig {
          */
         @WithDefault("true")
         boolean enabled();
+
+        /**
+         * Controls how much information is present in the git section
+         */
+        @WithDefault("standard")
+        Mode mode();
+
+        enum Mode {
+            STANDARD,
+            FULL
+        }
     }
 
     interface Build {

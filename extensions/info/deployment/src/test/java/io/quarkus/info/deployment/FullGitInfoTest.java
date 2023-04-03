@@ -3,18 +3,18 @@ package io.quarkus.info.deployment;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class EnabledInfoTest {
+public class FullGitInfoTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication();
+            .withEmptyApplication()
+            .overrideConfigKey("quarkus.info.git.mode", "full");
 
     @Test
     public void test() {
@@ -22,14 +22,15 @@ public class EnabledInfoTest {
                 .then()
                 .statusCode(200)
                 .body("os", is(notNullValue()))
-                .body("os.name", is(notNullValue()))
                 .body("java", is(notNullValue()))
-                .body("java.version", is(notNullValue()))
                 .body("build", is(notNullValue()))
-                .body("build.time", is(notNullValue()))
                 .body("git", is(notNullValue()))
                 .body("git.branch", is(notNullValue()))
-                .body("git.build", is(nullValue()));
+                .body("git.build", is(notNullValue()))
+                .body("git.commit", is(notNullValue()))
+                .body("git.commit.author", is(notNullValue()))
+                .body("git.commit.committer", is(notNullValue()))
+                .body("git.tags", is(notNullValue()));
 
     }
 }

@@ -39,6 +39,24 @@ class RootResourceTest {
     }
 
     @Test
+    void testCustomPermission() {
+        // test HTTP policy granting permissions with enabled proactive auth
+        given()
+                .auth().preemptive().basic("mary", Users.password("mary"))
+                .when()
+                .get("/manager-permission")
+                .then()
+                .statusCode(200)
+                .body(is("mary"));
+        given()
+                .auth().preemptive().basic("john", Users.password("john"))
+                .when()
+                .get("/manager-permission")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
     void testRolesAllowedConfigExpression() {
         given()
                 .auth().preemptive().basic("john", Users.password("john"))

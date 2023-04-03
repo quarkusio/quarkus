@@ -1,11 +1,20 @@
 package io.quarkus.vertx.http.deployment;
 
+import java.security.Permission;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
+
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -16,6 +25,10 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.StringPermission;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -37,9 +50,14 @@ import io.vertx.core.http.ClientAuth;
 
 public class HttpSecurityProcessor {
 
+    private static final DotName PERMISSION = DotName.createSimple(Permission.class.getName());
+
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     public void builtins(BuildProducer<HttpSecurityPolicyBuildItem> producer,
-            HttpBuildTimeConfig buildTimeConfig,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            HttpBuildTimeConfig buildTimeConfig, HttpSecurityRecorder recorder,
             BuildProducer<AdditionalBeanBuildItem> beanProducer) {
         producer.produce(new HttpSecurityPolicyBuildItem("deny", new SupplierImpl<>(new DenySecurityPolicy())));
         producer.produce(new HttpSecurityPolicyBuildItem("permit", new SupplierImpl<>(new PermitSecurityPolicy())));
@@ -48,11 +66,89 @@ public class HttpSecurityProcessor {
         if (!buildTimeConfig.auth.permissions.isEmpty()) {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(PathMatchingHttpSecurityPolicy.class));
         }
+        Map<String, BiFunction<String, String[], Permission>> permClassToCreator = new HashMap<>();
         for (Map.Entry<String, PolicyConfig> e : buildTimeConfig.auth.rolePolicy.entrySet()) {
-            producer.produce(new HttpSecurityPolicyBuildItem(e.getKey(),
-                    new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed))));
+            PolicyConfig policyConfig = e.getValue();
+            if (policyConfig.permissions.isEmpty()) {
+                producer.produce(new HttpSecurityPolicyBuildItem(e.getKey(),
+                        new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed))));
+            } else {
+                // create HTTP Security policy that checks allowed roles and grants SecurityIdentity permissions to
+                // requests that this policy allows to proceed
+                var permissionCreator = permClassToCreator.computeIfAbsent(policyConfig.permissionClass,
+                        new Function<String, BiFunction<String, String[], Permission>>() {
+                            @Override
+                            public BiFunction<String, String[], Permission> apply(String s) {
+                                if (StringPermission.class.getName().equals(s)) {
+                                    return recorder.stringPermissionCreator();
+                                }
+                                boolean constructorAcceptsActions = validateConstructor(combinedIndexBuildItem.getIndex(),
+                                        policyConfig.permissionClass);
+                                return recorder.customPermissionCreator(s, constructorAcceptsActions);
+                            }
+                        });
+                var policy = recorder.createRolesAllowedPolicy(policyConfig.rolesAllowed, policyConfig.permissions,
+                        permissionCreator);
+                producer.produce(new HttpSecurityPolicyBuildItem(e.getKey(), policy));
+            }
         }
 
+        if (!permClassToCreator.isEmpty()) {
+            // we need to register Permission classes for reflection as strictly speaking
+            // they might not exactly match classes defined via `PermissionsAllowed#permission`
+            var permissionClassesArr = permClassToCreator.keySet().toArray(new String[0]);
+            reflectiveClassProducer
+                    .produce(ReflectiveClassBuildItem.builder(permissionClassesArr).constructors().fields().methods().build());
+        }
+    }
+
+    private static boolean validateConstructor(IndexView index, String permissionClass) {
+        ClassInfo classInfo = index.getClassByName(permissionClass);
+
+        if (classInfo == null) {
+            throw new ConfigurationException(String.format("Permission class '%s' is missing", permissionClass));
+        }
+
+        // must have exactly one constructor
+        if (classInfo.constructors().size() != 1) {
+            throw new ConfigurationException(
+                    String.format("Permission class '%s' must have exactly one constructor", permissionClass));
+        }
+        MethodInfo constructor = classInfo.constructors().get(0);
+
+        // first parameter must be permission name (String)
+        if (constructor.parametersCount() == 0 || !isString(constructor.parameterType(0))) {
+            throw new ConfigurationException(
+                    String.format("Permission class '%s' constructor first parameter must be '%s' (permission name)",
+                            permissionClass, String.class.getName()));
+        }
+
+        // second parameter (actions) is optional
+        if (constructor.parametersCount() == 1) {
+            // permission constructor accepts just name, no actions
+            return false;
+        }
+
+        if (constructor.parametersCount() == 2) {
+            if (!isStringArray(constructor.parameterType(1))) {
+                throw new ConfigurationException(
+                        String.format("Permission class '%s' constructor second parameter must be '%s' array", permissionClass,
+                                String.class.getName()));
+            }
+            return true;
+        }
+
+        throw new ConfigurationException(String.format(
+                "Permission class '%s' constructor must accept either one parameter (String permissionName), or two parameters (String permissionName, String[] actions)",
+                permissionClass));
+    }
+
+    private static boolean isStringArray(Type type) {
+        return type.kind() == Type.Kind.ARRAY && isString(type.asArrayType().component());
+    }
+
+    private static boolean isString(Type type) {
+        return type.kind() == Type.Kind.CLASS && type.name().toString().equals(String.class.getName());
     }
 
     @BuildStep

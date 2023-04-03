@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.SecurityContext;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 
 @Path("/")
@@ -54,6 +55,13 @@ public class RootResource {
     @Path("/user")
     @RolesAllowed("user")
     public String user(@Context SecurityContext sec) {
+        return sec.getUserPrincipal().getName();
+    }
+
+    @GET
+    @Path("/manager-permission")
+    @PermissionsAllowed(value = "manager-permission", permission = ManagerPermission.class)
+    public String managerPermission(@Context SecurityContext sec) {
         return sec.getUserPrincipal().getName();
     }
 

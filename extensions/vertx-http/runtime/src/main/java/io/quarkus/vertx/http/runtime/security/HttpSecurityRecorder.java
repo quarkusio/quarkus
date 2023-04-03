@@ -1,10 +1,20 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import static io.quarkus.security.PermissionsAllowed.PERMISSION_TO_ACTION_SEPARATOR;
+
+import java.lang.reflect.InvocationTargetException;
+import java.security.Permission;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -18,9 +28,11 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
+import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
@@ -179,6 +191,95 @@ public class HttpSecurityRecorder {
                 });
             }
         };
+    }
+
+    public BiFunction<String, String[], Permission> stringPermissionCreator() {
+        return StringPermission::new;
+    }
+
+    public BiFunction<String, String[], Permission> customPermissionCreator(String clazz, boolean acceptsActions) {
+        return new BiFunction<String, String[], Permission>() {
+            @Override
+            public Permission apply(String name, String[] actions) {
+                try {
+                    if (acceptsActions) {
+                        return (Permission) loadClass(clazz).getConstructors()[0].newInstance(name, actions);
+                    } else {
+                        return (Permission) loadClass(clazz).getConstructors()[0].newInstance(name);
+                    }
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    throw new RuntimeException(
+                            String.format("Failed to create Permission - class '%s', name '%s', actions '%s'", clazz,
+                                    name, Arrays.toString(actions)),
+                            e);
+                }
+            }
+        };
+    }
+
+    public Supplier<HttpSecurityPolicy> createRolesAllowedPolicy(List<String> rolesAllowed,
+            Map<String, List<String>> roleToPermissionsStr, BiFunction<String, String[], Permission> permissionCreator) {
+        final Map<String, Set<Permission>> roleToPermissions = createPermissions(roleToPermissionsStr, permissionCreator);
+        return new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(rolesAllowed, roleToPermissions));
+    }
+
+    private static Map<String, Set<Permission>> createPermissions(Map<String, List<String>> roleToPermissions,
+            BiFunction<String, String[], Permission> permissionCreator) {
+        // role -> created permissions
+        Map<String, Set<Permission>> result = new HashMap<>();
+        for (Map.Entry<String, List<String>> e : roleToPermissions.entrySet()) {
+
+            // collect permission actions
+            // perm1:action1,perm2:action2,perm1:action3 -> perm1:action1,action3 and perm2:action2
+            Map<String, PermissionToActions> cache = new HashMap<>();
+            final String role = e.getKey();
+            for (String permissionToAction : e.getValue()) {
+                // parse permission to actions and add it to cache
+                addPermissionToAction(cache, role, permissionToAction);
+            }
+
+            // create permissions
+            var permissions = new HashSet<Permission>();
+            for (PermissionToActions permission : cache.values()) {
+                permissions.add(permission.create(permissionCreator));
+            }
+
+            result.put(role, Set.copyOf(permissions));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static void addPermissionToAction(Map<String, PermissionToActions> cache, String role, String permissionToAction) {
+        final String permissionName;
+        final String action;
+        // incoming value is either in format perm1:action1 or perm1 (with or withot action)
+        if (permissionToAction.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
+            // perm1:action1
+            var permToActions = permissionToAction.split(PERMISSION_TO_ACTION_SEPARATOR);
+            if (permToActions.length != 2) {
+                throw new ConfigurationException(
+                        String.format("Invalid permission format '%s', please use exactly one permission to action separator",
+                                permissionToAction));
+            }
+            permissionName = permToActions[0].trim();
+            action = permToActions[1].trim();
+        } else {
+            // perm1
+            permissionName = permissionToAction.trim();
+            action = null;
+        }
+
+        if (permissionName.isEmpty()) {
+            throw new ConfigurationException(
+                    String.format("Invalid permission name '%s' for role '%s'", permissionToAction, role));
+        }
+
+        cache.computeIfAbsent(permissionName, new Function<String, PermissionToActions>() {
+            @Override
+            public PermissionToActions apply(String s) {
+                return new PermissionToActions(s);
+            }
+        }).addAction(action);
     }
 
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
@@ -406,5 +507,33 @@ public class HttpSecurityRecorder {
         }
 
         protected abstract void setPathMatchingPolicy(RoutingContext event);
+    }
+
+    private static final class PermissionToActions {
+        private final String permissionName;
+        private final Set<String> actions;
+
+        private PermissionToActions(String permissionName) {
+            this.permissionName = permissionName;
+            this.actions = new HashSet<>();
+        }
+
+        private void addAction(String action) {
+            if (action != null) {
+                this.actions.add(action);
+            }
+        }
+
+        private Permission create(BiFunction<String, String[], Permission> permissionCreator) {
+            return permissionCreator.apply(permissionName, actions.toArray(new String[0]));
+        }
+    }
+
+    private static Class<?> loadClass(String className) {
+        try {
+            return Thread.currentThread().getContextClassLoader().loadClass(className);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Unable to load class '" + className + "' for creating permission", e);
+        }
     }
 }

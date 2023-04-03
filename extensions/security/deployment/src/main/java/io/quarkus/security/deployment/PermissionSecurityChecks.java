@@ -653,7 +653,8 @@ interface PermissionSecurityChecks {
                     if (foundIndex == -1) {
                         throw new RuntimeException(String.format(
                                 "Failed to identify matching data type for '%s' param of '%s' constructor for method '%s' annotated with @PermissionsAllowed",
-                                constructor.parameterName(i), permissionKey.classSignature(), securedMethod.name()));
+                                constructor.parameterName(i + nonMethodParams), permissionKey.classSignature(),
+                                securedMethod.name()));
                     }
                     methodParamIndexes[i] = foundIndex;
                 }

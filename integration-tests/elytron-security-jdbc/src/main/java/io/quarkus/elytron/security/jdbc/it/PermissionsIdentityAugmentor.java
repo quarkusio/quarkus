@@ -25,9 +25,6 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
 
     SecurityIdentity build(SecurityIdentity identity) {
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
-        if ("admin".equals(identity.getPrincipal().getName())) {
-            builder.addPermissionChecker(createStringPermission("read"));
-        }
         if ("worker".equals(identity.getPrincipal().getName())) {
             builder.addPermissionChecker(createWorkdayPermission());
         }

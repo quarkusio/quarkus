@@ -18,6 +18,20 @@ public class GraalVMTest {
 
     @Test
     public void testGraalVMVersionDetected() {
+        // Version detection after: https://github.com/oracle/graal/pull/6302 (3 lines of version output)
+        assertVersion(org.graalvm.home.Version.create(23, 0, 0), MANDREL,
+                Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
+                        + "OpenJDK Runtime Environment Mandrel-23.0.0-dev (build 17.0.6+10)\n"
+                        + "OpenJDK 64-Bit Server VM Mandrel-23.0.0-dev (build 17.0.6+10, mixed mode)").split("\\n"))));
+        assertVersion(org.graalvm.home.Version.create(23, 0, 0), MANDREL,
+                Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
+                        + "GraalVM Runtime Environment Mandrel-23.0.0-dev (build 17.0.6+10)\n"
+                        + "Substrate VM Mandrel-23.0.0-dev (build 17.0.6+10, serial gc)").split("\\n"))));
+        assertVersion(org.graalvm.home.Version.create(23, 0), ORACLE,
+                Version.of(Stream.of(("native-image 20 2023-03-21\n"
+                        + "GraalVM Runtime Environment GraalVM CE (build 20+34-jvmci-23.0-b10)\n"
+                        + "Substrate VM GraalVM CE (build 20+34, serial gc)").split("\\n"))));
+        // Older version parsing
         assertVersion(org.graalvm.home.Version.create(20, 1), ORACLE,
                 Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));
         assertVersion(org.graalvm.home.Version.create(20, 1, 0, 1), MANDREL, Version
@@ -41,12 +55,12 @@ public class GraalVMTest {
     }
 
     static void assertVersion(org.graalvm.home.Version graalVmVersion, Distribution distro, Version version) {
+        assertThat(version.isDetected()).isEqualTo(true);
         assertThat(graalVmVersion.compareTo(version.version)).isEqualTo(0);
         assertThat(version.distribution).isEqualTo(distro);
         if (distro == MANDREL) {
             assertThat(version.isMandrel()).isTrue();
         }
-        assertThat(version.isDetected()).isEqualTo(true);
     }
 
     @Test

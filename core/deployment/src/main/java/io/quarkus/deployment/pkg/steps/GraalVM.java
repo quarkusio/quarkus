@@ -1,11 +1,120 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class GraalVM {
+
+    // Implements version parsing after https://github.com/oracle/graal/pull/6302
+    static final class VersionParseHelper {
+
+        private static final String JVMCI_BUILD_PREFIX = "jvmci-";
+        private static final String MANDREL_VERS_PREFIX = "Mandrel-";
+
+        // Java version info (suitable for Runtime.Version.parse()). See java.lang.VersionProps
+        private static final String VNUM = "(?<VNUM>[1-9][0-9]*(?:(?:\\.0)*\\.[1-9][0-9]*)*)";
+        private static final String PRE = "(?:-(?<PRE>[a-zA-Z0-9]+))?";
+        private static final String BUILD = "(?:(?<PLUS>\\+)(?<BUILD>0|[1-9][0-9]*)?)?";
+        private static final String OPT = "(?:-(?<OPT>[-a-zA-Z0-9.]+))?";
+        private static final String VSTR_FORMAT = VNUM + PRE + BUILD + OPT;
+
+        private static final String VNUM_GROUP = "VNUM";
+        private static final String VENDOR_VERSION_GROUP = "VENDOR";
+        private static final String BUILD_INFO_GROUP = "BUILDINFO";
+
+        private static final String VENDOR_VERS = "(?<VENDOR>.*)";
+        private static final String JDK_DEBUG = "[^\\)]*"; // zero or more of >anything not a ')'<
+        private static final String RUNTIME_NAME = "(?<RUNTIME>(?:OpenJDK|GraalVM) Runtime Environment) ";
+        private static final String BUILD_INFO = "(?<BUILDINFO>.*)";
+        private static final String VM_NAME = "(?<VM>(?:OpenJDK 64-Bit Server|Substrate) VM) ";
+
+        private static final String FIRST_LINE_PATTERN = "native-image " + VSTR_FORMAT + " .*$";
+        private static final String SECOND_LINE_PATTERN = RUNTIME_NAME
+                + VENDOR_VERS + " \\(" + JDK_DEBUG + "build " + BUILD_INFO + "\\)$";
+        private static final String THIRD_LINE_PATTERN = VM_NAME + VENDOR_VERS + " \\(" + JDK_DEBUG + "build .*\\)$";
+        private static final Pattern FIRST_PATTERN = Pattern.compile(FIRST_LINE_PATTERN);
+        private static final Pattern SECOND_PATTERN = Pattern.compile(SECOND_LINE_PATTERN);
+        private static final Pattern THIRD_PATTERN = Pattern.compile(THIRD_LINE_PATTERN);
+
+        private static final String VERS_FORMAT = "(?<VERSION>[1-9][0-9]*(\\.[0-9]+)+(-dev\\p{XDigit}*)?)";
+        private static final String VERSION_GROUP = "VERSION";
+        private static final Pattern VERSION_PATTERN = Pattern.compile(VERS_FORMAT);
+
+        private static final Version UNKNOWN_VERSION = null;
+
+        static Version parse(List<String> lines) {
+            Matcher firstMatcher = FIRST_PATTERN.matcher(lines.get(0));
+            Matcher secondMatcher = SECOND_PATTERN.matcher(lines.get(1));
+            Matcher thirdMatcher = THIRD_PATTERN.matcher(lines.get(2));
+            if (firstMatcher.find() && secondMatcher.find() && thirdMatcher.find()) {
+                String javaVersion = firstMatcher.group(VNUM_GROUP);
+                java.lang.Runtime.Version v = null;
+                try {
+                    v = java.lang.Runtime.Version.parse(javaVersion);
+                } catch (IllegalArgumentException e) {
+                    return UNKNOWN_VERSION;
+                }
+
+                String vendorVersion = secondMatcher.group(VENDOR_VERSION_GROUP);
+
+                String buildInfo = secondMatcher.group(BUILD_INFO_GROUP);
+                String graalVersion = graalVersion(buildInfo);
+                String mandrelVersion = mandrelVersion(vendorVersion);
+                Distribution dist = isMandrel(vendorVersion) ? Distribution.MANDREL : Distribution.ORACLE;
+                String versNum = (dist == Distribution.MANDREL ? mandrelVersion : graalVersion);
+                return new Version(lines.stream().collect(Collectors.joining("\n")),
+                        versNum, v.feature(), v.update(), dist);
+            } else {
+                return UNKNOWN_VERSION;
+            }
+        }
+
+        private static boolean isMandrel(String vendorVersion) {
+            if (vendorVersion == null) {
+                return false;
+            }
+            return !vendorVersion.isBlank() && vendorVersion.startsWith(MANDREL_VERS_PREFIX);
+        }
+
+        private static String mandrelVersion(String vendorVersion) {
+            if (vendorVersion == null) {
+                return null;
+            }
+            int idx = vendorVersion.indexOf(MANDREL_VERS_PREFIX);
+            if (idx < 0) {
+                return null;
+            }
+            String version = vendorVersion.substring(idx + MANDREL_VERS_PREFIX.length());
+            return matchVersion(version);
+        }
+
+        private static String matchVersion(String version) {
+            Matcher versMatcher = VERSION_PATTERN.matcher(version);
+            if (versMatcher.find()) {
+                return versMatcher.group(VERSION_GROUP);
+            }
+            return null;
+        }
+
+        private static String graalVersion(String buildInfo) {
+            if (buildInfo == null) {
+                return null;
+            }
+            int idx = buildInfo.indexOf(JVMCI_BUILD_PREFIX);
+            if (idx < 0) {
+                return null;
+            }
+            String version = buildInfo.substring(idx + JVMCI_BUILD_PREFIX.length());
+            return matchVersion(version);
+        }
+    }
+
     public static final class Version implements Comparable<Version> {
 
         /**
@@ -16,8 +125,8 @@ public final class GraalVM {
          * * Update: quarterly updates, e.g. 13 as in JDK 11.0.13.
          * * Patch: emergency release, critical patch, not used here
          */
-        private static final Pattern PATTERN = Pattern.compile(
-                "(GraalVM|native-image)( Version)? (?<version>[1-9][0-9]*(\\.[0-9]+)+(-dev\\p{XDigit}*)?)(?<distro>.*?)?" +
+        private static final Pattern OLD_VERS_PATTERN = Pattern.compile(
+                "(GraalVM|native-image)( Version)? " + VersionParseHelper.VERS_FORMAT + "(?<distro>.*?)?" +
                         "(\\(Java Version (?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)?$");
 
         static final Version UNVERSIONED = new Version("Undefined", "snapshot", Distribution.ORACLE);
@@ -91,20 +200,27 @@ public final class GraalVM {
         }
 
         static Version of(Stream<String> lines) {
-            final Iterator<String> it = lines.iterator();
-            while (it.hasNext()) {
-                final String line = it.next();
-                final Matcher matcher = PATTERN.matcher(line);
-                if (matcher.find()) {
-                    // GraalVM/Mandrel:
-                    final String version = matcher.group("version");
-                    final String distro = matcher.group("distro");
+            List<String> linesList = toList(lines); // relies on ordering of the stream
+            if (linesList.size() == 3) {
+                // Attempt to parse the new 3-line version scheme first.
+                Version v = VersionParseHelper.parse(linesList);
+                if (v != VersionParseHelper.UNKNOWN_VERSION) {
+                    return v;
+                }
+            } else if (linesList.size() == 1) {
+                // Old, single line version parsing logic
+                final String line = linesList.get(0);
+                final Matcher oldVersMatcher = OLD_VERS_PATTERN.matcher(line);
+                if (oldVersMatcher.find()) {
+                    // GraalVM/Mandrel old, single line, version scheme:
+                    final String version = oldVersMatcher.group(VersionParseHelper.VERSION_GROUP);
+                    final String distro = oldVersMatcher.group("distro");
                     // JDK:
                     // e.g. JDK 17.0.1, feature: 17, interim: 0 (not used here), update: 1
-                    final String jFeatureMatch = matcher.group("jfeature");
+                    final String jFeatureMatch = oldVersMatcher.group("jfeature");
                     final int jFeature = jFeatureMatch == null ? // Old GraalVM versions, like 19, didn't report the Java version.
                             11 : Integer.parseInt(jFeatureMatch);
-                    final String jUpdateMatch = matcher.group("jupdate");
+                    final String jUpdateMatch = oldVersMatcher.group("jupdate");
                     final int jUpdate = jUpdateMatch == null ? // Some JDK dev builds don't report full version string.
                             UNDEFINED : Integer.parseInt(jUpdateMatch);
 
@@ -118,6 +234,12 @@ public final class GraalVM {
             }
 
             return UNVERSIONED;
+        }
+
+        // For JDK 11 source level compatibility. stream.toList() API is JDK 16+
+        @SuppressWarnings("unchecked")
+        private static <T> List<T> toList(Stream<String> stream) {
+            return (List<T>) Collections.unmodifiableList(new ArrayList<>(Arrays.asList(stream.toArray())));
         }
 
         private static boolean isMandrel(String s) {

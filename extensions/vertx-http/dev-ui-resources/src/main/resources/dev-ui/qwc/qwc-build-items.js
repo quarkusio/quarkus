@@ -1,7 +1,6 @@
-import { LitElement, html, css } from 'lit';
+import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 
 import { JsonRpc } from 'jsonrpc';
-import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
@@ -13,7 +12,7 @@ import '@vaadin/horizontal-layout';
 /**
  * This component shows the Build Items
  */
-export class QwcBuildItems extends LitElement {
+export class QwcBuildItems extends QwcHotReloadElement {
 
   jsonRpc = new JsonRpc("devui-build-metrics", true);
 
@@ -30,9 +29,8 @@ export class QwcBuildItems extends LitElement {
         height: 100%;
       }
 
-      vaadin-grid-cell-content {
-        vertical-align: top;
-        width: 100%;
+      vaadin-grid-sort-column {
+        color: red;
       }
 
       .summary {
@@ -50,11 +48,15 @@ export class QwcBuildItems extends LitElement {
 
   constructor() {
     super();
+    this.hotReload();
+  }
+
+  hotReload(){
     this.jsonRpc.getBuildStepsMetrics().then(e => {
       this._buildStepsMetrics = e.result;
       this._filtered = this._buildStepsMetrics.items;
     });
-  }
+  }  
 
   render() {
       if (this._buildStepsMetrics && this._filtered) {
@@ -96,25 +98,18 @@ export class QwcBuildItems extends LitElement {
                 <vaadin-grid-sort-column resizable
                                     header="Build item"
                                     path="class"
-                                    class="cell"
                                     ${columnBodyRenderer(this._classRenderer, [])}>
                 </vaadin-grid-sort-column>
 
                 <vaadin-grid-sort-column auto-width resizable flex-grow="0"
                                     header="Count"
-                                    path="count"
-                                    class="cell"
-                                    ${columnBodyRenderer(this._countRenderer, [])}>
+                                    path="count">
                 </vaadin-grid-sort-column>
             </vaadin-grid></div>`;
   }
 
   _classRenderer(item) {
     return html`<code>${item.class}</code>`;
-  }
-
-  _countRenderer(item) {
-    return html`${item.count}`;
   }
 }
 customElements.define('qwc-build-items', QwcBuildItems);

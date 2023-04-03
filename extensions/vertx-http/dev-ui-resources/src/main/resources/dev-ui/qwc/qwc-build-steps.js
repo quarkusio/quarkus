@@ -1,7 +1,6 @@
-import { LitElement, html, css } from 'lit';
+import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 
 import { JsonRpc } from 'jsonrpc';
-import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
@@ -13,7 +12,7 @@ import '@vaadin/horizontal-layout';
 /**
  * This component shows the Build Steps
  */
-export class QwcBuildSteps extends LitElement {
+export class QwcBuildSteps extends QwcHotReloadElement {
 
   jsonRpc = new JsonRpc("devui-build-metrics", true);
 
@@ -30,9 +29,8 @@ export class QwcBuildSteps extends LitElement {
         height: 100%;
       }
 
-      vaadin-grid-cell-content {
-        vertical-align: top;
-        width: 100%;
+      vaadin-grid-sort-column {
+        color: red;
       }
 
       .summary {
@@ -50,11 +48,15 @@ export class QwcBuildSteps extends LitElement {
 
   constructor() {
     super();
+    this.hotReload();
+  }
+
+  hotReload(){
     this.jsonRpc.getBuildStepsMetrics().then(e => {
       this._buildStepsMetrics = e.result;
       this._filtered = this._buildStepsMetrics.records;
     });
-  }
+  }  
 
   render() {
       if (this._buildStepsMetrics && this._filtered) {
@@ -96,47 +98,28 @@ export class QwcBuildSteps extends LitElement {
                 <vaadin-grid-sort-column resizable
                                     header="Build step"
                                     path="stepId"
-                                    class="cell"
                                     ${columnBodyRenderer(this._stepIdRenderer, [])}>
                 </vaadin-grid-sort-column>
 
                 <vaadin-grid-sort-column auto-width resizable flex-grow="0"
                                     header="Started"
-                                    path="started"
-                                    class="cell"
-                                    ${columnBodyRenderer(this._startedRenderer, [])}>
+                                    path="started">
                 </vaadin-grid-sort-column>
 
                 <vaadin-grid-sort-column auto-width resizable flex-grow="0"
                                     header="Duration (ms)"
-                                    path="duration"
-                                    class="cell"
-                                    ${columnBodyRenderer(this._durationRenderer, [])}>
+                                    path="duration">
                 </vaadin-grid-sort-column>
 
-                <vaadin-grid-column auto-width resizable flex-grow="0"
+                <vaadin-grid-sort-column auto-width resizable flex-grow="0"
                                     header="Thread"
-                                    path="thread"
-                                    class="cell"
-                                    ${columnBodyRenderer(this._threadRenderer, [])}>
-                </vaadin-grid-column>
+                                    path="thread">
+                </vaadin-grid-sort-column>
             </vaadin-grid></div>`;
   }
 
   _stepIdRenderer(record) {
     return html`<code>${record.stepId}</code>`;
-  }
-
-  _startedRenderer(record) {
-    return html`${record.started}`;
-  }
-
-  _durationRenderer(record) {
-    return html`${record.duration}`;
-  }
-
-  _threadRenderer(record) {
-    return html`${record.thread}`;
   }
 }
 customElements.define('qwc-build-steps', QwcBuildSteps);

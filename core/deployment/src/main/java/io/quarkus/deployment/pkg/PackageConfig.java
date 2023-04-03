@@ -12,22 +12,22 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class PackageConfig {
 
     /**
-     * @deprecated Use {@link Type#JAR} instead
+     * @deprecated Use {@link BuiltInType#JAR} instead
      */
     @Deprecated
     public static final String JAR = BuiltInType.JAR.name;
     /**
-     * @deprecated Use {@link Type#UBER_JAR} instead
+     * @deprecated Use {@link BuiltInType#UBER_JAR} instead
      */
     @Deprecated
     public static final String UBER_JAR = BuiltInType.UBER_JAR.name;
     /**
-     * @deprecated Use {@link Type#FAST_JAR} instead
+     * @deprecated Use {@link BuiltInType#FAST_JAR} instead
      */
     @Deprecated
     public static final String FAST_JAR = BuiltInType.FAST_JAR.name;
     /**
-     * @deprecated Use {@link Type#MUTABLE_JAR} instead
+     * @deprecated Use {@link BuiltInType#MUTABLE_JAR} instead
      */
     @Deprecated
     public static final String MUTABLE_JAR = BuiltInType.MUTABLE_JAR.name;
@@ -37,17 +37,17 @@ public class PackageConfig {
     @Deprecated
     public static final String LEGACY = BuiltInType.LEGACY.name;
     /**
-     * @deprecated Use {@link Type#LEGACY_JAR} instead
+     * @deprecated Use {@link BuiltInType#LEGACY_JAR} instead
      */
     @Deprecated
     public static final String LEGACY_JAR = BuiltInType.LEGACY_JAR.name;
     /**
-     * @deprecated Use {@link Type#NATIVE} instead
+     * @deprecated Use {@link BuiltInType#NATIVE} instead
      */
     @Deprecated
     public static final String NATIVE = BuiltInType.NATIVE.name;
     /**
-     * @deprecated Use {@link Type#NATIVE_SOURCES} instead
+     * @deprecated Use {@link BuiltInType#NATIVE_SOURCES} instead
      */
     @Deprecated
     // does everything 'native' but stops short of actually executing the 'native-image' command

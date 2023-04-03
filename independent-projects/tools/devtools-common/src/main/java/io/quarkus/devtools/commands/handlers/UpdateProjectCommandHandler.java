@@ -29,6 +29,7 @@ import io.quarkus.devtools.project.state.TopExtensionDependency;
 import io.quarkus.devtools.project.update.QuarkusUpdateCommand;
 import io.quarkus.devtools.project.update.QuarkusUpdateException;
 import io.quarkus.devtools.project.update.QuarkusUpdates;
+import io.quarkus.devtools.project.update.QuarkusUpdatesRepository;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.platform.tools.ToolsConstants;
@@ -45,7 +46,6 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
     public static final String REMOVE = "Remove:";
     public static final String UPDATE = "Update:";
     public static final String ITEM_FORMAT = "%-7s %s";
-    public static final String DEFAULT_UPDATE_RECIPES_VERSION = "LATEST";
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
@@ -72,12 +72,13 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
 
             if (!noRewrite) {
                 QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
+                        quarkusProject.getExtensionManager().getBuildTool(),
                         projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
                 Path recipe = null;
                 try {
                     recipe = Files.createTempFile("quarkus-project-recipe-", ".yaml");
                     final String updateRecipesVersion = invocation.getValue(UpdateProject.REWRITE_UPDATE_RECIPES_VERSION,
-                            DEFAULT_UPDATE_RECIPES_VERSION);
+                            QuarkusUpdatesRepository.DEFAULT_UPDATE_RECIPES_VERSION);
                     QuarkusUpdates.createRecipe(recipe,
                             QuarkusProjectHelper.artifactResolver(), updateRecipesVersion, request);
                     final String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION);
@@ -92,7 +93,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 } catch (IOException e) {
                     throw new QuarkusCommandException("Error while generating the project update script", e);
                 } catch (QuarkusUpdateException e) {
-                    throw new QuarkusCommandException("Error while running the project update scrip", e);
+                    throw new QuarkusCommandException("Error while running the project update script", e);
                 } finally {
                     if (recipe != null) {
                         try {

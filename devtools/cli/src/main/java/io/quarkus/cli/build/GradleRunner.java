@@ -8,9 +8,11 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import io.quarkus.cli.Version;
 import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
@@ -24,7 +26,12 @@ import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.cli.update.RewriteGroup;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.platform.tools.ToolsConstants;
+import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfigLocator;
+import io.quarkus.runtime.util.StringUtil;
 
 public class GradleRunner implements BuildSystemRunner {
     public static final String[] windowsWrapper = { "gradlew.cmd", "gradlew.bat" };
@@ -140,9 +147,42 @@ public class GradleRunner implements BuildSystemRunner {
     @Override
     public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
             throws Exception {
-        MessageWriter.info().error(
-                "quarkus update is not yet available for Gradle projects. See https://github.com/quarkusio/quarkus/issues/31658 for more information.");
-        return 1;
+        final ExtensionCatalog extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(
+                ToolsConstants.QUARKUS_CORE_GROUP_ID, null,
+                Version.clientVersion(),
+                QuarkusProjectHelper.artifactResolver(), MessageWriter.info());
+        final Properties props = ToolsUtils.readQuarkusProperties(extensionCatalog);
+        ArrayDeque<String> args = new ArrayDeque<>();
+        args.add("-PquarkusPluginVersion=" + ToolsUtils.getGradlePluginVersion(props));
+        args.add("--console");
+        args.add("plain");
+        args.add("--stacktrace");
+        args.add("quarkusUpdate");
+        if (!StringUtil.isNullOrEmpty(targetQuarkusVersion.platformVersion)) {
+            args.add("--platformVersion");
+            args.add(targetQuarkusVersion.platformVersion);
+        }
+        if (!StringUtil.isNullOrEmpty(targetQuarkusVersion.streamId)) {
+            args.add("--streamId");
+            args.add(targetQuarkusVersion.streamId);
+        }
+        if (rewrite.pluginVersion != null) {
+            args.add("--rewritePluginVersion=" + rewrite.pluginVersion);
+        }
+        if (rewrite.updateRecipesVersion != null) {
+            args.add("--updateRecipesVersion=" + rewrite.updateRecipesVersion);
+        }
+        if (rewrite.noRewrite) {
+            args.add("--noRewrite");
+        }
+        if (perModule) {
+            args.add("--perModule");
+        }
+        if (rewrite.dryRun) {
+            args.add("--rewriteDryRun");
+        }
+        return run(prependExecutable(args));
+
     }
 
     @Override

@@ -4,21 +4,29 @@ import static io.quarkus.devtools.project.update.QuarkusUpdateRecipe.RECIPE_IO_Q
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.qute.Qute;
 
 public class QuarkusUpdateCommand {
 
     public static final String MAVEN_REWRITE_PLUGIN_GROUP = "org.openrewrite.maven";
     public static final String MAVEN_REWRITE_PLUGIN_ARTIFACT = "rewrite-maven-plugin";
     public static final String DEFAULT_MAVEN_REWRITE_PLUGIN_VERSION = "4.41.0";
+    public static final String DEFAULT_GRADLE_REWRITE_PLUGIN_VERSION = "5.38.0";
+
     public static Set<String> ADDITIONAL_SOURCE_FILES_SET = Set.of("**/META-INF/services/**",
             "**/*.txt",
             "**/*.adoc",
@@ -39,8 +47,49 @@ public class QuarkusUpdateCommand {
             case MAVEN:
                 runMavenUpdate(log, baseDir, rewritePluginVersion, recipe, dryRun);
                 break;
+            case GRADLE:
+                runGradleUpdate(log, baseDir, rewritePluginVersion, recipe, dryRun);
+                break;
             default:
                 throw new QuarkusUpdateException(buildTool.getKey() + " is not supported yet");
+        }
+    }
+
+    private static void runGradleUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, Path recipe,
+            boolean dryRun) throws QuarkusUpdateException {
+        Path tempInit = null;
+        try {
+            tempInit = Files.createTempFile("openrewrite-init", "gradle");
+            try (InputStream inputStream = QuarkusUpdateCommand.class.getResourceAsStream("/openrewrite-init.gradle")) {
+                String template = new BufferedReader(
+                        new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+                        .lines()
+                        .collect(Collectors.joining("\n"));
+                Files.writeString(tempInit,
+                        Qute.fmt(template, Map.of(
+                                "rewriteFile", recipe.toAbsolutePath().toString(),
+                                "pluginVersion", rewritePluginVersion,
+                                "activeRecipe", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS,
+                                "plainTextMask", ADDITIONAL_SOURCE_FILES_SET.stream()
+                                        .map(s -> "\"" + s + "\"")
+                                        .collect(Collectors.joining(", ")))));
+            }
+            final String gradleBinary = findGradleBinary(baseDir);
+            String[] command = new String[] { gradleBinary.toString(), "--console", "plain", "--stacktrace",
+                    "--init-script",
+                    tempInit.toAbsolutePath().toString(), dryRun ? "rewriteDryRun" : "rewriteRun" };
+            executeCommand(baseDir, command, log);
+        } catch (Exception e) {
+            throw new QuarkusUpdateException("Error while running Gradle rewrite command", e);
+        } finally {
+            if (tempInit != null) {
+                try {
+                    Files.deleteIfExists(tempInit);
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+
         }
     }
 
@@ -58,10 +107,10 @@ public class QuarkusUpdateCommand {
             boolean dryRun)
             throws QuarkusUpdateException {
         final String mvnBinary = findMvnBinary(baseDir);
-        executeCommand(getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipe, dryRun), log);
+        executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipe, dryRun), log);
 
         // format the sources
-        executeCommand(getMavenProcessSourcesCommand(mvnBinary), log);
+        executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
     }
 
     private static String[] getMavenProcessSourcesCommand(String mvnBinary) {
@@ -79,7 +128,7 @@ public class QuarkusUpdateCommand {
                 "-D\"rewrite.pomCacheEnabled=false\"" };
     }
 
-    private static void executeCommand(String[] command, MessageWriter log) throws QuarkusUpdateException {
+    private static void executeCommand(Path baseDir, String[] command, MessageWriter log) throws QuarkusUpdateException {
         ProcessBuilder processBuilder = new ProcessBuilder();
         log.info("");
         log.info("");
@@ -90,14 +139,18 @@ public class QuarkusUpdateCommand {
         processBuilder.command(command);
 
         try {
-            Process process = processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
-                    .redirectError(ProcessBuilder.Redirect.INHERIT).start();
+            Process process = processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE)
+                    .redirectError(ProcessBuilder.Redirect.PIPE).start();
 
-            BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+            BufferedReader inputReader = new BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+            BufferedReader errorReader = new BufferedReader(new java.io.InputStreamReader(process.getErrorStream()));
 
             String line;
-            while ((line = reader.readLine()) != null) {
+            while ((line = inputReader.readLine()) != null) {
                 log.info(line);
+            }
+            while ((line = errorReader.readLine()) != null) {
+                log.error(line);
             }
 
             log.info("");

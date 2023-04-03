@@ -269,27 +269,27 @@ public class PackageConfig {
     public boolean writeTransformedBytecodeToBuildOutput;
 
     public boolean isAnyJarType() {
-        return (type.equalsIgnoreCase(PackageConfig.JAR) ||
-                type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
-                type.equalsIgnoreCase(PackageConfig.UBER_JAR)) ||
-                type.equalsIgnoreCase(PackageConfig.LEGACY_JAR) ||
-                type.equalsIgnoreCase(PackageConfig.LEGACY) ||
-                type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+        return (type.equalsIgnoreCase(PackageConfig.BuiltInType.JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.FAST_JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY_JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
     }
 
     public boolean isFastJar() {
-        return type.equalsIgnoreCase(PackageConfig.JAR) ||
-                type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
-                type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+        return type.equalsIgnoreCase(PackageConfig.BuiltInType.JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.FAST_JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
     }
 
     public boolean isLegacyJar() {
-        return (type.equalsIgnoreCase(PackageConfig.LEGACY_JAR) ||
-                type.equalsIgnoreCase(PackageConfig.LEGACY));
+        return (type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY_JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY.getValue()));
     }
 
     public boolean isUberJar() {
-        return type.equalsIgnoreCase(PackageConfig.UBER_JAR);
+        return type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue());
     }
 
     public String getRunnerSuffix() {

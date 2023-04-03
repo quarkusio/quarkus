@@ -161,7 +161,7 @@ public class JibProcessor {
 
         JibContainerBuilder jibContainerBuilder;
         String packageType = packageConfig.type;
-        if (packageConfig.isLegacyJar() || packageType.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
+        if (packageConfig.isLegacyJar() || packageType.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())) {
             jibContainerBuilder = createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                     jibConfig, containerImageConfig,
                     sourceJar, outputTarget, mainClass, containerImageLabels);
@@ -169,7 +169,7 @@ public class JibProcessor {
             jibContainerBuilder = createContainerBuilderFromFastJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                     jibConfig, containerImageConfig, sourceJar, curateOutcome,
                     containerImageLabels,
-                    appCDSResult, packageType.equals(MUTABLE_JAR));
+                    appCDSResult, packageType.equals(PackageConfig.BuiltInType.MUTABLE_JAR.getValue()));
         } else {
             throw new IllegalArgumentException(
                     "Package type '" + packageType + "' is not supported by the container-image-jib extension");

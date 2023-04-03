@@ -155,7 +155,8 @@ public class NativeImageBuildStep {
         // drop the original output to avoid confusion
         IoUtils.recursiveDelete(nativeImageSourceJarBuildItem.getPath().getParent());
 
-        return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(), PackageConfig.NATIVE_SOURCES,
+        return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(),
+                PackageConfig.BuiltInType.NATIVE_SOURCES.getValue(),
                 Collections.emptyMap());
     }
 

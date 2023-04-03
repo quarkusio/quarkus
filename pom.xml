@@ -67,7 +67,7 @@
         <skip.gradle.tests>false</skip.gradle.tests>
 
         <!-- Dependency versions -->
-        <jacoco.version>0.8.8</jacoco.version>
+        <jacoco.version>0.8.9</jacoco.version>
         <kubernetes-client.version>6.5.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->

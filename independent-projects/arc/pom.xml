@@ -46,7 +46,7 @@
         <version.jta>2.0.1</version.jta>
         <version.jandex>3.0.5</version.jandex>
         <version.junit5>5.9.2</version.junit5>
-        <version.kotlin>1.8.10</version.kotlin>
+        <version.kotlin>1.8.20</version.kotlin>
         <version.kotlin-coroutines>1.6.4</version.kotlin-coroutines>
         <version.maven>3.8.8</version.maven>
         <version.assertj>3.24.2</version.assertj>

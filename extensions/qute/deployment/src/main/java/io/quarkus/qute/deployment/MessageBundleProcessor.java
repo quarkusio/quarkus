@@ -85,8 +85,8 @@ import io.quarkus.qute.Expressions;
 import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.Namespaces;
 import io.quarkus.qute.Resolver;
-import io.quarkus.qute.deployment.QuteProcessor.LookupConfig;
-import io.quarkus.qute.deployment.QuteProcessor.Match;
+import io.quarkus.qute.deployment.QuteProcessor.JavaMemberLookupConfig;
+import io.quarkus.qute.deployment.QuteProcessor.MatchResult;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.Types.AssignableInfo;
 import io.quarkus.qute.deployment.Types.HierarchyIndexer;
@@ -453,7 +453,8 @@ public class MessageBundleProcessor {
         List<TemplateExtensionMethodBuildItem> regularExtensionMethods = templateExtensionMethods.stream()
                 .filter(Predicate.not(TemplateExtensionMethodBuildItem::hasNamespace)).collect(Collectors.toUnmodifiableList());
 
-        LookupConfig lookupConfig = new QuteProcessor.FixedLookupConfig(index, QuteProcessor.initDefaultMembersFilter(), false);
+        JavaMemberLookupConfig lookupConfig = new QuteProcessor.FixedJavaMemberLookupConfig(index,
+                QuteProcessor.initDefaultMembersFilter(), false);
         Map<DotName, AssignableInfo> assignableCache = new HashMap<>();
         HierarchyIndexer hierarchyIndexer = new HierarchyIndexer(index);
 
@@ -507,7 +508,7 @@ public class MessageBundleProcessor {
                         }
                     }
 
-                    Map<Integer, Match> generatedIdsToMatches = Collections.emptyMap();
+                    Map<Integer, MatchResult> generatedIdsToMatches = Collections.emptyMap();
                     for (TemplateExpressionMatchesBuildItem templateExpressionMatchesBuildItem : expressionMatches) {
                         if (templateExpressionMatchesBuildItem.templateGeneratedId.equals(templateAnalysis.generatedId)) {
                             generatedIdsToMatches = templateExpressionMatchesBuildItem.getGeneratedIdsToMatches();
@@ -558,7 +559,7 @@ public class MessageBundleProcessor {
                             int idx = 0;
                             for (Expression param : params) {
                                 if (param.hasTypeInfo()) {
-                                    Map<String, Match> results = new HashMap<>();
+                                    Map<String, MatchResult> results = new HashMap<>();
 
                                     final List<Predicate<TypeCheckExcludeBuildItem.TypeCheck>> excludes = new ArrayList<>();
                                     // subset of excludes specific for extension methods
@@ -576,7 +577,7 @@ public class MessageBundleProcessor {
                                             extensionMethodExcludes, checkedTemplate, lookupConfig, namedBeans,
                                             namespaceTemplateData, regularExtensionMethods, namespaceExtensionMethods,
                                             assignableCache, hierarchyIndexer);
-                                    Match match = results.get(param.toOriginalString());
+                                    MatchResult match = results.get(param.toOriginalString());
                                     if (match != null && !match.isEmpty() && !Types.isAssignableFrom(match.type(),
                                             methodParams.get(idx), index, assignableCache)) {
                                         incorrectExpressions

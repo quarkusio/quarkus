@@ -220,6 +220,7 @@ public class SmallRyeGraphQLProcessor {
     void registerNativeResourceBundle(BuildProducer<NativeImageResourceBundleBuildItem> nativeResourceBundleProvider)
             throws IOException {
         nativeResourceBundleProvider.produce(new NativeImageResourceBundleBuildItem("i18n.Validation"));
+        nativeResourceBundleProvider.produce(new NativeImageResourceBundleBuildItem("i18n.Parsing"));
     }
 
     @BuildStep

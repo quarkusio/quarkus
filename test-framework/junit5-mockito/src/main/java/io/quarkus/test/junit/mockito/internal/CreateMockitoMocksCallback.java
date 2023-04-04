@@ -4,22 +4,18 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
-import jakarta.inject.Qualifier;
 
 import org.mockito.Mockito;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.impl.Mockable;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.Subclass;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.mockito.InjectMock;
 
@@ -33,11 +29,11 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
                 InjectMock injectMockAnnotation = field.getAnnotation(InjectMock.class);
                 if (injectMockAnnotation != null) {
                     boolean returnsDeepMocks = injectMockAnnotation.returnsDeepMocks();
-                    Object beanInstance = getBeanInstance(testInstance, field, InjectMock.class);
-                    Optional<Object> result = createMockAndSetTestField(testInstance, field, beanInstance,
+                    Object contextualReference = getContextualReference(testInstance, field, InjectMock.class);
+                    Optional<Object> result = createMockAndSetTestField(testInstance, field, contextualReference,
                             new MockConfiguration(returnsDeepMocks));
                     if (result.isPresent()) {
-                        MockitoMocksTracker.track(testInstance, result.get(), beanInstance);
+                        MockitoMocksTracker.track(testInstance, result.get(), contextualReference);
                     }
                 }
             }
@@ -45,39 +41,20 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    private Optional<Object> createMockAndSetTestField(Object testInstance, Field field, Object beanInstance,
+    private Optional<Object> createMockAndSetTestField(Object testInstance, Field field, Object contextualReference,
             MockConfiguration mockConfiguration) {
-        Class<?> beanClass = beanInstance.getClass();
-        // make sure we don't mock proxy classes, especially given that they don't have generics info
-        if (ClientProxy.class.isAssignableFrom(beanClass)) {
-            // and yet some of them appear to have Object as supertype, avoid them
-            if (beanClass.getSuperclass() != Object.class)
-                beanClass = beanClass.getSuperclass();
-            else {
-                // try to find the mocked interface
-                Set<Class<?>> foundInterf = new HashSet<>();
-                for (Class<?> interf : beanClass.getInterfaces()) {
-                    if (interf == Mockable.class || interf == ClientProxy.class)
-                        continue;
-                    foundInterf.add(interf);
-                }
-                // only act if we found a single interface
-                if (foundInterf.size() == 1) {
-                    beanClass = foundInterf.iterator().next();
-                }
-            }
-        }
+        Class<?> implementationClass = getImplementationClass(contextualReference);
         Object mock;
         boolean isNew;
-        Optional<Object> currentMock = MockitoMocksTracker.currentMock(testInstance, beanInstance);
+        Optional<Object> currentMock = MockitoMocksTracker.currentMock(testInstance, contextualReference);
         if (currentMock.isPresent()) {
             mock = currentMock.get();
             isNew = false;
         } else {
             if (mockConfiguration.useDeepMocks) {
-                mock = Mockito.mock(beanClass, Mockito.RETURNS_DEEP_STUBS);
+                mock = Mockito.mock(implementationClass, Mockito.RETURNS_DEEP_STUBS);
             } else {
-                mock = Mockito.mock(beanClass);
+                mock = Mockito.mock(implementationClass);
             }
             isNew = true;
         }
@@ -94,38 +71,52 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    static Object getBeanInstance(Object testInstance, Field field, Class<? extends Annotation> annotationType) {
+    /**
+     * Contextual reference of a normal scoped bean is a client proxy.
+     *
+     * @param testInstance
+     * @param field
+     * @param annotationType
+     * @return a contextual reference of a bean
+     */
+    static Object getContextualReference(Object testInstance, Field field, Class<? extends Annotation> annotationType) {
         Type fieldType = field.getGenericType();
-        Annotation[] qualifiers = getQualifiers(field);
         ArcContainer container = Arc.container();
         BeanManager beanManager = container.beanManager();
-        Set<Bean<?>> beans = beanManager.getBeans(fieldType, qualifiers);
-        if (beans.isEmpty()) {
+        Annotation[] qualifiers = getQualifiers(field, beanManager);
+
+        InstanceHandle<?> handle = container.instance(fieldType, qualifiers);
+        if (!handle.isAvailable()) {
             throw new IllegalStateException(
                     "Invalid use of " + annotationType.getTypeName() + " - could not resolve the bean of type: "
                             + fieldType.getTypeName() + ". Offending field is " + field.getName() + " of test class "
                             + testInstance.getClass());
         }
-        Bean<?> bean = beanManager.resolve(beans);
-        if (!beanManager.isNormalScope(bean.getScope())) {
+        if (!beanManager.isNormalScope(handle.getBean().getScope())) {
             throw new IllegalStateException(
                     "Invalid use of " + annotationType.getTypeName()
-                            + " - the injected bean does not declare a CDI normal scope but: " + bean.getScope().getName()
+                            + " - the injected bean does not declare a CDI normal scope but: "
+                            + handle.getBean().getScope().getName()
                             + ". Offending field is " + field.getName() + " of test class "
                             + testInstance.getClass());
         }
-        return container.instance((InjectableBean<?>) bean).get();
+        return handle.get();
     }
 
-    static Annotation[] getQualifiers(Field fieldToMock) {
+    static Class<?> getImplementationClass(Object contextualReference) {
+        // Unwrap the client proxy if needed
+        Object contextualInstance = ClientProxy.unwrap(contextualReference);
+        // If the contextual instance is an intercepted subclass then mock the extended implementation class
+        return contextualInstance instanceof Subclass ? contextualInstance.getClass().getSuperclass()
+                : contextualInstance.getClass();
+    }
+
+    static Annotation[] getQualifiers(Field fieldToMock, BeanManager beanManager) {
         List<Annotation> qualifiers = new ArrayList<>();
         Annotation[] fieldAnnotations = fieldToMock.getDeclaredAnnotations();
         for (Annotation fieldAnnotation : fieldAnnotations) {
-            for (Annotation annotationOfFieldAnnotation : fieldAnnotation.annotationType().getAnnotations()) {
-                if (annotationOfFieldAnnotation.annotationType().equals(Qualifier.class)) {
-                    qualifiers.add(fieldAnnotation);
-                    break;
-                }
+            if (beanManager.isQualifier(fieldAnnotation.annotationType())) {
+                qualifiers.add(fieldAnnotation);
             }
         }
         return qualifiers.toArray(new Annotation[0]);

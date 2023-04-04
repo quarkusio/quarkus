@@ -18,19 +18,27 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
             for (Field field : current.getDeclaredFields()) {
                 InjectSpy injectSpyAnnotation = field.getAnnotation(InjectSpy.class);
                 if (injectSpyAnnotation != null) {
-                    Object beanInstance = CreateMockitoMocksCallback.getBeanInstance(testInstance, field, InjectSpy.class);
-                    Object spy = createSpyAndSetTestField(testInstance, field, beanInstance, injectSpyAnnotation.delegate());
-                    MockitoMocksTracker.track(testInstance, spy, beanInstance);
+                    Object contextualReference = CreateMockitoMocksCallback.getContextualReference(testInstance, field,
+                            InjectSpy.class);
+                    Object spy = createSpyAndSetTestField(testInstance, field, contextualReference,
+                            injectSpyAnnotation.delegate());
+                    MockitoMocksTracker.track(testInstance, spy, contextualReference);
                 }
             }
             current = current.getSuperclass();
         }
     }
 
-    private Object createSpyAndSetTestField(Object testInstance, Field field, Object beanInstance, boolean delegate) {
-        Object unwrapped = ClientProxy.unwrap(beanInstance);
-        Object spy = delegate ? Mockito.mock(unwrapped.getClass(), AdditionalAnswers.delegatesTo(unwrapped))
-                : Mockito.spy(unwrapped);
+    private Object createSpyAndSetTestField(Object testInstance, Field field, Object contextualReference, boolean delegate) {
+        Object spy;
+        Object contextualInstance = ClientProxy.unwrap(contextualReference);
+        if (delegate) {
+            spy = Mockito.mock(CreateMockitoMocksCallback.getImplementationClass(contextualReference),
+                    AdditionalAnswers.delegatesTo(contextualInstance));
+        } else {
+            // Unwrap the client proxy if needed
+            spy = Mockito.spy(contextualInstance);
+        }
         field.setAccessible(true);
         try {
             field.set(testInstance, spy);

@@ -85,6 +85,9 @@ public final class PluginUtil {
         if (checkGACTV(p.getLocation()).isPresent()) { //We don't want to remove remotely located plugins
             return false;
         }
+        if (p.getLocation().map(PluginUtil::isLocalFile).orElse(false)) {
+            return false;
+        }
         return true;
     }
 
@@ -167,6 +170,32 @@ public final class PluginUtil {
      */
     public static boolean isRemoteLocation(String location) {
         return checkUrl(location).isPresent() || checkGACTV(location).isPresent() || checkRemoteCatalog(location).isPresent();
+    }
+
+    /**
+     * Checks if location is a file that does exists locally.
+     *
+     * @param location the specifiied location.
+     * @return true if location is url or gactv
+     */
+    public static boolean isLocalFile(String location) {
+        return checkPath(location).map(p -> p.toFile().exists()).orElse(false);
+    }
+
+    /**
+     * Checks if location is a file that does exists under the project root.
+     *
+     * @param projectRoot the root of the project.
+     * @param location the specifiied location.
+     * @return true if location is url or gactv
+     */
+    public static boolean isProjectFile(Path projectRoot, String location) {
+        return checkPath(location)
+                .map(Path::normalize)
+                .map(Path::toFile)
+                .filter(f -> f.getAbsolutePath().startsWith(projectRoot.normalize().toAbsolutePath().toString()))
+                .map(File::exists)
+                .orElse(false);
     }
 
     private static List<Path> getBuildFiles(Optional<Path> projectRoot) {

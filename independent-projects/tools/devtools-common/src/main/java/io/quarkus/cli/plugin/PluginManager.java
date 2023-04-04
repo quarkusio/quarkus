@@ -67,8 +67,24 @@ public class PluginManager {
     public Optional<Plugin> addPlugin(String nameOrLocation, boolean userCatalog, Optional<String> description) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
         String name = util.getName(nameOrLocation);
+        Optional<String> location = Optional.empty();
+
         if (PluginUtil.isRemoteLocation(nameOrLocation)) {
-            Plugin plugin = new Plugin(name, PluginUtil.getType(nameOrLocation), Optional.of(nameOrLocation), description);
+            location = Optional.of(nameOrLocation);
+        } else if (PluginUtil.isLocalFile(nameOrLocation)) {
+
+            Optional<Path> projectRelative = state.getProjectRoot()
+                    .filter(r -> !userCatalog) // If users catalog selected ignore project relative paths.
+                    .filter(r -> PluginUtil.isProjectFile(r, nameOrLocation)) // check if its project file
+                    .map(r -> r.relativize(Path.of(nameOrLocation).toAbsolutePath()));
+
+            location = projectRelative
+                    .or(() -> Optional.of(nameOrLocation).map(Path::of).map(Path::toAbsolutePath))
+                    .map(Path::toString);
+        }
+
+        if (!location.isEmpty()) {
+            Plugin plugin = new Plugin(name, PluginUtil.getType(nameOrLocation), location, description);
             PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(plugin);
             pluginCatalogService.writeCatalog(updatedCatalog);
             return Optional.of(plugin);

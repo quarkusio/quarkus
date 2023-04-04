@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.jboss.jandex.DotName;
@@ -55,5 +56,23 @@ public class ClassNames {
 
     public static final DotName INTERCEPTOR = createConstant("org.hibernate.Interceptor");
     public static final DotName STATEMENT_INSPECTOR = createConstant("org.hibernate.resource.jdbc.spi.StatementInspector");
+
+    public static final List<DotName> GENERATORS = List.of(
+            createConstant("org.hibernate.generator.internal.CurrentTimestampGeneration"),
+            createConstant("org.hibernate.generator.internal.GeneratedAlwaysGeneration"),
+            createConstant("org.hibernate.generator.internal.GeneratedGeneration"),
+            createConstant("org.hibernate.generator.internal.SourceGeneration"),
+            createConstant("org.hibernate.generator.internal.VersionGeneration"),
+            createConstant("org.hibernate.id.Assigned"),
+            createConstant("org.hibernate.id.ForeignGenerator"),
+            createConstant("org.hibernate.id.GUIDGenerator"),
+            createConstant("org.hibernate.id.IdentityGenerator"),
+            createConstant("org.hibernate.id.IncrementGenerator"),
+            createConstant("org.hibernate.id.SelectGenerator"),
+            createConstant("org.hibernate.id.UUIDGenerator"),
+            createConstant("org.hibernate.id.UUIDHexGenerator"),
+            createConstant("org.hibernate.tuple.CreationTimestampGeneration"),
+            createConstant("org.hibernate.tuple.UpdateTimestampGeneration"),
+            createConstant("org.hibernate.tuple.VmValueGeneration"));
 
 }

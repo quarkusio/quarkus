@@ -86,7 +86,7 @@ export class JsonRpc {
 
     _extensionName;
     _logTraffic;
-    
+
     /**
      * 
      * @param {type} host the component using this.
@@ -96,7 +96,7 @@ export class JsonRpc {
      *   Again serviceIdentifier can allow multiple backends
      *  In the case of cards or logs, the namespace will be passed in as an attribute (as this component is not registered with the router)
      *   Again serviceIdentifier can allow multiple backends  
-     * @param {type} logTraffic - if traffic should be logged in the Dev UI Log (json-prc log)
+     * @param {type} logTraffic - if traffic should be logged in the Dev UI Log (json-rpc log)
      * @param {type} serviceIdentifier - if needed, a backend service identifier
      * @returns {Proxy}
      */

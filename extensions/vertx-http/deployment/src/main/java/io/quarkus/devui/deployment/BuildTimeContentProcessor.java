@@ -361,22 +361,19 @@ public class BuildTimeContentProcessor {
         internalBuildTimeData.addBuildTimeData("devServices", devServiceDescriptions);
 
         Page buildSteps = Page.webComponentPageBuilder().internal()
-                .namespace("devui-build-information")
+                .namespace("devui-build-metrics")
                 .title("Build Steps")
                 .icon("font-awesome-solid:hammer")
                 .componentLink("qwc-build-steps.js").build();
-        internalBuildTimeData.addBuildTimeData("buildSteps", "TODO: Build Steps");
 
         Page buildItems = Page.webComponentPageBuilder().internal()
-                .namespace("devui-build-information")
+                .namespace("devui-build-metrics")
                 .title("Build Items")
                 .icon("font-awesome-solid:trowel")
                 .componentLink("qwc-build-items.js").build();
-        internalBuildTimeData.addBuildTimeData("buildItems", "TODO: Build Items");
 
         // Add default menu items
-        @SuppressWarnings("unchecked")
-        List<Page> sectionMenu = new ArrayList(
+        List<Page> sectionMenu = new ArrayList<>(
                 List.of(extensions, configuration, configurationSourceEditor, continuousTesting, devServices,
                         buildSteps, buildItems));
 

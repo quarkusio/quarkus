@@ -30,6 +30,7 @@ import io.quarkus.vertx.http.deployment.devmode.BuildMetricsDevConsoleProcessor.
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+@Deprecated(forRemoval = true)
 public class BuildMetricsDevConsoleProcessor {
 
     private static final Logger LOG = Logger.getLogger(BuildMetricsDevConsoleProcessor.class.getName());

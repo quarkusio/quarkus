@@ -72,7 +72,7 @@ export class QwcDevServices extends LitElement {
             return html`${items}`;
         } else {
             return html`<p class="no-dev-services">
-                    <span>You do not have any Dev Services running</span>
+                    <span>You do not have any Dev Services running.</span>
                     <a href="https://quarkus.io/guides/dev-services" target="_blank">Read more about Dev Services</a>
                 </p>
             `

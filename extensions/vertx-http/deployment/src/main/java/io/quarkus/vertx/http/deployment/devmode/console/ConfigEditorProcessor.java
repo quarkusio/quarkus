@@ -44,7 +44,7 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
-import io.quarkus.devui.runtime.config.ConfigJsonRpcService;
+import io.quarkus.devui.runtime.config.ConfigJsonRPCService;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
@@ -161,7 +161,7 @@ public class ConfigEditorProcessor {
             updateConfig(values);
             return null;
         });
-        return new JsonRPCProvidersBuildItem("configuration", ConfigJsonRpcService.class);
+        return new JsonRPCProvidersBuildItem("configuration", ConfigJsonRPCService.class);
     }
 
     private Map<String, String> filterAndApplyProfile(Map<String, String> autoconfig, List<String> configFilter,

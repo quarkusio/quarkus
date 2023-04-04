@@ -11,7 +11,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
@@ -58,7 +57,9 @@ public final class PluginUtil {
 
         return gactv.map(i -> PluginType.maven)
                 .or(() -> url.map(u -> u.getPath()).or(() -> path.map(Path::toAbsolutePath).map(Path::toString))
-                        .filter(f -> f.endsWith(".jar")).map(i -> PluginType.jar))
+                        .filter(f -> f.endsWith(".jar") || f.endsWith(".java")) // java or jar files
+                        .map(f -> f.substring(f.lastIndexOf(".") + 1)) // get extension
+                        .map(PluginType::valueOf)) // map to type
                 .or(() -> path.filter(p -> p.toFile().exists()).map(i -> PluginType.executable))
                 .orElse(PluginType.jbang);
     }

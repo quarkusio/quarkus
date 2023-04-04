@@ -68,8 +68,9 @@ public class PluginManagerUtil {
         String prefix = settings.getPluginPrefix();
         return gactv.map(GACTV::getArtifactId)
                 .or(() -> url.map(URL::getPath).map(s -> s.substring(s.lastIndexOf("/") + 1))
-                        .map(s -> s.replaceAll("\\.jar$", "")))
-                .or(() -> path.map(Path::getFileName).map(Path::toString).map(s -> s.replaceAll("\\.jar$", "")))
+                        .map(s -> s.replaceAll("\\.jar$", "").replaceAll("\\.java$", "")))
+                .or(() -> path.map(Path::getFileName).map(Path::toString)
+                        .map(s -> s.replaceAll("\\.jar$", "").replaceAll("\\.java$", "")))
                 .map(n -> stripCliSuffix(n))
                 .map(n -> n.replaceAll("^" + prefix + "\\-cli\\-", prefix + "")) // stip cli prefix (after the quarkus bit)
                 .map(n -> n.replaceAll("^" + prefix + "\\-", "")) // stip quarkus prefix (after the quarkus bit)

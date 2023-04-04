@@ -469,7 +469,7 @@ quarkus.openshift.secret-volumes.my-volume.secret-name=my-secret
 
 [source,properties]
 ----
-quarkus.openshift.config-map-volumes.my-volume.config-map-name=my-secret
+quarkus.openshift.config-map-volumes.my-volume.config-map-name=my-config-map
 ----
 
 ==== Persistent Volume Claims

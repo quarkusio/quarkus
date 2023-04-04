@@ -17,10 +17,11 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
-import io.quarkus.devui.runtime.jsonrpc.JsonRpcReader;
-import io.quarkus.devui.runtime.jsonrpc.JsonRpcWriter;
+import io.quarkus.devui.runtime.jsonrpc.JsonRpcRequest;
+import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -28,7 +29,6 @@ import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.subscription.Cancellable;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.json.JsonObject;
 
 /**
  * Route JsonRPC message to the correct method
@@ -41,6 +41,7 @@ public class JsonRpcRouter {
     private final Map<String, ReflectionInfo> jsonRpcToJava = new HashMap<>();
 
     private static final List<ServerWebSocket> SESSIONS = Collections.synchronizedList(new ArrayList<>());
+    private JsonRpcCodec codec;
 
     /**
      * This gets called on build to build into of the classes we are going to call in runtime
@@ -79,6 +80,10 @@ public class JsonRpcRouter {
         }
     }
 
+    public void initializeCodec(JsonMapper jsonMapper) {
+        this.codec = new JsonRpcCodec(jsonMapper);
+    }
+
     private Uni<?> invoke(ReflectionInfo info, Object target, Object[] args) {
         if (info.isReturningUni()) {
             try {
@@ -104,7 +109,7 @@ public class JsonRpcRouter {
     public void addSocket(ServerWebSocket socket) {
         SESSIONS.add(socket);
         socket.textMessageHandler((e) -> {
-            JsonRpcReader jsonRpcRequest = JsonRpcReader.read(e);
+            JsonRpcRequest jsonRpcRequest = codec.readRequest(e);
             route(jsonRpcRequest, socket);
         }).closeHandler((e) -> {
             purge();
@@ -116,8 +121,7 @@ public class JsonRpcRouter {
         purge();
         for (ServerWebSocket s : new ArrayList<>(SESSIONS)) {
             if (!s.isClosed()) {
-                s.writeTextMessage(
-                        JsonRpcWriter.writeResponse(-1, LocalDateTime.now().toString(), MessageType.HotReload).encode());
+                codec.writeResponse(s, -1, LocalDateTime.now().toString(), MessageType.HotReload);
             }
         }
     }
@@ -134,18 +138,16 @@ public class JsonRpcRouter {
     Logger logger;
 
     @SuppressWarnings("unchecked")
-    private void route(JsonRpcReader jsonRpcRequest, ServerWebSocket s) {
+    private void route(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
         String jsonRpcMethodName = jsonRpcRequest.getMethod();
 
         // First check some internal methods
         if (jsonRpcMethodName.equalsIgnoreCase(UNSUBSCRIBE)) {
-            JsonObject jsonRpcResponse = JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), null, MessageType.Void);
-
             if (this.subscriptions.containsKey(jsonRpcRequest.getId())) {
                 Cancellable cancellable = this.subscriptions.remove(jsonRpcRequest.getId());
                 cancellable.cancel();
             }
-            s.writeTextMessage(jsonRpcResponse.encode());
+            codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
         } else if (this.jsonRpcToJava.containsKey(jsonRpcMethodName)) { // Route to extension
             ReflectionInfo reflectionInfo = this.jsonRpcToJava.get(jsonRpcMethodName);
             Object target = Arc.container().select(reflectionInfo.bean).get();
@@ -162,26 +164,23 @@ public class JsonRpcRouter {
                 } catch (Exception e) {
                     logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcMethodName,
                             jsonRpcRequest);
-                    s.writeTextMessage(JsonRpcWriter.writeErrorResponse(jsonRpcRequest.getId(), jsonRpcMethodName, e).encode());
+                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, e);
                     return;
                 }
 
                 Cancellable cancellable = multi.subscribe()
                         .with(
                                 item -> {
-                                    JsonObject jsonResponse = JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), item,
-                                            MessageType.SubscriptionMessage);
-                                    s.writeTextMessage(jsonResponse.encodePrettily());
+                                    codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
                                 },
                                 failure -> {
-                                    s.writeTextMessage(JsonRpcWriter
-                                            .writeErrorResponse(jsonRpcRequest.getId(), jsonRpcMethodName, failure).encode());
+                                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
                                     this.subscriptions.remove(jsonRpcRequest.getId());
                                 },
                                 () -> this.subscriptions.remove(jsonRpcRequest.getId()));
 
                 this.subscriptions.put(jsonRpcRequest.getId(), cancellable);
-                s.writeTextMessage(JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), null, MessageType.Void).encode());
+                codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
             } else {
                 // The invocation will return a Uni<JsonObject>
                 Uni<?> uni;
@@ -195,32 +194,30 @@ public class JsonRpcRouter {
                 } catch (Exception e) {
                     logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcMethodName,
                             jsonRpcRequest);
-                    s.writeTextMessage(JsonRpcWriter.writeErrorResponse(jsonRpcRequest.getId(), jsonRpcMethodName, e).encode());
+                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, e);
                     return;
                 }
                 uni.subscribe()
                         .with(item -> {
-                            s.writeTextMessage(JsonRpcWriter.writeResponse(jsonRpcRequest.getId(), item,
-                                    MessageType.Response).encode());
+                            codec.writeResponse(s, jsonRpcRequest.getId(), item,
+                                    MessageType.Response);
                         }, failure -> {
-                            s.writeTextMessage(JsonRpcWriter
-                                    .writeErrorResponse(jsonRpcRequest.getId(), jsonRpcMethodName, failure).encode());
+                            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
                         });
             }
         } else {
             // Method not found
-            s.writeTextMessage(JsonRpcWriter.writeMethodNotFoundResponse(jsonRpcRequest.getId(), jsonRpcMethodName).encode());
+            codec.writeMethodNotFoundResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName);
         }
     }
 
-    private Object[] getArgsAsObjects(Map<String, Class> params, JsonRpcReader jsonRpcRequest) {
+    private Object[] getArgsAsObjects(Map<String, Class> params, JsonRpcRequest jsonRpcRequest) {
         List<Object> objects = new ArrayList<>();
         for (Map.Entry<String, Class> expectedParams : params.entrySet()) {
             String paramName = expectedParams.getKey();
             Class paramType = expectedParams.getValue();
-            Object param = jsonRpcRequest.getParam(paramName);
-            Object casted = paramType.cast(param);
-            objects.add(casted);
+            Object param = jsonRpcRequest.getParam(paramName, paramType);
+            objects.add(param);
         }
         return objects.toArray(Object[]::new);
     }

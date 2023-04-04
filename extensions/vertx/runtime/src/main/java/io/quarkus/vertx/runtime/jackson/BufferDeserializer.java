@@ -13,7 +13,6 @@ package io.quarkus.vertx.runtime.jackson;
 import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_DECODER;
 
 import java.io.IOException;
-import java.time.Instant;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;

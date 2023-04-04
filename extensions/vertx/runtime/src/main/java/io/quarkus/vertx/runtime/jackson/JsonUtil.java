@@ -17,7 +17,7 @@ import io.vertx.core.shareddata.Shareable;
  *
  * This class is copied from {@code io.vertx.core.json.impl.JsonUtil} as it is internal to Vert.x
  */
-final class JsonUtil {
+public final class JsonUtil {
 
     public static final Base64.Encoder BASE64_ENCODER;
     public static final Base64.Decoder BASE64_DECODER;

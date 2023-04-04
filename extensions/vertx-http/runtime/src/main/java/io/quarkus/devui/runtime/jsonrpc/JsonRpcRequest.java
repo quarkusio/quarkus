@@ -8,19 +8,17 @@ import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.VERSION;
 
 import java.util.Map;
 
-import io.vertx.core.json.Json;
+import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.vertx.core.json.JsonObject;
 
-public class JsonRpcReader {
+public class JsonRpcRequest {
 
+    private final JsonMapper jsonMapper;
     private final JsonObject jsonObject;
 
-    private JsonRpcReader(JsonObject jsonObject) {
+    JsonRpcRequest(JsonMapper jsonMapper, JsonObject jsonObject) {
+        this.jsonMapper = jsonMapper;
         this.jsonObject = jsonObject;
-    }
-
-    public static JsonRpcReader read(String json) {
-        return new JsonRpcReader((JsonObject) Json.decodeValue(json));
     }
 
     public int getId() {
@@ -28,22 +26,22 @@ public class JsonRpcReader {
     }
 
     public String getJsonrpc() {
-        return jsonObject.getString(JSONRPC, VERSION);
+        String value = jsonObject.getString(JSONRPC);
+        if (value != null) {
+            return value;
+        }
+        return VERSION;
     }
 
     public String getMethod() {
         return jsonObject.getString(METHOD);
     }
 
-    public boolean isMethod(String m) {
-        return this.getMethod().equalsIgnoreCase(m);
-    }
-
     public boolean hasParams() {
         return this.getParams() != null;
     }
 
-    public Map<String, ?> getParams() {
+    private Map<?, ?> getParams() {
         JsonObject paramsObject = jsonObject.getJsonObject(PARAMS);
         if (paramsObject != null && paramsObject.getMap() != null && !paramsObject.getMap().isEmpty()) {
             return paramsObject.getMap();
@@ -51,18 +49,16 @@ public class JsonRpcReader {
         return null;
     }
 
-    @SuppressWarnings({ "unchecked", "unchecked" })
-    public <T> T getParam(String key) {
-        Map<String, ?> params = getParams();
+    public <T> T getParam(String key, Class<T> paramType) {
+        Map<?, ?> params = getParams();
         if (params == null || !params.containsKey(key)) {
             return null;
         }
-        return (T) params.get(key);
+        return jsonMapper.fromValue(params.get(key), paramType);
     }
 
     @Override
     public String toString() {
-        return jsonObject.encodePrettily();
+        return jsonMapper.toString(jsonObject, true);
     }
-
 }

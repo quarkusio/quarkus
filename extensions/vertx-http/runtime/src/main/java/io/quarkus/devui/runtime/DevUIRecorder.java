@@ -1,5 +1,8 @@
 package io.quarkus.devui.runtime;
 
+import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_DECODER;
+import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_ENCODER;
+
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.FileVisitResult;
@@ -15,19 +18,26 @@ import java.util.Set;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
+import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
+import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.webjar.WebJarStaticHandler;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class DevUIRecorder {
     private static final Logger LOG = Logger.getLogger(DevUIRecorder.class);
+    public static final String DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY = "dev-ui-databind-codec-builder";
 
     public void shutdownTask(ShutdownContext shutdownContext, String devUIBasePath) {
         shutdownContext.addShutdownTask(new DeleteDirectoryRunnable(devUIBasePath));
@@ -37,6 +47,25 @@ public class DevUIRecorder {
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
         JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
         jsonRpcRouter.populateJsonRPCMethods(extensionMethodsMap);
+        jsonRpcRouter.initializeCodec(createJsonMapper());
+    }
+
+    private JsonMapper createJsonMapper() {
+        // We use a codec defined in the deployment module
+        // because that module always has access to Jackson-Databind regardless of the application dependencies.
+        JsonMapper.Factory factory = JsonMapper.Factory.deploymentLinker().createLink(
+                DevConsoleManager.getGlobal(DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY));
+        // We need to pass some information so that the mapper, who lives in the deployment classloader,
+        // knows how to deal with JsonObject/JsonArray/JsonBuffer, who live in the runtime classloader.
+        return factory.create(new JsonTypeAdapter<>(JsonObject.class, JsonObject::getMap, JsonObject::new),
+                new JsonTypeAdapter<JsonArray, List<?>>(JsonArray.class, JsonArray::getList, JsonArray::new),
+                new JsonTypeAdapter<>(Buffer.class, buffer -> BASE64_ENCODER.encodeToString(buffer.getBytes()), text -> {
+                    try {
+                        return Buffer.buffer(BASE64_DECODER.decode(text));
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException("Expected a base64 encoded byte array, got: " + text, e);
+                    }
+                }));
     }
 
     public Handler<RoutingContext> communicationHandler() {

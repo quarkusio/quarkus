@@ -40,7 +40,7 @@ export class QwcRabbitMqCard extends LitElement {
         description: {attribute: true},
         guide: {attribute: true},
         namespace: {attribute: true},
-        "_port": {state: true},
+        _port: {state: true},
         "_externalUrl": {state: true}
     };
 

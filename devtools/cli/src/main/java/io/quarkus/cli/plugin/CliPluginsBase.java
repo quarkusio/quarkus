@@ -48,4 +48,18 @@ public class CliPluginsBase extends BaseBuildCommand {
                 catalogOptions.user ? Optional.empty() : quarkusProject(),
                 p -> type.map(t -> t == p.getType()).orElse(true));
     }
+
+    public PluginManager userPluginManager() {
+        Set<String> registries = Registries.getRegistries(registryClient, "quarkusio");
+        PluginManagerSettings settings = PluginManagerSettings.defaultSettings()
+                .withCatalogs(registries)
+                .withInteractivetMode(!output.isCliTest());
+
+        return new PluginManager(settings, output,
+                catalogOptions.userDirectory.or(() -> Optional.ofNullable(Paths.get(System.getProperty("user.home")))),
+                Optional.empty(),
+                Optional.empty(),
+                p -> type.map(t -> t == p.getType()).orElse(true));
+    }
+
 }

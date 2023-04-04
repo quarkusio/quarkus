@@ -51,6 +51,10 @@ public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
             PluginListTable table = new PluginListTable(List.of(new PluginListItem(true, plugin)), false);
             output.info("Added plugin:");
             output.info(table.getContent());
+            if (!plugin.isInUserCatalog() && userPluginManager().getInstalledPlugins().containsKey(plugin.getName())) {
+                output.warn(
+                        "Plugin was added in the project scope, but another with the same name exists in the user scope!\nThe project scoped one will take precedence when invoked from within the project!");
+            }
             return CommandLine.ExitCode.OK;
         }).orElseGet(() -> {
             output.error("No plugin available at: " + this.nameOrLocation);

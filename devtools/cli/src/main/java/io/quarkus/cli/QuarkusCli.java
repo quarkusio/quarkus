@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -19,6 +20,8 @@ import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.cli.plugin.Plugin;
 import io.quarkus.cli.plugin.PluginCommandFactory;
+import io.quarkus.cli.plugin.PluginListItem;
+import io.quarkus.cli.plugin.PluginListTable;
 import io.quarkus.cli.plugin.PluginManager;
 import io.quarkus.cli.plugin.PluginManagerSettings;
 import io.quarkus.cli.registry.RegistryClientMixin;
@@ -94,8 +97,12 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             missing.ifPresent(m -> {
                 Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
                 if (installable.containsKey(m)) {
+                    Plugin candidate = installable.get(m);
+                    PluginListItem item = new PluginListItem(false, candidate);
+                    PluginListTable table = new PluginListTable(List.of(item));
+                    output.info("Command %s not installed but the following plugin is available:\n%s", m, table.getContent());
                     if (interactiveMode && Prompt.yesOrNo(true,
-                            "Command %s is not installed, but a matching plugin is available. Would you like to install it now ?",
+                            "Would you like to install it now ?",
                             args)) {
                         pluginManager.addPlugin(m).ifPresent(added -> plugins.put(added.getName(), added));
                         pluginCommandFactory.populateCommands(cmd, plugins);

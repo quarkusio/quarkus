@@ -39,12 +39,19 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
 
     Integer removePlugin() throws IOException {
         PluginManager pluginManager = pluginManager();
+        Plugin toRemove = pluginManager.getInstalledPlugins().get(name);
         Optional<Plugin> removedPlugin = pluginManager.removePlugin(name);
 
         return removedPlugin.map(plugin -> {
             PluginListTable table = new PluginListTable(List.of(new PluginListItem(false, plugin)), false);
             output.info("Removed plugin:");
             output.info(table.getContent());
+            if (!plugin.isInUserCatalog()) {
+                if (userPluginManager().getInstalledPlugins().containsKey(plugin.getName())) {
+                    output.warn(
+                            "The removed plugin was available both in user and project scopes. It was removed from the project but will remain available in the user scope!");
+                }
+            }
             return CommandLine.ExitCode.OK;
         }).orElseGet(() -> {
             output.error("Plugin: " + name + " not found in catalog!");
@@ -61,4 +68,5 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
         dryRunOutput.put("Plugin to remove", name);
         output.info(help.createTextTable(dryRunOutput).toString());
     };
+
 }

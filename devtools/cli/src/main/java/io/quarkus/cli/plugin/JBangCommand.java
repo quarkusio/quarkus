@@ -21,14 +21,14 @@ public class JBangCommand implements PluginCommand {
 
     public JBangCommand(String location, OutputOptionMixin output) {
         this.location = location;
-        this.jbang = new JBangSupport(output.isCliTest(), output);
+        this.jbang = new JBangSupport(!output.isCliTest(), output);
         this.output = output;
         this.arguments.add(location);
     }
 
     @Override
     public Integer call() throws Exception {
-        if (jbang.isAvailable()) {
+        if (jbang.ensureJBangIsInstalled()) {
             return PluginCommand.super.call();
         } else {
             output.error("Unable to find JBang! Command execution aborted!");

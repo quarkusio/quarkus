@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.spi.Contextual;
@@ -371,8 +370,8 @@ public class InterceptedStaticMethodsProcessor {
 
     private ResultHandle createForwardingFunction(MethodCreator init, ClassInfo target, MethodInfo method) {
         // Forwarding function
-        // Function<InvocationContext, Object> forward = ctx -> Foo.interceptMe_original((java.lang.String)ctx.getParameters()[0])
-        FunctionCreator func = init.createFunction(Function.class);
+        // BiFunction<Object, InvocationContext, Object> forward = (ignored, ctx) -> Foo.interceptMe_original((java.lang.String)ctx.getParameters()[0])
+        FunctionCreator func = init.createFunction(BiFunction.class);
         BytecodeCreator funcBytecode = func.getBytecode();
         List<Type> paramTypes = method.parameterTypes();
         ResultHandle[] paramHandles;
@@ -382,7 +381,7 @@ public class InterceptedStaticMethodsProcessor {
             params = new String[0];
         } else {
             paramHandles = new ResultHandle[paramTypes.size()];
-            ResultHandle ctxHandle = funcBytecode.getMethodParam(0);
+            ResultHandle ctxHandle = funcBytecode.getMethodParam(1);
             ResultHandle ctxParamsHandle = funcBytecode.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(InvocationContext.class, "getParameters", Object[].class),
                     ctxHandle);

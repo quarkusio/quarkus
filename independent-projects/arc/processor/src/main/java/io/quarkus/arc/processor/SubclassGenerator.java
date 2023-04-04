@@ -20,6 +20,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -403,10 +404,11 @@ public class SubclassGenerator extends AbstractGenerator {
                 }
 
                 // Instantiate the forwarding function
-                // Function<InvocationContext, Object> forward = ctx -> super.foo((java.lang.String)ctx.getParameters()[0])
-                FunctionCreator func = initMetadataMethod.createFunction(Function.class);
+                // BiFunction<Object, InvocationContext, Object> forward = (target, ctx) -> target.foo$$superforward((java.lang.String)ctx.getParameters()[0])
+                FunctionCreator func = initMetadataMethod.createFunction(BiFunction.class);
                 BytecodeCreator funcBytecode = func.getBytecode();
-                ResultHandle ctxHandle = funcBytecode.getMethodParam(0);
+                ResultHandle targetHandle = funcBytecode.getMethodParam(0);
+                ResultHandle ctxHandle = funcBytecode.getMethodParam(1);
                 ResultHandle[] superParamHandles;
                 if (parameters.isEmpty()) {
                     superParamHandles = new ResultHandle[0];
@@ -438,7 +440,7 @@ public class SubclassGenerator extends AbstractGenerator {
                             .returnValue(funcBytecode.invokeVirtualMethod(virtualMethodDescriptor, funDecoratorInstance,
                                     superParamHandles));
                 } else {
-                    ResultHandle superResult = funcBytecode.invokeVirtualMethod(forwardDescriptor, initMetadataMethod.getThis(),
+                    ResultHandle superResult = funcBytecode.invokeVirtualMethod(forwardDescriptor, targetHandle,
                             superParamHandles);
                     funcBytecode.returnValue(superResult != null ? superResult : funcBytecode.loadNull());
                 }

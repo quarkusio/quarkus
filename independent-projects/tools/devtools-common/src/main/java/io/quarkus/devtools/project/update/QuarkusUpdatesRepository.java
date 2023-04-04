@@ -21,6 +21,7 @@ public final class QuarkusUpdatesRepository {
     }
 
     private static final String QUARKUS_RECIPE_GA = "io.quarkus:quarkus-update-recipes";
+    public static final String DEFAULT_UPDATE_RECIPES_VERSION = "LATEST";
 
     public static List<String> fetchRecipes(MavenArtifactResolver artifactResolver, String recipeVersion, String currentVersion,
             String targetVersion) {

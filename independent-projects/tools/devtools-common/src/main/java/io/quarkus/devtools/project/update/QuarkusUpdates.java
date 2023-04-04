@@ -20,9 +20,20 @@ public final class QuarkusUpdates {
                 request.currentVersion,
                 request.targetVersion);
         QuarkusUpdateRecipe recipe = new QuarkusUpdateRecipe()
-                .buildTool(request.buildTool)
-                .addOperation(new UpdatePropertyOperation("quarkus.platform.version", request.targetVersion))
-                .addOperation(new UpdatePropertyOperation("quarkus.version", request.targetVersion));
+                .buildTool(request.buildTool);
+
+        switch (request.buildTool) {
+            case MAVEN:
+                recipe.addOperation(new UpdatePropertyOperation("quarkus.platform.version", request.targetVersion))
+                        .addOperation(new UpdatePropertyOperation("quarkus.version", request.targetVersion));
+                break;
+            case GRADLE:
+            case GRADLE_KOTLIN_DSL:
+                recipe.addOperation(new UpdatePropertyOperation("quarkusPlatformVersion", request.targetVersion))
+                        .addOperation(new UpdatePropertyOperation("quarkusPluginVersion", request.targetVersion));
+                break;
+        }
+
         for (String s : recipes) {
             recipe.addRecipes(QuarkusUpdateRecipeIO.readRecipesYaml(s));
         }
@@ -31,11 +42,16 @@ public final class QuarkusUpdates {
 
     public static class ProjectUpdateRequest {
 
-        public BuildTool buildTool = BuildTool.MAVEN;
+        public BuildTool buildTool;
         public String currentVersion;
         public String targetVersion;
 
         public ProjectUpdateRequest(String currentVersion, String targetVersion) {
+            this(BuildTool.MAVEN, currentVersion, targetVersion);
+        }
+
+        public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion) {
+            this.buildTool = buildTool;
             this.currentVersion = currentVersion;
             this.targetVersion = targetVersion;
         }

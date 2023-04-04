@@ -34,7 +34,6 @@ public class LogStreamBroadcaster {
                 }
                 history.add(message);
             } catch (InterruptedException ex) {
-                ex.printStackTrace();
                 Thread.currentThread().interrupt();
             }
         }

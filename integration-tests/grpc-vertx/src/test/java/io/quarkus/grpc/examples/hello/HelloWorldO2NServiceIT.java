@@ -11,4 +11,9 @@ class HelloWorldO2NServiceIT extends HelloWorldNewServiceTestBase {
     protected int port() {
         return 8081;
     }
+
+    @Override
+    protected boolean skipEventloopTest() {
+        return true; // cannot know for sure if we have enough verticles
+    }
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -19,15 +20,14 @@ import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 class PluginMangerState {
 
     PluginMangerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome, Optional<Path> projectRoot,
-            Optional<QuarkusProject> quarkusProject) {
+            Supplier<QuarkusProject> quarkusProject) {
         this.settings = settings;
         this.output = output;
         this.userHome = userHome;
         this.quarkusProject = quarkusProject;
 
         //Inferred
-        this.projectRoot = projectRoot.or(() -> quarkusProject.map(QuarkusProject::getProjectDirPath))
-                .filter(p -> !p.equals(userHome.orElse(null)));
+        this.projectRoot = projectRoot.filter(p -> !p.equals(userHome.orElse(null)));
         this.jbangCatalogService = new JBangCatalogService(settings.isInteractiveMode(), output, settings.getPluginPrefix(),
                 settings.getRemoteJBangCatalogs());
         this.pluginCatalogService = new PluginCatalogService(settings.getToRelativePath());
@@ -39,7 +39,7 @@ class PluginMangerState {
     private final PluginManagerUtil util;
     private final Optional<Path> userHome;
     private final Optional<Path> projectRoot;
-    private final Optional<QuarkusProject> quarkusProject;
+    private final Supplier<QuarkusProject> quarkusProject;
 
     private final PluginCatalogService pluginCatalogService;
     private final JBangCatalogService jbangCatalogService;
@@ -138,7 +138,7 @@ class PluginMangerState {
     }
 
     public Map<String, Plugin> jbangPlugins() {
-        boolean isUserScoped = !quarkusProject.isPresent();
+        boolean isUserScoped = !projectRoot.isPresent();
         Map<String, Plugin> jbangPlugins = new HashMap<>();
         JBangCatalog jbangCatalog = jbangCatalogService.readCombinedCatalog(projectRoot, userHome);
         jbangCatalog.getAliases().forEach((location, alias) -> {
@@ -152,7 +152,7 @@ class PluginMangerState {
     }
 
     public Map<String, Plugin> executablePlugins() {
-        boolean isUserScoped = !quarkusProject.isPresent();
+        boolean isUserScoped = !projectRoot.isPresent();
         Map<String, Plugin> executablePlugins = new HashMap<>();
         Binaries.findQuarkusPrefixedCommands().forEach(f -> {
             String name = util.getName(f.getName());
@@ -167,7 +167,7 @@ class PluginMangerState {
     public Map<String, Plugin> extensionPlugins() {
         //Get extension plugins
         Map<String, Plugin> extensionPlugins = new HashMap<>();
-        quarkusProject.ifPresent(project -> {
+        projectRoot.map(r -> quarkusProject.get()).ifPresent(project -> {
             try {
                 Set<ArtifactKey> installed = project.getExtensionManager().getInstalled().stream()
                         .map(ArtifactCoords::getKey).collect(Collectors.toSet());
@@ -240,5 +240,4 @@ class PluginMangerState {
         _installablePlugins = null;
         _extensionPlugins = null;
     }
-
 }

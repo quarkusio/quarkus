@@ -10,7 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 import jakarta.inject.Inject;
 
@@ -25,7 +27,6 @@ import io.quarkus.cli.plugin.PluginListTable;
 import io.quarkus.cli.plugin.PluginManager;
 import io.quarkus.cli.plugin.PluginManagerSettings;
 import io.quarkus.cli.registry.RegistryClientMixin;
-import io.quarkus.cli.utils.Registries;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
@@ -241,25 +242,26 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         return Optional.ofNullable(projectRoot);
     }
 
-    private Optional<QuarkusProject> quarkusProject(Optional<String> testDir) {
-        try {
-            Path root = getProjectRoot(testDir).orElseThrow();
-            BuildTool buildTool = QuarkusProjectHelper.detectExistingBuildTool(root);
-            if (buildTool == null) {
-                return Optional.empty();
-            }
-            return Optional
-                    .ofNullable(registryClient.createQuarkusProject(root, new TargetQuarkusPlatformGroup(), buildTool, output));
-        } catch (Exception e) {
-            return Optional.empty();
+    private Supplier<QuarkusProject> quarkusProject(Optional<String> testDir) {
+        Path root = getProjectRoot(testDir).orElseThrow();
+        BuildTool buildTool = QuarkusProjectHelper.detectExistingBuildTool(root);
+        if (buildTool == null) {
+            return () -> null;
         }
+        return () -> {
+            try {
+                return registryClient.createQuarkusProject(root, new TargetQuarkusPlatformGroup(), buildTool, output);
+            } catch (Exception e) {
+                return null;
+            }
+        };
     }
 
     private PluginManager pluginManager(OutputOptionMixin output, Optional<String> testDir, boolean interactiveMode) {
         PluginManagerSettings settings = PluginManagerSettings.defaultSettings()
-                .withCatalogs(Registries.getRegistries(registryClient, "quarkusio"))
+                .withCatalogs(Set.<String> of("quarkusio"))
                 .withInteractivetMode(interactiveMode); // Why not just getting it from output.isClieTest ? Cause args have not been parsed yet.
-        return new PluginManager(settings, output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
+        return PluginManager.create(settings, output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
                 getProjectRoot(testDir), quarkusProject(testDir));
     }
 }

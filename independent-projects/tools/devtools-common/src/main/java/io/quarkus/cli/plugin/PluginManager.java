@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -11,13 +12,30 @@ import io.quarkus.devtools.project.QuarkusProject;
 
 public class PluginManager {
 
+    private static PluginManager INSTANCE;
+
     private final MessageWriter output;
     private final PluginMangerState state;
     private final PluginManagerSettings settings;
     private final PluginManagerUtil util;
 
-    public PluginManager(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
-            Optional<Path> projectRoot, Optional<QuarkusProject> quarkusProject) {
+    public synchronized static PluginManager get() {
+        if (INSTANCE == null) {
+            throw new IllegalStateException("No instance of PluginManager found!");
+        }
+        return INSTANCE;
+    }
+
+    public synchronized static PluginManager create(PluginManagerSettings settings, MessageWriter output,
+            Optional<Path> userHome, Optional<Path> projectRoot, Supplier<QuarkusProject> quarkusProject) {
+        if (INSTANCE == null) {
+            INSTANCE = new PluginManager(settings, output, userHome, projectRoot, quarkusProject);
+        }
+        return INSTANCE;
+    }
+
+    PluginManager(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
+            Optional<Path> projectRoot, Supplier<QuarkusProject> quarkusProject) {
         this.settings = settings;
         this.output = output;
         this.util = PluginManagerUtil.getUtil(settings);
@@ -190,7 +208,9 @@ public class PluginManager {
                 .orElseThrow(() -> new IllegalArgumentException("Unknwon plugin catalog location."));
         List<PluginType> installedTypes = catalog.getPlugins().entrySet().stream().map(Map.Entry::getValue).map(Plugin::getType)
                 .collect(Collectors.toList());
-        Map<String, Plugin> installablePlugins = state.installablePlugins(installedTypes);
+        Map<String, Plugin> installablePlugins = state.getInstallablePlugins().entrySet().stream()
+                .filter(e -> installedTypes.contains(e.getValue().getType()))
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 
         Map<String, Plugin> unreachable = catalog.getPlugins().entrySet().stream()
                 .filter(i -> !installablePlugins.containsKey(i.getKey()))

@@ -1,5 +1,8 @@
 package io.quarkus.deployment.console;
 
+import static io.quarkus.deployment.dev.testing.MessageFormat.RED;
+import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -18,6 +21,8 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -43,7 +48,8 @@ public class ConsoleProcessor {
     private static final Logger log = Logger.getLogger(ConsoleProcessor.class);
 
     private static boolean consoleInstalled = false;
-    static volatile ConsoleStateManager.ConsoleContext context;
+    static volatile ConsoleStateManager.ConsoleContext exceptionsConsoleContext;
+    static volatile ConsoleStateManager.ConsoleContext devUIConsoleContext;
 
     /**
      * Installs the interactive console for continuous testing (and other usages)
@@ -86,6 +92,37 @@ public class ConsoleProcessor {
     }
 
     @Consume(ConsoleInstalledBuildItem.class)
+    @Produce(ServiceStartBuildItem.class)
+    @BuildStep
+    void missingDevUIMessageHandler(Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.VERTX_HTTP)) {
+            return;
+        }
+
+        if (devUIConsoleContext == null) {
+            devUIConsoleContext = ConsoleStateManager.INSTANCE.createContext("HTTP");
+        }
+        devUIConsoleContext.reset(new ConsoleCommand('d', "Dev UI", new ConsoleCommand.HelpState(new Supplier<String>() {
+            @Override
+            public String get() {
+                return MessageFormat.RED;
+            }
+        }, new Supplier<String>() {
+            @Override
+            public String get() {
+                return "unavailable";
+            }
+        }), new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("\n" + RED
+                        + "For a Quarkus application to have access to the Dev UI, it needs to directly or transitively include the 'quarkus-vertx-http' extension"
+                        + RESET + "\n");
+            }
+        }));
+    }
+
+    @Consume(ConsoleInstalledBuildItem.class)
     @BuildStep
     void setupExceptionHandler(BuildProducer<ExceptionNotificationBuildItem> exceptionNotificationBuildItem,
             EffectiveIdeBuildItem ideSupport, LaunchModeBuildItem launchModeBuildItem) {
@@ -100,11 +137,11 @@ public class ConsoleProcessor {
                         lastUserCode.set(stackTraceElement);
                     }
                 }));
-        if (context == null) {
-            context = ConsoleStateManager.INSTANCE.createContext("Exceptions");
+        if (exceptionsConsoleContext == null) {
+            exceptionsConsoleContext = ConsoleStateManager.INSTANCE.createContext("Exceptions");
         }
 
-        context.reset(
+        exceptionsConsoleContext.reset(
                 new ConsoleCommand('x', "Open last exception in IDE", new ConsoleCommand.HelpState(new Supplier<String>() {
                     @Override
                     public String get() {

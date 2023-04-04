@@ -264,7 +264,7 @@ public class BeanDeployment {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         this.beans.addAll(
                 findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations.values(), stereotypes.keySet()), observers,
-                        injectionPoints, jtaCapabilities));
+                        injectionPoints, jtaCapabilities, strictCompatibility));
         // Note that we use unmodifiable views because the underlying collections may change in the next phase
         // E.g. synthetic beans are added and unused interceptors removed
         buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
@@ -892,7 +892,7 @@ public class BeanDeployment {
     }
 
     private List<BeanInfo> findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
-            List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities) {
+            List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities, boolean strictCompatibility) {
 
         Set<ClassInfo> beanClasses = new HashSet<>();
         Set<MethodInfo> producerMethods = new HashSet<>();
@@ -938,8 +938,14 @@ public class BeanDeployment {
                     }
                 }
 
-                // a bean without no-arg constructor needs to have either a constructor annotated with @Inject
-                // or a single constructor
+                // in strict compatibility mode, the bean needs to have either no args ctor or some with @Inject
+                // note that we perform validation (for multiple ctors for instance) later in the cycle
+                if (strictCompatibility && numberOfConstructorsWithInject == 0) {
+                    continue;
+                }
+
+                // without strict compatibility, a bean without no-arg constructor needs to have either a constructor
+                // annotated with @Inject or a single constructor
                 if (numberOfConstructorsWithInject == 0 && numberOfConstructorsWithoutInject != 1) {
                     continue;
                 }
@@ -982,12 +988,19 @@ public class BeanDeployment {
                 }
                 if (annotationStore.hasAnnotation(method, DotNames.PRODUCES)
                         && !annotationStore.hasAnnotation(method, DotNames.VETOED_PRODUCER)) {
+                    // Do not register classes with producers and no bean def. annotation as beans in strict mode
                     // Producers are not inherited
-                    producerMethods.add(method);
-                    if (!hasBeanDefiningAnnotation) {
-                        LOGGER.debugf("Producer method found but %s has no bean defining annotation - using @Dependent",
-                                beanClass);
-                        beanClasses.add(beanClass);
+                    if (strictCompatibility) {
+                        if (hasBeanDefiningAnnotation) {
+                            producerMethods.add(method);
+                        }
+                    } else {
+                        producerMethods.add(method);
+                        if (!hasBeanDefiningAnnotation) {
+                            LOGGER.debugf("Producer method found but %s has no bean defining annotation - using @Dependent",
+                                    beanClass);
+                            beanClasses.add(beanClass);
+                        }
                     }
                 }
                 if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
@@ -1026,22 +1039,30 @@ public class BeanDeployment {
                         syncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
                                 .add(beanClass);
                         if (!Modifier.isAbstract(beanClass.flags())) {
-                            // add only concrete classes
-                            beanClasses.add(beanClass);
-                            if (!hasBeanDefiningAnnotation) {
-                                LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
-                                        beanClass);
+                            // do not register classes with observers and no bean def. annotation as beans in strict mode
+                            if (!strictCompatibility) {
+                                // add only concrete classes
+                                beanClasses.add(beanClass);
+                                if (!hasBeanDefiningAnnotation) {
+                                    LOGGER.debugf(
+                                            "Observer method found but %s has no bean defining annotation - using @Dependent",
+                                            beanClass);
+                                }
                             }
                         }
                     } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
                         asyncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
                                 .add(beanClass);
                         if (!Modifier.isAbstract(beanClass.flags())) {
-                            // add only concrete classes
-                            beanClasses.add(beanClass);
-                            if (!hasBeanDefiningAnnotation) {
-                                LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
-                                        beanClass);
+                            // do not register classes with observers and no bean def. annotation as beans in strict mode
+                            if (!strictCompatibility) {
+                                // add only concrete classes
+                                beanClasses.add(beanClass);
+                                if (!hasBeanDefiningAnnotation) {
+                                    LOGGER.debugf(
+                                            "Observer method found but %s has no bean defining annotation - using @Dependent",
+                                            beanClass);
+                                }
                             }
                         }
                     }

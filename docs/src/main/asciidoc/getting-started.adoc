@@ -469,6 +469,28 @@ By default, when a Quarkus application starts (in regular or dev mode), it will 
 by setting the `-Dquarkus.banner.enabled=false` Java System Property, or by setting the `QUARKUS_BANNER_ENABLED` environment variable to `false`.
 Furthermore, users can supply a custom banner by placing the banner file in `src/main/resources` and configuring `quarkus.banner.path=name-of-file` in `application.properties`.
 
+== Non Application endpoints
+
+Various Quarkus extensions contribute non-application endpoints that provide different kinds of information about the application.
+Examples of such extensions are the xref:smallrye-health.adoc[health], xref:micrometer.adoc[metrics], xref:openapi-swaggerui.adoc[OpenAPI] and info extensions.
+
+These non application endpoints are normally accessible under the `/q` prefix like so:
+
+* `/q/health`
+* `/q/metrics`
+* `/q/openapi`
+* `/q/info`
+
+but users can also choose to expose one that might present a security risk under a different TCP port using a dedicated xref:management-interface-reference.adoc[management interface].
+
+=== Info endpoint
+
+If the application contains the `quarkus-info` extension, then Quarkus will by default expose the `/q/info` endpoint which provides information about the build, java version, version control, and operating system. The level of detail of the exposed information is configurable.
+
+==== Configuration Reference
+
+include::{generated-dir}/config/quarkus-info.adoc[opts=optional, leveloffset=+2]
+
 == What's next?
 
 This guide covered the creation of an application using Quarkus.

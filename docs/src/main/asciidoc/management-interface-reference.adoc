@@ -29,7 +29,7 @@ quarkus.management.enabled=true
 By default, management endpoints will be exposed on: `http://0.0.0.0:9000/q`.
 For example, `http://0.0.0.0:9000/q/health/ready` for the readiness probe.
 
-SmallRye Health Checks, SmallRye Metrics, and Micrometer endpoints will be declared as management endpoints when the management interface is enabled.
+SmallRye Health Checks, SmallRye Metrics, Micrometer and Info endpoints will be declared as management endpoints when the management interface is enabled.
 
 == Configure the host, port and scheme
 

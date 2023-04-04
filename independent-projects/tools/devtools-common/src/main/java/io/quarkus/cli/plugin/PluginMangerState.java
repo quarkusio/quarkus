@@ -233,6 +233,12 @@ class PluginMangerState {
         return this.projectRoot;
     }
 
+    public void invalidateInstalledPlugins() {
+        _userPlugins = null;
+        _projectPlugins = null;
+        _installedPlugins = null;
+    }
+
     public void invalidate() {
         _userPlugins = null;
         _projectPlugins = null;

@@ -72,6 +72,10 @@ public class Plugin {
         return inUserCatalog;
     }
 
+    public boolean isInProjectCatalog() {
+        return !inUserCatalog;
+    }
+
     public Optional<Path> getCatalogLocation() {
         return catalogLocation;
     }

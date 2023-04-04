@@ -84,17 +84,20 @@ public class PluginManager {
         }
 
         if (!location.isEmpty()) {
-            Plugin plugin = new Plugin(name, PluginUtil.getType(nameOrLocation), location, description);
+            Plugin plugin = new Plugin(name, PluginUtil.getType(nameOrLocation), location, description, Optional.empty(),
+                    userCatalog || state.getProjectCatalog().isEmpty());
             PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(plugin);
             pluginCatalogService.writeCatalog(updatedCatalog);
+            state.invalidateInstalledPlugins();
             return Optional.of(plugin);
         }
 
         Map<String, Plugin> installablePlugins = state.installablePlugins();
-        Optional<Plugin> plugin = Optional.ofNullable(installablePlugins.get(name));
+        Optional<Plugin> plugin = Optional.ofNullable(installablePlugins.get(name)).map(Plugin::inUserCatalog);
         return plugin.map(p -> {
             PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(p);
             pluginCatalogService.writeCatalog(updatedCatalog);
+            state.invalidateInstalledPlugins();
             return p;
         });
     }
@@ -124,6 +127,7 @@ public class PluginManager {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
         PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(plugin);
         pluginCatalogService.writeCatalog(updatedCatalog);
+        state.invalidateInstalledPlugins();
         return Optional.of(plugin);
     }
 
@@ -155,17 +159,25 @@ public class PluginManager {
         Plugin plugin = state.getInstalledPluigns().get(name);
         if (plugin == null) {
             return Optional.empty();
-        } else if (!userCatalog
-                && state.getProjectCatalog().map(PluginCatalog::getPlugins).map(p -> p.containsKey(name)).orElse(false)) {
-            pluginCatalogService.writeCatalog(state.getProjectCatalog()
-                    .orElseThrow(() -> new IllegalStateException("Project catalog should be available!"))
-                    .removePlugin(name));
-            return Optional.of(plugin);
+        } else if (userCatalog) {
+            Optional<Plugin> userPlugin = state.getUserCatalog().map(PluginCatalog::getPlugins).map(p -> p.get(name));
+            return userPlugin.map(p -> {
+                pluginCatalogService.writeCatalog(
+                        state.getUserCatalog().orElseThrow(() -> new IllegalStateException("User catalog should be available!"))
+                                .removePlugin(p));
+                state.invalidateInstalledPlugins();
+                return p;
+            });
         }
 
-        pluginCatalogService.writeCatalog(state.getUserCatalog()
-                .orElseThrow(() -> new IllegalStateException("User catalog should be available!"))
-                .removePlugin(name));
+        if (plugin.isInUserCatalog()) {
+            pluginCatalogService.writeCatalog(state.getUserCatalog()
+                    .orElseThrow(() -> new IllegalStateException("User catalog should be available!")).removePlugin(plugin));
+        } else {
+            pluginCatalogService.writeCatalog(state.getProjectCatalog()
+                    .orElseThrow(() -> new IllegalStateException("Project catalog should be available!")).removePlugin(plugin));
+        }
+        state.invalidateInstalledPlugins();
         return Optional.of(plugin);
     }
 
@@ -252,6 +264,7 @@ public class PluginManager {
             catalog = catalog.removePlugin(u);
         }
         pluginCatalogService.writeCatalog(catalog);
+        // here we are just touching the catalog, no need to invalidate
         return true;
     }
 
@@ -276,6 +289,7 @@ public class PluginManager {
             PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
             PluginCatalog catalog = state.pluginCatalog(false);
             pluginCatalogService.writeCatalog(catalog);
+            // here we are just touching the catalog, no need to invalidate
         }
         return catalogModified;
     }
@@ -303,5 +317,9 @@ public class PluginManager {
 
     public Map<String, Plugin> getInstallablePlugins() {
         return state.getInstallablePlugins();
+    }
+
+    public PluginManagerUtil getUtil() {
+        return util;
     }
 }

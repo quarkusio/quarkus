@@ -16,7 +16,7 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
     @CommandLine.Mixin
     RunModeOption runMode;
 
-    @CommandLine.Parameters(arity = "1", paramLabel = "PLUGIN_NAME", description = "Plugin name to add to the CLI")
+    @CommandLine.Parameters(arity = "1", paramLabel = "PLUGIN_NAME", description = "Plugin name to remove from the CLI")
     String name;
 
     @Override
@@ -39,17 +39,20 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
 
     Integer removePlugin() throws IOException {
         PluginManager pluginManager = pluginManager();
-        Plugin toRemove = pluginManager.getInstalledPlugins().get(name);
         Optional<Plugin> removedPlugin = pluginManager.removePlugin(name, catalogOptions.user);
 
         return removedPlugin.map(plugin -> {
             PluginListTable table = new PluginListTable(List.of(new PluginListItem(false, plugin)), false);
             output.info("Removed plugin:");
             output.info(table.getContent());
-            if (!plugin.isInUserCatalog()) {
-                if (userPluginManager().getInstalledPlugins().containsKey(plugin.getName())) {
+            // Check if plugin still exists
+            if (pluginManager.getInstalledPlugins().containsKey(plugin.getName())) {
+                if (plugin.isInProjectCatalog()) {
                     output.warn(
                             "The removed plugin was available both in user and project scopes. It was removed from the project but will remain available in the user scope!");
+                } else {
+                    output.warn(
+                            "The removed plugin was available both in user and project scopes. It was removed from the user but will remain available in the project scope!");
                 }
             }
             return CommandLine.ExitCode.OK;

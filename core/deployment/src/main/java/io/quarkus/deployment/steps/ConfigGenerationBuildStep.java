@@ -11,6 +11,7 @@ import static java.util.stream.Collectors.toSet;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URI;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -439,11 +440,20 @@ public class ConfigGenerationBuildStep {
         Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
         optionalLocations.ifPresent(locations -> {
             for (URI location : locations) {
-                Path path = location.getScheme() != null ? Paths.get(location) : Paths.get(location.getPath());
-                if (!Files.isDirectory(path)) {
-                    configWatchedFiles.add(path.toString());
+                Path path = location.getScheme() != null && location.getScheme().equals("file") ? Paths.get(location)
+                        : Paths.get(location.getPath());
+                if (Files.isRegularFile(path)) {
+                    configWatchedFiles.add(path.toAbsolutePath().toString());
                     for (String profile : config.getProfiles()) {
-                        configWatchedFiles.add(appendProfileToFilename(path, profile));
+                        configWatchedFiles.add(appendProfileToFilename(path.toAbsolutePath(), profile));
+                    }
+                } else if (Files.isDirectory(path)) {
+                    try (DirectoryStream<Path> files = Files.newDirectoryStream(path, Files::isRegularFile)) {
+                        for (Path file : files) {
+                            configWatchedFiles.add(file.toAbsolutePath().toString());
+                        }
+                    } catch (IOException e) {
+                        // Ignore
                     }
                 }
             }

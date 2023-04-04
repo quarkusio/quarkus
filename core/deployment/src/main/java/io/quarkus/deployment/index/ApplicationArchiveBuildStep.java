@@ -186,7 +186,9 @@ public class ApplicationArchiveBuildStep {
                 final ResolvedDependency artifact = userMap.get(key);
                 if (artifact == null) {
                     throw new RuntimeException(
-                            "Could not resolve artifact " + key + " among the runtime dependencies of the application");
+                            "Additional dependency to be indexed (added via 'quarkus.index-dependency' configuration) "
+                                    + key
+                                    + " could not be found among the runtime dependencies of the application. Either remove the indexing configuration or add the dependency to your build system.");
                 }
                 for (Path path : artifact.getContentTree().getRoots()) {
                     if (!root.isExcludedFromIndexing(path) && !root.getResolvedPaths().contains(path)

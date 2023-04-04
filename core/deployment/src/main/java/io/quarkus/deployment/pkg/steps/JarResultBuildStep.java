@@ -209,12 +209,11 @@ public class JarResultBuildStep {
         }
 
         if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))) {
+                || packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue()))) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, uberJarMergedResourceBuildItems,
                     uberJarIgnoredResourceBuildItems, mainClassBuildItem, classLoadingConfig);
-        } else if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)) {
+        } else if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()) {
             return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem,
@@ -307,7 +306,7 @@ public class JarResultBuildStep {
                 .resolve(outputTargetBuildItem.getOriginalBaseName() + DOT_JAR);
         final Path originalJar = Files.exists(standardJar) ? standardJar : null;
 
-        return new JarBuildItem(runnerJar, originalJar, null, PackageConfig.UBER_JAR,
+        return new JarBuildItem(runnerJar, originalJar, null, PackageConfig.BuiltInType.UBER_JAR.getValue(),
                 suffixToClassifier(packageConfig.getRunnerSuffix()));
     }
 
@@ -540,7 +539,7 @@ public class JarResultBuildStep {
         }
         runnerJar.toFile().setReadable(true, false);
 
-        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.LEGACY_JAR,
+        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.BuiltInType.LEGACY_JAR.getValue(),
                 suffixToClassifier(packageConfig.getRunnerSuffix()));
     }
 
@@ -748,7 +747,7 @@ public class JarResultBuildStep {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
-        boolean mutableJar = packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+        boolean mutableJar = packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
             //and sort them

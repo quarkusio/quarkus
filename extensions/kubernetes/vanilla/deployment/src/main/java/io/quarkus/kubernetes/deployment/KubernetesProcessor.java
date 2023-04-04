@@ -263,8 +263,9 @@ class KubernetesProcessor {
             PackageConfig packageConfig,
             List<UberJarRequiredBuildItem> uberJarRequired,
             List<LegacyJarRequiredBuildItem> legacyJarRequired) {
-        if (!legacyJarRequired.isEmpty() || packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)
-                || !uberJarRequired.isEmpty() || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
+        if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
+                || !uberJarRequired.isEmpty()
+                || packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())) {
             // the jar is a legacy jar or uber jar, the next logic applies:
             return outputTarget.getOutputDirectory()
                     .resolve(outputTarget.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");

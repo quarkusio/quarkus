@@ -12,46 +12,46 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class PackageConfig {
 
     /**
-     * @deprecated Use {@link Type#JAR} instead
+     * @deprecated Use {@link BuiltInType#JAR} instead
      */
     @Deprecated
-    public static final String JAR = BuiltInType.JAR.name;
+    public static final String JAR = BuiltInType.JAR.value;
     /**
-     * @deprecated Use {@link Type#UBER_JAR} instead
+     * @deprecated Use {@link BuiltInType#UBER_JAR} instead
      */
     @Deprecated
-    public static final String UBER_JAR = BuiltInType.UBER_JAR.name;
+    public static final String UBER_JAR = BuiltInType.UBER_JAR.value;
     /**
-     * @deprecated Use {@link Type#FAST_JAR} instead
+     * @deprecated Use {@link BuiltInType#FAST_JAR} instead
      */
     @Deprecated
-    public static final String FAST_JAR = BuiltInType.FAST_JAR.name;
+    public static final String FAST_JAR = BuiltInType.FAST_JAR.value;
     /**
-     * @deprecated Use {@link Type#MUTABLE_JAR} instead
+     * @deprecated Use {@link BuiltInType#MUTABLE_JAR} instead
      */
     @Deprecated
-    public static final String MUTABLE_JAR = BuiltInType.MUTABLE_JAR.name;
+    public static final String MUTABLE_JAR = BuiltInType.MUTABLE_JAR.value;
     /**
      * @deprecated use 'legacy-jar' instead
      */
     @Deprecated
-    public static final String LEGACY = BuiltInType.LEGACY.name;
+    public static final String LEGACY = BuiltInType.LEGACY.value;
     /**
-     * @deprecated Use {@link Type#LEGACY_JAR} instead
+     * @deprecated Use {@link BuiltInType#LEGACY_JAR} instead
      */
     @Deprecated
-    public static final String LEGACY_JAR = BuiltInType.LEGACY_JAR.name;
+    public static final String LEGACY_JAR = BuiltInType.LEGACY_JAR.value;
     /**
-     * @deprecated Use {@link Type#NATIVE} instead
+     * @deprecated Use {@link BuiltInType#NATIVE} instead
      */
     @Deprecated
-    public static final String NATIVE = BuiltInType.NATIVE.name;
+    public static final String NATIVE = BuiltInType.NATIVE.value;
     /**
-     * @deprecated Use {@link Type#NATIVE_SOURCES} instead
+     * @deprecated Use {@link BuiltInType#NATIVE_SOURCES} instead
      */
     @Deprecated
     // does everything 'native' but stops short of actually executing the 'native-image' command
-    public static final String NATIVE_SOURCES = BuiltInType.NATIVE_SOURCES.name;
+    public static final String NATIVE_SOURCES = BuiltInType.NATIVE_SOURCES.value;
 
     public enum BuiltInType {
         JAR("jar"),
@@ -68,24 +68,28 @@ public class PackageConfig {
         // does everything 'native' but stops short of actually executing the 'native-image' command
         NATIVE_SOURCES("native-sources");
 
-        private final String name;
+        private final String value;
 
-        private BuiltInType(final String name) {
-            this.name = name;
+        private BuiltInType(final String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
         }
 
         @Override
         public String toString() {
-            return name;
+            return value;
         }
 
-        public static BuiltInType fromString(String name) {
+        public static BuiltInType fromString(String value) {
             for (PackageConfig.BuiltInType type : values()) {
-                if (type.toString().equals(name)) {
+                if (type.toString().equals(value)) {
                     return type;
                 }
             }
-            throw new IllegalArgumentException("Unknown Quarkus package type '" + name + "'");
+            throw new IllegalArgumentException("Unknown Quarkus package type '" + value + "'");
         }
     }
 
@@ -265,27 +269,27 @@ public class PackageConfig {
     public boolean writeTransformedBytecodeToBuildOutput;
 
     public boolean isAnyJarType() {
-        return (type.equalsIgnoreCase(PackageConfig.JAR) ||
-                type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
-                type.equalsIgnoreCase(PackageConfig.UBER_JAR)) ||
-                type.equalsIgnoreCase(PackageConfig.LEGACY_JAR) ||
-                type.equalsIgnoreCase(PackageConfig.LEGACY) ||
-                type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+        return (type.equalsIgnoreCase(PackageConfig.BuiltInType.JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.FAST_JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY_JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
     }
 
     public boolean isFastJar() {
-        return type.equalsIgnoreCase(PackageConfig.JAR) ||
-                type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
-                type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+        return type.equalsIgnoreCase(PackageConfig.BuiltInType.JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.FAST_JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
     }
 
     public boolean isLegacyJar() {
-        return (type.equalsIgnoreCase(PackageConfig.LEGACY_JAR) ||
-                type.equalsIgnoreCase(PackageConfig.LEGACY));
+        return (type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY_JAR.getValue()) ||
+                type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY.getValue()));
     }
 
     public boolean isUberJar() {
-        return type.equalsIgnoreCase(PackageConfig.UBER_JAR);
+        return type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue());
     }
 
     public String getRunnerSuffix() {

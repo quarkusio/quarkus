@@ -361,7 +361,7 @@ public class DockerProcessor {
         } else {
             if (dockerConfig.dockerfileJvmPath.isPresent()) {
                 return ProvidedDockerfile.get(Paths.get(dockerConfig.dockerfileJvmPath.get()), outputDirectory);
-            } else if (packageConfig.type.equals(PackageConfig.LEGACY_JAR)) {
+            } else if (packageConfig.isLegacyJar()) {
                 return DockerfileDetectionResult.detect(DOCKERFILE_LEGACY_JAR, outputDirectory);
             } else {
                 return DockerfileDetectionResult.detect(DOCKERFILE_JVM, outputDirectory);

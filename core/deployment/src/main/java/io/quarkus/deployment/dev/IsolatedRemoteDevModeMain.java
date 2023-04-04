@@ -90,7 +90,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
             //ok, we have resolved all the deps
             try {
                 AugmentResult start = augmentAction.createProductionApplication();
-                if (!start.getJar().getType().equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
+                if (!start.getJar().getType().equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue())) {
                     throw new RuntimeException(
                             "remote-dev can only be used with mutable applications generated with the fast-jar format");
                 }

@@ -13,7 +13,7 @@ public class JarCommand implements PluginCommand {
     private JBangSupport jbang;
     private String name;
     private Path location; //May be path, url or CAGTV
-    private List<String> arguments = new ArrayList<>();
+    private final List<String> arguments = new ArrayList<>();
 
     private OutputOptionMixin output;
     private Path workingDirectory;
@@ -25,7 +25,6 @@ public class JarCommand implements PluginCommand {
         this.jbang = new JBangSupport(output.isCliTest(), output, workingDirectory);
         this.name = name;
         this.location = location;
-        this.arguments = new ArrayList<>();
         this.output = output;
         this.workingDirectory = workingDirectory;
         arguments.add(location.toAbsolutePath().toString());
@@ -39,6 +38,13 @@ public class JarCommand implements PluginCommand {
     @Override
     public List<String> getArguments() {
         return arguments;
+    }
+
+    @Override
+    public void useArguments(List<String> arguments) {
+        this.arguments.clear();
+        this.arguments.add(location.toAbsolutePath().toString());
+        this.arguments.addAll(arguments);
     }
 
     @Override

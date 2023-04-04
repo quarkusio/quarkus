@@ -60,7 +60,7 @@ public class PluginCommandFactory {
                             }
                             if (value instanceof String[]) {
                                 String[] array = (String[]) value;
-                                command.getArguments().addAll(Arrays.asList(array));
+                                command.useArguments(Arrays.asList(array));
                             }
                             return value;
                         }

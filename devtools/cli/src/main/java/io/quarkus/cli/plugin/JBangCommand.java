@@ -49,4 +49,11 @@ public class JBangCommand implements PluginCommand {
     public OutputOptionMixin getOutput() {
         return output;
     }
+
+    @Override
+    public void useArguments(List<String> arguments) {
+        this.arguments.clear();
+        this.arguments.add(location);
+        this.arguments.addAll(arguments);
+    }
 }

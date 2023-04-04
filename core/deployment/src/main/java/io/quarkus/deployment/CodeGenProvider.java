@@ -28,8 +28,10 @@ public interface CodeGenProvider {
     String inputExtension();
 
     /**
-     * Name of the directory containing the input files for the CodeGenProvider
-     * for <code>foo</code>, <code>src/main/foo</code> for application and <code>src/test/foo</code> for test resources
+     * Name of the directory containing input files for a given {@link CodeGenProvider} implementation
+     * relative to a sources root directory. For example, if an input directory is configured as <code>foo</code>,
+     * for a production build of an application the sources will be looked up at <code>src/main/foo</code> path
+     * and at <code>src/test/foo</code> for tests.
      *
      * @return the input directory
      */

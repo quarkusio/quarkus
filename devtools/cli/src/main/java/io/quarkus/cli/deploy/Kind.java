@@ -3,7 +3,7 @@ package io.quarkus.cli.deploy;
 import io.quarkus.cli.BuildToolContext;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "kind", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Perform the deploy action on minikube.", description = "%n"
+@CommandLine.Command(name = "kind", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Perform the deploy action on kind.", description = "%n"
         + "The command will deploy the application on kind.", footer = "%n"
                 + "For example (using default values), it will create a Deployment named '<project.artifactId>' using the image with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>' and will deploy it to the target cluster.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Kind extends BaseKubernetesDeployCommand {

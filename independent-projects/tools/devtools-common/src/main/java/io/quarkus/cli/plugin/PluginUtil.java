@@ -19,8 +19,6 @@ import io.quarkus.maven.dependency.GACTV;
 
 public final class PluginUtil {
 
-    private static final Pattern CLI_SUFFIX = Pattern.compile("(\\-cli)(@\\w+)?$");
-
     private PluginUtil() {
         //Utility
     }
@@ -145,13 +143,30 @@ public final class PluginUtil {
     }
 
     /**
+     * Chekcs if specified {@link String} contains a valid remote catalog
+     *
+     * @param location The string to check
+     * @return The catalog wrapped in {@link Optional} if valid, empty otherwise.
+     */
+    public static Optional<String> checkRemoteCatalog(String location) {
+        return Optional.ofNullable(location)
+                .filter(l -> l.contains("@"))
+                .map(l -> l.substring(l.lastIndexOf("@") + 1))
+                .filter(l -> !l.isEmpty());
+    }
+
+    public static Optional<String> checkRemoteCatalog(Optional<String> location) {
+        return location.flatMap(PluginUtil::checkRemoteCatalog);
+    }
+
+    /**
      * Checks if location is remote.
      *
      * @param location the specifiied location.
      * @return true if location is url or gactv
      */
     public static boolean isRemoteLocation(String location) {
-        return checkUrl(location).isPresent() || checkGACTV(location).isPresent();
+        return checkUrl(location).isPresent() || checkGACTV(location).isPresent() || checkRemoteCatalog(location).isPresent();
     }
 
     private static List<Path> getBuildFiles(Optional<Path> projectRoot) {

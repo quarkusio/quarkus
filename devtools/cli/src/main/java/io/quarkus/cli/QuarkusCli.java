@@ -96,18 +96,23 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         try {
             Optional<String> missing = checkMissingCommand(cmd, args);
             missing.ifPresent(m -> {
-                Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
-                if (installable.containsKey(m)) {
-                    Plugin candidate = installable.get(m);
-                    PluginListItem item = new PluginListItem(false, candidate);
-                    PluginListTable table = new PluginListTable(List.of(item));
-                    output.info("Command %s not installed but the following plugin is available:\n%s", m, table.getContent());
-                    if (interactiveMode && Prompt.yesOrNo(true,
-                            "Would you like to install it now ?",
-                            args)) {
-                        pluginManager.addPlugin(m).ifPresent(added -> plugins.put(added.getName(), added));
-                        pluginCommandFactory.populateCommands(cmd, plugins);
+                try {
+                    Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
+                    if (installable.containsKey(m)) {
+                        Plugin candidate = installable.get(m);
+                        PluginListItem item = new PluginListItem(false, candidate);
+                        PluginListTable table = new PluginListTable(List.of(item));
+                        output.info("Command %s not installed but the following plugin is available:\n%s", m,
+                                table.getContent());
+                        if (interactiveMode && Prompt.yesOrNo(true,
+                                "Would you like to install it now ?",
+                                args)) {
+                            pluginManager.addPlugin(m).ifPresent(added -> plugins.put(added.getName(), added));
+                            pluginCommandFactory.populateCommands(cmd, plugins);
+                        }
                     }
+                } catch (Exception e) {
+                    output.error("Command %s is missing and can't be installed.", m);
                 }
             });
         } catch (MutuallyExclusiveArgsException e) {

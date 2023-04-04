@@ -547,7 +547,7 @@ quarkus.kubernetes.secret-volumes.my-volume.secret-name=my-secret
 
 [source,properties]
 ----
-quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-secret
+quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-config-map
 ----
 
 ==== Passing application configuration

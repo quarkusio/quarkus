@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -67,6 +68,7 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
 
     Integer listPluigns() {
         PluginManager pluginManager = pluginManager();
+        Predicate<Plugin> pluginFilter = pluginFilter();
         pluginManager.reconcile();
         installedPlugins.putAll(pluginManager.getInstalledPlugins());
 
@@ -74,13 +76,15 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
         if (installable) {
             Map<String, Plugin> availablePlugins = pluginManager.getInstallablePlugins();
             items.putAll(availablePlugins
-                    .entrySet().stream()
-                    .filter(e -> !installedPlugins.containsKey(e.getKey()))
-                    .map(e -> new PluginListItem(installedPlugins.containsKey(e.getKey()), e.getValue()))
+                    .values().stream()
+                    .filter(p -> !installedPlugins.containsKey(p.getName()))
+                    .filter(pluginFilter)
+                    .map(p -> new PluginListItem(installedPlugins.containsKey(p.getName()), p))
                     .collect(Collectors.toMap(p -> p.getName(), p -> p)));
         }
 
         items.putAll(installedPlugins.entrySet().stream()
+                .filter(e -> pluginFilter.test(e.getValue()))
                 .map(e -> new PluginListItem(true, e.getValue()))
                 .collect(Collectors.toMap(p -> p.getName(), p -> p)));
 

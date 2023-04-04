@@ -40,7 +40,7 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
     Integer removePlugin() throws IOException {
         PluginManager pluginManager = pluginManager();
         Plugin toRemove = pluginManager.getInstalledPlugins().get(name);
-        Optional<Plugin> removedPlugin = pluginManager.removePlugin(name);
+        Optional<Plugin> removedPlugin = pluginManager.removePlugin(name, catalogOptions.user);
 
         return removedPlugin.map(plugin -> {
             PluginListTable table = new PluginListTable(List.of(new PluginListItem(false, plugin)), false);

@@ -260,6 +260,6 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
                 .withCatalogs(Registries.getRegistries(registryClient, "quarkusio"))
                 .withInteractivetMode(interactiveMode); // Why not just getting it from output.isClieTest ? Cause args have not been parsed yet.
         return new PluginManager(settings, output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
-                getProjectRoot(testDir), quarkusProject(testDir), p -> true);
+                getProjectRoot(testDir), quarkusProject(testDir));
     }
 }

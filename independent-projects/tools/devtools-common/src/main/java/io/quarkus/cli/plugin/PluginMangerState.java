@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -19,15 +18,12 @@ import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 
 class PluginMangerState {
 
-    PluginMangerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
-            Optional<Path> projectRoot,
-            Optional<QuarkusProject> quarkusProject,
-            Predicate<Plugin> pluginFilter) {
+    PluginMangerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome, Optional<Path> projectRoot,
+            Optional<QuarkusProject> quarkusProject) {
         this.settings = settings;
         this.output = output;
         this.userHome = userHome;
         this.quarkusProject = quarkusProject;
-        this.pluginFilter = pluginFilter;
 
         //Inferred
         this.projectRoot = projectRoot.or(() -> quarkusProject.map(QuarkusProject::getProjectDirPath))
@@ -48,8 +44,6 @@ class PluginMangerState {
     private final PluginCatalogService pluginCatalogService;
     private final JBangCatalogService jbangCatalogService;
 
-    private final Predicate<Plugin> pluginFilter;
-
     //
     private Map<String, Plugin> _userPlugins;
     private Map<String, Plugin> _projectPlugins;
@@ -60,8 +54,8 @@ class PluginMangerState {
 
     private Optional<PluginCatalog> _userCatalog;
     private Optional<PluginCatalog> _projectCatalog;
+
     private PluginCatalog _combinedCatalog;
-    private PluginCatalog _pluginCatalog;
 
     public PluginCatalogService getPluginCatalogService() {
         return pluginCatalogService;
@@ -87,7 +81,6 @@ class PluginMangerState {
 
     public Map<String, Plugin> projectPlugins() {
         return pluginCatalogService.readProjectCatalog(projectRoot).map(catalog -> catalog.getPlugins().values().stream()
-                .filter(pluginFilter)
                 .map(Plugin::inProjectCatalog)
                 .collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
     }
@@ -101,7 +94,6 @@ class PluginMangerState {
 
     public Map<String, Plugin> userPlugins() {
         return pluginCatalogService.readUserCatalog(userHome).map(catalog -> catalog.getPlugins().values().stream()
-                .filter(pluginFilter)
                 .map(Plugin::inUserCatalog)
                 .collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
     }
@@ -154,9 +146,7 @@ class PluginMangerState {
             Optional<String> description = alias.getDescription();
             Plugin plugin = new Plugin(name, PluginType.jbang, Optional.of(location), description, Optional.empty(),
                     isUserScoped);
-            if (pluginFilter.test(plugin)) {
-                jbangPlugins.put(name, plugin);
-            }
+            jbangPlugins.put(name, plugin);
         });
         return jbangPlugins;
     }
@@ -169,9 +159,7 @@ class PluginMangerState {
             Optional<String> description = Optional.empty();
             Optional<String> location = Optional.of(f.getAbsolutePath());
             Plugin plugin = new Plugin(name, PluginType.executable, location, description, Optional.empty(), isUserScoped);
-            if (pluginFilter.test(plugin)) {
-                executablePlugins.put(name, plugin);
-            }
+            executablePlugins.put(name, plugin);
         });
         return executablePlugins;
     }
@@ -236,16 +224,9 @@ class PluginMangerState {
         return _combinedCatalog;
     }
 
-    public PluginCatalog pluginCatalog() {
-        return getProjectCatalog().or(() -> getUserCatalog())
+    public PluginCatalog pluginCatalog(boolean userCatalog) {
+        return (userCatalog ? getUserCatalog() : getProjectCatalog()).or(() -> getUserCatalog())
                 .orElseThrow(() -> new IllegalStateException("Unable to get project and user plugin catalogs!"));
-    }
-
-    public PluginCatalog getPluginCatalog() {
-        if (_pluginCatalog == null) {
-            _pluginCatalog = pluginCatalog();
-        }
-        return _pluginCatalog;
     }
 
     public Optional<Path> getProjectRoot() {

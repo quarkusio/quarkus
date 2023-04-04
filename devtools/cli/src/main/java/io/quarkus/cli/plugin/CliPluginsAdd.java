@@ -45,7 +45,7 @@ public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
 
     Integer addPlugin() throws IOException {
         PluginManager pluginManager = pluginManager();
-        Optional<Plugin> addedPlugin = pluginManager.addPlugin(nameOrLocation, description);
+        Optional<Plugin> addedPlugin = pluginManager.addPlugin(nameOrLocation, catalogOptions.user, description);
 
         return addedPlugin.map(plugin -> {
             PluginListTable table = new PluginListTable(List.of(new PluginListItem(true, plugin)), false);

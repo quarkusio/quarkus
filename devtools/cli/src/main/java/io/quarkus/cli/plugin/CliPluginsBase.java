@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
@@ -44,9 +45,12 @@ public class CliPluginsBase extends BaseBuildCommand {
 
         return new PluginManager(settings, output,
                 catalogOptions.userDirectory.or(() -> Optional.ofNullable(Paths.get(System.getProperty("user.home")))),
-                catalogOptions.user ? Optional.empty() : Optional.ofNullable(projectRoot()),
-                catalogOptions.user ? Optional.empty() : quarkusProject(),
-                p -> type.map(t -> t == p.getType()).orElse(true));
+                Optional.ofNullable(projectRoot()),
+                quarkusProject());
+    }
+
+    public Predicate<Plugin> pluginFilter() {
+        return p -> type.map(t -> t == p.getType()).orElse(true);
     }
 
     public PluginManager userPluginManager() {

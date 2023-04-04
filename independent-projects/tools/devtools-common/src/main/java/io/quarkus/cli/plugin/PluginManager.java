@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -18,11 +17,11 @@ public class PluginManager {
     private final PluginManagerUtil util;
 
     public PluginManager(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
-            Optional<Path> projectRoot, Optional<QuarkusProject> quarkusProject, Predicate<Plugin> pluginFilter) {
+            Optional<Path> projectRoot, Optional<QuarkusProject> quarkusProject) {
         this.settings = settings;
         this.output = output;
         this.util = PluginManagerUtil.getUtil(settings);
-        this.state = new PluginMangerState(settings, output, userHome, projectRoot, quarkusProject, pluginFilter);
+        this.state = new PluginMangerState(settings, output, userHome, projectRoot, quarkusProject);
     }
 
     /**
@@ -34,7 +33,7 @@ public class PluginManager {
      * @return the pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
     public Optional<Plugin> addPlugin(String nameOrLocation) {
-        return addPlugin(nameOrLocation, Optional.empty());
+        return addPlugin(nameOrLocation, false, Optional.empty());
     }
 
     /**
@@ -43,15 +42,16 @@ public class PluginManager {
      * Remote plugins, that are not detected can be added by the location (e.g. url or maven coordinates).
      *
      * @param nameOrLocation The name or location of the plugin.
+     * @param userCatalog Flag to only use the user catalog.
      * @param description An optional description to add to the plugin.
      * @return The pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
-    public Optional<Plugin> addPlugin(String nameOrLocation, Optional<String> description) {
+    public Optional<Plugin> addPlugin(String nameOrLocation, boolean userCatalog, Optional<String> description) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
         String name = util.getName(nameOrLocation);
         if (PluginUtil.isRemoteLocation(nameOrLocation)) {
             Plugin plugin = new Plugin(name, PluginUtil.getType(nameOrLocation), Optional.of(nameOrLocation), description);
-            PluginCatalog updatedCatalog = state.getPluginCatalog().addPlugin(plugin);
+            PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(plugin);
             pluginCatalogService.writeCatalog(updatedCatalog);
             return Optional.of(plugin);
         }
@@ -59,7 +59,7 @@ public class PluginManager {
         Map<String, Plugin> installablePlugins = state.installablePlugins();
         Optional<Plugin> plugin = Optional.ofNullable(installablePlugins.get(name));
         return plugin.map(p -> {
-            PluginCatalog updatedCatalog = state.getPluginCatalog().addPlugin(p);
+            PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(p);
             pluginCatalogService.writeCatalog(updatedCatalog);
             return p;
         });
@@ -74,8 +74,21 @@ public class PluginManager {
      * @return The pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
     public Optional<Plugin> addPlugin(Plugin plugin) {
+        return addPlugin(plugin, false);
+    }
+
+    /**
+     * Adds the {@link Plugin} with the specified name or location to the installed plugins.
+     * Plugins that have been detected as installable may be added by name.
+     * Remote plugins, that are not detected can be added by the location (e.g. url or maven coordinates).
+     *
+     * @param plugin The plugin.
+     * @param userCatalog Flag to only use the user catalog.
+     * @return The pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
+     */
+    public Optional<Plugin> addPlugin(Plugin plugin, boolean userCatalog) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
-        PluginCatalog updatedCatalog = state.getPluginCatalog().addPlugin(plugin);
+        PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(plugin);
         pluginCatalogService.writeCatalog(updatedCatalog);
         return Optional.of(plugin);
     }
@@ -90,11 +103,26 @@ public class PluginManager {
      * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
      */
     public Optional<Plugin> removePlugin(String name) {
+        return removePlugin(name, false);
+    }
+
+    /**
+     * Removes a {@link Plugin} by name.
+     * The catalog from which the plugin will be removed is selected
+     * based on where the plugin is found. If plugin is found in both catalogs
+     * the project catalog is prefered.
+     *
+     * @param name The name of the plugin to remove.
+     * @param userCatalog Flag to only use the user catalog.
+     * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
+     */
+    public Optional<Plugin> removePlugin(String name, boolean userCatalog) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
         Plugin plugin = state.getInstalledPluigns().get(name);
         if (plugin == null) {
             return Optional.empty();
-        } else if (state.getProjectCatalog().map(PluginCatalog::getPlugins).map(p -> p.containsKey(name)).orElse(false)) {
+        } else if (!userCatalog
+                && state.getProjectCatalog().map(PluginCatalog::getPlugins).map(p -> p.containsKey(name)).orElse(false)) {
             pluginCatalogService.writeCatalog(state.getProjectCatalog()
                     .orElseThrow(() -> new IllegalStateException("Project catalog should be available!"))
                     .removePlugin(name));
@@ -117,7 +145,21 @@ public class PluginManager {
      * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
      */
     public Optional<Plugin> removePlugin(Plugin plugin) {
-        return removePlugin(plugin.getName());
+        return removePlugin(plugin, false);
+    }
+
+    /**
+     * Removes a {@link Plugin} by name.
+     * The catalog from which the plugin will be removed is selected
+     * based on where the plugin is found. If plugin is found in both catalogs
+     * the project catalog is prefered.
+     *
+     * @param plugin The plugin to remove
+     * @param userCatalog Flag to only use the user catalog.
+     * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
+     */
+    public Optional<Plugin> removePlugin(Plugin plugin, boolean userCatalog) {
+        return removePlugin(plugin.getName(), userCatalog);
     }
 
     /**
@@ -196,7 +238,7 @@ public class PluginManager {
         state.invalidate();
         if (!catalogModified) {
             PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
-            PluginCatalog catalog = state.getPluginCatalog();
+            PluginCatalog catalog = state.pluginCatalog(false);
             pluginCatalogService.writeCatalog(catalog);
         }
         return catalogModified;

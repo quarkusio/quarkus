@@ -311,8 +311,12 @@ public class PluginManager {
         return false;
     }
 
+    public Map<String, Plugin> getInstalledPlugins(boolean userCatalog) {
+        return userCatalog ? state.userPlugins() : state.getInstalledPluigns();
+    }
+
     public Map<String, Plugin> getInstalledPlugins() {
-        return state.getInstalledPluigns();
+        return getInstalledPlugins(false);
     }
 
     public Map<String, Plugin> getInstallablePlugins() {

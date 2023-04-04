@@ -70,7 +70,7 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
         PluginManager pluginManager = pluginManager();
         Predicate<Plugin> pluginFilter = pluginFilter();
         pluginManager.reconcile();
-        installedPlugins.putAll(pluginManager.getInstalledPlugins());
+        installedPlugins.putAll(pluginManager.getInstalledPlugins(catalogOptions.user));
 
         Map<String, PluginListItem> items = new HashMap<>();
         if (installable) {

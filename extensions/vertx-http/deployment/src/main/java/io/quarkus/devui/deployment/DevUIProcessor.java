@@ -195,6 +195,11 @@ public class DevUIProcessor {
                 .handler(recorder.mvnpmHandler(mvnpmBuildItem.getMvnpmJars()))
                 .build());
 
+        // Redirect /q/dev -> /q/dev-ui
+        routeProducer.produce(RouteBuildItem.builder()
+                .route("/q/dev")
+                .handler(recorder.redirect())
+                .build());
     }
 
     /**

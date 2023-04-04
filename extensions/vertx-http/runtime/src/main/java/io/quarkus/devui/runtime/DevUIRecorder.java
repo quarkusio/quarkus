@@ -65,6 +65,16 @@ public class DevUIRecorder {
         return new MvnpmHandler(mvnpmJarFiles);
     }
 
+    public Handler<RoutingContext> redirect() {
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext rc) {
+                // 308 because we also want to redirect other HTTP Methods (and not only GET).
+                rc.response().putHeader("Location", "/q/dev-ui").setStatusCode(308).end();
+            }
+        };
+    }
+
     private static final class DeleteDirectoryRunnable implements Runnable {
 
         private final Path directory;

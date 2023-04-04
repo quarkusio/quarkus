@@ -21,7 +21,7 @@ public class DevConsoleKafkaSmokeTest {
 
     @Test
     public void testServices() {
-        RestAssured.get("testing/q/dev/io.quarkus.quarkus-kafka-client/kafka-dev-ui")
+        RestAssured.get("testing/q/dev-v1/io.quarkus.quarkus-kafka-client/kafka-dev-ui")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Kafka Dev UI"));
     }

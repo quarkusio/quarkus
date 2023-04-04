@@ -29,7 +29,7 @@ public class DevConsoleConfigEditorBodyHandlerTest {
                 .formParam("value", "/foo")
                 .formParam("action", "updateProperty")
                 .redirects().follow(false)
-                .post("q/dev/io.quarkus.quarkus-vertx-http/config")
+                .post("q/dev-v1/io.quarkus.quarkus-vertx-http/config")
                 .then()
                 .statusCode(303);
         RestAssured.with()

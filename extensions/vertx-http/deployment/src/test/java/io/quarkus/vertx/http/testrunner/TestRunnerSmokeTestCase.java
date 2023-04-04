@@ -48,7 +48,7 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(1L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
 
-        SuiteResult suiteResult = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/result")
+        SuiteResult suiteResult = RestAssured.get("q/dev-v1/io.quarkus.quarkus-vertx-http/tests/result")
                 .as(SuiteResult.class);
         Assertions.assertEquals(2, suiteResult.getResults().size());
         for (ClassResult cr : suiteResult.getResults().values()) {

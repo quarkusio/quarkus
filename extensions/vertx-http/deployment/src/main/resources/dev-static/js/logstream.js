@@ -4,12 +4,12 @@ var myself = $('script[src*=logstream]');
 var frameworkRootPath = myself.attr('data-frameworkRootPath');   
 if (typeof frameworkRootPath === "undefined" ) {
     var pathname = window.location.pathname;
-    var frameworkRootPath = pathname.substr(0, pathname.indexOf('/dev/'));
+    var frameworkRootPath = pathname.substr(0, pathname.indexOf('/dev-v1/'));
 }
 // Get the streaming path
 var streamingPath = myself.attr('data-streamingPath');
 if (typeof streamingPath === "undefined" ) {
-   var streamingPath = "/dev/logstream";
+   var streamingPath = "/dev-v1/logstream";
 }
 
 var zoom = 0.90;

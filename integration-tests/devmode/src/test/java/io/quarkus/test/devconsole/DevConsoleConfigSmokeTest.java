@@ -19,7 +19,7 @@ public class DevConsoleConfigSmokeTest {
 
     @Test
     public void testConfigEditor() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/config")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-vertx-http/config")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Config Editor"));
 

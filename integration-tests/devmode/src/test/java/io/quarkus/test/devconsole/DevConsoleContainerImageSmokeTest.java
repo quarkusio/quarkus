@@ -19,7 +19,7 @@ public class DevConsoleContainerImageSmokeTest {
 
     @Test
     public void testCaches() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-container-image/build")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-container-image/build")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Build Type"));
     }

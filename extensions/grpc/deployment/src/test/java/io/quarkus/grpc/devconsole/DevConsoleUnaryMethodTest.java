@@ -37,7 +37,7 @@ public class DevConsoleUnaryMethodTest {
             List<String> incomingMessages = new CopyOnWriteArrayList<>();
             HttpClient client = vertx.createHttpClient();
 
-            client.webSocket(8080, "localhost", "/q/dev/io.quarkus.quarkus-grpc/grpc-test", result -> {
+            client.webSocket(8080, "localhost", "/q/dev-v1/io.quarkus.quarkus-grpc/grpc-test", result -> {
                 if (result.failed()) {
                     log.error("failure making a web socket connection", result.cause());
                     return;

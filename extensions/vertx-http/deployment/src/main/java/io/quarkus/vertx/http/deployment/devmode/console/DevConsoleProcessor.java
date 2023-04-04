@@ -273,7 +273,7 @@ public class DevConsoleProcessor {
                 .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
-        mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("dev*")).subRouter(router);
+        mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("dev-v1*")).subRouter(router);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -427,7 +427,7 @@ public class DevConsoleProcessor {
                 continue;
             }
             routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .route("dev/" + webjarBuildItem.getRouteRoot() + "/*")
+                    .route("dev-v1/" + webjarBuildItem.getRouteRoot() + "/*")
                     .handler(recorder.fileSystemStaticHandler(result.getWebRootConfigurations(), shutdownContext))
                     .build());
         }
@@ -461,14 +461,14 @@ public class DevConsoleProcessor {
         }
 
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev/resources/*")
+                .route("dev-v1/resources/*")
                 .handler(recorder.fileSystemStaticHandler(
                         result.getWebRootConfigurations(), shutdownContext))
                 .build());
 
         // Add the log stream
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev/logstream")
+                .route("dev-v1/logstream")
                 .handler(logStreamRecorder.websocketHandler(historyHandlerBuildItem.value))
                 .build());
 
@@ -479,13 +479,13 @@ public class DevConsoleProcessor {
             if (!i.isDeploymentSide()) {
                 if (devUIConfig.cors.enabled) {
                     routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                            .route("dev/*")
+                            .route("dev-v1/*")
                             .handler(new DevConsoleCORSFilter())
                             .build());
                 }
                 NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
-                                "dev/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
+                                "dev-v1/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
                                 new RuntimeDevConsoleRoute(i.getMethod(),
                                         i.isBodyHandlerRequired() ? bodyHandlerBuildItem.getHandler() : null));
                 if (i.isBlockingHandler()) {
@@ -499,12 +499,12 @@ public class DevConsoleProcessor {
         DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
         //must be last so the above routes have precedence
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev/*")
+                .route("dev-v1/*")
                 .handler(new DevConsoleFilter())
                 .build());
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev")
-                .displayOnNotFoundPage("Dev UI")
+                .route("dev-v1")
+                .displayOnNotFoundPage("Dev UI (v1)")
                 .handler(new RedirectHandler())
                 .build());
     }

@@ -62,7 +62,7 @@ public class DevConsole implements Handler<RoutingContext> {
         this.globalData.put("frameworkRootPath", frameworkRootPath);
 
         // This includes the dev segment, but does not include a trailing slash (for append)
-        this.devRootAppend = frameworkRootPath + "dev";
+        this.devRootAppend = frameworkRootPath + "dev-v1";
         this.globalData.put("devRootAppend", devRootAppend);
 
         this.globalData.put("quarkusVersion", Version.getVersion());
@@ -107,7 +107,7 @@ public class DevConsole implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext ctx) {
         initLazyState();
-        // Redirect /q/dev to /q/dev/
+        // Redirect /q/dev-v1 to /q/dev-v1/
         if (ctx.normalizedPath().length() == devRootAppend.length()) {
             ctx.response().setStatusCode(302);
             ctx.response().headers().set(HttpHeaders.LOCATION, devRootAppend + "/");

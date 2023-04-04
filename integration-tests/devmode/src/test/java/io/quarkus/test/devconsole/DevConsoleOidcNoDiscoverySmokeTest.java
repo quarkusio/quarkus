@@ -21,7 +21,7 @@ public class DevConsoleOidcNoDiscoverySmokeTest {
 
     @Test
     public void testOidcProviderTemplate() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-oidc/provider")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-oidc/provider")
                 .then()
                 .statusCode(200).body(Matchers.containsString("OpenId Connect Dev Console"));
     }

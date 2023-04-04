@@ -40,9 +40,11 @@ public class ArcRecorder {
      */
     public static volatile Map<String, Function<SyntheticCreationalContext<?>, ?>> syntheticBeanProviders;
 
-    public ArcContainer initContainer(ShutdownContext shutdown, RuntimeValue<CurrentContextFactory> currentContextFactory)
+    public ArcContainer initContainer(ShutdownContext shutdown, RuntimeValue<CurrentContextFactory> currentContextFactory,
+            boolean strictCompatibility)
             throws Exception {
-        ArcContainer container = Arc.initialize(currentContextFactory != null ? currentContextFactory.getValue() : null);
+        ArcContainer container = Arc.initialize(currentContextFactory != null ? currentContextFactory.getValue() : null,
+                strictCompatibility);
         shutdown.addShutdownTask(new Runnable() {
             @Override
             public void run() {

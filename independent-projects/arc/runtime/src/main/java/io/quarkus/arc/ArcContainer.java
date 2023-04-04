@@ -233,4 +233,12 @@ public interface ArcContainer {
      * @see CurrentContext
      */
     CurrentContextFactory getCurrentContextFactory();
+
+    /**
+     * Indicates whether container runs in strict compatibility mode.
+     * Default value is false.
+     *
+     * @return true is strict mode is enabled, false otherwise.
+     */
+    boolean strictCompatibility();
 }

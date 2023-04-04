@@ -22,11 +22,13 @@ import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.NotificationOptions;
 import jakarta.enterprise.event.ObserverException;
 import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.EventMetadata;
 import jakarta.enterprise.inject.spi.InjectionPoint;
@@ -315,8 +317,8 @@ class EventImpl<T> implements Event<T> {
                     }
                 }
 
-                // Non-tx observers notifications
-                if (activateRequestContext) {
+                // Non-tx observers notifications; only activate req. context in non-strict mode
+                if (activateRequestContext && !Arc.container().strictCompatibility()) {
                     ManagedContext requestContext = Arc.container().requestContext();
                     if (requestContext.isActive()) {
                         notifyObservers(event, exceptionHandler, predicate);
@@ -339,6 +341,12 @@ class EventImpl<T> implements Event<T> {
                 Predicate<ObserverMethod<? super T>> predicate) {
             EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
             for (ObserverMethod<? super T> observerMethod : observerMethods) {
+                Bean<?> declaringBean = observerMethod.getDeclaringBean();
+                // don't notify observers on beans with inactive context
+                if (declaringBean != null && !declaringBean.getScope().equals(Dependent.class)
+                        && Arc.container().getActiveContext(declaringBean.getScope()) == null) {
+                    continue;
+                }
                 if (predicate.test(observerMethod)) {
                     try {
                         observerMethod.notify(eventContext);

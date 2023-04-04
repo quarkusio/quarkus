@@ -22,13 +22,17 @@ public final class Arc {
      * @return the initialized container
      */
     public static ArcContainer initialize(CurrentContextFactory currentContextFactory) {
+        return initialize(currentContextFactory, false);
+    }
+
+    public static ArcContainer initialize(CurrentContextFactory currentContextFactory, boolean strictMode) {
         ArcContainerImpl container = INSTANCE.get();
         if (container == null) {
             synchronized (INSTANCE) {
                 container = INSTANCE.get();
                 if (container == null) {
                     // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
-                    container = new ArcContainerImpl(currentContextFactory);
+                    container = new ArcContainerImpl(currentContextFactory, strictMode);
                     INSTANCE.set(container);
                     container.init();
                 }

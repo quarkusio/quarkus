@@ -637,9 +637,9 @@ public class ArcProcessor {
             reflectiveClasses
                     .produce(ReflectiveClassBuildItem.builder(binding.name().toString()).methods().build());
         }
-
         ArcContainer container = recorder.initContainer(shutdown,
-                currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null);
+                currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null,
+                config.strictCompatibility);
         BeanContainer beanContainer = recorder.initBeanContainer(container,
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()));

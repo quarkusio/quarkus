@@ -188,12 +188,6 @@
                     <exclude name="testScopeTypeDeclaredInheritedIsBlockedByIntermediateScopeTypeNotMarkedInherited"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.event.observer.conditional.ConditionalObserverTest">
-                <methods>
-                    <exclude name="testObserverMethodInvokedOnReturnedInstanceFromContext"/>
-                    <exclude name="testConditionalObserverMethodNotInvokedIfNoActiveContext"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.order.aroundInvoke.AroundInvokeOrderTest">
                 <methods>
                     <exclude name="testInvocationOrder"/>
@@ -407,11 +401,6 @@
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptorTypeParamInitializerTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.event.observer.ObserverNotificationTest">
-                <methods>
-                    <exclude name="testObserverMethodNotInvokedIfNoActiveContext"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.context.dependent.DependentContextTest">

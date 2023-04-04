@@ -81,7 +81,8 @@ public class ArcDeployableContainer implements DeployableContainer<ArcContainerC
 
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
-            ArcContainer arcContainer = Arc.initialize();
+            // passing strict mode here allows it to be visible in runtime
+            ArcContainer arcContainer = Arc.initialize(null, true);
             runningArc.set(arcContainer);
             arcContainer.beanManager().getEvent().fire(new Startup());
 

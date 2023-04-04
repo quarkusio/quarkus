@@ -14,13 +14,18 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 
 public class ContextsImpl implements Contexts<Context> {
+
+    private InjectableContext.ContextState savedState;
+
     @Override
     public void setActive(Context context) {
-        ((ManagedContext) context).activate();
+        ((ManagedContext) context).activate(savedState);
+        savedState = null;
     }
 
     @Override
     public void setInactive(Context context) {
+        savedState = ((ManagedContext) context).getState();
         ((ManagedContext) context).deactivate();
     }
 

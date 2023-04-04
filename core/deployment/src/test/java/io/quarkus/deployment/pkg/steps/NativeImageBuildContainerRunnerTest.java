@@ -2,7 +2,6 @@ package io.quarkus.deployment.pkg.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -27,7 +26,7 @@ class NativeImageBuildContainerRunnerTest {
         String[] command;
 
         nativeConfig.builderImage = "graalvm";
-        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
+        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig);
         command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
                 Collections.emptyList());
         found = false;
@@ -40,7 +39,7 @@ class NativeImageBuildContainerRunnerTest {
         assertThat(found).isTrue();
 
         nativeConfig.builderImage = "mandrel";
-        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
+        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig);
         command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
                 Collections.emptyList());
         found = false;
@@ -53,7 +52,7 @@ class NativeImageBuildContainerRunnerTest {
         assertThat(found).isTrue();
 
         nativeConfig.builderImage = "RandomString";
-        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
+        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig);
         command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
                 Collections.emptyList());
         found = false;

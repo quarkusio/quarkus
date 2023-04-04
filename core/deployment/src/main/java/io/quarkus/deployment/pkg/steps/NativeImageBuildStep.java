@@ -40,6 +40,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
@@ -107,7 +108,8 @@ public class NativeImageBuildStep {
             List<NativeImageEnableModule> enableModules,
             List<JPMSExportBuildItem> jpmsExportBuildItems,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
-            List<NativeImageFeatureBuildItem> nativeImageFeatures) {
+            List<NativeImageFeatureBuildItem> nativeImageFeatures,
+            NativeImageRunnerBuildItem nativeImageRunner) {
 
         Path outputDir;
         try {
@@ -138,13 +140,14 @@ public class NativeImageBuildStep {
                 .setNativeImageName(nativeImageName)
                 .setGraalVMVersion(GraalVM.Version.CURRENT)
                 .setNativeImageFeatures(nativeImageFeatures)
+                .setContainerBuild(nativeImageRunner.isContainerBuild())
                 .build();
         List<String> command = nativeImageArgs.getArgs();
 
         try {
             Files.writeString(outputDir.resolve("native-image.args"), String.join(" ", command));
             Files.writeString(outputDir.resolve("graalvm.version"), GraalVM.Version.CURRENT.version.toString());
-            if (nativeConfig.isContainerBuild()) {
+            if (nativeImageRunner.isContainerBuild()) {
                 Files.writeString(outputDir.resolve("native-builder.image"), nativeConfig.getEffectiveBuilderImage());
             }
         } catch (IOException | RuntimeException e) {
@@ -177,7 +180,8 @@ public class NativeImageBuildStep {
             List<UnsupportedOSBuildItem> unsupportedOses,
             Optional<ProcessInheritIODisabled> processInheritIODisabled,
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem,
-            List<NativeImageFeatureBuildItem> nativeImageFeatures) {
+            List<NativeImageFeatureBuildItem> nativeImageFeatures,
+            NativeImageRunnerBuildItem nativeImageRunner) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
             copySourcesToSourceCache(outputTargetBuildItem);
@@ -186,18 +190,17 @@ public class NativeImageBuildStep {
         Path runnerJar = nativeImageSourceJarBuildItem.getPath();
         log.info("Building native image from " + runnerJar);
         Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
-
         final String runnerJarName = runnerJar.getFileName().toString();
 
         String noPIE = "";
 
-        boolean isContainerBuild = nativeConfig.isContainerBuild();
+        boolean isContainerBuild = nativeImageRunner.isContainerBuild();
         if (!isContainerBuild && SystemUtils.IS_OS_LINUX) {
             noPIE = detectNoPIE();
         }
 
         String nativeImageName = getNativeImageName(outputTargetBuildItem, packageConfig);
-        String resultingExecutableName = getResultingExecutableName(nativeImageName, isContainerBuild);
+        String resultingExecutableName = getResultingExecutableName(nativeImageName, nativeImageRunner.isContainerBuild());
         Path generatedExecutablePath = outputDir.resolve(resultingExecutableName);
         Path finalExecutablePath = outputTargetBuildItem.getOutputDirectory().resolve(resultingExecutableName);
         if (nativeConfig.reuseExisting) {
@@ -207,8 +210,8 @@ public class NativeImageBuildStep {
             }
         }
 
-        NativeImageBuildRunner buildRunner = getNativeImageBuildRunner(nativeConfig, outputDir,
-                nativeImageName, resultingExecutableName);
+        NativeImageBuildRunner buildRunner = nativeImageRunner.getBuildRunner();
+
         buildRunner.setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
         final GraalVM.Version graalVMVersion = buildRunner.getGraalVMVersion();
 
@@ -245,16 +248,18 @@ public class NativeImageBuildStep {
                     .setNoPIE(noPIE)
                     .setGraalVMVersion(graalVMVersion)
                     .setNativeImageFeatures(nativeImageFeatures)
+                    .setContainerBuild(isContainerBuild)
                     .build();
 
             List<String> nativeImageArgs = commandAndExecutable.args;
 
-            NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs, nativeImageName,
+            NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs,
+                    nativeImageName,
                     resultingExecutableName, outputDir,
                     graalVMVersion, nativeConfig.debug.enabled,
                     processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
             if (buildNativeResult.getExitCode() != 0) {
-                throw imageGenerationFailed(buildNativeResult.getExitCode(), nativeConfig.isContainerBuild());
+                throw imageGenerationFailed(buildNativeResult.getExitCode(), isContainerBuild);
             }
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
@@ -299,26 +304,31 @@ public class NativeImageBuildStep {
         return resultingExecutableName;
     }
 
-    private static NativeImageBuildRunner getNativeImageBuildRunner(NativeConfig nativeConfig, Path outputDir,
-            String nativeImageName, String resultingExecutableName) {
-        if (!nativeConfig.isContainerBuild()) {
-            NativeImageBuildLocalRunner localRunner = getNativeImageBuildLocalRunner(nativeConfig, outputDir.toFile());
+    /**
+     * Resolves the runner factory. Happens quite early, *before* the build.
+     */
+    @BuildStep
+    public NativeImageRunnerBuildItem resolveNativeImageBuildRunner(NativeConfig nativeConfig) {
+        boolean isExplicitContainerBuild = nativeConfig.containerBuild
+                .orElse(nativeConfig.containerRuntime.isPresent() || nativeConfig.remoteContainerBuild);
+        if (!isExplicitContainerBuild) {
+            NativeImageBuildLocalRunner localRunner = getNativeImageBuildLocalRunner(nativeConfig);
             if (localRunner != null) {
-                return localRunner;
+                return new NativeImageRunnerBuildItem(localRunner);
             }
             String executableName = getNativeImageExecutableName();
             String errorMessage = "Cannot find the `" + executableName
                     + "` in the GRAALVM_HOME, JAVA_HOME and System PATH. Install it using `gu install native-image`";
             if (!SystemUtils.IS_OS_LINUX) {
-                throw new RuntimeException(errorMessage);
+                // Delay the error: if we're just building native sources, we may not need the build runner at all.
+                return new NativeImageRunnerBuildItem(new NativeImageBuildRunnerError(errorMessage));
             }
             log.warn(errorMessage + " Attempting to fall back to container build.");
         }
         if (nativeConfig.remoteContainerBuild) {
-            return new NativeImageBuildRemoteContainerRunner(nativeConfig, outputDir,
-                    nativeImageName, resultingExecutableName);
+            return new NativeImageRunnerBuildItem(new NativeImageBuildRemoteContainerRunner(nativeConfig));
         }
-        return new NativeImageBuildLocalContainerRunner(nativeConfig, outputDir);
+        return new NativeImageRunnerBuildItem(new NativeImageBuildLocalContainerRunner(nativeConfig));
     }
 
     private void copyJarSourcesToLib(OutputTargetBuildItem outputTargetBuildItem,
@@ -426,12 +436,12 @@ public class NativeImageBuildStep {
         }
     }
 
-    private static NativeImageBuildLocalRunner getNativeImageBuildLocalRunner(NativeConfig nativeConfig, File outputDir) {
+    private static NativeImageBuildLocalRunner getNativeImageBuildLocalRunner(NativeConfig nativeConfig) {
         String executableName = getNativeImageExecutableName();
         if (nativeConfig.graalvmHome.isPresent()) {
             File file = Paths.get(nativeConfig.graalvmHome.get(), "bin", executableName).toFile();
             if (file.exists()) {
-                return new NativeImageBuildLocalRunner(file.getAbsolutePath(), outputDir);
+                return new NativeImageBuildLocalRunner(file.getAbsolutePath());
             }
         }
 
@@ -453,7 +463,7 @@ public class NativeImageBuildStep {
         if (javaHome != null) {
             File file = new File(javaHome, "bin/" + executableName);
             if (file.exists()) {
-                return new NativeImageBuildLocalRunner(file.getAbsolutePath(), outputDir);
+                return new NativeImageBuildLocalRunner(file.getAbsolutePath());
             }
         }
 
@@ -466,7 +476,7 @@ public class NativeImageBuildStep {
                 if (dir.isDirectory()) {
                     File file = new File(dir, executableName);
                     if (file.exists()) {
-                        return new NativeImageBuildLocalRunner(file.getAbsolutePath(), outputDir);
+                        return new NativeImageBuildLocalRunner(file.getAbsolutePath());
                     }
                 }
             }
@@ -529,6 +539,7 @@ public class NativeImageBuildStep {
             private GraalVM.Version graalVMVersion = GraalVM.Version.UNVERSIONED;
             private String nativeImageName;
             private boolean classpathIsBroken;
+            private boolean containerBuild;
 
             public Builder setNativeConfig(NativeConfig nativeConfig) {
                 this.nativeConfig = nativeConfig;
@@ -552,6 +563,11 @@ public class NativeImageBuildStep {
 
             public Builder setBrokenClasspath(boolean classpathIsBroken) {
                 this.classpathIsBroken = classpathIsBroken;
+                return this;
+            }
+
+            public Builder setContainerBuild(boolean containerBuild) {
+                this.containerBuild = containerBuild;
                 return this;
             }
 
@@ -779,7 +795,7 @@ public class NativeImageBuildStep {
                 }
                 if (nativeConfig.debugBuildProcess) {
                     String debugBuildProcessHost;
-                    if (nativeConfig.isContainerBuild()) {
+                    if (containerBuild) {
                         debugBuildProcessHost = "0.0.0.0";
                     } else {
                         debugBuildProcessHost = "localhost";
@@ -900,7 +916,7 @@ public class NativeImageBuildStep {
 
                 if (unsupportedOSes != null && !unsupportedOSes.isEmpty()) {
                     final String errs = unsupportedOSes.stream()
-                            .filter(o -> o.triggerError(nativeConfig))
+                            .filter(o -> o.triggerError(containerBuild))
                             .map(o -> o.error)
                             .collect(Collectors.joining(", "));
                     if (!errs.isEmpty()) {
@@ -928,7 +944,7 @@ public class NativeImageBuildStep {
                     List<String> strings = nativeConfig.additionalBuildArgs.get();
                     for (String buildArg : strings) {
                         String trimmedBuildArg = buildArg.trim();
-                        if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && nativeConfig.isContainerBuild()) {
+                        if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && containerBuild) {
                             /*
                              * When the native binary is being built with a docker container, because a volume is created,
                              * we need to copy the trustStore file into the output directory (which is the root of volume)

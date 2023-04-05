@@ -23,7 +23,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.event.Reception;
 import jakarta.enterprise.event.TransactionPhase;
@@ -414,8 +413,8 @@ public class ObserverGenerator extends AbstractGenerator {
                 ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
                         container,
                         scope);
-                notify.ifNull(context).trueBranch().throwException(ContextNotActiveException.class,
-                        "Context not active: " + observer.getDeclaringBean().getScope().getDotName());
+                // if the context isn't active, don't notify the observer
+                notify.ifNull(context).trueBranch().returnVoid();
                 notify.assign(declaringProviderInstanceHandle,
                         notify.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context,
                                 declaringProviderHandle));

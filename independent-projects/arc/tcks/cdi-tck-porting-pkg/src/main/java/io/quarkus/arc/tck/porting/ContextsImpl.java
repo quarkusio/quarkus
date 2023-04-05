@@ -1,6 +1,8 @@
 package io.quarkus.arc.tck.porting;
 
 import java.lang.annotation.Annotation;
+import java.util.HashMap;
+import java.util.Map;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.spi.Context;
@@ -15,17 +17,19 @@ import io.quarkus.arc.ManagedContext;
 
 public class ContextsImpl implements Contexts<Context> {
 
-    private InjectableContext.ContextState savedState;
+    // volatile is just a precaution in case some (future) TCK test attempts to use this in between multiple threads
+    private volatile Map<Context, InjectableContext.ContextState> contextStateMap = new HashMap();
 
     @Override
     public void setActive(Context context) {
-        ((ManagedContext) context).activate(savedState);
-        savedState = null;
+        // remove the context state we potentially stored, else use null to initiate fresh context
+        ((ManagedContext) context).activate(contextStateMap.remove(context));
     }
 
     @Override
     public void setInactive(Context context) {
-        savedState = ((ManagedContext) context).getState();
+        // save the state of the context
+        contextStateMap.put(context, ((ManagedContext) context).getState());
         ((ManagedContext) context).deactivate();
     }
 

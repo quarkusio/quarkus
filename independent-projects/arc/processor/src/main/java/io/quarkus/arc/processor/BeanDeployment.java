@@ -264,7 +264,7 @@ public class BeanDeployment {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         this.beans.addAll(
                 findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations.values(), stereotypes.keySet()), observers,
-                        injectionPoints, jtaCapabilities, strictCompatibility));
+                        injectionPoints, jtaCapabilities));
         // Note that we use unmodifiable views because the underlying collections may change in the next phase
         // E.g. synthetic beans are added and unused interceptors removed
         buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
@@ -892,7 +892,7 @@ public class BeanDeployment {
     }
 
     private List<BeanInfo> findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
-            List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities, boolean strictCompatibility) {
+            List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities) {
 
         Set<ClassInfo> beanClasses = new HashSet<>();
         Set<MethodInfo> producerMethods = new HashSet<>();

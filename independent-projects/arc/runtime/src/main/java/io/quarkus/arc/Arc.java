@@ -12,27 +12,37 @@ public final class Arc {
 
     private static final AtomicReference<ArcContainerImpl> INSTANCE = new AtomicReference<>();
 
+    /**
+     * Initializes {@link ArcContainer} with default settings.
+     * This is equal to using {@code Arc#initialize(ArcInitConfig.INSTANCE)}
+     *
+     * @return {@link ArcContainer} instance with default configuration
+     */
     public static ArcContainer initialize() {
-        return initialize(null);
+        return initialize(ArcInitConfig.INSTANCE);
     }
 
     /**
+     * Deprecated, will be removed in future iterations.
+     * Users are encouraged to use {@link #initialize(ArcInitConfig)} instead.
      *
      * @param currentContextFactory
      * @return the initialized container
      */
+    @Deprecated(since = "3.0", forRemoval = true)
     public static ArcContainer initialize(CurrentContextFactory currentContextFactory) {
-        return initialize(currentContextFactory, false);
+        return initialize(ArcInitConfig.builder().setCurrentContextFactory(currentContextFactory).build());
     }
 
-    public static ArcContainer initialize(CurrentContextFactory currentContextFactory, boolean strictMode) {
+    public static ArcContainer initialize(ArcInitConfig arcInitConfig) {
         ArcContainerImpl container = INSTANCE.get();
         if (container == null) {
             synchronized (INSTANCE) {
                 container = INSTANCE.get();
                 if (container == null) {
                     // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
-                    container = new ArcContainerImpl(currentContextFactory, strictMode);
+                    container = new ArcContainerImpl(arcInitConfig.getCurrentContextFactory(),
+                            arcInitConfig.isStrictCompatibility());
                     INSTANCE.set(container);
                     container.init();
                 }

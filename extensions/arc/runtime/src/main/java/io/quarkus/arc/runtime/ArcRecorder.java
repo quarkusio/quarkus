@@ -15,6 +15,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ArcInitConfig;
 import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableBean.Kind;
@@ -43,8 +44,9 @@ public class ArcRecorder {
     public ArcContainer initContainer(ShutdownContext shutdown, RuntimeValue<CurrentContextFactory> currentContextFactory,
             boolean strictCompatibility)
             throws Exception {
-        ArcContainer container = Arc.initialize(currentContextFactory != null ? currentContextFactory.getValue() : null,
-                strictCompatibility);
+        ArcContainer container = Arc.initialize(ArcInitConfig.builder()
+                .setCurrentContextFactory(currentContextFactory != null ? currentContextFactory.getValue() : null)
+                .setStrictCompatibility(strictCompatibility).build());
         shutdown.addShutdownTask(new Runnable() {
             @Override
             public void run() {

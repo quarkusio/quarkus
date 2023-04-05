@@ -63,14 +63,21 @@ public enum QuarkusContextStorage implements ContextStorage {
         if (toAttach == beforeAttach) {
             return Scope.noop();
         }
-
         vertxContext.putLocal(OTEL_CONTEXT, toAttach);
         OpenTelemetryUtil.setMDCData(toAttach, vertxContext);
+        //        System.out.println(Thread.currentThread().getName() + " UPDATE from " +
+        //                Span.fromContext(beforeAttach).getSpanContext().getSpanId()
+        //                + " to " + Span.fromContext(toAttach).getSpanContext().getSpanId());
+        //        new Exception().printStackTrace();
 
         return new Scope() {
 
             @Override
             public void close() {
+                //                System.out.println(Thread.currentThread().getName() + " REVERT from actual " +
+                //                        Span.fromContext(getContext(vertxContext)).getSpanContext().getSpanId() + ", expected "
+                //                        + Span.fromContext(toAttach).getSpanContext().getSpanId()
+                //                        + ", to " + Span.fromContext(beforeAttach).getSpanContext().getSpanId());
                 if (getContext(vertxContext) != toAttach) {
                     log.warn("Context in storage not the expected context, Scope.close was not called correctly");
                 }

@@ -18,6 +18,7 @@ import io.smallrye.graphql.execution.datafetcher.DefaultDataFetcher;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.transformation.AbstractDataFetcherException;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -90,14 +91,21 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
                 resultBuilder.clearErrors().data(null).error(new AbortExecutionException(e));
                 return (T) resultBuilder.build();
             } catch (Throwable ex) {
-                eventEmitter.fireOnDataFetchError(c, ex);
                 throw ex;
             }
         });
 
         // Here call blocking with context
         BlockingHelper.runBlocking(vc, contextualCallable, result);
-        return (T) result.future().toCompletionStage();
+
+        return (T) Uni.createFrom().completionStage(result.future().toCompletionStage()).onItemOrFailure()
+                .invoke((item, error) -> {
+                    if (item != null) {
+                        eventEmitter.fireAfterDataFetch(c);
+                    } else {
+                        eventEmitter.fireOnDataFetchError(c, error);
+                    }
+                }).subscribeAsCompletionStage();
     }
 
     @SuppressWarnings("unchecked")

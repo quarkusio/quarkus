@@ -5,7 +5,13 @@ import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.cfg.spi.DomainDataRegionBuildingContext;
 import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
 import org.hibernate.cache.internal.DefaultCacheKeysFactory;
-import org.hibernate.cache.spi.*;
+import org.hibernate.cache.spi.CacheKeysFactory;
+import org.hibernate.cache.spi.CacheTransactionSynchronization;
+import org.hibernate.cache.spi.DomainDataRegion;
+import org.hibernate.cache.spi.QueryResultsRegion;
+import org.hibernate.cache.spi.Region;
+import org.hibernate.cache.spi.RegionFactory;
+import org.hibernate.cache.spi.TimestampsRegion;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.support.RegionNameQualifier;
 import org.hibernate.cfg.AvailableSettings;
@@ -15,7 +21,14 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.jboss.logging.Logger;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 public final class QuarkusInfinispanRegionFactory implements RegionFactory {
 
@@ -25,7 +38,7 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
     public static final String OBJECT_COUNT_SUFFIX = ".memory.object-count";
     public static final String MAX_IDLE_SUFFIX = ".expiration.max-idle";
 
-    private final Map<String, InternalCache> caches = new HashMap<>();
+    private final Map<String, InternalCache> caches = new ConcurrentHashMap<>();
 
     private SessionFactoryOptions settings;
     private CacheKeysFactory cacheKeysFactory;
@@ -35,14 +48,15 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
 
     private Time.MillisService regionTimeService;
     private Time.NanosService cacheTimeService;
+    private final Supplier<Executor> cacheExecutorSupplier;
 
+    @Deprecated
     public QuarkusInfinispanRegionFactory() {
+        this(null);
     }
 
-    // Required by Hibernate
-    @SuppressWarnings({"UnusedParameters", "unused"})
-    public QuarkusInfinispanRegionFactory(Properties props) {
-        this();
+    public QuarkusInfinispanRegionFactory(Supplier<Executor> cacheExecutorSupplier) {
+        this.cacheExecutorSupplier = cacheExecutorSupplier;
     }
 
     @Override
@@ -143,11 +157,20 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
             if (cache == null) {
                 final InternalCacheConfig userDefinedCacheConfig = cacheConfigs.get(cacheName);
                 final InternalCacheConfig cacheConfig = userDefinedCacheConfig == null ? defaultDomainCacheConfig() : userDefinedCacheConfig;
-                cache = new CaffeineCache(cacheName, cacheConfig, this.cacheTimeService);
+                cache = new CaffeineCache(cacheName, cacheConfig, this.cacheTimeService, getCacheExecutor());
             }
 
             return cache;
         });
+    }
+
+    private Executor getCacheExecutor() {
+        if (this.cacheExecutorSupplier == null) {
+            return null;
+        }
+        else {
+            return this.cacheExecutorSupplier.get();
+        }
     }
 
     @Override

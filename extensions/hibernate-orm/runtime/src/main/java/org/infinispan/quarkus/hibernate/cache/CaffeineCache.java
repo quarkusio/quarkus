@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -28,7 +29,7 @@ final class CaffeineCache implements InternalCache {
     private final Cache cache;
     private final String cacheName;
 
-    CaffeineCache(String cacheName, InternalCacheConfig config, Time.NanosService nanosTimeService) {
+    CaffeineCache(String cacheName, InternalCacheConfig config, Time.NanosService nanosTimeService, Executor cacheExecutor) {
         Duration maxIdle = config.maxIdle;
         long objectCount = config.objectCount;
 
@@ -42,6 +43,9 @@ final class CaffeineCache implements InternalCache {
 
         if (objectCount >= 0) {
             cacheBuilder.maximumSize(objectCount);
+        }
+        if (cacheExecutor != null) {
+            cacheBuilder.executor(cacheExecutor);
         }
 
         this.cache = cacheBuilder.build();

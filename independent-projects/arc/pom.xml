@@ -35,31 +35,33 @@
     </scm>
 
     <properties>
-        <angus-activation.version>1.0.0</angus-activation.version>
-        <expressly.version>5.0.0</expressly.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
-        <!-- Versions -->
+
+        <!-- specification versions -->
         <version.cdi>4.0.1</version.cdi>
+        <version.jakarta-annotation>2.1.1</version.jakarta-annotation>
+        <version.jpa>3.0.0</version.jpa>
         <version.jta>2.0.1</version.jta>
+        <!-- main versions -->
+        <version.gizmo>1.6.0.Final</version.gizmo>
         <version.jandex>3.0.5</version.jandex>
+        <version.jboss-logging>3.5.0.Final</version.jboss-logging>
+        <version.mutiny>2.1.0</version.mutiny>
+        <!-- test versions -->
+        <version.assertj>3.24.2</version.assertj>
         <version.junit5>5.9.2</version.junit5>
         <version.kotlin>1.8.10</version.kotlin>
         <version.kotlin-coroutines>1.6.4</version.kotlin-coroutines>
-        <version.maven>3.8.8</version.maven>
-        <version.assertj>3.24.2</version.assertj>
-        <version.jboss-logging>3.5.0.Final</version.jboss-logging>
-        <version.jakarta-annotation>2.1.1</version.jakarta-annotation>
-        <version.gizmo>1.6.0.Final</version.gizmo>
-        <version.jpa>3.0.0</version.jpa>
-        <version.mutiny>2.1.0</version.mutiny>
+        <version.mockito>5.2.0</version.mockito>
+        <!-- TCK versions -->
         <version.arquillian>1.7.0.Alpha14</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>
         <version.cdi-tck>4.0.9</version.cdi-tck>
         <version.junit4>4.13.2</version.junit4>
-
+        <!-- Maven plugin versions -->
         <version.compiler.plugin>3.11.0</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0</version.surefire.plugin>
@@ -139,27 +141,6 @@
                 <type>pom</type>
             </dependency>
 
-
-            <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-plugin-api</artifactId>
-                <version>${version.maven}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.maven.plugin-tools</groupId>
-                <artifactId>maven-plugin-annotations</artifactId>
-                <version>${version.maven}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-core</artifactId>
-                <version>${version.maven}</version>
-                <scope>provided</scope>
-            </dependency>
 
             <dependency>
                 <groupId>org.jboss.logging</groupId>

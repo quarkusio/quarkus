@@ -71,7 +71,7 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
                         .invoke(new NextAroundInvokeInvocationContext(currentPosition + 1, parameters));
             } else {
                 // Invoke the target method
-                return metadata.aroundInvokeForward.apply(this);
+                return metadata.aroundInvokeForward.apply(target, this);
             }
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();

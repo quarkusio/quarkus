@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.spi.Context;
@@ -231,8 +231,7 @@ public final class MethodDescriptors {
             String.class);
 
     public static final MethodDescriptor INTERCEPTED_METHOD_METADATA_CONSTRUCTOR = MethodDescriptor.ofConstructor(
-            InterceptedMethodMetadata.class,
-            List.class, Method.class, Set.class, Function.class);
+            InterceptedMethodMetadata.class, List.class, Method.class, Set.class, BiFunction.class);
 
     public static final MethodDescriptor CREATIONAL_CTX_HAS_DEPENDENT_INSTANCES = MethodDescriptor.ofMethod(
             CreationalContextImpl.class,

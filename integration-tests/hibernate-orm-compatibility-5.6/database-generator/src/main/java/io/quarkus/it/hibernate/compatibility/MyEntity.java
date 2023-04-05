@@ -8,6 +8,7 @@ import javax.persistence.Id;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,8 @@ public class MyEntity {
     public UUID uuid;
 
     public Instant instant;
+
+    public OffsetTime offsetTime;
 
     public OffsetDateTime offsetDateTime;
 

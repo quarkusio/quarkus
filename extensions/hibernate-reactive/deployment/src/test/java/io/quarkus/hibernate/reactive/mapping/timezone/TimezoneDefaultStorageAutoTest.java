@@ -23,9 +23,7 @@ public class TimezoneDefaultStorageAutoTest extends AbstractTimezoneDefaultStora
     @Test
     public void schema() {
         assertThat(SchemaUtil.getColumnNames(ormSessionFactory, EntityWithTimezones.class))
-                .contains("zonedDateTime_tz", "offsetDateTime_tz")
-                // For some reason we don't get a TZ column for OffsetTime
-                .doesNotContain("offsetTime_tz");
+                .contains("zonedDateTime_tz", "offsetDateTime_tz", "offsetTime_tz");
         assertThat(SchemaUtil.getColumnTypeName(ormSessionFactory, EntityWithTimezones.class, "zonedDateTime"))
                 .isEqualTo("TIMESTAMP_UTC");
         assertThat(SchemaUtil.getColumnTypeName(ormSessionFactory, EntityWithTimezones.class, "offsetDateTime"))
@@ -36,9 +34,10 @@ public class TimezoneDefaultStorageAutoTest extends AbstractTimezoneDefaultStora
     @RunOnVertxContext
     public void persistAndLoad(UniAsserter asserter) {
         // Native storage is not supported with PostgreSQL, so we'll effectively use COLUMN.
-        // For some reason column storage preserves the offset, but not the zone ID.
         assertPersistedThenLoadedValues(asserter,
+                // Column storage preserves the offset, but not the zone ID: https://hibernate.atlassian.net/browse/HHH-16289
                 PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(PERSISTED_ZONED_DATE_TIME.getOffset()),
-                PERSISTED_OFFSET_DATE_TIME);
+                PERSISTED_OFFSET_DATE_TIME,
+                PERSISTED_OFFSET_TIME);
     }
 }

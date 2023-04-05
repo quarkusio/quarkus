@@ -25,7 +25,7 @@ public class TimezoneDefaultStorageNormalizeUtcTest extends AbstractTimezoneDefa
     @Test
     public void schema() {
         assertThat(SchemaUtil.getColumnNames(ormSessionFactory, EntityWithTimezones.class))
-                .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz");
+                .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz", "offsetTime_tz");
         assertThat(SchemaUtil.getColumnTypeName(ormSessionFactory, EntityWithTimezones.class, "zonedDateTime"))
                 .isEqualTo("TIMESTAMP_UTC");
         assertThat(SchemaUtil.getColumnTypeName(ormSessionFactory, EntityWithTimezones.class, "offsetDateTime"))
@@ -37,6 +37,7 @@ public class TimezoneDefaultStorageNormalizeUtcTest extends AbstractTimezoneDefa
     public void persistAndLoad(UniAsserter asserter) {
         assertPersistedThenLoadedValues(asserter,
                 PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneOffset.UTC),
-                PERSISTED_OFFSET_DATE_TIME.withOffsetSameInstant(ZoneOffset.UTC));
+                PERSISTED_OFFSET_DATE_TIME.withOffsetSameInstant(ZoneOffset.UTC),
+                PERSISTED_OFFSET_TIME.withOffsetSameInstant(ZoneOffset.UTC));
     }
 }

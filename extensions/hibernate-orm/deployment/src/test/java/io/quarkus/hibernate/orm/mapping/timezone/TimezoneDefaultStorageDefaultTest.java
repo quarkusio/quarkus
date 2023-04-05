@@ -21,7 +21,7 @@ public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultSt
     @Test
     public void schema() throws Exception {
         assertThat(SchemaUtil.getColumnNames(sessionFactory, EntityWithTimezones.class))
-                .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz");
+                .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz", "offsetTime_tz");
         assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "zonedDateTime"))
                 .isEqualTo("TIMESTAMP_WITH_TIMEZONE");
         assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "offsetDateTime"))
@@ -31,8 +31,10 @@ public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultSt
     @Test
     public void persistAndLoad() {
         long id = persistWithValuesToTest();
-        // For some reason native storage (with H2 at least) preserves the offset, but not the zone ID.
-        assertLoadedValues(id, PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(PERSISTED_ZONED_DATE_TIME.getOffset()),
-                PERSISTED_OFFSET_DATE_TIME);
+        assertLoadedValues(id,
+                // Native storage preserves the offset, but not the zone ID: https://hibernate.atlassian.net/browse/HHH-16289
+                PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(PERSISTED_ZONED_DATE_TIME.getOffset()),
+                PERSISTED_OFFSET_DATE_TIME,
+                PERSISTED_OFFSET_TIME);
     }
 }

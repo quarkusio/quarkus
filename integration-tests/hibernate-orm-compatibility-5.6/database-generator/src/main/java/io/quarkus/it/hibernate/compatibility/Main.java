@@ -3,6 +3,8 @@ package io.quarkus.it.hibernate.compatibility;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -39,6 +41,8 @@ public class Main {
                 entity.duration = Duration.of(59, ChronoUnit.SECONDS);
                 entity.uuid = UUID.fromString("f49c6ba8-8d7f-417a-a255-d594dddf729f");
                 entity.instant = Instant.parse("2018-01-01T10:58:30.00Z");
+                entity.offsetTime = LocalTime.of(12, 58, 30, 0)
+                        .atOffset(ZoneOffset.ofHours(2));
                 entity.offsetDateTime = LocalDateTime.of(2018, 1, 1, 12, 58, 30, 0)
                         .atOffset(ZoneOffset.ofHours(2));
                 entity.zonedDateTime = LocalDateTime.of(2018, 1, 1, 12, 58, 30, 0)
@@ -68,6 +72,8 @@ public class Main {
                 checkEqual(createdEntity.duration, loadedEntity.duration);
                 checkEqual(createdEntity.uuid, loadedEntity.uuid);
                 checkEqual(createdEntity.instant, loadedEntity.instant);
+                checkEqual(createdEntity.offsetTime.withOffsetSameInstant(ZoneId.systemDefault().getRules().getOffset(Instant.now())),
+                        loadedEntity.offsetTime);
                 checkEqual(createdEntity.offsetDateTime.atZoneSameInstant(ZoneId.systemDefault()).toOffsetDateTime(),
                         loadedEntity.offsetDateTime);
                 checkEqual(createdEntity.zonedDateTime.withZoneSameInstant(ZoneId.systemDefault()), loadedEntity.zonedDateTime);

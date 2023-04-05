@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.mapping.timezone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.time.ZoneId;
 
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ public class TimezoneDefaultStorageNormalizeTest extends AbstractTimezoneDefault
     @Test
     public void schema() throws Exception {
         assertThat(SchemaUtil.getColumnNames(sessionFactory, EntityWithTimezones.class))
-                .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz");
+                .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz", "offsetTime_tz");
         assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "zonedDateTime"))
                 .isEqualTo("TIMESTAMP");
         assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "offsetDateTime"))
@@ -37,8 +38,11 @@ public class TimezoneDefaultStorageNormalizeTest extends AbstractTimezoneDefault
     @Test
     public void persistAndLoad() {
         long id = persistWithValuesToTest();
-        assertLoadedValues(id, PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneId.systemDefault()),
+        assertLoadedValues(id,
+                PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneId.systemDefault()),
                 PERSISTED_OFFSET_DATE_TIME.withOffsetSameInstant(
-                        ZoneId.systemDefault().getRules().getOffset(PERSISTED_OFFSET_DATE_TIME.toInstant())));
+                        ZoneId.systemDefault().getRules().getOffset(PERSISTED_OFFSET_DATE_TIME.toInstant())),
+                PERSISTED_OFFSET_TIME.withOffsetSameInstant(
+                        ZoneId.systemDefault().getRules().getOffset(Instant.now())));
     }
 }

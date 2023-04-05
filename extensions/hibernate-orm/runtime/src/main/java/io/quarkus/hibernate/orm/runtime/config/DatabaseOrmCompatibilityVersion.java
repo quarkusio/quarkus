@@ -40,6 +40,7 @@ public enum DatabaseOrmCompatibilityVersion {
                     // there is no setting for this, so the schema will be incompatible.
                     // Runtime (queries, persisting) should continue to work, though.
                     // https://github.com/hibernate/hibernate-orm/blob/6.2/migration-guide.adoc#timezone-and-offset-storage
+                    // https://github.com/hibernate/hibernate-orm/blob/6.2/migration-guide.adoc#ddl-offset-time
                     AvailableSettings.TIMEZONE_DEFAULT_STORAGE, "NORMALIZE"));
 
             if (dbKind.isPresent() && !usedToSupportUuid(dbKind.get())) {

@@ -39,12 +39,15 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.deployment.extension.Codestart;
 import io.quarkus.devui.deployment.extension.Extension;
+import io.quarkus.devui.deployment.jsonrpc.DevUIDatabindCodec;
 import io.quarkus.devui.runtime.DevUIRecorder;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
+import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.spi.DevUIContent;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
@@ -334,6 +337,8 @@ public class DevUIProcessor {
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap = jsonRPCMethodsBuildItem
                     .getExtensionMethodsMap();
 
+            DevConsoleManager.setGlobal(DevUIRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
+                    JsonMapper.Factory.deploymentLinker().createLinkData(new DevUIDatabindCodec.Factory()));
             recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap);
         }
     }

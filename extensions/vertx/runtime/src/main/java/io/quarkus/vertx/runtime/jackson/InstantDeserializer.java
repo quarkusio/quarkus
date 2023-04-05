@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 /**
  * Copied from {@code io.vertx.core.json.jackson.InstantDeserializer} as that class is package private
  */
-class InstantDeserializer extends JsonDeserializer<Instant> {
+public class InstantDeserializer extends JsonDeserializer<Instant> {
     @Override
     public Instant deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         String text = p.getText();

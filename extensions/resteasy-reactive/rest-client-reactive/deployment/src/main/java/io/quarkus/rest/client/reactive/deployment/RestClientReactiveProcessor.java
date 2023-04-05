@@ -467,6 +467,11 @@ class RestClientReactiveProcessor {
                                     && !ResteasyReactiveDotNames.PATH.equals(annotation.name())) {
                                 methodCreator.addAnnotation(annotation);
                             }
+                            if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                                // TODO should skip annotations like `@PathParam` / `@RestPath`, probably (?)
+                                short position = annotation.target().asMethodParameter().position();
+                                methodCreator.getParameterAnnotations(position).addAnnotation(annotation);
+                            }
                         }
 
                         ResultHandle result;

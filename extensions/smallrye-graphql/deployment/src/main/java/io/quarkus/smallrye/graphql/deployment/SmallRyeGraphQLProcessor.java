@@ -605,9 +605,9 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
         boolean activate = shouldActivateService(graphQLConfig.tracingEnabled,
-                capabilities.isPresent(Capability.OPENTRACING),
-                "quarkus-smallrye-opentracing",
-                Capability.OPENTRACING,
+                capabilities.isPresent(Capability.OPENTELEMETRY_TRACER),
+                "quarkus-opentelemetry",
+                Capability.OPENTELEMETRY_TRACER,
                 "quarkus.smallrye-graphql.tracing.enabled",
                 true);
         if (activate) {

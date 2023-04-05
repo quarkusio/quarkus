@@ -104,7 +104,7 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
 
         if (remoteHint) {
             output.info(
-                    "Use the 'plugin add' sub command and pass the location of any plugin listed above, or any remote location in the form of URL / GACTV pointing to a remote plugin.");
+                    "Use the 'plugin add' subcommand and pass the location of any plugin listed above, or any remote location in the form of URL / GACTV pointing to a remote plugin.");
         }
     }
 

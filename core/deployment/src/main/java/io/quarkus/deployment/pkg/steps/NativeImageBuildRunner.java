@@ -21,21 +21,24 @@ public abstract class NativeImageBuildRunner {
 
     private static final Logger log = Logger.getLogger(NativeImageBuildRunner.class);
 
+    private static GraalVM.Version graalVMVersion = null;
+
     public GraalVM.Version getGraalVMVersion() {
-        final GraalVM.Version graalVMVersion;
-        try {
-            String[] versionCommand = getGraalVMVersionCommand(Collections.singletonList("--version"));
-            log.debugf(String.join(" ", versionCommand).replace("$", "\\$"));
-            Process versionProcess = new ProcessBuilder(versionCommand)
-                    .redirectErrorStream(true)
-                    .start();
-            versionProcess.waitFor();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(versionProcess.getInputStream(), StandardCharsets.UTF_8))) {
-                graalVMVersion = GraalVM.Version.of(reader.lines());
+        if (graalVMVersion == null) {
+            try {
+                final String[] versionCommand = getGraalVMVersionCommand(Collections.singletonList("--version"));
+                log.debugf(String.join(" ", versionCommand).replace("$", "\\$"));
+                final Process versionProcess = new ProcessBuilder(versionCommand)
+                        .redirectErrorStream(true)
+                        .start();
+                versionProcess.waitFor();
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(versionProcess.getInputStream(), StandardCharsets.UTF_8))) {
+                    graalVMVersion = GraalVM.Version.of(reader.lines());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to get GraalVM version", e);
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get GraalVM version", e);
         }
         return graalVMVersion;
     }

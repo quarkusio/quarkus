@@ -1,6 +1,8 @@
 package io.quarkus.gradle.tasks;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -142,6 +144,11 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         // Caching and "up-to-date" checks depend on the inputs, this 'delete()' should ensure that the up-to-date
         // checks work against "clean" outputs, considering that the outputs depend on the package-type.
         getFileSystemOperations().delete(delete -> delete.delete(genDir));
+        try {
+            Files.createDirectories(genDir);
+        } catch (IOException e) {
+            throw new GradleException("Could not create directory " + genDir, e);
+        }
 
         ApplicationModel appModel = resolveAppModelForBuild();
         EffectiveConfig effectiveConfig = extension().buildEffectiveConfiguration(appModel.getAppArtifact());

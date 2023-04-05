@@ -24,7 +24,7 @@ public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultSt
     @Test
     public void schema() {
         assertThat(SchemaUtil.getColumnNames(ormSessionFactory, EntityWithTimezones.class))
-                .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz");
+                .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz", "offsetTime_tz");
         assertThat(SchemaUtil.getColumnTypeName(ormSessionFactory, EntityWithTimezones.class, "zonedDateTime"))
                 .isEqualTo("TIMESTAMP_UTC");
         assertThat(SchemaUtil.getColumnTypeName(ormSessionFactory, EntityWithTimezones.class, "offsetDateTime"))
@@ -37,6 +37,7 @@ public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultSt
         // Native storage is not supported with PostgreSQL, so we'll effectively use NORMALIZED_UTC.
         assertPersistedThenLoadedValues(asserter,
                 PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneOffset.UTC),
-                PERSISTED_OFFSET_DATE_TIME.withOffsetSameInstant(ZoneOffset.UTC));
+                PERSISTED_OFFSET_DATE_TIME.withOffsetSameInstant(ZoneOffset.UTC),
+                PERSISTED_OFFSET_TIME.withOffsetSameInstant(ZoneOffset.UTC));
     }
 }

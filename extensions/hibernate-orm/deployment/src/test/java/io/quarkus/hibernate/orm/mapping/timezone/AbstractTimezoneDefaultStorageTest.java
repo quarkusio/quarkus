@@ -32,18 +32,20 @@ public class AbstractTimezoneDefaultStorageTest {
 
     protected long persistWithValuesToTest() {
         return QuarkusTransaction.requiringNew().call(() -> {
-            var entity = new EntityWithTimezones(PERSISTED_ZONED_DATE_TIME, PERSISTED_OFFSET_DATE_TIME);
+            var entity = new EntityWithTimezones(PERSISTED_ZONED_DATE_TIME, PERSISTED_OFFSET_DATE_TIME, PERSISTED_OFFSET_TIME);
             session.persist(entity);
             return entity.id;
         });
     }
 
-    protected void assertLoadedValues(long id, ZonedDateTime expectedZonedDateTime, OffsetDateTime expectedOffsetDateTime) {
+    protected void assertLoadedValues(long id, ZonedDateTime expectedZonedDateTime, OffsetDateTime expectedOffsetDateTime,
+            OffsetTime expectedOffsetTime) {
         QuarkusTransaction.requiringNew().run(() -> {
             var entity = session.find(EntityWithTimezones.class, id);
             SoftAssertions.assertSoftly(assertions -> {
                 assertions.assertThat(entity).extracting("zonedDateTime").isEqualTo(expectedZonedDateTime);
                 assertions.assertThat(entity).extracting("offsetDateTime").isEqualTo(expectedOffsetDateTime);
+                assertions.assertThat(entity).extracting("offsetTime").isEqualTo(expectedOffsetTime);
             });
         });
     }

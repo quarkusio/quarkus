@@ -13,7 +13,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
  * Activates the native-image features included in the module
  * org.hibernate:hibernate-graalvm.
  */
-@BuildSteps
+@BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public class GraalVMFeatures {
 
     @BuildStep

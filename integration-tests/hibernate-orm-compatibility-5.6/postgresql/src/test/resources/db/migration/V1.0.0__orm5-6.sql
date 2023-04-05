@@ -59,6 +59,7 @@ CREATE TABLE public.myentity (
     intarray bytea,
     myenum integer,
     offsetdatetime timestamp without time zone,
+    offsettime time without time zone,
     stringlist bytea,
     uuid uuid,
     zoneddatetime timestamp without time zone
@@ -107,9 +108,9 @@ ALTER TABLE public.seqgendefallocsize OWNER TO hibernate_orm_test;
 -- Data for Name: myentity; Type: TABLE DATA; Schema: public; Owner: hibernate_orm_test
 --
 
-COPY public.myentity (id, duration, instant, intarray, myenum, offsetdatetime, stringlist, uuid, zoneddatetime) FROM stdin;
-1	59000000000	2018-01-01 11:58:30	\\xaced0005757200025b494dba602676eab2a502000078700000000300000000000000010000002a	1	2018-01-01 11:58:30	\\xaced0005737200136a6176612e7574696c2e41727261794c6973747881d21d99c7619d03000149000473697a657870000000027704000000027400036f6e6574000374776f78	f49c6ba8-8d7f-417a-a255-d594dddf729f	2018-01-01 11:58:30
-2	\N	\N	\N	\N	\N	\N	\N	\N
+COPY public.myentity (id, duration, instant, intarray, myenum, offsetdatetime, offsettime, stringlist, uuid, zoneddatetime) FROM stdin;
+1	59000000000	2018-01-01 11:58:30	\\xaced0005757200025b494dba602676eab2a502000078700000000300000000000000010000002a	1	2018-01-01 11:58:30	12:58:30	\\xaced0005737200136a6176612e7574696c2e41727261794c6973747881d21d99c7619d03000149000473697a657870000000027704000000027400036f6e6574000374776f78	f49c6ba8-8d7f-417a-a255-d594dddf729f	2018-01-01 11:58:30
+2	\N	\N	\N	\N	\N	\N	\N	\N	\N
 \.
 
 

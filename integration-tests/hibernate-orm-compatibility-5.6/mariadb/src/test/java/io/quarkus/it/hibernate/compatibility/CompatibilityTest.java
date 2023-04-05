@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.is;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -80,6 +81,8 @@ public class CompatibilityTest {
         entity.uuid = UUID.fromString("f49c6ba8-8d7f-417a-a255-d594dddf729f");
         entity.instant = Instant.parse("2018-01-01T10:58:30.00Z");
         entity.intArray = new int[] { 0, 1, 42 };
+        entity.offsetTime = LocalTime.of(12, 58, 30, 0)
+                .atOffset(ZoneOffset.ofHours(2));
         entity.offsetDateTime = LocalDateTime.of(2018, 1, 1, 12, 58, 30, 0)
                 .atOffset(ZoneOffset.ofHours(2));
         entity.zonedDateTime = LocalDateTime.of(2018, 1, 1, 12, 58, 30, 0)
@@ -110,6 +113,16 @@ public class CompatibilityTest {
     @Test
     public void instant() {
         assertThat(findOld().instant).isEqualTo(Instant.parse("2018-01-01T10:58:30.00Z"));
+    }
+
+    // https://github.com/hibernate/hibernate-orm/blob/6.2/migration-guide.adoc#ddl-offset-time
+    @Test
+    public void offsetTime() {
+        assertThat(findOld().offsetTime)
+                .isEqualTo(LocalTime.of(12, 58, 30, 0)
+                        .atOffset(ZoneOffset.ofHours(2))
+                        // Hibernate ORM 5 used to normalize these values to the JVM TZ
+                        .withOffsetSameInstant(ZoneId.systemDefault().getRules().getOffset(Instant.now())));
     }
 
     // https://github.com/hibernate/hibernate-orm/blob/6.2/migration-guide.adoc#timezone-and-offset-storage

@@ -3,6 +3,7 @@ package io.quarkus.it.hibernate.compatibility;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -27,6 +28,8 @@ public class MyEntity {
     public UUID uuid;
 
     public Instant instant;
+
+    public OffsetTime offsetTime;
 
     public OffsetDateTime offsetDateTime;
 

@@ -15,7 +15,7 @@
     <name>Quarkus - Reactive Oracle Client - Deployment</name>
 
     <properties>
-        <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521:XE</reactive-oracledb.url>
+        <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521/FREEPDB1</reactive-oracledb.url>
     </properties>
 
     <dependencies>
@@ -131,7 +131,7 @@
                 </property>
             </activation>
             <properties>
-                <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521:XE</reactive-oracledb.url>
+                <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521/FREEPDB1</reactive-oracledb.url>
             </properties>
             <build>
                 <plugins>

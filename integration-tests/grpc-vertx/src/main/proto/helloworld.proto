@@ -40,6 +40,7 @@ package helloworld;
 service Greeter {
     // Sends a greeting
     rpc SayHello (HelloRequest) returns (HelloReply) {}
+    rpc ThreadName (HelloRequest) returns (HelloReply) {}
 }
 
 // The request message containing the user's name.

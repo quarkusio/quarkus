@@ -23,4 +23,9 @@ class HelloWorldVertxServiceTest extends HelloWorldNewServiceTestBase {
     protected int port() {
         return 8081;
     }
+
+    @Override
+    protected void checkVerticles() {
+        checkVerticles(vertx);
+    }
 }

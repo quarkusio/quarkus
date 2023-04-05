@@ -15,4 +15,10 @@ public class HelloWorldNewService extends MutinyGreeterGrpc.GreeterImplBase {
         return Uni.createFrom().item("Hello " + name)
                 .map(res -> HelloReply.newBuilder().setMessage(res).build());
     }
+
+    @Override
+    public Uni<HelloReply> threadName(HelloRequest request) {
+        return Uni.createFrom().item(Thread.currentThread().getName())
+                .map(res -> HelloReply.newBuilder().setMessage(res).build());
+    }
 }

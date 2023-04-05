@@ -23,4 +23,9 @@ class HelloWorldVertxServiceIT extends HelloWorldNewServiceTestBase {
     protected void close(Vertx vertx) {
         GRPCTestUtils.close(vertx);
     }
+
+    @Override
+    protected boolean skipEventloopTest() {
+        return true; // cannot know for sure if we have enough verticles
+    }
 }

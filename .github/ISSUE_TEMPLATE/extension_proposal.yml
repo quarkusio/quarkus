@@ -4,6 +4,7 @@ labels: [area/quarkiverse,kind/extension-proposal]
 title: "[Extension Proposal] "
 body:
   - type: textarea
+    id: description
     validations:
       required: true
     attributes:
@@ -13,6 +14,7 @@ body:
       value:
         Interested in this extension, please +1 via the emoji/reaction feature of GitHub (top right).
   - type: input
+    id: repository_name
     validations:
       required: true
     attributes:
@@ -22,6 +24,7 @@ body:
       value: quarkus-<YOUR_EXTENSION>
   
   - type: input
+    id: short_description
     validations:
       required: true
     attributes:
@@ -30,6 +33,7 @@ body:
         Please provide a short description (1 line) about this extension
         
   - type: input
+    id: repository_url
     validations:
       required: false
     attributes:
@@ -40,6 +44,7 @@ body:
         https://quarkiverse.github.io/quarkiverse-docs/<REPOSITORY_NAME>/dev/
 
   - type: textarea
+    id: repository_topics
     attributes:
       label: Repository Topics
       description: "To help other people find and contribute to your project, you can add topics to your repository related to your project's intended purpose, subject area, affinity groups, or other important qualities. They must include only lowercase alphanumeric characters or hyphens and cannot start with a hyphen and consist of 35 characters or less"
@@ -49,6 +54,7 @@ body:
         ...
 
   - type: textarea
+    id: team_members
     attributes:
       label: Team Members
       description: "Please list the team members that will lead the development of this extension. If you are simply proposing an extension for others to pick up, leave it blank"
@@ -56,6 +62,7 @@ body:
         - 
 
   - type: textarea
+    id: additional_context
     attributes:
       label: Additional context
       description: >

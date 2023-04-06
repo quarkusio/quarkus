@@ -6,10 +6,10 @@ import java.util.Optional;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
@@ -235,7 +235,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        @WithDefault("none")
+        @ConfigDocDefault("none")
         Optional<String> strategy();
     }
 

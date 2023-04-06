@@ -76,9 +76,9 @@ import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 public class OpenshiftProcessor {
 
     private static final int OPENSHIFT_PRIORITY = DEFAULT_PRIORITY;
-    private static final String OPENSHIFT_INTERNAL_REGISTRY = "image-registry.openshift-image-registry.svc:5000";
     private static final String DOCKERIO_REGISTRY = "docker.io";
     private static final String OPENSHIFT_V3_APP = "app";
+    private static final String ANY = null;
 
     @BuildStep
     public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenshiftConfig config,
@@ -113,10 +113,7 @@ public class OpenshiftProcessor {
             DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind(capabilities);
             if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
                 if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
-                    // Images stored in internal openshift registry use the following pattern:
-                    // 'image-registry.openshift-image-registry.svc:5000/{{ project name}}/{{ image name }}: {{image version }}.
-                    // So, we need warn users if group does not match currently selected project.
-                    containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(OPENSHIFT_INTERNAL_REGISTRY));
+                    //Don't need fallback namespace, we use local lookup instead.
                 } else {
                     containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(DOCKERIO_REGISTRY));
                 }
@@ -297,6 +294,9 @@ public class OpenshiftProcessor {
                                             .withSecret(e.getSecret()).withConfigmap(e.getConfigMap()).withField(e.getField())
                                             .build())));
                 });
+
+        // Enalbe local lookup policy for all image streams
+        result.add(new DecoratorBuildItem(OPENSHIFT, new EnableImageStreamLocalLookupPolicyDecorator()));
 
         // Handle custom s2i builder images
         baseImage.map(BaseImageInfoBuildItem::getImage).ifPresent(builderImage -> {

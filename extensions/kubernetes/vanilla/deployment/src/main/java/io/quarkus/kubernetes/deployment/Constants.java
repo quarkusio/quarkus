@@ -36,6 +36,8 @@ public final class Constants {
     static final String S2I = "s2i";
     static final String DEFAULT_S2I_IMAGE_NAME = "s2i-java"; //refers to the Dekorate default image.
 
+    static final String OPENSHIFT_INTERNAL_REGISTRY = "image-registry.openshift-image-registry.svc:5000";
+
     static final String KNATIVE = "knative";
     static final String KNATIVE_SERVICE = "Service";
     static final String KNATIVE_SERVICE_GROUP = "serving.knative.dev";

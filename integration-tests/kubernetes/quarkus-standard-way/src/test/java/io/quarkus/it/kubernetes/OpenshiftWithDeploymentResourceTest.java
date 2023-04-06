@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.openshift.api.model.ImageStream;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
@@ -76,13 +77,22 @@ public class OpenshiftWithDeploymentResourceTest {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
                             assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getImage())
-                                        .isEqualTo(
-                                                "image-registry.openshift-image-registry.svc:5000/testme/openshift-with-deployment-resource:0.1-SNAPSHOT");
+                                        .isEqualTo("testme/openshift-with-deployment-resource:0.1-SNAPSHOT");
                             });
                         });
                     });
                 });
             });
         });
+
+        assertThat(kubernetesList).filteredOn(r -> r instanceof ImageStream && r.getMetadata().getName().equals(NAME))
+                .singleElement().satisfies(r -> {
+                    assertThat(r).isInstanceOfSatisfying(ImageStream.class, i -> {
+                        assertThat(i.getSpec()).satisfies(spec -> {
+                            assertThat(spec.getLookupPolicy().getLocal()).isEqualTo(true);
+                        });
+                    });
+                });
+
     }
 }

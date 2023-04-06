@@ -22,6 +22,9 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             config.setApplicationType(ApplicationType.WEB_APP);
             return Uni.createFrom().item(config);
         }
+        if (context.request().path().endsWith("/null-tenant")) {
+            return null;
+        }
         return Uni.createFrom().nullItem();
     }
 

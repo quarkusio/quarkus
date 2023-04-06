@@ -10,7 +10,7 @@ public class OracleLifecycleManager implements QuarkusTestResourceLifecycleManag
     @Override
     public Map<String, String> start() {
         Map<String, String> properties = new HashMap<>();
-        properties.put("quarkus.datasource.oracle.jdbc.url", "jdbc:oracle:thin:@localhost:1521/XE");
+        properties.put("quarkus.datasource.oracle.jdbc.url", "jdbc:oracle:thin:@localhost:1521/FREEPDB1");
         properties.put("quarkus.datasource.oracle.password", "quarkus");
         properties.put("quarkus.datasource.oracle.username", "SYSTEM");
         properties.put("quarkus.hibernate-orm.oracle.database.generation", "drop-and-create");

@@ -14,7 +14,7 @@
     <description>Module that contains JPA related tests running with the Oracle database</description>
 
     <properties>
-        <oracledb.url>jdbc:oracle:thin:@localhost:1521/XE</oracledb.url>
+        <oracledb.url>jdbc:oracle:thin:@localhost:1521/FREEPDB1</oracledb.url>
     </properties>
 
     <dependencies>
@@ -187,7 +187,7 @@
                 </property>
             </activation>
             <properties>
-                <oracledb.url>jdbc:oracle:thin:@localhost:1521/XE</oracledb.url>
+                <oracledb.url>jdbc:oracle:thin:@localhost:1521/FREEPDB1</oracledb.url>
             </properties>
             <build>
                 <plugins>

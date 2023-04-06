@@ -16,7 +16,7 @@ public class ReactiveOracleReloadTest {
                     .add(new StringAsset("quarkus.datasource.db-kind=oracle\n" +
                             "quarkus.datasource.username=SYSTEM\n" +
                             "quarkus.datasource.password=hibernate_orm_test\n" +
-                            "quarkus.datasource.reactive.url=vertx-reactive:oracle:thin:@localhost:2115:XE"),
+                            "quarkus.datasource.reactive.url=vertx-reactive:oracle:thin:@localhost:2115/FREEPDB1"),
                             "application.properties"));
 
     @Test

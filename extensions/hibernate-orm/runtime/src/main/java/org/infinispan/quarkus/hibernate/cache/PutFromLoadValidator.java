@@ -120,8 +120,8 @@ public final class PutFromLoadValidator {
         this.cache = cache;
         this.regionName = regionName;
         this.nextTimestamp = regionFactory::nextTimestamp;
-
         this.pendingPuts = Caffeine.newBuilder()
+                .executor(Runnable::run)
                 .expireAfterAccess(Duration.ofMillis(EXPIRATION_PERIOD))
                 .build();
     }

@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import org.jboss.logging.Logger;
+
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
@@ -19,6 +21,7 @@ import io.vertx.ext.web.RoutingContext;
 
 public class CORSFilter implements Handler<RoutingContext> {
 
+    private static final Logger LOG = Logger.getLogger(CORSFilter.class);
     private static final Pattern COMMA_SEPARATED_SPLIT_REGEX = Pattern.compile("\\s*,\\s*");
 
     // This is set in the recorder at runtime.
@@ -214,10 +217,12 @@ public class CORSFilter implements Handler<RoutingContext> {
             }
 
             if (!allowsOrigin) {
+                LOG.debug("Origin is not allowed");
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid origin");
                 response.end();
             } else if (request.method().equals(HttpMethod.OPTIONS) && (requestedHeaders != null || requestedMethods != null)) {
+                LOG.debug("Preflight request has completed");
                 if (corsConfig.accessControlMaxAge.isPresent()) {
                     response.putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
                             String.valueOf(corsConfig.accessControlMaxAge.get().getSeconds()));
@@ -233,6 +238,9 @@ public class CORSFilter implements Handler<RoutingContext> {
         //fast path check, when everything is the same
         if (origin.startsWith(request.scheme())) {
             if (!substringMatch(origin, request.scheme().length(), "://", false)) {
+                LOG.debugf(
+                        "Same origin check has failed, the origin is not a substring of the request URI. Request URI: %s, origin: %s",
+                        request.absoluteURI(), origin);
                 return false;
             }
             if (substringMatch(origin, request.scheme().length() + 3, request.host(), true)) {
@@ -253,9 +261,14 @@ public class CORSFilter implements Handler<RoutingContext> {
         if (!originUri.getPath().isEmpty()) {
             //origin should not contain a path component
             //just reject it in this case
+            LOG.debugf("Same origin check has failed as the origin contains a path component. Request URI: %s, origin: %s",
+                    request.absoluteURI(), origin);
             return false;
         }
         if (!baseUri.getHost().equals(originUri.getHost())) {
+            LOG.debugf("Same origin check has failed, the host values do not match. Request URI: %s, origin: %s",
+                    request.absoluteURI(),
+                    origin);
             return false;
         }
         if (baseUri.getPort() == originUri.getPort()) {
@@ -280,6 +293,7 @@ public class CORSFilter implements Handler<RoutingContext> {
                 }
             }
         }
+        LOG.debugf("Same origin check has failed. Request URI: %s, origin: %s", request.absoluteURI(), origin);
         return false;
     }
 

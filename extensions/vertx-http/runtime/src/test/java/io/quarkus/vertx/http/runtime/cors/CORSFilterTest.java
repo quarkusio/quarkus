@@ -76,6 +76,17 @@ public class CORSFilterTest {
     }
 
     @Test
+    public void sameOriginPublicWebAddressTest() {
+        var request = Mockito.mock(HttpServerRequest.class);
+        Mockito.when(request.scheme()).thenReturn("https");
+        Mockito.when(request.host()).thenReturn("stage.code.quarkus.io");
+        Mockito.when(request.absoluteURI()).thenReturn("https://stage.code.quarkus.io/api/project");
+        Assertions.assertFalse(isSameOrigin(request, "http://localhost"));
+        Assertions.assertFalse(isSameOrigin(request, "https://code.quarkus.io"));
+        Assertions.assertTrue(isSameOrigin(request, "https://stage.code.quarkus.io"));
+    }
+
+    @Test
     public void testSubstringMatches() {
         Assertions.assertTrue(substringMatch("localhost", 0, "local", false));
         Assertions.assertFalse(substringMatch("localhost", 0, "local", true));

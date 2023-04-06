@@ -94,7 +94,7 @@
         <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2019-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>
-        <oracle.image>docker.io/gvenzl/oracle-xe:21-slim-faststart</oracle.image>
+        <oracle.image>docker.io/gvenzl/oracle-free:23.2.0-faststart</oracle.image>
         <mongo.image>docker.io/mongo:4.4</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->

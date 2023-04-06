@@ -29,7 +29,11 @@ public class OracleDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(OracleDevServicesProcessor.class);
 
-    public static final String IMAGE = "gvenzl/oracle-xe";
+    /**
+     * This is the container name as defined by the Testcontainer's OracleContainer:
+     * does not necessarily match the container name that Quarkus will default to use.
+     */
+    public static final String ORIGINAL_IMAGE_NAME = "gvenzl/oracle-xe";
     public static final int PORT = 1521;
 
     @BuildStep
@@ -91,7 +95,7 @@ public class OracleDevServicesProcessor {
                 boolean useSharedNetwork) {
             super(DockerImageName
                     .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")))
-                    .asCompatibleSubstituteFor(OracleDevServicesProcessor.IMAGE));
+                    .asCompatibleSubstituteFor(OracleDevServicesProcessor.ORIGINAL_IMAGE_NAME));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
         }

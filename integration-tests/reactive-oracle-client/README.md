@@ -23,7 +23,7 @@ Authentication parameters might need to be changed in the Quarkus configuration 
 ### Starting Oracle via docker
 
 ```
-docker run --memory-swappiness=0 --rm=true --name=HibernateTestingOracle -p 1521:1521 -e ORACLE_PASSWORD=hibernate_orm_test docker.io/gvenzl/oracle-xe:21-slim-faststart
+docker run --rm=true --name=HibernateTestingOracle -p 1521:1521 -e ORACLE_PASSWORD=hibernate_orm_test docker.io/gvenzl/oracle-free:23.2.0-faststart
 ```
 
 This will start a local instance with the configuration matching the parameters used by the integration tests of this module.

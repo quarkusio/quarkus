@@ -5,7 +5,6 @@ import static io.quarkus.kubernetes.deployment.Constants.KIND;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
-import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,7 +29,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesList;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
-import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -160,7 +158,6 @@ public class KubernetesDeployer {
             ContainerImageConfig containerImageConfig) {
         final DeploymentTargetEntry selectedTarget;
 
-        boolean checkForNamespaceGroupAlignment = false;
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getExplictilyDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty()) {
             selectedTarget = targets.getEntriesSortedByPriority().get(0);
@@ -184,22 +181,6 @@ public class KubernetesDeployer {
             }
         }
 
-        if (OPENSHIFT.equals(selectedTarget.getName())) {
-            // We should ensure that we have image group and namespace alignment we are not using deployment triggers via DeploymentConfig.
-            if (!targets.getEntriesSortedByPriority().get(0).getKind().equals("DeploymentConfig")) {
-                checkForNamespaceGroupAlignment = true;
-            }
-        }
-
-        //This might also be applicable in other scenarios too (e.g. Knative on Openshift), so we might need to make it slightly more generic.
-        if (checkForNamespaceGroupAlignment) {
-            Config config = Config.autoConfigure(null);
-            if (config.getNamespace() != null && !config.getNamespace().equals(containerImageInfo.getGroup())) {
-                log.warn("An openshift deployment was requested, but the container image group:" + containerImageInfo.getGroup()
-                        + " is not aligned with the currently selected project:" + config.getNamespace() + "."
-                        + "it is strongly advised to align them, or else the image might not be reachable.");
-            }
-        }
         return selectedTarget;
     }
 

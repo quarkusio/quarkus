@@ -77,8 +77,7 @@ public class OpenshiftWithCustomNameTest {
                             assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getImage())
                                         .isEqualTo(
-                                                "image-registry.openshift-image-registry.svc:5000/testme/" + CUSTOM_NAME
-                                                        + ":0.1-SNAPSHOT");
+                                                "testme/" + CUSTOM_NAME + ":0.1-SNAPSHOT");
                             });
                         });
                     });

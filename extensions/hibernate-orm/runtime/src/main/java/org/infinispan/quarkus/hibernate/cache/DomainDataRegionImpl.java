@@ -1,6 +1,10 @@
 package org.infinispan.quarkus.hibernate.cache;
 
-import org.hibernate.cache.cfg.spi.*;
+import org.hibernate.cache.cfg.spi.CollectionDataCachingConfig;
+import org.hibernate.cache.cfg.spi.DomainDataCachingConfig;
+import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
+import org.hibernate.cache.cfg.spi.EntityDataCachingConfig;
+import org.hibernate.cache.cfg.spi.NaturalIdDataCachingConfig;
 import org.hibernate.cache.spi.CacheKeysFactory;
 import org.hibernate.cache.spi.DomainDataRegion;
 import org.hibernate.cache.spi.ExtendedStatisticsSupport;
@@ -79,7 +83,7 @@ final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatistics
         return new ReadWriteEntityDataAccess(internal, this);
     }
 
-    private <T extends DomainDataCachingConfig> T findConfig(List<T> configs, NavigableRole role) {
+    private static <T extends DomainDataCachingConfig> T findConfig(List<T> configs, NavigableRole role) {
         return configs.stream()
                 .filter(c -> c.getNavigableRole().equals(role))
                 .findFirst()

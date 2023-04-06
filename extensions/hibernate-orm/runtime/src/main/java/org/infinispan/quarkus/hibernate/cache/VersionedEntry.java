@@ -12,17 +12,17 @@ import java.util.function.Predicate;
 
 final class VersionedEntry {
 
-    private static final Logger log = Logger.getLogger(VersionedEntry.class);
-    private static final boolean trace = log.isTraceEnabled();
+    static final Logger log = Logger.getLogger(VersionedEntry.class);
+    static final boolean trace = log.isTraceEnabled();
 
     public static final Duration TOMBSTONE_LIFESPAN = Duration.ofSeconds(60);
 
     static final ExcludeEmptyFilter EXCLUDE_EMPTY_VERSIONED_ENTRY = new ExcludeEmptyFilter();
 
-    private final Object value;
-    private final Object version;
-    private final long timestamp;
-    private Duration lifespan = Duration.ofSeconds(Long.MAX_VALUE);
+    final Object value;
+    final Object version;
+    final long timestamp;
+    Duration lifespan = Duration.ofSeconds(Long.MAX_VALUE);
 
     VersionedEntry(Object value, Object version, long timestamp) {
         this.value = value;
@@ -153,6 +153,9 @@ final class VersionedEntry {
     }
 
     private static class ExcludeEmptyFilter implements Predicate<Map.Entry> {
+
+        ExcludeEmptyFilter() {
+        }
 
         @Override
         public boolean test(Map.Entry entry) {

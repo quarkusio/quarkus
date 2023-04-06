@@ -13,18 +13,17 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 
 final class QueryResultsRegionImpl implements QueryResultsRegion, ExtendedStatisticsSupport {
 
     private static final Logger log = Logger.getLogger(QueryResultsRegionImpl.class);
 
-    private final InternalCache cache;
+    final InternalCache cache;
     private final String name;
     private final InternalRegionImpl internalRegion;
     private final RegionFactory regionFactory;
 
-    private final ConcurrentMap<Object, Map> transactionContext = new ConcurrentHashMap<>();
+    final ConcurrentMap<Object, Map> transactionContext = new ConcurrentHashMap<>();
 
     public QueryResultsRegionImpl(InternalCache cache, String name, QuarkusInfinispanRegionFactory regionFactory) {
         this.cache = cache;
@@ -113,7 +112,7 @@ final class QueryResultsRegionImpl implements QueryResultsRegion, ExtendedStatis
         return CacheRegionStatistics.NO_EXTENDED_STAT_SUPPORT_RETURN;
     }
 
-    private class PostTransactionQueryUpdate implements Function<Boolean, CompletableFuture<?>> {
+    final class PostTransactionQueryUpdate {
         private final Object session;
         private final Object key;
         private final Object value;
@@ -124,8 +123,7 @@ final class QueryResultsRegionImpl implements QueryResultsRegion, ExtendedStatis
             this.value = value;
         }
 
-        @Override
-        public CompletableFuture<?> apply(Boolean success) {
+        public CompletableFuture<?> apply(boolean success) {
             transactionContext.remove(session);
             if (success) {
                 cache.put(key, value);

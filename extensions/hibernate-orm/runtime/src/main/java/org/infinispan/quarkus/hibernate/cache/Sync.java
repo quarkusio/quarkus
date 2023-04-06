@@ -7,7 +7,6 @@ import org.jboss.logging.Logger;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.function.Function;
 
 final class Sync implements CacheTransactionSynchronization {
     private static final Logger log = Logger.getLogger(Sync.class);
@@ -24,21 +23,22 @@ final class Sync implements CacheTransactionSynchronization {
         transactionStartTimestamp = regionFactory.nextTimestamp();
     }
 
-    public void registerBeforeCommit(CompletableFuture<?> future) {
+    void registerBeforeCommit(CompletableFuture<?> future) {
         add(future);
     }
 
-    public void registerAfterCommit(Function<Boolean, CompletableFuture<?>> invocation) {
-        assert !(invocation instanceof CompletableFuture) : "Invocation must not extend CompletableFuture";
+    void registerAfterCommit(QueryResultsRegionImpl.PostTransactionQueryUpdate invocation) {
         add(invocation);
     }
 
     private void add(Object task) {
-        log.tracef("Adding %08x %s", System.identityHashCode(task), task);
+        if (trace) {
+            log.tracef("Adding %08x %s", System.identityHashCode(task), task);
+        }
         if (tasks == null) {
             tasks = new Object[4];
         } else if (index == tasks.length) {
-            tasks = Arrays.copyOf(tasks, tasks.length * 2);
+            tasks = Arrays.copyOf(tasks, tasks.length << 1);
         }
         tasks[index++] = task;
     }
@@ -72,7 +72,9 @@ final class Sync implements CacheTransactionSynchronization {
         for (int i = 0; i < index; ++i) {
             Object task = tasks[i];
             if (task instanceof CompletableFuture) {
-                log.tracef("Waiting for %08x %s", System.identityHashCode(task), task);
+                if (trace) {
+                    log.tracef("Waiting for %08x %s", System.identityHashCode(task), task);
+                }
                 try {
                     ((CompletableFuture) task).join();
                 } catch (CompletionException e) {
@@ -81,7 +83,9 @@ final class Sync implements CacheTransactionSynchronization {
                 tasks[i] = null;
                 ++count;
             } else {
-                log.tracef("Not waiting for %08x %s", System.identityHashCode(task), task);
+                if (trace) {
+                    log.tracef("Not waiting for %08x %s", System.identityHashCode(task), task);
+                }
             }
         }
         if (trace) {
@@ -103,7 +107,7 @@ final class Sync implements CacheTransactionSynchronization {
                 continue;
             }
             try {
-                tasks[i] = ((Function<Boolean, CompletableFuture<?>>) invocation).apply(successful);
+                tasks[i] = ((QueryResultsRegionImpl.PostTransactionQueryUpdate) invocation).apply(successful);
             } catch (Exception e) {
                 log.errorf(e, "Operation #%d scheduled after transaction completion failed (transaction successful? %s)", i, successful);
                 tasks[i] = null;

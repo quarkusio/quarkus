@@ -13,17 +13,17 @@ import org.jboss.logging.Logger;
 import jakarta.transaction.Status;
 import jakarta.transaction.Synchronization;
 import java.util.Comparator;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 
 final class NonStrictDataAccess implements InternalDataAccess {
 
-    private static final Logger log = Logger.getLogger(NonStrictDataAccess.class);
+    static final Logger log = Logger.getLogger(NonStrictDataAccess.class);
     private static final boolean trace = log.isTraceEnabled();
 
-    private final InternalCache cache;
-    private final InternalRegion internalRegion;
+    final InternalCache cache;
+    final InternalRegion internalRegion;
     private final Comparator versionComparator;
-    private final Supplier<Long> nextTimestamp;
+    final LongSupplier nextTimestamp;
 
     NonStrictDataAccess(InternalCache cache, InternalRegion internalRegion, Comparator versionComparator, RegionFactory regionFactory) {
         this.cache = cache;
@@ -118,7 +118,7 @@ final class NonStrictDataAccess implements InternalDataAccess {
 
     @Override
     public void evict(Object key) {
-        cache.compute(key, new ComputeFn(new VersionedEntry(nextTimestamp.get()), internalRegion));
+        cache.compute(key, new ComputeFn(new VersionedEntry(nextTimestamp.getAsLong()), internalRegion));
     }
 
     @Override
@@ -149,7 +149,7 @@ final class NonStrictDataAccess implements InternalDataAccess {
         return true;
     }
 
-    private Object getVersion(Object value) {
+    private static Object getVersion(Object value) {
         if (value instanceof CacheEntry) {
             return ((CacheEntry) value).getVersion();
         } else if (value instanceof VersionedEntry) {
@@ -163,7 +163,7 @@ final class NonStrictDataAccess implements InternalDataAccess {
         private final Object key;
         private final TransactionCoordinator transactionCoordinator;
 
-        private RemovalSynchronization(Object key, TransactionCoordinator transactionCoordinator) {
+        RemovalSynchronization(Object key, TransactionCoordinator transactionCoordinator) {
             this.key = key;
             this.transactionCoordinator = transactionCoordinator;
         }
@@ -192,7 +192,7 @@ final class NonStrictDataAccess implements InternalDataAccess {
                 // TODO: isolation without obtaining Connection -> needs HHH-9993
                 final WorkExecutorVisitable<Void> work = (executor, connection) -> {
                     if (success) {
-                        cache.compute(key, new ComputeFn(new VersionedEntry(nextTimestamp.get()), internalRegion));
+                        cache.compute(key, new ComputeFn(new VersionedEntry(nextTimestamp.getAsLong()), internalRegion));
                     }
                     return null;
                 };
@@ -200,9 +200,7 @@ final class NonStrictDataAccess implements InternalDataAccess {
                 transactionCoordinator.createIsolationDelegate().delegateWork(work, false);
             } catch (HibernateException e) {
                 // silently fail any exceptions
-                if (log.isTraceEnabled()) {
-                    log.trace("Exception during query cache update", e);
-                }
+                log.trace("Exception during query cache update", e);
             }
         }
 

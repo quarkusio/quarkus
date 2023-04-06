@@ -82,7 +82,7 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
         this.cacheConfigs = computeCacheConfigs(configValues);
     }
 
-    private String extractRegionName(int prefixIndexEnd, String key) {
+    private static String extractRegionName(int prefixIndexEnd, String key) {
         final int suffixIndex = Math.max(key.indexOf(OBJECT_COUNT_SUFFIX), key.indexOf(MAX_IDLE_SUFFIX));
         if (suffixIndex != -1) {
             return key.substring(prefixIndexEnd, suffixIndex);
@@ -91,13 +91,13 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
         return null;
     }
 
-    private String extractProperty(String key, Map properties) {
+    private static String extractProperty(String key, Map properties) {
         final String value = ConfigurationHelper.extractPropertyValue(key, properties);
         log.debugf("Configuration override via property %s: %s", key, value);
         return value;
     }
 
-    private CacheKeysFactory determineCacheKeysFactory(SessionFactoryOptions settings, Map properties) {
+    private static CacheKeysFactory determineCacheKeysFactory(SessionFactoryOptions settings, Map properties) {
         return settings
                 .getServiceRegistry()
                 .getService(StrategySelector.class)
@@ -223,7 +223,7 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
         regions.clear();
     }
 
-    private HashMap<String, InternalCacheConfig> computeCacheConfigs(Map configValues) {
+    private static HashMap<String, InternalCacheConfig> computeCacheConfigs(Map configValues) {
         final HashMap<String, InternalCacheConfig> cacheConfigs = new HashMap<>();
 
         cacheConfigs.put(DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME, defaultQueryCacheConfig());

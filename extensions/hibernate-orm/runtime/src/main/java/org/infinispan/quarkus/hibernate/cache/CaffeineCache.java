@@ -15,10 +15,10 @@ import java.util.function.Predicate;
 
 final class CaffeineCache implements InternalCache {
 
-    private static final Logger log = Logger.getLogger(CaffeineCache.class);
-    private static final boolean trace = log.isTraceEnabled();
+    static final Logger log = Logger.getLogger(CaffeineCache.class);
+    static final boolean trace = log.isTraceEnabled();
 
-    private static final Ticker TICKER = Ticker.systemTicker();
+    static final Ticker TICKER = Ticker.systemTicker();
     static final Time.NanosService TIME_SERVICE = new Time.NanosService() {
         @Override
         public long nanoTime() {
@@ -171,7 +171,9 @@ final class CaffeineCache implements InternalCache {
                 if (maxIdleNanos > 0) {
                     final long idleDeadline = currentTime + maxIdleNanos;
                     final long versionedLifespan = versioned.getLifespanNanos();
-                    log.tracef("Expire after create, either idle deadline %d (ns) or versioned entry lifespan %d (ns)", idleDeadline, versionedLifespan);
+                    if (trace) {
+                        log.tracef("Expire after create, either idle deadline %d (ns) or versioned entry lifespan %d (ns)", idleDeadline, versionedLifespan);
+                    }
                     return Math.min(idleDeadline, versionedLifespan);
                 }
 

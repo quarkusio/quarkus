@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -72,15 +73,15 @@ import java.util.function.Supplier;
  * @version $Revision: $
  */
 final class PutFromLoadValidator {
-    private static final Logger log = Logger.getLogger(PutFromLoadValidator.class);
-    private static final boolean trace = log.isTraceEnabled();
+    static final Logger log = Logger.getLogger(PutFromLoadValidator.class);
+    static final boolean trace = log.isTraceEnabled();
 
     /**
      * Period (in milliseconds) after which ongoing invalidation is removed.
      * Needs to be milliseconds because it will be compared with {@link RegionFactory#nextTimestamp()},
      * and that method is expected to return milliseconds.
      */
-    private static final long EXPIRATION_PERIOD = Duration.ofSeconds(60).toMillis();
+    static final long EXPIRATION_PERIOD = Duration.ofSeconds(60).toMillis();
 
     /**
      * Registry of expected, future, isPutValid calls. If a key+owner is registered in this map, it
@@ -91,9 +92,9 @@ final class PutFromLoadValidator {
     /**
      * Main cache where the entities/collections are stored. This is not modified from within this class.
      */
-    private final InternalCache cache;
+    final InternalCache cache;
 
-    private final Supplier<Long> nextTimestamp;
+    final LongSupplier nextTimestamp;
 
     private final String regionName;
 
@@ -127,7 +128,7 @@ final class PutFromLoadValidator {
     /**
      * Marker for lock acquired in {@link #acquirePutFromLoadLock(Object, Object, long)}
      */
-    public static abstract class Lock {
+    static class Lock {
 
         private Lock() {
         }
@@ -277,7 +278,7 @@ final class PutFromLoadValidator {
             log.trace("Started invalidating region " + regionName);
         }
         boolean ok = true;
-        long now = nextTimestamp.get();
+        long now = nextTimestamp.getAsLong();
         // deny all puts until endInvalidatingRegion is called; at that time the region should be already
         // in INVALID state, therefore all new requests should be blocked and ongoing should fail by timestamp
         synchronized (this) {
@@ -315,7 +316,7 @@ final class PutFromLoadValidator {
     public void endInvalidatingRegion() {
         synchronized (this) {
             if (--regionInvalidations == 0) {
-                regionInvalidationTimestamp = nextTimestamp.get();
+                regionInvalidationTimestamp = nextTimestamp.getAsLong();
                 if (trace) {
                     log.tracef("Finished invalidating region %s at %d", regionName, regionInvalidationTimestamp);
                 }
@@ -401,7 +402,7 @@ final class PutFromLoadValidator {
                         }
                         continue;
                     }
-                    long now = nextTimestamp.get();
+                    long now = nextTimestamp.getAsLong();
                     if (trace) {
                         log.tracef("beginInvalidatingKey(%s#%s, %s) remove invalidator from %s", regionName, key, lockOwnerToString(lockOwner), pending);
                     }
@@ -439,7 +440,7 @@ final class PutFromLoadValidator {
         }
         if (pending.acquireLock(60, TimeUnit.SECONDS)) {
             try {
-                long now = nextTimestamp.get();
+                long now = nextTimestamp.getAsLong();
                 pending.removeInvalidator(lockOwner, key, now, doPFER);
                 // we can't remove the pending put yet because we wait for naked puts
                 // pendingPuts should be configured with maxIdle time so won't have memory leak
@@ -461,7 +462,7 @@ final class PutFromLoadValidator {
     // ---------------------------------------------------------------- Private
 
     // we can't use SessionImpl.toString() concurrently
-    private static String lockOwnerToString(Object lockOwner) {
+    static String lockOwnerToString(Object lockOwner) {
         return lockOwner instanceof SessionImplementor ? "Session#" + lockOwner.hashCode() : lockOwner.toString();
     }
 
@@ -484,7 +485,7 @@ final class PutFromLoadValidator {
         private final java.util.concurrent.locks.Lock lock = new ReentrantLock();
         private Invalidator singleInvalidator;
         private Map<Object, Invalidator> invalidators;
-        private long lastInvalidationEnd = Long.MIN_VALUE;
+        long lastInvalidationEnd = Long.MIN_VALUE;
         private boolean removed = false;
 
         PendingPutMap(PendingPut singleItem) {
@@ -610,7 +611,7 @@ final class PutFromLoadValidator {
          */
         private void gc() {
             assert fullMap != null;
-            long now = nextTimestamp.get();
+            long now = nextTimestamp.getAsLong();
             log.tracef("Contains %d, doing GC at %d, expiration %d", size(), now, EXPIRATION_PERIOD);
             for (Iterator<PendingPut> it = fullMap.values().iterator(); it.hasNext(); ) {
                 PendingPut pp = it.next();
@@ -721,12 +722,12 @@ final class PutFromLoadValidator {
 
     private static class PendingPut {
 
-        private final Object owner;
-        private boolean completed;
+        final Object owner;
+        boolean completed;
         // the timestamp is not filled during registration in order to avoid expensive currentTimeMillis() calls
         private long registeredTimestamp = Long.MIN_VALUE;
 
-        private PendingPut(Object owner) {
+        PendingPut(Object owner) {
             this.owner = owner;
         }
 
@@ -752,11 +753,11 @@ final class PutFromLoadValidator {
 
     private static class Invalidator {
 
-        private final Object owner;
-        private final long registeredTimestamp;
-        private final Object valueForPFER;
+        final Object owner;
+        final long registeredTimestamp;
+        final Object valueForPFER;
 
-        private Invalidator(Object owner, long registeredTimestamp, Object valueForPFER) {
+        Invalidator(Object owner, long registeredTimestamp, Object valueForPFER) {
             this.owner = owner;
             this.registeredTimestamp = registeredTimestamp;
             this.valueForPFER = valueForPFER;

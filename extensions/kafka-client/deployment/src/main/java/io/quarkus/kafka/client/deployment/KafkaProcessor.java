@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -86,10 +87,13 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleWebjarBuildItem;
-import io.quarkus.kafka.client.runtime.*;
+import io.quarkus.kafka.client.runtime.KafkaAdminClient;
+import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
+import io.quarkus.kafka.client.runtime.KafkaRecorder;
 import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
 import io.quarkus.kafka.client.runtime.ui.KafkaTopicClient;
 import io.quarkus.kafka.client.runtime.ui.KafkaUiRecorder;
@@ -222,7 +226,6 @@ public class KafkaProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
             Capabilities capabilities,
-            NativeImageRunnerBuildItem nativeImageRunner,
             BuildProducer<UnremovableBeanBuildItem> beans,
             BuildProducer<NativeImageResourceBuildItem> nativeLibs,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
@@ -286,13 +289,11 @@ public class KafkaProcessor {
         handleAvro(reflectiveClass, proxies, serviceProviders, sslNativeSupport, capabilities);
         handleOpenTracing(reflectiveClass, capabilities);
         handleStrimziOAuth(curateOutcomeBuildItem, reflectiveClass);
-        if (config.snappyEnabled) {
-            handleSnappy(nativeImageRunner, reflectiveClass, nativeLibs);
-        }
 
     }
 
-    private void handleSnappy(NativeImageRunnerBuildItem nativeImageRunner,
+    @BuildStep(onlyIf = { IsSnappy.class, NativeOrNativeSourcesBuild.class })
+    public void handleSnappyInNative(NativeImageRunnerBuildItem nativeImageRunner,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> nativeLibs) {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.xerial.snappy.SnappyInputStream",
@@ -572,6 +573,20 @@ public class KafkaProcessor {
                 .root(DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH)
                 .routeRoot(KAFKA_RESOURCES_ROOT_PATH)
                 .build();
+    }
+
+    public static final class IsSnappy implements BooleanSupplier {
+
+        private final KafkaBuildTimeConfig config;
+
+        public IsSnappy(KafkaBuildTimeConfig config) {
+            this.config = config;
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return config.snappyEnabled;
+        }
     }
 
 }

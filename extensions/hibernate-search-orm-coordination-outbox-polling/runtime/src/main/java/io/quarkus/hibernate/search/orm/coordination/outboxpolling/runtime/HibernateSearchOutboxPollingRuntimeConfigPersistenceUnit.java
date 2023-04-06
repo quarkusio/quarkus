@@ -9,55 +9,53 @@ import java.util.OptionalInt;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigGroup
-class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
+public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
 
     /**
      * Configuration for coordination between threads or application instances.
      */
-    @ConfigItem
-    CoordinationConfig coordination;
+    CoordinationConfig coordination();
 
     @ConfigGroup
-    static class CoordinationConfig {
+    public interface CoordinationConfig {
 
         /**
          * Default config
          */
         @ConfigDocSection
-        @ConfigItem(name = ConfigItem.PARENT)
-        AgentsConfig defaults;
+        @WithParentName
+        AgentsConfig defaults();
 
         /**
          * Per-tenant config
          */
         @ConfigDocSection
         @ConfigDocMapKey("tenant-id")
-        Map<String, AgentsConfig> tenants;
+        Map<String, AgentsConfig> tenants();
 
     }
 
     @ConfigGroup
-    static class AgentsConfig {
+    public interface AgentsConfig {
 
         /**
          * Configuration for the event processor agent.
          */
-        @ConfigItem
-        EventProcessorConfig eventProcessor;
+        EventProcessorConfig eventProcessor();
 
         /**
          * Configuration for the mass indexer agent.
          */
-        @ConfigItem
-        MassIndexerConfig massIndexer;
+        MassIndexerConfig massIndexer();
 
     }
 
     @ConfigGroup
-    static class EventProcessorConfig {
+    public interface EventProcessorConfig {
 
         // @formatter:off
         /**
@@ -74,14 +72,13 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "true")
-        boolean enabled;
+        @WithDefault("true")
+        boolean enabled();
 
         /**
          * Configuration related to shards.
          */
-        @ConfigItem
-        EventProcessorShardsConfig shards;
+        EventProcessorShardsConfig shards();
 
         // @formatter:off
         /**
@@ -97,8 +94,8 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "0.100S")
-        Duration pollingInterval;
+        @WithDefault("0.100S")
+        Duration pollingInterval();
 
         // @formatter:off
         /**
@@ -127,8 +124,8 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "2S")
-        Duration pulseInterval;
+        @WithDefault("2S")
+        Duration pulseInterval();
 
         // @formatter:off
         /**
@@ -154,8 +151,8 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "30S")
-        Duration pulseExpiration;
+        @WithDefault("30S")
+        Duration pulseExpiration();
 
         // @formatter:off
         /**
@@ -172,8 +169,8 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "50")
-        int batchSize;
+        @WithDefault("50")
+        int batchSize();
 
         // @formatter:off
         /**
@@ -191,8 +188,7 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem
-        Optional<Duration> transactionTimeout;
+        Optional<Duration> transactionTimeout();
 
         // @formatter:off
         /**
@@ -207,13 +203,13 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "30S")
-        Duration retryDelay;
+        @WithDefault("30S")
+        Duration retryDelay();
 
     }
 
     @ConfigGroup
-    static class EventProcessorShardsConfig {
+    public interface EventProcessorShardsConfig {
 
         // @formatter:off
         /**
@@ -232,8 +228,7 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem
-        OptionalInt totalCount;
+        OptionalInt totalCount();
 
         // @formatter:off
         /**
@@ -257,13 +252,12 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem
-        Optional<List<Integer>> assigned;
+        Optional<List<Integer>> assigned();
 
     }
 
     @ConfigGroup
-    static class MassIndexerConfig {
+    public interface MassIndexerConfig {
 
         // @formatter:off
         /**
@@ -285,8 +279,8 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "0.100S")
-        Duration pollingInterval;
+        @WithDefault("0.100S")
+        Duration pollingInterval();
 
         // @formatter:off
         /**
@@ -313,8 +307,8 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "2S")
-        Duration pulseInterval;
+        @WithDefault("2S")
+        Duration pulseInterval();
 
         // @formatter:off
         /**
@@ -340,8 +334,8 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "30S")
-        Duration pulseExpiration;
+        @WithDefault("30S")
+        Duration pulseExpiration();
 
     }
 

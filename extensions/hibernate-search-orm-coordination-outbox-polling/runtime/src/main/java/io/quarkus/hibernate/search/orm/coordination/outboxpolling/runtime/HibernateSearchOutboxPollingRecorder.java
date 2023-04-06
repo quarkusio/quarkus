@@ -20,8 +20,8 @@ public class HibernateSearchOutboxPollingRecorder {
             HibernateSearchOutboxPollingRuntimeConfig runtimeConfig, String persistenceUnitName) {
         HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
                 .isDefaultPersistenceUnit(persistenceUnitName)
-                        ? runtimeConfig.defaultPersistenceUnit
-                        : runtimeConfig.persistenceUnits.get(persistenceUnitName);
+                        ? runtimeConfig.defaultPersistenceUnit()
+                        : runtimeConfig.persistenceUnits().get(persistenceUnitName);
         return new RuntimeInitListener(puConfig);
     }
 
@@ -40,9 +40,9 @@ public class HibernateSearchOutboxPollingRecorder {
                 return;
             }
 
-            contributeCoordinationRuntimeProperties(propertyCollector, null, runtimeConfig.coordination.defaults);
+            contributeCoordinationRuntimeProperties(propertyCollector, null, runtimeConfig.coordination().defaults());
 
-            for (Entry<String, AgentsConfig> tenantEntry : runtimeConfig.coordination.tenants.entrySet()) {
+            for (Entry<String, AgentsConfig> tenantEntry : runtimeConfig.coordination().tenants().entrySet()) {
                 contributeCoordinationRuntimeProperties(propertyCollector, tenantEntry.getKey(), tenantEntry.getValue());
             }
         }
@@ -51,41 +51,41 @@ public class HibernateSearchOutboxPollingRecorder {
                 AgentsConfig agentsConfig) {
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_ENABLED,
-                    agentsConfig.eventProcessor.enabled);
+                    agentsConfig.eventProcessor().enabled());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_SHARDS_TOTAL_COUNT,
-                    agentsConfig.eventProcessor.shards.totalCount);
+                    agentsConfig.eventProcessor().shards().totalCount());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_SHARDS_ASSIGNED,
-                    agentsConfig.eventProcessor.shards.assigned);
+                    agentsConfig.eventProcessor().shards().assigned());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_POLLING_INTERVAL,
-                    agentsConfig.eventProcessor.pollingInterval.toMillis());
+                    agentsConfig.eventProcessor().pollingInterval().toMillis());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_PULSE_INTERVAL,
-                    agentsConfig.eventProcessor.pulseInterval.toMillis());
+                    agentsConfig.eventProcessor().pulseInterval().toMillis());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_PULSE_EXPIRATION,
-                    agentsConfig.eventProcessor.pulseExpiration.toMillis());
+                    agentsConfig.eventProcessor().pulseExpiration().toMillis());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_BATCH_SIZE,
-                    agentsConfig.eventProcessor.batchSize);
+                    agentsConfig.eventProcessor().batchSize());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_TRANSACTION_TIMEOUT,
-                    agentsConfig.eventProcessor.transactionTimeout, Optional::isPresent, d -> d.get().toSeconds());
+                    agentsConfig.eventProcessor().transactionTimeout(), Optional::isPresent, d -> d.get().toSeconds());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_RETRY_DELAY,
-                    agentsConfig.eventProcessor.retryDelay.toSeconds());
+                    agentsConfig.eventProcessor().retryDelay().toSeconds());
 
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.MASS_INDEXER_POLLING_INTERVAL,
-                    agentsConfig.massIndexer.pollingInterval.toMillis());
+                    agentsConfig.massIndexer().pollingInterval().toMillis());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.MASS_INDEXER_PULSE_INTERVAL,
-                    agentsConfig.massIndexer.pulseInterval.toMillis());
+                    agentsConfig.massIndexer().pulseInterval().toMillis());
             addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.MASS_INDEXER_PULSE_EXPIRATION,
-                    agentsConfig.massIndexer.pulseExpiration.toMillis());
+                    agentsConfig.massIndexer().pulseExpiration().toMillis());
         }
 
     }

@@ -10,7 +10,7 @@ import io.smallrye.mutiny.infrastructure.Infrastructure;
 @ApplicationScoped
 public class BuildMetricsJsonRPCService {
 
-    public Uni<Map<String, Object>> getBuildStepsMetrics() {
+    public Uni<Map<String, Object>> getBuildMetrics() {
         return Uni.createFrom().item(() -> BuildMetricsDevUIController.get().getBuildStepsMetrics())
                 .runSubscriptionOn(Infrastructure.getDefaultWorkerPool());
     }

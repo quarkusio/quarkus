@@ -362,20 +362,14 @@ public class BuildTimeContentProcessor {
 
         Page buildSteps = Page.webComponentPageBuilder().internal()
                 .namespace("devui-build-metrics")
-                .title("Build Steps")
+                .title("Build Metrics")
                 .icon("font-awesome-solid:hammer")
-                .componentLink("qwc-build-steps.js").build();
-
-        Page buildItems = Page.webComponentPageBuilder().internal()
-                .namespace("devui-build-metrics")
-                .title("Build Items")
-                .icon("font-awesome-solid:trowel")
-                .componentLink("qwc-build-items.js").build();
+                .componentLink("qwc-build-metrics.js").build();
 
         // Add default menu items
         List<Page> sectionMenu = new ArrayList<>(
                 List.of(extensions, configuration, configurationSourceEditor, continuousTesting, devServices,
-                        buildSteps, buildItems));
+                        buildSteps));
 
         // Add any Menus from extensions
         for (Extension e : extensionsBuildItem.getSectionMenuExtensions()) {

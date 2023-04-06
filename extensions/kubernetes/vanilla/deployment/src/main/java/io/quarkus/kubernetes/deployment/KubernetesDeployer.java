@@ -5,17 +5,18 @@ import static io.quarkus.kubernetes.deployment.Constants.KIND;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
-import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -24,13 +25,14 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 import io.dekorate.utils.Serialization;
+import io.fabric8.kubernetes.api.builder.Visitor;
 import io.fabric8.kubernetes.api.model.APIResourceList;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesList;
+import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
-import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -54,6 +56,7 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.DeployStrategy;
+import io.quarkus.kubernetes.spi.DeploymentDecoratorBuildItem;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentClusterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesOptionalResourceDefinitionBuildItem;
@@ -116,6 +119,7 @@ public class KubernetesDeployer {
             ContainerImageConfig containerImageConfig,
             ApplicationInfoBuildItem applicationInfo,
             List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions,
+            List<DeploymentDecoratorBuildItem> deploymentDecorators,
             BuildProducer<DeploymentResultBuildItem> deploymentResult,
             // needed to ensure that this step runs after the container image has been built
             @SuppressWarnings("unused") List<ArtifactResultBuildItem> artifactResults) {
@@ -140,7 +144,7 @@ public class KubernetesDeployer {
         try (final KubernetesClient client = kubernetesClientBuilder.buildClient()) {
             deploymentResult
                     .produce(deploy(selectedDeploymentTarget.get().getEntry(), client, outputTarget.getOutputDirectory(),
-                            openshiftConfig, applicationInfo, optionalResourceDefinitions));
+                            openshiftConfig, applicationInfo, deploymentDecorators, optionalResourceDefinitions));
         }
     }
 
@@ -160,7 +164,6 @@ public class KubernetesDeployer {
             ContainerImageConfig containerImageConfig) {
         final DeploymentTargetEntry selectedTarget;
 
-        boolean checkForNamespaceGroupAlignment = false;
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getExplictilyDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty()) {
             selectedTarget = targets.getEntriesSortedByPriority().get(0);
@@ -184,28 +187,13 @@ public class KubernetesDeployer {
             }
         }
 
-        if (OPENSHIFT.equals(selectedTarget.getName())) {
-            // We should ensure that we have image group and namespace alignment we are not using deployment triggers via DeploymentConfig.
-            if (!targets.getEntriesSortedByPriority().get(0).getKind().equals("DeploymentConfig")) {
-                checkForNamespaceGroupAlignment = true;
-            }
-        }
-
-        //This might also be applicable in other scenarios too (e.g. Knative on Openshift), so we might need to make it slightly more generic.
-        if (checkForNamespaceGroupAlignment) {
-            Config config = Config.autoConfigure(null);
-            if (config.getNamespace() != null && !config.getNamespace().equals(containerImageInfo.getGroup())) {
-                log.warn("An openshift deployment was requested, but the container image group:" + containerImageInfo.getGroup()
-                        + " is not aligned with the currently selected project:" + config.getNamespace() + "."
-                        + "it is strongly advised to align them, or else the image might not be reachable.");
-            }
-        }
         return selectedTarget;
     }
 
     private DeploymentResultBuildItem deploy(DeploymentTargetEntry deploymentTarget,
             KubernetesClient client, Path outputDir,
             OpenshiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo,
+            List<DeploymentDecoratorBuildItem> deploymentDecorators,
             List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
         log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
@@ -213,8 +201,31 @@ public class KubernetesDeployer {
         File manifest = outputDir.resolve(KUBERNETES).resolve(deploymentTarget.getName().toLowerCase() + ".yml")
                 .toFile();
 
+        Set<DeploymentDecorator<?>> decorators = new HashSet<>();
+        deploymentDecorators.stream()
+                .map(d -> d.getDecorator(DeploymentDecorator.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(d -> {
+                    decorators.add(d.withDeploymentContext(client.getConfiguration()));
+                });
+
+        Visitor<?>[] visitors = decorators.stream()
+                .filter(d -> (d instanceof Visitor))
+                .map(d -> (Visitor) d)
+                .collect(Collectors.toList())
+                .toArray(new Visitor[0]);
+
         try (FileInputStream fis = new FileInputStream(manifest)) {
-            KubernetesList list = Serialization.unmarshalAsList(fis);
+            KubernetesList list = new KubernetesListBuilder(Serialization.unmarshalAsList(fis)).accept(visitors).build();
+            Set<String> messages = decorators.stream().filter(DeploymentDecorator::isApplied)
+                    .map(DeploymentDecorator::getMessage)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toSet());
+
+            messages.forEach(m -> log.info(m));
+
             list.getItems().stream().filter(distinctByResourceKey()).forEach(i -> {
                 deployResource(deploymentTarget, client, i, optionalResourceDefinitions);
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");

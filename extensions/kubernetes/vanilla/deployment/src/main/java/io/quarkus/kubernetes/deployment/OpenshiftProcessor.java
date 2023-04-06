@@ -54,6 +54,7 @@ import io.quarkus.kubernetes.deployment.OpenshiftConfig.DeploymentResourceKind;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
+import io.quarkus.kubernetes.spi.DeploymentDecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
@@ -78,6 +79,7 @@ public class OpenshiftProcessor {
     private static final String OPENSHIFT_INTERNAL_REGISTRY = "image-registry.openshift-image-registry.svc:5000";
     private static final String DOCKERIO_REGISTRY = "docker.io";
     private static final String OPENSHIFT_V3_APP = "app";
+    private static final String ANY = null;
 
     @BuildStep
     public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenshiftConfig config,
@@ -114,6 +116,20 @@ public class OpenshiftProcessor {
                     containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(DOCKERIO_REGISTRY));
                 }
             }
+        }
+    }
+
+    @BuildStep
+    public void popuplateDeploymentDecorators(ApplicationInfoBuildItem app, OpenshiftConfig openshiftConfig,
+            ContainerImageConfig containerImageConfig,
+            Capabilities capabilities, BuildProducer<DeploymentDecoratorBuildItem> deploymentDecorator) {
+        DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind(capabilities);
+        String name = openshiftConfig.name.orElse(app.getName());
+        if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig
+                && openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
+            // We are not explicit about resource name, since we also want to apply the decorator to init jobs etc.
+            deploymentDecorator
+                    .produce(new DeploymentDecoratorBuildItem(OPENSHIFT, new OpenshiftProjectToImageGroupDecorator(name)));
         }
     }
 

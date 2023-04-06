@@ -79,6 +79,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Optional<String> partOf;
 
     /**
+     * When this property is set to true, on deployment time the name of the project will be set as image group.
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean projectAsImageGroup;
+
+    /**
      * The name of the application. This value will be used for naming Kubernetes
      * resources like: 'Deployment', 'Service' and so on...
      */

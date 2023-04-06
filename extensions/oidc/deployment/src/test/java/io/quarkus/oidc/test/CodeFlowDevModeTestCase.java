@@ -124,6 +124,18 @@ public class CodeFlowDevModeTestCase {
 
             assertEquals("tenant-config-resolver:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
+            try {
+                webClient.getPage("http://localhost:8080/protected/tenant/null-tenant");
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+            }
+            try {
+                webClient.getPage("http://localhost:8080/protected/tenant/unknown-tenant");
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+            }
         }
     }
 

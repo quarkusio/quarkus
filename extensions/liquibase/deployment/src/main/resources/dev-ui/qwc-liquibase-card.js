@@ -33,11 +33,17 @@ export class QwcLiquibaseCard extends LitElement {
     `;
 
     static properties = {
-        description: {type: String}
+        extensionName: {attribute: true},
+        description: {attribute: true},
+        guide: {attribute: true},
+        namespace: {attribute: true},
     };
 
     constructor() {
         super();
+        if(!this.extensionName){
+            this.extensionName = NAME;
+        }
     }
 
     connectedCallback() {
@@ -64,7 +70,8 @@ export class QwcLiquibaseCard extends LitElement {
     _renderCardLinks(){
         return html`${pages.map(page => html`
                             <qwc-extension-link slot="link"
-                                extensionName="${NAME}"
+                                namespace="${this.namespace}"
+                                extensionName="${this.extensionName}"
                                 iconName="${page.icon}"
                                 displayName="${page.title}"
                                 staticLabel="${page.staticLabel}"

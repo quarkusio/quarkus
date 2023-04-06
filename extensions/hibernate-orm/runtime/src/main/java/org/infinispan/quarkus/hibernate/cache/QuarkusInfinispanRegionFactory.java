@@ -43,7 +43,7 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
     private SessionFactoryOptions settings;
     private CacheKeysFactory cacheKeysFactory;
 
-    private List<Region> regions = new ArrayList<>();
+    private final List<Region> regions = new ArrayList<>();
     private Map<String, InternalCacheConfig> cacheConfigs;
 
     private Time.MillisService regionTimeService;

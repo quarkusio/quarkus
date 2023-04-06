@@ -9,8 +9,7 @@ import org.jboss.logging.Logger;
 import jakarta.transaction.Status;
 import jakarta.transaction.Synchronization;
 
-// TODO temporarily public, for correctness testing checks...
-public final class StrictDataAccess implements InternalDataAccess {
+final class StrictDataAccess implements InternalDataAccess {
 
     private static final Logger log = Logger.getLogger(StrictDataAccess.class);
     private static final boolean trace = log.isTraceEnabled();
@@ -157,7 +156,7 @@ public final class StrictDataAccess implements InternalDataAccess {
         cache.invalidate(key);
     }
 
-    protected void registerLocalInvalidation(Object session, Object lockOwner, Object key) {
+    private void registerLocalInvalidation(Object session, Object lockOwner, Object key) {
         TransactionCoordinator transactionCoordinator = ((SharedSessionContractImplementor) session).getTransactionCoordinator();
         if (transactionCoordinator == null) {
             return;

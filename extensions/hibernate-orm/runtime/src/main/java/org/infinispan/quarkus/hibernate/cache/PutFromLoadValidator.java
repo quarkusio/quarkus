@@ -50,8 +50,7 @@ import java.util.function.Supplier;
  * call
  * <p/>
  * <ul>
- * <li> {@link #beginInvalidatingKey(Object, Object)} (for a single key invalidation)</li>
- * <li>or {@link #beginInvalidatingRegion()} followed by {@link #endInvalidatingRegion()}
+ * <li> {@link #beginInvalidatingRegion()} followed by {@link #endInvalidatingRegion()}
  * (for a general invalidation all pending puts)</li>
  * </ul>
  * After transaction commit (when the DB is updated) {@link #endInvalidatingKey(Object, Object)} should
@@ -72,8 +71,7 @@ import java.util.function.Supplier;
  * @author Brian Stansberry
  * @version $Revision: $
  */
-// TODO temporarily public, for correctness testing checks...
-public final class PutFromLoadValidator {
+final class PutFromLoadValidator {
     private static final Logger log = Logger.getLogger(PutFromLoadValidator.class);
     private static final boolean trace = log.isTraceEnabled();
 
@@ -124,9 +122,6 @@ public final class PutFromLoadValidator {
                 .executor(Runnable::run)
                 .expireAfterAccess(Duration.ofMillis(EXPIRATION_PERIOD))
                 .build();
-    }
-
-    public void destroy() {
     }
 
     /**
@@ -240,10 +235,8 @@ public final class PutFromLoadValidator {
 
                 if (t instanceof RuntimeException) {
                     throw (RuntimeException) t;
-                } else if (t instanceof Error) {
-                    throw (Error) t;
                 } else {
-                    throw new RuntimeException(t);
+                    throw (Error) t;
                 }
             }
         }
@@ -393,23 +386,6 @@ public final class PutFromLoadValidator {
         }
     }
 
-    /**
-     * Invalidates any {@link #registerPendingPut(Object, Object, long) previously registered pending puts}
-     * and disables further registrations ensuring a subsequent call to {@link #acquirePutFromLoadLock(Object, Object, long)}
-     * will return <code>false</code>. <p> This method will block until any concurrent thread that has
-     * {@link #acquirePutFromLoadLock(Object, Object, long) acquired the putFromLoad lock} for the given key
-     * has released the lock. This allows the caller to be certain the putFromLoad will not execute after this method
-     * returns, possibly caching stale data. </p>
-     * After this transaction completes, {@link #endInvalidatingKey(Object, Object)} needs to be called }
-     *
-     * @param key key identifying data whose pending puts should be invalidated
-     * @return <code>true</code> if the invalidation was successful; <code>false</code> if a problem occurred (which the
-     * caller should treat as an exception condition)
-     */
-    public boolean beginInvalidatingKey(Object lockOwner, Object key) {
-        return beginInvalidatingWithPFER(lockOwner, key, null);
-    }
-
     public boolean beginInvalidatingWithPFER(Object lockOwner, Object key, Object valueForPFER) {
         for (; ; ) {
             PendingPutMap pending = new PendingPutMap(null);
@@ -445,13 +421,9 @@ public final class PutFromLoadValidator {
         }
     }
 
-    public boolean endInvalidatingKey(Object lockOwner, Object key) {
-        return endInvalidatingKey(lockOwner, key, false);
-    }
-
     /**
      * Called after the transaction completes, allowing caching of entries. It is possible that this method
-     * is called without previous invocation of {@link #beginInvalidatingKey(Object, Object)}, then it should be a no-op.
+     * is called without previous invocation of #beginInvalidatingKey(Object, Object), then it should be a no-op.
      *
      * @param lockOwner owner of the invalidation - transaction or thread
      * @param key
@@ -792,11 +764,9 @@ public final class PutFromLoadValidator {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("{");
-            sb.append("Owner=").append(lockOwnerToString(owner));
-            sb.append(", Timestamp=").append(registeredTimestamp);
-            sb.append('}');
-            return sb.toString();
+            return "{" + "Owner=" + lockOwnerToString(owner) +
+                    ", Timestamp=" + registeredTimestamp +
+                    '}';
         }
     }
 }

@@ -187,7 +187,7 @@ final class NonStrictDataAccess implements InternalDataAccess {
             }
         }
 
-        protected void invokeIsolated(final boolean success) {
+        private void invokeIsolated(final boolean success) {
             try {
                 // TODO: isolation without obtaining Connection -> needs HHH-9993
                 final WorkExecutorVisitable<Void> work = (executor, connection) -> {

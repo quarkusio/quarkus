@@ -9,8 +9,13 @@ plugins {
 {/include}
 
 allOpen {
+    {#if quarkus.platform.version.startsWith("2.") or quarkus.platform.version.startsWith("1.")}
+    annotation("javax.ws.rs.Path")
+    annotation("javax.enterprise.context.ApplicationScoped")
+    {#else}
     annotation("jakarta.ws.rs.Path")
     annotation("jakarta.enterprise.context.ApplicationScoped")
+    {/if}
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 

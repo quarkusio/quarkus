@@ -16,7 +16,7 @@ import 'qui-badge';
 export class QwcServerLog extends QwcHotReloadElement {
     
     logControl = new LogController(this);
-    jsonRpc = new JsonRpc(this, false);
+    jsonRpc = new JsonRpc("devui-logstream", false);
     
     static styles = css`
         .log {
@@ -347,6 +347,9 @@ export class QwcServerLog extends QwcHotReloadElement {
     
     _renderMessage(level, message){
         if(this._selectedColumns.includes('19')){
+            // Clean up Ansi
+            message = message.replace(/\u001b\[.*?m/g, "");
+            
             // Make links clickable
             if(message.includes("http://")){
                 message = this._makeLink(message, "http://");
@@ -451,12 +454,18 @@ export class QwcServerLog extends QwcHotReloadElement {
     }
     
     _addLogEntry(entry){
-        this._messages = [
-            ...this._messages,
-            entry
-        ];
+        if(this.doLogEntry(entry)){
+            this._messages = [
+                ...this._messages,
+                entry
+            ];
         
-        this._scrollToBottom();   
+            this._scrollToBottom();
+        }
+    }
+    
+    doLogEntry(entry){
+        return true;
     }
     
     async _scrollToBottom(){

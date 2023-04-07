@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -30,6 +31,10 @@ public class FrontendResource {
     ProtectedResourceServiceNonDefaultOidcClient protectedResourceServiceNonDefaultOidcClient;
 
     @Inject
+    @RestClient
+    MisconfiguredClientFilter misconfiguredClientFilter;
+
+    @Inject
     ManagedExecutor managedExecutor;
 
     private Object lock = new Object();
@@ -45,6 +50,17 @@ public class FrontendResource {
     @Path("userNonDefaultOidcClient")
     public String userNameNonDefaultOidcClient() {
         return protectedResourceServiceNonDefaultOidcClient.getUserName();
+    }
+
+    @GET
+    @Path("userNameMisconfiguredClientFilter")
+    @Produces("text/plain")
+    public String userNameMisconfiguredClientFilter() {
+        try {
+            return misconfiguredClientFilter.getUserName();
+        } catch (Throwable t) {
+            return t.getMessage();
+        }
     }
 
     @GET

@@ -355,6 +355,13 @@ public class BuildTimeContentProcessor {
                 .componentLink("qwc-server-log.js").build();
         footerTabs.add(serverLog);
 
+        Page testLog = Page.webComponentPageBuilder().internal()
+                .namespace("devui-continuous-testing")
+                .title("Testing")
+                .icon("font-awesome-solid:flask-vial")
+                .componentLink("qwc-test-log.js").build();
+        footerTabs.add(testLog);
+
         // This is only needed when extension developers work on an extension, so we only included it if you build from source.
         if (Version.getVersion().equalsIgnoreCase("999-SNAPSHOT")) {
             Page devUiLog = Page.webComponentPageBuilder().internal()

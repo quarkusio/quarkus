@@ -35,8 +35,13 @@ abstract class QuarkusBuildTask extends QuarkusTask {
     static final String QUARKUS_ARTIFACT_PROPERTIES = "quarkus-artifact.properties";
     static final String NATIVE_SOURCES = "native-sources";
 
+    private final GACTV gactv;
+
     QuarkusBuildTask(String description) {
         super(description);
+
+        gactv = new GACTV(getProject().getGroup().toString(), getProject().getName(),
+                getProject().getVersion().toString());
     }
 
     @Inject
@@ -57,44 +62,44 @@ abstract class QuarkusBuildTask extends QuarkusTask {
     }
 
     Path genBuildDir() {
-        return getProject().getBuildDir().toPath().resolve(QUARKUS_BUILD_GEN_DIR);
+        return buildDir.toPath().resolve(QUARKUS_BUILD_GEN_DIR);
     }
 
     Path appBuildDir() {
-        return getProject().getBuildDir().toPath().resolve(QUARKUS_BUILD_APP_DIR);
+        return buildDir.toPath().resolve(QUARKUS_BUILD_APP_DIR);
     }
 
     Path depBuildDir() {
-        return getProject().getBuildDir().toPath().resolve(QUARKUS_BUILD_DEP_DIR);
+        return buildDir.toPath().resolve(QUARKUS_BUILD_DEP_DIR);
     }
 
     File artifactProperties() {
-        return new File(getProject().getBuildDir(), QUARKUS_ARTIFACT_PROPERTIES);
+        return new File(buildDir, QUARKUS_ARTIFACT_PROPERTIES);
     }
 
     File nativeSources() {
-        return new File(getProject().getBuildDir(), NATIVE_SOURCES);
+        return new File(buildDir, NATIVE_SOURCES);
     }
 
     /**
      * "final" location of the "fast-jar".
      */
     File fastJar() {
-        return new File(getProject().getBuildDir(), outputDirectory());
+        return new File(buildDir, outputDirectory());
     }
 
     /**
      * "final" location of the "uber-jar".
      */
     File runnerJar() {
-        return new File(getProject().getBuildDir(), runnerJarFileName());
+        return new File(buildDir, runnerJarFileName());
     }
 
     /**
      * "final" location of the "native" runner.
      */
     File nativeRunner() {
-        return new File(getProject().getBuildDir(), nativeRunnerFileName());
+        return new File(buildDir, nativeRunnerFileName());
     }
 
     String runnerJarFileName() {
@@ -127,11 +132,9 @@ abstract class QuarkusBuildTask extends QuarkusTask {
     ApplicationModel resolveAppModelForBuild() {
         ApplicationModel appModel;
         try {
-            GACTV gactv = new GACTV(getProject().getGroup().toString(), getProject().getName(),
-                    getProject().getVersion().toString());
             appModel = extension().getAppModelResolver().resolveModel(gactv);
         } catch (AppModelResolverException e) {
-            throw new GradleException("Failed to resolve Quarkus application model for " + getProject().getPath(), e);
+            throw new GradleException("Failed to resolve Quarkus application model for " + getPath(), e);
         }
         return appModel;
     }
@@ -151,22 +154,22 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         }
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        EffectiveConfig effectiveConfig = extension().buildEffectiveConfiguration(appModel.getAppArtifact());
+        Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
 
         getLogger().info("Starting Quarkus application build for package type {}", packageType);
 
         if (getLogger().isEnabled(LogLevel.INFO)) {
             getLogger().info("Effective properties: {}",
-                    effectiveConfig.configMap().entrySet().stream()
+                    configMap.entrySet().stream()
                             .filter(e -> e.getKey().startsWith("quarkus.")).map(e -> "" + e)
                             .sorted()
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
 
-        WorkQueue workQueue = workQueue(effectiveConfig, () -> extension().buildForkOptions);
+        WorkQueue workQueue = workQueue(configMap, () -> extension().buildForkOptions);
 
         workQueue.submit(BuildWorker.class, params -> {
-            params.getBuildSystemProperties().putAll(effectiveConfig.configMap());
+            params.getBuildSystemProperties().putAll(configMap);
             params.getBaseName().set(extension().finalName());
             params.getTargetDirectory().set(genDir.toFile());
             params.getAppModel().set(appModel);

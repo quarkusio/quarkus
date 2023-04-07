@@ -1,0 +1,45 @@
+buildscript {
+    repositories {
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+apply plugin: 'java'
+
+group = 'com.quarkus.demo'
+version = '1.0'
+
+
+subprojects {
+
+    apply plugin: 'java'
+
+    test {
+        dependsOn 'cleanTest'
+        useJUnitPlatform()
+        forkEvery 1
+        systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+    }
+
+    repositories {
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+            }
+        }
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation 'io.quarkus:quarkus-resteasy'
+
+        implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    }
+
+}

@@ -60,7 +60,8 @@ public class CachingTest {
         Map<String, String> env = simulateCI ? Map.of("CI", "yes") : Map.of();
 
         List<String> args = new ArrayList<>();
-        Collections.addAll(args, "build", "--info", "--stacktrace", "--build-cache", "-Dquarkus.package.type=" + packageType);
+        Collections.addAll(args, "build", "--info", "--stacktrace", "--build-cache", "--configuration-cache",
+                "-Dquarkus.package.type=" + packageType);
         if (outputDir != null) {
             args.add("-Dquarkus.package.outputDirectory=" + outputDir);
         }
@@ -174,6 +175,7 @@ public class CachingTest {
     static List<Path> directoryContents(Path dir, Predicate<Path> include) throws IOException {
         try (Stream<Path> saved = Files.walk(dir)) {
             return saved.map(dir::relativize).filter(include).sorted(Comparator.comparing(Path::toString))
+                    .filter(p -> !p.toString().startsWith("reports" + File.separator + "configuration-cache" + File.separator))
                     .collect(Collectors.toList());
         }
     }

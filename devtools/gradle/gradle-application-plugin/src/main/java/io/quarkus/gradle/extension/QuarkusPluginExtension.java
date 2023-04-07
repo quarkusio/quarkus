@@ -78,13 +78,15 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
             }
             props.put(BootstrapConstants.OUTPUT_SOURCES_DIR, outputSourcesDir.toString());
 
-            final SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+            final SourceSetContainer sourceSets = getSourceSets();
             final SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
             final File outputDirectoryAsFile = getLastFile(mainSourceSet.getOutput().getClassesDirs());
 
+            Path projectDirPath = projectDir.toPath();
+
             // Identify the folder containing the sources associated with this test task
-            String fileList = getSourceSets().stream()
+            String fileList = sourceSets.stream()
                     .filter(sourceSet -> Objects.equals(
                             task.getTestClassesDirs().getAsPath(),
                             sourceSet.getOutput().getClassesDirs().getAsPath()))
@@ -92,11 +94,11 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
                     .filter(File::exists)
                     .distinct()
                     .map(testSrcDir -> String.format("%s:%s",
-                            project.relativePath(testSrcDir),
-                            project.relativePath(outputDirectoryAsFile)))
+                            projectDirPath.relativize(testSrcDir.toPath()),
+                            projectDirPath.relativize(outputDirectoryAsFile.toPath())))
                     .collect(Collectors.joining(","));
             task.environment(BootstrapConstants.TEST_TO_MAIN_MAPPINGS, fileList);
-            project.getLogger().debug("test dir mapping - {}", fileList);
+            task.getLogger().debug("test dir mapping - {}", fileList);
 
             QuarkusBuild quarkusBuild = project.getTasks().named(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class)
                     .get();
@@ -157,8 +159,9 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     public Set<File> combinedOutputSourceDirs() {
         Set<File> sourcesDirs = new LinkedHashSet<>();
-        sourcesDirs.addAll(getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
-        sourcesDirs.addAll(getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
+        SourceSetContainer sourceSets = getSourceSets();
+        sourcesDirs.addAll(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
+        sourcesDirs.addAll(sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
         return sourcesDirs;
     }
 

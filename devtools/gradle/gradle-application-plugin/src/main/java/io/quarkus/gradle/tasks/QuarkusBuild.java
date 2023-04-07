@@ -108,7 +108,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
             case LEGACY_JAR:
             case LEGACY:
                 outputs.put("fast-jar", fastJar());
-                outputs.put("legacy-lib", getProject().getBuildDir().toPath().resolve("lib").toFile());
+                outputs.put("legacy-lib", buildDir.toPath().resolve("lib").toFile());
                 break;
             case JAR:
             case FAST_JAR:
@@ -231,7 +231,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
     private void assembleLegacyJar() {
         getLogger().info("Finalizing Quarkus build for {} packaging", packageType());
 
-        Path buildDir = getProject().getBuildDir().toPath();
+        Path buildDir = this.buildDir.toPath();
         Path libDir = buildDir.resolve("lib");
         Path depBuildDir = depBuildDir();
         Path appBuildDir = appBuildDir();
@@ -275,7 +275,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
     }
 
     private void assembleFullBuild() {
-        File targetDir = getProject().getBuildDir();
+        File targetDir = buildDir;
 
         // build/quarkus-build/gen
         Path genBuildDir = genBuildDir();
@@ -311,8 +311,6 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
     }
 
     private void copyRunnersAndArtifactProperties(Path sourceDir) {
-        File buildDir = getProject().getBuildDir();
-
         getLogger().info("Copying remaining Quarkus application artifacts for {} packaging from {} into {}",
                 packageType(), sourceDir, buildDir);
         getFileSystemOperations().copy(

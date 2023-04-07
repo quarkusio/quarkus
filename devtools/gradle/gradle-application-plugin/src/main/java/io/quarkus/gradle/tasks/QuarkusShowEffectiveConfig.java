@@ -6,7 +6,10 @@ import static java.nio.file.Files.newBufferedWriter;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -44,8 +47,10 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
         try {
             EffectiveConfig effective = extension()
                     .buildEffectiveConfiguration(extension().getApplicationModel().getAppArtifact());
+            Map<String, String> configMap = effective.configMap();
+            List<URL> applicationPropsSources = effective.applicationPropsSources();
 
-            String config = effective.configMap().entrySet().stream()
+            String config = configMap.entrySet().stream()
                     .filter(e -> e.getKey().startsWith("quarkus."))
                     .map(e -> format("%s=%s", e.getKey(), e.getValue())).sorted()
                     .collect(Collectors.joining("\n    ", "\n    ", "\n"));
@@ -53,11 +58,10 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
             getLogger().lifecycle("Effective Quarkus configuration options: {}", config);
 
             String finalName = extension().finalName();
-            String packageType = effective.configMap().getOrDefault(QuarkusPlugin.QUARKUS_PACKAGE_TYPE, "fast-jar");
+            String packageType = configMap.getOrDefault(QuarkusPlugin.QUARKUS_PACKAGE_TYPE, "fast-jar");
             File fastJar = fastJar();
             getLogger().lifecycle(
-                    "" +
-                            "Quarkus package type:          {}\n" +
+                    "Quarkus package type:          {}\n" +
                             "Final name:                    {}\n" +
                             "Output directory:              {}\n" +
                             "Fast jar directory (if built): {}\n" +
@@ -70,13 +74,13 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
                     fastJar,
                     runnerJar(),
                     nativeRunner(),
-                    effective.applicationPropsSources().stream().map(Object::toString)
+                    applicationPropsSources.stream().map(Object::toString)
                             .collect(Collectors.joining("\n        ", "\n        ", "\n")));
 
             if (getSaveConfigProperties().get()) {
                 Properties props = new Properties();
-                props.putAll(effective.configMap());
-                Path file = getProject().getBuildDir().toPath().resolve(finalName + ".quarkus-build.properties");
+                props.putAll(configMap);
+                Path file = buildDir.toPath().resolve(finalName + ".quarkus-build.properties");
                 try (BufferedWriter writer = newBufferedWriter(file)) {
                     props.store(writer, format("Quarkus build properties with package type %s", packageType));
                 } catch (IOException e) {

@@ -30,6 +30,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         addSystemProperties(command);
         command.add("-Dorg.gradle.console=plain");
         command.add("-Dorg.gradle.daemon=false");
+        command.add("--configuration-cache");
         command.add("--stacktrace");
         command.add("--info");
         command.add("--daemon");

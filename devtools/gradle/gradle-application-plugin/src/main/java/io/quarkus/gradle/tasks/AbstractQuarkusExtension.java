@@ -35,11 +35,11 @@ public abstract class AbstractQuarkusExtension {
 
     private static final String QUARKUS_PROFILE = "quarkus.profile";
     protected final Project project;
+    protected final File projectDir;
     protected final Property<String> finalName;
     private final MapProperty<String, String> forcedPropertiesProperty;
     protected final MapProperty<String, String> quarkusBuildProperties;
     private final ListProperty<String> ignoredEntries;
-    private final SourceSet mainSourceSet;
     private final FileCollection classpath;
     private final Property<BaseConfig> baseConfig;
     protected final List<Action<? super JavaForkOptions>> codeGenForkOptions;
@@ -47,6 +47,7 @@ public abstract class AbstractQuarkusExtension {
 
     protected AbstractQuarkusExtension(Project project) {
         this.project = project;
+        this.projectDir = project.getProjectDir();
         this.finalName = project.getObjects().property(String.class);
         this.finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
         this.forcedPropertiesProperty = project.getObjects().mapProperty(String.class, String.class);
@@ -55,7 +56,7 @@ public abstract class AbstractQuarkusExtension {
         this.ignoredEntries.convention(
                 project.provider(() -> baseConfig().packageConfig().userConfiguredIgnoredEntries.orElse(emptyList())));
         this.baseConfig = project.getObjects().property(BaseConfig.class).value(project.provider(this::buildBaseConfig));
-        this.mainSourceSet = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
+        SourceSet mainSourceSet = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
         this.classpath = dependencyClasspath(mainSourceSet);
         this.codeGenForkOptions = new ArrayList<>();
         this.buildForkOptions = new ArrayList<>();
@@ -127,7 +128,7 @@ public abstract class AbstractQuarkusExtension {
                 .build();
     }
 
-    String quarkusProfile() {
+    private String quarkusProfile() {
         String profile = System.getProperty(QUARKUS_PROFILE);
         if (profile == null) {
             profile = System.getenv("QUARKUS_PROFILE");

@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 
-public class JandexMultiModuleProjectDevModeTest extends QuarkusDevGradleTestBase {
+public class JandexKordampMultiModuleProjectDevModeTest extends QuarkusDevGradleTestBase {
 
     @Override
     protected String projectDirectoryName() {
-        return "jandex-basic-multi-module-project";
+        return "jandex-basic-multi-module-project-kordamp";
     }
 
     @Override
@@ -18,11 +18,11 @@ public class JandexMultiModuleProjectDevModeTest extends QuarkusDevGradleTestBas
 
     protected void testDevMode() {
 
-        assertThat(getHttpResponse("/hello")).contains("hello common");
+        assertThat(getHttpResponse("/hello")).contains("hello kordamp jandex common-kordamp");
 
         replace("common/src/main/java/org/acme/common/CommonBean.java",
-                ImmutableMap.of("return \"common\";", "return \"modified\";"));
+                ImmutableMap.of("return \"common-kordamp\";", "return \"modified-kordamp\";"));
 
-        assertUpdatedResponseContains("/hello", "hello modified");
+        assertUpdatedResponseContains("/hello", "hello kordamp jandex modified-kordamp");
     }
 }

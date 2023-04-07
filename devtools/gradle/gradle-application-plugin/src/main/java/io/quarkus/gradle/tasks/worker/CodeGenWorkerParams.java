@@ -13,6 +13,4 @@ public interface CodeGenWorkerParams extends QuarkusParams {
     DirectoryProperty getOutputPath();
 
     Property<LaunchMode> getLaunchMode();
-
-    Property<Boolean> getTest();
 }

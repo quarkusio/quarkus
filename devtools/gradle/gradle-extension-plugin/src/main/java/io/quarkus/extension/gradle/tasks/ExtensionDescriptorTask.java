@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -60,6 +61,8 @@ public class ExtensionDescriptorTask extends DefaultTask {
     private static final String ARTIFACT_ID = "artifact-id";
     private static final String METADATA = "metadata";
 
+    private final Map<String, String> projectInfo;
+
     @Inject
     public ExtensionDescriptorTask(QuarkusExtensionConfiguration quarkusExtensionConfiguration, SourceSet mainSourceSet,
             Configuration runtimeClasspath) {
@@ -71,6 +74,18 @@ public class ExtensionDescriptorTask extends DefaultTask {
         this.outputResourcesDir = mainSourceSet.getOutput().getResourcesDir();
         this.inputResourcesDir = mainSourceSet.getResources().getSourceDirectories().getAsPath();
         this.classpath = runtimeClasspath;
+
+        // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
+        // cache will be at least degraded, but the build will not fail.
+        notCompatibleWithConfigurationCache("The Quarkus Extension Plugin isn't compatible with the configuration cache");
+
+        projectInfo = new HashMap<>();
+        projectInfo.put("name", getProject().getName());
+        if (getProject().getDescription() != null) {
+            projectInfo.put("description", getProject().getDescription());
+        }
+        projectInfo.put("group", getProject().getGroup().toString());
+        projectInfo.put("version", getProject().getVersion().toString());
     }
 
     @Classpath
@@ -225,8 +240,8 @@ public class ExtensionDescriptorTask extends DefaultTask {
         computeQuarkusCoreVersion(extObject);
         computeQuarkusExtensions(extObject);
 
-        if (!extObject.has("description") && getProject().getDescription() != null) {
-            extObject.put("description", getProject().getDescription());
+        if (!extObject.has("description") && projectInfo.containsKey("description")) {
+            extObject.put("description", projectInfo.get("description"));
         }
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
@@ -243,8 +258,8 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
     private void computeProjectName(ObjectNode extObject) {
         if (!extObject.has("name")) {
-            if (getProject().getName() != null) {
-                extObject.put("name", getProject().getName());
+            if (projectInfo.containsKey("name")) {
+                extObject.put("name", projectInfo.get("name"));
             } else {
                 JsonNode node = extObject.get(ARTIFACT_ID);
                 String defaultName = node.asText();
@@ -301,11 +316,11 @@ public class ExtensionDescriptorTask extends DefaultTask {
         }
         if (artifactNode == null || groupId == null || artifactId == null || version == null) {
             final AppArtifactCoords coords = new AppArtifactCoords(
-                    groupId == null ? getProject().getGroup().toString() : groupId,
-                    artifactId == null ? getProject().getName() : artifactId,
+                    groupId == null ? projectInfo.get("group") : groupId,
+                    artifactId == null ? projectInfo.get("name") : artifactId,
                     null,
                     "jar",
-                    version == null ? getProject().getVersion().toString() : version);
+                    version == null ? projectInfo.get("version") : version);
             extObject.put("artifact", coords.toString());
         }
     }

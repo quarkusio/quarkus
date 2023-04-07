@@ -40,7 +40,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         Set<String> extensions = JAVA.equals(sourceType) ? Collections.emptySet() : Set.of(sourceType.toString().toLowerCase());
         createProject(extensions);
 
-        BuildResult build = runGradleWrapper(projectRoot, "build", "--stacktrace");
+        BuildResult build = runGradleWrapper(projectRoot, "build");
 
         assertThat(BuildResult.isSuccessful(build.getTasks().get(":build"))).isTrue();
         // gradle build should not build the native image
@@ -54,10 +54,10 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     public void canDetectUpToDateBuild() throws Exception {
         createProject();
 
-        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
-        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.UPTODATE_OUTCOME);
     }
 
@@ -65,13 +65,13 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     public void canDetectResourceChangeWhenBuilding() throws Exception {
         createProject();
 
-        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
         final File applicationProperties = projectRoot.toPath().resolve("src/main/resources/application.properties").toFile();
         Files.write(applicationProperties.toPath(), "quarkus.http.port=8888".getBytes());
 
-        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
     }
 
@@ -79,14 +79,14 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     public void canDetectClassChangeWhenBuilding() throws Exception {
         createProject();
 
-        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
         final File greetingResourceFile = projectRoot.toPath().resolve("src/main/java/org/acme/foo/GreetingResource.java")
                 .toFile();
         DevModeTestUtils.filter(greetingResourceFile, ImmutableMap.of("\"/greeting\"", "\"/test/hello\""));
 
-        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
     }
 
@@ -94,11 +94,11 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     public void canDetectClasspathChangeWhenBuilding() throws Exception {
         createProject();
 
-        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
         runGradleWrapper(projectRoot, "addExtension", "--extensions=hibernate-orm");
-        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
     }
 
@@ -106,13 +106,13 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     public void canDetectOutputChangeWhenBuilding() throws Exception {
         createProject();
 
-        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild");
 
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
         Path runnerJar = projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar");
         Files.delete(runnerJar);
 
-        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild");
 
         assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
         assertThat(runnerJar).exists();
@@ -135,7 +135,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     public void canDetectSystemPropertyChangeWhenBuilding() throws Exception {
         createProject();
 
-        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild");
 
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
         assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar")).exists();
@@ -150,7 +150,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     public void canRunTest() throws Exception {
         createProject();
 
-        BuildResult buildResult = runGradleWrapper(projectRoot, "test", "--stacktrace");
+        BuildResult buildResult = runGradleWrapper(projectRoot, "test");
 
         assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":test"))).isTrue();
     }
@@ -159,7 +159,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     public void generateCodeBeforeTests() throws Exception {
         createProject();
 
-        BuildResult firstBuild = runGradleWrapper(projectRoot, "test", "--stacktrace");
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "test");
         assertThat(firstBuild.getOutput()).contains("Task :quarkusGenerateCode");
         assertThat(firstBuild.getOutput()).contains("Task :quarkusGenerateCodeTests");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":test"))).isTrue();

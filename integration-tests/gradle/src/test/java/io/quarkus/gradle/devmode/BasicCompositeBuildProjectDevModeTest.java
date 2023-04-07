@@ -19,7 +19,7 @@ public class BasicCompositeBuildProjectDevModeTest extends QuarkusDevGradleTestB
 
     @Override
     protected String[] buildArguments() {
-        return new String[] { ":application:clean", ":application:quarkusDev", "-s" };
+        return new String[] { ":application:clean", ":application:quarkusDev" };
     }
 
     protected void testDevMode() throws Exception {

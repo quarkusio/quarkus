@@ -82,9 +82,9 @@ public class HibernateValidatorRecorder {
                         .defaultLocale(localesBuildTimeConfig.defaultLocale)
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 
-                if (hibernateValidatorBuildTimeConfig.expressionLanguage.constraintExpressionFeatureLevel.isPresent()) {
+                if (hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel().isPresent()) {
                     configuration.constraintExpressionLanguageFeatureLevel(
-                            hibernateValidatorBuildTimeConfig.expressionLanguage.constraintExpressionFeatureLevel.get());
+                            hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel().get());
                 }
 
                 InstanceHandle<ConstraintValidatorFactory> configuredConstraintValidatorFactory = Arc.container()
@@ -127,13 +127,13 @@ public class HibernateValidatorRecorder {
 
                 // Hibernate Validator-specific configuration
 
-                configuration.failFast(hibernateValidatorBuildTimeConfig.failFast);
+                configuration.failFast(hibernateValidatorBuildTimeConfig.failFast());
                 configuration.allowOverridingMethodAlterParameterConstraint(
-                        hibernateValidatorBuildTimeConfig.methodValidation.allowOverridingParameterConstraints);
+                        hibernateValidatorBuildTimeConfig.methodValidation().allowOverridingParameterConstraints());
                 configuration.allowParallelMethodsDefineParameterConstraints(
-                        hibernateValidatorBuildTimeConfig.methodValidation.allowParameterConstraintsOnParallelMethods);
+                        hibernateValidatorBuildTimeConfig.methodValidation().allowParameterConstraintsOnParallelMethods());
                 configuration.allowMultipleCascadedValidationOnReturnValues(
-                        hibernateValidatorBuildTimeConfig.methodValidation.allowMultipleCascadedValidationOnReturnValues);
+                        hibernateValidatorBuildTimeConfig.methodValidation().allowMultipleCascadedValidationOnReturnValues());
 
                 InstanceHandle<ScriptEvaluatorFactory> configuredScriptEvaluatorFactory = Arc.container()
                         .instance(ScriptEvaluatorFactory.class);

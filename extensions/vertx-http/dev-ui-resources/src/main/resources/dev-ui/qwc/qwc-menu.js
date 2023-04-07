@@ -159,7 +159,11 @@ export class QwcMenu extends observeState(LitElement) {
             this._customMenuNamespaces.push(page.namespace);
             let displayName = "";
             if(this._show){
-                displayName = page.title;
+                if(page.namespaceLabel){
+                    displayName = page.namespaceLabel;
+                }else{
+                    displayName = page.title;
+                }
             }
         
             let pageRef = this.routerController.getPageUrlFor(page);

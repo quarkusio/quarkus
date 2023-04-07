@@ -8,7 +8,7 @@ import '@vaadin/icon';
 import '@vaadin/text-field';
 import '@vaadin/vertical-layout';
 import '@vaadin/horizontal-layout';
-
+import '@vaadin/progress-bar';
 /**
  * This component shows the Build Items
  */
@@ -62,7 +62,12 @@ export class QwcBuildItems extends QwcHotReloadElement {
       if (this._buildStepsMetrics && this._filtered) {
           return this._render();
       }else {
-          return html`<span>Loading build items...</span>`;
+          return html`
+            <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                <div>Loading build items...</div>
+                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
+            </div>
+            `;
       }
   }
 

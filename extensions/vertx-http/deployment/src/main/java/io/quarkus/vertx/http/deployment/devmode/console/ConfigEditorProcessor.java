@@ -161,7 +161,7 @@ public class ConfigEditorProcessor {
             updateConfig(values);
             return null;
         });
-        return new JsonRPCProvidersBuildItem("configuration", ConfigJsonRPCService.class);
+        return new JsonRPCProvidersBuildItem("devui-configuration", ConfigJsonRPCService.class);
     }
 
     private Map<String, String> filterAndApplyProfile(Map<String, String> autoconfig, List<String> configFilter,

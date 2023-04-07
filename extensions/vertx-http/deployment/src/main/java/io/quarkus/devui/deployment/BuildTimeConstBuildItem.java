@@ -34,6 +34,10 @@ public final class BuildTimeConstBuildItem extends AbstractDevUIBuildItem {
         this.buildTimeData.put(fieldName, fieldData);
     }
 
+    public void addAllBuildTimeData(Map<String, Object> buildTimeData) {
+        this.buildTimeData.putAll(buildTimeData);
+    }
+
     public Map<String, Object> getBuildTimeData() {
         return this.buildTimeData;
     }

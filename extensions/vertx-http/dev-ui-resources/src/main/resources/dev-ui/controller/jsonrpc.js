@@ -110,13 +110,8 @@ export class JsonRpc {
             var page = RouterController.componentMap.get(host.tagName.toLowerCase());
 
             if (page){
-                // Internal Menu
-                if(page.internal){
-                    this._setExtensionName(page.id, serviceIdentifier);
-                }else {
-                    // For pages
-                    this._setExtensionName(page.namespace, serviceIdentifier);
-                }
+                // For pages
+                this._setExtensionName(page.namespace, serviceIdentifier);
             } else {
                 // For cards and logs
                 this._setExtensionName(host.getAttribute("namespace"), serviceIdentifier);

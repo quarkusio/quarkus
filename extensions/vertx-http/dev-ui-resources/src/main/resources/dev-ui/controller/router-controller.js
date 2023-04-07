@@ -38,7 +38,11 @@ export class RouterController {
     getCurrentTitle(){
         let p = this.getCurrentPage();
         if(p){
-            return p.title;
+            if(p.namespaceLabel){
+                return p.namespaceLabel;
+            }else {
+                return p.title;
+            }
         }
         return null;
     }

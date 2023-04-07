@@ -13,8 +13,6 @@ import '@vaadin/number-field';
 import '@vaadin/integer-field';
 import '@vaadin/text-field';
 import '@vaadin/select';
-import '@vaadin/vertical-layout';
-import '@vaadin/horizontal-layout';
 import '@vaadin/details';
 import { notifier } from 'notifier';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';

@@ -1,5 +1,7 @@
 package io.quarkus.it.keycloak;
 
+import java.util.function.Function;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -23,6 +25,10 @@ public class FrontendResource {
     @RestClient
     ProtectedResourceServiceNamedFilter protectedResourceServiceNamedFilter;
 
+    @Inject
+    @RestClient
+    MisconfiguredClientFilter misconfiguredClientFilter;
+
     @GET
     @Path("userNameCustomFilter")
     @Produces("text/plain")
@@ -42,5 +48,20 @@ public class FrontendResource {
     @Produces("text/plain")
     public Uni<String> userNameNamedFilter() {
         return protectedResourceServiceNamedFilter.getUserName();
+    }
+
+    @GET
+    @Path("userNameMisconfiguredClientFilter")
+    @Produces("text/plain")
+    public Uni<String> userNameMisconfiguredClientFilter() {
+        return misconfiguredClientFilter.getUserName().onFailure(Throwable.class)
+                .recoverWithItem(new Function<Throwable, String>() {
+
+                    @Override
+                    public String apply(Throwable t) {
+                        return t.getMessage();
+                    }
+
+                });
     }
 }

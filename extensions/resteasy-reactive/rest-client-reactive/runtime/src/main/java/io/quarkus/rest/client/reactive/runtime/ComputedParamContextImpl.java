@@ -49,6 +49,19 @@ public class ComputedParamContextImpl implements ComputedParamContext {
         return parameters;
     }
 
+    public static Object getMethodParameterFromContext(ClientRequestContext context, int index) {
+        Object property = context.getProperty(INVOKED_METHOD_PARAMETERS_PROP);
+        if (property == null) {
+            throw new IllegalStateException(
+                    "property " + INVOKED_METHOD_PARAMETERS_PROP + " should have been part of the client context");
+        }
+        List<Object> methodParameterValues = (List<Object>) property;
+        if (index > methodParameterValues.size() - 1) {
+            throw new IllegalArgumentException("Invalid parameter index '" + index + "' used when obtaining parameter values");
+        }
+        return methodParameterValues.get(index);
+    }
+
     private static class MethodParameterImpl implements MethodParameter {
 
         private final Object value;

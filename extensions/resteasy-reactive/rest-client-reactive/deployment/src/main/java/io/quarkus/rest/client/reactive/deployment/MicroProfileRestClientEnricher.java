@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -42,6 +43,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -113,6 +115,14 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             "queryParam", WebTargetImpl.class, String.class, Collection.class);
 
     private static final MethodDescriptor ARRAYS_AS_LIST = ofMethod(Arrays.class, "asList", List.class, Object[].class);
+
+    private static final MethodDescriptor COMPUTER_PARAM_CONTEXT_IMPL_CTOR = MethodDescriptor.ofConstructor(
+            ComputedParamContextImpl.class, String.class,
+            ClientRequestContext.class);
+
+    private static final MethodDescriptor COMPUTER_PARAM_CONTEXT_IMPL_GET_METHOD_PARAM = MethodDescriptor.ofMethod(
+            ComputedParamContextImpl.class, "getMethodParameterFromContext", Object.class, ClientRequestContext.class,
+            int.class);
 
     private static final Type STRING_TYPE = Type.create(DotName.STRING_NAME, Type.Kind.CLASS);
 
@@ -563,8 +573,9 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
             fillHeaders.invokeInterfaceMethod(MAP_PUT_METHOD, headerMap, fillHeaders.load(headerName), headerList);
         } else {
-            // if there is only one value, we support mixing verbatim values, config params and method invocations
+            // if there is only one value, we support mixing verbatim values, config params method invocations and method parameter lookups
             // A method call is in the form of {some.package.ClassName.methodName} or {defaultMethodWithinThisInterfaceName}
+            // A method parameter lookup is also in the form of {methodParamName} and if there are clashes with a method call, the latter takes precedence
             // An config name is in the form of ${config.name}
             List<Node> nodes = new RestClientAnnotationExpressionParser(values[0],
                     declaringMethod.declaringClass().name().toString() + "#" + declaringMethod.name()).parse();
@@ -598,7 +609,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                         @Override
                         public ResultHandle get() {
                             return fillHeader.invokeStaticMethod(
-                                    MethodDescriptor.ofMethod(ConfigUtils.class, "doGetConfigValue", String.class, String.class,
+                                    ofMethod(ConfigUtils.class, "doGetConfigValue", String.class, String.class,
                                             boolean.class, String.class),
                                     fillHeader.load("${" + n.getValue() + "}"), fillHeader.load(required),
                                     fillHeader.load(n.getValue()));
@@ -607,15 +618,15 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
                 } else if (n instanceof RestClientAnnotationExpressionParser.Accessible) {
 
-                    String methodName = n.getValue();
+                    String accessibleName = n.getValue();
                     MethodInfo headerFillingMethod;
-                    AccessibleType accessibleType = methodName.contains(".") ? AccessibleType.STATIC_METHOD
+                    AccessibleType accessibleType = accessibleName.contains(".") ? AccessibleType.STATIC_METHOD
                             : AccessibleType.INTERFACE_METHOD;
                     if (accessibleType == AccessibleType.STATIC_METHOD) {
                         // calling a static method
-                        int endOfClassName = methodName.lastIndexOf('.');
-                        String className = methodName.substring(0, endOfClassName);
-                        String staticMethodName = methodName.substring(endOfClassName + 1);
+                        int endOfClassName = accessibleName.lastIndexOf('.');
+                        String className = accessibleName.substring(0, endOfClassName);
+                        String staticMethodName = accessibleName.substring(endOfClassName + 1);
 
                         ClassInfo clazz = index.getClassByName(DotName.createSimple(className));
                         if (clazz == null) {
@@ -626,16 +637,36 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                         headerFillingMethod = findMethod(clazz, declaringClass, staticMethodName,
                                 CLIENT_HEADER_PARAM.toString());
                     } else if (accessibleType == AccessibleType.INTERFACE_METHOD) {
-                        headerFillingMethod = findMethod(declaringClass, declaringClass, methodName,
+                        headerFillingMethod = findMethod(declaringClass, declaringClass, accessibleName,
                                 CLIENT_HEADER_PARAM.toString());
                     } else {
                         throw new IllegalStateException("Unknown type " + accessibleType);
                     }
 
+                    Type valueType = null;
+                    AtomicInteger parameterPosition = new AtomicInteger(-1);
                     if (headerFillingMethod == null) {
-                        throw new RestClientDefinitionException(String.format(
-                                "Invalid %s definition, unable to determine target method %s. Problematic interface: %s",
-                                CLIENT_HEADER_PARAM, methodName, declaringClass));
+                        for (MethodParameterInfo parameter : declaringMethod.parameters()) {
+                            if (!accessibleName.equals(parameter.name())) {
+                                continue;
+                            }
+                            if (!isString(parameter.type())) {
+                                throw new RestClientDefinitionException(String.format(
+                                        "Invalid %s definition, method parameter %s is not of String type. Problematic interface: %s",
+                                        CLIENT_HEADER_PARAM, accessibleName, declaringClass));
+                            }
+                            accessibleType = AccessibleType.METHOD_PARAMETER;
+                            valueType = parameter.type();
+                            parameterPosition.set(parameter.position());
+                            break;
+                        }
+                        if (valueType == null) {
+                            throw new RestClientDefinitionException(String.format(
+                                    "Invalid %s definition, unable to determine target method '%s'. Problematic interface: %s",
+                                    CLIENT_HEADER_PARAM, accessibleName, declaringClass));
+                        }
+                    } else {
+                        valueType = headerFillingMethod.returnType();
                     }
 
                     Supplier<ResultHandle> supplier;
@@ -653,8 +684,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                                         && isComputedParamContext(headerFillingMethod.parameterType(0))) {
                                     ResultHandle fillerParam = fillHeader
                                             .newInstance(
-                                                    MethodDescriptor.ofConstructor(ComputedParamContextImpl.class, String.class,
-                                                            ClientRequestContext.class),
+                                                    COMPUTER_PARAM_CONTEXT_IMPL_CTOR,
                                                     fillHeader.load(headerName), requestContext);
                                     return fillHeader.invokeStaticMethod(headerFillingMethod, fillerParam);
                                 } else {
@@ -684,8 +714,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                                         && isComputedParamContext(headerFillingMethod.parameterType(0))) {
                                     ResultHandle fillerParam = fillHeader
                                             .newInstance(
-                                                    MethodDescriptor.ofConstructor(ComputedParamContextImpl.class, String.class,
-                                                            ClientRequestContext.class),
+                                                    COMPUTER_PARAM_CONTEXT_IMPL_CTOR,
                                                     fillHeader.load(headerName), requestContext);
                                     return fillHeader.invokeInterfaceMethod(headerFillingMethod, interfaceMock,
                                             fillerParam);
@@ -697,21 +726,28 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                                 }
                             }
                         };
+                    } else if (accessibleType == AccessibleType.METHOD_PARAMETER) {
+                        supplier = new Supplier<ResultHandle>() {
+                            @Override
+                            public ResultHandle get() {
+                                return fillHeader.invokeStaticMethod(COMPUTER_PARAM_CONTEXT_IMPL_GET_METHOD_PARAM,
+                                        requestContext, fillHeader.load(parameterPosition.get()));
+                            }
+                        };
                     } else {
                         throw new IllegalStateException("Unknown type " + accessibleType);
                     }
 
-                    Type headerFillerMethodReturnType = headerFillingMethod.returnType();
                     if (nodes.size() == 1) {
-                        if (!isString(headerFillerMethodReturnType) && !isStringArray(
-                                headerFillerMethodReturnType)) {
+                        if (!isString(valueType) && !isStringArray(
+                                valueType)) {
                             throw new RestClientDefinitionException("Method " + headerFillingMethod.declaringClass().toString()
                                     + "#" + headerFillingMethod.name()
                                     + " has an unsupported return type for ClientHeaderParam. " +
                                     "Only String and String[] return types are supported");
                         }
                     } else {
-                        if (!isString(headerFillerMethodReturnType)) {
+                        if (!isString(valueType)) {
                             throw new RestClientDefinitionException("Method " + headerFillingMethod.declaringClass().toString()
                                     + "#" + headerFillingMethod.name()
                                     + " has an unsupported return type for ClientHeaderParam. " +
@@ -719,7 +755,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                         }
                     }
 
-                    return new HeaderFillerInfo(headerFillerMethodReturnType, n, supplier);
+                    return new HeaderFillerInfo(valueType, n, supplier);
 
                 } else {
                     throw new IllegalStateException("Unknown node type " + n.getClass().getName());
@@ -782,7 +818,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
     enum AccessibleType {
         INTERFACE_METHOD,
-        STATIC_METHOD
+        STATIC_METHOD,
+        METHOD_PARAMETER
     }
 
     private static class HeaderFillerInfo {

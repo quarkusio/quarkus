@@ -16,6 +16,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.NotBody;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
@@ -39,6 +40,7 @@ public class AdvancedClientHeaderParamExpressionTest {
 
         assertThat(client.call()).isEqualTo("property-foobar-value/method-test-call/foobar-test-method-header");
         assertThat(client.call2()).isEqualTo("property-foobar-value/method-test-call/testtest2");
+        assertThat(client.call3(null, "1234", null)).isEqualTo("property-foobar-value/method-test-call/Bearer 1234");
     }
 
     @Path("/")
@@ -65,12 +67,20 @@ public class AdvancedClientHeaderParamExpressionTest {
         @ClientHeaderParam(name = "method-header", value = "{calculate2}")
         String call2();
 
+        @GET
+        @ClientHeaderParam(name = "method-header", value = "Bearer {token}{returnNull}")
+        String call3(@NotBody Object unused, String token, @NotBody Object alsoUnused);
+
         default String calculate() {
             return "test";
         }
 
         default String[] calculate2() {
             return new String[] { "test", "test2" };
+        }
+
+        default String returnNull() {
+            return null;
         }
 
     }

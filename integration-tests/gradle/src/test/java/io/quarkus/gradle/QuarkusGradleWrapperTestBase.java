@@ -5,14 +5,11 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.jupiter.api.AfterAll;
 
 public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
@@ -22,42 +19,20 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     private Map<String, String> systemProps;
 
-    private static final List<Process> gradleProcesses = new ArrayList<>();
-    static {
-        Runtime.getRuntime().addShutdownHook(new Thread(QuarkusGradleWrapperTestBase::killProcesses));
-    }
-
     protected void setupTestCommand() {
 
     }
 
-    @AfterAll
-    static void killProcesses() {
-        gradleProcesses.forEach(Process::destroy);
-        for (int i = 0; i < 100; i++) {
-            if (gradleProcesses.stream().noneMatch(Process::isAlive)) {
-                return;
-            }
-            try {
-                Thread.sleep(100L);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-        gradleProcesses.forEach(Process::destroyForcibly);
-    }
-
     public BuildResult runGradleWrapper(File projectDir, String... args) throws IOException, InterruptedException {
         setupTestCommand();
-        List<String> systemProperties = getSytemProperties();
-        List<String> command = new ArrayList<>(systemProperties.size() + args.length + 4);
+        List<String> command = new ArrayList<>();
         command.add(getGradleWrapperCommand());
-        command.addAll(systemProperties);
+        addSystemProperties(command);
         command.add("-Dorg.gradle.console=plain");
         command.add("-Dorg.gradle.daemon=false");
         command.add("--stacktrace");
         command.add("--info");
+        command.add("--daemon");
         command.addAll(Arrays.asList(args));
 
         File logOutput = new File(projectDir, "command-output.log");
@@ -70,8 +45,6 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .redirectError(logOutput)
                 .redirectOutput(logOutput)
                 .start();
-
-        gradleProcesses.add(p);
 
         //long timeout for native tests
         //that may also need to download docker
@@ -99,34 +72,25 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
     }
 
     private String getGradleWrapperName() {
-        if (System.getProperty("os.name").toLowerCase(Locale.ENGLISH).indexOf("windows") >= 0) {
+        if (System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows")) {
             return GRADLE_WRAPPER_WINDOWS;
         }
         return GRADLE_WRAPPER_UNIX;
     }
 
-    private List<String> getSytemProperties() {
-        List<String> args = null;
+    private void addSystemProperties(List<String> args) {
         if (systemProps != null) {
-            args = new ArrayList<>(systemProps.size() + 1);
-            for (Map.Entry<String, String> prop : systemProps.entrySet()) {
-                args.add(toPropertyArg(prop.getKey(), prop.getValue()));
-            }
+            systemProps.entrySet().stream().map(e -> toPropertyArg(e.getKey(), e.getValue())).forEach(args::add);
         }
+
         final String mavenRepoLocal = System.getProperty(MAVEN_REPO_LOCAL);
         if (mavenRepoLocal != null) {
-            final String arg = toPropertyArg(MAVEN_REPO_LOCAL, mavenRepoLocal);
-            if (args == null) {
-                args = Collections.singletonList(arg);
-            } else {
-                args.add(arg);
-            }
+            args.add(toPropertyArg(MAVEN_REPO_LOCAL, mavenRepoLocal));
         }
-        return args == null ? Collections.emptyList() : args;
     }
 
     private static String toPropertyArg(String name, String value) {
-        return new StringBuilder().append("-D").append(name).append("=").append(value).toString();
+        return "-D" + name + "=" + value;
     }
 
     private void printCommandOutput(File projectDir, List<String> command, BuildResult commandResult, int exitCode) {

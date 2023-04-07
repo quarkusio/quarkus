@@ -50,11 +50,16 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
     private Time.NanosService cacheTimeService;
     private final Supplier<Executor> cacheExecutorSupplier;
 
-    @Deprecated
     public QuarkusInfinispanRegionFactory() {
-        this(null);
+        //By default, we'll run operations "inline":
+        this(()->Runnable::run);
     }
 
+    /**
+     * Special constructor which allows to customize the Executor
+     * being used for internal cache maintenance operations
+     * @param cacheExecutorSupplier
+     */
     public QuarkusInfinispanRegionFactory(Supplier<Executor> cacheExecutorSupplier) {
         this.cacheExecutorSupplier = cacheExecutorSupplier;
     }

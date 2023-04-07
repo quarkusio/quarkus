@@ -71,6 +71,7 @@ public class BuildTimeContentProcessor {
         // Echarts
         internalImportMapBuildItem.add("echarts/", contextRoot + "echarts/");
         internalImportMapBuildItem.add("echarts-gauge-grade", contextRoot + "echarts/echarts-gauge-grade.js");
+        internalImportMapBuildItem.add("echarts-pie", contextRoot + "echarts/echarts-pie.js");
 
         // Other assets
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");

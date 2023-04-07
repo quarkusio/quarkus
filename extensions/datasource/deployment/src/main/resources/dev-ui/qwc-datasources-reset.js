@@ -22,7 +22,6 @@ export class QwcDatasourcesReset extends LitElement {
 
     static styles = css`
         .button {
-            background-color: transparent;
             cursor: pointer;
         }
         .clearIcon {

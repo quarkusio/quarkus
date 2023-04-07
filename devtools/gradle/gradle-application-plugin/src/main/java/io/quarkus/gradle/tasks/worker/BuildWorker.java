@@ -59,7 +59,7 @@ public abstract class BuildWorker extends QuarkusWorker<BuildWorkerParams> {
                     LOGGER.warn("AugmentResult.results = null");
                 } else {
                     LOGGER.info("AugmentResult.results = {}", results.stream().map(ArtifactResult::getPath)
-                            .map(Object::toString).collect(Collectors.joining("\n    ", "\n    ", "")));
+                            .map(r -> r == null ? "null" : r.toString()).collect(Collectors.joining("\n    ", "\n    ", "")));
                 }
                 JarResult jar = result.getJar();
                 LOGGER.info("AugmentResult:");

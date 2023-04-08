@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { RouterController } from 'router-controller';
 import { StorageController } from 'storage-controller';
+import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import { devuiState } from 'devui-state';
@@ -240,7 +241,16 @@ export class QwcHeader extends observeState(LitElement) {
     }
 
     _reload(e) {
-        fetch(devuiState.applicationInfo.contextRoot);
+        fetch(devuiState.applicationInfo.contextRoot).then(response => {
+            this.routerController.goHome();
+        })
+        .catch(error => {
+            this.routerController.goHome();
+            notifier.showErrorMessage("Seems like your server is not available.  <br/>Error : <code>" + error + "</code>","middle");
+        });
+
+        
+
     }
 }
 customElements.define('qwc-header', QwcHeader);

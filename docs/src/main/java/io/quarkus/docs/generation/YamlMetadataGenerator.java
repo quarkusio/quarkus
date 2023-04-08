@@ -108,7 +108,10 @@ public class YamlMetadataGenerator {
     }
 
     public void writeYamlFiles() throws StreamWriteException, DatabindException, IOException {
-        ObjectMapper om = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+        ObjectMapper om = new ObjectMapper(
+                new YAMLFactory()
+                        .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
+                        .disable(YAMLGenerator.Feature.SPLIT_LINES));
         Map<String, DocMetadata> metadata = index.metadataByFile();
 
         om.writeValue(targetDir.resolve("indexByType.yaml").toFile(), index);

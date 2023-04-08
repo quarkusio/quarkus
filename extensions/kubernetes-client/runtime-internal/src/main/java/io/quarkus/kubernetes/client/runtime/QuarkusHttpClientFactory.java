@@ -11,6 +11,7 @@ import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.kubernetes.client.vertx.VertxHttpClientBuilder;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.file.FileSystemOptions;
 
 public class QuarkusHttpClientFactory implements HttpClient.Factory, Closeable {
 
@@ -38,7 +39,8 @@ public class QuarkusHttpClientFactory implements HttpClient.Factory, Closeable {
         Vertx vertx;
         try {
             System.setProperty(DISABLE_DNS_RESOLVER_PROP_NAME, "true");
-            vertx = Vertx.vertx(new VertxOptions());
+            vertx = Vertx.vertx(new VertxOptions().setFileSystemOptions(
+                    new FileSystemOptions().setFileCachingEnabled(false).setClassPathResolvingEnabled(false)));
         } finally {
             // Restore the original value
             if (originalValue == null) {

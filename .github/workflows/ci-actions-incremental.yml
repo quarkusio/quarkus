@@ -233,8 +233,8 @@ jobs:
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv 'integration-tests/(devtools|gradle|maven)|tcks/.*'; then run_jvm=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/devtools'; then run_devtools=false; fi
-            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; fi
-            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/maven'; then run_maven=false; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; run_devtools=true; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/maven'; then run_maven=false; run_devtools=true; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv '(docs|integration-tests|tcks)/.*'; then run_quickstarts=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'tcks/.*'; then run_tcks=false; fi
           fi

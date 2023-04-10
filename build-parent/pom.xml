@@ -176,7 +176,7 @@
 
         <!-- google cloud functions invoker-->
         <gcf-invoker.version>1.1.1</gcf-invoker.version>
-        <owasp-dependency-check-plugin.version>7.4.4</owasp-dependency-check-plugin.version>
+        <owasp-dependency-check-plugin.version>8.2.1</owasp-dependency-check-plugin.version>
 
         <!-- Jakarta JMS API -->
         <jakarta.jms-api.version>2.0.3</jakarta.jms-api.version>

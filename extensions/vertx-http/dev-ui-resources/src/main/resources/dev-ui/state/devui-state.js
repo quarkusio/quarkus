@@ -2,6 +2,7 @@ import { extensions } from 'devui-data';
 import { menuItems } from 'devui-data';
 import { footerTabs } from 'devui-data';
 import { applicationInfo } from 'devui-data';
+import { allConfiguration } from 'devui-data';
 import { connectionState } from 'connection-state';
 import { LitState } from 'lit-element-state';
 
@@ -24,35 +25,41 @@ class DevUIState extends LitState {
             menu: menuItems,
             footer: footerTabs,
             applicationInfo: applicationInfo,
+            allConfiguration: allConfiguration,
         };
     }
     
     reload(){
         
         if(connectionState.current.isConnected){
-            import(`devui/devui-data.js?${Date.now()}`).then(devUIData => {
+            import(`devui/devui-data.js?${Date.now()}`).then(newDevUIData => {
 
                 // Check Card changes
-                if(devUIData.extensions.active !== devuiState.cards.active ||
-                        devUIData.extensions.inactive !== devuiState.cards.inactive ){ // TODO: Do a finer check if something changed
-                    devuiState.cards = devUIData.extensions;
+                if(newDevUIData.extensions.active !== devuiState.cards.active ||
+                        newDevUIData.extensions.inactive !== devuiState.cards.inactive ){ // TODO: Do a finer check if something changed
+                    devuiState.cards = newDevUIData.extensions;
                 }
 
                 // Check Menu changes
-                if(devUIData.menuItems !== devuiState.menuItems){ // TODO: Do a finer check if something changed
-                    devuiState.menu = devUIData.menuItems;
+                if(newDevUIData.menuItems !== devuiState.menuItems){ // TODO: Do a finer check if something changed
+                    devuiState.menu = newDevUIData.menuItems;
                 }
 
                 // Check Footer changes
-                if(devUIData.footerTabs !== devuiState.footerTabs){ // TODO: Do a finer check if something changed
-                    devuiState.footer = devUIData.footerTabs;
+                if(newDevUIData.footerTabs !== devuiState.footerTabs){ // TODO: Do a finer check if something changed
+                    devuiState.footer = newDevUIData.footerTabs;
                 } 
                 
                 // Check application info for updates
-                if(devUIData.applicationInfo !== devuiState.applicationInfo){
-                    devuiState.applicationInfo = devUIData.applicationInfo;
+                if(newDevUIData.applicationInfo !== devuiState.applicationInfo){
+                    devuiState.applicationInfo = newDevUIData.applicationInfo;
                     document.title = "Dev UI | " + devuiState.applicationInfo.applicationName + " " + devuiState.applicationInfo.applicationVersion; 
-                } 
+                }
+                
+                // Check configuration for updates
+                if(newDevUIData.allConfiguration !== devuiState.allConfiguration){
+                    devuiState.allConfiguration = newDevUIData.allConfiguration;
+                }
             });
         }
     }

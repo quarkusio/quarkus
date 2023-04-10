@@ -1,5 +1,4 @@
 import { LitElement, html, css } from 'lit';
-import { allConfiguration } from 'devui-data';
 import { JsonRpc } from 'jsonrpc';
 import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
@@ -13,17 +12,17 @@ import '@vaadin/number-field';
 import '@vaadin/integer-field';
 import '@vaadin/text-field';
 import '@vaadin/select';
-import '@vaadin/vertical-layout';
-import '@vaadin/horizontal-layout';
 import '@vaadin/details';
 import { notifier } from 'notifier';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
+import { observeState } from 'lit-element-state';
+import { devuiState } from 'devui-state';
 
 /**
  * This component allows users to change the configuration
  */
-export class QwcConfiguration extends LitElement {
+export class QwcConfiguration extends observeState(LitElement) {
 
     jsonRpc = new JsonRpc(this);
 
@@ -72,23 +71,28 @@ export class QwcConfiguration extends LitElement {
         color: var(--lumo-contrast-60pct);
         font-size: small;
       }
+
+      .disabledDatatable {
+        pointer-events: none;
+        opacity: 0.4;
+      }
     `;
 
     static properties = {
-        _configurations: {state: true, type: Array},
         _filtered: {state: true, type: Array},
         _values: {state: true},
-        _detailsOpenedItem: {state: true, type: Array}
+        _detailsOpenedItem: {state: true, type: Array},
+        _busy: {state: true},
     };
 
     constructor() {
         super();
-        this._configurations = allConfiguration;
-        this._filtered = allConfiguration;
+        this._filtered = devuiState.allConfiguration;
         this.jsonRpc.getAllValues().then(e => {
             this._values = e.result;
         });
         this._detailsOpenedItem = [];
+        this._busy = null;
     }
 
     render() {
@@ -105,11 +109,11 @@ export class QwcConfiguration extends LitElement {
     _filter(e) {
         const searchTerm = (e.detail.value || '').trim();
         if (searchTerm === '') {
-            this._filtered = this._configurations;
+            this._filtered = devuiState.allConfiguration
             return;
         }
 
-        this._filtered = this._configurations.filter((prop) => {
+        this._filtered = devuiState.allConfiguration.filter((prop) => {
            return  this._match(prop.name, searchTerm) || this._match(prop.description, searchTerm)
         });
     }
@@ -123,32 +127,45 @@ export class QwcConfiguration extends LitElement {
                         @value-changed="${(e) => this._filter(e)}">
                     <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
                 </vaadin-text-field>
-                <vaadin-grid .items="${this._filtered}" style="width: 100%;" class="datatable" theme="row-stripes"
-                             .detailsOpenedItems="${this._detailsOpenedItem}"
-                            @active-item-changed="${(event) => {
-                            const prop = event.detail.value;
-                            this._detailsOpenedItem = prop ? [prop] : [];
-                        }}"
-                        ${gridRowDetailsRenderer(this._descriptionRenderer, [])}
-                >
-                    <vaadin-grid-sort-column auto-width class="cell" flex-grow="0" path="configPhase" header='Phase'
-                                        ${columnBodyRenderer(this._lockRenderer, [])}>
-                    </vaadin-grid-sort-column>
-
-                    <vaadin-grid-sort-column width="45%" resizable flex-grow="0"
-                                        header="Name" 
-                                        path="name"
-                                        class="cell"
-                                        ${columnBodyRenderer(this._nameRenderer, [])}>
-                    </vaadin-grid-sort-column>
-
-                    <vaadin-grid-column auto-width resizable
-                                        class="cell"
-                                        header="Value"
-                                        ${columnBodyRenderer(this._valueRenderer, [])}>
-                    </vaadin-grid-column>
-                </vaadin-grid></div>`;
+                ${this._renderGrid()}
+                </div>`;
         }
+    }
+
+    _renderGrid(){
+        if(this._busy){
+            return html`${this._renderStyledGrid("disabledDatatable")}`;
+        }else{
+            return html`${this._renderStyledGrid("datatable")}`;
+        }
+    }
+
+    _renderStyledGrid(className){
+        return html`<vaadin-grid .items="${this._filtered}" style="width: 100%;" class="${className}" theme="row-stripes"
+                                .detailsOpenedItems="${this._detailsOpenedItem}"
+                                @active-item-changed="${(event) => {
+                                const prop = event.detail.value;
+                                this._detailsOpenedItem = prop ? [prop] : [];
+                            }}"
+                            ${gridRowDetailsRenderer(this._descriptionRenderer, [])}
+                        >
+                        <vaadin-grid-sort-column auto-width class="cell" flex-grow="0" path="configPhase" header='Phase'
+                                            ${columnBodyRenderer(this._lockRenderer, [])}>
+                        </vaadin-grid-sort-column>
+
+                        <vaadin-grid-sort-column width="45%" resizable flex-grow="0"
+                                            header="Name" 
+                                            path="name"
+                                            class="cell"
+                                            ${columnBodyRenderer(this._nameRenderer, [])}>
+                        </vaadin-grid-sort-column>
+
+                        <vaadin-grid-column auto-width resizable
+                                            class="cell"
+                                            header="Value"
+                                            ${columnBodyRenderer(this._valueRenderer, [])}>
+                        </vaadin-grid-column>
+                    </vaadin-grid>`;
     }
 
     _lockRenderer(prop) {
@@ -181,7 +198,7 @@ export class QwcConfiguration extends LitElement {
         }
 
         return html`
-            <code${prop.name}</code>${devservice}${wildcard}`;
+            <code>${prop.name}</code>${devservice}${wildcard}`;
     }
 
     _valueRenderer(prop) {
@@ -200,39 +217,40 @@ export class QwcConfiguration extends LitElement {
         if (prop.wildcardEntry) {
             // TODO
         } else if (prop.typeName === "java.lang.Boolean") {
+            let isChecked = (actualValue === 'true');
             return html`
                 <vaadin-checkbox theme="small"
-                                 @change="${(event) => {
-                                     this._checkedChanged(prop, event, event.target.checked);
-                                 }}"
-                                 checked="${actualValue === 'true'}">
+                                @change="${(event) => {
+                                    this._checkedChanged(prop, event, event.target.checked);
+                                }}"
+                                .checked=${isChecked}>
                     <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
-                </vaadin-checkbox>`
+                </vaadin-checkbox>`;
         } else if (prop.typeName === "java.lang.Integer" || prop.typeName === "java.lang.Long") {
             return html`
                 <vaadin-integer-field class="input-column"
-                                      placeholder="${prop.defaultValue}"
-                                      value="${actualValue}"
-                                      theme="small"
-                                      id="input-${prop.name}"
-                                      @keydown="${this._keydown}">
+                                    placeholder="${prop.defaultValue}"
+                                    value="${actualValue}"
+                                    theme="small"
+                                    id="input-${prop.name}"
+                                    @keydown="${this._keydown}">
                     <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
                     <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button"
-                                 id="save-button-${prop.name}"
-                                 @click="${this._saveClicked}"></vaadin-icon>
-                </vaadin-integer-field>`
+                                id="save-button-${prop.name}"
+                                @click="${this._saveClicked}"></vaadin-icon>
+                </vaadin-integer-field>`;
         } else if (prop.typeName === "java.lang.Float" || prop.typeName === "java.lang.Double") {
             return html`
                 <vaadin-number-field class="input-column" 
-                                     theme="small" 
-                                     id="input-${prop.name}" 
-                                     placeholder="${prop.defaultValue}" 
-                                     value="${actualValue}" 
-                                     @keydown="${this._keydown}">
+                                    theme="small" 
+                                    id="input-${prop.name}" 
+                                    placeholder="${prop.defaultValue}" 
+                                    value="${actualValue}" 
+                                    @keydown="${this._keydown}">
                     <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
                     <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button"
-                                 id="save-button-${prop.name}" @click="${this._saveClicked}"></vaadin-icon>
-                </vaadin-number-field>`
+                                id="save-button-${prop.name}" @click="${this._saveClicked}"></vaadin-icon>
+                </vaadin-number-field>`;
         } else if (prop.typeName === "java.lang.Enum" || prop.typeName === "java.util.logging.Level") {
             let items = [];
             let defaultValue = '';
@@ -249,22 +267,30 @@ export class QwcConfiguration extends LitElement {
                 defaultValue = prop.defaultValue;
             }
             return html`
-                <vaadin-select class="input-column" id="select-${prop.name}" theme="small" .items="${items}" .value="${defaultValue}"
-                               @change="${this._selectChanged}"
-                               <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
-                >
+                <vaadin-select class="input-column" 
+                                id="select-${prop.name}" 
+                                theme="small" 
+                                .items="${items}" 
+                                .value="${defaultValue}"
+                                @change="${this._selectChanged}">
+                            <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
+                
                 </vaadin-select>
-            `
+            `;
         } else {
             return html`
-                <vaadin-text-field class="input-column" theme="small" value="${actualValue}"
-                                   placeholder="${prop.defaultValue}" id="input-${prop.name}" @keydown="${this._keydown}">
+                <vaadin-text-field class="input-column" 
+                                    theme="small" 
+                                    value="${actualValue}"
+                                    placeholder="${prop.defaultValue}" 
+                                    id="input-${prop.name}" 
+                                    @keydown="${this._keydown}">
                         <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
                         <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button" 
-                                     id="save-button-${prop.name}" @click="${this._saveClicked}"></vaadin-icon>
+                                    id="save-button-${prop.name}" @click="${this._saveClicked}"></vaadin-icon>
                     </vaadin-button>
                 </vaadin-text-field>
-            `
+            `;
         }
     }
 
@@ -323,12 +349,14 @@ export class QwcConfiguration extends LitElement {
     }
 
     _updateProperty(name, value){
+        this._busy = true;
         this.jsonRpc.updateProperty({
             'name': name,
             'value': value
         }).then(e => {
             this._values[name] = value;
             notifier.showInfoMessage("Property <code>" + name + "</code> updated");
+            this._busy = null;
         });
     }
 }

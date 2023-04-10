@@ -28,7 +28,7 @@ export class QwcFooter extends observeState(LitElement) {
         
         .openIcon {
             cursor: pointer;
-            font-size: small;
+            font-size: var(--lumo-font-size-s);
         }
         
         .openIcon:hover {

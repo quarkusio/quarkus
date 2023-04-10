@@ -24,7 +24,7 @@ public class Page {
     private final boolean internalComponent; // True if this component is provided by dev-ui (usually provided by the extension)
 
     private String namespace = null; // The namespace can be the extension path or, if internal, qwc
-
+    private String namespaceLabel = null; // When more than one page belongs to the same namespace, we use the namespace as a title sometimes
     private String extensionId = null; // If this originates from an extension, then id. For internal this will be null;
 
     protected Page(String icon,
@@ -38,6 +38,7 @@ public class Page {
             boolean embed,
             boolean internalComponent,
             String namespace,
+            String namespaceLabel,
             String extensionId) {
 
         this.icon = icon;
@@ -51,13 +52,25 @@ public class Page {
         this.embed = embed;
         this.internalComponent = internalComponent;
         this.namespace = namespace;
+        this.namespaceLabel = namespaceLabel;
         this.extensionId = extensionId;
     }
 
     public String getId() {
         String id = this.title.toLowerCase().replaceAll(SPACE, DASH);
         if (!this.isInternal() && this.namespace != null) {
-            id = this.namespace + SLASH + id;
+            // This is extension pages in Dev UI
+            id = this.namespace.toLowerCase() + SLASH + id;
+        } else if (this.isInternal() && this.namespace != null) {
+            // This is internal pages in Dev UI
+            String d = "devui-" + id;
+            if (d.equals(this.namespace)) {
+                return id;
+            } else {
+                int i = this.namespace.indexOf(DASH) + 1;
+                String stripDevui = this.namespace.substring(i);
+                return stripDevui + DASH + id;
+            }
         }
         return id;
     }
@@ -74,6 +87,10 @@ public class Page {
 
     public String getNamespace() {
         return this.namespace;
+    }
+
+    public String getNamespaceLabel() {
+        return this.namespaceLabel;
     }
 
     public String getIcon() {
@@ -129,6 +146,7 @@ public class Page {
                 + ", \n\tdynamicLabel=" + dynamicLabel
                 + ", \n\tstreamingLabel=" + streamingLabel
                 + ", \n\tnamespace=" + namespace
+                + ", \n\tnamespaceLabel=" + namespaceLabel
                 + ", \n\tcomponentName=" + componentName
                 + ", \n\tcomponentLink=" + componentLink
                 + ", \n\tembed=" + embed + "\n}";

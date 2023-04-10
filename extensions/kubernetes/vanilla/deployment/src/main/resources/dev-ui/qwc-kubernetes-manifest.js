@@ -8,6 +8,7 @@ import '@vanillawc/wc-codemirror/mode/yaml/yaml.js';
 import '@vaadin/icon';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
+import '@vaadin/progress-bar';
 
 export class QwcKubernetesManifest extends observeState(LitElement)  {
 
@@ -65,7 +66,12 @@ export class QwcKubernetesManifest extends observeState(LitElement)  {
                 </vaadin-tabsheet>
               `;
         }else{
-            return html`<span>${this._message}</span>`;
+            return html`
+            <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                <div>${this._message}</div>
+                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
+            </div>
+            `;
         }
     }
 

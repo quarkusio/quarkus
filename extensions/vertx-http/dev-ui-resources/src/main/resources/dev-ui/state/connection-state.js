@@ -33,7 +33,7 @@ class ConnectionState extends LitState {
         const newState = new Object();
         newState.name = "connecting";
         newState.icon = "plug-circle-bolt";
-        newState.color = "var(--lumo-primary-color)";
+        newState.color = "var(--lumo-warning-color)";
         newState.message = "Connecting to " + serverUri;
         newState.serverUri = serverUri;
         newState.isConnected = false;

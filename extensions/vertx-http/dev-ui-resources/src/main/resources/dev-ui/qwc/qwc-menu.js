@@ -51,7 +51,7 @@ export class QwcMenu extends observeState(LitElement) {
                 gap: 10px;
                 cursor: pointer;
                 border-left: 5px solid transparent;
-                color: var(--lumo-contrast);
+                color: var(--lumo-contrast-90pct);
                 height:30px;
                 text-decoration: none;
             }
@@ -159,7 +159,11 @@ export class QwcMenu extends observeState(LitElement) {
             this._customMenuNamespaces.push(page.namespace);
             let displayName = "";
             if(this._show){
-                displayName = page.title;
+                if(page.namespaceLabel){
+                    displayName = page.namespaceLabel;
+                }else{
+                    displayName = page.title;
+                }
             }
         
             let pageRef = this.routerController.getPageUrlFor(page);

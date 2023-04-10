@@ -31,7 +31,7 @@ export class QwcExtensionLink extends LitElement {
             flex-direction: row;
             justify-content: flex-start;
             align-items: center;
-            color: var(--lumo-contrast);
+            color: var(--lumo-contrast-80pct);
         }
     `;
 

@@ -16,6 +16,11 @@ export class RouterController {
         this._host = host;
     }
     
+    goHome(){
+        let firstPage = RouterController.pageMap.entries().next().value[0];
+        Router.go({pathname: firstPage});
+    }
+
     getCurrentRoutePath(){
         var location = RouterController.router.location;
         if (location.route) {
@@ -38,7 +43,11 @@ export class RouterController {
     getCurrentTitle(){
         let p = this.getCurrentPage();
         if(p){
-            return p.title;
+            if(p.namespaceLabel){
+                return p.namespaceLabel;
+            }else {
+                return p.title;
+            }
         }
         return null;
     }
@@ -113,7 +122,6 @@ export class RouterController {
     }
     
     addRouteForMenu(page, defaultSelection){
-        let pageRef = this.getPageUrlFor(page.namespace);
         this.addRoute(page.id, page.componentName, page.title, page, defaultSelection);
     }
     

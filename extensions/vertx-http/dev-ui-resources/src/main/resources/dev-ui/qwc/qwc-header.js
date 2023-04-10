@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { RouterController } from 'router-controller';
 import { StorageController } from 'storage-controller';
+import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import { devuiState } from 'devui-state';
@@ -50,7 +51,6 @@ export class QwcHeader extends observeState(LitElement) {
             cursor: pointer;
             display: flex;
             align-items:center;
-            font-size: xx-large;
         }
 
         .logo-reload-click:hover {
@@ -60,17 +60,20 @@ export class QwcHeader extends observeState(LitElement) {
         .title {
             display: flex;
             align-items:center;
-            font-size: x-large;
+            font-size: var(--lumo-font-size-xl);
             padding-left: 100px;
+            color: var(--lumo-contrast-90pct);
         }
         
         .logo-text {
-            line-height: 1;
+            padding-top: 10px;
+            font-size: xx-large;
         }
     
         .app-info {
-            font-size: small;
+            font-size: var(--lumo-font-size-s);
             padding-right: 10px;
+            color: var(--lumo-contrast-50pct);
         }
     
         .themeDropdown {
@@ -240,7 +243,16 @@ export class QwcHeader extends observeState(LitElement) {
     }
 
     _reload(e) {
-        fetch(devuiState.applicationInfo.contextRoot);
+        fetch(devuiState.applicationInfo.contextRoot).then(response => {
+            this.routerController.goHome();
+        })
+        .catch(error => {
+            this.routerController.goHome();
+            notifier.showErrorMessage("Seems like your server is not available.  <br/>Error : <code>" + error + "</code>","middle");
+        });
+
+        
+
     }
 }
 customElements.define('qwc-header', QwcHeader);

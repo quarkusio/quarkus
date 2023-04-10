@@ -23,6 +23,7 @@ public abstract class PageBuilder<T> {
     protected boolean embed = true; // default
     protected boolean internalComponent = false; // default
     protected String namespace = null;
+    protected String namespaceLabel = null;
     protected String extensionId = null;
     protected Class preprocessor = null;
 
@@ -72,7 +73,13 @@ public abstract class PageBuilder<T> {
 
     @SuppressWarnings("unchecked")
     public T internal() {
+        return this.internal(null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T internal(String namespaceLabel) {
         this.internalComponent = true;
+        this.namespaceLabel = namespaceLabel;
         return (T) this;
     }
 
@@ -112,9 +119,19 @@ public abstract class PageBuilder<T> {
             this.title = n.substring(0, 1).toUpperCase() + n.substring(1); // Capitalize first letter
         }
 
-        Page page = new Page(icon, title, staticLabel, dynamicLabel, streamingLabel, componentName, componentLink, metadata,
+        Page page = new Page(icon,
+                title,
+                staticLabel,
+                dynamicLabel,
+                streamingLabel,
+                componentName,
+                componentLink,
+                metadata,
                 embed,
-                internalComponent, namespace, extensionId);
+                internalComponent,
+                namespace,
+                namespaceLabel,
+                extensionId);
 
         return page;
     }

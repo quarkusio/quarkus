@@ -22,7 +22,7 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
+            <groupId>org.mvnpm.locked.at.vaadin</groupId>
             <artifactId>router</artifactId>
             <scope>runtime</scope>
         </dependency>

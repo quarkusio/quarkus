@@ -225,9 +225,9 @@
         <importmap.version>1.0.7</importmap.version>
         <lit.version>2.6.1</lit.version>
         <lit-state.version>1.7.0</lit-state.version>
-        <vaadin.version>23.3.8</vaadin.version>
+        <vaadin.version>24.0.2</vaadin.version>
         <echarts.version>5.4.1</echarts.version>
-        <vaadin-router.version>1.7.4</vaadin-router.version>
+        <vaadin-router.version>1.7.5.2</vaadin-router.version>
         <wc-codemirror.version>2.1.0</wc-codemirror.version>
         <es-module-shims.version>1.7.0</es-module-shims.version>
     </properties>
@@ -3249,7 +3249,7 @@
                 <scope>runtime</scope>
             </dependency>
             <dependency>
-                <groupId>org.mvnpm.at.vaadin</groupId>
+                <groupId>org.mvnpm.locked.at.vaadin</groupId>
                 <artifactId>router</artifactId>
                 <version>${vaadin-router.version}</version>
                 <scope>runtime</scope>

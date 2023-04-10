@@ -11,7 +11,6 @@
             {importmap}
         </script>
 
-        <link rel="stylesheet" href="{contextRoot}font/red-hat-font.min.css">
         <script type="module" src="{contextRoot}icon/font-awesome.js"></script>
 
         <script type="module" src="{contextRoot}qwc/qwc-header.js"></script>
@@ -23,11 +22,13 @@
         <style>
             body {
                 {themeVars}
-                
+                --lumo-clickable-cursor: pointer;
                 margin: 0;
                 width:100vw;
                 height: 100vh;
-                font-family: 'Red Hat Text', sans-serif;
+                font-family: var(--lumo-font-family);
+                font-size: var(--lumo-font-size-m);
+                line-height: var(--lumo-line-height-m):
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;

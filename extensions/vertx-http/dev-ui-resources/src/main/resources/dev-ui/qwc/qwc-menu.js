@@ -51,7 +51,7 @@ export class QwcMenu extends observeState(LitElement) {
                 gap: 10px;
                 cursor: pointer;
                 border-left: 5px solid transparent;
-                color: var(--lumo-contrast);
+                color: var(--lumo-contrast-90pct);
                 height:30px;
                 text-decoration: none;
             }

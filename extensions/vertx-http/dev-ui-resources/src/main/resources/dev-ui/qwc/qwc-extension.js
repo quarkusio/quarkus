@@ -22,6 +22,8 @@ export class QwcExtension extends LitElement {
         }
 
         .card-header {
+            font-size: var(--lumo-font-size-l);
+            line-height: 1;
             height: 25px;
             display: flex;
             flex-direction: row;
@@ -47,7 +49,11 @@ export class QwcExtension extends LitElement {
         }
 
         .active .card-header{
-            color: var(--lumo-contrast);
+            color: var(--lumo-contrast-80pct);
+        }
+
+        .inactive .card-header{
+            color: var(--lumo-contrast-70pct);
         }
         
         .active:hover .card-footer, .active:hover .guide {
@@ -119,7 +125,7 @@ export class QwcExtension extends LitElement {
 
     _headerTemplate() {
         return html`<div class="card-header">
-                        <h4>${this.name}</h4>
+                        <div>${this.name}</div>
                         ${this.guide?
                             html`<vaadin-icon class="icon guide" icon="font-awesome-solid:book" @click="${this._guide}" title="Go to the ${this.name} guide"></vaadin-icon>`:
                             html``
@@ -138,7 +144,7 @@ export class QwcExtension extends LitElement {
     }
 
     _renderDialog(){
-        return html`<table style="font-family: Red Hat Text;">
+        return html`<table>
                 <tr>
                     <td><b>Name</b></td>
                     <td>${this.name}</td>

@@ -76,7 +76,6 @@ public class BuildTimeContentProcessor {
 
         // Other assets
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");
-        internalImportMapBuildItem.add("font/", contextRoot + "font/");
         // Controllers
         internalImportMapBuildItem.add("controller/", contextRoot + "controller/");
         internalImportMapBuildItem.add("log-controller", contextRoot + "controller/log-controller.js");

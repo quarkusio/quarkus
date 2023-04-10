@@ -29,10 +29,6 @@ export class QwcBuildSteps extends QwcHotReloadElement {
         height: 100%;
       }
 
-      vaadin-grid-sort-column {
-        color: red;
-      }
-
       .summary {
         margin-bottom: 15px;
       }

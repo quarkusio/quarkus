@@ -23,6 +23,7 @@ export class QwcExtensions extends observeState(LitElement) {
         
         .description {
             padding-bottom: 10px;
+            color: var(--lumo-contrast-50pct);
         }
     
         .card-content {

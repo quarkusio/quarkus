@@ -63,6 +63,11 @@ triage:
     - id: devmode
       labels: [area/devmode]
       title: "dev mode"
+    - id: devui
+      labels: [area/devui]
+      title: "dev.?ui"
+      notify: [phillip-kruger, cescoffier]
+      notifyInPullRequest: true
     - labels: [area/gradle]
       title: "gradle"
       notify: [quarkusio/devtools, glefloch]

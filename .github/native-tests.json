@@ -8,7 +8,7 @@
         },
         {
             "category": "Data1",
-            "timeout": 80,
+            "timeout": 90,
             "test-modules": "jpa-h2, jpa-h2-embedded, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-orm-tenancy/datasource, hibernate-orm-tenancy/connection-resolver, hibernate-orm-tenancy/connection-resolver-legacy-qualifiers",
             "os-name": "ubuntu-latest"
         },
@@ -38,7 +38,7 @@
         },
         {
             "category": "Data6",
-            "timeout": 80,
+            "timeout": 90,
             "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling, hibernate-reactive-panache, hibernate-reactive-panache-kotlin",
             "os-name": "ubuntu-latest"
         },

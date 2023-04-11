@@ -22,7 +22,7 @@ export class QwcFooter extends observeState(LitElement) {
     
         vaadin-menu-bar {
             --lumo-size-m: 10px;
-            --lumo-space-xs: 0.5rem;
+            --lumo-space-xs: 0.7rem;
             --_lumo-button-background-color: transparent;
         }
         
@@ -140,6 +140,15 @@ export class QwcFooter extends observeState(LitElement) {
         _originalMouseY: {state: false},
     };
 
+    constructor() {
+        super();
+        LogController.addListener(this);
+    }
+
+    loaded(){
+        this._initControlButtons();
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this._controlButtons = [];
@@ -185,14 +194,14 @@ export class QwcFooter extends observeState(LitElement) {
             this._tabSelected(0);
         }
         
-        return html`<div id="footer" class="${this._footerClass}" style="height: ${this._height}px;" @dblclick=${this._doubleClicked}>
+            return html`<div id="footer" class="${this._footerClass}" style="height: ${this._height}px;" @dblclick=${this._doubleClicked}>
                         <div class="${this._dragClass}" @mousedown=${this._mousedown}></div>
                         <vaadin-tabsheet theme="minimal" class="${this._tabsheetClass}">
         
                             ${this._renderTabBodies()}
         
                             <qwc-ws-status slot="prefix"></qwc-ws-status>
-                            <vaadin-icon slot="prefix" class="openIcon" icon="font-awesome-solid:chevron-${this._arrow}" @click=${this._doubleClicked}></vaadin-icon>
+                            <vaadin-icon slot="prefix" class="openIcon" icon="font-awesome-solid:chevron-${this._arrow}" @click=${this._openCloseClicked}></vaadin-icon>
                             
                             <vaadin-tabs slot="tabs" class="${this._tabsClass}" theme="small" selected=${this._selectedTab}>
                                 ${this._renderTabHeaders()}
@@ -205,7 +214,7 @@ export class QwcFooter extends observeState(LitElement) {
                         </vaadin-tabsheet>
                     </div>`;
     }
-    
+
     _renderTabHeaders(){
         return html`${devuiState.footer.map((footerTab, index) =>
                 this._renderTabHeader(footerTab, index)
@@ -234,7 +243,8 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _renderTabBody(footerTab){
-        return html`${unsafeHTML('<' + footerTab.componentName + ' namespace="' + footerTab.namespace + '"></' + footerTab.componentName + '>')}`;
+        let dynamicFooter = `<${footerTab.componentName} namespace="${footerTab.namespace}"></${footerTab.componentName}>`;
+        return html`${unsafeHTML(dynamicFooter)}`;
     }
 
     _tabSelected(index){
@@ -279,21 +289,20 @@ export class QwcFooter extends observeState(LitElement) {
 
     _doubleClicked(e) {
         if(e.target.tagName.toLowerCase() === "vaadin-tabs" 
-                || e.target.tagName.toLowerCase() === "vaadin-tabsheet"
-                || e.target.tagName.toLowerCase() === "vaadin-icon"){
-            if(this._isOpen){
-                this._close();
-            }else {
-                this._open();
-            }
-        }
-        
-        // Initial load of control buttons
-        if (this._controlButtons.length === 0) {
-            this._initControlButtons();
+                || e.target.tagName.toLowerCase() === "vaadin-tabsheet"){
+            
+                this._openCloseClicked(e);
         }
     }
     
+    _openCloseClicked(e){
+        if(this._isOpen){
+            this._close();
+        }else {
+            this._open();
+        }
+    }
+
     _initControlButtons(){
         if (this._controlButtons.length === 0) {
             if(this._selectedTab){

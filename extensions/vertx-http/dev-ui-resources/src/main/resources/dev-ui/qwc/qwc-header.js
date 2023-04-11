@@ -7,6 +7,7 @@ import { themeState } from 'theme-state';
 import { devuiState } from 'devui-state';
 import '@vaadin/menu-bar';
 import '@vaadin/tabs';
+import '@vaadin/button';
 
 /**
  * This component represent the Dev UI Header
@@ -27,7 +28,7 @@ export class QwcHeader extends observeState(LitElement) {
         }
         .right-bar {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-around;
             align-items: center;
         }
         
@@ -72,15 +73,17 @@ export class QwcHeader extends observeState(LitElement) {
     
         .app-info {
             font-size: var(--lumo-font-size-s);
-            padding-right: 10px;
             color: var(--lumo-contrast-50pct);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
     
         .themeDropdown {
             padding-right: 15px;
             padding-left: 15px;
+            width: 60px;
         }
-
         `;
 
     static properties = {
@@ -150,7 +153,6 @@ export class QwcHeader extends observeState(LitElement) {
             <div class="right-bar">
                 ${this._rightSideNav}
                 ${this._renderThemeOptions()}
-                
             </div>
         </div>
         `;
@@ -238,7 +240,11 @@ export class QwcHeader extends observeState(LitElement) {
                                     )}
                                 </vaadin-tabs>`;
         }else{
-            this._rightSideNav = html`<div class="app-info">${devuiState.applicationInfo.applicationName} ${devuiState.applicationInfo.applicationVersion}</div>`; // default
+            this._rightSideNav = html`
+                <div class="app-info">
+                    ${devuiState.applicationInfo.applicationName} ${devuiState.applicationInfo.applicationVersion}
+                    <vaadin-button theme="secondary" @click="${this._previousDevUI}">Back to the previous Dev UI</vaadin-button>
+                </div>`;
         }
     }
 
@@ -250,9 +256,11 @@ export class QwcHeader extends observeState(LitElement) {
             this.routerController.goHome();
             notifier.showErrorMessage("Seems like your server is not available.  <br/>Error : <code>" + error + "</code>","middle");
         });
+    }
 
-        
-
+    _previousDevUI(){
+        let pdui = this.routerController.getBasePath().replace("/dev-ui", "/dev-v1");;
+        window.open(pdui, "_self").focus();
     }
 }
 customElements.define('qwc-header', QwcHeader);

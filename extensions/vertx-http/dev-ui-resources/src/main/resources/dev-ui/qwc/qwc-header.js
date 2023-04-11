@@ -28,7 +28,7 @@ export class QwcHeader extends observeState(LitElement) {
         }
         .right-bar {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-around;
             align-items: center;
         }
         
@@ -74,11 +74,15 @@ export class QwcHeader extends observeState(LitElement) {
         .app-info {
             font-size: var(--lumo-font-size-s);
             color: var(--lumo-contrast-50pct);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
     
         .themeDropdown {
             padding-right: 15px;
             padding-left: 15px;
+            width: 60px;
         }
         `;
 
@@ -149,7 +153,6 @@ export class QwcHeader extends observeState(LitElement) {
             <div class="right-bar">
                 ${this._rightSideNav}
                 ${this._renderThemeOptions()}
-                
             </div>
         </div>
         `;

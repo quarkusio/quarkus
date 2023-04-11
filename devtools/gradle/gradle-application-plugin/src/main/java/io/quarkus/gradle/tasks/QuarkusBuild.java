@@ -108,11 +108,14 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
             case LEGACY_JAR:
             case LEGACY:
                 outputs.put("fast-jar", fastJar());
-                outputs.put("legacy-lib", buildDir.toPath().resolve("lib").toFile());
+                outputs.put("legacy-lib", gradleBuildDir().resolve("lib").toFile());
+                break;
+            case NATIVE:
+                outputs.put("native-source", nativeSources());
+                outputs.put("fast-jar", fastJar());
                 break;
             case JAR:
             case FAST_JAR:
-            case NATIVE:
                 outputs.put("fast-jar", fastJar());
                 break;
             case MUTABLE_JAR:
@@ -136,23 +139,20 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         Map<String, File> outputs = new HashMap<>();
         PackageConfig.BuiltInType packageType = packageType();
         switch (packageType) {
+            case UBER_JAR:
             case LEGACY_JAR:
             case LEGACY:
-                outputs.put("legacy-jar", runnerJar());
-                outputs.put("artifact-properties", artifactProperties());
-                break;
-            case JAR:
-            case FAST_JAR:
-            case MUTABLE_JAR:
-            case NATIVE_SOURCES:
+                outputs.put("runner-jar", runnerJar());
                 outputs.put("artifact-properties", artifactProperties());
                 break;
             case NATIVE:
                 outputs.put("native-runner", nativeRunner());
                 outputs.put("artifact-properties", artifactProperties());
                 break;
-            case UBER_JAR:
-                outputs.put("uber-jar", runnerJar());
+            case JAR:
+            case FAST_JAR:
+            case MUTABLE_JAR:
+            case NATIVE_SOURCES:
                 outputs.put("artifact-properties", artifactProperties());
                 break;
             default:
@@ -196,7 +196,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         buildInputs.accept(sourceDir.resolve(nativeRunnerFileName()).toFile());
         buildInputs.accept(sourceDir.resolve(runnerJarFileName()).toFile());
         // TODO jib-image* ??
-        buildInputs.accept(sourceDir.resolve(runnerBaseName() + "-native-image-source-jar").toFile());
+        buildInputs.accept(sourceDir.resolve(nativeImageSourceJarDirName()).toFile());
     }
 
     @TaskAction
@@ -320,7 +320,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
                                 runnerJarFileName(),
                                 "jib-image*",
                                 NATIVE_SOURCES,
-                                runnerBaseName() + "-native-image-source-jar/**"));
+                                nativeImageSourceJarDirName() + "/**"));
     }
 
     private String expandConfigurationKey(String shortKey) {

@@ -1,9 +1,10 @@
-package io.quarkus.security.jpa.deployment;
+package io.quarkus.security.jpa.common.deployment;
 
 import java.lang.reflect.Modifier;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -11,14 +12,24 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.bean.JavaBeanUtil;
-import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 
 public class JpaSecurityDefinition {
+
+    public boolean haveRolesAnnotation(DotName... annotations) {
+        for (DotName annotation : annotations) {
+            if (roles.annotation(annotation) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static class FieldOrMethod {
         public final FieldInfo field;
         public final MethodInfo getter;
@@ -42,12 +53,12 @@ public class JpaSecurityDefinition {
             return JavaBeanUtil.getPropertyNameFromGetter(getter.name());
         }
 
-        public ResultHandle readValue(BytecodeCreator methodCreator, AssignableResultHandle userVar) {
+        public ResultHandle readValue(BytecodeCreator bytecodeCreator, ResultHandle userVar) {
             // favour the getter
             if (getter != null) {
-                return methodCreator.invokeVirtualMethod(MethodDescriptor.of(getter), userVar);
+                return bytecodeCreator.invokeVirtualMethod(MethodDescriptor.of(getter), userVar);
             }
-            return methodCreator.readInstanceField(FieldDescriptor.of(field), userVar);
+            return bytecodeCreator.readInstanceField(FieldDescriptor.of(field), userVar);
         }
 
         public Type type() {
@@ -78,6 +89,11 @@ public class JpaSecurityDefinition {
 
     public static FieldOrMethod getFieldOrMethod(Index index, ClassInfo annotatedClass,
             AnnotationTarget annotatedFieldOrMethod, boolean isPanache) {
+
+        if (annotatedFieldOrMethod == null) {
+            return null;
+        }
+
         switch (annotatedFieldOrMethod.kind()) {
             case FIELD:
                 // try to find a getter for this field
@@ -91,6 +107,14 @@ public class JpaSecurityDefinition {
                 throw new IllegalArgumentException(
                         "annotatedFieldOrMethod must be a field or method: " + annotatedFieldOrMethod);
         }
+    }
+
+    public AnnotationValue passwordType() {
+        return password.annotation(QuarkusSecurityJpaCommonProcessor.DOTNAME_PASSWORD).value();
+    }
+
+    public AnnotationValue customPasswordProvider() {
+        return password.annotation(QuarkusSecurityJpaCommonProcessor.DOTNAME_PASSWORD).value("provider");
     }
 
     // FIXME: in order to check for the getter type we need to apply type parameters, that's too complex so assume it matches
@@ -109,7 +133,7 @@ public class JpaSecurityDefinition {
             return method;
         }
         DotName superName = annotatedClass.superName();
-        if (superName != null && !superName.equals(QuarkusSecurityJpaProcessor.DOTNAME_OBJECT)) {
+        if (superName != null && !superName.equals(DotNames.OBJECT)) {
             ClassInfo superClass = index.getClassByName(superName);
             if (superClass != null) {
                 method = findGetter(index, superClass, methodName);

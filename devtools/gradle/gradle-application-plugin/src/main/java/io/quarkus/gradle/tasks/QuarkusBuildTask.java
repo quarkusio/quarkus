@@ -163,9 +163,7 @@ abstract class QuarkusBuildTask extends QuarkusTask {
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
 
-        WorkQueue workQueue = getWorkerExecutor()
-                .processIsolation(processWorkerSpec -> configureProcessWorkerSpec(processWorkerSpec, effectiveConfig,
-                        extension().buildForkOptions));
+        WorkQueue workQueue = workQueue(effectiveConfig, () -> extension().buildForkOptions);
 
         workQueue.submit(BuildWorker.class, params -> {
             params.getBuildSystemProperties().putAll(effectiveConfig.configMap());

@@ -68,12 +68,11 @@ class HibernateSearchElasticsearchProcessor {
 
     private static final Logger LOG = Logger.getLogger(HibernateSearchElasticsearchProcessor.class);
 
-    HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
-
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void build(HibernateSearchElasticsearchRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
@@ -176,6 +175,7 @@ class HibernateSearchElasticsearchProcessor {
     void setStaticConfig(RecorderContext recorderContext, HibernateSearchElasticsearchRecorder recorder,
             List<HibernateSearchIntegrationStaticConfiguredBuildItem> integrationStaticConfigBuildItems,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+            HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticConfigured) {
         // Make it possible to record the settings as bytecode:
         recorderContext.registerSubstitution(ElasticsearchVersion.class,
@@ -199,7 +199,8 @@ class HibernateSearchElasticsearchProcessor {
             staticConfigured.produce(
                     new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
                             .setInitListener(
-                                    recorder.createStaticInitListener(puName, configuredPersistenceUnit.getBuildTimeConfig(),
+                                    // we cannot pass a config group to a recorder so passing the whole config
+                                    recorder.createStaticInitListener(puName, buildTimeConfig,
                                             configuredPersistenceUnit.getBackendAndIndexNamesForSearchExtensions(),
                                             integrationStaticInitListeners))
                             .setXmlMappingRequired(xmlMappingRequired));
@@ -265,7 +266,7 @@ class HibernateSearchElasticsearchProcessor {
         for (String backendName : allBackendNames) {
             ElasticsearchBackendBuildTimeConfig backendConfig = backends.get(backendName);
             // ... we validate that the backend is configured and the version is present
-            if (backendConfig == null || backendConfig.version.isEmpty()) {
+            if (backendConfig == null || backendConfig.version().isEmpty()) {
                 propertyKeysWithNoVersion.add(elasticsearchVersionPropertyKey(persistenceUnitName, backendName));
             }
             // ... we register files referenced from backends configuration
@@ -287,9 +288,9 @@ class HibernateSearchElasticsearchProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
-        registerClasspathFileFromIndexConfig(persistenceUnitName, backendName, null, backendConfig.indexDefaults,
+        registerClasspathFileFromIndexConfig(persistenceUnitName, backendName, null, backendConfig.indexDefaults(),
                 applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
-        for (Entry<String, ElasticsearchIndexBuildTimeConfig> entry : backendConfig.indexes.entrySet()) {
+        for (Entry<String, ElasticsearchIndexBuildTimeConfig> entry : backendConfig.indexes().entrySet()) {
             String indexName = entry.getKey();
             ElasticsearchIndexBuildTimeConfig indexConfig = entry.getValue();
             registerClasspathFileFromIndexConfig(persistenceUnitName, backendName, indexName, indexConfig,
@@ -303,10 +304,10 @@ class HibernateSearchElasticsearchProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
         registerClasspathFileFromConfig(persistenceUnitName, backendName, indexName, "schema-management.settings-file",
-                indexConfig.schemaManagement.settingsFile,
+                indexConfig.schemaManagement().settingsFile(),
                 applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
         registerClasspathFileFromConfig(persistenceUnitName, backendName, indexName, "schema-management.mapping-file",
-                indexConfig.schemaManagement.mappingFile,
+                indexConfig.schemaManagement().mappingFile(),
                 applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
     }
 
@@ -342,10 +343,11 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     DevservicesElasticsearchBuildItem devServices(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.defaultPersistenceUnit != null && buildTimeConfig.defaultPersistenceUnit.defaultBackend != null
-        // If the version is not set, the default backend is not in use.
-                && buildTimeConfig.defaultPersistenceUnit.defaultBackend.version.isPresent()) {
-            ElasticsearchVersion version = buildTimeConfig.defaultPersistenceUnit.defaultBackend.version.get();
+        if (buildTimeConfig.defaultPersistenceUnit() != null
+                && buildTimeConfig.defaultPersistenceUnit().defaultBackend() != null
+                // If the version is not set, the default backend is not in use.
+                && buildTimeConfig.defaultPersistenceUnit().defaultBackend().version().isPresent()) {
+            ElasticsearchVersion version = buildTimeConfig.defaultPersistenceUnit().defaultBackend().version().get();
             String hostsPropertyKey = backendPropertyKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, null, null,
                     "hosts");
             return new DevservicesElasticsearchBuildItem(hostsPropertyKey,

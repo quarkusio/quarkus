@@ -1,11 +1,13 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_DEFAULT;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_ENUM_VALUE;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_MAP_KEY;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_SECTION;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_ITEM;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_WITH_DEFAULT;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_WITH_NAME;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_WITH_PARENT_NAME;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONVERT_WITH;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_DEFAULT_CONVERTER;
 import static io.quarkus.annotation.processor.Constants.DOT;
@@ -223,14 +225,14 @@ class ConfigDocItemFinder {
                 }
 
                 // Mappings
-                for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
-                        .getElementValues().entrySet()) {
-                    Object value = entry.getValue().getValue();
-                    if (annotationName.equals(ANNOTATION_CONFIG_WITH_NAME)) {
-                        name = parentName + DOT + value;
-                    } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_DEFAULT)) {
-                        defaultValue = value.toString();
-                    }
+                if (annotationName.equals(ANNOTATION_CONFIG_WITH_NAME)) {
+                    name = parentName + DOT + annotationMirror.getElementValues().values().iterator().next().getValue();
+                } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_PARENT_NAME)) {
+                    name = parentName;
+                } else if (annotationName.equals(ANNOTATION_CONFIG_DOC_DEFAULT)) {
+                    defaultValueDoc = annotationMirror.getElementValues().values().iterator().next().getValue().toString();
+                } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_DEFAULT)) {
+                    defaultValue = annotationMirror.getElementValues().values().iterator().next().getValue().toString();
                 }
             }
 
@@ -244,12 +246,8 @@ class ConfigDocItemFinder {
             if (name == null) {
                 name = parentName + DOT + hyphenatedFieldName;
             }
-
             if (NO_DEFAULT.equals(defaultValue)) {
                 defaultValue = EMPTY;
-            }
-            if (EMPTY.equals(defaultValue)) {
-                defaultValue = defaultValueDoc;
             }
 
             if (isConfigGroup(type)) {
@@ -321,10 +319,14 @@ class ConfigDocItemFinder {
 
                             type = simpleTypeToString(realTypeMirror);
                             if (isEnumType(realTypeMirror)) {
-                                if (useHyphenateEnumValue) {
-                                    defaultValue = Arrays.stream(defaultValue.split(COMMA))
-                                            .map(defaultEnumValue -> hyphenateEnumValue(defaultEnumValue.trim()))
-                                            .collect(Collectors.joining(COMMA));
+                                if (defaultValueDoc.isBlank()) {
+                                    if (useHyphenateEnumValue) {
+                                        defaultValue = Arrays.stream(defaultValue.split(COMMA))
+                                                .map(defaultEnumValue -> hyphenateEnumValue(defaultEnumValue.trim()))
+                                                .collect(Collectors.joining(COMMA));
+                                    }
+                                } else {
+                                    defaultValue = defaultValueDoc;
                                 }
                                 acceptedValues = extractEnumValues(realTypeMirror, useHyphenateEnumValue,
                                         clazz.getQualifiedName().toString());
@@ -333,15 +335,18 @@ class ConfigDocItemFinder {
                         }
                     } else {
                         type = simpleTypeToString(declaredType);
-                        if (isEnumType(declaredType)) {
-                            if (useHyphenateEnumValue) {
+
+                        if (defaultValueDoc.isBlank()) {
+                            if (isEnumType(declaredType)) {
                                 defaultValue = hyphenateEnumValue(defaultValue);
+                                acceptedValues = extractEnumValues(declaredType, useHyphenateEnumValue,
+                                        clazz.getQualifiedName().toString());
+                                configDocKey.setEnum(true);
+                            } else if (isDurationType(declaredType) && !defaultValue.isEmpty()) {
+                                defaultValue = DocGeneratorUtil.normalizeDurationValue(defaultValue);
                             }
-                            acceptedValues = extractEnumValues(declaredType, useHyphenateEnumValue,
-                                    clazz.getQualifiedName().toString());
-                            configDocKey.setEnum(true);
-                        } else if (isDurationType(declaredType) && !defaultValue.isEmpty()) {
-                            defaultValue = DocGeneratorUtil.normalizeDurationValue(defaultValue);
+                        } else {
+                            defaultValue = defaultValueDoc;
                         }
                     }
                 }

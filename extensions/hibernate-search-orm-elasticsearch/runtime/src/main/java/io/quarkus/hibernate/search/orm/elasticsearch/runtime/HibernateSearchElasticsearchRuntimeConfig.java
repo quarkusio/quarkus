@@ -7,33 +7,35 @@ import java.util.TreeMap;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithParentName;
 
-@ConfigRoot(name = "hibernate-search-orm", phase = ConfigPhase.RUN_TIME)
-public class HibernateSearchElasticsearchRuntimeConfig {
+@ConfigMapping(prefix = "quarkus.hibernate-search-orm")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface HibernateSearchElasticsearchRuntimeConfig {
 
     /**
      * Configuration for the default persistence unit.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public HibernateSearchElasticsearchRuntimeConfigPersistenceUnit defaultPersistenceUnit;
+    @WithParentName
+    HibernateSearchElasticsearchRuntimeConfigPersistenceUnit defaultPersistenceUnit();
 
     /**
      * Configuration for additional named persistence units.
      */
     @ConfigDocSection
     @ConfigDocMapKey("persistence-unit-name")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> persistenceUnits;
+    @WithParentName
+    Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> persistenceUnits();
 
-    public Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
+    default Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
         Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> map = new TreeMap<>();
-        if (defaultPersistenceUnit != null) {
-            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
+        if (defaultPersistenceUnit() != null) {
+            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit());
         }
-        map.putAll(persistenceUnits);
+        map.putAll(persistenceUnits());
         return map;
     }
 

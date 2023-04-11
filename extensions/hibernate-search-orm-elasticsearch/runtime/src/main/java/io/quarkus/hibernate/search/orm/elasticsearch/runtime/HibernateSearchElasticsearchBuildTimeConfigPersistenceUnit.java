@@ -6,27 +6,29 @@ import java.util.Optional;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
 
 @ConfigGroup
-public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
+public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
 
     /**
      * Default backend
      */
-    @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    public ElasticsearchBackendBuildTimeConfig defaultBackend;
+    @WithName("elasticsearch")
+    ElasticsearchBackendBuildTimeConfig defaultBackend();
 
     /**
      * Named backends
      */
-    @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    ElasticsearchNamedBackendsBuildTimeConfig namedBackends;
+    @WithName("elasticsearch")
+    ElasticsearchNamedBackendsBuildTimeConfig namedBackends();
 
     /**
      * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to a component
@@ -45,39 +47,37 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      *
      * @asciidoclet
      */
-    @ConfigItem
-    public Optional<String> backgroundFailureHandler;
+    Optional<String> backgroundFailureHandler();
 
     /**
      * Configuration for coordination between threads or application instances.
      */
-    @ConfigItem
-    public CoordinationConfig coordination;
+    CoordinationConfig coordination();
 
-    public Map<String, ElasticsearchBackendBuildTimeConfig> getAllBackendConfigsAsMap() {
+    default Map<String, ElasticsearchBackendBuildTimeConfig> getAllBackendConfigsAsMap() {
         Map<String, ElasticsearchBackendBuildTimeConfig> map = new LinkedHashMap<>();
-        if (defaultBackend != null) {
-            map.put(null, defaultBackend);
+        if (defaultBackend() != null) {
+            map.put(null, defaultBackend());
         }
-        if (namedBackends != null) {
-            map.putAll(namedBackends.backends);
+        if (namedBackends() != null) {
+            map.putAll(namedBackends().backends());
         }
         return map;
     }
 
     @ConfigGroup
-    public static class ElasticsearchNamedBackendsBuildTimeConfig {
+    public interface ElasticsearchNamedBackendsBuildTimeConfig {
 
         /**
          * Named backends
          */
         @ConfigDocMapKey("backend-name")
-        public Map<String, ElasticsearchBackendBuildTimeConfig> backends;
+        public Map<String, ElasticsearchBackendBuildTimeConfig> backends();
 
     }
 
     @ConfigGroup
-    public static class ElasticsearchBackendBuildTimeConfig {
+    public interface ElasticsearchBackendBuildTimeConfig {
         /**
          * The version of Elasticsearch used in the cluster.
          *
@@ -92,47 +92,42 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        @ConfigItem
-        public Optional<ElasticsearchVersion> version;
+        Optional<ElasticsearchVersion> version();
 
         /**
          * Configuration for the index layout.
          */
-        @ConfigItem
-        public LayoutConfig layout;
+        LayoutConfig layout();
 
         /**
          * The default configuration for the Elasticsearch indexes.
          */
-        @ConfigItem(name = ConfigItem.PARENT)
-        public ElasticsearchIndexBuildTimeConfig indexDefaults;
+        @WithParentName
+        ElasticsearchIndexBuildTimeConfig indexDefaults();
 
         /**
          * Per-index specific configuration.
          */
-        @ConfigItem
         @ConfigDocMapKey("index-name")
-        public Map<String, ElasticsearchIndexBuildTimeConfig> indexes;
+        Map<String, ElasticsearchIndexBuildTimeConfig> indexes();
     }
 
     @ConfigGroup
-    public static class ElasticsearchIndexBuildTimeConfig {
+    public interface ElasticsearchIndexBuildTimeConfig {
         /**
          * Configuration for automatic creation and validation of the Elasticsearch schema:
          * indexes, their mapping, their settings.
          */
-        @ConfigItem
-        public SchemaManagementConfig schemaManagement;
+        SchemaManagementConfig schemaManagement();
 
         /**
          * Configuration for full-text analysis.
          */
-        @ConfigItem
-        public AnalysisConfig analysis;
+        AnalysisConfig analysis();
     }
 
     @ConfigGroup
-    public static class SchemaManagementConfig {
+    public interface SchemaManagementConfig {
 
         // @formatter:off
         /**
@@ -149,8 +144,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem
-        public Optional<String> settingsFile;
+        Optional<String> settingsFile();
 
         // @formatter:off
         /**
@@ -166,13 +160,12 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem
-        public Optional<String> mappingFile;
+        Optional<String> mappingFile();
 
     }
 
     @ConfigGroup
-    public static class AnalysisConfig {
+    public interface AnalysisConfig {
         /**
          * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
          * used to configure full text analysis (e.g. analyzers, normalizers).
@@ -192,12 +185,11 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        @ConfigItem
-        public Optional<String> configurer;
+        Optional<String> configurer();
     }
 
     @ConfigGroup
-    public static class LayoutConfig {
+    public interface LayoutConfig {
         /**
          * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
          * used to configure layout (e.g. index names, index aliases).
@@ -229,12 +221,11 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        @ConfigItem
-        public Optional<String> strategy;
+        Optional<String> strategy();
     }
 
     @ConfigGroup
-    public static class CoordinationConfig {
+    public interface CoordinationConfig {
 
         /**
          * The strategy to use for coordinating between threads or even separate instances of the application,
@@ -244,8 +235,8 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        @ConfigItem(defaultValue = "none")
-        public Optional<String> strategy;
+        @ConfigDocDefault("none")
+        Optional<String> strategy();
     }
 
 }

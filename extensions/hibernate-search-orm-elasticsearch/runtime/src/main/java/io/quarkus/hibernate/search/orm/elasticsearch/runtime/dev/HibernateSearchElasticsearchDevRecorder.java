@@ -29,7 +29,7 @@ public class HibernateSearchElasticsearchDevRecorder {
         Set<String> activePersistenceUnitNames = persistenceUnitNames.stream()
                 .filter(name -> {
                     var puConfig = puConfigs.get(name);
-                    return puConfig == null || puConfig.active.orElse(true);
+                    return puConfig == null || puConfig.active().orElse(true);
                 })
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         HibernateSearchElasticsearchDevController.get().setActivePersistenceUnitNames(activePersistenceUnitNames);

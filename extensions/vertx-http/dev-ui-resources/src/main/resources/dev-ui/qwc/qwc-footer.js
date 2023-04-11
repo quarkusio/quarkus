@@ -192,7 +192,7 @@ export class QwcFooter extends observeState(LitElement) {
                             ${this._renderTabBodies()}
         
                             <qwc-ws-status slot="prefix"></qwc-ws-status>
-                            <vaadin-icon slot="prefix" class="openIcon" icon="font-awesome-solid:chevron-${this._arrow}" @click=${this._doubleClicked}></vaadin-icon>
+                            <vaadin-icon slot="prefix" class="openIcon" icon="font-awesome-solid:chevron-${this._arrow}" @click=${this._openCloseClicked}></vaadin-icon>
                             
                             <vaadin-tabs slot="tabs" class="${this._tabsClass}" theme="small" selected=${this._selectedTab}>
                                 ${this._renderTabHeaders()}
@@ -279,21 +279,26 @@ export class QwcFooter extends observeState(LitElement) {
 
     _doubleClicked(e) {
         if(e.target.tagName.toLowerCase() === "vaadin-tabs" 
-                || e.target.tagName.toLowerCase() === "vaadin-tabsheet"
-                || e.target.tagName.toLowerCase() === "vaadin-icon"){
-            if(this._isOpen){
-                this._close();
-            }else {
-                this._open();
-            }
+                || e.target.tagName.toLowerCase() === "vaadin-tabsheet"){
+            
+                this._openCloseClicked(e);
         }
-        
+    }
+    
+    _openCloseClicked(e){
+        if(this._isOpen){
+            this._close();
+        }else {
+            this._open();
+        }
+
         // Initial load of control buttons
         if (this._controlButtons.length === 0) {
             this._initControlButtons();
         }
+
     }
-    
+
     _initControlButtons(){
         if (this._controlButtons.length === 0) {
             if(this._selectedTab){

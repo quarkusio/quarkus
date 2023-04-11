@@ -47,7 +47,7 @@ export class QwcKubernetesManifest extends observeState(LitElement)  {
                 m.set(key, data[key]);
             }
             this._manifests = m;
-            this._message = "No manifests generated";
+            this._message = "No manifests generated.";
         });
     }
 
@@ -57,6 +57,14 @@ export class QwcKubernetesManifest extends observeState(LitElement)  {
      */
     render() {
         if (this._manifests) {
+            if (this._manifests.size == 0) {
+                return html`
+                <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                    <div>${this._message}</div>
+                </div>
+                `;
+            }
+
             return html`
                 <vaadin-tabsheet>
                     <vaadin-tabs slot="tabs">
@@ -65,14 +73,14 @@ export class QwcKubernetesManifest extends observeState(LitElement)  {
                     ${this._renderContent()}
                 </vaadin-tabsheet>
               `;
-        }else{
-            return html`
+        }
+
+        return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
                 <div>${this._message}</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>
             `;
-        }
     }
 
     _renderFileName(){

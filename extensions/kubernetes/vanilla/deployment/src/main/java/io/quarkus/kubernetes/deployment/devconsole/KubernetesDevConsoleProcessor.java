@@ -33,10 +33,14 @@ public class KubernetesDevConsoleProcessor {
         @Override
         public void accept(Map<String, byte[]> context, BuildResult buildResult) {
             // the idea here is to only display the content of the manifest file that will be selected for deployment
+            var selectedTargetBI = buildResult
+                    .consumeOptional(SelectedKubernetesDeploymentTargetBuildItem.class);
+            if (selectedTargetBI == null) {
+                return;
+            }
+
             var generatedFilesBI = buildResult
                     .consumeMulti(GeneratedKubernetesResourceBuildItem.class);
-            var selectedTargetBI = buildResult
-                    .consume(SelectedKubernetesDeploymentTargetBuildItem.class);
             for (var bi : generatedFilesBI) {
                 if (bi.getName().startsWith(selectedTargetBI.getEntry().getName())
                         && bi.getName().endsWith(".yml")) {

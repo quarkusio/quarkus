@@ -36,7 +36,6 @@ public class KubernetesDevUiProcessor {
                 List<KubernetesDevConsoleProcessor.Manifest> manifests = holder.getManifests();
                 // Avoid relying on databind.
                 Map<String, String> map = new LinkedHashMap<>();
-                System.out.println("manifests are " + manifests);
                 for (KubernetesDevConsoleProcessor.Manifest manifest : manifests) {
                     map.put(manifest.getName(), manifest.getContent());
                 }

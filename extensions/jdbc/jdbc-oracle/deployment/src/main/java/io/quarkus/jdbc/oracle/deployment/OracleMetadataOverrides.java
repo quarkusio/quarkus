@@ -48,7 +48,7 @@ public final class OracleMetadataOverrides {
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         //This is to match the Oracle metadata (which we excluded so that we can apply fixes):
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.internal.ACProxyable")
-                .methods().build());
+                .constructors().methods().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.T4CDriverExtension")
                 .build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.T2CDriverExtension")
@@ -68,18 +68,18 @@ public final class OracleMetadataOverrides {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.Message11")
                 .build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.TypeDescriptor")
-                .fields().build());
+                .constructors().fields().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.TypeDescriptorFactory")
-                .build());
+                .constructors().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.AnyDataFactory")
-                .build());
+                .constructors().build());
         reflectiveClass
                 .produce(ReflectiveClassBuildItem.builder("com.sun.rowset.providers.RIOptimisticProvider")
                         .build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Supports")
-                .methods().build());
+                .constructors().methods().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Feature")
-                .methods().build());
+                .constructors().methods().build());
     }
 
     @BuildStep

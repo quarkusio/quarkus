@@ -10,7 +10,7 @@ public final class ArcInitConfig {
     /**
      * Basic instance without any configuration, all values are default
      */
-    public static final ArcInitConfig INSTANCE = builder().build();
+    public static final ArcInitConfig DEFAULT = builder().build();
 
     /**
      * Obtains a builder for {@link ArcInitConfig}

@@ -19,7 +19,7 @@ public final class Arc {
      * @return {@link ArcContainer} instance with default configuration
      */
     public static ArcContainer initialize() {
-        return initialize(ArcInitConfig.INSTANCE);
+        return initialize(ArcInitConfig.DEFAULT);
     }
 
     /**

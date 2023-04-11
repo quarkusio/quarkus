@@ -1038,10 +1038,10 @@ public class BeanDeployment {
                     if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
                         syncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
                                 .add(beanClass);
+                        // add only concrete classes
                         if (!Modifier.isAbstract(beanClass.flags())) {
                             // do not register classes with observers and no bean def. annotation as beans in strict mode
                             if (!strictCompatibility) {
-                                // add only concrete classes
                                 beanClasses.add(beanClass);
                                 if (!hasBeanDefiningAnnotation) {
                                     LOGGER.debugf(
@@ -1053,10 +1053,10 @@ public class BeanDeployment {
                     } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
                         asyncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
                                 .add(beanClass);
+                        // add only concrete classes
                         if (!Modifier.isAbstract(beanClass.flags())) {
                             // do not register classes with observers and no bean def. annotation as beans in strict mode
                             if (!strictCompatibility) {
-                                // add only concrete classes
                                 beanClasses.add(beanClass);
                                 if (!hasBeanDefiningAnnotation) {
                                     LOGGER.debugf(
@@ -1080,12 +1080,19 @@ public class BeanDeployment {
                     if (annotationStore.hasAnnotation(field, DotNames.INJECT)) {
                         throw new DefinitionException("Injected field cannot be annotated with @Produces: " + field);
                     }
+                    // Do not register classes with producers and no bean def. annotation as beans in strict mode
                     // Producer fields are not inherited
-                    producerFields.add(field);
-                    if (!hasBeanDefiningAnnotation) {
-                        LOGGER.debugf("Producer field found but %s has no bean defining annotation - using @Dependent",
-                                beanClass);
-                        beanClasses.add(beanClass);
+                    if (strictCompatibility) {
+                        if (hasBeanDefiningAnnotation) {
+                            producerFields.add(field);
+                        }
+                    } else {
+                        producerFields.add(field);
+                        if (!hasBeanDefiningAnnotation) {
+                            LOGGER.debugf("Producer field found but %s has no bean defining annotation - using @Dependent",
+                                    beanClass);
+                            beanClasses.add(beanClass);
+                        }
                     }
                 } else {
                     // Verify that non-producer fields are not annotated with stereotypes

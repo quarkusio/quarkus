@@ -1,8 +1,8 @@
 package io.quarkus.arc.tck.porting;
 
 import java.lang.annotation.Annotation;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.spi.Context;
@@ -17,8 +17,8 @@ import io.quarkus.arc.ManagedContext;
 
 public class ContextsImpl implements Contexts<Context> {
 
-    // volatile is just a precaution in case some (future) TCK test attempts to use this in between multiple threads
-    private volatile Map<Context, InjectableContext.ContextState> contextStateMap = new HashMap();
+    // ConcurrentHashMap is just future-proofing, could be implemented with plain map too
+    private final Map<Context, InjectableContext.ContextState> contextStateMap = new ConcurrentHashMap<>();
 
     @Override
     public void setActive(Context context) {

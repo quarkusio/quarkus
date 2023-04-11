@@ -140,6 +140,15 @@ export class QwcFooter extends observeState(LitElement) {
         _originalMouseY: {state: false},
     };
 
+    constructor() {
+        super();
+        LogController.addListener(this);
+    }
+
+    loaded(){
+        this._initControlButtons();
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this._controlButtons = [];
@@ -234,7 +243,8 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _renderTabBody(footerTab){
-        return html`${unsafeHTML('<' + footerTab.componentName + ' namespace="' + footerTab.namespace + '"></' + footerTab.componentName + '>')}`;
+        let dynamicFooter = `<${footerTab.componentName} namespace="${footerTab.namespace}"></${footerTab.componentName}>`;
+        return html`${unsafeHTML(dynamicFooter)}`;
     }
 
     _tabSelected(index){
@@ -291,12 +301,6 @@ export class QwcFooter extends observeState(LitElement) {
         }else {
             this._open();
         }
-
-        // Initial load of control buttons
-        if (this._controlButtons.length === 0) {
-            this._initControlButtons();
-        }
-
     }
 
     _initControlButtons(){

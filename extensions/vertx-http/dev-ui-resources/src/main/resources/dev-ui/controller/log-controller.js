@@ -3,7 +3,8 @@
  */
 export class LogController {
     static _controllers = new Map();
-    
+    static listener;
+
     host;
     tab;
     items = [];
@@ -51,6 +52,10 @@ export class LogController {
         return this;
     }
     
+    done(){
+        LogController.listener.loaded();
+    }
+
     _createItem(icon, title, color) {
         var style = `font-size: small;cursor: pointer;color: ${color};`;
         const item = document.createElement('vaadin-context-menu-item');
@@ -83,6 +88,10 @@ export class LogController {
         return this._createItem(icon,title,color);
     }
     
+    static addListener(listener){
+        LogController.listener = listener;
+    }
+
     static getItemsForTab(tabName){
         
         if(LogController._controllers.has(tabName)){

@@ -43,7 +43,7 @@ export class QwcSchedulerLog extends LitElement {
                     this._clearLog();
                 }).addFollow("Follow log", true , (e) => {
                     this._toggleFollowLog(e);
-                });
+                }).done();
         this._logEntries = [];
         this._zoom = parseFloat(1.0);
         this._increment = parseFloat(0.05);

@@ -67,7 +67,7 @@ export class QwcJsonrpcMessages extends LitElement {
                     this._clearLog();
                 }).addFollow("Follow log", true , (e) => {
                     this._toggleFollowLog(e);
-                });
+                }).done();
                 
         this._messages = [];
         this._zoom = parseFloat(1.0);

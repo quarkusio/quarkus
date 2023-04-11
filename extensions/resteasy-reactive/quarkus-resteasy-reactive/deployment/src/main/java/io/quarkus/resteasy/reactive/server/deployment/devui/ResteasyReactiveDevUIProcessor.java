@@ -34,7 +34,8 @@ public class ResteasyReactiveDevUIProcessor {
                 .icon("font-awesome-solid:arrow-right-arrow-left"));
 
         // Custom Card
-        cardPageBuildItem.setCustomCard("qwc-resteasy-reactive-card.js");
+        // For now, we don't display the score as it might be confusing for people using blocking
+        //cardPageBuildItem.setCustomCard("qwc-resteasy-reactive-card.js");
 
         cardPageProducer.produce(cardPageBuildItem);
     }

@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.Supplier;
 
 import javax.inject.Inject;
 
@@ -11,6 +12,7 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.process.JavaForkOptions;
 import org.gradle.workers.ProcessWorkerSpec;
+import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
@@ -35,11 +37,33 @@ public abstract class QuarkusTask extends DefaultTask {
         return extension;
     }
 
-    void configureProcessWorkerSpec(ProcessWorkerSpec processWorkerSpec, EffectiveConfig effectiveConfig,
+    WorkQueue workQueue(EffectiveConfig effectiveConfig, Supplier<List<Action<? super JavaForkOptions>>> forkOptionsActions) {
+        WorkerExecutor workerExecutor = getWorkerExecutor();
+
+        // Use process isolation by default, unless Gradle's started with its debugging system property or the
+        // system property `quarkus.gradle-worker.no-process is set to `true`.
+        if (Boolean.getBoolean("org.gradle.debug") || Boolean.getBoolean("quarkus.gradle-worker.no-process")) {
+            return workerExecutor.classLoaderIsolation();
+        }
+
+        return workerExecutor.processIsolation(processWorkerSpec -> configureProcessWorkerSpec(processWorkerSpec,
+                effectiveConfig, forkOptionsActions.get()));
+    }
+
+    private void configureProcessWorkerSpec(ProcessWorkerSpec processWorkerSpec, EffectiveConfig effectiveConfig,
             List<Action<? super JavaForkOptions>> customizations) {
         JavaForkOptions forkOptions = processWorkerSpec.getForkOptions();
 
         customizations.forEach(a -> a.execute(forkOptions));
+
+        // Pass all system properties
+        System.getProperties().forEach((k, v) -> {
+            String key = k.toString();
+            forkOptions.systemProperty(key, v);
+        });
+
+        // Pass all environment variables
+        forkOptions.environment(System.getenv());
 
         if (OS.determineOS() == OS.WINDOWS) {
             // On Windows, gRPC code generation is sometimes(?) unable to find "java.exe". Feels (not proven) that

@@ -5,141 +5,129 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class EventBusConfiguration {
+public interface EventBusConfiguration {
 
     /**
      * The key configuration for the PEM format.
      */
-    @ConfigItem
-    public PemKeyCertConfiguration keyCertificatePem;
+    PemKeyCertConfiguration keyCertificatePem();
 
     /**
      * The key configuration for the JKS format.
      */
-    @ConfigItem
-    public JksConfiguration keyCertificateJks;
+    JksConfiguration keyCertificateJks();
 
     /**
      * The key configuration for the PFX format.
      */
-    @ConfigItem
-    public PfxConfiguration keyCertificatePfx;
+    PfxConfiguration keyCertificatePfx();
 
     /**
      * The trust key configuration for the PEM format.
      */
-    @ConfigItem
-    public PemTrustCertConfiguration trustCertificatePem;
+    PemTrustCertConfiguration trustCertificatePem();
 
     /**
      * The trust key configuration for the JKS format.
      */
-    @ConfigItem
-    public JksConfiguration trustCertificateJks;
+    JksConfiguration trustCertificateJks();
 
     /**
      * The trust key configuration for the PFX format.
      */
-    @ConfigItem
-    public PfxConfiguration trustCertificatePfx;
+    PfxConfiguration trustCertificatePfx();
 
     /**
      * The accept backlog.
      */
-    @ConfigItem
-    public OptionalInt acceptBacklog;
+    OptionalInt acceptBacklog();
 
     /**
      * The client authentication.
      */
-    @ConfigItem(defaultValue = "NONE")
-    public String clientAuth;
+    @WithDefault("NONE")
+    String clientAuth();
 
     /**
      * The connect timeout.
      */
-    @ConfigItem(defaultValue = "60")
-    public Duration connectTimeout;
+    @WithDefault("60")
+    Duration connectTimeout();
 
     /**
      * The idle timeout in milliseconds.
      */
-    @ConfigItem
-    public Optional<Duration> idleTimeout;
+    Optional<Duration> idleTimeout();
 
     /**
      * The receive buffer size.
      */
-    @ConfigItem
-    public OptionalInt receiveBufferSize;
+    OptionalInt receiveBufferSize();
 
     /**
      * The number of reconnection attempts.
      */
-    @ConfigItem
-    public int reconnectAttempts;
+    @WithDefault("0")
+    int reconnectAttempts();
 
     /**
      * The reconnection interval in milliseconds.
      */
-    @ConfigItem(defaultValue = "1")
-    public Duration reconnectInterval;
+    @WithDefault("1")
+    Duration reconnectInterval();
 
     /**
      * Whether to reuse the address.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean reuseAddress;
+    @WithDefault("true")
+    boolean reuseAddress();
 
     /**
      * Whether to reuse the port.
      */
-    @ConfigItem
-    public boolean reusePort;
+    @WithDefault("false")
+    boolean reusePort();
 
     /**
      * The send buffer size.
      */
-    @ConfigItem
-    public OptionalInt sendBufferSize;
+    OptionalInt sendBufferSize();
 
     /**
      * The so linger.
      */
-    @ConfigItem(name = "soLinger")
-    public OptionalInt soLinger;
+    OptionalInt soLinger();
 
     /**
      * Enables or Disabled SSL.
      */
-    @ConfigItem
-    public boolean ssl;
+    @WithDefault("false")
+    boolean ssl();
 
     /**
      * Whether to keep the TCP connection opened (keep-alive).
      */
-    @ConfigItem
-    public boolean tcpKeepAlive;
+    @WithDefault("false")
+    boolean tcpKeepAlive();
 
     /**
      * Configure the TCP no delay.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean tcpNoDelay;
+    @WithDefault("true")
+    boolean tcpNoDelay();
 
     /**
      * Configure the traffic class.
      */
-    @ConfigItem
-    public OptionalInt trafficClass;
+    OptionalInt trafficClass();
 
     /**
      * Enables or disables the trust all parameter.
      */
-    @ConfigItem
-    public boolean trustAll;
+    @WithDefault("false")
+    boolean trustAll();
 
 }

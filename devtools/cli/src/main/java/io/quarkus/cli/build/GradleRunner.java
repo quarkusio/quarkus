@@ -163,7 +163,7 @@ public class GradleRunner implements BuildSystemRunner {
             args.add(targetQuarkusVersion.platformVersion);
         }
         if (!StringUtil.isNullOrEmpty(targetQuarkusVersion.streamId)) {
-            args.add("--streamId");
+            args.add("--stream");
             args.add(targetQuarkusVersion.streamId);
         }
         if (rewrite.pluginVersion != null) {

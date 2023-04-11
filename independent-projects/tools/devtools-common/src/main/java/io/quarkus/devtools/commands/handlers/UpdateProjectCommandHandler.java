@@ -83,6 +83,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                             QuarkusProjectHelper.artifactResolver(), updateRecipesVersion, request);
                     final String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION);
                     final boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
+                    invocation.log().warn(
+                            "The update feature does not yet handle updates of the extension versions. If needed, update your extensions manually.");
                     QuarkusUpdateCommand.handle(
                             invocation.log(),
                             quarkusProject.getExtensionManager().getBuildTool(),

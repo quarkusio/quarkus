@@ -22,7 +22,7 @@ export class QwcFooter extends observeState(LitElement) {
     
         vaadin-menu-bar {
             --lumo-size-m: 10px;
-            --lumo-space-xs: 0.5rem;
+            --lumo-space-xs: 0.7rem;
             --_lumo-button-background-color: transparent;
         }
         
@@ -185,7 +185,7 @@ export class QwcFooter extends observeState(LitElement) {
             this._tabSelected(0);
         }
         
-        return html`<div id="footer" class="${this._footerClass}" style="height: ${this._height}px;" @dblclick=${this._doubleClicked}>
+            return html`<div id="footer" class="${this._footerClass}" style="height: ${this._height}px;" @dblclick=${this._doubleClicked}>
                         <div class="${this._dragClass}" @mousedown=${this._mousedown}></div>
                         <vaadin-tabsheet theme="minimal" class="${this._tabsheetClass}">
         
@@ -205,7 +205,7 @@ export class QwcFooter extends observeState(LitElement) {
                         </vaadin-tabsheet>
                     </div>`;
     }
-    
+
     _renderTabHeaders(){
         return html`${devuiState.footer.map((footerTab, index) =>
                 this._renderTabHeader(footerTab, index)

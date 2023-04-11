@@ -52,7 +52,7 @@ export class LogController {
     }
     
     _createItem(icon, title, color) {
-        var style = `font-size: x-small;cursor: pointer;color: ${color};`;
+        var style = `font-size: small;cursor: pointer;color: ${color};`;
         const item = document.createElement('vaadin-context-menu-item');
         const vaadinicon = document.createElement('vaadin-icon');
         item.setAttribute('aria-label', `${title}`);
@@ -94,32 +94,33 @@ export class LogController {
     
     static fireCallback(e){
         if(e.detail.value.isToggle){
-            if(e.detail.value.component.firstChild.icon.endsWith('-on')){
+            let iconComponent = e.detail.value.component.firstChild.firstChild;
+
+            if(iconComponent.icon.endsWith('-on')){
                 // switching off
-                e.detail.value.component.firstChild.icon = "font-awesome-solid:toggle-off";
-                e.detail.value.component.firstChild.style.color = "var(--lumo-tertiary-text-color)";
+                iconComponent.icon = "font-awesome-solid:toggle-off";
+                iconComponent.style.color = "var(--lumo-tertiary-text-color)";
                 e.detail.value.callback(false);
-            }else if(e.detail.value.component.firstChild.icon.endsWith('-off')){
+            }else if(iconComponent.icon.endsWith('-off')){
                 // switching on
-                e.detail.value.component.firstChild.icon = "font-awesome-solid:toggle-on";
-                e.detail.value.component.firstChild.style.color = "var(--lumo-primary-color)";
+                iconComponent.icon = "font-awesome-solid:toggle-on";
+                iconComponent.style.color = "var(--lumo-primary-color)";
                 e.detail.value.callback(true); 
-            }else if(e.detail.value.component.firstChild.icon.endsWith('circle-dot')){
+            }else if(iconComponent.icon.endsWith('circle-dot')){
                 // switching off
-                e.detail.value.component.firstChild.icon = "font-awesome-regular:circle";
-                e.detail.value.component.firstChild.style.color = "var(--lumo-tertiary-text-color)";
+                iconComponent.icon = "font-awesome-regular:circle";
+                iconComponent.style.color = "var(--lumo-tertiary-text-color)";
                 e.detail.value.callback(false);
-            }else if(e.detail.value.component.firstChild.icon.endsWith('circle')){
+            }else if(iconComponent.icon.endsWith('circle')){
                 // switching on
-                e.detail.value.component.firstChild.icon = "font-awesome-regular:circle-dot";
-                e.detail.value.component.firstChild.style.color = "var(--lumo-success-color)";
+                iconComponent.icon = "font-awesome-regular:circle-dot";
+                iconComponent.style.color = "var(--lumo-success-color)";
                 e.detail.value.callback(true); 
             }
             
         }else{
             e.detail.value.callback(e); 
         }
-        
         
     }
 }

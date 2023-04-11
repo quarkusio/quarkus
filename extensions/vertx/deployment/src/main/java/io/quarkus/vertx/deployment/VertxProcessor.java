@@ -103,7 +103,7 @@ class VertxProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void currentContextFactory(BuildProducer<CurrentContextFactoryBuildItem> currentContextFactory,
             VertxBuildConfig buildConfig, VertxRecorder recorder) {
-        if (buildConfig.customizeArcContext) {
+        if (buildConfig.customizeArcContext()) {
             currentContextFactory.produce(new CurrentContextFactoryBuildItem(recorder.currentContextFactory()));
         }
     }

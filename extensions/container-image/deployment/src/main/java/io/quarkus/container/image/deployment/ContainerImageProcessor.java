@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.jboss.logging.Logger;
 
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageCustomNameBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.container.spi.FallbackContainerImageRegistryBuildItem;
@@ -48,6 +49,7 @@ public class ContainerImageProcessor {
     public void publishImageInfo(ApplicationInfoBuildItem app,
             ContainerImageConfig containerImageConfig,
             Optional<FallbackContainerImageRegistryBuildItem> containerImageRegistry,
+            Optional<ContainerImageCustomNameBuildItem> containerImageCustomName,
             Capabilities capabilities,
             BuildProducer<ContainerImageInfoBuildItem> containerImage) {
 
@@ -86,7 +88,9 @@ public class ContainerImageProcessor {
             throw new IllegalArgumentException("The supplied container-image registry '" + registry + "' is invalid");
         }
 
-        String effectiveName = containerImageConfig.name.orElse(app.getName());
+        String effectiveName = containerImageCustomName.map(ContainerImageCustomNameBuildItem::getName)
+                .or(() -> containerImageConfig.name)
+                .orElse(app.getName());
         String repository = (containerImageConfig.getEffectiveGroup().map(s -> s + "/").orElse("")) + effectiveName;
         if (!ImageReference.isValidRepository(repository)) {
             throw new IllegalArgumentException("The supplied combination of container-image group '"

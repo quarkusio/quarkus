@@ -104,6 +104,7 @@ public class KubernetesCommonHelper {
     private static final String[] PROMETHEUS_ANNOTATION_TARGETS = { "Service",
             "Deployment", "DeploymentConfig" };
     private static final String DEFAULT_ROLE_NAME_VIEW = "view";
+    private static final List<String> LIST_WITH_EMPTY = List.of("");
 
     public static Optional<Project> createProject(ApplicationInfoBuildItem app,
             Optional<CustomProjectRootBuildItem> customProjectRoot, OutputTargetBuildItem outputTarget,
@@ -1011,7 +1012,7 @@ public class KubernetesCommonHelper {
         return policyRules.values()
                 .stream()
                 .map(it -> new PolicyRuleBuilder()
-                        .withApiGroups(it.apiGroups.orElse(null))
+                        .withApiGroups(it.apiGroups.orElse(LIST_WITH_EMPTY))
                         .withNonResourceURLs(it.nonResourceUrls.orElse(null))
                         .withResourceNames(it.resourceNames.orElse(null))
                         .withResources(it.resources.orElse(null))

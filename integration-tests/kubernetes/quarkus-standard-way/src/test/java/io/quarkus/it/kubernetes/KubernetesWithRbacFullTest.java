@@ -61,6 +61,7 @@ public class KubernetesWithRbacFullTest {
         Role podWriterRole = getRoleByName(kubernetesList, "pod-writer");
         assertEquals(APP_NAMESPACE, podWriterRole.getMetadata().getNamespace());
         assertThat(podWriterRole.getRules()).satisfiesOnlyOnce(r -> {
+            assertThat(r.getApiGroups()).containsExactly("");
             assertThat(r.getResources()).containsExactly("pods");
             assertThat(r.getVerbs()).containsExactly("update");
         });
@@ -69,6 +70,7 @@ public class KubernetesWithRbacFullTest {
         Role podReaderRole = getRoleByName(kubernetesList, "pod-reader");
         assertEquals("projectb", podReaderRole.getMetadata().getNamespace());
         assertThat(podReaderRole.getRules()).satisfiesOnlyOnce(r -> {
+            assertThat(r.getApiGroups()).containsExactly("");
             assertThat(r.getResources()).containsExactly("pods");
             assertThat(r.getVerbs()).containsExactly("get", "watch", "list");
         });
@@ -76,6 +78,7 @@ public class KubernetesWithRbacFullTest {
         // secret-reader assertions
         ClusterRole secretReaderRole = getClusterRoleByName(kubernetesList, "secret-reader");
         assertThat(secretReaderRole.getRules()).satisfiesOnlyOnce(r -> {
+            assertThat(r.getApiGroups()).containsExactly("");
             assertThat(r.getResources()).containsExactly("secrets");
             assertThat(r.getVerbs()).containsExactly("get", "watch", "list");
         });

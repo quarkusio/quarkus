@@ -134,4 +134,12 @@ class ExtensionInvoker {
         extensionClasses.clear();
         extensionClassInstances.clear();
     }
+
+    /**
+     *
+     * @return {@code true} if no {@link BuildCompatibleExtension} was found, {@code false} otherwise
+     */
+    boolean isEmpty() {
+        return extensionClasses.isEmpty();
+    }
 }

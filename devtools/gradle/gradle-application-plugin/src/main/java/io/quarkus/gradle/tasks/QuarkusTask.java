@@ -56,12 +56,6 @@ public abstract class QuarkusTask extends DefaultTask {
 
         customizations.forEach(a -> a.execute(forkOptions));
 
-        // Pass all system properties
-        System.getProperties().forEach((k, v) -> {
-            String key = k.toString();
-            forkOptions.systemProperty(key, v);
-        });
-
         // Pass all environment variables
         forkOptions.environment(System.getenv());
 

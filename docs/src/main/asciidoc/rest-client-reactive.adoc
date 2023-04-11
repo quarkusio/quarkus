@@ -804,6 +804,7 @@ import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import java.util.Set;
+import io.quarkus.rest.client.reactive.NotBody;
 
 @Path("/extensions")
 @RegisterRestClient
@@ -814,7 +815,8 @@ public interface ExtensionsService {
 
     @GET
     @ClientHeaderParam(name = "header-from-properties", value = "${header.value}") // <4>
-    Set<Extension> getById(@QueryParam("id") String id, @HeaderParam("jaxrs-style-header") String headerValue); // <5>
+    @ClientHeaderParam(name = "header-from-method-param", value = "Bearer {token}") // <5>
+    Set<Extension> getById(@QueryParam("id") String id, @HeaderParam("jaxrs-style-header") String headerValue, @NotBody String token); // <6>
 }
 ----
 
@@ -822,7 +824,8 @@ public interface ExtensionsService {
 <2> `@ClientHeaderParam` can be used on the client interface and on methods. It can specify a constant header value...
 <3> ... and a name of a method that should compute the value of the header. It can either be a static method or a default method in this interface. The method can take either no parameters, a single String parameter or a single `io.quarkus.rest.client.reactive.ComputedParamContext` parameter (which is very useful for code that needs to compute headers based on method parameters and naturally complements `@io.quarkus.rest.client.reactive.NotBody`).
 <4> ... as well as a value from your application's configuration
-<5> ... or as a normal Jakarta REST `@HeaderParam` annotated argument
+<5> ... or even any mixture of verbatim text, method parameters (referenced by name), a configuration value (as mentioned previously) and method invocations (as mentioned before)
+<6> ... or as a normal Jakarta REST `@HeaderParam` annotated argument
 
 [NOTE]
 ====

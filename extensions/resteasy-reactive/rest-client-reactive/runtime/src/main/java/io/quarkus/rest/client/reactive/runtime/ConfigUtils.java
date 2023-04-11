@@ -41,14 +41,23 @@ public class ConfigUtils {
         return sb.toString();
     }
 
+    /**
+     * Obtains the value of the {@param configProperty} expression. This expressions MUST be in the form of ${...}
+     */
     public static String getConfigValue(String configProperty, boolean required) {
-        String propertyName = stripPrefixAndSuffix(configProperty);
+        return doGetConfigValue(configProperty, required, stripPrefixAndSuffix(configProperty));
+    }
+
+    /**
+     * Obtains the value of the {@param propertyName} name, meaning that the name must NOT start with '${' or end with '}'
+     */
+    public static String doGetConfigValue(String configPropertyName, boolean required, String propertyName) {
         try {
             Optional<String> optionalValue = ConfigProvider.getConfig().getOptionalValue(propertyName, String.class);
             if (optionalValue.isEmpty()) {
                 String message = String.format("Failed to find value for config property %s in application configuration. "
                         + "Please provide the value for the property, e.g. by adding %s=<desired-value> to your application.properties",
-                        configProperty, propertyName);
+                        configPropertyName, propertyName);
                 if (required) {
                     throw new IllegalArgumentException(message);
                 }
@@ -56,7 +65,7 @@ public class ConfigUtils {
             }
             return optionalValue.orElse(null);
         } catch (IllegalArgumentException e) {
-            String message = "Failed to convert value for property " + configProperty + " to String";
+            String message = "Failed to convert value for property " + configPropertyName + " to String";
             if (required) {
                 throw new IllegalArgumentException(message, e);
             } else {

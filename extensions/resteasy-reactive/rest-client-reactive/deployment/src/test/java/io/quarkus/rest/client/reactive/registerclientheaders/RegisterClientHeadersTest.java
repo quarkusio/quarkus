@@ -89,6 +89,8 @@ public class RegisterClientHeadersTest {
     public void shouldSetHeadersFromMultipleBindingsAndBody() {
         String headerValue = "my-header-value";
         Map<String, List<String>> headers = multipleHeadersBindingClient.call(headerValue, "test", "unused-body").getHeaders();
+        Map<String, List<String>> header2 = multipleHeadersBindingClient.call2(headerValue, "test", "unused-body").getHeaders();
+        assertThat(headers).isEqualTo(header2);
         // Verify: @RegisterClientHeaders(MyHeadersFactory.class)
         assertThat(headers.get("foo")).containsExactly("bar");
         // Verify: @ClientHeaderParam(name = "my-header", value = "constant-header-value")

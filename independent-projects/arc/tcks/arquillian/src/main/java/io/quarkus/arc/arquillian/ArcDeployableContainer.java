@@ -21,6 +21,7 @@ import org.jboss.shrinkwrap.descriptor.api.Descriptor;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ArcInitConfig;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.arquillian.utils.ClassLoading;
@@ -81,7 +82,8 @@ public class ArcDeployableContainer implements DeployableContainer<ArcContainerC
 
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
-            ArcContainer arcContainer = Arc.initialize();
+            // passing strict mode here allows it to be visible in runtime
+            ArcContainer arcContainer = Arc.initialize(ArcInitConfig.builder().setStrictCompatibility(true).build());
             runningArc.set(arcContainer);
             arcContainer.beanManager().getEvent().fire(new Startup());
 

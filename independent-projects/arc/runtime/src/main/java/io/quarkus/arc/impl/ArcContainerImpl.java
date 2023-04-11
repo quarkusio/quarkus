@@ -98,7 +98,10 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final CurrentContextFactory currentContextFactory;
 
-    public ArcContainerImpl(CurrentContextFactory currentContextFactory) {
+    private final boolean strictMode;
+
+    public ArcContainerImpl(CurrentContextFactory currentContextFactory, boolean strictMode) {
+        this.strictMode = strictMode;
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
         List<InjectableBean<?>> beans = new ArrayList<>();
@@ -361,6 +364,11 @@ public class ArcContainerImpl implements ArcContainer {
     @Override
     public CurrentContextFactory getCurrentContextFactory() {
         return currentContextFactory;
+    }
+
+    @Override
+    public boolean strictCompatibility() {
+        return strictMode;
     }
 
     @Override

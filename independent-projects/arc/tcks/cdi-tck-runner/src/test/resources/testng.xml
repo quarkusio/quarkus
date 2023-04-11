@@ -85,31 +85,6 @@
                     <exclude name="testDeploymentFails"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.producer.method.definition.ProducerMethodDefinitionTest">
-                <methods>
-                    <exclude name="testStereotypeSpecifiesScope"/>
-                    <exclude name="testDefaultBindingType"/>
-                    <exclude name="testDefaultNamedMethod"/>
-                    <exclude name="testStaticMethod"/>
-                    <exclude name="testApiTypeForPrimitiveReturn"/>
-                    <exclude name="testApiTypeForClassReturn"/>
-                    <exclude name="testTypeVariableReturnType"/>
-                    <exclude name="testApiTypeForInterfaceReturn"/>
-                    <exclude name="testProducerOnNonBean"/>
-                    <exclude name="testStaticDisposerMethod"/>
-                    <exclude name="testParameterizedReturnType"/>
-                    <exclude name="testBindingType"/>
-                    <exclude name="testNonStaticDisposerMethodWithStaticProducer"/>
-                    <exclude name="testStaticDisposerMethodWithNonStaticProducer"/>
-                    <exclude name="testNamedMethod"/>
-                    <exclude name="testNonDependentProducerReturnsNullValue"/>
-                    <exclude name="testNonStaticProducerMethodNotInherited"/>
-                    <exclude name="testDependentProducerReturnsNullValue"/>
-                    <exclude name="testBindingTypesAppliedToProducerMethodParameters"/>
-                    <exclude name="testScopeType"/>
-                    <exclude name="testApiTypeForArrayTypeReturn"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.lookup.circular.CircularDependencyTest">
                 <methods>
                     <exclude name="testCircularInjectionOnTwoNormalBeans"/>
@@ -150,11 +125,6 @@
                     <exclude name="testInterceptorBindingsWithConflictingAnnotationMembersNotOk"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.event.broken.observer.beanNotManaged.ObserverMethodOnIncorrectBeanTest">
-                <methods>
-                    <exclude name="testObserverMethodNotOnManagedOrSessionBeanFails"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamConstructorTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
@@ -186,12 +156,6 @@
                     <exclude name="testScopeTypeDeclaresScopeTypeAnnotation"/>
                     <exclude name="testScopeTypesAreExtensible"/>
                     <exclude name="testScopeTypeDeclaredInheritedIsBlockedByIntermediateScopeTypeNotMarkedInherited"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.event.observer.conditional.ConditionalObserverTest">
-                <methods>
-                    <exclude name="testObserverMethodInvokedOnReturnedInstanceFromContext"/>
-                    <exclude name="testConditionalObserverMethodNotInvokedIfNoActiveContext"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.order.aroundInvoke.AroundInvokeOrderTest">
@@ -407,11 +371,6 @@
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptorTypeParamInitializerTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.event.observer.ObserverNotificationTest">
-                <methods>
-                    <exclude name="testObserverMethodNotInvokedIfNoActiveContext"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.context.dependent.DependentContextTest">

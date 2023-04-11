@@ -938,8 +938,14 @@ public class BeanDeployment {
                     }
                 }
 
-                // a bean without no-arg constructor needs to have either a constructor annotated with @Inject
-                // or a single constructor
+                // in strict compatibility mode, the bean needs to have either no args ctor or some with @Inject
+                // note that we perform validation (for multiple ctors for instance) later in the cycle
+                if (strictCompatibility && numberOfConstructorsWithInject == 0) {
+                    continue;
+                }
+
+                // without strict compatibility, a bean without no-arg constructor needs to have either a constructor
+                // annotated with @Inject or a single constructor
                 if (numberOfConstructorsWithInject == 0 && numberOfConstructorsWithoutInject != 1) {
                     continue;
                 }
@@ -982,12 +988,19 @@ public class BeanDeployment {
                 }
                 if (annotationStore.hasAnnotation(method, DotNames.PRODUCES)
                         && !annotationStore.hasAnnotation(method, DotNames.VETOED_PRODUCER)) {
+                    // Do not register classes with producers and no bean def. annotation as beans in strict mode
                     // Producers are not inherited
-                    producerMethods.add(method);
-                    if (!hasBeanDefiningAnnotation) {
-                        LOGGER.debugf("Producer method found but %s has no bean defining annotation - using @Dependent",
-                                beanClass);
-                        beanClasses.add(beanClass);
+                    if (strictCompatibility) {
+                        if (hasBeanDefiningAnnotation) {
+                            producerMethods.add(method);
+                        }
+                    } else {
+                        producerMethods.add(method);
+                        if (!hasBeanDefiningAnnotation) {
+                            LOGGER.debugf("Producer method found but %s has no bean defining annotation - using @Dependent",
+                                    beanClass);
+                            beanClasses.add(beanClass);
+                        }
                     }
                 }
                 if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
@@ -1025,23 +1038,31 @@ public class BeanDeployment {
                     if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
                         syncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
                                 .add(beanClass);
+                        // add only concrete classes
                         if (!Modifier.isAbstract(beanClass.flags())) {
-                            // add only concrete classes
-                            beanClasses.add(beanClass);
-                            if (!hasBeanDefiningAnnotation) {
-                                LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
-                                        beanClass);
+                            // do not register classes with observers and no bean def. annotation as beans in strict mode
+                            if (!strictCompatibility) {
+                                beanClasses.add(beanClass);
+                                if (!hasBeanDefiningAnnotation) {
+                                    LOGGER.debugf(
+                                            "Observer method found but %s has no bean defining annotation - using @Dependent",
+                                            beanClass);
+                                }
                             }
                         }
                     } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
                         asyncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
                                 .add(beanClass);
+                        // add only concrete classes
                         if (!Modifier.isAbstract(beanClass.flags())) {
-                            // add only concrete classes
-                            beanClasses.add(beanClass);
-                            if (!hasBeanDefiningAnnotation) {
-                                LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
-                                        beanClass);
+                            // do not register classes with observers and no bean def. annotation as beans in strict mode
+                            if (!strictCompatibility) {
+                                beanClasses.add(beanClass);
+                                if (!hasBeanDefiningAnnotation) {
+                                    LOGGER.debugf(
+                                            "Observer method found but %s has no bean defining annotation - using @Dependent",
+                                            beanClass);
+                                }
                             }
                         }
                     }
@@ -1059,12 +1080,19 @@ public class BeanDeployment {
                     if (annotationStore.hasAnnotation(field, DotNames.INJECT)) {
                         throw new DefinitionException("Injected field cannot be annotated with @Produces: " + field);
                     }
+                    // Do not register classes with producers and no bean def. annotation as beans in strict mode
                     // Producer fields are not inherited
-                    producerFields.add(field);
-                    if (!hasBeanDefiningAnnotation) {
-                        LOGGER.debugf("Producer field found but %s has no bean defining annotation - using @Dependent",
-                                beanClass);
-                        beanClasses.add(beanClass);
+                    if (strictCompatibility) {
+                        if (hasBeanDefiningAnnotation) {
+                            producerFields.add(field);
+                        }
+                    } else {
+                        producerFields.add(field);
+                        if (!hasBeanDefiningAnnotation) {
+                            LOGGER.debugf("Producer field found but %s has no bean defining annotation - using @Dependent",
+                                    beanClass);
+                            beanClasses.add(beanClass);
+                        }
                     }
                 } else {
                     // Verify that non-producer fields are not annotated with stereotypes

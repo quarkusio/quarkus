@@ -166,7 +166,8 @@ class EventImpl<T> implements Event<T> {
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container, InjectionPoint injectionPoint) {
-        return createNotifier(runtimeType, eventType, qualifiers, container, true, injectionPoint);
+        return createNotifier(runtimeType, eventType, qualifiers, container, !Arc.container().strictCompatibility(),
+                injectionPoint);
     }
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
@@ -316,6 +317,7 @@ class EventImpl<T> implements Event<T> {
                 }
 
                 // Non-tx observers notifications
+                // req. context is activated if not in strict mode and not for lifecycle events such as init/shutdown
                 if (activateRequestContext) {
                     ManagedContext requestContext = Arc.container().requestContext();
                     if (requestContext.isActive()) {

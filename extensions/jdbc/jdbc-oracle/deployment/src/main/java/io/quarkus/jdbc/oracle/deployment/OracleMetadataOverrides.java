@@ -7,6 +7,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
@@ -48,7 +49,7 @@ public final class OracleMetadataOverrides {
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         //This is to match the Oracle metadata (which we excluded so that we can apply fixes):
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.internal.ACProxyable")
-                .methods().build());
+                .constructors().methods().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.T4CDriverExtension")
                 .build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.T2CDriverExtension")
@@ -65,21 +66,24 @@ public final class OracleMetadataOverrides {
                 .build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.net.ano.SupervisorService")
                 .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.Message11")
-                .build());
+        //This is listed in the original metadata, but it doesn't actually exist:
+        //        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.Message11")
+        //                .build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.TypeDescriptor")
-                .fields().build());
+                .constructors().fields().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.TypeDescriptorFactory")
-                .build());
+                .constructors().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.AnyDataFactory")
-                .build());
+                .constructors().build());
         reflectiveClass
                 .produce(ReflectiveClassBuildItem.builder("com.sun.rowset.providers.RIOptimisticProvider")
                         .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Supports")
-                .methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Feature")
-                .methods().build());
+        //This is listed in the original metadata, but it doesn't actually exist:
+        //        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Supports")
+        //                .constructors().methods().build());
+        //This is listed in the original metadata, but it doesn't actually exist:
+        //        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Feature")
+        //                .constructors().methods().build());
     }
 
     @BuildStep
@@ -153,6 +157,11 @@ public final class OracleMetadataOverrides {
     RemovedResourceBuildItem enhancedCharsetSubstitutions() {
         return new RemovedResourceBuildItem(ArtifactKey.fromString("com.oracle.database.jdbc:ojdbc11"),
                 Collections.singleton("oracle/nativeimage/CharacterSetFeature.class"));
+    }
+
+    @BuildStep
+    NativeImageResourceBundleBuildItem additionalResourceBundles() {
+        return new NativeImageResourceBundleBuildItem("oracle.net.mesg.NetErrorMessages");
     }
 
 }

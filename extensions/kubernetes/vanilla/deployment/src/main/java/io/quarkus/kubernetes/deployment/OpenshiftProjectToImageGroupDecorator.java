@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_INTERNAL_REGISTRY;
+
 import java.util.Optional;
 
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
@@ -9,8 +11,6 @@ import io.quarkus.container.image.deployment.util.ImageUtil;
 
 public class OpenshiftProjectToImageGroupDecorator extends ApplicationContainerDecorator<ContainerFluent<?>>
         implements DeploymentDecorator<OpenshiftProjectToImageGroupDecorator> {
-
-    private static final String OPENSHIFT_INTERNAL_REGISTRY = "image-registry.openshift-image-registry.svc:5000";
 
     private final String name;
     private final String namespace;

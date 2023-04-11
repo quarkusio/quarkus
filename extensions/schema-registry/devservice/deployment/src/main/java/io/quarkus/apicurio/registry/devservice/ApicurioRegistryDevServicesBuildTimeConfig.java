@@ -31,7 +31,7 @@ public class ApicurioRegistryDevServicesBuildTimeConfig {
      * Note that only Apicurio Registry 2.x images are supported.
      * Specifically, the image repository must end with {@code apicurio/apicurio-registry-mem}.
      */
-    @ConfigItem(defaultValue = "quay.io/apicurio/apicurio-registry-mem:2.2.3.Final")
+    @ConfigItem(defaultValue = "quay.io/apicurio/apicurio-registry-mem:2.4.2.Final")
     public String imageName;
 
     /**

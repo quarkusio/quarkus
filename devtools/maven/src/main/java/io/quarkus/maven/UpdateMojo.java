@@ -16,7 +16,6 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.project.update.QuarkusUpdateCommand;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -50,7 +49,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     /**
      * The OpenRewrite plugin version
      */
-    @Parameter(property = "rewritePluginVersion", required = true, defaultValue = QuarkusUpdateCommand.DEFAULT_MAVEN_REWRITE_PLUGIN_VERSION)
+    @Parameter(property = "rewritePluginVersion", required = false)
     private String rewritePluginVersion;
 
     /**

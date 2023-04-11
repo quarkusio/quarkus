@@ -2,10 +2,11 @@ package io.quarkus.devtools.project.update;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.update.QuarkusUpdatesRepository.FetchResult;
 import io.quarkus.devtools.project.update.operations.UpdatePropertyOperation;
 
 public final class QuarkusUpdates {
@@ -13,10 +14,11 @@ public final class QuarkusUpdates {
     private QuarkusUpdates() {
     }
 
-    public static void createRecipe(Path target, MavenArtifactResolver artifactResolver, String updateRecipesVersion,
+    public static FetchResult createRecipe(MessageWriter log, Path target, MavenArtifactResolver artifactResolver,
+            BuildTool buildTool, String updateRecipesVersion,
             ProjectUpdateRequest request)
             throws IOException {
-        final List<String> recipes = QuarkusUpdatesRepository.fetchRecipes(artifactResolver, updateRecipesVersion,
+        final FetchResult result = QuarkusUpdatesRepository.fetchRecipes(log, artifactResolver, buildTool, updateRecipesVersion,
                 request.currentVersion,
                 request.targetVersion);
         QuarkusUpdateRecipe recipe = new QuarkusUpdateRecipe()
@@ -34,10 +36,11 @@ public final class QuarkusUpdates {
                 break;
         }
 
-        for (String s : recipes) {
+        for (String s : result.getRecipes()) {
             recipe.addRecipes(QuarkusUpdateRecipeIO.readRecipesYaml(s));
         }
         QuarkusUpdateRecipeIO.write(target, recipe);
+        return result;
     }
 
     public static class ProjectUpdateRequest {

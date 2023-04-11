@@ -10,7 +10,6 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.update.QuarkusUpdateCommand;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -27,7 +26,7 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
     private String targetStreamId;
     private String targetPlatformVersion;
 
-    private String rewritePluginVersion = QuarkusUpdateCommand.DEFAULT_GRADLE_REWRITE_PLUGIN_VERSION;
+    private String rewritePluginVersion = null;
 
     private String rewriteUpdateRecipesVersion = null;
 
@@ -66,6 +65,7 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
     }
 
     @Input
+    @Optional
     public String getRewritePluginVersion() {
         return rewritePluginVersion;
     }

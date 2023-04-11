@@ -65,6 +65,11 @@ public abstract class PermissionSecurityCheck<T> implements SecurityCheck {
         return checkPermissions(identity, getPermissions(parameters), 0);
     }
 
+    @Override
+    public boolean requiresMethodArguments() {
+        return useComputedPermissions;
+    }
+
     private static void throwException(SecurityIdentity identity) {
         if (identity.isAnonymous()) {
             throw new UnauthorizedException();

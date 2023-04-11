@@ -14,7 +14,7 @@ public class LazyAuthPermissionsAllowedTestCase extends AbstractPermissionsAllow
             .withApplicationRoot((jar) -> jar
                     .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
                             NonBlockingPermissionsAllowedResource.class, CustomPermission.class,
-                            PermissionsIdentityAugmentor.class)
+                            PermissionsIdentityAugmentor.class, CustomPermissionWithExtraArgs.class)
                     .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"),
                             "application.properties"));
 

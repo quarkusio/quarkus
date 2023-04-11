@@ -16,6 +16,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationController;
@@ -97,8 +98,18 @@ public class EagerSecurityHandler implements ServerRestHandler {
             deferredIdentity.flatMap(new Function<SecurityIdentity, Uni<?>>() {
                 @Override
                 public Uni<?> apply(SecurityIdentity securityIdentity) {
-                    preventRepeatedSecurityChecks(requestContext, methodDescription);
-                    return theCheck.nonBlockingApply(securityIdentity, methodDescription, requestContext.getParameters());
+                    if (theCheck.requiresMethodArguments()) {
+                        // if security check requires method arguments, we can't perform it now
+                        // however we only allow to pass authenticated requests to avoid security risks
+                        if (securityIdentity.isAnonymous()) {
+                            throw new UnauthorizedException();
+                        }
+                        // security check will be performed by CDI interceptor
+                        return Uni.createFrom().nullItem();
+                    } else {
+                        preventRepeatedSecurityChecks(requestContext, methodDescription);
+                        return theCheck.nonBlockingApply(securityIdentity, methodDescription, requestContext.getParameters());
+                    }
                 }
             })
                     .subscribe().withSubscriber(new UniSubscriber<Object>() {

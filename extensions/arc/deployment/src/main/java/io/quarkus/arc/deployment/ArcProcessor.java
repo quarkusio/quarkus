@@ -798,19 +798,6 @@ public class ArcProcessor {
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         BeanDeployment beanDeployment = beanRegistrationPhase.getBeanProcessor().getBeanDeployment();
-        ReflectionRegistration reflectionRegistration = new ReflectionRegistration() {
-            @Override
-            public void registerMethod(MethodInfo methodInfo) {
-                reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
-            }
-
-            @Override
-            public void registerField(FieldInfo fieldInfo) {
-                reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
-            }
-
-        };
-
         List<TypeAndQualifiers> unremovables = new ArrayList<>();
 
         for (InjectionPointInfo injectionPoint : injectionPoints) {

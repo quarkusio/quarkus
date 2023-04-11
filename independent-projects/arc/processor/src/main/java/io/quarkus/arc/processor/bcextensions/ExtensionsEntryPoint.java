@@ -69,18 +69,18 @@ import io.quarkus.gizmo.ResultHandle;
  */
 public class ExtensionsEntryPoint {
     private final ExtensionInvoker invoker;
-    private final AllAnnotationOverlays annotationOverlays = new AllAnnotationOverlays();
-    private final SharedErrors errors = new SharedErrors();
+    private final AllAnnotationOverlays annotationOverlays;
+    private final SharedErrors errors;
 
-    private final Map<DotName, ClassConfig> qualifiers = new ConcurrentHashMap<>();
-    private final Map<DotName, ClassConfig> interceptorBindings = new ConcurrentHashMap<>();
-    private final Map<DotName, ClassConfig> stereotypes = new ConcurrentHashMap<>();
-    private final List<MetaAnnotationsImpl.ContextData> contexts = Collections.synchronizedList(new ArrayList<>());
+    private final Map<DotName, ClassConfig> qualifiers;
+    private final Map<DotName, ClassConfig> interceptorBindings;
+    private final Map<DotName, ClassConfig> stereotypes;
+    private final List<MetaAnnotationsImpl.ContextData> contexts;
 
     private volatile AllAnnotationTransformations preAnnotationTransformations;
 
-    private final List<SyntheticBeanBuilderImpl<?>> syntheticBeans = Collections.synchronizedList(new ArrayList<>());
-    private final List<SyntheticObserverBuilderImpl<?>> syntheticObservers = Collections.synchronizedList(new ArrayList<>());
+    private final List<SyntheticBeanBuilderImpl<?>> syntheticBeans;
+    private final List<SyntheticObserverBuilderImpl<?>> syntheticObservers;
 
     public ExtensionsEntryPoint() {
         this(List.of());
@@ -88,13 +88,37 @@ public class ExtensionsEntryPoint {
 
     // only for `ArcTestContainer`
     public ExtensionsEntryPoint(List<BuildCompatibleExtension> extensions) {
-        this.invoker = new ExtensionInvoker(extensions);
+        invoker = new ExtensionInvoker(extensions);
+        if (invoker.isEmpty()) {
+            annotationOverlays = null;
+            errors = null;
+            qualifiers = null;
+            interceptorBindings = null;
+            stereotypes = null;
+            contexts = null;
+            syntheticBeans = null;
+            syntheticObservers = null;
+        } else {
+            annotationOverlays = new AllAnnotationOverlays();
+            errors = new SharedErrors();
+            qualifiers = new ConcurrentHashMap<>();
+            interceptorBindings = new ConcurrentHashMap<>();
+            stereotypes = new ConcurrentHashMap<>();
+            contexts = Collections.synchronizedList(new ArrayList<>());
+            syntheticBeans = Collections.synchronizedList(new ArrayList<>());
+            syntheticObservers = Collections.synchronizedList(new ArrayList<>());
+        }
     }
 
     /**
      * Must be called first, <i>before</i> {@code registerMetaAnnotations}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void runDiscovery(org.jboss.jandex.IndexView applicationIndex, Set<String> additionalClasses) {
+        if (invoker.isEmpty()) {
+            return;
+        }
         try {
             BuildServicesImpl.init(applicationIndex, annotationOverlays);
 
@@ -117,8 +141,13 @@ public class ExtensionsEntryPoint {
 
     /**
      * Must be called <i>after</i> {@code runDiscovery} and <i>before</i> {@code runEnhancement}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void registerMetaAnnotations(BeanProcessor.Builder builder) {
+        if (invoker.isEmpty()) {
+            return;
+        }
         builder.addAnnotationTransformer(preAnnotationTransformations.classes);
         builder.addAnnotationTransformer(preAnnotationTransformations.methods);
         builder.addAnnotationTransformer(preAnnotationTransformations.parameters);
@@ -200,8 +229,13 @@ public class ExtensionsEntryPoint {
 
     /**
      * Must be called <i>after</i> {@code registerMetaAnnotations} and <i>before</i> {@code runRegistration}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void runEnhancement(org.jboss.jandex.IndexView beanArchiveIndex, BeanProcessor.Builder builder) {
+        if (invoker.isEmpty()) {
+            return;
+        }
         AllAnnotationTransformations annotationTransformations = new AllAnnotationTransformations(beanArchiveIndex,
                 annotationOverlays);
         builder.addAnnotationTransformer(annotationTransformations.classes);
@@ -223,10 +257,15 @@ public class ExtensionsEntryPoint {
 
     /**
      * Must be called <i>after</i> {@code runEnhancement} and <i>before</i> {@code runSynthesis}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void runRegistration(org.jboss.jandex.IndexView beanArchiveIndex,
             Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
             Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
+        if (invoker.isEmpty()) {
+            return;
+        }
 
         BuildServicesImpl.init(beanArchiveIndex, annotationOverlays);
 
@@ -240,8 +279,14 @@ public class ExtensionsEntryPoint {
 
     /**
      * Must be called <i>after</i> {@code runRegistration} and <i>before</i> {@code registerSyntheticBeans}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void runSynthesis(org.jboss.jandex.IndexView beanArchiveIndex) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
         BuildServicesImpl.init(beanArchiveIndex, annotationOverlays);
 
         try {
@@ -254,8 +299,14 @@ public class ExtensionsEntryPoint {
 
     /**
      * Must be called <i>after</i> {@code runSynthesis} and <i>before</i> {@code runRegistrationAgain}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void registerSyntheticBeans(BeanRegistrar.RegistrationContext context) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
         Map<DotName, StereotypeInfo> allStereotypes = context.get(BuildExtension.Key.STEREOTYPES);
 
         for (SyntheticBeanBuilderImpl<?> syntheticBean : syntheticBeans) {
@@ -369,8 +420,14 @@ public class ExtensionsEntryPoint {
 
     /**
      * Must be called <i>after</i> {@code runSynthesis} and <i>before</i> {@code runRegistrationAgain}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void registerSyntheticObservers(ObserverRegistrar.RegistrationContext context) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
         for (SyntheticObserverBuilderImpl<?> syntheticObserver : syntheticObservers) {
             if (syntheticObserver.isAsync && syntheticObserver.transactionPhase != TransactionPhase.IN_PROGRESS) {
                 throw new IllegalStateException("Synthetic observer declared as asynchronous and transactional "
@@ -475,10 +532,16 @@ public class ExtensionsEntryPoint {
     /**
      * Must be called <i>after</i> {@code registerSynthetic{Beans,Observers}} and <i>before</i>
      * {@code runValidation}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void runRegistrationAgain(org.jboss.jandex.IndexView beanArchiveIndex,
             Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
             Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
         Collection<io.quarkus.arc.processor.BeanInfo> syntheticBeans = allBeans.stream()
                 .filter(BeanInfo::isSynthetic)
                 .collect(Collectors.toUnmodifiableList());
@@ -498,10 +561,15 @@ public class ExtensionsEntryPoint {
 
     /**
      * Must be called <i>after</i> {@code runRegistrationAgain} and <i>before</i> {@code registerValidationErrors}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void runValidation(org.jboss.jandex.IndexView beanArchiveIndex,
             Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
             Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
+        if (invoker.isEmpty()) {
+            return;
+        }
 
         BuildServicesImpl.init(beanArchiveIndex, annotationOverlays);
 
@@ -515,8 +583,14 @@ public class ExtensionsEntryPoint {
 
     /**
      * Must be called last, <i>after</i> {@code runValidation}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
     public void registerValidationErrors(BeanDeploymentValidator.ValidationContext context) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
         for (Throwable error : errors.list) {
             context.addDeploymentProblem(error);
         }

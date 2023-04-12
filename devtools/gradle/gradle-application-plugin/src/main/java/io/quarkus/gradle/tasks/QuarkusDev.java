@@ -365,9 +365,9 @@ public abstract class QuarkusDev extends QuarkusTask {
         }
         GradleDevModeLauncher.Builder builder = GradleDevModeLauncher.builder(getLogger(), java)
                 .preventnoverify(getPreventNoVerify().getOrElse(false))
-                .projectDir(project.getProjectDir())
-                .buildDir(project.getBuildDir())
-                .outputDir(project.getBuildDir())
+                .projectDir(projectDir)
+                .buildDir(buildDir)
+                .outputDir(buildDir)
                 .debug(System.getProperty("debug"))
                 .debugHost(System.getProperty("debugHost"))
                 .debugPort(System.getProperty("debugPort"))

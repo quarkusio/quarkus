@@ -104,7 +104,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected String[] buildArguments() {
-        return new String[] { "clean", "quarkusDev", "-s" };
+        return new String[] { "clean", "quarkusDev" };
     }
 
     protected void beforeQuarkusDev() throws Exception {

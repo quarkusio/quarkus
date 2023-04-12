@@ -20,6 +20,7 @@ import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
+import io.quarkus.runtime.LaunchMode;
 
 public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CodeGenWorker.class);
@@ -60,6 +61,8 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
             Consumer<Path> sourceRegistrar = (p) -> {
             };
 
+            LaunchMode launchMode = params.getLaunchMode().get();
+
             initAndRun.invoke(null,
                     // QuarkusClassLoader classLoader,
                     deploymentClassLoader,
@@ -77,9 +80,9 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
                     // Properties properties,
                     props,
                     // String launchMode,
-                    params.getLaunchMode().get().name(),
+                    launchMode.name(),
                     // boolean test
-                    params.getTest().get());
+                    launchMode == LaunchMode.TEST);
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {
             // Gradle "abbreviates" the stacktrace to something human-readable, but here the underlying cause might
             // get lost in the error output, so add 'e' to the message.

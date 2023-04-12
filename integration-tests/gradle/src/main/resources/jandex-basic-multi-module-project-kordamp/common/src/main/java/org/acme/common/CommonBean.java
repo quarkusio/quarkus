@@ -6,6 +6,6 @@ import jakarta.enterprise.context.RequestScoped;
 public class CommonBean {
 
    public String getName() {
-       return "common";
+       return "common-kordamp";
    }
 }

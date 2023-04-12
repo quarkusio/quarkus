@@ -17,7 +17,7 @@ public class MultiModuleKotlinProjectDevModeTest extends QuarkusDevGradleTestBas
 
     @Override
     protected String[] buildArguments() {
-        return new String[] { "clean", ":web:quarkusDev", "-s" };
+        return new String[] { "clean", ":web:quarkusDev" };
     }
 
     protected void testDevMode() throws Exception {

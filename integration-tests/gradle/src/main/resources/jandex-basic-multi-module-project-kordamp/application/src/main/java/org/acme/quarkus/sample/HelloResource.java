@@ -17,6 +17,6 @@ public class HelloResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello " + common.getName();
+        return "hello kordamp jandex " + common.getName();
     }
 }

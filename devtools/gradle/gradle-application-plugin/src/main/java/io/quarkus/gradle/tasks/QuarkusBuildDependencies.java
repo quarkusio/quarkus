@@ -135,13 +135,12 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         }
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        EffectiveConfig effectiveConfig = extension().buildEffectiveConfiguration(appModel.getAppArtifact());
+        Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
 
         // see https://quarkus.io/guides/class-loading-reference#configuring-class-loading
-        String removedArtifactsProp = effectiveConfig
-                .configMap().getOrDefault(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, "");
+        String removedArtifactsProp = configMap.getOrDefault(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, "");
         java.util.Optional<Set<ArtifactKey>> optionalDependencies = java.util.Optional.ofNullable(
-                effectiveConfig.configMap().getOrDefault(CLASS_LOADING_REMOVED_ARTIFACTS, null))
+                configMap.getOrDefault(CLASS_LOADING_REMOVED_ARTIFACTS, null))
                 .map(s -> Arrays.stream(s.split(","))
                         .map(String::trim)
                         .filter(gact -> !gact.isEmpty())

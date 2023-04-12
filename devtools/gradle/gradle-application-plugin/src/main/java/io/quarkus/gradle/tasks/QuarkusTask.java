@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.inject.Inject;
@@ -19,25 +20,30 @@ import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.utilities.OS;
 
 public abstract class QuarkusTask extends DefaultTask {
-
-    private QuarkusPluginExtension extension;
+    private final transient QuarkusPluginExtension extension;
+    protected final File projectDir;
+    protected final File buildDir;
 
     QuarkusTask(String description) {
         setDescription(description);
         setGroup("quarkus");
+        this.extension = getProject().getExtensions().findByType(QuarkusPluginExtension.class);
+        this.projectDir = getProject().getProjectDir();
+        this.buildDir = getProject().getBuildDir();
+
+        // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
+        // cache will be at least degraded, but the build will not fail.
+        notCompatibleWithConfigurationCache("The Quarkus Plugin isn't compatible with the configuration cache");
     }
 
     @Inject
     protected abstract WorkerExecutor getWorkerExecutor();
 
     QuarkusPluginExtension extension() {
-        if (extension == null) {
-            extension = getProject().getExtensions().findByType(QuarkusPluginExtension.class);
-        }
         return extension;
     }
 
-    WorkQueue workQueue(EffectiveConfig effectiveConfig, Supplier<List<Action<? super JavaForkOptions>>> forkOptionsActions) {
+    WorkQueue workQueue(Map<String, String> configMap, Supplier<List<Action<? super JavaForkOptions>>> forkOptionsActions) {
         WorkerExecutor workerExecutor = getWorkerExecutor();
 
         // Use process isolation by default, unless Gradle's started with its debugging system property or the
@@ -47,10 +53,10 @@ public abstract class QuarkusTask extends DefaultTask {
         }
 
         return workerExecutor.processIsolation(processWorkerSpec -> configureProcessWorkerSpec(processWorkerSpec,
-                effectiveConfig, forkOptionsActions.get()));
+                configMap, forkOptionsActions.get()));
     }
 
-    private void configureProcessWorkerSpec(ProcessWorkerSpec processWorkerSpec, EffectiveConfig effectiveConfig,
+    private void configureProcessWorkerSpec(ProcessWorkerSpec processWorkerSpec, Map<String, String> configMap,
             List<Action<? super JavaForkOptions>> customizations) {
         JavaForkOptions forkOptions = processWorkerSpec.getForkOptions();
 
@@ -82,7 +88,7 @@ public abstract class QuarkusTask extends DefaultTask {
         // properties.
         // Note that we MUST NOT mess with the system properties of the JVM running the build! And that is the
         // main reason why build and code generation happen in a separate process.
-        effectiveConfig.configMap().entrySet().stream().filter(e -> e.getKey().startsWith("quarkus."))
+        configMap.entrySet().stream().filter(e -> e.getKey().startsWith("quarkus."))
                 .forEach(e -> forkOptions.systemProperty(e.getKey(), e.getValue()));
 
         // populate worker classpath with additional content?

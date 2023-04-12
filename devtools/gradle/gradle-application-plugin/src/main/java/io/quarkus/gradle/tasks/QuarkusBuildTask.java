@@ -1,8 +1,6 @@
 package io.quarkus.gradle.tasks;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,8 +33,13 @@ abstract class QuarkusBuildTask extends QuarkusTask {
     static final String QUARKUS_ARTIFACT_PROPERTIES = "quarkus-artifact.properties";
     static final String NATIVE_SOURCES = "native-sources";
 
+    private final GACTV gactv;
+
     QuarkusBuildTask(String description) {
         super(description);
+
+        gactv = new GACTV(getProject().getGroup().toString(), getProject().getName(),
+                getProject().getVersion().toString());
     }
 
     @Inject
@@ -56,45 +59,49 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         return extension().baseConfig().packageType();
     }
 
+    Path gradleBuildDir() {
+        return buildDir.toPath();
+    }
+
     Path genBuildDir() {
-        return getProject().getBuildDir().toPath().resolve(QUARKUS_BUILD_GEN_DIR);
+        return gradleBuildDir().resolve(QUARKUS_BUILD_GEN_DIR);
     }
 
     Path appBuildDir() {
-        return getProject().getBuildDir().toPath().resolve(QUARKUS_BUILD_APP_DIR);
+        return gradleBuildDir().resolve(QUARKUS_BUILD_APP_DIR);
     }
 
     Path depBuildDir() {
-        return getProject().getBuildDir().toPath().resolve(QUARKUS_BUILD_DEP_DIR);
+        return gradleBuildDir().resolve(QUARKUS_BUILD_DEP_DIR);
     }
 
     File artifactProperties() {
-        return new File(getProject().getBuildDir(), QUARKUS_ARTIFACT_PROPERTIES);
+        return new File(buildDir, QUARKUS_ARTIFACT_PROPERTIES);
     }
 
     File nativeSources() {
-        return new File(getProject().getBuildDir(), NATIVE_SOURCES);
+        return new File(buildDir, NATIVE_SOURCES);
     }
 
     /**
      * "final" location of the "fast-jar".
      */
     File fastJar() {
-        return new File(getProject().getBuildDir(), outputDirectory());
+        return new File(buildDir, outputDirectory());
     }
 
     /**
      * "final" location of the "uber-jar".
      */
     File runnerJar() {
-        return new File(getProject().getBuildDir(), runnerJarFileName());
+        return new File(buildDir, runnerJarFileName());
     }
 
     /**
      * "final" location of the "native" runner.
      */
     File nativeRunner() {
-        return new File(getProject().getBuildDir(), nativeRunnerFileName());
+        return new File(buildDir, nativeRunnerFileName());
     }
 
     String runnerJarFileName() {
@@ -107,6 +114,10 @@ abstract class QuarkusBuildTask extends QuarkusTask {
 
     String runnerName() {
         return runnerBaseName() + runnerSuffix();
+    }
+
+    String nativeImageSourceJarDirName() {
+        return runnerBaseName() + "-native-image-source-jar";
     }
 
     String runnerBaseName() {
@@ -127,51 +138,116 @@ abstract class QuarkusBuildTask extends QuarkusTask {
     ApplicationModel resolveAppModelForBuild() {
         ApplicationModel appModel;
         try {
-            GACTV gactv = new GACTV(getProject().getGroup().toString(), getProject().getName(),
-                    getProject().getVersion().toString());
             appModel = extension().getAppModelResolver().resolveModel(gactv);
         } catch (AppModelResolverException e) {
-            throw new GradleException("Failed to resolve Quarkus application model for " + getProject().getPath(), e);
+            throw new GradleException("Failed to resolve Quarkus application model for " + getPath(), e);
         }
         return appModel;
     }
 
+    /**
+     * Runs the Quarkus-build in the "well known" location, Gradle's {@code build/} directory.
+     *
+     * <p>
+     * It would be easier to run the Quarkus-build directly in {@code build/quarkus-build/gen} to have a "clean
+     * target directory", but that breaks already existing Gradle builds for users, which have for example
+     * {@code Dockerfile}s that rely on the fact that build artifacts are present in {@code build/}.
+     *
+     * <p>
+     * This requires this method to
+     * <ol>
+     * <li>"properly" clean the directories that are going to be populated by the Quarkus build, then
+     * <li>run the Quarkus build with the target directory {@code build/} and then
+     * <li>populate the
+     * </ol>
+     */
     void generateBuild() {
+        Path buildDir = gradleBuildDir();
         Path genDir = genBuildDir();
         PackageConfig.BuiltInType packageType = packageType();
         getLogger().info("Building Quarkus app for package type {} in {}", packageType, genDir);
 
-        // Caching and "up-to-date" checks depend on the inputs, this 'delete()' should ensure that the up-to-date
-        // checks work against "clean" outputs, considering that the outputs depend on the package-type.
-        getFileSystemOperations().delete(delete -> delete.delete(genDir));
-        try {
-            Files.createDirectories(genDir);
-        } catch (IOException e) {
-            throw new GradleException("Could not create directory " + genDir, e);
-        }
+        getFileSystemOperations().delete(delete -> {
+            // Caching and "up-to-date" checks depend on the inputs, this 'delete()' should ensure that the up-to-date
+            // checks work against "clean" outputs, considering that the outputs depend on the package-type.
+            delete.delete(genDir);
+
+            // Delete directories inside Gradle's build/ dir that are going to be populated by the Quarkus build.
+            switch (packageType) {
+                case JAR:
+                case FAST_JAR:
+                    delete.delete(buildDir.resolve(nativeImageSourceJarDirName()));
+                    // fall through
+                case NATIVE:
+                case NATIVE_SOURCES:
+                    delete.delete(fastJar());
+                    break;
+                case LEGACY_JAR:
+                case LEGACY:
+                    delete.delete(buildDir.resolve("lib"));
+                    break;
+                case MUTABLE_JAR:
+                case UBER_JAR:
+                    break;
+                default:
+                    throw new GradleException("Unsupported package type " + packageType);
+            }
+        });
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        EffectiveConfig effectiveConfig = extension().buildEffectiveConfiguration(appModel.getAppArtifact());
+        Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
 
         getLogger().info("Starting Quarkus application build for package type {}", packageType);
 
         if (getLogger().isEnabled(LogLevel.INFO)) {
             getLogger().info("Effective properties: {}",
-                    effectiveConfig.configMap().entrySet().stream()
-                            .filter(e -> e.getKey().startsWith("quarkus.")).map(e -> "" + e)
+                    configMap.entrySet().stream()
+                            .filter(e -> e.getKey().startsWith("quarkus.")).map(Object::toString)
                             .sorted()
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
 
-        WorkQueue workQueue = workQueue(effectiveConfig, () -> extension().buildForkOptions);
+        WorkQueue workQueue = workQueue(configMap, () -> extension().buildForkOptions);
 
         workQueue.submit(BuildWorker.class, params -> {
-            params.getBuildSystemProperties().putAll(effectiveConfig.configMap());
+            params.getBuildSystemProperties().putAll(configMap);
             params.getBaseName().set(extension().finalName());
-            params.getTargetDirectory().set(genDir.toFile());
+            params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);
         });
 
         workQueue.await();
+
+        // Copy built artifacts from `build/` into `build/quarkus-build/gen/`
+        getFileSystemOperations().copy(copy -> {
+            copy.from(buildDir);
+            copy.into(genDir);
+            switch (packageType) {
+                case NATIVE:
+                    copy.include(nativeRunnerFileName());
+                    copy.include(nativeImageSourceJarDirName() + "/**");
+                    // fall through
+                case JAR:
+                case FAST_JAR:
+                    copy.include(outputDirectory() + "/**");
+                    copy.include(QUARKUS_ARTIFACT_PROPERTIES);
+                    break;
+                case LEGACY_JAR:
+                case LEGACY:
+                    copy.include("lib/**");
+                    // fall through
+                case MUTABLE_JAR:
+                case UBER_JAR:
+                    copy.include(QUARKUS_ARTIFACT_PROPERTIES);
+                    copy.include(runnerJarFileName());
+                    break;
+                case NATIVE_SOURCES:
+                    copy.include(QUARKUS_ARTIFACT_PROPERTIES);
+                    copy.include(nativeImageSourceJarDirName() + "/**");
+                    break;
+                default:
+                    throw new GradleException("Unsupported package type " + packageType);
+            }
+        });
     }
 }

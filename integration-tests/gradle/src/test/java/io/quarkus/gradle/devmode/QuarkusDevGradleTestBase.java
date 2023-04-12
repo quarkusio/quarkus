@@ -7,6 +7,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -15,6 +17,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
@@ -35,22 +39,49 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
 
     @Test
     public void main() throws Exception {
-
         projectDir = getProjectDir();
         beforeQuarkusDev();
         ExecutorService executor = null;
         AtomicReference<BuildResult> buildResult = new AtomicReference<>();
+        List<String> processesBeforeTest = dumpProcesses();
+        List<String> processesAfterTest = Collections.emptyList();
         try {
-            executor = Executors.newSingleThreadExecutor();
-            quarkusDev = executor.submit(() -> {
-                try {
-                    buildResult.set(build());
-                } catch (Exception e) {
-                    throw new IllegalStateException("Failed to build the project", e);
+            try {
+                executor = Executors.newSingleThreadExecutor();
+                quarkusDev = executor.submit(() -> {
+                    try {
+                        buildResult.set(build());
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Failed to build the project", e);
+                    }
+                });
+                testDevMode();
+            } finally {
+                processesAfterTest = dumpProcesses();
+
+                if (quarkusDev != null) {
+                    quarkusDev.cancel(true);
                 }
-            });
-            testDevMode();
+                if (executor != null) {
+                    executor.shutdownNow();
+                }
+
+                // Kill all processes that were (indirectly) spawned by the current process.
+                List<ProcessHandle> childProcesses = DevModeTestUtils.killDescendingProcesses();
+
+                DevModeTestUtils.awaitUntilServerDown();
+
+                // sanity: forcefully terminate left-over processes
+                childProcesses.forEach(ProcessHandle::destroyForcibly);
+            }
         } catch (Exception | AssertionError e) {
+            System.err.println("PROCESSES BEFORE TEST:");
+            processesBeforeTest.forEach(System.err::println);
+            System.err.println("PROCESSES AFTER TEST (BEFORE CLEANUP):");
+            processesAfterTest.forEach(System.err::println);
+            System.err.println("PROCESSES AFTER CLEANUP:");
+            dumpProcesses().forEach(System.err::println);
+
             if (buildResult.get() != null) {
                 System.err.println("BELOW IS THE CAPTURED LOGGING OF THE FAILED GRADLE TEST PROJECT BUILD");
                 System.err.println(buildResult.get().getOutput());
@@ -71,22 +102,23 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
             }
             throw e;
         } finally {
-            if (quarkusDev != null) {
-                quarkusDev.cancel(true);
-            }
-            if (executor != null) {
-                executor.shutdownNow();
-            }
-
-            // Kill all processes that were (indirectly) spawned by the current process.
-            DevModeTestUtils.killDescendingProcesses();
-
-            DevModeTestUtils.awaitUntilServerDown();
-
             if (projectDir != null && projectDir.isDirectory()) {
                 FileUtils.deleteQuietly(projectDir);
             }
         }
+    }
+
+    public static List<String> dumpProcesses() {
+        // ProcessHandle.Info.command()/arguments()/commandLine() are always empty on Windows:
+        // https://bugs.openjdk.java.net/browse/JDK-8176725
+        ProcessHandle current = ProcessHandle.current();
+        return Stream.concat(Stream.of(current), current.descendants()).map(p -> {
+            ProcessHandle.Info i = p.info();
+            return String.format("PID %8d (%8d) started:%s CPU:%s - %s", p.pid(),
+                    p.parent().map(ProcessHandle::pid).orElse(-1L),
+                    i.startInstant().orElse(null), i.totalCpuDuration().orElse(null),
+                    i.commandLine().orElse("<command line not available>"));
+        }).collect(Collectors.toList());
     }
 
     protected BuildResult build() throws Exception {

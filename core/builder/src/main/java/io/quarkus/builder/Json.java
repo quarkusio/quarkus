@@ -52,7 +52,6 @@ public final class Json {
     }
 
     /**
-     *
      * @param ignoreEmptyBuilders
      * @return the new JSON array builder
      * @see JsonBuilder#ignoreEmptyBuilders
@@ -62,7 +61,6 @@ public final class Json {
     }
 
     /**
-     *
      * @return the new JSON object builder, empty builders are not ignored
      */
     public static JsonObjectBuilder object() {
@@ -70,7 +68,6 @@ public final class Json {
     }
 
     /**
-     *
      * @param ignoreEmptyBuilders
      * @return the new JSON object builder
      * @see JsonBuilder#ignoreEmptyBuilders
@@ -84,7 +81,6 @@ public final class Json {
         protected boolean ignoreEmptyBuilders = false;
 
         /**
-         *
          * @param ignoreEmptyBuilders If set to true all empty builders added to this builder will be ignored during
          *        {@link #build()}
          */
@@ -93,13 +89,11 @@ public final class Json {
         }
 
         /**
-         *
          * @return <code>true</code> if there are no elements/properties, <code>false</code> otherwise
          */
         abstract boolean isEmpty();
 
         /**
-         *
          * @return a string representation
          * @throws IOException
          */
@@ -108,7 +102,6 @@ public final class Json {
         abstract void appendTo(Appendable appendable) throws IOException;
 
         /**
-         *
          * @param value
          * @return <code>true</code> if the value is null or an empty builder and {@link #ignoreEmptyBuilders} is set to
          *         <code>true</code>, <code>false</code>

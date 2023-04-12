@@ -5,6 +5,8 @@ import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,7 @@ class OpenTelemetryLegacyConfigurationTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.opentelemetry.enabled", "false")
             .overrideConfigKey("quarkus.opentelemetry.tracer.enabled", "false")
+            .overrideConfigKey("quarkus.opentelemetry.propagators", "tracecontext")
             .overrideConfigKey("quarkus.opentelemetry.tracer.suppress-non-application-uris", "false")
             .overrideConfigKey("quarkus.opentelemetry.tracer.include-static-resources", "true")
             .overrideConfigKey("quarkus.opentelemetry.tracer.sampler", "off")
@@ -43,6 +46,7 @@ class OpenTelemetryLegacyConfigurationTest {
         assertEquals(FALSE, oTelBuildConfig.enabled());
         assertTrue(oTelBuildConfig.traces().enabled().isPresent());
         assertEquals(FALSE, oTelBuildConfig.traces().enabled().get());
+        assertEquals(Arrays.asList("tracecontext"), oTelBuildConfig.propagators()); // will not include the default baggagge
         assertEquals(FALSE, oTelRuntimeConfig.traces().suppressNonApplicationUris());
         assertEquals(TRUE, oTelRuntimeConfig.traces().includeStaticResources());
         assertEquals("always_off", oTelBuildConfig.traces().sampler());

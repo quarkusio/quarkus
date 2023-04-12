@@ -21,6 +21,7 @@ public class OTelFallbackConfigSourceInterceptor extends FallbackConfigSourceInt
         super(Map.of(
                 "quarkus.otel.enabled", "quarkus.opentelemetry.enabled",
                 "quarkus.otel.traces.enabled", "quarkus.opentelemetry.tracer.enabled",
+                "quarkus.otel.propagators", "quarkus.opentelemetry.propagators",
                 "quarkus.otel.traces.suppress-non-application-uris",
                 "quarkus.opentelemetry.tracer.suppress-non-application-uris",
                 "quarkus.otel.traces.include-static-resources", "quarkus.opentelemetry.tracer.include-static-resources",
@@ -50,6 +51,7 @@ public class OTelFallbackConfigSourceInterceptor extends FallbackConfigSourceInt
         // TODO - Required because the defaults ConfigSource for mappings does not provide configuration names.
         names.add("quarkus.otel.enabled");
         names.add("quarkus.otel.metrics.exporter");
+        names.add("quarkus.otel.propagators");
         names.add("quarkus.otel.logs.exporter");
         names.add("quarkus.otel.traces.enabled");
         names.add("quarkus.otel.traces.exporter");

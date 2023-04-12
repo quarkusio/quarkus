@@ -233,9 +233,8 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         tasks.register(BUILD_NATIVE_TASK_NAME, DefaultTask.class, task -> {
             task.finalizedBy(quarkusBuild);
-            task.doFirst(t -> project.getLogger()
+            task.doFirst(t -> t.getLogger()
                     .warn("The 'buildNative' task has been deprecated in favor of 'build -Dquarkus.package.type=native'"));
-
         });
 
         configureBuildNativeTask(project);

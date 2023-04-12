@@ -94,8 +94,6 @@ public final class ConfigUtils {
             builder.withSources(new RuntimeOverrideConfigSource(Thread.currentThread().getContextClassLoader()));
         }
         if (runTime || bootstrap) {
-            // Validator only for runtime. We cannot use the current validator for build time (chicken / egg problem)
-            builder.addDiscoveredValidator();
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
         }
         if (addDiscovered) {

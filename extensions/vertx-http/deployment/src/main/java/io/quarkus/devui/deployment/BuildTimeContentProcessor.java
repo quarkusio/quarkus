@@ -73,6 +73,8 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("echarts/", contextRoot + "echarts/");
         internalImportMapBuildItem.add("echarts-gauge-grade", contextRoot + "echarts/echarts-gauge-grade.js");
         internalImportMapBuildItem.add("echarts-pie", contextRoot + "echarts/echarts-pie.js");
+        internalImportMapBuildItem.add("echarts-horizontal-stacked-bar",
+                contextRoot + "echarts/echarts-horizontal-stacked-bar.js");
 
         // Other assets
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");

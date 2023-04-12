@@ -10,7 +10,7 @@ import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/progress-bar';
 import '@vaadin/checkbox';
-import 'echarts-pie';
+import 'echarts-horizontal-stacked-bar';
 
 /**
  * This component shows the Continuous Testing Page
@@ -26,13 +26,11 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         }
         .menubar{
             border-bottom: 1px solid var(--lumo-contrast-5pct);
-        }
-        .center {
-            width: 100%;
             display: flex;
-            gap: 10px;
-            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
         }
+        
         .results {
             display: flex;
             gap: 10px;
@@ -55,29 +53,19 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            margin-left: 10px;
+            margin-left: 40px;
             margin-top: 10px;
-        }
-        vaadin-button {
-            cursor: pointer;
+            height: 100%;
         }
         
-        .logDetails {
-            background: var(--lumo-contrast-5pct);
-            overflow: hidden;
-            margin-right: 5px;
-            margin-left: 5px;
-            border-radius: 15px 15px 0px 0px;
-            display: flex;
-            flex-direction: column;
+        .progress {
+            padding-right: 20px;
+            width: 50%;
         }
-        .rightSideInfo {
-            display: flex;
-            flex-direction: column;
-        }
-        echarts-pie {
-            width: 400px;
-            height: 400px;
+
+        .total {
+            padding-right: 20px;
+            text-align: center;
         }
     `;
 
@@ -142,20 +130,21 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     render() {
         return html`
             ${this._renderMenuBar()}
-            <div class="results">
-                ${this._renderResultSet()}
-                ${this._renderState()}
-            </div>
+            ${this._renderResultSet()}
+            ${this._renderBarChart()}
         `;
     }
 
     _renderMenuBar(){
         if(this._state){
             return html`<div class="menubar">
-                ${this._renderStopStartButton()}
-                ${this._renderRunAllButton()}
-                ${this._renderRunFailedButton()}
-                ${this._renderToggleBrokenOnly()}
+                <div>
+                    ${this._renderStopStartButton()}
+                    ${this._renderRunAllButton()}
+                    ${this._renderRunFailedButton()}
+                    ${this._renderToggleBrokenOnly()}
+                </div>
+                ${this._renderBusyIndicator()}
             </div>`;
         }else{
             return html`<div class="menubar">
@@ -164,19 +153,19 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         }
     }
 
-    _renderState(){
+    _renderBarChart(){
         if(this._state && this._state.running && this._state.run > 0){
-            return html`<div class="rightSideInfo">
-                            ${this._renderStateChart()}
-                            ${this._renderBusyIndicator()}
-                        </div>`;
-        }else if(this._state && this._state.running && this._state.run === 0){
-            return html`${this._renderProgressBar("Starting ...")}`;
+            let values = [this._state.passed, this._state.failed, this._state.skipped];
+            return html`<echarts-horizontal-stacked-bar name = "Tests"
+                            sectionTitles="${this._chartTitles.toString()}" 
+                            sectionValues="${values.toString()}"
+                            sectionColors="${this._chartColors.toString()}">
+                        </echarts-horizontal-stacked-bar>`;
         }
     }
 
     _renderStateChart(){
-        let values = [this._state.passed, this._state.failed, this._state.skipped]
+        let values = [this._state.passed, this._state.failed, this._state.skipped];
         return html`<echarts-pie name = "Tests"
                             sectionTitles="${this._chartTitles.toString()}" 
                             sectionValues="${values.toString()}"
@@ -186,13 +175,13 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _renderBusyIndicator(){
         if(this._state && this._state.inProgress){
-            return html`${this._renderProgressBar("Running ...")}`;
-        }else if(this._results){
+            return html`<vaadin-progress-bar class="progress" indeterminate></vaadin-progress-bar>`;
+        }else if(this._results && this._state && this._state.running){
 
-            return html`<span style="text-align: center;">
-                        Total time: 
-                        <qui-badge><span>${this._results.totalTime}ms</span></qui-badge>
-                    </span>`
+             return html`<span class="total">
+                         Total time: 
+                         <qui-badge><span>${this._results.totalTime}ms</span></qui-badge>
+                     </span>`
         }
         
     }
@@ -206,9 +195,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
             var allResults = failingResults.concat(passingResults, skippedResults);
 
-            return html`<div class="center">
-                            ${this._renderResults(allResults)}
-                        </div>`;
+            return html`${this._renderResults(allResults)}`;
         }
 
     }
@@ -409,15 +396,6 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         this.jsonRpc.toggleBrokenOnly().then(jsonRpcResponse => {
             this._busy = false;
         });
-    }
-
-    _renderProgressBar(message){
-        return html`
-            <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>${message}</div>
-                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
-            </div>
-            `;
     }
 }
 customElements.define('qwc-continuous-testing', QwcContinuousTesting);

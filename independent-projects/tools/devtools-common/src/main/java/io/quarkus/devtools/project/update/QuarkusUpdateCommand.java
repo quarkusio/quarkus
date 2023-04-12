@@ -24,9 +24,6 @@ public class QuarkusUpdateCommand {
 
     public static final String MAVEN_REWRITE_PLUGIN_GROUP = "org.openrewrite.maven";
     public static final String MAVEN_REWRITE_PLUGIN_ARTIFACT = "rewrite-maven-plugin";
-    public static final String DEFAULT_MAVEN_REWRITE_PLUGIN_VERSION = "4.41.0";
-    public static final String DEFAULT_GRADLE_REWRITE_PLUGIN_VERSION = "5.38.0";
-
     public static Set<String> ADDITIONAL_SOURCE_FILES_SET = Set.of("**/META-INF/services/**",
             "**/*.txt",
             "**/*.adoc",

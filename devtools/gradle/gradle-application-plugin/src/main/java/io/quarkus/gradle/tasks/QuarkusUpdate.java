@@ -10,7 +10,6 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.update.QuarkusUpdateCommand;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -27,9 +26,9 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
     private String targetStreamId;
     private String targetPlatformVersion;
 
-    private String rewritePluginVersion = QuarkusUpdateCommand.DEFAULT_GRADLE_REWRITE_PLUGIN_VERSION;
+    private String rewritePluginVersion = null;
 
-    private String rewriteUpdateRecipesVersion;
+    private String rewriteUpdateRecipesVersion = null;
 
     @Input
     @Optional
@@ -66,6 +65,7 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
     }
 
     @Input
+    @Optional
     public String getRewritePluginVersion() {
         return rewritePluginVersion;
     }
@@ -93,7 +93,7 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
         return targetStreamId;
     }
 
-    @Option(description = "A target stream id, for example:  2.0", option = "streamId")
+    @Option(description = "A target stream, for example:  2.0", option = "stream")
     public void setStreamId(String targetStreamId) {
         this.targetStreamId = targetStreamId;
     }
@@ -141,7 +141,12 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
         final UpdateProject invoker = new UpdateProject(quarkusProject);
         invoker.latestCatalog(targetCatalog);
-        invoker.rewritePluginVersion(rewritePluginVersion);
+        if (rewriteUpdateRecipesVersion != null) {
+            invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
+        }
+        if (rewritePluginVersion != null) {
+            invoker.rewritePluginVersion(rewritePluginVersion);
+        }
         invoker.targetPlatformVersion(targetPlatformVersion);
         invoker.rewriteDryRun(rewriteDryRun);
         invoker.noRewrite(noRewrite);

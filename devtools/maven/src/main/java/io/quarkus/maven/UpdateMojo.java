@@ -15,7 +15,7 @@ import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.update.QuarkusUpdateCommand;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -49,7 +49,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     /**
      * The OpenRewrite plugin version
      */
-    @Parameter(property = "rewritePluginVersion", required = true, defaultValue = QuarkusUpdateCommand.DEFAULT_MAVEN_REWRITE_PLUGIN_VERSION)
+    @Parameter(property = "rewritePluginVersion", required = false)
     private String rewritePluginVersion;
 
     /**
@@ -91,7 +91,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
 
     @Override
     protected void processProjectState(QuarkusProject quarkusProject) throws MojoExecutionException {
-
+        QuarkusProjectHelper.setArtifactResolver(artifactResolver());
         final ExtensionCatalog targetCatalog;
         try {
             if (platformVersion != null) {
@@ -120,7 +120,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
             invoker.rewritePluginVersion(rewritePluginVersion);
         }
         if (rewriteUpdateRecipesVersion != null) {
-            invoker.rewritePluginVersion(rewriteUpdateRecipesVersion);
+            invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
         }
         invoker.rewriteDryRun(rewriteDryRun);
         invoker.noRewrite(noRewrite);

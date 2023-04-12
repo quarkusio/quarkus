@@ -15,7 +15,7 @@ public class Update extends BaseBuildCommand implements Callable<Integer> {
     @CommandLine.ArgGroup(order = 0, heading = "%nTarget Quarkus version:%n", multiplicity = "0..1")
     TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
 
-    @CommandLine.ArgGroup(order = 1, heading = "%nRewrite:%n")
+    @CommandLine.ArgGroup(order = 1, heading = "%nRewrite:%n", exclusive = false)
     RewriteGroup rewrite = new RewriteGroup();
 
     @CommandLine.Option(order = 2, names = { "--per-module" }, description = "Display information per project module.")

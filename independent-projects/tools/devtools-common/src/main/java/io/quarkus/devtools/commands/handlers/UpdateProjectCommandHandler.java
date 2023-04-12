@@ -20,6 +20,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.ProjectInfoCommandHandler.PlatformInfo;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.state.ExtensionProvider;
@@ -71,21 +72,26 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             final boolean noRewrite = invocation.getValue(UpdateProject.NO_REWRITE, false);
 
             if (!noRewrite) {
+                final BuildTool buildTool = quarkusProject.getExtensionManager().getBuildTool();
                 QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
-                        quarkusProject.getExtensionManager().getBuildTool(),
+                        buildTool,
                         projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
                 Path recipe = null;
                 try {
                     recipe = Files.createTempFile("quarkus-project-recipe-", ".yaml");
                     final String updateRecipesVersion = invocation.getValue(UpdateProject.REWRITE_UPDATE_RECIPES_VERSION,
                             QuarkusUpdatesRepository.DEFAULT_UPDATE_RECIPES_VERSION);
-                    QuarkusUpdates.createRecipe(recipe,
-                            QuarkusProjectHelper.artifactResolver(), updateRecipesVersion, request);
-                    final String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION);
+                    final QuarkusUpdatesRepository.FetchResult fetchResult = QuarkusUpdates.createRecipe(invocation.log(),
+                            recipe,
+                            QuarkusProjectHelper.artifactResolver(), buildTool, updateRecipesVersion, request);
+                    final String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION,
+                            fetchResult.getRewritePluginVersion());
                     final boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
+                    invocation.log().warn(
+                            "The update feature does not yet handle updates of the extension versions. If needed, update your extensions manually.");
                     QuarkusUpdateCommand.handle(
                             invocation.log(),
-                            quarkusProject.getExtensionManager().getBuildTool(),
+                            buildTool,
                             quarkusProject.getProjectDirPath(),
                             rewritePluginVersion,
                             recipe,

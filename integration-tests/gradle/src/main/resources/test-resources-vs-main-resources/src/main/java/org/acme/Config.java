@@ -1,8 +1,8 @@
 package org.acme;
 
-import io.quarkus.arc.config.ConfigProperties;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigProperties(prefix = "example")
-public class Config {
-    public String message;
+@ConfigMapping(prefix = "example")
+public interface Config {
+    public String message();
 }

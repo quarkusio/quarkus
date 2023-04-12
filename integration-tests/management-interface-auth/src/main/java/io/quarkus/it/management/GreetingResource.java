@@ -17,4 +17,16 @@ public class GreetingResource {
     public String goodbye() {
         return "goodbye";
     }
+
+    @GET
+    @Path("/goodmorning")
+    public String goodmorning() {
+        return "goodmorning";
+    }
+
+    @GET
+    @Path("/goodevening")
+    public String goodevening() {
+        return "goodevening";
+    }
 }

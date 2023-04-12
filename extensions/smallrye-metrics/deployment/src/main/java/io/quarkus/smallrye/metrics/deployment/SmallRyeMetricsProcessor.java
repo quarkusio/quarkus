@@ -64,7 +64,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
@@ -286,11 +285,17 @@ public class SmallRyeMetricsProcessor {
      */
     @BuildStep
     void reflectiveMethodsWithGauges(BeanArchiveIndexBuildItem beanArchiveIndex,
-            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        Set<String> classNames = new HashSet<>();
         for (AnnotationInstance annotation : beanArchiveIndex.getIndex().getAnnotations(GAUGE)) {
             if (annotation.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
-                reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
+                classNames.add(annotation.target().asMethod().declaringClass().name().toString());
             }
+        }
+        if (!classNames.isEmpty()) {
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(classNames.toArray(new String[0]))
+                            .methods(true).constructors(true).build());
         }
     }
 

@@ -947,7 +947,7 @@ This is considered an advanced option and should only be performed if you fully 
 Building on the features provided by `InjectMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for spying on the beans supported by `QuarkusMock`.
 This functionality is available via the `@io.quarkus.test.junit.mockito.InjectSpy` annotation which is available in the `quarkus-junit5-mockito` dependency.
 
-Sometimes when testing you only need to verify that a certain logical path was taken, or you only need to stub out a single method's response while still executing the rest of the methods on the Spied clone. Please see link:https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#spy-T-[Mockito documentation] for more details on Spy partial mocks.
+Sometimes when testing you only need to verify that a certain logical path was taken, or you only need to stub out a single method's response while still executing the rest of the methods on the Spied clone. Please see link:https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#13[Mockito documentation - Spying on real objects] for more details on Spy partial mocks.
 In either of those situations a Spy of the object is preferable.
 Using `@InjectSpy`, the previous example could be written as follows:
 
@@ -972,7 +972,7 @@ public class SpyGreetingServiceTest {
 
     @Test
     public void testOverrideGreeting() {
-        when(greetingService.greet()).thenReturn("hi"); <2>
+        doReturn("hi").when(greetingService).greet(); <2>
         given()
                 .when().get("/greeting")
                 .then()
@@ -1005,7 +1005,7 @@ public class SpyGreetingServiceTest {
 }
 ----
 <1> Instead of overriding the value, we just want to ensure that the greet method on our `GreetingService` was called by this test.
-<2> Here we are telling the Spy to return "hi" instead of "hello". When the `GreetingResource` requests the greeting from `GreetingService` we get the mocked response instead of the response of the regular `GreetingService` bean
+<2> Here we are telling the Spy to return "hi" instead of "hello". When the `GreetingResource` requests the greeting from `GreetingService` we get the mocked response instead of the response of the regular `GreetingService` bean. Sometimes it's impossible or impractical to use `when(Object)` for stubbing spies. Therefore when using spies please consider `doReturn|Answer|Throw()` family of methods for stubbing.
 <3> We are verifying that we get the mocked response from the Spy.
 
 ==== Using `@InjectMock` with `@RestClient`

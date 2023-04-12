@@ -9,11 +9,11 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.api.tasks.TaskAction;
 
 public abstract class ImageTask extends QuarkusBuildTask {
 
+    static final String QUARKUS_PREFIX = "quarkus-";
     static final String QUARKUS_CONTAINER_IMAGE_PREFIX = "quarkus-container-image-";
     static final String QUARKUS_CONTAINER_IMAGE_BUILD = "quarkus.container-image.build";
     static final String QUARKUS_CONTAINER_IMAGE_PUSH = "quarkus.container-image.push";
@@ -37,8 +37,10 @@ public abstract class ImageTask extends QuarkusBuildTask {
         super(description);
     }
 
-    Optional<Builder> builder() {
-        return builderFromSystemProperties();
+    public Builder builder() {
+        return builderFromSystemProperties()
+                .or(() -> availableBuilders().stream().findFirst())
+                .orElse(Builder.docker);
     }
 
     Optional<Builder> builderFromSystemProperties() {
@@ -48,10 +50,13 @@ public abstract class ImageTask extends QuarkusBuildTask {
     }
 
     List<Builder> availableBuilders() {
+        // This will only pickup direct dependencies and not transitives
+        // This means that extensions like quarkus-container-image-openshift via quarkus-openshift are not picked up
+        // So, let's relax our filters a bit so that we can pickup quarkus-openshift directly (relax the prefix requirement).
         return getProject().getConfigurations().stream().flatMap(c -> c.getDependencies().stream())
                 .map(d -> d.getName())
-                .filter(n -> n.startsWith(QUARKUS_CONTAINER_IMAGE_PREFIX))
-                .map(n -> n.replace(QUARKUS_CONTAINER_IMAGE_PREFIX, ""))
+                .filter(n -> n.startsWith(QUARKUS_CONTAINER_IMAGE_PREFIX) || n.startsWith(QUARKUS_PREFIX))
+                .map(n -> n.replace(QUARKUS_CONTAINER_IMAGE_PREFIX, "").replace(QUARKUS_PREFIX, ""))
                 .filter(BUILDERS::containsKey)
                 .map(BUILDERS::get)
                 .collect(Collectors.toList());
@@ -62,7 +67,7 @@ public abstract class ImageTask extends QuarkusBuildTask {
         // Currently forcedDependencies() is not implemented for gradle.
         // So, let's give users a meaningful warning message.
         List<Builder> availableBuidlers = availableBuilders();
-        Optional<Builder> missingBuilder = builder().filter(Predicate.not(availableBuidlers::contains));
+        Optional<Builder> missingBuilder = Optional.of(builder()).filter(Predicate.not(availableBuidlers::contains));
         missingBuilder.map(builder -> QUARKUS_CONTAINER_IMAGE_PREFIX + builder.name()).ifPresent(missingDependency -> {
             getProject().getLogger().warn("Task: {} requires extensions: {}", getName(), missingDependency);
             getProject().getLogger().warn("To add the extensions to the project you can run the following command:");
@@ -77,13 +82,5 @@ public abstract class ImageTask extends QuarkusBuildTask {
             getProject().getLogger().warn("\tgradle addExtension --extensions=<extension name>");
             abort("Aborting.");
         }
-    }
-
-    void abort(String message, Object... args) {
-        getProject().getLogger().warn(message, args);
-        getProject().getTasks().stream().filter(t -> t != this).forEach(t -> {
-            t.setEnabled(false);
-        });
-        throw new StopExecutionException();
     }
 }

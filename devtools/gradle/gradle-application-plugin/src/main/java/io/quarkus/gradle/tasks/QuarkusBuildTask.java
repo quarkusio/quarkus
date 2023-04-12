@@ -13,6 +13,7 @@ import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.workers.WorkQueue;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -249,5 +250,15 @@ abstract class QuarkusBuildTask extends QuarkusTask {
                     throw new GradleException("Unsupported package type " + packageType);
             }
         });
+    }
+
+    void abort(String message, Object... args) {
+        getProject().getLogger().warn(message, args);
+        getProject().getTasks().stream()
+                .filter(t -> t != this)
+                .filter(t -> !t.getState().getExecuted()).forEach(t -> {
+                    t.setEnabled(false);
+                });
+        throw new StopExecutionException();
     }
 }

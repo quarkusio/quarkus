@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -12,17 +12,34 @@ import io.quarkus.devtools.project.QuarkusProject;
 
 public class PluginManager {
 
+    private static PluginManager INSTANCE;
+
     private final MessageWriter output;
     private final PluginMangerState state;
     private final PluginManagerSettings settings;
     private final PluginManagerUtil util;
 
-    public PluginManager(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
-            Optional<Path> projectRoot, Optional<QuarkusProject> quarkusProject, Predicate<Plugin> pluginFilter) {
+    public synchronized static PluginManager get() {
+        if (INSTANCE == null) {
+            throw new IllegalStateException("No instance of PluginManager found!");
+        }
+        return INSTANCE;
+    }
+
+    public synchronized static PluginManager create(PluginManagerSettings settings, MessageWriter output,
+            Optional<Path> userHome, Optional<Path> projectRoot, Supplier<QuarkusProject> quarkusProject) {
+        if (INSTANCE == null) {
+            INSTANCE = new PluginManager(settings, output, userHome, projectRoot, quarkusProject);
+        }
+        return INSTANCE;
+    }
+
+    PluginManager(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
+            Optional<Path> projectRoot, Supplier<QuarkusProject> quarkusProject) {
         this.settings = settings;
         this.output = output;
         this.util = PluginManagerUtil.getUtil(settings);
-        this.state = new PluginMangerState(settings, output, userHome, projectRoot, quarkusProject, pluginFilter);
+        this.state = new PluginMangerState(settings, output, userHome, projectRoot, quarkusProject);
     }
 
     /**
@@ -34,7 +51,7 @@ public class PluginManager {
      * @return the pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
     public Optional<Plugin> addPlugin(String nameOrLocation) {
-        return addPlugin(nameOrLocation, Optional.empty());
+        return addPlugin(nameOrLocation, false, Optional.empty());
     }
 
     /**
@@ -43,24 +60,44 @@ public class PluginManager {
      * Remote plugins, that are not detected can be added by the location (e.g. url or maven coordinates).
      *
      * @param nameOrLocation The name or location of the plugin.
+     * @param userCatalog Flag to only use the user catalog.
      * @param description An optional description to add to the plugin.
      * @return The pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
-    public Optional<Plugin> addPlugin(String nameOrLocation, Optional<String> description) {
+    public Optional<Plugin> addPlugin(String nameOrLocation, boolean userCatalog, Optional<String> description) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
         String name = util.getName(nameOrLocation);
+        Optional<String> location = Optional.empty();
+
         if (PluginUtil.isRemoteLocation(nameOrLocation)) {
-            Plugin plugin = new Plugin(name, PluginUtil.getType(nameOrLocation), Optional.of(nameOrLocation), description);
-            PluginCatalog updatedCatalog = state.getPluginCatalog().addPlugin(plugin);
+            location = Optional.of(nameOrLocation);
+        } else if (PluginUtil.isLocalFile(nameOrLocation)) {
+
+            Optional<Path> projectRelative = state.getProjectRoot()
+                    .filter(r -> !userCatalog) // If users catalog selected ignore project relative paths.
+                    .filter(r -> PluginUtil.isProjectFile(r, nameOrLocation)) // check if its project file
+                    .map(r -> r.relativize(Path.of(nameOrLocation).toAbsolutePath()));
+
+            location = projectRelative
+                    .or(() -> Optional.of(nameOrLocation).map(Path::of).map(Path::toAbsolutePath))
+                    .map(Path::toString);
+        }
+
+        if (!location.isEmpty()) {
+            Plugin plugin = new Plugin(name, PluginUtil.getType(nameOrLocation), location, description, Optional.empty(),
+                    userCatalog || state.getProjectCatalog().isEmpty());
+            PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(plugin);
             pluginCatalogService.writeCatalog(updatedCatalog);
+            state.invalidateInstalledPlugins();
             return Optional.of(plugin);
         }
 
         Map<String, Plugin> installablePlugins = state.installablePlugins();
-        Optional<Plugin> plugin = Optional.ofNullable(installablePlugins.get(name));
+        Optional<Plugin> plugin = Optional.ofNullable(installablePlugins.get(name)).map(Plugin::inUserCatalog);
         return plugin.map(p -> {
-            PluginCatalog updatedCatalog = state.getPluginCatalog().addPlugin(p);
+            PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(p);
             pluginCatalogService.writeCatalog(updatedCatalog);
+            state.invalidateInstalledPlugins();
             return p;
         });
     }
@@ -74,9 +111,23 @@ public class PluginManager {
      * @return The pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
     public Optional<Plugin> addPlugin(Plugin plugin) {
+        return addPlugin(plugin, false);
+    }
+
+    /**
+     * Adds the {@link Plugin} with the specified name or location to the installed plugins.
+     * Plugins that have been detected as installable may be added by name.
+     * Remote plugins, that are not detected can be added by the location (e.g. url or maven coordinates).
+     *
+     * @param plugin The plugin.
+     * @param userCatalog Flag to only use the user catalog.
+     * @return The pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
+     */
+    public Optional<Plugin> addPlugin(Plugin plugin, boolean userCatalog) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
-        PluginCatalog updatedCatalog = state.getPluginCatalog().addPlugin(plugin);
+        PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(plugin);
         pluginCatalogService.writeCatalog(updatedCatalog);
+        state.invalidateInstalledPlugins();
         return Optional.of(plugin);
     }
 
@@ -90,20 +141,43 @@ public class PluginManager {
      * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
      */
     public Optional<Plugin> removePlugin(String name) {
+        return removePlugin(name, false);
+    }
+
+    /**
+     * Removes a {@link Plugin} by name.
+     * The catalog from which the plugin will be removed is selected
+     * based on where the plugin is found. If plugin is found in both catalogs
+     * the project catalog is prefered.
+     *
+     * @param name The name of the plugin to remove.
+     * @param userCatalog Flag to only use the user catalog.
+     * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
+     */
+    public Optional<Plugin> removePlugin(String name, boolean userCatalog) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
         Plugin plugin = state.getInstalledPluigns().get(name);
         if (plugin == null) {
             return Optional.empty();
-        } else if (state.getProjectCatalog().map(PluginCatalog::getPlugins).map(p -> p.containsKey(name)).orElse(false)) {
-            pluginCatalogService.writeCatalog(state.getProjectCatalog()
-                    .orElseThrow(() -> new IllegalStateException("Project catalog should be available!"))
-                    .removePlugin(name));
-            return Optional.of(plugin);
+        } else if (userCatalog) {
+            Optional<Plugin> userPlugin = state.getUserCatalog().map(PluginCatalog::getPlugins).map(p -> p.get(name));
+            return userPlugin.map(p -> {
+                pluginCatalogService.writeCatalog(
+                        state.getUserCatalog().orElseThrow(() -> new IllegalStateException("User catalog should be available!"))
+                                .removePlugin(p));
+                state.invalidateInstalledPlugins();
+                return p;
+            });
         }
 
-        pluginCatalogService.writeCatalog(state.getUserCatalog()
-                .orElseThrow(() -> new IllegalStateException("User catalog should be available!"))
-                .removePlugin(name));
+        if (plugin.isInUserCatalog()) {
+            pluginCatalogService.writeCatalog(state.getUserCatalog()
+                    .orElseThrow(() -> new IllegalStateException("User catalog should be available!")).removePlugin(plugin));
+        } else {
+            pluginCatalogService.writeCatalog(state.getProjectCatalog()
+                    .orElseThrow(() -> new IllegalStateException("Project catalog should be available!")).removePlugin(plugin));
+        }
+        state.invalidateInstalledPlugins();
         return Optional.of(plugin);
     }
 
@@ -117,7 +191,21 @@ public class PluginManager {
      * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
      */
     public Optional<Plugin> removePlugin(Plugin plugin) {
-        return removePlugin(plugin.getName());
+        return removePlugin(plugin, false);
+    }
+
+    /**
+     * Removes a {@link Plugin} by name.
+     * The catalog from which the plugin will be removed is selected
+     * based on where the plugin is found. If plugin is found in both catalogs
+     * the project catalog is prefered.
+     *
+     * @param plugin The plugin to remove
+     * @param userCatalog Flag to only use the user catalog.
+     * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
+     */
+    public Optional<Plugin> removePlugin(Plugin plugin, boolean userCatalog) {
+        return removePlugin(plugin.getName(), userCatalog);
     }
 
     /**
@@ -148,7 +236,9 @@ public class PluginManager {
                 .orElseThrow(() -> new IllegalArgumentException("Unknwon plugin catalog location."));
         List<PluginType> installedTypes = catalog.getPlugins().entrySet().stream().map(Map.Entry::getValue).map(Plugin::getType)
                 .collect(Collectors.toList());
-        Map<String, Plugin> installablePlugins = state.installablePlugins(installedTypes);
+        Map<String, Plugin> installablePlugins = state.getInstallablePlugins().entrySet().stream()
+                .filter(e -> installedTypes.contains(e.getValue().getType()))
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 
         Map<String, Plugin> unreachable = catalog.getPlugins().entrySet().stream()
                 .filter(i -> !installablePlugins.containsKey(i.getKey()))
@@ -174,6 +264,7 @@ public class PluginManager {
             catalog = catalog.removePlugin(u);
         }
         pluginCatalogService.writeCatalog(catalog);
+        // here we are just touching the catalog, no need to invalidate
         return true;
     }
 
@@ -196,8 +287,9 @@ public class PluginManager {
         state.invalidate();
         if (!catalogModified) {
             PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
-            PluginCatalog catalog = state.getPluginCatalog();
+            PluginCatalog catalog = state.pluginCatalog(false);
             pluginCatalogService.writeCatalog(catalog);
+            // here we are just touching the catalog, no need to invalidate
         }
         return catalogModified;
     }
@@ -219,11 +311,19 @@ public class PluginManager {
         return false;
     }
 
+    public Map<String, Plugin> getInstalledPlugins(boolean userCatalog) {
+        return userCatalog ? state.userPlugins() : state.getInstalledPluigns();
+    }
+
     public Map<String, Plugin> getInstalledPlugins() {
-        return state.getInstalledPluigns();
+        return getInstalledPlugins(false);
     }
 
     public Map<String, Plugin> getInstallablePlugins() {
         return state.getInstallablePlugins();
+    }
+
+    public PluginManagerUtil getUtil() {
+        return util;
     }
 }

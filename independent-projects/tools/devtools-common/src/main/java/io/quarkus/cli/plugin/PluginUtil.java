@@ -11,15 +11,12 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.dependency.GACTV;
 
 public final class PluginUtil {
-
-    private static final Pattern CLI_SUFFIX = Pattern.compile("(\\-cli)(@\\w+)?$");
 
     private PluginUtil() {
         //Utility
@@ -60,7 +57,9 @@ public final class PluginUtil {
 
         return gactv.map(i -> PluginType.maven)
                 .or(() -> url.map(u -> u.getPath()).or(() -> path.map(Path::toAbsolutePath).map(Path::toString))
-                        .filter(f -> f.endsWith(".jar")).map(i -> PluginType.jar))
+                        .filter(f -> f.endsWith(".jar") || f.endsWith(".java")) // java or jar files
+                        .map(f -> f.substring(f.lastIndexOf(".") + 1)) // get extension
+                        .map(PluginType::valueOf)) // map to type
                 .or(() -> path.filter(p -> p.toFile().exists()).map(i -> PluginType.executable))
                 .orElse(PluginType.jbang);
     }
@@ -85,6 +84,9 @@ public final class PluginUtil {
             return false;
         }
         if (checkGACTV(p.getLocation()).isPresent()) { //We don't want to remove remotely located plugins
+            return false;
+        }
+        if (p.getLocation().map(PluginUtil::isLocalFile).orElse(false)) {
             return false;
         }
         return true;
@@ -145,13 +147,56 @@ public final class PluginUtil {
     }
 
     /**
+     * Chekcs if specified {@link String} contains a valid remote catalog
+     *
+     * @param location The string to check
+     * @return The catalog wrapped in {@link Optional} if valid, empty otherwise.
+     */
+    public static Optional<String> checkRemoteCatalog(String location) {
+        return Optional.ofNullable(location)
+                .filter(l -> l.contains("@"))
+                .map(l -> l.substring(l.lastIndexOf("@") + 1))
+                .filter(l -> !l.isEmpty());
+    }
+
+    public static Optional<String> checkRemoteCatalog(Optional<String> location) {
+        return location.flatMap(PluginUtil::checkRemoteCatalog);
+    }
+
+    /**
      * Checks if location is remote.
      *
      * @param location the specifiied location.
      * @return true if location is url or gactv
      */
     public static boolean isRemoteLocation(String location) {
-        return checkUrl(location).isPresent() || checkGACTV(location).isPresent();
+        return checkUrl(location).isPresent() || checkGACTV(location).isPresent() || checkRemoteCatalog(location).isPresent();
+    }
+
+    /**
+     * Checks if location is a file that does exists locally.
+     *
+     * @param location the specifiied location.
+     * @return true if location is url or gactv
+     */
+    public static boolean isLocalFile(String location) {
+        return checkPath(location).map(p -> p.toFile().exists()).orElse(false);
+    }
+
+    /**
+     * Checks if location is a file that does exists under the project root.
+     *
+     * @param projectRoot the root of the project.
+     * @param location the specifiied location.
+     * @return true if location is url or gactv
+     */
+    public static boolean isProjectFile(Path projectRoot, String location) {
+        return checkPath(location)
+                .map(Path::normalize)
+                .map(Path::toFile)
+                .filter(f -> f.getAbsolutePath().startsWith(projectRoot.normalize().toAbsolutePath().toString()))
+                .map(File::exists)
+                .orElse(false);
     }
 
     private static List<Path> getBuildFiles(Optional<Path> projectRoot) {

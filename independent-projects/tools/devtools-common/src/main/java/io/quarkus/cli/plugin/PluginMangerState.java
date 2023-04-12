@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -19,19 +19,15 @@ import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 
 class PluginMangerState {
 
-    PluginMangerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
-            Optional<Path> projectRoot,
-            Optional<QuarkusProject> quarkusProject,
-            Predicate<Plugin> pluginFilter) {
+    PluginMangerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome, Optional<Path> projectRoot,
+            Supplier<QuarkusProject> quarkusProject) {
         this.settings = settings;
         this.output = output;
         this.userHome = userHome;
         this.quarkusProject = quarkusProject;
-        this.pluginFilter = pluginFilter;
 
         //Inferred
-        this.projectRoot = projectRoot.or(() -> quarkusProject.map(QuarkusProject::getProjectDirPath))
-                .filter(p -> !p.equals(userHome.orElse(null)));
+        this.projectRoot = projectRoot.filter(p -> !p.equals(userHome.orElse(null)));
         this.jbangCatalogService = new JBangCatalogService(settings.isInteractiveMode(), output, settings.getPluginPrefix(),
                 settings.getRemoteJBangCatalogs());
         this.pluginCatalogService = new PluginCatalogService(settings.getToRelativePath());
@@ -43,12 +39,10 @@ class PluginMangerState {
     private final PluginManagerUtil util;
     private final Optional<Path> userHome;
     private final Optional<Path> projectRoot;
-    private final Optional<QuarkusProject> quarkusProject;
+    private final Supplier<QuarkusProject> quarkusProject;
 
     private final PluginCatalogService pluginCatalogService;
     private final JBangCatalogService jbangCatalogService;
-
-    private final Predicate<Plugin> pluginFilter;
 
     //
     private Map<String, Plugin> _userPlugins;
@@ -60,8 +54,8 @@ class PluginMangerState {
 
     private Optional<PluginCatalog> _userCatalog;
     private Optional<PluginCatalog> _projectCatalog;
+
     private PluginCatalog _combinedCatalog;
-    private PluginCatalog _pluginCatalog;
 
     public PluginCatalogService getPluginCatalogService() {
         return pluginCatalogService;
@@ -87,7 +81,6 @@ class PluginMangerState {
 
     public Map<String, Plugin> projectPlugins() {
         return pluginCatalogService.readProjectCatalog(projectRoot).map(catalog -> catalog.getPlugins().values().stream()
-                .filter(pluginFilter)
                 .map(Plugin::inProjectCatalog)
                 .collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
     }
@@ -101,7 +94,6 @@ class PluginMangerState {
 
     public Map<String, Plugin> userPlugins() {
         return pluginCatalogService.readUserCatalog(userHome).map(catalog -> catalog.getPlugins().values().stream()
-                .filter(pluginFilter)
                 .map(Plugin::inUserCatalog)
                 .collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
     }
@@ -146,7 +138,7 @@ class PluginMangerState {
     }
 
     public Map<String, Plugin> jbangPlugins() {
-        boolean isUserScoped = !quarkusProject.isPresent();
+        boolean isUserScoped = !projectRoot.isPresent();
         Map<String, Plugin> jbangPlugins = new HashMap<>();
         JBangCatalog jbangCatalog = jbangCatalogService.readCombinedCatalog(projectRoot, userHome);
         jbangCatalog.getAliases().forEach((location, alias) -> {
@@ -154,24 +146,20 @@ class PluginMangerState {
             Optional<String> description = alias.getDescription();
             Plugin plugin = new Plugin(name, PluginType.jbang, Optional.of(location), description, Optional.empty(),
                     isUserScoped);
-            if (pluginFilter.test(plugin)) {
-                jbangPlugins.put(name, plugin);
-            }
+            jbangPlugins.put(name, plugin);
         });
         return jbangPlugins;
     }
 
     public Map<String, Plugin> executablePlugins() {
-        boolean isUserScoped = !quarkusProject.isPresent();
+        boolean isUserScoped = !projectRoot.isPresent();
         Map<String, Plugin> executablePlugins = new HashMap<>();
         Binaries.findQuarkusPrefixedCommands().forEach(f -> {
             String name = util.getName(f.getName());
             Optional<String> description = Optional.empty();
             Optional<String> location = Optional.of(f.getAbsolutePath());
             Plugin plugin = new Plugin(name, PluginType.executable, location, description, Optional.empty(), isUserScoped);
-            if (pluginFilter.test(plugin)) {
-                executablePlugins.put(name, plugin);
-            }
+            executablePlugins.put(name, plugin);
         });
         return executablePlugins;
     }
@@ -179,7 +167,7 @@ class PluginMangerState {
     public Map<String, Plugin> extensionPlugins() {
         //Get extension plugins
         Map<String, Plugin> extensionPlugins = new HashMap<>();
-        quarkusProject.ifPresent(project -> {
+        projectRoot.map(r -> quarkusProject.get()).ifPresent(project -> {
             try {
                 Set<ArtifactKey> installed = project.getExtensionManager().getInstalled().stream()
                         .map(ArtifactCoords::getKey).collect(Collectors.toSet());
@@ -236,20 +224,19 @@ class PluginMangerState {
         return _combinedCatalog;
     }
 
-    public PluginCatalog pluginCatalog() {
-        return getProjectCatalog().or(() -> getUserCatalog())
+    public PluginCatalog pluginCatalog(boolean userCatalog) {
+        return (userCatalog ? getUserCatalog() : getProjectCatalog()).or(() -> getUserCatalog())
                 .orElseThrow(() -> new IllegalStateException("Unable to get project and user plugin catalogs!"));
-    }
-
-    public PluginCatalog getPluginCatalog() {
-        if (_pluginCatalog == null) {
-            _pluginCatalog = pluginCatalog();
-        }
-        return _pluginCatalog;
     }
 
     public Optional<Path> getProjectRoot() {
         return this.projectRoot;
+    }
+
+    public void invalidateInstalledPlugins() {
+        _userPlugins = null;
+        _projectPlugins = null;
+        _installedPlugins = null;
     }
 
     public void invalidate() {
@@ -259,5 +246,4 @@ class PluginMangerState {
         _installablePlugins = null;
         _extensionPlugins = null;
     }
-
 }

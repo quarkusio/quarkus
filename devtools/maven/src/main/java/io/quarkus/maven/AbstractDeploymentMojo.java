@@ -1,50 +1,21 @@
 package io.quarkus.maven;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 
-import io.quarkus.deployment.util.DeploymentUtil;
-import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runtime.LaunchMode;
 
 public class AbstractDeploymentMojo extends BuildMojo {
 
-    public enum Deployer {
-
-        kubernetes("quarkus-kubernetes", "quarkus-container-image-docker", "quarkus-container-image-jib",
-                "quarkus-container-image-buildpack"),
-        minikube("quarkus-minikube", "quarkus-container-image-docker", "quarkus-container-image-jib",
-                "quarkus-container-image-buildpack"),
-        kind("quarkus-kind", "quarkus-container-image-docker", "quarkus-container-image-jib",
-                "quarkus-container-image-buildpack"),
-        knative("quarkus-kubernetes", "quarkus-container-image-docker", "quarkus-container-image-jib",
-                "quarkus-container-image-buildpack"),
-        openshift("quarkus-openshift");
-
-        private final String extension;
-        private final String[] requiresOneOf;
-
-        Deployer(String extension, String... requiresOneOf) {
-            this.extension = extension;
-            this.requiresOneOf = requiresOneOf;
-        }
-
-        public String getExtension() {
-            return extension;
-        }
-
-        public String[] getRequiresOneOf() {
-            return requiresOneOf;
-        }
-    }
-
-    Deployer deployer = Deployer.kubernetes;
+    Optional<String> deployer = Optional.empty();
 
     @Parameter(property = "quarkus.deployment.dry-run")
     boolean dryRun;
@@ -69,79 +40,28 @@ public class AbstractDeploymentMojo extends BuildMojo {
         }
     }
 
-    public Optional<String> getImageBuilder() {
-        return Optional.ofNullable(imageBuilder);
+    public Deployer getDeployer() {
+        return Deployer.getDeployer(mavenProject())
+                .orElse(Deployer.kubernetes);
     }
 
-    public Deployer getDeployer() {
-        return DeploymentUtil.getEnabledDeployer().map(d -> Deployer.valueOf(d)).orElse(Deployer.kubernetes);
+    public Optional<String> getImageBuilder() {
+        return Optional.ofNullable(imageBuilder);
     }
 
     @Override
     protected List<Dependency> forcedDependencies(LaunchMode mode) {
         List<Dependency> dependencies = new ArrayList<>();
+        MavenProject project = mavenProject();
         Deployer deployer = getDeployer();
-        String containerImageBuilderArtifactId = containerImageBuilderArtifactId(imageBuilder);
-        getDeploymentExtension(deployer).ifPresent(d -> dependencies.add(d));
-        getContainerImageExtension(containerImageBuilderArtifactId).or(() -> getFirstContainerImageExtension(deployer))
-                .ifPresent(d -> dependencies.add(d));
-        return dependencies;
-    }
-
-    protected Optional<ArtifactDependency> getDeploymentExtension(Deployer deployer) {
-        return mavenProject().getDependencyManagement().getDependencies().stream()
-                .filter(d -> "io.quarkus".equals(d.getGroupId()) && deployer.getExtension().equals(d.getArtifactId()))
-                .map(d -> new ArtifactDependency(d.getGroupId(), d.getArtifactId(), null,
-                        io.quarkus.maven.dependency.ArtifactCoords.TYPE_JAR,
-                        d.getVersion()))
-                .findFirst();
-    }
-
-    /**
-     * Get the first {@link ArtifactDependency} that is requires by the specified {@link Deployer}.
-     * The depndency is looked up in the project.
-     *
-     * @param deployer The deployer
-     * @return a {@link Optional} containing the {@link ArtifactDependency} or empty if none is found.
-     */
-    protected Optional<ArtifactDependency> getFirstContainerImageExtension(Deployer deployer) {
-        return getContainerImageExtension(Arrays.stream(deployer.requiresOneOf).findFirst());
-    }
-
-    /**
-     * Get the first {@link ArtifactDependency} that matches the specified artifactId.
-     * The depndency is looked up in the project (by artifactId).
-     *
-     * @param artifactId The artifactId to use for the lookup.
-     * @return a {@link Optional} containing the {@link ArtifactDependency} or empty if none is found.
-     */
-    protected Optional<ArtifactDependency> getContainerImageExtension(String artifactId) {
-        return getContainerImageExtension(Optional.ofNullable(artifactId));
-    }
-
-    /**
-     * Get the first {@link ArtifactDependency} that matches the specified artifactId.
-     * The depndency is looked up in the project (by artifactId).
-     *
-     * @param artifactId the {@link Optional} artifactId to use for the lookup.
-     * @return a {@link Optional} containing the {@link ArtifactDependency} or empty if none is found.
-     */
-    protected Optional<ArtifactDependency> getContainerImageExtension(Optional<String> artifactId) {
-        return artifactId.flatMap(a -> {
-            return mavenProject().getDependencyManagement().getDependencies().stream()
-                    .filter(d -> "io.quarkus".equals(d.getGroupId()) && a.equals(d.getArtifactId()))
-                    .map(d -> new ArtifactDependency(d.getGroupId(), d.getArtifactId(), null,
-                            io.quarkus.maven.dependency.ArtifactCoords.TYPE_JAR,
-                            d.getVersion()))
-                    .findFirst();
-
-        });
-    }
-
-    protected static String containerImageBuilderArtifactId(String builder) {
-        if (builder == null || builder.isEmpty()) {
-            return null;
+        deployer.getExtensionArtifact(project).ifPresent(d -> dependencies.add(d));
+        if (this.imageBuild || this.imageBuilder != null) {
+            Set<ImageBuilder> projectBuilders = ImageBuilder.getProjectBuilder(project).stream().map(ImageBuilder::valueOf)
+                    .collect(Collectors.toSet());
+            Optional<ImageBuilder> imageBuilder = ImageBuilder.getBuilder(this.imageBuilder, projectBuilders);
+            imageBuilder.filter(b -> !projectBuilders.contains(b)).flatMap(b -> b.getExtensionArtifact(project))
+                    .ifPresent(d -> dependencies.add(d));
         }
-        return "quarkus-container-image-" + builder;
+        return dependencies;
     }
 }

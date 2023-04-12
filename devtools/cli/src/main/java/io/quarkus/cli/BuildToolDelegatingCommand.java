@@ -123,7 +123,8 @@ public class BuildToolDelegatingCommand implements Callable<Integer> {
 
     public void prepareMaven(BuildToolContext context) {
         BuildSystemRunner runner = getRunner(context);
-        BuildSystemRunner.BuildCommandArgs compileArgs = runner.prepareAction("compiler:compile", context.getBuildOptions(),
+        BuildSystemRunner.BuildCommandArgs compileArgs = runner.prepareAction("resources:resources",
+                context.getBuildOptions(),
                 context.getRunModeOption(),
                 context.getParams());
 

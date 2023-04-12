@@ -27,9 +27,10 @@ public class PluginCommandFactory {
 
     private Optional<PluginCommand> createPluginCommand(Plugin plugin) {
         switch (plugin.getType()) {
-            case jar:
             case maven:
                 return plugin.getLocation().flatMap(PluginUtil::checkGACTV).map(g -> new JBangCommand(toGAVC(g), output));
+            case java:
+            case jar:
             case jbang:
                 return plugin.getLocation().map(l -> new JBangCommand(l, output));
             case executable:
@@ -60,7 +61,7 @@ public class PluginCommandFactory {
                             }
                             if (value instanceof String[]) {
                                 String[] array = (String[]) value;
-                                command.getArguments().addAll(Arrays.asList(array));
+                                command.useArguments(Arrays.asList(array));
                             }
                             return value;
                         }

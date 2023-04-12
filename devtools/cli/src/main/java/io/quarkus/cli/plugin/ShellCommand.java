@@ -42,6 +42,12 @@ public class ShellCommand implements PluginCommand, Callable<Integer> {
         return arguments;
     }
 
+    @Override
+    public void useArguments(List<String> arguments) {
+        this.arguments.clear();
+        this.arguments.addAll(arguments);
+    }
+
     public OutputOptionMixin getOutput() {
         return output;
     }

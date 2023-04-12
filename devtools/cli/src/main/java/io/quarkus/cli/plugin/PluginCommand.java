@@ -17,6 +17,8 @@ public interface PluginCommand extends Callable<Integer> {
 
     OutputOptionMixin getOutput();
 
+    void useArguments(List<String> arguments);
+
     default Path getWorkingDirectory() {
         return Paths.get(System.getProperty("user.dir"));
     }

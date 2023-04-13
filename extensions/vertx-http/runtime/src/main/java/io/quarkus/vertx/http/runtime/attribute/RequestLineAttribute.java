@@ -1,20 +1,30 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * The request line
  *
  */
-public class RequestLineAttribute implements ExchangeAttribute {
+public class RequestLineAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String REQUEST_LINE_SHORT = "%r";
     public static final String REQUEST_LINE = "%{REQUEST_LINE}";
 
     public static final ExchangeAttribute INSTANCE = new RequestLineAttribute();
 
+    private static final String NAME = "Request line";
+
     private RequestLineAttribute() {
 
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -49,14 +59,14 @@ public class RequestLineAttribute implements ExchangeAttribute {
 
     @Override
     public void writeAttribute(final RoutingContext exchange, final String newValue) throws ReadOnlyAttributeException {
-        throw new ReadOnlyAttributeException("Request line", newValue);
+        throw new ReadOnlyAttributeException(NAME, newValue);
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {
 
         @Override
         public String name() {
-            return "Request line";
+            return RequestLineAttribute.NAME;
         }
 
         @Override

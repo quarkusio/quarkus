@@ -19,13 +19,17 @@
 package io.quarkus.vertx.http.runtime.filters.accesslog;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jboss.logging.MDC;
+
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttribute;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeParser;
+import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeSerializable;
 import io.quarkus.vertx.http.runtime.attribute.SubstituteEmptyWrapper;
 import io.quarkus.vertx.http.runtime.filters.QuarkusRequestWrapper;
 import io.vertx.core.Handler;
@@ -145,7 +149,16 @@ public class AccessLogHandler implements Handler<RoutingContext> {
         QuarkusRequestWrapper.get(rc.request()).addRequestDoneHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
+                Map<String, Optional<String>> serialized = ((ExchangeAttributeSerializable) tokens).serialize(rc);
+                for (Map.Entry<String, Optional<String>> entry : serialized.entrySet()) {
+                    MDC.put(entry.getKey(), entry.getValue().orElse("-"));
+                }
+
                 accessLogReceiver.logMessage(tokens.readAttribute(rc));
+
+                for (String key : serialized.keySet()) {
+                    MDC.remove(key);
+                }
             }
         });
         rc.next();

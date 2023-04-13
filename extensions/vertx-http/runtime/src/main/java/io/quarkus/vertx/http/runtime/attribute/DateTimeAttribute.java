@@ -4,6 +4,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
 import io.vertx.ext.web.RoutingContext;
 
@@ -11,7 +13,7 @@ import io.vertx.ext.web.RoutingContext;
  * The current time
  *
  */
-public class DateTimeAttribute implements ExchangeAttribute {
+public class DateTimeAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     private static final String COMMON_LOG_PATTERN = "[dd/MMM/yyyy:HH:mm:ss Z]";
 
@@ -20,6 +22,8 @@ public class DateTimeAttribute implements ExchangeAttribute {
     public static final String CUSTOM_TIME = "%{time,";
 
     public static final ExchangeAttribute INSTANCE = new DateTimeAttribute();
+
+    private static final String NAME = "Date Time";
 
     private final DateTimeFormatter formatter;
 
@@ -40,20 +44,25 @@ public class DateTimeAttribute implements ExchangeAttribute {
     }
 
     @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
+    }
+
+    @Override
     public String readAttribute(final RoutingContext exchange) {
         return formatter.format(ZonedDateTime.now());
     }
 
     @Override
     public void writeAttribute(final RoutingContext exchange, final String newValue) throws ReadOnlyAttributeException {
-        throw new ReadOnlyAttributeException("Date time", newValue);
+        throw new ReadOnlyAttributeException(NAME, newValue);
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {
 
         @Override
         public String name() {
-            return "Date Time";
+            return DateTimeAttribute.NAME;
         }
 
         @Override

@@ -1,13 +1,23 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.ext.web.RoutingContext;
 
-public class SecureExchangeAttribute implements ExchangeAttribute {
+public class SecureExchangeAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String TOKEN = "%{SECURE}";
 
     public static final String LEGACY_INCORRECT_TOKEN = "${SECURE}"; //this was a bug, but we still support it for compat
     public static final ExchangeAttribute INSTANCE = new SecureExchangeAttribute();
+
+    private static final String NAME = "Secure";
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
+    }
 
     @Override
     public String readAttribute(RoutingContext exchange) {
@@ -23,7 +33,7 @@ public class SecureExchangeAttribute implements ExchangeAttribute {
 
         @Override
         public String name() {
-            return "Secure";
+            return SecureExchangeAttribute.NAME;
         }
 
         @Override

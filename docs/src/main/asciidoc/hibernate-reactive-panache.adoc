@@ -858,7 +858,7 @@ Testing reactive Panache entities in a `@QuarkusTest` is slightly more complicat
 The `quarkus-test-vertx` dependency provides the `@io.quarkus.test.vertx.RunOnVertxContext` annotation and the `io.quarkus.test.vertx.UniAsserter` class which are intended precisely for this purpose. 
 The usage is described in the xref:hibernate-reactive.adoc#testing[Hibernate Reactive] guide.
 
-You can also extend the `io.quarkus.test.vertx.UniAsserterInterceptor` to customize the behavior of the injected `UniAsserter`.
+You can also extend the `io.quarkus.test.vertx.UniAsserterInterceptor` to wrap the injected `UniAsserter` and customize the behavior.
 For example, the interceptor can be used to execute the assert methods within a separate database transaction.
 
 .`UniAsserterInterceptor` Example

@@ -23,9 +23,7 @@ import io.quarkus.bootstrap.classloading.ClassPathResource;
 import io.quarkus.bootstrap.classloading.FilteredClassPathElement;
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -77,15 +75,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         this.curationResult = curationResult;
         this.appModel = curationResult.getApplicationModel();
         this.configuredClassLoading = configuredClassLoading;
-    }
-
-    /**
-     * @deprecated in favor of {@link #getApplicationModel()}
-     * @return AppModel
-     */
-    @Deprecated
-    public AppModel getAppModel() {
-        return BootstrapUtils.convert(appModel);
     }
 
     public boolean isFlatClassPath() {

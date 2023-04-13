@@ -36,8 +36,6 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * A collection of ASM and Jandex utilities.
- * NOTE: this has a copy in AsmUtilCopy in arc-processor with some extra methods for knowing if we need a
- * signature and getting the signature of a class.
  */
 public class AsmUtil {
 
@@ -79,67 +77,23 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode signature of a given Jandex MethodInfo.
-     * If the Java compiler doesn't have to emit a signature for the method, {@code null} is returned instead.
-     *
-     * @param method the method you want the signature for
-     * @return a bytecode signature for that method, or {@code null} if signature is not required
+     * @deprecated use {@link MethodInfo#genericSignatureIfRequired()}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getSignatureIfRequired(MethodInfo method) {
-        return getSignatureIfRequired(method, ignored -> null);
+        return method.genericSignatureIfRequired();
     }
 
     /**
-     * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
-     * If the Java compiler doesn't have to emit a signature for the method, {@code null} is returned instead.
-     *
-     * @param method the method you want the signature for
-     * @param typeArgMapper a mapping between type argument names and their bytecode signatures
-     * @return a bytecode signature for that method, or {@code null} if signature is not required
+     * @deprecated use {@link MethodInfo#genericSignatureIfRequired(Function)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getSignatureIfRequired(MethodInfo method, Function<String, String> typeArgMapper) {
-        if (!hasSignature(method)) {
+        if (!method.requiresGenericSignature()) {
             return null;
         }
 
         return getSignature(method, typeArgMapper);
-    }
-
-    private static boolean hasSignature(MethodInfo method) {
-        // JVMS 16, chapter 4.7.9.1. Signatures:
-        //
-        // Java compiler must emit ...
-        //
-        // A method signature for any method or constructor declaration which is either generic,
-        // or has a type variable or parameterized type as the return type or a formal parameter type,
-        // or has a type variable in a throws clause, or any combination thereof.
-
-        if (!method.typeParameters().isEmpty()) {
-            return true;
-        }
-
-        {
-            Type type = method.returnType();
-            if (type.kind() == Kind.TYPE_VARIABLE
-                    || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE
-                    || type.kind() == Kind.PARAMETERIZED_TYPE) {
-                return true;
-            }
-        }
-
-        for (Type type : method.parameterTypes()) {
-            if (type.kind() == Kind.TYPE_VARIABLE
-                    || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE
-                    || type.kind() == Kind.PARAMETERIZED_TYPE) {
-                return true;
-            }
-        }
-
-        if (hasThrowsSignature(method)) {
-            return true;
-        }
-
-        return false;
     }
 
     private static boolean hasThrowsSignature(MethodInfo method) {
@@ -165,24 +119,9 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
-     * For example, given this method:
-     *
-     * <pre>
-     * {@code
-     * public class Foo<T> {
-     *  public <R> List<R> method(int a, T t){...}
-     * }
-     * }
-     * </pre>
-     *
-     * This will return <tt>&lt;R:Ljava/lang/Object;>(ILjava/lang/Integer;)Ljava/util/List&lt;TR;>;</tt> if
-     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     *
-     * @param method the method you want the signature for.
-     * @param typeArgMapper a mapping between type argument names and their bytecode signature.
-     * @return a bytecode signature for that method.
+     * @deprecated use {@link MethodInfo#genericSignature(Function)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getSignature(MethodInfo method, Function<String, String> typeArgMapper) {
         // for grammar, see JVMS 16, chapter 4.7.9.1. Signatures
 
@@ -241,24 +180,9 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode descriptor of a given Jandex MethodInfo using the given type argument mappings.
-     * For example, given this method:
-     *
-     * <pre>
-     * {@code
-     * public class Foo<T> {
-     *  public <R> List<R> method(int a, T t){...}
-     * }
-     * }
-     * </pre>
-     *
-     * This will return <tt>(ILjava/lang/Integer;)Ljava/util/List;</tt> if
-     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     *
-     * @param method the method you want the descriptor for.
-     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
-     * @return a bytecode descriptor for that method.
+     * @deprecated use {@link MethodInfo#descriptor(Function)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getDescriptor(MethodInfo method, Function<String, String> typeArgMapper) {
         List<Type> parameters = method.parameterTypes();
 
@@ -272,14 +196,9 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode descriptor of a given Jandex Type using the given type argument mappings.
-     * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List;</tt> if
-     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     *
-     * @param type the type you want the descriptor for.
-     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
-     * @return a bytecode descriptor for that type.
+     * @deprecated use {@link Type#descriptor(Function)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getDescriptor(Type type, Function<String, String> typeArgMapper) {
         StringBuilder sb = new StringBuilder();
         toSignature(sb, type, typeArgMapper, true);
@@ -287,14 +206,9 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode signature of a given Jandex Type using the given type argument mappings.
-     * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List&lt;Ljava/lang/Integer;>;</tt> if
-     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     *
-     * @param type the type you want the signature for.
-     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
-     * @return a bytecode signature for that type.
+     * @deprecated use {@link org.jboss.jandex.GenericSignature#forType(Type, Function, StringBuilder)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getSignature(Type type, Function<String, String> typeArgMapper) {
         StringBuilder sb = new StringBuilder();
         toSignature(sb, type, typeArgMapper, false);

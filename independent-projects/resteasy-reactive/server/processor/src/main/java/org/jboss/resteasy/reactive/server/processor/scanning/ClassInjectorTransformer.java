@@ -245,7 +245,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                     case BEAN:
                         // this
                         injectMethod.visitIntInsn(Opcodes.ALOAD, 0);
-                        String typeDescriptor = AsmUtil.getDescriptor(fieldInfo.type(), name -> null);
+                        String typeDescriptor = fieldInfo.type().descriptor();
                         if (requireCreateBeanParams) {
                             String type = fieldInfo.type().name().toString().replace(".", "/");
                             injectMethod.visitTypeInsn(Opcodes.NEW, type);
@@ -580,7 +580,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             }
             // store our param field
             injectMethod.visitFieldInsn(Opcodes.PUTFIELD, thisName, fieldInfo.name(),
-                    AsmUtil.getDescriptor(fieldInfo.type(), name -> null));
+                    fieldInfo.type().descriptor());
             Label endLabel = new Label();
             injectMethod.visitJumpInsn(Opcodes.GOTO, endLabel);
 

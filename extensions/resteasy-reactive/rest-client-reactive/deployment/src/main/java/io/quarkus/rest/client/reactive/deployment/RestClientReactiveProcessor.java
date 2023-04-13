@@ -76,7 +76,6 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -458,7 +457,7 @@ class RestClientReactiveProcessor {
                         //     return InterfaceClass.super.get();
                         // }
                         MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(method));
-                        methodCreator.setSignature(AsmUtil.getSignatureIfRequired(method));
+                        methodCreator.setSignature(method.genericSignatureIfRequired());
 
                         // copy method annotations, there can be interceptors bound to them:
                         for (AnnotationInstance annotation : annotationsStore.getAnnotations(method)) {

@@ -1018,7 +1018,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     private static String methodDescriptor(MethodInfo info) {
-        return info.name() + ":" + AsmUtil.getDescriptor(info, s -> null);
+        return info.name() + ":" + info.descriptor();
     }
 
     private static boolean moreThanOne(AnnotationInstance... annotations) {

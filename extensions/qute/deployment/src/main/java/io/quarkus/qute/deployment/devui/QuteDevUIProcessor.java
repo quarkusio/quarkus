@@ -1,9 +1,12 @@
 package io.quarkus.qute.deployment.devui;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.DotName;
@@ -15,8 +18,10 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.deployment.CheckedTemplateBuildItem;
+import io.quarkus.qute.deployment.ImplicitValueResolverBuildItem;
 import io.quarkus.qute.deployment.TemplateDataBuildItem;
 import io.quarkus.qute.deployment.TemplateExtensionMethodBuildItem;
+import io.quarkus.qute.deployment.TemplateGlobalBuildItem;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
 import io.quarkus.qute.deployment.TemplateVariantsBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem;
@@ -34,13 +39,16 @@ public class QuteDevUIProcessor {
             TemplatesAnalysisBuildItem templatesAnalysis,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
             List<TemplateDataBuildItem> templateDatas,
+            List<ImplicitValueResolverBuildItem> implicitTemplateDatas,
+            List<TemplateGlobalBuildItem> templateGlobals,
             BuildProducer<CardPageBuildItem> cardPages) {
 
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         List<TemplatePathBuildItem> sortedTemplatePaths = templatePaths.stream()
                 .sorted(Comparator.comparing(tp -> tp.getPath().toLowerCase())).collect(Collectors.toList());
-        JsonArray templates = createTemplatesJson(sortedTemplatePaths, checkedTemplates, templatesAnalysis, variants);
+        pageBuildItem.addBuildTimeData("templates",
+                createTemplatesJson(sortedTemplatePaths, checkedTemplates, templatesAnalysis, variants));
 
         List<TemplateExtensionMethodBuildItem> sortedExtensionMethods = templateExtensionMethods.stream()
                 .sorted(new Comparator<TemplateExtensionMethodBuildItem>() {
@@ -53,35 +61,71 @@ public class QuteDevUIProcessor {
                         return ret == 0 ? m1.getMethod().name().compareTo(m2.getMethod().name()) : ret;
                     }
                 }).collect(Collectors.toList());
-        JsonArray extensionMethods = createExtensionMethodsJson(sortedExtensionMethods);
+        pageBuildItem.addBuildTimeData("extensionMethods", createExtensionMethodsJson(sortedExtensionMethods));
 
-        List<TemplateDataBuildItem> sortedTemplateData = templateDatas.stream()
+        List<TemplateDataBuildItem> sortedTemplateData = new ArrayList<>(templateDatas);
+        Set<DotName> explicitTargets = new HashSet<>();
+        for (TemplateDataBuildItem td : templateDatas) {
+            explicitTargets.add(td.getTargetClass().name());
+        }
+        for (ImplicitValueResolverBuildItem itd : implicitTemplateDatas) {
+            if (!explicitTargets.contains(itd.getClazz().name())) {
+                sortedTemplateData.add(new TemplateDataBuildItem(itd.getTemplateData(), itd.getClazz()));
+            }
+        }
+        sortedTemplateData = sortedTemplateData.stream()
                 .sorted(Comparator.comparing(td -> td.getTargetClass().name())).collect(Collectors.toList());
-        JsonArray templateData = createTemplateDataJson(sortedTemplateData);
+        if (!sortedTemplateData.isEmpty()) {
+            pageBuildItem.addBuildTimeData("templateData", createTemplateDataJson(sortedTemplateData));
+        }
 
-        pageBuildItem.addBuildTimeData("templates", templates);
-        pageBuildItem.addBuildTimeData("extensionMethods", extensionMethods);
-        pageBuildItem.addBuildTimeData("templateData", templateData);
+        List<TemplateGlobalBuildItem> sortedTemplateGlobals = templateGlobals.stream()
+                .sorted(Comparator.comparing(tg -> tg.getName().toLowerCase())).collect(Collectors.toList());
+        if (!sortedTemplateGlobals.isEmpty()) {
+            pageBuildItem.addBuildTimeData("templateGlobals", createTemplateGlobalsJson(sortedTemplateGlobals));
+        }
 
         pageBuildItem.addPage(Page.webComponentPageBuilder()
                 .title("Templates")
                 .icon("font-awesome-solid:file-code")
                 .componentLink("qwc-qute-templates.js")
-                .staticLabel(String.valueOf(templates.size())));
+                .staticLabel(String.valueOf(sortedTemplatePaths.size())));
 
         pageBuildItem.addPage(Page.webComponentPageBuilder()
                 .title("Extension Methods")
                 .icon("font-awesome-solid:puzzle-piece")
                 .componentLink("qwc-qute-extension-methods.js")
-                .staticLabel(String.valueOf(extensionMethods.size())));
+                .staticLabel(String.valueOf(sortedExtensionMethods.size())));
 
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("@TemplateData")
-                .icon("font-awesome-solid:database")
-                .componentLink("qwc-qute-template-data.js")
-                .staticLabel(String.valueOf(templateData.size())));
+        if (!sortedTemplateData.isEmpty()) {
+            pageBuildItem.addPage(Page.webComponentPageBuilder()
+                    .title("Template Data")
+                    .icon("font-awesome-solid:database")
+                    .componentLink("qwc-qute-template-data.js")
+                    .staticLabel(String.valueOf(sortedTemplateData.size())));
+        }
+
+        if (!sortedTemplateGlobals.isEmpty()) {
+            pageBuildItem.addPage(Page.webComponentPageBuilder()
+                    .title("Global Variables")
+                    .icon("font-awesome-solid:globe")
+                    .componentLink("qwc-qute-template-globals.js")
+                    .staticLabel(String.valueOf(sortedTemplateGlobals.size())));
+        }
 
         cardPages.produce(pageBuildItem);
+    }
+
+    private JsonArray createTemplateGlobalsJson(List<TemplateGlobalBuildItem> sortedTemplateGlobals) {
+        JsonArray globals = new JsonArray();
+        for (TemplateGlobalBuildItem global : sortedTemplateGlobals) {
+            JsonObject json = new JsonObject();
+            json.put("name", global.getName());
+            json.put("target", global.getDeclaringClass() + "#"
+                    + (global.isField() ? global.getTarget().asField().name() : global.getTarget().asMethod().name() + "()"));
+            globals.add(json);
+        }
+        return globals;
     }
 
     private JsonArray createTemplateDataJson(List<TemplateDataBuildItem> sortedTemplateData) {

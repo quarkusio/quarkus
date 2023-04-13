@@ -25,7 +25,7 @@ public final class TemplateDataBuildItem extends MultiBuildItem {
     private final boolean properties;
     private final AnnotationInstance annotationInstance;
 
-    TemplateDataBuildItem(AnnotationInstance annotationInstance, ClassInfo targetClass) {
+    public TemplateDataBuildItem(AnnotationInstance annotationInstance, ClassInfo targetClass) {
         this.annotationInstance = annotationInstance;
 
         AnnotationValue ignoreValue = annotationInstance.value(ValueResolverGenerator.IGNORE);

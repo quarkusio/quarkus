@@ -4,6 +4,7 @@ import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid';
 import '@vaadin/text-field';
 import { templateData } from 'build-time-data';
+import 'qui-alert';
 
 
 /**
@@ -32,6 +33,7 @@ export class QwcQuteTemplateData extends LitElement {
 
     render() {
             return html`
+                <qui-alert>The listed target classes are accessible in templates, i.e. a value resolver is generated for each class so that reflection is not needed to access properties and call methods.</qui-alert>
                 <vaadin-grid .items="${templateData}" class="templates-table" theme="no-border" all-rows-visible>
                     <vaadin-grid-column auto-width
                         header="Target Class"
@@ -44,7 +46,7 @@ export class QwcQuteTemplateData extends LitElement {
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                        header="Ignore"
+                        header="Ignore members"
                         ${columnBodyRenderer(this._renderIgnores, [])}
                         resizable>
                     </vaadin-grid-column>

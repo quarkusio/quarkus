@@ -12,6 +12,7 @@ public final class Constants {
     public static final String ROLE = "Role";
     public static final String CLUSTER_ROLE = "ClusterRole";
     public static final String ROLE_BINDING = "RoleBinding";
+    public static final String CLUSTER_ROLE_BINDING = "ClusterRoleBinding";
     public static final String SERVICE_ACCOUNT = "ServiceAccount";
     public static final String DEPLOYMENT_GROUP = "apps";
     public static final String DEPLOYMENT_VERSION = "v1";

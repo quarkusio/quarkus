@@ -122,6 +122,8 @@
         <!-- Security -->
         <module>security</module>
         <module>security-jpa</module>
+        <module>security-jpa-reactive</module>
+        <module>security-jpa-common</module>
         <module>security-webauthn</module>
         <module>elytron-security-common</module>
         <module>elytron-security</module>

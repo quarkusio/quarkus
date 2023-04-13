@@ -81,6 +81,22 @@ When you run either command, the following XML is added to your build file:
 implementation("io.quarkus:quarkus-security-jpa")
 ----
 
+=== Using Hibernate Reactive
+
+If you plan to use Hibernate Reactive and non-blocking database drivers, you will need to use the `security-jpa-reactive` extension instead.
+The `security-jpa-reactive` extension works with the same annotations and only difference in configuration is a datasource URL.
+Reactive datasource has URL set with the `quarkus.datasource.reactive.url` configuration property, instead of the `quarkus.datasource.jdbc.url`
+configuration property used by JDBC datasource.
+
+[source,properties]
+----
+%prod.quarkus.datasource.reactive.url=vertx-reactive:postgresql://localhost:5431/security_jpa
+----
+
+Please refer to the xref:hibernate-reactive.adoc[Hibernate Reactive guide] for more information.
+On top of that, Hibernate Reactive with Panache uses its own reactive classes as `io.quarkus.hibernate.reactive.panache.PanacheEntity`.
+You can learn more about it in the xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache guide].
+
 == Write the application
 
 * Let's start by implementing the `/api/public` endpoint to allow all users access to access the application.

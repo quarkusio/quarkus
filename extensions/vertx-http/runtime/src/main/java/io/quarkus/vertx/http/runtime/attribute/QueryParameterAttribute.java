@@ -2,6 +2,8 @@ package io.quarkus.vertx.http.runtime.attribute;
 
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.vertx.ext.web.RoutingContext;
@@ -9,14 +11,21 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Query parameter
  */
-public class QueryParameterAttribute implements ExchangeAttribute {
+public class QueryParameterAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     private final String parameter;
     private final boolean useOriginalRequest;
 
+    private static final String NAME = "Query Parameter";
+
     public QueryParameterAttribute(String parameter, boolean useOriginalRequest) {
         this.parameter = parameter;
         this.useOriginalRequest = useOriginalRequest;
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -54,7 +63,7 @@ public class QueryParameterAttribute implements ExchangeAttribute {
 
         @Override
         public String name() {
-            return "Query Parameter";
+            return QueryParameterAttribute.NAME;
         }
 
         @Override

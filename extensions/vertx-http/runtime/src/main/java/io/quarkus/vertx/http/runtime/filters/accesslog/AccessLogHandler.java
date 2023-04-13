@@ -19,13 +19,18 @@
 package io.quarkus.vertx.http.runtime.filters.accesslog;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jboss.logging.MDC;
+
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttribute;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeParser;
+import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeSerializable;
 import io.quarkus.vertx.http.runtime.attribute.SubstituteEmptyWrapper;
 import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.quarkus.vertx.http.runtime.filters.QuarkusRequestWrapper;
@@ -152,10 +157,25 @@ public class AccessLogHandler implements Handler<RoutingContext> {
             rc.next();
             return;
         }
-        QuarkusRequestWrapper.get(rc.request()).addRequestDoneHandler(new Handler<Void>() {
-            @Override
-            public void handle(Void event) {
-                accessLogReceiver.logMessage(tokens.readAttribute(rc));
+        QuarkusRequestWrapper.get(rc.request()).addRequestDoneHandler(event -> {
+            Map<String, Optional<String>> serialized = ((ExchangeAttributeSerializable) tokens).serialize(rc);
+            Map<String, Object> entries = new HashMap<>();
+
+            for (Map.Entry<String, Optional<String>> entry : serialized.entrySet()) {
+                if (entry.getValue().isPresent()) {
+                    entries.put(entry.getKey(), MDC.get(entry.getKey()));
+                    MDC.put(entry.getKey(), entry.getValue().get());
+                }
+            }
+
+            accessLogReceiver.logMessage(tokens.readAttribute(rc));
+
+            for (Map.Entry<String, Object> entry : entries.entrySet()) {
+                if (entry.getValue() != null) {
+                    MDC.put(entry.getKey(), entry.getValue());
+                } else {
+                    MDC.remove(entry.getKey());
+                }
             }
         });
         if (consolidateReroutedRequests) {

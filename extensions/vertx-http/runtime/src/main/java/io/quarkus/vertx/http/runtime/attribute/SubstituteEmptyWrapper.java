@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.ext.web.RoutingContext;
 
 public class SubstituteEmptyWrapper implements ExchangeAttributeWrapper {
@@ -15,13 +18,22 @@ public class SubstituteEmptyWrapper implements ExchangeAttributeWrapper {
         return new SubstituteEmptyAttribute(attribute, substitute);
     }
 
-    public static class SubstituteEmptyAttribute implements ExchangeAttribute {
+    public static class SubstituteEmptyAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
         private final ExchangeAttribute attribute;
         private final String substitute;
 
         public SubstituteEmptyAttribute(ExchangeAttribute attribute, String substitute) {
             this.attribute = attribute;
             this.substitute = substitute;
+        }
+
+        @Override
+        public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+            if (attribute instanceof ExchangeAttributeSerializable) {
+                return ((ExchangeAttributeSerializable) attribute).serialize(exchange);
+            }
+
+            return Map.of();
         }
 
         @Override

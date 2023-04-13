@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.vertx.ext.web.RoutingContext;
 
@@ -7,7 +10,7 @@ import io.vertx.ext.web.RoutingContext;
  * The request URL
  *
  */
-public class RequestURLAttribute implements ExchangeAttribute {
+public class RequestURLAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String REQUEST_URL_SHORT = "%U";
     public static final String REQUEST_URL = "%{REQUEST_URL}";
@@ -17,10 +20,17 @@ public class RequestURLAttribute implements ExchangeAttribute {
     public static final ExchangeAttribute INSTANCE = new RequestURLAttribute(false);
     public static final ExchangeAttribute INSTANCE_ORIGINAL_REQUEST = new RequestURLAttribute(true);
 
+    private static final String NAME = "Request URL";
+
     private final boolean useOriginalRequest;
 
     private RequestURLAttribute(boolean useOriginalRequest) {
         this.useOriginalRequest = useOriginalRequest;
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -37,7 +47,7 @@ public class RequestURLAttribute implements ExchangeAttribute {
 
         @Override
         public String name() {
-            return "Request URL";
+            return RequestURLAttribute.NAME;
         }
 
         @Override

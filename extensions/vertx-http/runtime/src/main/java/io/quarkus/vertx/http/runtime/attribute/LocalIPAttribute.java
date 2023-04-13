@@ -1,20 +1,30 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * The local IP address
  */
-public class LocalIPAttribute implements ExchangeAttribute {
+public class LocalIPAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String LOCAL_IP = "%{LOCAL_IP}";
     public static final String LOCAL_IP_SHORT = "%A";
 
     public static final ExchangeAttribute INSTANCE = new LocalIPAttribute();
 
+    private static final String NAME = "Local IP";
+
     private LocalIPAttribute() {
 
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -28,14 +38,14 @@ public class LocalIPAttribute implements ExchangeAttribute {
 
     @Override
     public void writeAttribute(final RoutingContext exchange, final String newValue) throws ReadOnlyAttributeException {
-        throw new ReadOnlyAttributeException("Local IP", newValue);
+        throw new ReadOnlyAttributeException(NAME, newValue);
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {
 
         @Override
         public String name() {
-            return "Local IP";
+            return LocalIPAttribute.NAME;
         }
 
         @Override

@@ -1,21 +1,31 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * The bytes sent
  *
  */
-public class BytesSentAttribute implements ExchangeAttribute {
+public class BytesSentAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String BYTES_SENT_SHORT_UPPER = "%B";
     public static final String BYTES_SENT_SHORT_LOWER = "%b";
     public static final String BYTES_SENT = "%{BYTES_SENT}";
 
+    private static final String NAME = "Bytes Sent";
+
     private final boolean dashIfZero;
 
     public BytesSentAttribute(boolean dashIfZero) {
         this.dashIfZero = dashIfZero;
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -30,14 +40,14 @@ public class BytesSentAttribute implements ExchangeAttribute {
 
     @Override
     public void writeAttribute(final RoutingContext exchange, final String newValue) throws ReadOnlyAttributeException {
-        throw new ReadOnlyAttributeException("Bytes sent", newValue);
+        throw new ReadOnlyAttributeException(NAME, newValue);
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {
 
         @Override
         public String name() {
-            return "Bytes Sent";
+            return BytesSentAttribute.NAME;
         }
 
         @Override

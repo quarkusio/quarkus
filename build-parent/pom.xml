@@ -137,7 +137,7 @@
         <webjar.jquery.version>3.6.4</webjar.jquery.version>
         <webjar.codemirror.version>5.62.2</webjar.codemirror.version>
         <!-- we don't add mermaid as a dependency as it brings a ton of things we don't use -->
-        <webjar.mermaid.version>9.4.0</webjar.mermaid.version>
+        <webjar.mermaid.version>10.1.0</webjar.mermaid.version>
         <webjar.d3js.version>6.6.0</webjar.d3js.version>
         <webjar.chartjs.version>3.7.1</webjar.chartjs.version>
 

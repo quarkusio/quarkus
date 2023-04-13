@@ -34,9 +34,9 @@ import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticInitDialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.StandardHibernateORMInitiatorListProvider;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionProviderInitiator;
-import io.quarkus.hibernate.reactive.runtime.customized.QuarkusReactiveDialectFactoryInitiator;
 
 /**
  * Defines the initial list of StandardServiceInitiator instances used to initialize the
@@ -86,8 +86,8 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(DialectResolverInitiator.INSTANCE);
 
-        // Custom Quarkus V Reactive implementation !
-        serviceInitiators.add(QuarkusReactiveDialectFactoryInitiator.INSTANCE);
+        // Custom Quarkus implementation !
+        serviceInitiators.add(QuarkusStaticInitDialectFactoryInitiator.INSTANCE);
 
         // Default implementation
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);

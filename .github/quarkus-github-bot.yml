@@ -64,7 +64,7 @@ triage:
       labels: [area/devmode]
       title: "dev mode"
     - id: devui
-      labels: [area/devui]
+      labels: [area/dev-ui]
       title: "dev.?ui"
       notify: [phillip-kruger, cescoffier]
       notifyInPullRequest: true

@@ -483,13 +483,13 @@ public class DevMojo extends AbstractMojo {
      */
     private void saveTerminalState() {
         try {
-            if (windowsAttributes > 0) {
-                long hConsole = Kernel32.GetStdHandle(Kernel32.STD_INPUT_HANDLE);
-                if (hConsole != (long) Kernel32.INVALID_HANDLE_VALUE) {
-                    int[] mode = new int[1];
-                    windowsAttributes = Kernel32.GetConsoleMode(hConsole, mode) == 0 ? -1 : mode[0];
-                    windowsAttributesSet = true;
+            long hConsole = Kernel32.GetStdHandle(Kernel32.STD_INPUT_HANDLE);
+            if (hConsole != (long) Kernel32.INVALID_HANDLE_VALUE) {
+                int[] mode = new int[1];
+                windowsAttributes = Kernel32.GetConsoleMode(hConsole, mode) == 0 ? -1 : mode[0];
+                windowsAttributesSet = true;
 
+                if (windowsAttributes > 0) {
                     final int VIRTUAL_TERMINAL_PROCESSING = 0x0004; //enable color on the windows console
                     if (Kernel32.SetConsoleMode(hConsole, windowsAttributes | VIRTUAL_TERMINAL_PROCESSING) != 0) {
                         windowsColorSupport = true;

@@ -7,10 +7,11 @@ import java.util.function.Supplier;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Subclasses can be used to customize the behavior of the injected {@link UniAsserter}.
- *
+ * A subclass can be used to wrap the injected {@link UniAsserter} and customize the default behavior.
+ * <p>
  * Specifically, it can intercept selected methods and perform some additional logic. The {@link #transformUni(Supplier)} method
  * can be used to transform the provided {@link Uni} supplier for assertion and {@link UniAsserter#execute(Supplier)} methods.
+ * <p>
  * For example, it can be used to perform all assertions within the scope of a database transaction:
  *
  * <pre>
@@ -24,7 +25,7 @@ import io.smallrye.mutiny.Uni;
  *         }
  *
  *         &#64;Override
- *         protected <T> Supplier<Uni<T>> transformUni(Supplier<Uni<T>> uniSupplier) {
+ *         protected &lt;T&gt; Supplier&lt;Uni&lt;T&gt;&gt; transformUni(Supplier&lt;Uni&lt;T&gt;&gt; uniSupplier) {
  *             // Assert/execute methods are invoked within a database transaction
  *             return () -> Panache.withTransaction(uniSupplier);
  *         }
@@ -35,8 +36,30 @@ import io.smallrye.mutiny.Uni;
  *     public void testEntity(UniAsserter asserter) {
  *         asserter = new TransactionalUniAsserterInterceptor(asserter);
  *         asserter.execute(() -> new MyEntity().persist());
- *         asserter.assertEquals(() -> MyEntity.count(), 1l);
+ *         asserter.assertEquals(() -&gt; MyEntity.count(), 1l);
  *         asserter.execute(() -> MyEntity.deleteAll());
+ *     }
+ * }
+ * </pre>
+ *
+ * Alternatively, an anonymous class can be used as well:
+ *
+ * <pre>
+ * &#64;QuarkusTest
+ * public class SomeTest {
+ *
+ *     &#64;Test
+ *     &#64;RunOnVertxContext
+ *     public void testEntity(UniAsserter asserter) {
+ *         asserter = new UniAsserterInterceptor(asserter) {
+ *             &#64;Override
+ *             protected &lt;T&gt; Supplier&lt;Uni&lt;T&gt;&gt; transformUni(Supplier&lt;Uni&lt;T&gt;&gt; uniSupplier) {
+ *                 return () -&gt; Panache.withTransaction(uniSupplier);
+ *             }
+ *         };
+ *         asserter.execute(() -&gt; new MyEntity().persist());
+ *         asserter.assertEquals(() -&gt; MyEntity.count(), 1l);
+ *         asserter.execute(() -&gt; MyEntity.deleteAll());
  *     }
  * }
  * </pre>

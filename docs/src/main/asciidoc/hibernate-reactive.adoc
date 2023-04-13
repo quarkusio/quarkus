@@ -245,6 +245,32 @@ public class SomeTest {
 
 NOTE: See the Javadoc of `UniAsserter` for a full description of the various methods that can be used for creating assertions.
 
+[TIP]
+====
+You can also extend the `io.quarkus.test.vertx.UniAsserterInterceptor` to wrap the injected `UniAsserter` and customize the default behavior. For example, the interceptor can be used to execute the assert methods within a separate database transaction.:
+
+[source,java]
+----
+@QuarkusTest
+public class SomeTest {
+
+   @Test
+   @RunOnVertxContext
+   public void testEntity(UniAsserter asserter) {
+      asserter = new UniAsserterInterceptor(asserter) {
+         @Override
+         protected <T> Supplier<Uni<T>> transformUni(Supplier<Uni<T>> uniSupplier) {
+            return () -> Panache.withTransaction(uniSupplier);
+         }
+      };
+      asserter.execute(() -> new MyEntity().persist());
+      asserter.assertEquals(() -> MyEntity.count(), 1l);
+      asserter.execute(() -> MyEntity.deleteAll());
+   }
+}
+----
+====
+
 [[hr-limitations]]
 == Limitations and other things you should know
 

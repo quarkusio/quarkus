@@ -57,7 +57,7 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
     protected void postBuild(Path outputDir, String nativeImageName, String resultingExecutableName) {
         copyFromContainerVolume(outputDir, resultingExecutableName,
                 "Failed to copy native image from container volume back to the host.");
-        if (nativeConfig.debug.enabled) {
+        if (nativeConfig.debug().enabled()) {
             copyFromContainerVolume(outputDir, "sources", "Failed to copy sources from container volume back to the host.");
             String symbols = String.format("%s.debug", nativeImageName);
             copyFromContainerVolume(outputDir, symbols, "Failed to copy debug symbols from container volume back to the host.");

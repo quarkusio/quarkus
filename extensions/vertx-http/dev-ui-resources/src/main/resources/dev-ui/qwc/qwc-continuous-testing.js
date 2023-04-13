@@ -317,14 +317,14 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     _renderStartButton(){
-        return html`<vaadin-button theme="tertiary" @click="${this._start}" ?disabled=${this._busy}>
+        return html`<vaadin-button id="start-cnt-testing-btn" theme="tertiary" @click="${this._start}" ?disabled=${this._busy}>
                         <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
                         Start
                     </vaadin-button>`;
     }
 
     _renderStopButton(){
-        return html`<vaadin-button theme="tertiary" @click="${this._stop}" ?disabled=${this._state.inProgress || this._busy}>
+        return html`<vaadin-button id="stop-cnt-testing-btn" theme="tertiary" @click="${this._stop}" ?disabled=${this._state.inProgress || this._busy}>
                         <vaadin-icon icon="font-awesome-solid:stop"></vaadin-icon>
                         Stop
                     </vaadin-button>`;
@@ -332,7 +332,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _renderRunAllButton(){
         if(this._state && this._state.running){
-            return html`<vaadin-button theme="tertiary" @click="${this._runAll}" ?disabled=${this._state.inProgress || this._busy}>
+            return html`<vaadin-button id="run-all-cnt-testing-btn" theme="tertiary" @click="${this._runAll}" ?disabled=${this._state.inProgress || this._busy}>
                             <vaadin-icon icon="font-awesome-solid:person-running"></vaadin-icon>
                             Run all
                         </vaadin-button>`;
@@ -341,7 +341,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _renderRunFailedButton(){
         if(this._state && this._state.running && this._state.failed > 0){
-            return html`<vaadin-button theme="tertiary" @click="${this._runFailed}" ?disabled=${this._state.inProgress || this._busy}>
+            return html`<vaadin-button id="run-failed-cnt-testing-btn" theme="tertiary" @click="${this._runFailed}" ?disabled=${this._state.inProgress || this._busy}>
                             <vaadin-icon class="warning" icon="font-awesome-solid:person-falling-burst" ></vaadin-icon>
                             Run failed
                         </vaadin-button>`;
@@ -350,7 +350,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _renderToggleBrokenOnly(){
         if(this._state && this._state.running){
-            return html`<vaadin-checkbox theme="small"
+            return html`<vaadin-checkbox id="run-failed-cnt-testing-chk" theme="small"
                                     @change="${this._toggleBrokenOnly}"
                                     ?checked=${this._state.isBrokenOnly}
                                     ?disabled=${this._state.inProgress || this._busy}

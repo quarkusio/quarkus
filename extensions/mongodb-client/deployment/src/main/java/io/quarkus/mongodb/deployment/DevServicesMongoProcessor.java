@@ -272,7 +272,7 @@ public class DevServicesMongoProcessor {
         }
 
         @Override
-        protected void configure() {
+        public void configure() {
             super.configure();
 
             if (useSharedNetwork) {

@@ -907,7 +907,7 @@ quarkus.kubernetes.rbac.role-bindings.my-role-binding.role-name=my-role
 <2> Also, the service account "my-service-account" will be generated.
 <3> And we can configure the generated RoleBinding resource by selecting the role to be used and the subject. 
 
-Finally, we can also generate the cluster wide role resource of "ClusterRole" kind as follows: 
+Finally, we can also generate the cluster wide role resource of "ClusterRole" kind and a "ClusterRoleBinding" resource as follows: 
 
 [source,properties]
 ----
@@ -917,11 +917,13 @@ quarkus.kubernetes.rbac.cluster-roles.my-cluster-role.policy-rules.0.resources=d
 quarkus.kubernetes.rbac.cluster-roles.my-cluster-role.policy-rules.0.verbs=get,watch,list
 
 # Bind the ClusterRole "my-cluster-role" with the application service account
-quarkus.kubernetes.rbac.role-bindings.my-role-binding.role-name=my-cluster-role <2>
+quarkus.kubernetes.rbac.cluster-role-bindings.my-cluster-role-binding.subjects.manager.kind=Group
+quarkus.kubernetes.rbac.cluster-role-bindings.my-cluster-role-binding.subjects.manager.api-group=rbac.authorization.k8s.io
+quarkus.kubernetes.rbac.cluster-role-bindings.my-cluster-role-binding.role-name=my-cluster-role <2>
 ----
 
 <1> In this example, the cluster role "my-cluster-role" will be generated with the specified policy rules.
-<2> As we have configured only one role, this property is not really necessary.
+<2> The name of the ClusterRole resource to use. Role resources are namespace-based and hence not allowed in ClusterRoleBinding resources.
 
 === Deploying to Minikube
 

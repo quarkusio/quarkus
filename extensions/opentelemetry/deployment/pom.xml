@@ -116,23 +116,6 @@
             <artifactId>opentelemetry-jdbc</artifactId>
             <scope>test</scope>
         </dependency>
-
-<!--  brunobat: aws dependencies commented. This will be soon moved to an independent IT Project.  -->
-<!--        <dependency>-->
-<!--            <groupId>io.opentelemetry.contrib</groupId>-->
-<!--            <artifactId>opentelemetry-aws-xray-propagator</artifactId>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.opentelemetry.contrib</groupId>-->
-<!--            <artifactId>opentelemetry-aws-resources</artifactId>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.opentelemetry.contrib</groupId>-->
-<!--            <artifactId>opentelemetry-aws-xray</artifactId>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2-deployment</artifactId>

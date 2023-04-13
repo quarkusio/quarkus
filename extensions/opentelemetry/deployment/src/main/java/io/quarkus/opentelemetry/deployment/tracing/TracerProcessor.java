@@ -14,6 +14,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
 import io.opentelemetry.sdk.trace.SpanProcessor;
@@ -46,6 +47,7 @@ public class TracerProcessor {
     private static final DotName SAMPLER = DotName.createSimple(Sampler.class.getName());
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
+    private static final DotName TEXT_MAP_PROPAGATOR = DotName.createSimple(TextMapPropagator.class.getName());
 
     @BuildStep
     UnremovableBeanBuildItem ensureProducersAreRetained(
@@ -82,6 +84,9 @@ public class TracerProcessor {
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(SPAN_PROCESSOR.toString());
         index.getAllKnownImplementors(SPAN_PROCESSOR)
+                .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
+        knownClasses.add(TEXT_MAP_PROPAGATOR.toString());
+        index.getAllKnownImplementors(TEXT_MAP_PROPAGATOR)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
 
         Set<String> retainProducers = new HashSet<>();

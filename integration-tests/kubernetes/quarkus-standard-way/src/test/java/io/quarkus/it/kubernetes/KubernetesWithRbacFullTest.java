@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.Role;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.Subject;
@@ -95,6 +96,15 @@ public class KubernetesWithRbacFullTest {
         assertEquals("ServiceAccount", subject.getKind());
         assertEquals("user", subject.getName());
         assertEquals("projectc", subject.getNamespace());
+
+        // cluster role binding
+        ClusterRoleBinding clusterRoleBinding = getClusterRoleBindingByName(kubernetesList, "my-cluster-role-binding");
+        assertEquals("secret-reader", clusterRoleBinding.getRoleRef().getName());
+        assertEquals("ClusterRole", clusterRoleBinding.getRoleRef().getKind());
+        Subject clusterSubject = clusterRoleBinding.getSubjects().get(0);
+        assertEquals("Group", clusterSubject.getKind());
+        assertEquals("manager", clusterSubject.getName());
+        assertEquals("rbac.authorization.k8s.io", clusterSubject.getApiGroup());
     }
 
     private int lastIndexOfKind(String content, String... kinds) {
@@ -130,6 +140,10 @@ public class KubernetesWithRbacFullTest {
 
     private RoleBinding getRoleBindingByName(List<HasMetadata> kubernetesList, String rbName) {
         return getResourceByName(kubernetesList, RoleBinding.class, rbName);
+    }
+
+    private ClusterRoleBinding getClusterRoleBindingByName(List<HasMetadata> kubernetesList, String rbName) {
+        return getResourceByName(kubernetesList, ClusterRoleBinding.class, rbName);
     }
 
     private <T extends HasMetadata> T getResourceByName(List<HasMetadata> kubernetesList, Class<T> clazz, String name) {

@@ -96,6 +96,8 @@ import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
+import io.quarkus.kubernetes.spi.RoleRef;
+import io.quarkus.kubernetes.spi.Subject;
 
 public class KubernetesCommonHelper {
 
@@ -358,17 +360,17 @@ public class KubernetesCommonHelper {
             String rbName = rb.getValue().name.orElse(rb.getKey());
             RoleBindingConfig roleBinding = rb.getValue();
 
-            List<KubernetesRoleBindingBuildItem.Subject> subjects = new ArrayList<>();
+            List<Subject> subjects = new ArrayList<>();
             if (roleBinding.subjects.isEmpty()) {
                 requiresServiceAccount = true;
-                subjects.add(new KubernetesRoleBindingBuildItem.Subject(null, SERVICE_ACCOUNT,
+                subjects.add(new Subject(null, SERVICE_ACCOUNT,
                         defaultIfEmpty(defaultServiceAccount, config.getServiceAccount().orElse(name)),
                         defaultServiceAccountNamespace));
             } else {
                 for (Map.Entry<String, SubjectConfig> s : roleBinding.subjects.entrySet()) {
                     String subjectName = s.getValue().name.orElse(s.getKey());
                     SubjectConfig subject = s.getValue();
-                    subjects.add(new KubernetesRoleBindingBuildItem.Subject(subject.apiGroup.orElse(null),
+                    subjects.add(new Subject(subject.apiGroup.orElse(null),
                             subject.kind,
                             subjectName,
                             subject.namespace.orElse(null)));
@@ -384,8 +386,34 @@ public class KubernetesCommonHelper {
             result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
                     rbName,
                     roleBinding.labels,
-                    new KubernetesRoleBindingBuildItem.RoleRef(roleName, clusterWide),
-                    subjects.toArray(new KubernetesRoleBindingBuildItem.Subject[0]))));
+                    new RoleRef(roleName, clusterWide),
+                    subjects.toArray(new Subject[0]))));
+        }
+
+        // Add cluster role bindings from configuration
+        for (Map.Entry<String, ClusterRoleBindingConfig> rb : config.getRbacConfig().clusterRoleBindings.entrySet()) {
+            String rbName = rb.getValue().name.orElse(rb.getKey());
+            ClusterRoleBindingConfig clusterRoleBinding = rb.getValue();
+
+            List<Subject> subjects = new ArrayList<>();
+            if (clusterRoleBinding.subjects.isEmpty()) {
+                throw new IllegalStateException("No subjects have been set in the ClusterRoleBinding resource!");
+            }
+
+            for (Map.Entry<String, SubjectConfig> s : clusterRoleBinding.subjects.entrySet()) {
+                String subjectName = s.getValue().name.orElse(s.getKey());
+                SubjectConfig subject = s.getValue();
+                subjects.add(new Subject(subject.apiGroup.orElse(null),
+                        subject.kind,
+                        subjectName,
+                        subject.namespace.orElse(null)));
+            }
+
+            result.add(new DecoratorBuildItem(target, new AddClusterRoleBindingResourceDecorator(name,
+                    rbName,
+                    clusterRoleBinding.labels,
+                    new RoleRef(clusterRoleBinding.roleName, true),
+                    subjects.toArray(new Subject[0]))));
         }
 
         // if no role bindings were created, then automatically create one if:
@@ -396,8 +424,8 @@ public class KubernetesCommonHelper {
                 result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
                         name,
                         Collections.emptyMap(),
-                        new KubernetesRoleBindingBuildItem.RoleRef(defaultRoleName, defaultClusterWide),
-                        new KubernetesRoleBindingBuildItem.Subject(null, SERVICE_ACCOUNT,
+                        new RoleRef(defaultRoleName, defaultClusterWide),
+                        new Subject(null, SERVICE_ACCOUNT,
                                 defaultIfEmpty(defaultServiceAccount, config.getServiceAccount().orElse(name)),
                                 defaultServiceAccountNamespace))));
             } else if (kubernetesClientRequiresRbacGeneration) {
@@ -407,8 +435,8 @@ public class KubernetesCommonHelper {
                 result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
                         name + "-" + DEFAULT_ROLE_NAME_VIEW,
                         Collections.emptyMap(),
-                        new KubernetesRoleBindingBuildItem.RoleRef(DEFAULT_ROLE_NAME_VIEW, true),
-                        new KubernetesRoleBindingBuildItem.Subject(null, SERVICE_ACCOUNT,
+                        new RoleRef(DEFAULT_ROLE_NAME_VIEW, true),
+                        new Subject(null, SERVICE_ACCOUNT,
                                 defaultIfEmpty(defaultServiceAccount, config.getServiceAccount().orElse(name)),
                                 defaultServiceAccountNamespace))));
             }

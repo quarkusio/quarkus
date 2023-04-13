@@ -31,4 +31,10 @@ public class RbacConfig {
      */
     @ConfigItem
     Map<String, RoleBindingConfig> roleBindings;
+
+    /**
+     * List of cluster role bindings to generate.
+     */
+    @ConfigItem
+    Map<String, ClusterRoleBindingConfig> clusterRoleBindings;
 }

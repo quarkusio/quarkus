@@ -430,13 +430,13 @@
             </build>
         </profile>
         <profile>
-            <id>jdk19-workarounds</id>
+            <id>jdk20-workarounds</id>
             <activation>
-                <jdk>[19,)</jdk>
+                <jdk>[20,)</jdk>
             </activation>
             <properties>
                 <!-- auto-exclude tests that are known to fail on JDK 19 or above (tagged via @Tag("failsOnJDK19")) -->
-                <excludedGroups>failsOnJDK19</excludedGroups>
+                <excludedGroups>failsOnJDK20</excludedGroups>
             </properties>
         </profile>
     </profiles>

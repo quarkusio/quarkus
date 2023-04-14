@@ -62,6 +62,11 @@ public abstract class QuarkusTask extends DefaultTask {
 
         customizations.forEach(a -> a.execute(forkOptions));
 
+        String quarkusWorkerMaxHeap = System.getProperty("quarkus.gradle-worker.max-heap");
+        if (quarkusWorkerMaxHeap != null && forkOptions.getAllJvmArgs().stream().noneMatch(arg -> arg.startsWith("-Xmx"))) {
+            forkOptions.jvmArgs("-Xmx" + quarkusWorkerMaxHeap);
+        }
+
         // Pass all environment variables
         forkOptions.environment(System.getenv());
 

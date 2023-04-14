@@ -78,7 +78,7 @@ public class KnownPathResourceManager implements ResourceManager {
         private final String path;
 
         private DirectoryResource(String path) {
-            this.path = path;
+            this.path = path.replaceAll("\\\\", "/");
         }
 
         @Override

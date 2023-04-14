@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -122,7 +123,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected String getHttpResponse(String path) {
-        return getHttpResponse(path, 1, TimeUnit.MINUTES);
+        return getHttpResponse(path, devModeTimeoutSeconds(), TimeUnit.SECONDS);
     }
 
     protected String getHttpResponse(String path, long timeout, TimeUnit tu) {
@@ -146,7 +147,16 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected void assertUpdatedResponseContains(String path, String value) {
-        assertUpdatedResponseContains(path, value, 1, TimeUnit.MINUTES);
+        assertUpdatedResponseContains(path, value, devModeTimeoutSeconds(), TimeUnit.SECONDS);
+    }
+
+    protected int devModeTimeoutSeconds() {
+        // It's a wild guess, but maybe Windows is just slower - at least: a successful Gradle-CI-jobs on Windows is
+        // 2.5x slower than the same Gradle-CI-job on Linux.
+        if (System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows")) {
+            return 90;
+        }
+        return 60;
     }
 
     protected void assertUpdatedResponseContains(String path, String value, long waitAtMost, TimeUnit timeUnit) {

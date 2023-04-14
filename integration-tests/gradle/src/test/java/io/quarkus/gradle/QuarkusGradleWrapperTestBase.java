@@ -21,10 +21,28 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     private Map<String, String> systemProps;
 
+    private boolean configurationCacheEnable = true;
+    private boolean noWatchFs = true;
+
     protected void setupTestCommand() {
 
     }
 
+    /**
+     * Gradle's configuration cache is enabled by default for all tests. This option can be used to disable the
+     * configuration test.
+     */
+    protected void gradleConfigurationCache(boolean configurationCacheEnable) {
+        this.configurationCacheEnable = configurationCacheEnable;
+    }
+
+    /**
+     * Gradle is run by default with {@code --no-watch-fs} to reduce I/O load during tests. Some tests might run into issues
+     * with this option.
+     */
+    protected void gradleNoWatchFs(boolean noWatchFs) {
+        this.noWatchFs = noWatchFs;
+    }
 
     public BuildResult runGradleWrapper(File projectDir, String... args) throws IOException, InterruptedException {
         return runGradleWrapper(false, projectDir, args);
@@ -37,9 +55,13 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         command.add(getGradleWrapperCommand());
         addSystemProperties(command);
         command.add("-Dorg.gradle.console=plain");
-        command.add("-Dorg.gradle.daemon=false");
-        command.add("--configuration-cache");
+        if (configurationCacheEnable) {
+            command.add("--configuration-cache");
+        }
         command.add("--stacktrace");
+        if (noWatchFs) {
+            command.add("--no-watch-fs");
+        }
         command.add("--info");
         command.add("--daemon");
         command.addAll(Arrays.asList(args));

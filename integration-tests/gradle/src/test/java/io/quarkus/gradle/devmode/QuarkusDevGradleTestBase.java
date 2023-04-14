@@ -27,6 +27,11 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     private Future<?> quarkusDev;
     protected File projectDir;
 
+    @Override
+    protected void setupTestCommand() {
+        gradleNoWatchFs(false);
+    }
+
     @Test
     public void main() throws Exception {
 

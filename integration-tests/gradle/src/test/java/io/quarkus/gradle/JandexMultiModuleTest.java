@@ -10,11 +10,14 @@ public class JandexMultiModuleTest extends QuarkusGradleWrapperTestBase {
 
     @Test
     public void testBasicMultiModuleBuildKordamp() throws Exception {
+        // Kordamp Jandex plugin's not compatible w/ the Gradle configuration cache
+        gradleConfigurationCache(false);
         jandexTest("jandex-basic-multi-module-project-kordamp", ":common:jandex");
     }
 
     @Test
     public void testBasicMultiModuleBuildJandex() throws Exception {
+        gradleConfigurationCache(true);
         jandexTest("jandex-basic-multi-module-project-vlsi", ":common:processJandexIndex");
     }
 

@@ -101,8 +101,6 @@ public class BuildConfigurationTest extends QuarkusGradleWrapperTestBase {
     private void verifyBuild(String override) throws IOException, InterruptedException, URISyntaxException {
         File rootDir = getProjectDir(ROOT_PROJECT_NAME);
         BuildResult buildResult = runGradleWrapper(rootDir, "clean", "quarkusBuild",
-                // Package type is not included in the Gradle cache inputs, see https://github.com/quarkusio/quarkus/issues/30852
-                "--no-build-cache",
                 override != null ? "-Dquarkus.package.type=" + override : "-Dfoo=bar");
         soft.assertThat(buildResult.unsuccessfulTasks()).isEmpty();
 

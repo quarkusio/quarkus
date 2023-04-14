@@ -29,6 +29,7 @@ public class QuarkusGradleDevToolsTestBase extends QuarkusGradleWrapperTestBase 
 
     @Override
     protected void setupTestCommand() {
+        gradleNoWatchFs(false);
         for (Map.Entry<?, ?> prop : devToolsProps.entrySet()) {
             setSystemProperty(prop.getKey().toString(), prop.getValue().toString());
         }

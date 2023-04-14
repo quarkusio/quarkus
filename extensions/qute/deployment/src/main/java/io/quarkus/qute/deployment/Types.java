@@ -1,14 +1,13 @@
 package io.quarkus.qute.deployment;
 
-import java.util.Collection;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -127,122 +126,61 @@ public final class Types {
             }
         }
         if (type.kind() == Type.Kind.ARRAY) {
-            return containsTypeVariable(type.asArrayType().component());
+            return containsTypeVariable(type.asArrayType().constituent());
         }
         return false;
     }
 
-    static boolean isAssignableFrom(Type type1, Type type2, IndexView index, Map<DotName, AssignableInfo> assignableCache) {
-        if (type1.kind() == Kind.ARRAY) {
-            return type2.kind() == Kind.ARRAY
-                    ? isAssignableFrom(type1.asArrayType().component(), type2.asArrayType().component(), index,
-                            assignableCache)
-                    : false;
+    // This class is not thread-safe and should not be used concurrently.
+    static class AssignabilityCheck {
+
+        final Map<DotName, Set<DotName>> superTypesCache;
+        final IndexView computingIndex;
+
+        AssignabilityCheck(IndexView beanArchiveIndex) {
+            this.superTypesCache = new HashMap<>();
+            this.computingIndex = beanArchiveIndex;
         }
 
-        return Types.isAssignableFrom(box(type1).name(), box(type2).name(), index, assignableCache);
-    }
-
-    static class AssignableInfo {
-
-        static AssignableInfo from(ClassInfo classInfo, IndexView index) {
-            if (classInfo.isInterface()) {
-                return new AssignableInfo(null, toNames(index.getAllKnownImplementors(classInfo.name())),
-                        toNames(index.getAllKnownSubinterfaces(classInfo.name())));
-            } else {
-                return new AssignableInfo(toNames(index.getAllKnownSubclasses(classInfo.name())), null, null);
+        boolean isAssignableFrom(Type type1, Type type2) {
+            if (type1.kind() == Kind.ARRAY) {
+                return type2.kind() == Kind.ARRAY
+                        ? isAssignableFrom(type1.asArrayType().constituent(), type2.asArrayType().constituent())
+                        : false;
             }
+            return isAssignableFrom(box(type1).name(), box(type2).name());
         }
 
-        private static Set<DotName> toNames(Collection<ClassInfo> classes) {
-            return classes.stream().map(ClassInfo::name).collect(Collectors.toSet());
-        }
-
-        final Set<DotName> subclasses;
-        final Set<DotName> implementors;
-        final Set<DotName> subInterfaces;
-
-        AssignableInfo(Set<DotName> subclasses, Set<DotName> implementors, Set<DotName> subInterfaces) {
-            this.subclasses = subclasses;
-            this.implementors = implementors;
-            this.subInterfaces = subInterfaces;
-        }
-
-        boolean isAssignableFrom(DotName clazz) {
-            if (clazz == null) {
-                return false;
-            }
-            if (subclasses != null && subclasses.contains(clazz)) {
+        boolean isAssignableFrom(DotName className1, DotName className2) {
+            // java.lang.Object is assignable from any type
+            if (className1.equals(DotNames.OBJECT)) {
                 return true;
             }
-            if (implementors != null && implementors.contains(clazz)) {
+            if (className1.equals(className2)) {
                 return true;
             }
-            return subInterfaces != null && subInterfaces.contains(clazz);
+            return superTypesCache.computeIfAbsent(className2, this::findSuperTypes).contains(className1);
         }
 
-    }
-
-    static boolean isAssignableFrom(DotName className1, DotName className2, IndexView index,
-            Map<DotName, AssignableInfo> assignableCache) {
-        // java.lang.Object is assignable from any type
-        if (className1.equals(DotNames.OBJECT)) {
-            return true;
-        }
-        // type1 is the same as type2
-        if (className1.equals(className2)) {
-            return true;
-        }
-        ClassInfo class1 = index.getClassByName(className1);
-        if (class1 == null) {
-            // Not found in the index
-            return false;
-        }
-        AssignableInfo assignableInfo = assignableCache.get(className1);
-        if (assignableInfo == null) {
-            // No cached info
-            assignableInfo = AssignableInfo.from(class1, index);
-            assignableCache.put(className1, assignableInfo);
-            return assignableInfo.isAssignableFrom(className2);
-        } else {
-            if (assignableInfo.isAssignableFrom(className2)) {
-                return true;
-            }
-            // Cached info does not match - try to update the assignable info (a computing index is used)
-            assignableInfo = AssignableInfo.from(class1, index);
-            if (assignableInfo.isAssignableFrom(className2)) {
-                // Update the cache
-                assignableCache.put(className1, assignableInfo);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // This class is not thread-safe
-    static class HierarchyIndexer {
-
-        final IndexView index;
-        final Set<DotName> processed;
-
-        public HierarchyIndexer(IndexView index) {
-            this.index = Objects.requireNonNull(index);
-            this.processed = new HashSet<>();
-        }
-
-        void indexHierarchy(ClassInfo classInfo) {
-            if (classInfo != null && processed.add(classInfo.name())) {
-                LOG.debugf("Index hierarchy of: %s", classInfo);
-                // Interfaces
-                for (DotName interfaceName : classInfo.interfaceNames()) {
-                    indexHierarchy(index.getClassByName(interfaceName));
-                }
-                // Superclass
-                DotName superName = classInfo.superName();
-                if (superName != null && !superName.equals(DotNames.OBJECT)) {
-                    indexHierarchy(index.getClassByName(superName));
+        private Set<DotName> findSuperTypes(DotName name) {
+            LOG.debugf("Find supertypes/index hierarchy of: %s", name);
+            Set<DotName> result = new HashSet<>();
+            Deque<DotName> queue = new ArrayDeque<>();
+            queue.add(name);
+            while (!queue.isEmpty()) {
+                DotName type = queue.poll();
+                if (result.add(type)) {
+                    ClassInfo clazz = computingIndex.getClassByName(type);
+                    if (clazz == null) {
+                        continue;
+                    }
+                    if (clazz.superName() != null) {
+                        queue.add(clazz.superName());
+                    }
+                    queue.addAll(clazz.interfaceNames());
                 }
             }
+            return result;
         }
 
     }

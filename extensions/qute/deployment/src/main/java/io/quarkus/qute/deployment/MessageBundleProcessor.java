@@ -88,8 +88,7 @@ import io.quarkus.qute.Resolver;
 import io.quarkus.qute.deployment.QuteProcessor.JavaMemberLookupConfig;
 import io.quarkus.qute.deployment.QuteProcessor.MatchResult;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
-import io.quarkus.qute.deployment.Types.AssignableInfo;
-import io.quarkus.qute.deployment.Types.HierarchyIndexer;
+import io.quarkus.qute.deployment.Types.AssignabilityCheck;
 import io.quarkus.qute.generator.Descriptors;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.i18n.Localized;
@@ -455,8 +454,7 @@ public class MessageBundleProcessor {
 
         JavaMemberLookupConfig lookupConfig = new QuteProcessor.FixedJavaMemberLookupConfig(index,
                 QuteProcessor.initDefaultMembersFilter(), false);
-        Map<DotName, AssignableInfo> assignableCache = new HashMap<>();
-        HierarchyIndexer hierarchyIndexer = new HierarchyIndexer(index);
+        AssignabilityCheck assignabilityCheck = new AssignabilityCheck(index);
 
         // bundle name -> (key -> method)
         Map<String, Map<String, MethodInfo>> bundleToMethods = new HashMap<>();
@@ -576,10 +574,10 @@ public class MessageBundleProcessor {
                                             implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
                                             extensionMethodExcludes, checkedTemplate, lookupConfig, namedBeans,
                                             namespaceTemplateData, regularExtensionMethods, namespaceExtensionMethods,
-                                            assignableCache, hierarchyIndexer);
+                                            assignabilityCheck);
                                     MatchResult match = results.get(param.toOriginalString());
-                                    if (match != null && !match.isEmpty() && !Types.isAssignableFrom(match.type(),
-                                            methodParams.get(idx), index, assignableCache)) {
+                                    if (match != null && !match.isEmpty() && !assignabilityCheck.isAssignableFrom(match.type(),
+                                            methodParams.get(idx))) {
                                         incorrectExpressions
                                                 .produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
                                                         "Message bundle method " + method.declaringClass().name() + "#" +

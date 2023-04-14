@@ -1,0 +1,9 @@
+apiVersion: 1
+datasources:
+  - name: VictoriaMetrics
+    type: prometheus
+    url: http://xTARGETx
+    access: proxy
+    isDefault: true
+    jsonData:
+      timeInterval: 30s

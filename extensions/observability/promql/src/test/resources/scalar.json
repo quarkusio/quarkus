@@ -1,0 +1,13 @@
+{
+  "status" : "success",
+  "data" : {
+    "resultType" : "scalar",
+    "result" : [1435781451.781, "2.3"]
+  },
+  "errorType": "Dummy",
+  "error": "Test dummy crash course",
+  "warnings": [
+    "W1",
+    "W2"
+  ]
+}

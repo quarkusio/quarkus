@@ -276,6 +276,8 @@
                 <module>flyway</module>
                 <module>liquibase</module>
                 <module>liquibase-mongodb</module>
+                <module>observability</module>
+                <module>observability-multiapp</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
                 <module>oidc-client-reactive</module>

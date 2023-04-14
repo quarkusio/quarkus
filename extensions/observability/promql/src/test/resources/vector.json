@@ -1,0 +1,30 @@
+{
+  "status" : "success",
+  "data" : {
+    "resultType" : "vector",
+    "result" : [
+      {
+        "metric" : {
+          "__name__" : "up",
+          "job" : "prometheus",
+          "instance" : "localhost:9090"
+        },
+        "value": [ 1435781451.781, "1" ]
+      },
+      {
+        "metric" : {
+          "__name__" : "up",
+          "job" : "node",
+          "instance" : "localhost:9100"
+        },
+        "value" : [ 1435781451.781, "0" ]
+      }
+    ]
+  },
+  "errorType": "Dummy",
+  "error": "Test dummy crash course",
+  "warnings": [
+    "W1",
+    "W2"
+  ]
+}

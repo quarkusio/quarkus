@@ -11,6 +11,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.assertj.core.api.Assertions;
+
 public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
@@ -23,7 +25,13 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     }
 
+
     public BuildResult runGradleWrapper(File projectDir, String... args) throws IOException, InterruptedException {
+        return runGradleWrapper(false, projectDir, args);
+    }
+
+    public BuildResult runGradleWrapper(boolean expectError, File projectDir, String... args)
+            throws IOException, InterruptedException {
         setupTestCommand();
         List<String> command = new ArrayList<>();
         command.add(getGradleWrapperCommand());
@@ -60,8 +68,14 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         }
         final BuildResult commandResult = BuildResult.of(logOutput);
         int exitCode = p.exitValue();
-        if (exitCode != 0) {
+
+        // The test failed, if the Gradle build exits with != 0 and the tests expects no failure, or if the test
+        // expects a failure and the exit code is 0.
+        if (expectError == (exitCode == 0)) {
+            // Only print the output, if the test does not expect a failure.
             printCommandOutput(projectDir, command, commandResult, exitCode);
+            // Fail hard, if the test does not expect a failure.
+            Assertions.fail("Gradle build failed with exit code %d", exitCode);
         }
         return commandResult;
     }

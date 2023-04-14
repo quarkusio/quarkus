@@ -299,9 +299,6 @@ Fortunately, Mutiny provides a set of shortcut to make your code more concise:
 |`uni.chain(x -> uni2)`
 |`uni.onItem().transformToUni(x -> uni2)`
 
-|`uni.then(() -> uni2)`
-|`uni.onItem().transformToUni(ignored -> uni2)`
-
 |`uni.invoke(x -> System.out.println(x))`
 |`uni.onItem().invoke(x -> System.out.println(x))`
 

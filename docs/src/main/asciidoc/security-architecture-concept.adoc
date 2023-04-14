@@ -18,7 +18,7 @@ The sequential security validation process results in one of three outcomes:
 
 * The HTTP request is authenticated and authorized and access to the Quarkus application is granted
 * The HTTP request authentication fails and the requester receives a challenge
-* The HTTP request authorization fails and and the requester's access to the Quarkus applicaton is denied
+* The HTTP request authorization fails and the requester's access to the Quarkus applicaton is denied
 
 The following diagram steps through the detailed process flow of the Quarkus Security architecture:
 
@@ -44,7 +44,7 @@ For more information, see xref:security-identity-providers-concept.adoc[Identity
 Because Quarkus Security is customizable, for example, you can add authorization roles to `SecurityIdentity`, you can register and prioritize one or more custom security augmentors.
 
 Registered instances of `SecurityIdentityAugmentor` are invoked during the final stage of the security authentication process.
-For more information see the xref:security-customization.adoc#security-identity-customization[Security Identity Customization] section of the "Security Tips and Tricks" guide.
+For more information, see the xref:security-customization.adoc#security-identity-customization[Security Identity Customization] section of the "Security Tips and Tricks" guide.
 
 
 == Supported authentication mechanisms

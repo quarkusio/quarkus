@@ -39,13 +39,18 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         File logOutput = new File(projectDir, "command-output.log");
 
         System.out.println("$ " + String.join(" ", command));
-        Process p = new ProcessBuilder()
+        ProcessBuilder pb = new ProcessBuilder()
                 .directory(projectDir)
                 .command(command)
                 .redirectInput(ProcessBuilder.Redirect.INHERIT)
-                .redirectError(logOutput)
                 .redirectOutput(logOutput)
-                .start();
+                // Should prevent "fragmented" output (parts of stdout and stderr interleaved)
+                .redirectErrorStream(true);
+        if (System.getenv("JAVA_HOME") == null) {
+            // This helps running the tests in IntelliJ w/o configuring an explicit JAVA_HOME env var.
+            pb.environment().put("JAVA_HOME", System.getProperty("java.home"));
+        }
+        Process p = pb.start();
 
         //long timeout for native tests
         //that may also need to download docker

@@ -9,25 +9,36 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 public class DevModeTestUtils {
 
-    public static void killDescendingProcesses() {
+    public static List<ProcessHandle> killDescendingProcesses() {
         // Warning: Do not try to evaluate ProcessHandle.Info.arguments() or .commandLine() as those are always empty on Windows:
         // https://bugs.openjdk.java.net/browse/JDK-8176725
-        ProcessHandle.current().descendants()
+        //
+        // Intentionally collecting the ProcessHandles before calling .destroy(), because it seemed that, at least on
+        // Windows, not all processes were properly killed, leaving (some) processes around, causing following dev-mode
+        // tests to time-out.
+        List<ProcessHandle> childProcesses = ProcessHandle.current().descendants()
                 // destroy younger descendants first
                 .sorted((ph1, ph2) -> ph2.info().startInstant().orElse(Instant.EPOCH)
                         .compareTo(ph1.info().startInstant().orElse(Instant.EPOCH)))
-                .forEach(ProcessHandle::destroy);
+                .collect(Collectors.toList());
+
+        childProcesses.forEach(ProcessHandle::destroy);
+
+        // Returning all child processes for callers that want to do a "kill -9"
+        return childProcesses;
     }
 
     public static void filter(File input, Map<String, String> variables) throws IOException {

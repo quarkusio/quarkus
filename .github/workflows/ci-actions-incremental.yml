@@ -430,7 +430,7 @@ jobs:
       MAVEN_OPTS: -Xmx1g
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_gradle == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 80
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:

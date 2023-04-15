@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import com.google.common.collect.ImmutableMap;
 
-@org.junit.jupiter.api.Tag("failsOnJDK19")
+@org.junit.jupiter.api.Tag("failsOnJDK20")
 public class BasicKotlinApplicationModuleDevModeTest extends QuarkusDevGradleTestBase {
 
     @Override

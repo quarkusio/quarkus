@@ -13,6 +13,8 @@ public class ExtensionUnitTestTest extends QuarkusGradleWrapperTestBase {
 
     @Test
     public void shouldRunTestWithSuccess() throws Exception {
+        gradleConfigurationCache(false);
+
         File projectDir = getProjectDir("extensions/simple-extension");
 
         BuildResult buildResult = runGradleWrapper(projectDir, "clean", ":deployment:test", "--no-build-cache");

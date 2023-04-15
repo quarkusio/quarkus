@@ -32,6 +32,7 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.CompileClasspath;
@@ -82,6 +83,7 @@ public abstract class QuarkusDev extends QuarkusTask {
     private final CompilerOptions compilerOptions = new CompilerOptions();
 
     private final Property<File> workingDirectory;
+    private final MapProperty<String, String> environmentVariables;
 
     private final Property<Boolean> preventNoVerify;
     private final Property<Boolean> shouldPropagateJavaCompilerArgs;
@@ -113,6 +115,8 @@ public abstract class QuarkusDev extends QuarkusTask {
 
         workingDirectory = objectFactory.property(File.class);
         workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+
+        environmentVariables = objectFactory.mapProperty(String.class, String.class);
 
         preventNoVerify = objectFactory.property(Boolean.class);
         preventNoVerify.convention(false);
@@ -175,6 +179,16 @@ public abstract class QuarkusDev extends QuarkusTask {
     @Deprecated
     public void setWorkingDir(String workingDir) {
         workingDirectory.set(getProject().file(workingDir));
+    }
+
+    @Input
+    public MapProperty<String, String> getEnvironmentVariables() {
+        return environmentVariables;
+    }
+
+    @Internal
+    public Map<String, String> getEnvVars() {
+        return environmentVariables.get();
     }
 
     @Input
@@ -307,6 +321,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             if (outputFile == null) {
                 getProject().exec(action -> {
                     action.commandLine(runner.args()).workingDir(getWorkingDirectory().get());
+                    action.environment(getEnvVars());
                     action.setStandardInput(System.in)
                             .setErrorOutput(System.out)
                             .setStandardOutput(System.out);

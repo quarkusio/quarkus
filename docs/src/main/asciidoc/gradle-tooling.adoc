@@ -208,6 +208,31 @@ By default, `quarkusDev` sets the debug host to `localhost` (for security reason
 include::{includes}/devtools/dev-parameters.adoc[]
 :!dev-additional-parameters:
 ====
+
+You also can add environment variables to the development environment:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+quarkusDev {
+    environmentVariables = [FOO_VALUE: 'abc', BAR_VALUE: 'def']
+}
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+tasks.quarkusDev {
+    environmentVariables.set(mapOf("FOO_VALUE" to "abc", "BAR_VALUE" to "def"))
+}
+----
+****
+
 The plugin also exposes a `quarkusDev` configuration. Using this configuration to declare a dependency will restrict the usage of that dependency to development mode.
 The `quarkusDev` configuration can be used as following:
 

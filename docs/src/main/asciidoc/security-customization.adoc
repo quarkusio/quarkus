@@ -424,7 +424,7 @@ and add the BouncyCastle provider dependency:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("org.bouncycastle:bcprov-jdk15on")
+implementation("org.bouncycastle:bcprov-jdk18on")
 ----
 
 [[bouncy-castle-jsse]]
@@ -459,7 +459,7 @@ and add the BouncyCastle TLS dependency:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("org.bouncycastle:bctls-jdk15on")
+implementation("org.bouncycastle:bctls-jdk18on")
 ----
 
 [[bouncy-castle-fips]]

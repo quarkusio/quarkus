@@ -69,6 +69,8 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qui/", contextRoot + "qui/");
         internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
         internalImportMapBuildItem.add("qui-alert", contextRoot + "qui/qui-alert.js");
+        internalImportMapBuildItem.add("qui-code-block", contextRoot + "qui/qui-code-block.js");
+
         // Echarts
         internalImportMapBuildItem.add("echarts/", contextRoot + "echarts/");
         internalImportMapBuildItem.add("echarts-gauge-grade", contextRoot + "echarts/echarts-gauge-grade.js");
@@ -231,13 +233,15 @@ public class BuildTimeContentProcessor {
             Map<String, String> importMap = importMapBuildItem.getImportMap();
             aggregator.addMappings(importMap);
         }
-        String importmap = aggregator.aggregateAsJson();
+        String importmap = aggregator.aggregateAsJson(nonApplicationRootPathBuildItem.getNonApplicationRootPath());
         aggregator.reset();
 
         String themeVars = themeVarsBuildItem.getTemplateValue();
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + DEV_UI + SLASH;
+        String nonApplicationRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
+        String contextRoot = nonApplicationRoot + DEV_UI + SLASH;
 
         Map<String, Object> data = Map.of(
+                "nonApplicationRoot", nonApplicationRoot,
                 "contextRoot", contextRoot,
                 "importmap", importmap,
                 "themeVars", themeVars);

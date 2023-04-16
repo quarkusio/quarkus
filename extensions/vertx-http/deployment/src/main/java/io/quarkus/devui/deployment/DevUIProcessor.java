@@ -194,15 +194,17 @@ public class DevUIProcessor {
         }
 
         // Static mvnpm jars
-        routeProducer.produce(RouteBuildItem.builder()
-                .route("/_static" + SLASH_ALL)
-                .handler(recorder.mvnpmHandler(mvnpmBuildItem.getMvnpmJars()))
-                .build());
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
+        routeProducer.produce(
+                nonApplicationRootPathBuildItem.routeBuilder()
+                        .route("_static" + SLASH_ALL)
+                        .handler(recorder.mvnpmHandler(contextRoot, mvnpmBuildItem.getMvnpmJars()))
+                        .build());
 
         // Redirect /q/dev -> /q/dev-ui
-        routeProducer.produce(RouteBuildItem.builder()
-                .route("/q/dev")
-                .handler(recorder.redirect())
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route("dev")
+                .handler(recorder.redirect(contextRoot))
                 .build());
     }
 

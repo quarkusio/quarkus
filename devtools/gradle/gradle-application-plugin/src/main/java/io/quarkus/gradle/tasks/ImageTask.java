@@ -69,17 +69,17 @@ public abstract class ImageTask extends QuarkusBuildTask {
         List<Builder> availableBuidlers = availableBuilders();
         Optional<Builder> missingBuilder = Optional.of(builder()).filter(Predicate.not(availableBuidlers::contains));
         missingBuilder.map(builder -> QUARKUS_CONTAINER_IMAGE_PREFIX + builder.name()).ifPresent(missingDependency -> {
-            getProject().getLogger().warn("Task: {} requires extensions: {}", getName(), missingDependency);
-            getProject().getLogger().warn("To add the extensions to the project you can run the following command:");
-            getProject().getLogger().warn("\tgradle addExtension --extensions={}", missingDependency);
+            getLogger().warn("Task: {} requires extensions: {}", getName(), missingDependency);
+            getLogger().warn("To add the extensions to the project you can run the following command:");
+            getLogger().warn("\tgradle addExtension --extensions={}", missingDependency);
             abort("Aborting.");
         });
 
         if (!missingBuilder.isPresent() && availableBuidlers.isEmpty()) {
-            getProject().getLogger().warn("Task: {} requires on of extensions: {}", getName(),
+            getLogger().warn("Task: {} requires on of extensions: {}", getName(),
                     Arrays.stream(Builder.values()).map(Builder::name).collect(Collectors.joining(", ", "[", "]")));
-            getProject().getLogger().warn("To add the extensions to the project you can run the following command:");
-            getProject().getLogger().warn("\tgradle addExtension --extensions=<extension name>");
+            getLogger().warn("To add the extensions to the project you can run the following command:");
+            getLogger().warn("\tgradle addExtension --extensions=<extension name>");
             abort("Aborting.");
         }
     }

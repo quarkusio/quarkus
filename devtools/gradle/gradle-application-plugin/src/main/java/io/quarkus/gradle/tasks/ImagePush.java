@@ -33,12 +33,12 @@ public abstract class ImagePush extends ImageTask {
                 .collect(Collectors.toList());
 
         if (containerImageExtensions.isEmpty()) {
-            getProject().getLogger().warn("Task: {} requires a container image extension.", getName());
-            getProject().getLogger().warn("Available container image exntesions: [{}]",
+            getLogger().warn("Task: {} requires a container image extension.", getName());
+            getLogger().warn("Available container image exntesions: [{}]",
                     extensions.stream().collect(Collectors.joining(", ")));
-            getProject().getLogger().warn("To add an extension to the project, you can run one of the commands below:");
+            getLogger().warn("To add an extension to the project, you can run one of the commands below:");
             extensions.forEach(e -> {
-                getProject().getLogger().warn("\tgradle addExtension --extensions={}", e);
+                getLogger().warn("\tgradle addExtension --extensions={}", e);
             });
         }
     }

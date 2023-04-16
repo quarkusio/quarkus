@@ -43,6 +43,8 @@ public interface CaffeineCache extends Cache {
      */
     <V> void put(Object key, CompletableFuture<V> valueFuture);
 
+    <V> void put(Object key, CompletableFuture<V> valueFuture, Duration expiresIn);
+
     /**
      * Changes the duration, initially set from the configuration, after which each entry should be automatically removed from
      * the cache once that duration has elapsed after the entry's creation, or the most recent replacement of its value.

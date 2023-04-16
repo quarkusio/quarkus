@@ -1,5 +1,6 @@
 package io.quarkus.cache.runtime.noop;
 
+import java.time.Duration;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -22,6 +23,11 @@ public class NoOpCache extends AbstractCache {
 
     @Override
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
+        return get(key, valueLoader, null);
+    }
+
+    @Override
+    public <K, V> Uni<V> get(K key, Function<K, V> valueLoader, Duration expiresIn) {
         return Uni.createFrom().item(new Supplier<V>() {
             @Override
             public V get() {
@@ -32,6 +38,11 @@ public class NoOpCache extends AbstractCache {
 
     @Override
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+        return getAsync(key, valueLoader, null);
+    }
+
+    @Override
+    public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader, Duration expiresIn) {
         return valueLoader.apply(key);
     }
 

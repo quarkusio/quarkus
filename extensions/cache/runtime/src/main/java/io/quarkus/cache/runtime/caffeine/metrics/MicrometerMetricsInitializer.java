@@ -6,6 +6,7 @@ import com.github.benmanes.caffeine.cache.AsyncCache;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
+import io.quarkus.cache.runtime.caffeine.CacheValue;
 
 /**
  * An instance of this class is created during the instantiation of the Caffeine caches when the application depends on a
@@ -21,7 +22,7 @@ public class MicrometerMetricsInitializer implements MetricsInitializer {
     }
 
     @Override
-    public void recordMetrics(AsyncCache<Object, Object> cache, String cacheName) {
+    public void recordMetrics(AsyncCache<Object, CacheValue<Object>> cache, String cacheName) {
         LOGGER.tracef("Initializing Micrometer metrics for cache [%s]", cacheName);
         // The 'tags' vararg is purposely empty here. Tags should be configured using MeterFilter.
         CaffeineCacheMetrics.monitor(Metrics.globalRegistry, cache, cacheName);

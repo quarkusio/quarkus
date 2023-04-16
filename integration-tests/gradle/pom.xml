@@ -27,11 +27,13 @@
             <groupId>io.quarkus</groupId>
             <artifactId>io.quarkus.gradle.plugin</artifactId>
             <version>${project.version}</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>io.quarkus.extension</groupId>
             <artifactId>io.quarkus.extension.gradle.plugin</artifactId>
             <version>${project.version}</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>

@@ -13,6 +13,6 @@ public final class CertUtilsSubstitutions {
     @Substitute
     static PrivateKey handleECKey(InputStream keyInputStream) throws IOException {
         throw new RuntimeException(
-                "EC Keys are not supported when using the native binary, please add the org.bouncycastle:bcpkix-jdk15on dependency");
+                "EC Keys are not supported when using the native binary, please add the org.bouncycastle:bcpkix-jdk18on dependency");
     }
 }

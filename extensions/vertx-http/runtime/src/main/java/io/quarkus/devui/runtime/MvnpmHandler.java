@@ -18,15 +18,17 @@ import io.vertx.ext.web.RoutingContext;
 public class MvnpmHandler implements Handler<RoutingContext> {
 
     private final URLClassLoader mvnpmLoader;
+    private final String root;
 
-    public MvnpmHandler(Set<URL> mvnpmJars) {
+    public MvnpmHandler(String root, Set<URL> mvnpmJars) {
+        this.root = root;
         this.mvnpmLoader = new URLClassLoader(mvnpmJars.toArray(new URL[] {}));
     }
 
     @Override
     public void handle(RoutingContext event) {
+        String fullPath = event.normalizedPath().replaceFirst(root, SLASH);
         // Find the "filename" and see if it has a file extension
-        String fullPath = event.normalizedPath();
         String parts[] = fullPath.split(SLASH);
         String fileName = parts[parts.length - 1];
 

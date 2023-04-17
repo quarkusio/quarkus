@@ -10,6 +10,7 @@ import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -32,6 +33,7 @@ public abstract class AbstractLambdaPollLoop {
     private final ObjectReader clientCtxReader;
     private final LaunchMode launchMode;
     private static final String LAMBDA_TRACE_HEADER_PROP = "com.amazonaws.xray.traceHeader";
+    private static final String MDC_AWS_REQUEST_ID_KEY = "AWSRequestId";
 
     public AbstractLambdaPollLoop(ObjectMapper objectMapper, ObjectReader cognitoIdReader, ObjectReader clientCtxReader,
             LaunchMode launchMode) {
@@ -91,6 +93,9 @@ public abstract class AbstractLambdaPollLoop {
                         }
                         try {
                             String requestId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+                            if (requestId != null) {
+                                MDC.put(MDC_AWS_REQUEST_ID_KEY, requestId);
+                            }
                             if (requestConnection.getResponseCode() != 200) {
                                 // connection should be closed by finally clause
                                 continue;
@@ -164,6 +169,7 @@ public abstract class AbstractLambdaPollLoop {
                             }
                             return;
                         } finally {
+                            MDC.remove(MDC_AWS_REQUEST_ID_KEY);
                             try {
                                 requestConnection.getInputStream().close();
                             } catch (IOException ignored) {

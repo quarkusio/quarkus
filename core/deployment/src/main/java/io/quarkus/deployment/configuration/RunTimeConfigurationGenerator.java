@@ -171,8 +171,6 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor CU_ADD_SOURCE_FACTORY_PROVIDER = MethodDescriptor.ofMethod(ConfigUtils.class,
             "addSourceFactoryProvider",
             void.class, SmallRyeConfigBuilder.class, ConfigSourceFactoryProvider.class);
-    static final MethodDescriptor CU_WITH_MAPPING = MethodDescriptor.ofMethod(ConfigUtils.class, "addMapping",
-            void.class, SmallRyeConfigBuilder.class, String.class, String.class);
 
     static final MethodDescriptor RCS_NEW = MethodDescriptor.ofConstructor(RuntimeConfigSource.class, String.class);
     static final MethodDescriptor RCSP_NEW = MethodDescriptor.ofConstructor(RuntimeConfigSourceProvider.class, String.class);

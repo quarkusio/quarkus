@@ -12,6 +12,7 @@ import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
+import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
@@ -34,7 +35,8 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
  * Hibernate ORM when running on Quarkus.
  * WARNING: this is a customized list: we started from a copy of ORM's standard
  * list, then changes have evolved.
- * Also: Hibernate Reactive uses a different list.
+ * Also: Hibernate Reactive uses a different list, and there's an additional definition of
+ * services in PreconfiguredServiceRegistryBuilder.
  */
 public final class StandardHibernateORMInitiatorListProvider implements InitialInitiatorListProvider {
 
@@ -103,6 +105,9 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
 
         // Default implementation
         serviceInitiators.add(ParameterMarkerStrategyInitiator.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(SqlStatementLoggerInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
 

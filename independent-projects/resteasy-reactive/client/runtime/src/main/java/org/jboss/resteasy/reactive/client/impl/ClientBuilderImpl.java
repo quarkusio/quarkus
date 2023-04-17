@@ -29,6 +29,7 @@ import jakarta.ws.rs.ext.MessageBodyWriter;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.interceptors.ClientGZIPDecodingInterceptor;
 import org.jboss.resteasy.reactive.client.logging.DefaultClientLogger;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -74,6 +75,8 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private ClientLogger clientLogger = new DefaultClientLogger();
     private String userAgent = "Resteasy Reactive Client";
+
+    private boolean enableCompression;
 
     public ClientBuilderImpl() {
         configuration = new ConfigurationImpl(RuntimeType.CLIENT);
@@ -188,6 +191,11 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder enableCompression() {
+        this.enableCompression = true;
+        return this;
+    }
+
     @Override
     public ClientImpl build() {
         HttpClientOptions options = Optional.ofNullable(configuration.getFromContext(HttpClientOptions.class))
@@ -271,6 +279,10 @@ public class ClientBuilderImpl extends ClientBuilder {
                     configureNonProxyHosts(options, nonProxyHosts);
                 }
             }
+        }
+
+        if (enableCompression) {
+            configuration.register(ClientGZIPDecodingInterceptor.class);
         }
 
         clientLogger.setBodySize(loggingBodySize);

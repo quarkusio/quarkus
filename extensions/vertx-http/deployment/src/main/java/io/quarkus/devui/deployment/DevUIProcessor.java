@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -373,7 +374,7 @@ public class DevUIProcessor {
             List<Extension> inactiveExtensions = new ArrayList<>();
             List<Extension> sectionMenuExtensions = new ArrayList<>();
             List<Extension> footerTabExtensions = new ArrayList<>();
-            ClassPathUtils.consumeAsPaths(YAML_FILE, p -> {
+            ClassPathUtils.consumeAsPaths(YAML_FILE, (Path p) -> {
                 try {
                     Extension extension = new Extension();
                     final String extensionYaml;
@@ -410,7 +411,7 @@ public class DevUIProcessor {
                         }
 
                         extension.setCategories((List<String>) metaData.getOrDefault(CATEGORIES, null));
-                        extension.setStatus((String) metaData.getOrDefault(STATUS, null));
+                        extension.setStatus(collectionToString(metaData, STATUS));
                         extension.setBuiltWith((String) metaData.getOrDefault(BUILT_WITH, null));
                         extension.setConfigFilter((List<String>) metaData.getOrDefault(CONFIG, null));
                         extension.setExtensionDependencies((List<String>) metaData.getOrDefault(EXTENSION_DEPENDENCIES, null));
@@ -504,6 +505,21 @@ public class DevUIProcessor {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    private String collectionToString(Map<String, Object> metaData, String key) {
+        Object value = metaData.getOrDefault(key, null);
+        if (value == null) {
+            return null;
+        } else if (String.class.isAssignableFrom(value.getClass())) {
+            return (String) value;
+        } else if (List.class.isAssignableFrom(value.getClass())) {
+            List values = (List) value;
+            return (String) values.stream()
+                    .map(n -> String.valueOf(n))
+                    .collect(Collectors.joining(", "));
+        }
+        return String.valueOf(value);
     }
 
     private void produceResources(String artifactId,

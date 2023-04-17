@@ -206,13 +206,24 @@ public class MessageBundleProcessor {
                     for (Path messageFile : messageFiles) {
                         String fileName = messageFile.getFileName().toString();
                         if (fileName.startsWith(name)) {
-                            // msg_en.txt -> en
-                            // msg_Views_Index_cs.properties -> cs
-                            // msg_Views_Index_cs-CZ.properties -> cs-CZ
-                            // msg_Views_Index_cs_CZ.properties -> cs_CZ
-                            String locale = fileName.substring(name.length() + 1, fileName.indexOf('.'));
-                            // Support resource bundle naming convention
-                            locale = locale.replace('_', '-');
+                            final String locale;
+                            int postfixIdx = fileName.indexOf('.');
+                            if (postfixIdx == name.length()) {
+
+                                // msg.txt -> use bundle default locale
+                                locale = defaultLocale;
+                            } else {
+
+                                locale = fileName
+                                        // msg_en.txt -> en
+                                        // msg_Views_Index_cs.properties -> cs
+                                        // msg_Views_Index_cs-CZ.properties -> cs-CZ
+                                        // msg_Views_Index_cs_CZ.properties -> cs_CZ
+                                        .substring(name.length() + 1, postfixIdx)
+                                        // Support resource bundle naming convention
+                                        .replace('_', '-');
+                            }
+
                             ClassInfo localizedInterface = localeToInterface.get(locale);
                             if (defaultLocale.equals(locale) || localizedInterface != null) {
                                 // both file and interface exist for one locale, therefore we need to merge them

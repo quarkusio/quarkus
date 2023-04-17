@@ -16,6 +16,7 @@ import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
+import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
@@ -240,6 +241,9 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
 
         // Custom for Hibernate Reactive: ParameterMarkerStrategy
         serviceInitiators.add(NativeParametersHandling.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(SqlStatementLoggerInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

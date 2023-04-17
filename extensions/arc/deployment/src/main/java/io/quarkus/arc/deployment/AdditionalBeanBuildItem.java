@@ -21,6 +21,11 @@ import io.quarkus.builder.item.MultiBuildItem;
  * An additional bean may have the scope defaulted via {@link #defaultScope} and {@link Builder#setDefaultScope(DotName)}. The
  * default scope is only used if there is no scope declared on the bean class. The default scope should be used in cases where a
  * bean class source is not controlled by the extension and the scope annotation cannot be declared directly on the class.
+ *
+ * <h2>Generated Classes</h2>
+ *
+ * This build item should never be produced for a generated class - {@link GeneratedBeanBuildItem} and
+ * {@link GeneratedBeanGizmoAdaptor} should be used instead.
  */
 public final class AdditionalBeanBuildItem extends MultiBuildItem {
 

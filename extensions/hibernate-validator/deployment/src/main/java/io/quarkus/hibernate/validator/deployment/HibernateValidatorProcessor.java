@@ -63,6 +63,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -71,9 +72,12 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
@@ -81,9 +85,15 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.Gizmo;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.validator.ValidatorFactoryCustomizer;
 import io.quarkus.hibernate.validator.runtime.DisableLoggingFeature;
+import io.quarkus.hibernate.validator.runtime.HibernateBeanValidationConfigValidator;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidationSupport;
@@ -98,6 +108,12 @@ import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
+import io.quarkus.runtime.configuration.ConfigBuilder;
+import io.smallrye.config.ConfigMappingLoader;
+import io.smallrye.config.ConfigMappingMetadata;
+import io.smallrye.config.ConfigValidator;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.validator.BeanValidationConfigValidator;
 
 class HibernateValidatorProcessor {
 
@@ -144,6 +160,167 @@ class HibernateValidatorProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     NativeImageFeatureBuildItem nativeImageFeature() {
         return new NativeImageFeatureBuildItem(DisableLoggingFeature.class);
+    }
+
+    @BuildStep
+    void beanValidationAnnotations(
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<BeanValidationAnnotationsBuildItem> beanValidationAnnotations) {
+
+        IndexView indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
+
+        Set<DotName> constraints = new HashSet<>();
+        Set<String> builtinConstraints = ConstraintHelper.getBuiltinConstraints();
+
+        // Collect the constraint annotations provided by Hibernate Validator and Bean Validation
+        contributeBuiltinConstraints(builtinConstraints, constraints);
+
+        // Add the constraint annotations present in the application itself
+        for (AnnotationInstance constraint : indexView.getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
+            constraints.add(constraint.target().asClass().name());
+
+            if (constraint.target().asClass().annotationsMap().containsKey(REPEATABLE)) {
+                for (AnnotationInstance repeatableConstraint : constraint.target().asClass().annotationsMap()
+                        .get(REPEATABLE)) {
+                    constraints.add(repeatableConstraint.value().asClass().name());
+                }
+            }
+        }
+
+        Set<DotName> allConsideredAnnotations = new HashSet<>();
+        allConsideredAnnotations.addAll(constraints);
+
+        // Also consider elements that are marked with @Valid
+        allConsideredAnnotations.add(VALID);
+
+        // Also consider elements that are marked with @ValidateOnExecution
+        allConsideredAnnotations.add(VALIDATE_ON_EXECUTION);
+
+        beanValidationAnnotations.produce(new BeanValidationAnnotationsBuildItem(
+                VALID,
+                constraints,
+                allConsideredAnnotations));
+    }
+
+    @BuildStep
+    void configValidator(
+            CombinedIndexBuildItem combinedIndex,
+            List<ConfigClassBuildItem> configClasses,
+            BeanValidationAnnotationsBuildItem beanValidationAnnotations,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+
+        Set<DotName> configMappings = new HashSet<>();
+        Set<DotName> configClassesToValidate = new HashSet<>();
+        for (ConfigClassBuildItem configClass : configClasses) {
+            for (String generatedConfigClass : configClass.getGeneratedClasses()) {
+                DotName simple = DotName.createSimple(generatedConfigClass);
+                configClassesToValidate.add(simple);
+            }
+
+            for (ConfigMappingMetadata mappingsMetadata : ConfigMappingLoader
+                    .getConfigMappingsMetadata(configClass.getConfigClass())) {
+                configMappings.add(DotName.createSimple(mappingsMetadata.getInterfaceType()));
+            }
+        }
+
+        Set<String> configMappingsConstraints = new HashSet<>();
+        for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations()) {
+            Collection<AnnotationInstance> annotationInstances = combinedIndex.getIndex().getAnnotations(consideredAnnotation);
+
+            if (annotationInstances.isEmpty()) {
+                continue;
+            }
+
+            for (AnnotationInstance annotation : annotationInstances) {
+                String builtinConstraintCandidate = BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN
+                        .matcher(consideredAnnotation.toString()).replaceAll("");
+
+                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+                    MethodInfo methodInfo = annotation.target().asMethod();
+                    ClassInfo declaringClass = methodInfo.declaringClass();
+                    if (configMappings.contains(declaringClass.name())) {
+                        configMappingsConstraints.add(builtinConstraintCandidate);
+                    }
+                } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                    ClassInfo classInfo = annotation.target().asClass();
+                    if (configMappings.contains(classInfo.name())) {
+                        configMappingsConstraints.add(builtinConstraintCandidate);
+                    }
+                }
+            }
+        }
+
+        if (configMappingsConstraints.isEmpty()) {
+            return;
+        }
+
+        String builderClassName = HibernateBeanValidationConfigValidator.class.getName() + "Builder";
+        try (ClassCreator classCreator = ClassCreator.builder()
+                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
+                .className(builderClassName)
+                .interfaces(ConfigBuilder.class)
+                .setFinal(true)
+                .build()) {
+
+            // Static Init Validator
+            MethodCreator clinit = classCreator
+                    .getMethodCreator(MethodDescriptor.ofMethod(builderClassName, "<clinit>", void.class));
+            clinit.setModifiers(Opcodes.ACC_STATIC);
+
+            ResultHandle constraints = clinit.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            for (String configMappingsConstraint : configMappingsConstraints) {
+                clinit.invokeVirtualMethod(MethodDescriptor.ofMethod(HashSet.class, "add", boolean.class, Object.class),
+                        constraints, clinit.load(configMappingsConstraint));
+            }
+
+            ResultHandle classes = clinit.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            for (DotName configClassToValidate : configClassesToValidate) {
+                clinit.invokeVirtualMethod(MethodDescriptor.ofMethod(HashSet.class, "add", boolean.class, Object.class),
+                        classes, clinit.loadClass(configClassToValidate.toString()));
+            }
+
+            ResultHandle configValidator = clinit.newInstance(
+                    MethodDescriptor.ofConstructor(HibernateBeanValidationConfigValidator.class, Set.class, Set.class),
+                    constraints, classes);
+
+            FieldDescriptor configValidatorField = FieldDescriptor.of(builderClassName, "configValidator",
+                    BeanValidationConfigValidator.class);
+            classCreator.getFieldCreator(configValidatorField)
+                    .setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE);
+            clinit.writeStaticField(configValidatorField, configValidator);
+
+            clinit.returnNull();
+            clinit.close();
+
+            MethodCreator configBuilderMethod = classCreator.getMethodCreator(
+                    MethodDescriptor.ofMethod(
+                            ConfigBuilder.class, "configBuilder",
+                            SmallRyeConfigBuilder.class, SmallRyeConfigBuilder.class));
+            ResultHandle configBuilder = configBuilderMethod.getMethodParam(0);
+
+            // Add Validator to the builder
+            configBuilderMethod.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "withValidator", SmallRyeConfigBuilder.class,
+                            ConfigValidator.class),
+                    configBuilder, configBuilderMethod.readStaticField(configValidatorField));
+
+            configBuilderMethod.returnValue(configBuilder);
+        }
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(builderClassName).build());
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void shutdownConfigValidator(HibernateValidatorRecorder hibernateValidatorRecorder,
+            ShutdownContextBuildItem shutdownContext) {
+        hibernateValidatorRecorder.shutdownConfigValidator(shutdownContext);
     }
 
     @BuildStep
@@ -207,7 +384,9 @@ class HibernateValidatorProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(HibernateValidatorRecorder recorder, RecorderContext recorderContext,
+    public void build(
+            HibernateValidatorRecorder recorder, RecorderContext recorderContext,
+            BeanValidationAnnotationsBuildItem beanValidationAnnotations,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
@@ -215,7 +394,6 @@ class HibernateValidatorProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
-            BuildProducer<BeanValidationAnnotationsBuildItem> beanValidationAnnotations,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             ShutdownContextBuildItem shutdownContext,
             List<ConfigClassBuildItem> configClasses,
@@ -229,44 +407,11 @@ class HibernateValidatorProcessor {
         // we use both indexes to support both generated beans and jars that contain no CDI beans but only Validation annotations
         IndexView indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
 
-        Set<DotName> constraints = new HashSet<>();
-
-        Set<String> builtinConstraints = ConstraintHelper.getBuiltinConstraints();
-
-        // Collect the constraint annotations provided by Hibernate Validator and Bean Validation
-        contributeBuiltinConstraints(builtinConstraints, constraints);
-
-        // Add the constraint annotations present in the application itself
-        for (AnnotationInstance constraint : indexView.getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
-            constraints.add(constraint.target().asClass().name());
-
-            if (constraint.target().asClass().annotationsMap().containsKey(REPEATABLE)) {
-                for (AnnotationInstance repeatableConstraint : constraint.target().asClass().annotationsMap()
-                        .get(REPEATABLE)) {
-                    constraints.add(repeatableConstraint.value().asClass().name());
-                }
-            }
-        }
-
-        Set<DotName> allConsideredAnnotations = new HashSet<>();
-        allConsideredAnnotations.addAll(constraints);
-
-        // Also consider elements that are marked with @Valid
-        allConsideredAnnotations.add(VALID);
-
-        // Also consider elements that are marked with @ValidateOnExecution
-        allConsideredAnnotations.add(VALIDATE_ON_EXECUTION);
-
-        beanValidationAnnotations.produce(new BeanValidationAnnotationsBuildItem(
-                VALID,
-                constraints,
-                allConsideredAnnotations));
-
         Set<DotName> classNamesToBeValidated = new HashSet<>();
         Map<DotName, Set<SimpleMethodSignatureKey>> methodsWithInheritedValidation = new HashMap<>();
         Set<String> detectedBuiltinConstraints = new HashSet<>();
 
-        for (DotName consideredAnnotation : allConsideredAnnotations) {
+        for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations()) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(consideredAnnotation);
 
             if (annotationInstances.isEmpty()) {
@@ -276,7 +421,8 @@ class HibernateValidatorProcessor {
             // we trim the repeatable container suffix if needed
             String builtinConstraintCandidate = BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN
                     .matcher(consideredAnnotation.toString()).replaceAll("");
-            if (builtinConstraints.contains(builtinConstraintCandidate)) {
+            if (beanValidationAnnotations.getConstraintAnnotations()
+                    .contains(DotName.createSimple(builtinConstraintCandidate))) {
                 detectedBuiltinConstraints.add(builtinConstraintCandidate);
             }
 
@@ -333,12 +479,6 @@ class HibernateValidatorProcessor {
             }
         }
 
-        for (ConfigClassBuildItem configClass : configClasses) {
-            for (String generatedClass : configClass.getGeneratedClasses()) {
-                classNamesToBeValidated.add(DotName.createSimple(generatedClass));
-            }
-        }
-
         // JAX-RS methods are handled differently by the transformer so those need to be gathered here.
         // Note: The focus only on methods is basically an incomplete solution, since there could also be
         // class-level JAX-RS annotations but currently the transformer only looks at methods.
@@ -351,7 +491,7 @@ class HibernateValidatorProcessor {
 
         annotationsTransformers
                 .produce(new AnnotationsTransformerBuildItem(
-                        new MethodValidatedAnnotationsTransformer(allConsideredAnnotations,
+                        new MethodValidatedAnnotationsTransformer(beanValidationAnnotations.getAllAnnotations(),
                                 jaxRsMethods,
                                 methodsWithInheritedValidation)));
 

@@ -39,7 +39,9 @@ public class LoggingWithPanacheTest {
                         "[ERROR] four: foo | bar | baz | quux",
                         "[WARN] foo | bar | baz | quux: io.quarkus.logging.NoStackTraceTestException",
                         "[ERROR] Hello Error: io.quarkus.logging.NoStackTraceTestException",
-                        "[INFO] Hi!");
+                        "[INFO] Hi!",
+                        "[INFO] number 42",
+                        "[INFO] string now");
             });
 
     @Inject
@@ -49,5 +51,7 @@ public class LoggingWithPanacheTest {
     public void test() {
         bean.doSomething();
         new LoggingEntity().something();
+
+        bean.reproduceStackDisciplineIssue();
     }
 }

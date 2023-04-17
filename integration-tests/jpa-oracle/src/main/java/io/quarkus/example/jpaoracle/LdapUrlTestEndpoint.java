@@ -30,7 +30,7 @@ public class LdapUrlTestEndpoint extends HttpServlet {
             resp.getWriter().write(output);
 
         } catch (Exception e) {
-            resp.getWriter().write("An error occurred while attempting ldap operations");
+            e.printStackTrace(resp.getWriter());
         }
     }
 

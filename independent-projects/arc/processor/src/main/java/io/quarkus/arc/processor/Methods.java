@@ -152,12 +152,12 @@ final class Methods {
     static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
-            boolean transformUnproxyableClasses) {
+            boolean transformUnproxyableClasses, List<MethodInfo> aroundInvokes) {
         return addInterceptedMethodCandidates(beanDeployment, classInfo, classInfo, candidates, Set.copyOf(classLevelBindings),
                 bytecodeTransformerConsumer, transformUnproxyableClasses,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
                         beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods()),
-                false, new HashSet<>());
+                false, new HashSet<>(), aroundInvokes);
     }
 
     private static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
@@ -165,16 +165,20 @@ final class Methods {
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             Set<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses, SubclassSkipPredicate skipPredicate, boolean ignoreMethodLevelBindings,
-            Set<MethodKey> noClassInterceptorsMethods) {
+            Set<MethodKey> noClassInterceptorsMethods, List<MethodInfo> aroundInvokes) {
 
         Set<NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
         Set<MethodInfo> finalMethodsFoundAndNotChanged = new HashSet<>();
         skipPredicate.startProcessing(classInfo, originalClassInfo);
 
         for (MethodInfo method : classInfo.methods()) {
+            if (aroundInvokes.contains(method)) {
+                // Around invoke method declared in the target class hierarchy
+                continue;
+            }
             Set<AnnotationInstance> merged = mergeBindings(beanDeployment, originalClassInfo, classLevelBindings,
                     ignoreMethodLevelBindings, method, noClassInterceptorsMethods);
-            if (merged.isEmpty() || skipPredicate.test(method)) {
+            if ((merged.isEmpty() && aroundInvokes.isEmpty()) || skipPredicate.test(method)) {
                 continue;
             }
             boolean addToCandidates = true;
@@ -204,7 +208,7 @@ final class Methods {
                 finalMethodsFoundAndNotChanged
                         .addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, classInfo, candidates,
                                 classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses, skipPredicate,
-                                ignoreMethodLevelBindings, noClassInterceptorsMethods));
+                                ignoreMethodLevelBindings, noClassInterceptorsMethods, aroundInvokes));
             }
         }
 
@@ -214,7 +218,7 @@ final class Methods {
                 //interfaces can't have final methods
                 addInterceptedMethodCandidates(beanDeployment, interfaceInfo, originalClassInfo, candidates,
                         classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses,
-                        skipPredicate, true, noClassInterceptorsMethods);
+                        skipPredicate, true, noClassInterceptorsMethods, aroundInvokes);
             }
         }
         return finalMethodsFoundAndNotChanged;

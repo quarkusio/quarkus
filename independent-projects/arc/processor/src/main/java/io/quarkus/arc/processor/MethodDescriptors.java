@@ -166,6 +166,10 @@ public final class MethodDescriptors {
             InvocationContexts.class,
             "performAroundInvoke", Object.class, Object.class, Object[].class, InterceptedMethodMetadata.class);
 
+    public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_TARGET_AROUND_INVOKE = MethodDescriptor.ofMethod(
+            InvocationContexts.class,
+            "performTargetAroundInvoke", Object.class, InvocationContext.class, List.class, BiFunction.class);
+
     public static final MethodDescriptor INVOCATION_CONTEXTS_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
             "aroundConstruct",
@@ -179,8 +183,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXTS_PRE_DESTROY = MethodDescriptor.ofMethod(InvocationContexts.class,
             "preDestroy",
             InvocationContext.class, Object.class, List.class, Set.class);
-    
-    public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_SUPERCLASS = MethodDescriptor.ofMethod(InvocationContexts.class,
+
+    public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_SUPERCLASS = MethodDescriptor.ofMethod(
+            InvocationContexts.class,
             "performSuperclassInterception",
             Object.class, InvocationContext.class, List.class, Object.class, Object[].class);
 

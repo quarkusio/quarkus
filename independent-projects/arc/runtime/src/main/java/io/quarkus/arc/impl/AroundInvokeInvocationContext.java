@@ -27,15 +27,18 @@ import io.quarkus.arc.ArcInvocationContext;
  */
 class AroundInvokeInvocationContext extends AbstractInvocationContext {
 
+    static Object perform(Object target, Object[] args, InterceptedMethodMetadata metadata) throws Exception {
+        if (metadata.chain.isEmpty()) {
+            return metadata.aroundInvokeForward.apply(target, new AroundInvokeInvocationContext(target, args, metadata));
+        }
+        return metadata.chain.get(0).invoke(new AroundInvokeInvocationContext(target, args, metadata));
+    }
+
     private final InterceptedMethodMetadata metadata;
 
     AroundInvokeInvocationContext(Object target, Object[] args, InterceptedMethodMetadata metadata) {
         super(target, args, new ContextDataMap(metadata.bindings));
         this.metadata = metadata;
-    }
-
-    static Object perform(Object target, Object[] args, InterceptedMethodMetadata metadata) throws Exception {
-        return metadata.chain.get(0).invoke(new AroundInvokeInvocationContext(target, args, metadata));
     }
 
     @Override

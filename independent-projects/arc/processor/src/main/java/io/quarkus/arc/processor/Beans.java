@@ -649,6 +649,34 @@ public final class Beans {
         return callbacks;
     }
 
+    static List<MethodInfo> getAroundInvokes(ClassInfo beanClass, BeanDeployment deployment) {
+        List<MethodInfo> methods = new ArrayList<>();
+        AnnotationStore store = deployment.getAnnotationStore();
+        Set<String> processed = new HashSet<>();
+
+        ClassInfo aClass = beanClass;
+        while (aClass != null) {
+            int aroundInvokesFound = 0;
+            for (MethodInfo method : aClass.methods()) {
+                if (Modifier.isStatic(method.flags())) {
+                    continue;
+                }
+                if (store.hasAnnotation(method, DotNames.AROUND_INVOKE) && !processed.contains(method.name())) {
+                    methods.add(method);
+                    if (++aroundInvokesFound > 1) {
+                        throw new DefinitionException(
+                                "Multiple @AroundInvoke interceptor methods declared on class: " + aClass);
+                    }
+                }
+            }
+            DotName superTypeName = aClass.superName();
+            aClass = superTypeName == null || DotNames.OBJECT.equals(superTypeName) ? null
+                    : getClassByName(deployment.getBeanArchiveIndex(), superTypeName);
+        }
+        Collections.reverse(methods);
+        return methods.isEmpty() ? List.of() : List.copyOf(methods);
+    }
+
     static void analyzeType(Type type, BeanDeployment beanDeployment) {
         if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
             for (Type argument : type.asParameterizedType().arguments()) {

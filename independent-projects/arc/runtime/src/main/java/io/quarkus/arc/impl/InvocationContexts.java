@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import jakarta.interceptor.InvocationContext;
@@ -24,6 +25,20 @@ public final class InvocationContexts {
     public static Object performAroundInvoke(Object target, Object[] args, InterceptedMethodMetadata metadata)
             throws Exception {
         return AroundInvokeInvocationContext.perform(target, args, metadata);
+    }
+
+    /**
+     *
+     * @param delegate
+     * @param aroundInvokeMethods
+     * @param aroundInvokeForward
+     * @return the return value
+     * @throws Exception
+     */
+    public static Object performTargetAroundInvoke(InvocationContext delegate,
+            List<BiFunction<Object, InvocationContext, Object>> aroundInvokeMethods,
+            BiFunction<Object, InvocationContext, Object> aroundInvokeForward) throws Exception {
+        return TargetAroundInvokeInvocationContext.perform(delegate, aroundInvokeMethods, aroundInvokeForward);
     }
 
     /**
@@ -67,7 +82,7 @@ public final class InvocationContexts {
     }
 
     /**
-     * 
+     *
      * @param delegate
      * @param methods
      * @param interceptorInstance

@@ -216,7 +216,7 @@ public class BeanProcessor {
         }
 
         SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate,
-                generateSources, refReg, existingClasses);
+                generateSources, refReg, existingClasses, privateMembers);
 
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
                 privateMembers, generateSources, refReg, existingClasses, observerToGeneratedName,

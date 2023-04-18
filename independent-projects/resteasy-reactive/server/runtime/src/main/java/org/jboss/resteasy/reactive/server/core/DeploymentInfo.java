@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import jakarta.ws.rs.core.Application;
 
+import org.jboss.resteasy.reactive.common.BlockingDefault;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
@@ -36,6 +37,8 @@ public class DeploymentInfo {
     private List<HandlerChainCustomizer> globalHandlerCustomizers = new ArrayList<>();
     private boolean developmentMode;
     private boolean resumeOn404;
+
+    private BlockingDefault applicationBlockingDefault;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -187,6 +190,15 @@ public class DeploymentInfo {
 
     public DeploymentInfo setResumeOn404(boolean resumeOn404) {
         this.resumeOn404 = resumeOn404;
+        return this;
+    }
+
+    public BlockingDefault getApplicationBlockingDefault() {
+        return applicationBlockingDefault;
+    }
+
+    public DeploymentInfo setApplicationBlockingDefault(BlockingDefault applicationBlockingDefault) {
+        this.applicationBlockingDefault = applicationBlockingDefault;
         return this;
     }
 }

@@ -37,7 +37,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.processor.BlockingDefault;
+import org.jboss.resteasy.reactive.common.BlockingDefault;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.NameBindingUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;

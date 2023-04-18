@@ -732,4 +732,7 @@ public class RuntimeResourceDeployment {
         return pathParameterIndexes;
     }
 
+    public BlockingHandler getBlockingHandler() {
+        return blockingHandler;
+    }
 }

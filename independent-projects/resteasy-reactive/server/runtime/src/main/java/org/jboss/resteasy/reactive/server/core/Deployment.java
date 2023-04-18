@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.ext.ParamConverter;
 import jakarta.ws.rs.ext.ParamConverterProvider;
 
+import org.jboss.resteasy.reactive.common.BlockingDefault;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
@@ -20,6 +21,7 @@ import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeParameterConverter;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
+import org.jboss.resteasy.reactive.server.handlers.BlockingHandler;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
@@ -48,8 +50,11 @@ public class Deployment {
     private final RuntimeExceptionMapper exceptionMapper;
     private final boolean resumeOn404;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
+
     //this is not final, as it is set after startup
     private RuntimeConfiguration runtimeConfiguration;
+    private final BlockingDefault applicationBlockingDefault;
+    private final BlockingHandler blockingHandler;
 
     public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
@@ -62,7 +67,9 @@ public class Deployment {
             List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers,
             RuntimeExceptionMapper exceptionMapper,
             boolean resumeOn404,
-            ResteasyReactiveConfig resteasyReactiveConfig) {
+            ResteasyReactiveConfig resteasyReactiveConfig,
+            BlockingDefault applicationBlockingDefault,
+            BlockingHandler blockingHandler) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -80,6 +87,8 @@ public class Deployment {
         this.exceptionMapper = exceptionMapper;
         this.resumeOn404 = resumeOn404;
         this.resteasyReactiveConfig = resteasyReactiveConfig;
+        this.applicationBlockingDefault = applicationBlockingDefault;
+        this.blockingHandler = blockingHandler;
     }
 
     public RuntimeExceptionMapper getExceptionMapper() {
@@ -120,6 +129,14 @@ public class Deployment {
 
     public boolean isResumeOn404() {
         return resumeOn404;
+    }
+
+    public BlockingDefault getApplicationBlockingDefault() {
+        return applicationBlockingDefault;
+    }
+
+    public BlockingHandler getBlockingHandler() {
+        return blockingHandler;
     }
 
     /**

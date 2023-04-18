@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.ws.rs.NotFoundException;
 
+import org.jboss.resteasy.reactive.common.BlockingDefault;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -27,6 +28,16 @@ public class RestInitialHandler implements ServerRestHandler {
         this.deployment = deployment;
         this.preMappingHandlers = deployment.getPreMatchHandlers();
         this.resumeOn404 = deployment.isResumeOn404();
+        initialChain = createChain(this.preMappingHandlers, deployment.getApplicationBlockingDefault(),
+                deployment.getBlockingHandler());
+        this.requestContext = deployment.getThreadSetupAction();
+        this.requestContextFactory = deployment.getRequestContextFactory();
+    }
+
+    private ServerRestHandler[] createChain(List<ServerRestHandler> preMappingHandlers,
+            BlockingDefault applicationBlockingDefault,
+            BlockingHandler blockingHandler) {
+        ServerRestHandler[] initialChain;
         if (preMappingHandlers.isEmpty()) {
             initialChain = new ServerRestHandler[] { new MatrixParamHandler(), this };
         } else {
@@ -37,8 +48,13 @@ public class RestInitialHandler implements ServerRestHandler {
             }
             initialChain[initialChain.length - 1] = this;
         }
-        this.requestContext = deployment.getThreadSetupAction();
-        this.requestContextFactory = deployment.getRequestContextFactory();
+        if (applicationBlockingDefault == BlockingDefault.BLOCKING) {
+            ServerRestHandler[] old = initialChain;
+            initialChain = new ServerRestHandler[old.length + 1];
+            System.arraycopy(old, 0, initialChain, 1, old.length);
+            initialChain[0] = blockingHandler;
+        }
+        return initialChain;
     }
 
     public void beginProcessing(Object externalHttpContext) {

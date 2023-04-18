@@ -18,6 +18,7 @@ import jakarta.ws.rs.core.Application;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.BlockingDefault;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
@@ -137,11 +138,13 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
-            LaunchMode launchMode, boolean resumeOn404) {
+            LaunchMode launchMode, boolean resumeOn404,
+            BlockingDefault applicationBlockingDefault) {
 
         if (resumeOn404) {
             info.setResumeOn404(true);
         }
+        info.setApplicationBlockingDefault(applicationBlockingDefault);
 
         CurrentRequestManager
                 .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));

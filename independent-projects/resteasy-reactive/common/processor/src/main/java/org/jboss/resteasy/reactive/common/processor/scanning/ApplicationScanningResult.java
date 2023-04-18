@@ -5,7 +5,7 @@ import java.util.Set;
 import jakarta.ws.rs.core.Application;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.resteasy.reactive.common.processor.BlockingDefault;
+import org.jboss.resteasy.reactive.common.BlockingDefault;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 public final class ApplicationScanningResult {

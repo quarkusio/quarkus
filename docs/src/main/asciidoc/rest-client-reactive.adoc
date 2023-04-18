@@ -1125,6 +1125,9 @@ The code uses the following pieces:
 
 As previously mentioned, the body parameter needs to be properly crafted by the application code to conform to the service's requirements.
 
+=== Receiving compressed messages
+REST Client Reactive also supports receiving compressed messages using GZIP. You can enable the HTTP compression support by adding the property `quarkus.http.enable-compression=true`.
+When this feature is enabled and a server returns a response that includes the header `Content-Encoding: gzip`, REST Client Reactive will automatically decode the content and proceed with the message handling. 
 
 == Proxy support
 REST Client Reactive supports sending requests through a proxy.

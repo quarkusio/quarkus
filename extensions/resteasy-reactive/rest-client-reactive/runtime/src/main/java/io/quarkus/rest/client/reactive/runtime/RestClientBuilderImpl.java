@@ -47,6 +47,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     private static final String DEFAULT_MAPPER_DISABLED = "microprofile.rest.client.disable.default.mapper";
     private static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
+    private static final String ENABLE_COMPRESSION = "quarkus.http.enable-compression";
 
     private final ClientBuilderImpl clientBuilder = (ClientBuilderImpl) new ClientBuilderImpl()
             .withConfig(new ConfigurationImpl(RuntimeType.CLIENT));
@@ -339,6 +340,12 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2)) {
             clientBuilder.http2((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP2));
+        }
+
+        Boolean enableCompression = ConfigProvider.getConfig()
+                .getOptionalValue(ENABLE_COMPRESSION, Boolean.class).orElse(false);
+        if (enableCompression) {
+            clientBuilder.enableCompression();
         }
 
         if (proxyHost != null) {

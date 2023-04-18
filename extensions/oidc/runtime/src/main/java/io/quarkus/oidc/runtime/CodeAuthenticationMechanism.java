@@ -533,7 +533,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 : Collections.emptyList();
                         List<String> scopes = new ArrayList<>(oidcConfigScopes.size() + 1);
                         if (configContext.oidcConfig.getAuthentication().addOpenidScope.orElse(true)) {
-                            scopes.add("openid");
+                            scopes.add(OidcConstants.OPENID_SCOPE);
                         }
                         scopes.addAll(oidcConfigScopes);
                         codeFlowParams.append(AMP).append(OidcConstants.TOKEN_SCOPE).append(EQ)

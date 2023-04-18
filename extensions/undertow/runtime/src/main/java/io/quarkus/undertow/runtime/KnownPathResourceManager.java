@@ -135,7 +135,7 @@ public class KnownPathResourceManager implements ResourceManager {
 
             for (var s : List.of(fileSet, dirSet)) {
                 for (String i : s) {
-                    if (i.equals(slashPath)) {
+                    if (i.equals(slashPath) || "_static".equalsIgnoreCase(i)) {
                         continue;
                     }
                     if (i.startsWith(slashPath)) {

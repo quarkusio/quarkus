@@ -34,6 +34,12 @@ public class ResourceManagerTestCase {
 
     @Test
     public void testServlet() {
+        RestAssured.when().get(" ").then() // space
+                .statusCode(200)
+                .body(is("[foo, index.html]"));
+        RestAssured.when().get("").then() // empty
+                .statusCode(200)
+                .body(is("[foo, index.html]"));
         RestAssured.when().get("/").then()
                 .statusCode(200)
                 .body(is("[foo, index.html]"));

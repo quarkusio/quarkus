@@ -53,6 +53,12 @@ public class KubernetesWithRbacFullTest {
         assertTrue(lastIndexOfRoleRefKind < firstIndexOfRoleBinding, "RoleBinding resource is created before "
                 + "the Role/ClusterRole/ServiceAccount resource!");
 
+        // ensure service account resource is generated before the Deployment resource:
+        int lastIndexOfServiceAccount = lastIndexOfKind(kubernetesFileContent, "ServiceAccount");
+        int firstIndexOfDeployment = kubernetesFileContent.indexOf("kind: Deployment");
+        assertTrue(lastIndexOfServiceAccount < firstIndexOfDeployment, "ServiceAccount resource is created after "
+                + "the Deployment resource!");
+
         List<HasMetadata> kubernetesList = DeserializationUtil.deserializeAsList(kubernetesFile);
 
         Deployment deployment = getDeploymentByName(kubernetesList, APP_NAME);

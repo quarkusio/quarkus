@@ -5,6 +5,7 @@ import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
@@ -47,22 +48,24 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .statusCode(200)
                 .body("message", Matchers.equalTo("Hit message."));
 
-        Awaitility.await().atMost(Duration.ofSeconds(55)).until(() -> !getSpans().isEmpty());
+        Awaitility.await().atMost(Duration.ofSeconds(55)).untilAsserted(() -> {
+            assertFalse(getSpans().isEmpty());
 
-        // Assert insert has been traced
-        boolean hitInserted = false;
-        for (Map<String, Object> spanData : getSpans()) {
-            if (spanData.get("attributes") instanceof Map) {
-                final Map attributes = (Map) spanData.get("attributes");
-                var dbOperation = attributes.get("db.operation");
-                var dbTable = attributes.get("db.sql.table");
-                if ("INSERT".equals(dbOperation) && expectedTable.equals(dbTable)) {
-                    hitInserted = true;
-                    break;
+            // Assert insert has been traced
+            boolean hitInserted = false;
+            for (Map<String, Object> spanData : getSpans()) {
+                if (spanData.get("attributes") instanceof Map) {
+                    final Map attributes = (Map) spanData.get("attributes");
+                    var dbOperation = attributes.get("db.operation");
+                    var dbTable = attributes.get("db.sql.table");
+                    if ("INSERT".equals(dbOperation) && expectedTable.equals(dbTable)) {
+                        hitInserted = true;
+                        break;
+                    }
                 }
             }
-        }
-        assertTrue(hitInserted, "JDBC insert statement was not traced.");
+            assertTrue(hitInserted, "JDBC insert statement was not traced.");
+        });
     }
 
 }

@@ -179,6 +179,10 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXTS_PRE_DESTROY = MethodDescriptor.ofMethod(InvocationContexts.class,
             "preDestroy",
             InvocationContext.class, Object.class, List.class, Set.class);
+    
+    public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_SUPERCLASS = MethodDescriptor.ofMethod(InvocationContexts.class,
+            "performSuperclassInterception",
+            Object.class, InvocationContext.class, List.class, Object.class, Object[].class);
 
     public static final MethodDescriptor INVOCATION_CONTEXT_PROCEED = MethodDescriptor.ofMethod(InvocationContext.class,
             "proceed",
@@ -187,6 +191,10 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXT_GET_TARGET = MethodDescriptor.ofMethod(InvocationContext.class,
             "getTarget",
             Object.class);
+
+    public static final MethodDescriptor INVOCATION_CONTEXT_GET_PARAMETERS = MethodDescriptor.ofMethod(InvocationContext.class,
+            "getParameters",
+            Object[].class);
 
     public static final MethodDescriptor CREATIONAL_CTX_ADD_DEP_TO_PARENT = MethodDescriptor.ofMethod(
             CreationalContextImpl.class,

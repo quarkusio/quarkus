@@ -55,7 +55,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext {
         return found;
     }
 
-    protected void validateParameters(Executable executable, Object[] params) {
+    static void validateParameters(Executable executable, Object[] params) {
         int newParametersCount = Objects.requireNonNull(params).length;
         Class<?>[] parameterTypes = executable.getParameterTypes();
         if (parameterTypes.length != newParametersCount) {

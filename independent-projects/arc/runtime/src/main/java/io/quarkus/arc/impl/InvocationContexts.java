@@ -66,4 +66,18 @@ public final class InvocationContexts {
                 aroundConstructForward);
     }
 
+    /**
+     * 
+     * @param delegate
+     * @param methods
+     * @param interceptorInstance
+     * @return the return value
+     * @throws Exception
+     */
+    public static Object performSuperclassInterception(InvocationContext delegate,
+            List<BiFunction<Object, InvocationContext, Object>> methods, Object interceptorInstance, Object[] parameters)
+            throws Exception {
+        return SuperclassInvocationContext.perform(delegate, methods, interceptorInstance, parameters);
+    }
+
 }

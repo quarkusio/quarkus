@@ -5,12 +5,15 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -34,6 +37,8 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -111,7 +116,7 @@ public class InterceptorGenerator extends BeanGenerator {
         createProviderFields(interceptorCreator, interceptor, injectionPointToProviderField, Collections.emptyMap(),
                 Collections.emptyMap());
         createConstructor(classOutput, interceptorCreator, interceptor, injectionPointToProviderField,
-                bindings.getFieldDescriptor(), reflectionRegistration);
+                bindings.getFieldDescriptor(), reflectionRegistration, isApplicationClass, providerType);
 
         implementGetIdentifier(interceptor, interceptorCreator);
         implementSupplierGet(interceptorCreator);
@@ -139,8 +144,8 @@ public class InterceptorGenerator extends BeanGenerator {
     }
 
     protected void createConstructor(ClassOutput classOutput, ClassCreator creator, InterceptorInfo interceptor,
-            Map<InjectionPointInfo, String> injectionPointToProviderField,
-            FieldDescriptor bindings, ReflectionRegistration reflectionRegistration) {
+            Map<InjectionPointInfo, String> injectionPointToProviderField, FieldDescriptor bindings,
+            ReflectionRegistration reflectionRegistration, boolean isApplicationClass, ProviderType providerType) {
 
         MethodCreator constructor = initConstructor(classOutput, creator, interceptor, injectionPointToProviderField,
                 Collections.emptyMap(), Collections.emptyMap(), annotationLiterals, reflectionRegistration);
@@ -156,7 +161,39 @@ public class InterceptorGenerator extends BeanGenerator {
                     annotationLiterals.create(constructor, bindingClass, bindingAnnotation));
         }
         constructor.writeInstanceField(bindings, constructor.getThis(), bindingsHandle);
+
+        // Initialize a list of BiFunction for each interception type if multiple interceptor methods are declared in a hierarchy
+        initInterceptorMethodsField(creator, constructor, InterceptionType.AROUND_INVOKE, interceptor.getAroundInvokes(),
+                providerType.className(), isApplicationClass);
+        initInterceptorMethodsField(creator, constructor, InterceptionType.AROUND_CONSTRUCT, interceptor.getAroundConstructs(),
+                providerType.className(), isApplicationClass);
+        initInterceptorMethodsField(creator, constructor, InterceptionType.POST_CONSTRUCT, interceptor.getPostConstructs(),
+                providerType.className(), isApplicationClass);
+        initInterceptorMethodsField(creator, constructor, InterceptionType.PRE_DESTROY, interceptor.getPreDestroys(),
+                providerType.className(), isApplicationClass);
+
         constructor.returnValue(null);
+    }
+
+    private void initInterceptorMethodsField(ClassCreator creator, MethodCreator constructor, InterceptionType interceptionType,
+            List<MethodInfo> methods, String interceptorClass, boolean isApplicationClass) {
+        if (methods.size() < 2) {
+            return;
+        }
+        FieldCreator field = creator.getFieldCreator(interceptorMethodsField(interceptionType), List.class)
+                .setModifiers(ACC_PRIVATE);
+        ResultHandle methodsList = constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+        for (MethodInfo method : methods) {
+            // BiFunction<Object,InvocationContext,Object>
+            FunctionCreator fun = constructor.createFunction(BiFunction.class);
+            BytecodeCreator funBytecode = fun.getBytecode();
+            ResultHandle ret = invokeInterceptorMethod(funBytecode, interceptorClass, method,
+                    interceptionType, isApplicationClass, funBytecode.getMethodParam(1),
+                    funBytecode.getMethodParam(0));
+            funBytecode.returnValue(interceptionType == InterceptionType.AROUND_INVOKE ? ret : funBytecode.loadNull());
+            constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, methodsList, fun.getInstance());
+        }
+        constructor.writeInstanceField(field.getFieldDescriptor(), constructor.getThis(), methodsList);
     }
 
     /**
@@ -214,64 +251,105 @@ public class InterceptorGenerator extends BeanGenerator {
                 .getMethodCreator("intercept", Object.class, InterceptionType.class, Object.class, InvocationContext.class)
                 .setModifiers(ACC_PUBLIC).addException(Exception.class);
 
-        addIntercept(intercept, interceptor.getAroundInvoke(), InterceptionType.AROUND_INVOKE, providerType,
+        addIntercept(creator, intercept, interceptor.getAroundInvokes(), InterceptionType.AROUND_INVOKE, providerType,
                 reflectionRegistration, isApplicationClass);
-        addIntercept(intercept, interceptor.getPostConstruct(), InterceptionType.POST_CONSTRUCT, providerType,
+        addIntercept(creator, intercept, interceptor.getPostConstructs(), InterceptionType.POST_CONSTRUCT, providerType,
                 reflectionRegistration, isApplicationClass);
-        addIntercept(intercept, interceptor.getPreDestroy(), InterceptionType.PRE_DESTROY, providerType,
+        addIntercept(creator, intercept, interceptor.getPreDestroys(), InterceptionType.PRE_DESTROY, providerType,
                 reflectionRegistration, isApplicationClass);
-        addIntercept(intercept, interceptor.getAroundConstruct(), InterceptionType.AROUND_CONSTRUCT, providerType,
+        addIntercept(creator, intercept, interceptor.getAroundConstructs(), InterceptionType.AROUND_CONSTRUCT, providerType,
                 reflectionRegistration, isApplicationClass);
         intercept.returnValue(intercept.loadNull());
     }
 
-    private void addIntercept(MethodCreator intercept, MethodInfo interceptorMethod, InterceptionType interceptionType,
-            ProviderType providerType,
-            ReflectionRegistration reflectionRegistration, boolean isApplicationClass) {
-        if (interceptorMethod != null) {
-            ResultHandle enumValue = intercept
-                    .readStaticField(FieldDescriptor.of(InterceptionType.class.getName(), interceptionType.name(),
-                            InterceptionType.class.getName()));
-            BranchResult result = intercept.ifNonZero(
-                    intercept.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, enumValue, intercept.getMethodParam(0)));
-            BytecodeCreator trueBranch = result.trueBranch();
-            Class<?> retType = null;
-            if (InterceptionType.AROUND_INVOKE.equals(interceptionType)) {
-                retType = Object.class;
-            } else {
-                // @PostConstruct, @PreDestroy, @AroundConstruct
-                retType = interceptorMethod.returnType().kind().equals(Type.Kind.VOID) ? void.class : Object.class;
-            }
-            ResultHandle ret;
-            // Check if interceptor method uses InvocationContext or ArcInvocationContext
-            Class<?> invocationContextClass;
-            if (interceptorMethod.parameterType(0).name().equals(DotNames.INVOCATION_CONTEXT)) {
-                invocationContextClass = InvocationContext.class;
-            } else {
-                invocationContextClass = ArcInvocationContext.class;
-            }
-            if (Modifier.isPrivate(interceptorMethod.flags())) {
-                privateMembers.add(isApplicationClass,
-                        String.format("Interceptor method %s#%s()", interceptorMethod.declaringClass().name(),
-                                interceptorMethod.name()));
-                // Use reflection fallback
-                ResultHandle paramTypesArray = trueBranch.newArray(Class.class, trueBranch.load(1));
-                trueBranch.writeArrayValue(paramTypesArray, 0, trueBranch.loadClass(invocationContextClass));
-                ResultHandle argsArray = trueBranch.newArray(Object.class, trueBranch.load(1));
-                trueBranch.writeArrayValue(argsArray, 0, intercept.getMethodParam(2));
-                reflectionRegistration.registerMethod(interceptorMethod);
-                ret = trueBranch.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                        trueBranch.loadClass(interceptorMethod.declaringClass()
-                                .name()
-                                .toString()),
-                        trueBranch.load(interceptorMethod.name()), paramTypesArray, intercept.getMethodParam(1), argsArray);
-            } else {
-                ret = trueBranch.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(providerType.className(), interceptorMethod.name(), retType,
-                                invocationContextClass),
-                        intercept.getMethodParam(1), intercept.getMethodParam(2));
-            }
-            trueBranch.returnValue(InterceptionType.AROUND_INVOKE.equals(interceptionType) ? ret : trueBranch.loadNull());
+    private void addIntercept(ClassCreator creator, MethodCreator intercept, List<MethodInfo> interceptorMethods,
+            InterceptionType interceptionType, ProviderType providerType, ReflectionRegistration reflectionRegistration,
+            boolean isApplicationClass) {
+        if (interceptorMethods.isEmpty()) {
+            return;
         }
+        BranchResult result = intercept
+                .ifTrue(Gizmo.equals(intercept, intercept.load(interceptionType), intercept.getMethodParam(0)));
+        BytecodeCreator trueBranch = result.trueBranch();
+        ResultHandle ret;
+        if (interceptorMethods.size() == 1) {
+            MethodInfo interceptorMethod = interceptorMethods.get(0);
+            ret = invokeInterceptorMethod(trueBranch, providerType.className(), interceptorMethod,
+                    interceptionType, isApplicationClass, trueBranch.getMethodParam(2), trueBranch.getMethodParam(1));
+        } else {
+            // Multiple interceptor methods found in the hierarchy
+            ResultHandle methodList = trueBranch.readInstanceField(
+                    FieldDescriptor.of(creator.getClassName(), interceptorMethodsField(interceptionType), List.class),
+                    trueBranch.getThis());
+            ResultHandle params;
+            if (interceptionType == InterceptionType.AROUND_INVOKE) {
+                params = trueBranch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_GET_PARAMETERS,
+                        trueBranch.getMethodParam(2));
+            } else {
+                params = trueBranch.loadNull();
+            }
+            ret = trueBranch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXTS_PERFORM_SUPERCLASS,
+                    trueBranch.getMethodParam(2), methodList,
+                    trueBranch.getMethodParam(1), params);
+
+        }
+        trueBranch.returnValue(InterceptionType.AROUND_INVOKE.equals(interceptionType) ? ret : trueBranch.loadNull());
+    }
+
+    private String interceptorMethodsField(InterceptionType interceptionType) {
+        switch (interceptionType) {
+            case AROUND_INVOKE:
+                return "aroundInvokes";
+            case AROUND_CONSTRUCT:
+                return "aroundConstructs";
+            case POST_CONSTRUCT:
+                return "postConstructs";
+            case PRE_DESTROY:
+                return "preDestroys";
+            default:
+                throw new IllegalArgumentException("Unsupported interception type: " + interceptionType);
+        }
+    }
+
+    private ResultHandle invokeInterceptorMethod(BytecodeCreator creator, String interceptorClass, MethodInfo interceptorMethod,
+            InterceptionType interceptionType, boolean isApplicationClass, ResultHandle invocationContext,
+            ResultHandle interceptorInstance) {
+        Class<?> retType = null;
+        if (InterceptionType.AROUND_INVOKE.equals(interceptionType)) {
+            retType = Object.class;
+        } else {
+            // @PostConstruct, @PreDestroy, @AroundConstruct
+            retType = interceptorMethod.returnType().kind().equals(Type.Kind.VOID) ? void.class : Object.class;
+        }
+        ResultHandle ret;
+        // Check if interceptor method uses InvocationContext or ArcInvocationContext
+        Class<?> invocationContextClass;
+        if (interceptorMethod.parameterType(0).name().equals(DotNames.INVOCATION_CONTEXT)) {
+            invocationContextClass = InvocationContext.class;
+        } else {
+            invocationContextClass = ArcInvocationContext.class;
+        }
+        if (Modifier.isPrivate(interceptorMethod.flags())) {
+            privateMembers.add(isApplicationClass,
+                    String.format("Interceptor method %s#%s()", interceptorMethod.declaringClass().name(),
+                            interceptorMethod.name()));
+            // Use reflection fallback
+            ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(1));
+            creator.writeArrayValue(paramTypesArray, 0, creator.loadClass(invocationContextClass));
+            ResultHandle argsArray = creator.newArray(Object.class, creator.load(1));
+            creator.writeArrayValue(argsArray, 0, invocationContext);
+            reflectionRegistration.registerMethod(interceptorMethod);
+            ret = creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                    creator.loadClass(interceptorMethod.declaringClass()
+                            .name()
+                            .toString()),
+                    creator.load(interceptorMethod.name()), paramTypesArray, interceptorInstance, argsArray);
+        } else {
+            ret = creator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(interceptorClass, interceptorMethod.name(), retType,
+                            invocationContextClass),
+                    interceptorInstance, invocationContext);
+        }
+        return ret;
     }
 }

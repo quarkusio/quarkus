@@ -113,6 +113,7 @@ public class StaticResourcesRecorder {
                 // No other HTTP methods should be used
                 route.method(HttpMethod.GET);
                 route.method(HttpMethod.HEAD);
+                route.method(HttpMethod.OPTIONS);
                 for (Handler<RoutingContext> i : handlers) {
                     route.handler(i);
                 }

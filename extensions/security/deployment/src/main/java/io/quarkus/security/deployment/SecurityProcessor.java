@@ -214,6 +214,11 @@ public class SecurityProcessor {
                     .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV"));
+            // URLSeededEntropySourceProvider.seedStream may contain a reference to a 'FileInputStream' which includes
+            // references to FileDescriptors which aren't allowed in the image heap
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem(
+                            "org.bouncycastle.jcajce.provider.drbg.DRBG$URLSeededEntropySourceProvider"));
         } else {
             reflection.produce(ReflectiveClassBuildItem.builder("org.bouncycastle.crypto.general.AES")
                     .methods().fields().build());

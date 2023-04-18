@@ -1381,6 +1381,7 @@ public class ResteasyReactiveProcessor {
 
         return new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
                 getEffectivePropertyValue("input-buffer-size", config.inputBufferSize().asLongValue(), Long.class, mpConfig),
+                getEffectivePropertyValue("min-chunk-size", config.outputBufferSize(), Integer.class, mpConfig),
                 getEffectivePropertyValue("output-buffer-size", config.outputBufferSize(), Integer.class, mpConfig),
                 getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces(), Boolean.class, mpConfig),
                 getEffectivePropertyValue("default-produces", config.defaultProduces(), Boolean.class, mpConfig));

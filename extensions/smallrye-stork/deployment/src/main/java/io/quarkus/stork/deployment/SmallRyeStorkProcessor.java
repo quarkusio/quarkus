@@ -26,8 +26,10 @@ import io.quarkus.stork.StorkConfiguration;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.smallrye.stork.spi.LoadBalancerProvider;
 import io.smallrye.stork.spi.ServiceDiscoveryProvider;
+import io.smallrye.stork.spi.ServiceRegistrarProvider;
 import io.smallrye.stork.spi.internal.LoadBalancerLoader;
 import io.smallrye.stork.spi.internal.ServiceDiscoveryLoader;
+import io.smallrye.stork.spi.internal.ServiceRegistrarLoader;
 
 public class SmallRyeStorkProcessor {
 
@@ -35,10 +37,11 @@ public class SmallRyeStorkProcessor {
     private static final Logger LOGGER = Logger.getLogger(SmallRyeStorkProcessor.class.getName());
 
     @BuildStep
-    void registerServiceProviders(BuildProducer<ServiceProviderBuildItem> services, Capabilities capabilities) {
+    void registerServiceProviders(BuildProducer<ServiceProviderBuildItem> services) {
         services.produce(new ServiceProviderBuildItem(io.smallrye.stork.spi.config.ConfigProvider.class.getName(),
                 StorkConfigProvider.class.getName()));
-        for (Class<?> providerClass : asList(LoadBalancerLoader.class, ServiceDiscoveryLoader.class)) {
+        for (Class<?> providerClass : asList(LoadBalancerLoader.class, ServiceDiscoveryLoader.class,
+                ServiceRegistrarLoader.class)) {
             services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(providerClass.getName()));
         }
     }
@@ -47,11 +50,15 @@ public class SmallRyeStorkProcessor {
     UnremovableBeanBuildItem unremoveableBeans() {
         return UnremovableBeanBuildItem.beanTypes(
                 DotName.createSimple(ServiceDiscoveryProvider.class),
-                DotName.createSimple(LoadBalancerProvider.class));
+                DotName.createSimple(ServiceDiscoveryLoader.class),
+                DotName.createSimple(LoadBalancerProvider.class),
+                DotName.createSimple(LoadBalancerLoader.class),
+                DotName.createSimple(ServiceRegistrarProvider.class),
+                DotName.createSimple(ServiceRegistrarLoader.class));
     }
 
     /**
-     * This build step is the fix for https://github.com/quarkusio/quarkus/issues/24444.
+     * This build step is the fix for <a href="https://github.com/quarkusio/quarkus/issues/24444">#24444</a>.
      * Because Stork itself cannot depend on Quarkus, and we do not want to have extensions for all the service
      * discovery and load-balancer providers, we work around the issue by detecting when the kubernetes service
      * discovery is used and if the kubernetes extension is used.

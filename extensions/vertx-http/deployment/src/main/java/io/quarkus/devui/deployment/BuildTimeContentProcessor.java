@@ -32,7 +32,10 @@ import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.DevUIContent;
 import io.quarkus.devui.spi.buildtime.QuteTemplateBuildItem;
 import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
+import io.quarkus.devui.spi.page.AbstractPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.FooterPageBuildItem;
+import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -67,6 +70,8 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc-server-log", contextRoot + "qwc/qwc-server-log.js");
         // Quarkus UI
         internalImportMapBuildItem.add("qui/", contextRoot + "qui/");
+        internalImportMapBuildItem.add("qui-card", contextRoot + "qui/qui-card.js");
+
         internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
         internalImportMapBuildItem.add("qui-alert", contextRoot + "qui/qui-alert.js");
         internalImportMapBuildItem.add("qui-code-block", contextRoot + "qui/qui-code-block.js");
@@ -103,13 +108,31 @@ public class BuildTimeContentProcessor {
      * @param buildTimeConstProducer
      */
     @BuildStep(onlyIf = IsDevelopment.class)
-    void mapPageBuildTimeData(List<CardPageBuildItem> pageBuildItems,
+    void mapPageBuildTimeData(List<CardPageBuildItem> cards,
+            List<MenuPageBuildItem> menus,
+            List<FooterPageBuildItem> footers,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer) {
 
-        for (CardPageBuildItem pageBuildItem : pageBuildItems) {
-            String extensionPathName = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
-            Map<String, Object> buildTimeData = getBuildTimeData(curateOutcomeBuildItem, pageBuildItem);
+        for (CardPageBuildItem card : cards) {
+            String extensionPathName = card.getExtensionPathName(curateOutcomeBuildItem);
+            Map<String, Object> buildTimeData = getBuildTimeDataForCard(curateOutcomeBuildItem, card);
+            if (!buildTimeData.isEmpty()) {
+                buildTimeConstProducer.produce(
+                        new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
+            }
+        }
+        for (MenuPageBuildItem menu : menus) {
+            String extensionPathName = menu.getExtensionPathName(curateOutcomeBuildItem);
+            Map<String, Object> buildTimeData = getBuildTimeDataForPage(menu);
+            if (!buildTimeData.isEmpty()) {
+                buildTimeConstProducer.produce(
+                        new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
+            }
+        }
+        for (FooterPageBuildItem footer : footers) {
+            String extensionPathName = footer.getExtensionPathName(curateOutcomeBuildItem);
+            Map<String, Object> buildTimeData = getBuildTimeDataForPage(footer);
             if (!buildTimeData.isEmpty()) {
                 buildTimeConstProducer.produce(
                         new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
@@ -117,12 +140,17 @@ public class BuildTimeContentProcessor {
         }
     }
 
-    private Map<String, Object> getBuildTimeData(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            CardPageBuildItem pageBuildItem) {
+    private Map<String, Object> getBuildTimeDataForPage(AbstractPageBuildItem pageBuildItem) {
         Map<String, Object> m = new HashMap<>();
         if (pageBuildItem.hasBuildTimeData()) {
             m.putAll(pageBuildItem.getBuildTimeData());
         }
+        return m;
+    }
+
+    private Map<String, Object> getBuildTimeDataForCard(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            CardPageBuildItem pageBuildItem) {
+        Map<String, Object> m = getBuildTimeDataForPage(pageBuildItem);
 
         if (pageBuildItem.getOptionalCard().isPresent()) {
             // Make the pages available for the custom card

@@ -1,18 +1,13 @@
 import { LitElement, html, css} from 'lit';
-import { until } from 'lit/directives/until.js';
 import { RouterController } from 'router-controller';
-import { observeState } from 'lit-element-state';
-import { themeState } from 'theme-state';
-import '@vanillawc/wc-codemirror';
-import '@vanillawc/wc-codemirror/mode/yaml/yaml.js';
-import '@vanillawc/wc-codemirror/mode/properties/properties.js';
-import '@vanillawc/wc-codemirror/mode/javascript/javascript.js';
 import '@vaadin/icon';
+import 'qui-code-block';
+import '@vaadin/progress-bar';
 
 /**
  * This component loads an external page
  */
-export class QwcExternalPage extends observeState(LitElement)  {
+export class QwcExternalPage extends LitElement {
     routerController = new RouterController(this);
     
     static styles = css`
@@ -52,7 +47,15 @@ export class QwcExternalPage extends observeState(LitElement)  {
     }
     
     render() {
-        return html`${until(this._loadExternal(), html`<span>Loading with ${themeState.theme.name} theme</span>`)}`;
+        if(this._mode){
+            return this._loadExternal();
+        }else {
+            return html`
+                <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                    <div>Loading content...</div>
+                    <vaadin-progress-bar indeterminate></vaadin-progress-bar>
+                </div>`;
+        }
     }
 
     _autoDetectMimeType(){
@@ -89,17 +92,17 @@ export class QwcExternalPage extends observeState(LitElement)  {
                                 height='100%'>
                             </object>`;
             } else {
+                let currentPath = window.location.pathname;
+                currentPath = currentPath.substring(0, currentPath.indexOf('/dev'));
                 return html`<div class="codeBlock">
                             <span class="download" @click="${this._download}">
                                 <vaadin-icon class="icon" icon="font-awesome-solid:download"></vaadin-icon>
                                 Download
                             </span>
-                            <wc-codemirror mode='${this._mode}'
-                                        src='${this._externalUrl}'
-                                        theme='base16-${themeState.theme.name}'
-                                        readonly>
-                                <link rel="stylesheet" href="/_static/wc-codemirror/theme/base16-${themeState.theme.name}.css">
-                            </wc-codemirror>
+                            <qui-code-block 
+                                mode='${this._mode}'
+                                src='${this._externalUrl}'>
+                            </qui-code-block>
                         </div>
                         `;
             }

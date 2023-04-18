@@ -2,6 +2,7 @@ import {LitElement, html, css} from 'lit';
 import {devServices} from 'devui-data';
 import '@vaadin/vertical-layout';
 import '@vaadin/icon';
+import 'qui-code-block';
 
 /**
  * This component shows the Dev Services Page
@@ -87,7 +88,7 @@ export class QwcDevServices extends LitElement {
                     <span>You do not have any Dev Services running.</span>
                     <a href="https://quarkus.io/guides/dev-services" target="_blank">Read more about Dev Services</a>
                 </p>
-            `
+            `;
         }
     }
 
@@ -121,7 +122,10 @@ export class QwcDevServices extends LitElement {
             let properties = ''.concat(...list);
             return html`<span class="configHeader">Config:</span>
                         <div class="config">
-                            <pre><code>${properties.trim()}</code></pre>
+                            <qui-code-block 
+                                mode='properties'
+                                content='${properties.trim()}'>
+                            </qui-code-block>
                         </div>`;
         }
     }

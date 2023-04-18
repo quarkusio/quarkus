@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -48,10 +47,5 @@ class AddRoleResourceDecorator extends ResourceProvidingDecorator<KubernetesList
                 .withLabels(roleLabels)
                 .endMetadata()
                 .withRules(rules));
-    }
-
-    @Override
-    public Class<? extends Decorator>[] before() {
-        return new Class[] { AddRoleBindingResourceDecorator.class };
     }
 }

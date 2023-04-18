@@ -226,6 +226,10 @@ triage:
         - extensions/security/
         - extensions/elytron
         - integration-tests/elytron
+    - id: bearer-token
+      labels: [area/security, area/oidc]
+      title: "bearer"
+      notify: [sberyozkin, pedroigor]
     - id: metrics
       labels: [area/metrics, area/smallrye]
       title: "metrics"

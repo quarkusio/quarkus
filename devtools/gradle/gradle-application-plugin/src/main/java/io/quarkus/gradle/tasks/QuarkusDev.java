@@ -446,7 +446,7 @@ public abstract class QuarkusDev extends QuarkusTask {
                     File file = p.toFile();
                     if (file.exists() && configuredParentFirst.contains(artifact.getKey())
                             && filesIncludedInClasspath.add(file)) {
-                        getProject().getLogger().debug("Adding dependency {}", file);
+                        getLogger().debug("Adding dependency {}", file);
                         builder.classpathEntry(artifact.getKey(), file);
                     }
                 });

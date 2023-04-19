@@ -8,6 +8,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 class AcmeExtProcessor {
 
@@ -23,9 +24,9 @@ class AcmeExtProcessor {
 
         final Path output = p.getParent().getParent().getParent().resolve(launchModeBuildItem.getLaunchMode() + "-" + p.getFileName());
         try {
-            Files.copy(p, output);
+            Files.copy(p, output, StandardCopyOption.REPLACE_EXISTING);
         } catch(IOException e) {
-            throw new IllegalStateException("Failed to copy " + p + " to " + output);
+            throw new IllegalStateException("Failed to copy " + p + " to " + output, e);
         }
         return new FeatureBuildItem(FEATURE);
     }

@@ -28,9 +28,9 @@ public abstract class QuarkusListPlatforms extends QuarkusPlatformTask {
 
     @TaskAction
     public void listExtensions() {
-        getProject().getLogger().info("");
+        getLogger().info("");
         if (installed) {
-            getProject().getLogger().info("Imported Quarkus platforms:");
+            getLogger().info("Imported Quarkus platforms:");
             importedPlatforms().forEach(coords -> {
                 final StringBuilder buf = new StringBuilder();
                 buf.append(coords.getGroupId()).append(":")
@@ -40,13 +40,13 @@ public abstract class QuarkusListPlatforms extends QuarkusPlatformTask {
                 messageWriter().info(buf.toString());
             });
         } else {
-            getProject().getLogger().info("Available Quarkus platforms:");
+            getLogger().info("Available Quarkus platforms:");
             try {
                 new ListPlatforms(getQuarkusProject(installed)).execute();
             } catch (Exception e) {
                 throw new GradleException("Unable to list platforms", e);
             }
         }
-        getProject().getLogger().info("");
+        getLogger().info("");
     }
 }

@@ -140,7 +140,7 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     }
 
     protected GradleMessageWriter messageWriter() {
-        return new GradleMessageWriter(getProject().getLogger());
+        return new GradleMessageWriter(getLogger());
     }
 
     protected static URL toURL(String url) {

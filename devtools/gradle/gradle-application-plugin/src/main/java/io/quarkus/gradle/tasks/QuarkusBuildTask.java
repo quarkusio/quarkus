@@ -253,7 +253,7 @@ abstract class QuarkusBuildTask extends QuarkusTask {
     }
 
     void abort(String message, Object... args) {
-        getProject().getLogger().warn(message, args);
+        getLogger().warn(message, args);
         getProject().getTasks().stream()
                 .filter(t -> t != this)
                 .filter(t -> !t.getState().getExecuted()).forEach(t -> {

@@ -30,8 +30,7 @@ public abstract class QuarkusInfo extends QuarkusPlatformTask {
 
     @TaskAction
     public void logInfo() {
-
-        getProject().getLogger().warn(getName() + " is experimental, its options and output might change in future versions");
+        getLogger().warn(getName() + " is experimental, its options and output might change in future versions");
 
         final QuarkusProject quarkusProject = getQuarkusProject(false);
         final QuarkusCommandOutcome outcome;
@@ -44,7 +43,7 @@ public abstract class QuarkusInfo extends QuarkusPlatformTask {
             throw new GradleException("Failed to collect Quarkus project information", e);
         }
         if (outcome.getValue(ProjectInfoCommandHandler.RECOMMENDATIONS_AVAILABLE, false)) {
-            this.getProject().getLogger().warn(
+            getLogger().warn(
                     "Non-recommended Quarkus platform BOM and/or extension versions were found. For more details, please, execute 'gradle quarkusUpdate --rectify'");
         }
     }

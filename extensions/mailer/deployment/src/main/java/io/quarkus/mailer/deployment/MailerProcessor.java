@@ -27,6 +27,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -45,6 +46,7 @@ import io.quarkus.mailer.runtime.MailerSupport;
 import io.quarkus.mailer.runtime.Mailers;
 import io.quarkus.mailer.runtime.MailersBuildTimeConfig;
 import io.quarkus.mailer.runtime.MailersRuntimeConfig;
+import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.deployment.CheckedTemplateAdapterBuildItem;
 import io.quarkus.qute.deployment.QuteProcessor;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
@@ -91,13 +93,15 @@ public class MailerProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     MailersBuildItem generateMailerSupportBean(MailerRecorder recorder,
+            CombinedIndexBuildItem index,
             BeanDiscoveryFinishedBuildItem beans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         List<InjectionPointInfo> mailerInjectionPoints = beans.getInjectionPoints().stream()
                 .filter(i -> SUPPORTED_INJECTION_TYPES.contains(i.getRequiredType().name()))
                 .collect(Collectors.toList());
 
-        boolean hasDefaultMailer = mailerInjectionPoints.stream().anyMatch(i -> i.hasDefaultedQualifier());
+        boolean hasDefaultMailer = mailerInjectionPoints.stream().anyMatch(i -> i.hasDefaultedQualifier())
+                || !index.getIndex().getAnnotations(CheckedTemplate.class).isEmpty();
 
         Set<String> namedMailers = mailerInjectionPoints.stream()
                 .map(i -> i.getRequiredQualifier(MAILER_NAME))

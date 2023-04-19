@@ -23,6 +23,8 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildIt
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -57,7 +59,9 @@ public class DevServicesDatasourceProcessor {
     static volatile boolean first = true;
 
     @BuildStep
-    DevServicesDatasourceResultBuildItem launchDatabases(CurateOutcomeBuildItem curateOutcomeBuildItem,
+    DevServicesDatasourceResultBuildItem launchDatabases(
+            Capabilities capabilities,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             DockerStatusBuildItem dockerStatusBuildItem,
             List<DefaultDataSourceDbKindBuildItem> installedDrivers,
             List<DevServicesDatasourceProviderBuildItem> devDBProviders,
@@ -133,7 +137,7 @@ public class DevServicesDatasourceProcessor {
         Map<String, DevServicesDatasourceProvider> devDBProviderMap = devDBProviders.stream()
                 .collect(Collectors.toMap(DevServicesDatasourceProviderBuildItem::getDatabase,
                         DevServicesDatasourceProviderBuildItem::getDevServicesProvider));
-        RunningDevService defaultDevService = startDevDb(null, curateOutcomeBuildItem, installedDrivers,
+        RunningDevService defaultDevService = startDevDb(null, capabilities, curateOutcomeBuildItem, installedDrivers,
                 !dataSourceBuildTimeConfig.namedDataSources.isEmpty(),
                 devDBProviderMap,
                 dataSourceBuildTimeConfig.defaultDataSource,
@@ -145,7 +149,7 @@ public class DevServicesDatasourceProcessor {
         }
         defaultResult = toDbResult(defaultDevService);
         for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourceBuildTimeConfig.namedDataSources.entrySet()) {
-            RunningDevService namedDevService = startDevDb(entry.getKey(), curateOutcomeBuildItem,
+            RunningDevService namedDevService = startDevDb(entry.getKey(), capabilities, curateOutcomeBuildItem,
                     installedDrivers, true,
                     devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap,
                     dockerStatusBuildItem,
@@ -192,7 +196,9 @@ public class DevServicesDatasourceProcessor {
         return optional.trim();
     }
 
-    private RunningDevService startDevDb(String dbName,
+    private RunningDevService startDevDb(
+            String dbName,
+            Capabilities capabilities,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<DefaultDataSourceDbKindBuildItem> installedDrivers,
             boolean hasNamedDatasources,
@@ -314,8 +320,17 @@ public class DevServicesDatasourceProcessor {
 
             Map<String, String> devDebProperties = new HashMap<>();
             for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
-                devDebProperties.putAll(devDbConfigurationHandlerBuildItem.getConfigProviderFunction()
-                        .apply(dbName, datasource));
+                Map<String, String> properties = devDbConfigurationHandlerBuildItem.getConfigProviderFunction().apply(dbName,
+                        datasource);
+                for (Map.Entry<String, String> entry : properties.entrySet()) {
+                    if (entry.getKey().contains(".jdbc.") && entry.getKey().endsWith(".url")) {
+                        if (capabilities.isCapabilityWithPrefixPresent(Capability.AGROAL)) {
+                            devDebProperties.put(entry.getKey(), entry.getValue());
+                        }
+                    } else {
+                        devDebProperties.put(entry.getKey(), entry.getValue());
+                    }
+                }
             }
             setDataSourceProperties(devDebProperties, dbName, "db-kind", defaultDbKind.get());
             if (datasource.getUsername() != null) {

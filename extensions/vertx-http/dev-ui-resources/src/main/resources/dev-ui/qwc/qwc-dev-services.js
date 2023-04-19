@@ -1,8 +1,8 @@
 import {LitElement, html, css} from 'lit';
 import {devServices} from 'devui-data';
-import '@vaadin/vertical-layout';
 import '@vaadin/icon';
 import 'qui-code-block';
+import 'qui-card';
 
 /**
  * This component shows the Dev Services Page
@@ -11,29 +11,9 @@ export class QwcDevServices extends LitElement {
     static styles = css`
         .cards {
             height: 100%;
+            padding-right: 10px;
         }
-        .card {
-            display: flex;
-            flex-direction: column;
-            border: 1px solid var(--lumo-contrast-10pct);
-            border-radius: 4px;
-            margin-left: 30px;
-            margin-right: 30px;
-        }
-
-        .card-header {
-            font-size: var(--lumo-font-size-l);
-            line-height: 1;
-            height: 25px;
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 10px;
-            background-color: var(--lumo-contrast-5pct);
-            border-bottom: 1px solid var(--lumo-contrast-10pct);
-        }
-
+    
         .configHeader {
             padding: 10px;
         }
@@ -93,11 +73,12 @@ export class QwcDevServices extends LitElement {
     }
 
     _renderCard(devService){
-        return html`<div class="card">
-                        <div class="card-header">${devService.name}</div>
-                        ${this._renderContainerDetails(devService)}
-                        ${this._renderConfigDetails(devService)}
-                    </div>`;
+        return html`<qui-card title="${devService.name}">
+                        <div slot="content">
+                            ${this._renderContainerDetails(devService)}
+                            ${this._renderConfigDetails(devService)}
+                        </div>
+                    </qui-card>`;
     }
 
     _renderContainerDetails(devService){

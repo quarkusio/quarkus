@@ -5,10 +5,16 @@ import { JsonRpc } from 'jsonrpc';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import '@vaadin/icon';
 import '@vaadin/dialog';
+import '@vaadin/select';
 import '@vaadin/checkbox';
 import '@vaadin/checkbox-group';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import 'qui-badge';
+import '@vaadin/grid';
+import { columnBodyRenderer } from '@vaadin/grid/lit.js';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
+import '@vaadin/vertical-layout';
+import { loggerLevels } from 'devui-data';
 
 /**
  * This component represent the Server Log
@@ -73,13 +79,6 @@ export class QwcServerLog extends QwcHotReloadElement {
             color: var(--lumo-success-color-50pct);
         }
     
-        .columnsDialog{
-            
-        }
-        
-        .levelsDialog{
-            
-        }
     `;
 
     static properties = {
@@ -91,10 +90,22 @@ export class QwcServerLog extends QwcHotReloadElement {
         _levelsDialogOpened: {state: true},
         _columnsDialogOpened: {state: true},
         _selectedColumns: {state: true},
+        _allLoggers: {state: true, type: Array},
+        _filteredLoggers: {state: true, type: Array},
+        _loggerLevels: {state: false, type: Array}
     };
 
     constructor() {
         super();
+        this._loggerLevels = [];
+        for (let i in loggerLevels) {
+            let loggerLevel = loggerLevels[i];
+            this._loggerLevels.push({
+                'label': loggerLevel,
+                'value': loggerLevel,
+            });
+        }
+
         this.logControl
                 .addToggle("On/off switch", true, (e) => {
                     this._toggleOnOffClicked(e);
@@ -129,6 +140,7 @@ export class QwcServerLog extends QwcHotReloadElement {
                 this._addLogEntry(entry);
             });
         });
+        this._loadAllLoggers();
     }
     
     disconnectedCallback() {
@@ -136,11 +148,20 @@ export class QwcServerLog extends QwcHotReloadElement {
         this._toggleOnOff(false);
     }
 
+    _loadAllLoggers(){
+        this.jsonRpc.getLoggers().then(jsonRpcResponse => {
+            this._allLoggers = jsonRpcResponse.result;
+            this._filteredLoggers = this._allLoggers;
+        });
+    }
+
     render() {
-        
-        return html`
+        if(this._filteredLoggers){
+            return html`
                 <vaadin-dialog class="levelsDialog"
-                    header-title="Log levels"
+                    header-title="Log levels (${this._filteredLoggers.length})"
+                    resizable
+                    draggable
                     .opened="${this._levelsDialogOpened}"
                     @opened-changed="${(e) => (this._levelsDialogOpened = e.detail.value)}"
                     ${dialogHeaderRenderer(() => html`
@@ -154,6 +175,8 @@ export class QwcServerLog extends QwcHotReloadElement {
                 ></vaadin-dialog>
                 <vaadin-dialog class="columnsDialog"
                     header-title="Columns"
+                    resizable
+                    draggable
                     .opened="${this._columnsDialogOpened}"
                     @opened-changed="${(e) => (this._columnsDialogOpened = e.detail.value)}"
                     ${dialogHeaderRenderer(() => html`
@@ -176,7 +199,7 @@ export class QwcServerLog extends QwcHotReloadElement {
                   `
                   )}
                 </code>`;
-        
+        }
     }
 
     _renderLogEntry(message){
@@ -379,11 +402,80 @@ export class QwcServerLog extends QwcHotReloadElement {
     }
     
     _renderLevelsDialog(){
-        return html`
-            Hello levels
-        `;
+        if(this._filteredLoggers){
+            return html`<vaadin-vertical-layout
+                            theme="spacing"
+                            style="width: 600px; max-width: 100%; min-width: 300px; height: 100%; align-items: stretch;">
+
+                <vaadin-text-field
+                        placeholder="Filter"
+                        style="width: 100%;"
+                        @value-changed="${(e) => this._filterLoggers(e)}">
+                    <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
+                </vaadin-text-field>
+                <vaadin-grid .items="${this._filteredLoggers}" style="width: 100%;" theme="row-stripes">
+                    <vaadin-grid-sort-column resizable
+                                        header="Name"
+                                        path="name">
+                    </vaadin-grid-sort-column>
+
+                    <vaadin-grid-column auto-width resizable flex-grow="0"
+                                            class="cell"
+                                            header="Level"
+                                            ${columnBodyRenderer(this._logLevelRenderer, [])}>
+
+                </vaadin-grid>
+            </vaadin-vertical-layout>
+            `;
+        }
     }
     
+    _filterLoggers(e) {
+        const searchTerm = (e.detail.value || '').trim();
+        if (searchTerm === '') {
+          this._filteredLoggers = this._allLoggers;
+          return;
+        }
+    
+        this._filteredLoggers = this._allLoggers.filter((level) => {    
+            let i = this._matchLogger(level.name, searchTerm); 
+            return i;
+        });
+    }
+
+    _matchLogger(value, term) {
+        if (!value) {
+          return false;
+        }
+        return value.toLowerCase().includes(term.toLowerCase());
+    }
+
+    _logLevelRenderer(logger){
+        return html`${this._renderSelect(logger.name, logger.effectiveLevel)}`;
+    }
+
+    _renderSelect(loggerName, loggerLevel){
+        return html`<vaadin-select class="input-column" 
+                            id="${loggerName}" 
+                            theme="small" 
+                            .items="${this._loggerLevels}" 
+                            .value="${loggerLevel}"
+                            @change="${this._logLevelSelectChanged}">
+                </vaadin-select>`;
+    }
+
+    _logLevelSelectChanged(event){
+        let name = event.target.id;
+        this._updateLogLevel(name, event.target.value);
+    }
+
+    _updateLogLevel(name, value){
+        this.jsonRpc.updateLogLevel({
+            'loggerName': name,
+            'levelValue': value
+        });
+    }
+
     _renderColumnsDialog(){
         return html`<vaadin-checkbox-group
                             .value="${this._selectedColumns}"
@@ -446,6 +538,7 @@ export class QwcServerLog extends QwcHotReloadElement {
     hotReload(){
         this._toggleOnOffClicked(false);
         this._toggleOnOffClicked(true);
+        this._loadAllLoggers();
     }
     
     _toggleFollowLog(e){

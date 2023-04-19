@@ -280,9 +280,13 @@ public class AppCDSBuildStep {
         Path workingDirectory = appCDSPathsContainer.workingDirectory;
         Path appCDSPath = appCDSPathsContainer.resultingFile;
 
-        List<String> javaArgs = new ArrayList<>(3);
+        boolean debug = log.isDebugEnabled();
+        List<String> javaArgs = new ArrayList<>(debug ? 4 : 3);
         javaArgs.add("-XX:ArchiveClassesAtExit=" + appCDSPath.getFileName().toString());
         javaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
+        if (debug) {
+            javaArgs.add("-Xlog:cds=debug");
+        }
         javaArgs.add("-jar");
 
         List<String> command;

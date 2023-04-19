@@ -3,7 +3,6 @@ package io.quarkus.bootstrap.resolver.maven.workspace;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -13,6 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Build;
+import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -117,7 +117,7 @@ public class LocalProject {
         return wsLoader.load();
     }
 
-    static final Model readModel(Path pom) throws BootstrapMavenException {
+    static Model readModel(Path pom) throws BootstrapMavenException {
         try {
             final Model model = ModelUtils.readModel(pom);
             model.setPomFile(pom.toFile());
@@ -227,8 +227,8 @@ public class LocalProject {
 
     public Path getOutputDir() {
         return modelBuildingResult == null
-                ? resolveRelativeToBaseDir(configuredBuildDir(this, build -> build.getDirectory()), "target")
-                : Paths.get(modelBuildingResult.getEffectiveModel().getBuild().getDirectory());
+                ? resolveRelativeToBaseDir(configuredBuildDir(this, BuildBase::getDirectory), "target")
+                : Path.of(modelBuildingResult.getEffectiveModel().getBuild().getDirectory());
     }
 
     public Path getCodeGenOutputDir() {
@@ -237,24 +237,24 @@ public class LocalProject {
 
     public Path getClassesDir() {
         return modelBuildingResult == null
-                ? resolveRelativeToBuildDir(configuredBuildDir(this, build -> build.getOutputDirectory()), "classes")
-                : Paths.get(modelBuildingResult.getEffectiveModel().getBuild().getOutputDirectory());
+                ? resolveRelativeToBuildDir(configuredBuildDir(this, Build::getOutputDirectory), "classes")
+                : Path.of(modelBuildingResult.getEffectiveModel().getBuild().getOutputDirectory());
     }
 
     public Path getTestClassesDir() {
         return modelBuildingResult == null
-                ? resolveRelativeToBuildDir(configuredBuildDir(this, build -> build.getTestOutputDirectory()), "test-classes")
-                : Paths.get(modelBuildingResult.getEffectiveModel().getBuild().getTestOutputDirectory());
+                ? resolveRelativeToBuildDir(configuredBuildDir(this, Build::getTestOutputDirectory), "test-classes")
+                : Path.of(modelBuildingResult.getEffectiveModel().getBuild().getTestOutputDirectory());
     }
 
     public Path getSourcesSourcesDir() {
         return modelBuildingResult == null
-                ? resolveRelativeToBaseDir(configuredBuildDir(this, build -> build.getSourceDirectory()), "src/main/java")
-                : Paths.get(modelBuildingResult.getEffectiveModel().getBuild().getSourceDirectory());
+                ? resolveRelativeToBaseDir(configuredBuildDir(this, Build::getSourceDirectory), "src/main/java")
+                : Path.of(modelBuildingResult.getEffectiveModel().getBuild().getSourceDirectory());
     }
 
     public Path getTestSourcesSourcesDir() {
-        return resolveRelativeToBaseDir(configuredBuildDir(this, build -> build.getTestSourceDirectory()), "src/test/java");
+        return resolveRelativeToBaseDir(configuredBuildDir(this, Build::getTestSourceDirectory), "src/test/java");
     }
 
     public Path getSourcesDir() {
@@ -390,7 +390,7 @@ public class LocalProject {
                         }
                     } else if (plugin.getArtifactId().equals("maven-surefire-plugin") && plugin.getConfiguration() != null) {
                         Object config = plugin.getConfiguration();
-                        if (config == null || !(config instanceof Xpp3Dom)) {
+                        if (!(config instanceof Xpp3Dom)) {
                             continue;
                         }
                         Xpp3Dom dom = (Xpp3Dom) config;
@@ -491,7 +491,7 @@ public class LocalProject {
     }
 
     private DefaultArtifactSources processJarPluginExecutionConfig(Object config, boolean test) {
-        if (config == null || !(config instanceof Xpp3Dom)) {
+        if (!(config instanceof Xpp3Dom)) {
             return null;
         }
         Xpp3Dom dom = (Xpp3Dom) config;

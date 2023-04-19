@@ -34,6 +34,8 @@
         "kotlin-version": "${kotlin.version}",
         "scala-version": "${scala.version}",
         "scala-plugin-version": "${scala-plugin.version}",
+        "groovy-version": "${groovy.version}",
+        "groovy-plugin-version": "${groovy-plugin.version}",
         "quarkus-core-version": "${project.version}",
         "maven-plugin-groupId": "${project.groupId}",
         "maven-plugin-artifactId": "quarkus-maven-plugin",

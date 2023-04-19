@@ -7333,6 +7333,8 @@
         "kotlin-version" : "1.4.32",
         "scala-version" : "2.12.13",
         "scala-plugin-version" : "4.4.0",
+        "groovy-version": "4.0.11",
+        "groovy-plugin-version": "2.1.0",
         "quarkus-core-version" : "2.0.3.Final",
         "maven-plugin-groupId" : "io.quarkus",
         "maven-plugin-artifactId" : "quarkus-maven-plugin",

@@ -31,19 +31,24 @@ public class TargetLanguageGroup {
     @CommandLine.Option(names = { "--scala" }, description = "Use Scala")
     boolean scala = false;
 
+    @CommandLine.Option(names = { "--groovy" }, description = "Use Groovy")
+    boolean groovy = false;
+
     public SourceType getSourceType(CommandSpec spec, BuildTool buildTool, Set<String> extensions, OutputOptionMixin output) {
-        if (kotlin && scala) {
+        if (kotlin && scala || kotlin && groovy || groovy && scala) {
             throw new ParameterException(spec.commandLine(),
-                    "Invalid source type. Projects can target either Kotlin (--kotlin) or Scala (--scala), not both.");
+                    "Invalid source type. Projects can target only one language among Groovy (--groovy), Kotlin (--kotlin), or Scala (--scala), not several.");
         }
 
         if (sourceType == null) {
             if (buildTool == null) {
                 // Buildless/JBang only works with Java, atm
                 sourceType = SourceType.JAVA;
-                if (kotlin || scala) {
+                if (kotlin || scala || groovy) {
                     output.warn("JBang only supports Java. Using Java as the target language.");
                 }
+            } else if (groovy) {
+                sourceType = SourceType.GROOVY;
             } else if (kotlin) {
                 sourceType = SourceType.KOTLIN;
             } else if (scala) {
@@ -62,6 +67,7 @@ public class TargetLanguageGroup {
     @Override
     public String toString() {
         return "TargetLanguageGroup [java=" + javaVersion
+                + ", groovy=" + groovy
                 + ", kotlin=" + kotlin
                 + ", scala=" + scala
                 + ", sourceType=" + sourceType

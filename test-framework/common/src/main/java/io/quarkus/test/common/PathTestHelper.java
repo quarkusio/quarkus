@@ -59,6 +59,26 @@ public final class PathTestHelper {
                 "quarkus-app-classes-test",
                 "quarkus-app-classes");
         //endregion
+        //region Groovy
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "groovy" + File.separator + "native-test",
+                "classes" + File.separator + "groovy" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "groovy" + File.separator + "test",
+                "classes" + File.separator + "groovy" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "groovy" + File.separator + "integration-test",
+                "classes" + File.separator + "groovy" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "groovy" + File.separator + "integrationTest",
+                "classes" + File.separator + "groovy" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "groovy" + File.separator + "native-integrationTest",
+                "classes" + File.separator + "groovy" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "groovy" + File.separator + "native-integration-test",
+                "classes" + File.separator + "groovy" + File.separator + "main");
+        //endregion
         //region Kotlin
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "kotlin" + File.separator + "native-test",

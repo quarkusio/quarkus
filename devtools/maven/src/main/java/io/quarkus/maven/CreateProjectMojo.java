@@ -437,7 +437,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
     private void sanitizeOptions() {
         if (className != null) {
-            className = className.replaceAll("\\.(java|kotlin|scala)$", "");
+            className = className.replaceAll("\\.(java|kotlin|scala|groovy)$", "");
             int idx = className.lastIndexOf('.');
             if (idx >= 0 && isBlank(packageName)) {
                 // if it's a full qualified class name, we use the package name part (only if the packageName wasn't already defined)

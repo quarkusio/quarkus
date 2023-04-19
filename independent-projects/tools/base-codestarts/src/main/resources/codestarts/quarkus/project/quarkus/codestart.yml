@@ -14,6 +14,7 @@ output-strategy:
   "src/test/resources/application.yml": smart-config-merge
   "src/test/resources/application.properties": forbidden
   "*.java": smart-package
+  "*.groovy": smart-package
   "*.kt": smart-package
   "*.scala": smart-package
   "*": fail-on-duplicate

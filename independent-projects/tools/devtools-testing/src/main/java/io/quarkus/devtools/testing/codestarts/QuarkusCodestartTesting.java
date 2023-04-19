@@ -63,8 +63,10 @@ public class QuarkusCodestartTesting {
         data.put(QUARKUS_MAVEN_PLUGIN_VERSION.key(), catalog.getQuarkusCoreVersion());
         data.put(QUARKUS_GRADLE_PLUGIN_ID.key(), "io.quarkus");
         data.put(QUARKUS_GRADLE_PLUGIN_VERSION.key(), catalog.getQuarkusCoreVersion());
+        data.put(GROOVY_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_GROOVY_VERSION));
         data.put(KOTLIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_KOTLIN_VERSION));
         data.put(SCALA_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SCALA_VERSION));
+        data.put(GROOVY_MAVEN_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_GROOVY_PLUGIN_VERSION));
         data.put(SCALA_MAVEN_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SCALA_PLUGIN_VERSION));
         data.put(MAVEN_COMPILER_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_COMPILER_PLUGIN_VERSION));
         data.put(MAVEN_SUREFIRE_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SUREFIRE_PLUGIN_VERSION));

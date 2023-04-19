@@ -22,4 +22,5 @@ metadata:
     languages:
       - "java"
       - "kotlin"
-    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"  
+      - "groovy"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

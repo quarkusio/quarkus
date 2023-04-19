@@ -20,13 +20,15 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.11.0</compiler-plugin.version>
+        <groovy.version>4.0.11</groovy.version>
         <kotlin.version>1.8.10</kotlin.version>
         <dokka.version>1.8.10</dokka.version>
         <scala.version>2.13.8</scala.version>
         <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
+        <groovy-maven-plugin.version>2.1.0</groovy-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
-
+        <groovy-plugin.version>${groovy-maven-plugin.version}</groovy-plugin.version>
         <!-- version.* properties are defined in jboss-parent and are overridden/updated here: -->
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0</version.surefire.plugin>

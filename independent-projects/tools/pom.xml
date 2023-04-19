@@ -47,9 +47,11 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.11.0</compiler-plugin.version>
+        <groovy.version>4.0.11</groovy.version>
         <kotlin.version>1.6.0</kotlin.version>
         <scala.version>2.12.13</scala.version>
         <scala-plugin.version>4.4.0</scala-plugin.version>
+        <groovy-plugin.version>2.1.0</groovy-plugin.version>
 
         <!-- Versions -->
         <assertj.version>3.24.2</assertj.version>

@@ -261,6 +261,7 @@
                 <module>virtual-http-resteasy</module>
                 <module>maven</module>
                 <module>scala</module>
+                <module>groovy</module>
                 <module>kotlin</module>
                 <module>kotlin-serialization</module>
                 <module>mongodb-panache</module>
@@ -295,6 +296,7 @@
                 <module>reactive-messaging-hibernate-reactive</module>
                 <module>reactive-messaging-hibernate-orm</module>
                 <module>rest-client</module>
+                <module>resteasy-reactive-groovy</module>
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-http2</module>

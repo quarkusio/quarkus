@@ -18,6 +18,7 @@ metadata:
       - "java"
       - "kotlin"
       - "scala"
+      - "groovy"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
   - "quarkus.resteasy."

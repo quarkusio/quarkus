@@ -15,4 +15,11 @@ metadata:
     - "web"
     - "reactive"
   status: "stable"
+  codestart:
+    name: "reactive-routes"
+    languages:
+      - "java"
+      - "kotlin"
+      - "groovy"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   guide: https://quarkus.io/guides/reactive-routes

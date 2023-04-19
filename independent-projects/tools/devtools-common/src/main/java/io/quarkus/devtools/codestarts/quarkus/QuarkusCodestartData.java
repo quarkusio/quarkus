@@ -25,11 +25,13 @@ public final class QuarkusCodestartData {
         QUARKUS_VERSION("quarkus.version"),
 
         JAVA_VERSION("java.version"),
+        GROOVY_VERSION("groovy.version"),
         KOTLIN_VERSION("kotlin.version"),
         SCALA_VERSION("scala.version"),
         SCALA_MAVEN_PLUGIN_VERSION("scala-maven-plugin.version"),
         MAVEN_COMPILER_PLUGIN_VERSION("maven-compiler-plugin.version"),
         MAVEN_SUREFIRE_PLUGIN_VERSION("maven-surefire-plugin.version"),
+        GROOVY_MAVEN_PLUGIN_VERSION("groovy-maven-plugin.version"),
 
         RESTEASY_CODESTART_RESOURCE_PATH("resteasy-codestart.resource.path"),
         RESTEASY_CODESTART_RESOURCE_CLASS_NAME("resteasy-codestart.resource.class-name"),

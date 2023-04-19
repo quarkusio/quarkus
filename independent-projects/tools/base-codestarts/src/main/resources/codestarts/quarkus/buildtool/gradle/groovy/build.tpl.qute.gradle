@@ -1,0 +1,18 @@
+{#include build-layout}
+{#plugins}
+plugins {
+    id 'groovy'
+    id 'java'
+    id '{quarkus.gradle-plugin.id}'
+}
+{/plugins}
+{/include}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+}

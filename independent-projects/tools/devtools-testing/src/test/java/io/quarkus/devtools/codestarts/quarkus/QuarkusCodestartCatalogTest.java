@@ -32,17 +32,17 @@ class QuarkusCodestartCatalogTest {
         assertThat(catalog.getCodestarts())
                 .filteredOn(c -> c.getType().isBase())
                 .extracting(Codestart::getImplementedLanguages)
-                .allSatisfy(s -> assertThat(s.isEmpty() || s.size() == 3).isTrue());
+                .allSatisfy(s -> assertThat(s.isEmpty() || s.size() == 4).isTrue());
 
         assertThat(catalog.getCodestarts()).filteredOn("ref", "resteasy-reactive")
                 .extracting(Codestart::getImplementedLanguages)
                 .hasSize(1)
-                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin", "scala"));
+                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("groovy", "java", "kotlin", "scala"));
 
         assertThat(catalog.getCodestarts()).filteredOn("ref", "resteasy")
                 .extracting(Codestart::getImplementedLanguages)
                 .hasSize(1)
-                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin", "scala"));
+                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("groovy", "java", "kotlin", "scala"));
     }
 
     @Test

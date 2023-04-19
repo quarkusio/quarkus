@@ -47,7 +47,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     private static final String COM_REDHAT_QUARKUS_PLATFORM_GROUP_ID = "com.redhat.quarkus.platform";
     private static final String QUARKUS_BOM = "quarkus-bom";
     private static final String QUARKUS_UNIVERSE_BOM = "quarkus-universe-bom";
-    private static final Set<String> LANGUAGE_EXTENSIONS = Set.of("quarkus-kotlin", "quarkus-scala");
+    private static final Set<String> LANGUAGE_EXTENSIONS = Set.of("quarkus-groovy", "quarkus-kotlin", "quarkus-scala");
     private final Map<String, Extension> extensionsMapping;
 
     public enum AppContent implements DataKey {
@@ -63,6 +63,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     }
 
     public enum Language implements DataKey {
+        GROOVY,
         JAVA,
         KOTLIN,
         SCALA

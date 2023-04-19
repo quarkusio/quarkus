@@ -1,0 +1,12 @@
+name: "Groovy"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "groovy"
+  categories:
+  - "alt-languages"
+  status: "preview"
+  codestart:
+    name: "groovy"
+    kind: "core"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

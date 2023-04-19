@@ -15,6 +15,7 @@ metadata:
     languages:
       - "java"
       - "kotlin"
+      - "groovy"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
   - "quarkus.qute."

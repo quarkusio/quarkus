@@ -11,6 +11,11 @@ import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.ArcInvocationContext;
 
+/**
+ * Invocation context for an "inner" invocation chain, consisting of interceptor methods declared
+ * in one class and its superclasses. It doesn't proceed to other interceptors in the "outer" invocation
+ * chain (interceptor methods declared in other classes).
+ */
 abstract class InnerInvocationContext implements ArcInvocationContext {
 
     protected final ArcInvocationContext delegate;

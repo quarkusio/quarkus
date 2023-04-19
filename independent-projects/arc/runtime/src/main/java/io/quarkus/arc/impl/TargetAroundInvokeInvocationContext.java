@@ -6,7 +6,7 @@ import java.util.function.BiFunction;
 import jakarta.interceptor.InvocationContext;
 
 /**
- * A special {@link javax.interceptor.InvocationContext} that is used for around invoke methods declared in a hierarchy of a
+ * A special {@link jakarta.interceptor.InvocationContext} that is used for around invoke methods declared in a hierarchy of a
  * target class.
  * <p>
  * The interceptor methods defined by the superclasses are invoked before the interceptor method defined by the interceptor

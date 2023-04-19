@@ -7,7 +7,7 @@ import java.util.function.BiFunction;
 import jakarta.interceptor.InvocationContext;
 
 /**
- * A special {@link javax.interceptor.InvocationContext} that is used if multiple interceptor methods are declared in a
+ * A special {@link jakarta.interceptor.InvocationContext} that is used if multiple interceptor methods are declared in a
  * hierarchy of an interceptor class.
  * <p>
  * The interceptor methods defined by the superclasses are invoked before the interceptor method defined by the interceptor

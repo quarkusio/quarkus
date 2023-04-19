@@ -11,7 +11,7 @@ import java.util.Set;
 import io.quarkus.arc.ArcInvocationContext;
 
 /**
- * An {@link javax.interceptor.InvocationContext} for {@link javax.interceptor.AroundInvoke} interceptors.
+ * An {@link jakarta.interceptor.InvocationContext} for {@link jakarta.interceptor.AroundInvoke} interceptors.
  * <p>
  * A new instance is created for the first interceptor in the chain. Furthermore, subsequent interceptors receive a new instance
  * of {@link NextAroundInvokeInvocationContext}. This does not comply with the spec but allows for "asynchronous continuation"

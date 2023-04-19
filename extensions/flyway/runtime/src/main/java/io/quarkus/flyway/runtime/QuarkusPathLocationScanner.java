@@ -28,17 +28,20 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
     private static Map<String, Collection<Callback>> applicationCallbackClasses = Collections.emptyMap(); // the set default to aid unit tests
 
     private final Collection<LoadableResource> scannedResources;
+    private final Collection<Class<? extends JavaMigration>> scannedMigrationClasses;
 
     public QuarkusPathLocationScanner(Collection<Location> locations) {
         LOGGER.debugv("Locations: {0}", locations);
 
         this.scannedResources = new ArrayList<>();
+        this.scannedMigrationClasses = new ArrayList<>();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
         FileSystemScanner fileSystemScanner = null;
         for (String migrationFile : applicationMigrationFiles) {
             if (isClassPathResource(locations, migrationFile)) {
                 LOGGER.debugf("Loading %s", migrationFile);
+
                 scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
             } else if (migrationFile.startsWith(Location.FILESYSTEM_PREFIX)) {
                 if (fileSystemScanner == null) {
@@ -51,6 +54,13 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
             }
         }
 
+        // Filter the provided migration classes to match the provided locations.
+        for (Class<? extends JavaMigration> migrationClass : applicationMigrationClasses) {
+            if (isClassPathResource(locations, migrationClass.getCanonicalName().replace('.', '/'))) {
+                LOGGER.debugf("Loading migration class %s", migrationClass.getCanonicalName());
+                scannedMigrationClasses.add(migrationClass);
+            }
+        }
     }
 
     public static void setApplicationCallbackClasses(Map<String, Collection<Callback>> callbackClasses) {
@@ -96,7 +106,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
      */
     @Override
     public Collection<Class<? extends JavaMigration>> scanForClasses() {
-        return applicationMigrationClasses;
+        return scannedMigrationClasses;
     }
 
     public static void setApplicationMigrationFiles(Collection<String> applicationMigrationFiles) {

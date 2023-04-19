@@ -159,8 +159,6 @@ class ConfigDocItemFinder {
             String name = null;
             String defaultValue = NO_DEFAULT;
             String defaultValueDoc = EMPTY;
-            final TypeMirror typeMirror = unwrapTypeMirror(enclosedElement.asType());
-            String type = typeMirror.toString();
             List<String> acceptedValues = null;
             final TypeElement clazz = (TypeElement) element;
             final String fieldName = enclosedElement.getSimpleName().toString();
@@ -249,6 +247,9 @@ class ConfigDocItemFinder {
             if (NO_DEFAULT.equals(defaultValue)) {
                 defaultValue = EMPTY;
             }
+
+            TypeMirror typeMirror = unwrapTypeMirror(enclosedElement.asType());
+            String type = getType(typeMirror);
 
             if (isConfigGroup(type)) {
                 List<ConfigDocItem> groupConfigItems = readConfigGroupItems(configPhase, rootName, name, type,
@@ -385,6 +386,15 @@ class ConfigDocItemFinder {
         }
 
         return typeMirror;
+    }
+
+    private String getType(TypeMirror typeMirror) {
+        if (typeMirror instanceof DeclaredType) {
+            DeclaredType declaredType = (DeclaredType) typeMirror;
+            TypeElement typeElement = (TypeElement) declaredType.asElement();
+            return typeElement.getQualifiedName().toString();
+        }
+        return typeMirror.toString();
     }
 
     private boolean isConfigGroup(String type) {

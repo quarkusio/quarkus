@@ -99,7 +99,8 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         }
         if (runOnVertxContext == null) {
             // Use duplicated context if @TestReactiveTransaction is present
-            return m.isAnnotationPresent(TestReactiveTransaction.class);
+            return m.isAnnotationPresent(TestReactiveTransaction.class)
+                    || m.getDeclaringClass().isAnnotationPresent(TestReactiveTransaction.class);
         } else {
             return runOnVertxContext.duplicateContext();
         }

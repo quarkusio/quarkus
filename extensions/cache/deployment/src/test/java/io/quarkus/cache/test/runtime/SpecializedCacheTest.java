@@ -2,6 +2,7 @@ package io.quarkus.cache.test.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -68,6 +69,11 @@ public class SpecializedCacheTest {
 
         @Override
         public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+            throw new UnsupportedOperationException("This method is not tested here");
+        }
+
+        @Override
+        public <K, V> V compute(K key, BiFunction<K, V, V> command) {
             throw new UnsupportedOperationException("This method is not tested here");
         }
 

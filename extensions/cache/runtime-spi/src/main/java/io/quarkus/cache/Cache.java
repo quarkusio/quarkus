@@ -1,5 +1,6 @@
 package io.quarkus.cache;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -54,6 +55,16 @@ public interface Cache {
      * @throws NullPointerException if the key is {@code null}
      */
     <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader);
+
+    /**
+     * Modify the cache entry identified by {@code key} from the cache.
+     * The command function get passed both the key and the previous value, and should return the new value.
+     *
+     * @param key cache key
+     * @param command function having for argument the key and the previous value if any, returning the new value
+     * @throws NullPointerException if the key is {@code null}
+     */
+    <K, V> V compute(K key, BiFunction<K, V, V> command);
 
     /**
      * Removes the cache entry identified by {@code key} from the cache. If the key does not identify any cache entry, nothing

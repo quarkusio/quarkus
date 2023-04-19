@@ -8,11 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -40,6 +42,12 @@ public class ProgrammaticApiTest {
     private static final Object KEY_1 = new Object();
     private static final Object KEY_2 = new Object();
 
+    private static final String CACHE_COMPUTE = "test-cache-compute";
+
+    private static final String KEY_COMPUTE = "KEY_COMPUTE";
+    private static final String VALUE_COMPUTE = "VALUE_COMPUTE";
+
+
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
@@ -54,6 +62,9 @@ public class ProgrammaticApiTest {
 
     @CacheName(CACHE_NAME_2)
     Cache anotherCache;
+
+    @CacheName(CACHE_COMPUTE)
+    Cache cacheCompute;
 
     @Test
     public void testInjection() {
@@ -202,6 +213,47 @@ public class ProgrammaticApiTest {
         assertKeySetContains();
         assertGetIfPresentMissingKey(key);
     }
+
+    @Test
+    public void testCompute() {
+        try {
+            String value = cacheCompute.compute(KEY_COMPUTE, (key, previousValue) -> {
+                assertEquals(KEY_COMPUTE, key);
+                assertNull(previousValue);
+                return VALUE_COMPUTE;
+            });
+            assertEquals(VALUE_COMPUTE, value);
+            assertEquals(VALUE_COMPUTE, cacheCompute.get(KEY_COMPUTE, Function.identity()).await().atMost(Duration.ofSeconds(1)));
+        } finally {
+            cache.invalidate(KEY_COMPUTE);
+        }
+    }
+
+    @Test
+    public void testComputeConcurrent() {
+
+        String CONCURRENT_VALUE = "CONCURRENT_VALUE";
+
+        try {
+            assertThrows(RuntimeException.class, () -> cacheCompute.compute(KEY_COMPUTE, (key, previousValue) -> {
+                CountDownLatch latch = new CountDownLatch(1);
+                new Thread(() -> {
+                    cacheCompute.compute(KEY_COMPUTE, (k, p) -> CONCURRENT_VALUE);
+                    latch.countDown();
+                }).start();
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                return VALUE_COMPUTE;
+            }));
+            assertEquals(CONCURRENT_VALUE, cacheCompute.get(KEY_COMPUTE, Function.identity()).await().atMost(Duration.ofSeconds(1)));
+        } finally {
+            cache.invalidate(KEY_COMPUTE);
+        }
+    }
+
 
     @Test
     public void testPutShouldPopulateCache() {

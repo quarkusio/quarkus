@@ -1,5 +1,6 @@
 package io.quarkus.cache.runtime.noop;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -33,6 +34,11 @@ public class NoOpCache extends AbstractCache {
     @Override
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
         return valueLoader.apply(key);
+    }
+
+    @Override
+    public <K, V> V compute(K key, BiFunction<K, V, V> command) {
+        return command.apply(key, null);
     }
 
     @Override

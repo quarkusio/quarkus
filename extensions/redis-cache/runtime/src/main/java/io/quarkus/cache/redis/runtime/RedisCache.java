@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -62,6 +63,27 @@ public interface RedisCache extends Cache {
      * @return the Uni emitting the cached value.
      */
     <K, V> Uni<V> getAsync(K key, Class<V> clazz, Function<K, Uni<V>> valueLoader);
+
+    @Override
+    default <K, V> V compute(K key, BiFunction<K, V, V> command) {
+        Class<V> type = (Class<V>) getDefaultValueType();
+        if (type == null) {
+            throw new UnsupportedOperationException("Cannot use `compute` method without a default type configured. " +
+                    "Consider using the `compute` method accepting the type or configure the default type for the cache " +
+                    getName());
+        }
+        return compute(key, type, command);
+    }
+
+    /**
+     * Modify the cache entry identified by {@code key} from the cache.
+     *
+     * @param key cache key
+     * @param clazz the class of the value
+     * @param command function having for argument the key and the previous value if any, returning the new value
+     * @throws NullPointerException if the key is {@code null}
+     */
+    <K, V> V compute(K key, Class<V> clazz, BiFunction<K, V, V> command);
 
     /**
      * Put a value in the cache.

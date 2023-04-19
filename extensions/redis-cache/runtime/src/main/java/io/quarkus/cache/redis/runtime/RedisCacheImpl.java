@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -56,7 +57,6 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
     private final Supplier<Boolean> blockingAllowedSupplier;
 
     public RedisCacheImpl(RedisCacheInfo cacheInfo, Optional<String> redisClientName) {
-
         this(cacheInfo, Arc.container().select(Vertx.class).get(), determineRedisClient(redisClientName),
                 BlockingOperationControl::isBlockingAllowed);
     }
@@ -219,6 +219,42 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
     }
 
     @Override
+    public <K, V> V compute(K key, Class<V> clazz, BiFunction<K, V, V> command) {
+        byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(key)));
+
+        return (V) withConnection(connection -> watch(connection, encodedKey)
+                .chain(new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller))
+                .chain((value) -> connection.send(Request.cmd(Command.MULTI)).replaceWith(value))
+                .chain(previousValue -> Uni.createFrom().item(() -> command.apply(key, previousValue))
+                        .runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate())))
+                .chain(value -> {
+                    if (value == null) {
+                        throw new IllegalArgumentException("Cannot cache `null` value");
+                    }
+                    byte[] encodedValue = marshaller.encode(value);
+                    return set(connection, encodedKey, encodedValue)
+                            .replaceWith(value);
+                })
+                .onItemOrFailure()
+                .transformToUni((value, failure) -> {
+                    if (failure != null) {
+                        return connection.send(Request.cmd(Command.DISCARD))
+                                .chain(() -> {
+                                    throw new RuntimeException("Execution failed, cache has not been modified", failure);
+                                });
+                    }
+                    return connection.send(Request.cmd(Command.EXEC))
+                            .chain(response -> {
+                                if (response == null) {
+                                    throw new RuntimeException("Concurrent modification, cache has not been modified");
+                                }
+                                return Uni.createFrom().item(value);
+                            });
+                })
+        ).await().atMost(cacheInfo.computeTimeout);
+    }
+
+    @Override
     public <K, V> Uni<Void> put(K key, V value) {
         return put(key, new StaticSupplier<>(value));
     }
@@ -355,7 +391,7 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
     }
 
     private static <X> Uni<X> doGet(RedisConnection connection1, byte[] encodedKey1, Class<X> clazz,
-            Marshaller marshaller) {
+                                    Marshaller marshaller) {
         return connection1.send(Request.cmd(Command.GET).arg(encodedKey1))
                 .map(new Function<Response, X>() {
                     @Override

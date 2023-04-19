@@ -126,7 +126,7 @@ public final class Reflections {
     public static Object newInstance(Class<?> clazz, Class<?>[] parameterTypes, Object[] args) {
         Constructor<?> constructor = findConstructor(clazz, parameterTypes);
         if (constructor != null) {
-            if (!constructor.isAccessible()) {
+            if (!constructor.canAccess(null)) {
                 constructor.setAccessible(true);
             }
             try {
@@ -152,7 +152,7 @@ public final class Reflections {
     public static Object readField(Class<?> clazz, String name, Object instance) {
         try {
             Field field = clazz.getDeclaredField(name);
-            if (!field.isAccessible()) {
+            if (!field.canAccess(instance)) {
                 field.setAccessible(true);
             }
             return field.get(instance);
@@ -164,7 +164,7 @@ public final class Reflections {
     public static void writeField(Class<?> clazz, String name, Object instance, Object value) {
         try {
             Field field = clazz.getDeclaredField(name);
-            if (!field.isAccessible()) {
+            if (!field.canAccess(instance)) {
                 field.setAccessible(true);
             }
             field.set(instance, value);
@@ -176,7 +176,7 @@ public final class Reflections {
     public static Object invokeMethod(Class<?> clazz, String name, Class<?>[] paramTypes, Object instance, Object[] args) {
         try {
             Method method = clazz.getDeclaredMethod(name, paramTypes);
-            if (!method.isAccessible()) {
+            if (!method.canAccess(instance)) {
                 method.setAccessible(true);
             }
             return method.invoke(instance, args);

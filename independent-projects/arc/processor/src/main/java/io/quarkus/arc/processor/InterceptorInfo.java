@@ -247,28 +247,30 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         return getTarget().toString().compareTo(other.getTarget().toString());
     }
 
-    private void addInterceptorMethod(List<MethodInfo> allMethods, List<MethodInfo> interceptorMethods, MethodInfo method) {
+    static void addInterceptorMethod(List<MethodInfo> allMethods, List<MethodInfo> interceptorMethods, MethodInfo method) {
         validateSignature(method);
         if (!isInterceptorMethodOverriden(allMethods, method)) {
             interceptorMethods.add(method);
         }
     }
 
-    private boolean isInterceptorMethodOverriden(Iterable<MethodInfo> allMethods, MethodInfo method) {
+    static boolean isInterceptorMethodOverriden(Iterable<MethodInfo> allMethods, MethodInfo method) {
         for (MethodInfo m : allMethods) {
-            if (m.name().equals(method.name()) && m.parametersCount() == 1
-                    && (m.parameterType(0).name().equals(DotNames.INVOCATION_CONTEXT)
-                            || m.parameterType(0).name().equals(DotNames.ARC_INVOCATION_CONTEXT))) {
+            if (m.name().equals(method.name()) && hasInterceptorMethodParameter(m)) {
                 return true;
             }
         }
         return false;
     }
 
-    private MethodInfo validateSignature(MethodInfo method) {
-        List<Type> parameters = method.parameterTypes();
-        if (parameters.size() != 1 || !(parameters.get(0).name().equals(DotNames.INVOCATION_CONTEXT)
-                || parameters.get(0).name().equals(DotNames.ARC_INVOCATION_CONTEXT))) {
+    static boolean hasInterceptorMethodParameter(MethodInfo method) {
+        return method.parametersCount() == 1
+                && (method.parameterType(0).name().equals(DotNames.INVOCATION_CONTEXT)
+                        || method.parameterType(0).name().equals(DotNames.ARC_INVOCATION_CONTEXT));
+    }
+
+    private static MethodInfo validateSignature(MethodInfo method) {
+        if (!hasInterceptorMethodParameter(method)) {
             throw new IllegalStateException(
                     "An interceptor method must accept exactly one parameter of type jakarta.interceptor.InvocationContext: "
                             + method + " declared on " + method.declaringClass());

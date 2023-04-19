@@ -650,10 +650,10 @@ public final class Beans {
     }
 
     static List<MethodInfo> getAroundInvokes(ClassInfo beanClass, BeanDeployment deployment) {
-        List<MethodInfo> methods = new ArrayList<>();
         AnnotationStore store = deployment.getAnnotationStore();
-        Set<String> processed = new HashSet<>();
+        List<MethodInfo> methods = new ArrayList<>();
 
+        List<MethodInfo> allMethods = new ArrayList<>();
         ClassInfo aClass = beanClass;
         while (aClass != null) {
             int aroundInvokesFound = 0;
@@ -661,13 +661,14 @@ public final class Beans {
                 if (Modifier.isStatic(method.flags())) {
                     continue;
                 }
-                if (store.hasAnnotation(method, DotNames.AROUND_INVOKE) && !processed.contains(method.name())) {
-                    methods.add(method);
+                if (store.hasAnnotation(method, DotNames.AROUND_INVOKE)) {
+                    InterceptorInfo.addInterceptorMethod(allMethods, methods, method);
                     if (++aroundInvokesFound > 1) {
                         throw new DefinitionException(
                                 "Multiple @AroundInvoke interceptor methods declared on class: " + aClass);
                     }
                 }
+                allMethods.add(method);
             }
             DotName superTypeName = aClass.superName();
             aClass = superTypeName == null || DotNames.OBJECT.equals(superTypeName) ? null

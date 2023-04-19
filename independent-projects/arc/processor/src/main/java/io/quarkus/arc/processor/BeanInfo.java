@@ -619,8 +619,8 @@ public class BeanInfo implements InjectionTargetInfo {
                 }
             }
 
-            Set<MethodInfo> finalMethods = Methods.addInterceptedMethodCandidates(beanDeployment, target.get().asClass(),
-                    candidates, classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses, aroundInvokes);
+            Set<MethodInfo> finalMethods = Methods.addInterceptedMethodCandidates(this, candidates, classLevelBindings,
+                    bytecodeTransformerConsumer, transformUnproxyableClasses);
             if (!finalMethods.isEmpty()) {
                 String additionalError = "";
                 if (finalMethods.stream().anyMatch(KotlinUtils::isNoninterceptableKotlinMethod)) {
@@ -668,7 +668,8 @@ public class BeanInfo implements InjectionTargetInfo {
         ClassInfo classInfo = target.get().asClass();
         addDecoratedMethods(candidates, classInfo, classInfo, bound,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
-                        beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods()));
+                        beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods(),
+                        beanDeployment.getAnnotationStore()));
 
         Map<MethodInfo, DecorationInfo> decoratedMethods = new HashMap<>(candidates.size());
         for (Entry<MethodKey, DecorationInfo> entry : candidates.entrySet()) {

@@ -29,11 +29,11 @@ public class AbstractJsonObjectResponse {
     }
 
     public String getString(String name) {
-        return json.getString(name);
+        return contains(name) ? json.getString(name) : null;
     }
 
     public Boolean getBoolean(String name) {
-        return json.getBoolean(name);
+        return contains(name) ? json.getBoolean(name) : null;
     }
 
     public Long getLong(String name) {

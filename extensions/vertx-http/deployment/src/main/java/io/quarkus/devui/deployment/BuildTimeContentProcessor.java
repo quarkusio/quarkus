@@ -1,5 +1,20 @@
 package io.quarkus.devui.deployment;
 
+import static java.util.logging.Level.ALL;
+import static java.util.logging.Level.CONFIG;
+import static java.util.logging.Level.FINE;
+import static java.util.logging.Level.FINER;
+import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.OFF;
+import static java.util.logging.Level.SEVERE;
+import static java.util.logging.Level.WARNING;
+import static org.jboss.logmanager.Level.DEBUG;
+import static org.jboss.logmanager.Level.ERROR;
+import static org.jboss.logmanager.Level.FATAL;
+import static org.jboss.logmanager.Level.INFO;
+import static org.jboss.logmanager.Level.TRACE;
+import static org.jboss.logmanager.Level.WARN;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -411,6 +426,7 @@ public class BuildTimeContentProcessor {
         }
 
         internalBuildTimeData.addBuildTimeData("footerTabs", footerTabs);
+        internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS);
     }
 
     private void addVersionInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
@@ -425,6 +441,22 @@ public class BuildTimeContentProcessor {
                 config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
         internalBuildTimeData.addBuildTimeData("applicationInfo", applicationInfo);
     }
+
+    private static final List<String> LEVELS = List.of(
+            OFF.getName(),
+            SEVERE.getName(),
+            ERROR.getName(),
+            FATAL.getName(),
+            WARNING.getName(),
+            WARN.getName(),
+            INFO.getName(),
+            DEBUG.getName(),
+            TRACE.getName(),
+            CONFIG.getName(),
+            FINE.getName(),
+            FINER.getName(),
+            FINEST.getName(),
+            ALL.getName());
 
     private static void computeColors(Map<String, Map<String, String>> themes, Map<String, String> dark,
             Map<String, String> light) {

@@ -8,6 +8,7 @@ import { devuiState } from 'devui-state';
 import '@vaadin/menu-bar';
 import '@vaadin/tabs';
 import '@vaadin/button';
+import 'qwc/qwc-extension-link.js';
 
 /**
  * This component represent the Dev UI Header
@@ -236,7 +237,9 @@ export class QwcHeader extends observeState(LitElement) {
         if(subMenu){
             this._rightSideNav = html`<vaadin-tabs selected="${subMenu.index}">
                                     ${subMenu.links.map(link =>
-                                        html`<vaadin-tab><a title="${link.path}" href="${link.path}">${link.name}</a></vaadin-tab>`
+                                        html`<vaadin-tab>
+                                                ${this._renderSubMenuLink(link)}
+                                            </vaadin-tab>`
                                     )}
                                 </vaadin-tabs>`;
         }else{
@@ -246,6 +249,25 @@ export class QwcHeader extends observeState(LitElement) {
                     <vaadin-button theme="secondary" @click="${this._previousDevUI}">Back to the previous Dev UI</vaadin-button>
                 </div>`;
         }
+    }
+
+    _renderSubMenuLink(link){
+
+        let relativePath = link.page.id.replace(link.page.namespace + "/", ""); 
+
+        return html`<qwc-extension-link
+            namespace="${link.page.namespace}"
+            extensionName="${link.page.extensionId}"
+            iconName="${link.page.icon}"
+            displayName="${link.page.title}"
+            staticLabel="${link.page.staticLabel}"
+            dynamicLabel="${link.page.dynamicLabel}"
+            streamingLabel="${link.page.streamingLabel}"
+            path="${relativePath}"
+            ?embed=${link.page.embed}
+            externalUrl="${link.page.metadata.externalUrl}"
+            webcomponent="${link.page.componentLink}" >
+        </qwc-extension-link>`;
     }
 
     _reload(e) {

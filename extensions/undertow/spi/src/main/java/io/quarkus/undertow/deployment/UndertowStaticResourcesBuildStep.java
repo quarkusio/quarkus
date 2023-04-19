@@ -12,6 +12,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -22,7 +24,6 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
  * NOTE: Shared with Resteasy standalone!
@@ -56,8 +57,8 @@ public class UndertowStaticResourcesBuildStep {
         }
         //we need to check for web resources in order to get welcome files to work
         //this kinda sucks
-        Set<String> knownFiles = new HashSet<>();
-        Set<String> knownDirectories = new HashSet<>();
+        final Set<String> knownFiles = new HashSet<>();
+        final Set<String> knownDirectories = new HashSet<>();
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
             i.accept(tree -> {
                 Path resource = tree.getPath(META_INF_RESOURCES);
@@ -67,9 +68,14 @@ public class UndertowStaticResourcesBuildStep {
             });
         }
 
-        ClassPathUtils.consumeAsPaths(META_INF_RESOURCES, resource -> {
-            collectKnownPaths(resource, knownFiles, knownDirectories);
-        });
+        for (ClassPathElement e : QuarkusClassLoader.getElements(META_INF_RESOURCES, false)) {
+            if (e.isRuntime()) {
+                e.apply(tree -> {
+                    collectKnownPaths(tree.getPath(META_INF_RESOURCES), knownFiles, knownDirectories);
+                    return null;
+                });
+            }
+        }
 
         for (GeneratedWebResourceBuildItem genResource : generatedWebResources) {
             String sub = genResource.getName();

@@ -622,7 +622,7 @@ For example, with Apicurio dev service if you set the image name to use version 
 
 [source,properties]
 ----
-quarkus.apicurio-registry.devservices.image-name=quay.io/apicurio/apicurio-registry-mem:2.4.2.Final
+quarkus.apicurio-registry.devservices.image-name=quay.io/apicurio/apicurio-registry-mem:2.1.5.Final
 ----
 
 You need to make sure that `apicurio-registry-serdes-avro-serde` dependency
@@ -647,12 +647,30 @@ and the REST client `apicurio-common-rest-client-vertx` dependency are set to co
 </dependency>
 <dependency>
     <groupId>io.apicurio</groupId>
+    <artifactId>apicurio-registry-client</artifactId>
+    <version>2.1.5.Final</version>
+</dependency>
+<dependency>
+    <groupId>io.apicurio</groupId>
+    <artifactId>apicurio-registry-common</artifactId>
+    <version>2.1.5.Final</version>
+</dependency>
+<dependency>
+    <groupId>io.apicurio</groupId>
     <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
     <version>2.1.5.Final</version>
     <exclusions>
         <exclusion>
             <groupId>io.apicurio</groupId>
             <artifactId>apicurio-common-rest-client-jdk</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>io.apicurio</groupId>
+            <artifactId>apicurio-registry-client</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>io.apicurio</groupId>
+            <artifactId>apicurio-registry-common</artifactId>
         </exclusion>
     </exclusions>
 </dependency>
@@ -674,6 +692,18 @@ dependencies {
     implementation("io.quarkus:quarkus-apicurio-registry-avro")
     implementation("io.apicurio:apicurio-registry-serdes-avro-serde") {
         exclude group: "io.apicurio", module: "apicurio-common-rest-client-jdk"
+        exclude group: "io.apicurio", module: "apicurio-registry-client"
+        exclude group: "io.apicurio", module: "apicurio-registry-common"
+        version {
+            strictly "2.1.5.Final"
+        }
+    }
+    implementation("io.apicurio:apicurio-registry-client") {
+        version {
+            strictly "2.1.5.Final"
+        }
+    }
+    implementation("io.apicurio:apicurio-registry-common") {
         version {
             strictly "2.1.5.Final"
         }
@@ -685,6 +715,11 @@ dependencies {
     }
 }
 ----
+
+Known previous compatible versions for `apicurio-registry-client` and `apicurio-common-rest-client-vertx` are the following
+
+- `apicurio-registry-client` 2.1.5.Final with `apicurio-common-rest-client-vertx` 0.1.5.Final
+- `apicurio-registry-client` 2.3.1.Final with `apicurio-common-rest-client-vertx` 0.1.13.Final
 
 [[confluent]]
 == Using the Confluent Schema Registry

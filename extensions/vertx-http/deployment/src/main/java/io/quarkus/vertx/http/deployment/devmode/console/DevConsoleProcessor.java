@@ -117,8 +117,8 @@ import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxBuilder;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.impl.VertxThread;
+import io.vertx.core.impl.transports.JDKTransport;
 import io.vertx.core.net.impl.VertxHandler;
-import io.vertx.core.net.impl.transport.Transport;
 import io.vertx.core.spi.VertxThreadFactory;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -238,7 +238,7 @@ public class DevConsoleProcessor {
                 return new VertxThread(target, "[DevConsole]" + name, worker, maxExecTime, maxExecTimeUnit);
             }
         });
-        builder.transport(Transport.JDK);
+        builder.findTransport(JDKTransport.INSTANCE);
         builder.init();
         return builder.vertx();
     }

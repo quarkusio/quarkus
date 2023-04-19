@@ -58,6 +58,7 @@ import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpClosedException;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.RequestOptions;
@@ -375,7 +376,14 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 .onFailure(new Handler<>() {
                     @Override
                     public void handle(Throwable failure) {
-                        if (failure instanceof IOException) {
+                        if (failure instanceof HttpClosedException) {
+                            // This is because of the Rest Client TCK
+                            // HttpClosedException is a runtime exception. If we complete with that exception, it gets
+                            // unwrapped by the rest client proxy and thus fails the TCK.
+                            // By creating an IOException, we avoid that and provide a meaningful exception (because
+                            // it's an I/O exception)
+                            requestContext.resume(new ProcessingException(new IOException(failure.getMessage())));
+                        } else if (failure instanceof IOException) {
                             requestContext.resume(new ProcessingException(failure));
                         } else {
                             requestContext.resume(failure);

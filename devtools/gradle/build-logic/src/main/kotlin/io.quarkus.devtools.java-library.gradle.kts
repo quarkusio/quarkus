@@ -22,13 +22,8 @@ dependencies {
     testImplementation(libs.getLibrary("quarkus-devtools-testing"))
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
-    }
-}
-
 tasks.withType<JavaCompile>().configureEach {
+    options.release.set(11)
     options.encoding = "UTF-8"
 }
 

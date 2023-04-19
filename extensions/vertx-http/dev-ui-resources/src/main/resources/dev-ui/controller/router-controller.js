@@ -84,7 +84,8 @@ export class RouterController {
                     
                     subMenus.push({
                         "path" : pageRef,
-                        "name" : pageForNamespace.title
+                        "name" : pageForNamespace.title, // deprecate ?
+                        "page" : pageForNamespace
                     });
                 });
                 return {

@@ -340,7 +340,7 @@ Please note that if you would like to use Elliptic Curve keys with Kubernetes Cl
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("org.bouncycastle:bcpkix-jdk15on")
+implementation("org.bouncycastle:bcpkix-jdk18on")
 ----
 
 Note that internally an `org.bouncycastle.jce.provider.BouncyCastleProvider` provider will be registered if it has not already been registered.

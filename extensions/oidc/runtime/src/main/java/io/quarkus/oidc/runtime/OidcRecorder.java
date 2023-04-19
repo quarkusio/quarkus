@@ -33,6 +33,7 @@ import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -45,7 +46,12 @@ public class OidcRecorder {
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
 
     public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(OidcConfig config, Supplier<Vertx> vertx) {
-        return () -> new DefaultTokenIntrospectionUserInfoCache(config, vertx.get());
+        return new Supplier<DefaultTokenIntrospectionUserInfoCache>() {
+            @Override
+            public DefaultTokenIntrospectionUserInfoCache get() {
+                return new DefaultTokenIntrospectionUserInfoCache(config, vertx.get());
+            }
+        };
     }
 
     public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
@@ -86,7 +92,12 @@ public class OidcRecorder {
         }
         if (!dynamicTenantsConfig.containsKey(tenantId)) {
             Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, tlsConfig, tenantId);
-            uniContext.onFailure().transform(t -> logTenantConfigContextFailure(t, tenantId));
+            uniContext.onFailure().transform(new Function<Throwable, Throwable>() {
+                @Override
+                public Throwable apply(Throwable t) {
+                    return logTenantConfigContextFailure(t, tenantId);
+                }
+            });
             return uniContext.onItem().transform(
                     new Function<TenantConfigContext, TenantConfigContext>() {
                         @Override
@@ -232,7 +243,12 @@ public class OidcRecorder {
         }
 
         return createOidcProvider(oidcConfig, tlsConfig, vertx)
-                .onItem().transform(p -> new TenantConfigContext(p, oidcConfig));
+                .onItem().transform(new Function<OidcProvider, TenantConfigContext>() {
+                    @Override
+                    public TenantConfigContext apply(OidcProvider p) {
+                        return new TenantConfigContext(p, oidcConfig);
+                    }
+                });
     }
 
     private static TenantConfigContext createTenantContextFromPublicKey(OidcTenantConfig oidcConfig) {
@@ -324,7 +340,12 @@ public class OidcRecorder {
                     .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION, OidcCommonUtils.CONNECTION_BACKOFF_DURATION)
                     .expireIn(connectionDelayInMillisecs)
                     .onFailure()
-                    .transform(t -> toOidcException(t, oidcConfig.authServerUrl.get()))
+                    .transform(new Function<Throwable, Throwable>() {
+                        @Override
+                        public Throwable apply(Throwable t) {
+                            return toOidcException(t, oidcConfig.authServerUrl.get());
+                        }
+                    })
                     .onFailure()
                     .invoke(client::close);
         } else {
@@ -350,8 +371,12 @@ public class OidcRecorder {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
             metadataUni = OidcCommonUtils.discoverMetadata(client, authServerUriString, connectionDelayInMillisecs)
                     .onItem()
-                    .transform(
-                            json -> new OidcConfigurationMetadata(json, createLocalMetadata(oidcConfig, authServerUriString)));
+                    .transform(new Function<JsonObject, OidcConfigurationMetadata>() {
+                        @Override
+                        public OidcConfigurationMetadata apply(JsonObject json) {
+                            return new OidcConfigurationMetadata(json, createLocalMetadata(oidcConfig, authServerUriString));
+                        }
+                    });
         }
         return metadataUni.onItemOrFailure()
                 .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcProviderClient>>() {

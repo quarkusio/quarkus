@@ -68,6 +68,9 @@ public class JDBCMariaDBProcessor {
         // driver.properties is not added because it only provides optional descriptions for
         // org.mariadb.jdbc.Driver.getPropertyInfo(), which is probably not even called.
         resources.produce(new NativeImageResourceBuildItem("mariadb.properties"));
+
+        // necessary when jdbcUrl contains useSsl=true
+        resources.produce(new NativeImageResourceBuildItem("deprecated.properties"));
     }
 
     @BuildStep

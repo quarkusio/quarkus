@@ -22,9 +22,7 @@ public class FastJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
 
         final File projectDir = getProjectDir("test-that-fast-jar-format-works");
 
-        BuildResult result = runGradleWrapper(projectDir, "clean", "build");
-        result.getTasks().forEach((k, v) -> System.err.println("   " + k + " --> " + v));
-        System.err.println(result.getOutput());
+        runGradleWrapper(projectDir, "clean", "build");
 
         final Path quarkusApp = projectDir.toPath().resolve("build").resolve("quarkus-app");
         assertThat(quarkusApp).exists();

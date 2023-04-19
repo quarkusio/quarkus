@@ -14,19 +14,20 @@ import io.dekorate.utils.Strings;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
-import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
+import io.quarkus.kubernetes.spi.RoleRef;
+import io.quarkus.kubernetes.spi.Subject;
 
 public class AddRoleBindingResourceDecorator extends ResourceProvidingDecorator<KubernetesListBuilder> {
 
     private final String deploymentName;
     private final String name;
     private final Map<String, String> labels;
-    private final KubernetesRoleBindingBuildItem.RoleRef roleRef;
-    private final KubernetesRoleBindingBuildItem.Subject[] subjects;
+    private final RoleRef roleRef;
+    private final Subject[] subjects;
 
     public AddRoleBindingResourceDecorator(String deploymentName, String name, Map<String, String> labels,
-            KubernetesRoleBindingBuildItem.RoleRef roleRef,
-            KubernetesRoleBindingBuildItem.Subject... subjects) {
+            RoleRef roleRef,
+            Subject... subjects) {
         this.deploymentName = deploymentName;
         this.name = name;
         this.labels = labels;
@@ -56,7 +57,7 @@ public class AddRoleBindingResourceDecorator extends ResourceProvidingDecorator<
                 .withApiGroup(RBAC_API_GROUP)
                 .endRoleRef();
 
-        for (KubernetesRoleBindingBuildItem.Subject subject : subjects) {
+        for (Subject subject : subjects) {
             builder.addNewSubject()
                     .withApiGroup(subject.getApiGroup())
                     .withKind(subject.getKind())

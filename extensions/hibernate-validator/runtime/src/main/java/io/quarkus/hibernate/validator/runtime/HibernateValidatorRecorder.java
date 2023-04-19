@@ -37,6 +37,19 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class HibernateValidatorRecorder {
 
+    public void shutdownConfigValidator(ShutdownContext shutdownContext) {
+        shutdownContext.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                ValidatorFactory validatorFactory = HibernateBeanValidationConfigValidator.ConfigValidatorHolder
+                        .getValidatorFactory();
+                if (validatorFactory != null) {
+                    validatorFactory.close();
+                }
+            }
+        });
+    }
+
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
             Set<String> detectedBuiltinConstraints, Set<Class<?>> valueExtractorClasses,
             boolean hasXmlConfiguration, boolean jpaInClasspath,

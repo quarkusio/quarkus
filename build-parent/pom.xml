@@ -65,7 +65,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.8</proposed-maven-version>
         <maven-wrapper.version>3.2.0</maven-wrapper.version>
-        <gradle-wrapper.version>8.0.2</gradle-wrapper.version>
+        <gradle-wrapper.version>8.1</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -102,7 +102,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>21.0.1</keycloak.version>
+        <keycloak.version>21.0.2</keycloak.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
@@ -176,7 +176,7 @@
 
         <!-- google cloud functions invoker-->
         <gcf-invoker.version>1.1.1</gcf-invoker.version>
-        <owasp-dependency-check-plugin.version>8.1.2</owasp-dependency-check-plugin.version>
+        <owasp-dependency-check-plugin.version>8.2.1</owasp-dependency-check-plugin.version>
 
         <!-- Jakarta JMS API -->
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>

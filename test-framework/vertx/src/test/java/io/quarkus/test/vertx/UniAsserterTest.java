@@ -181,7 +181,12 @@ public class UniAsserterTest {
     @Test
     public void testInterceptorData() {
         testAsserter(ua -> {
-            UniAsserter asserter = new DataUniAsserterInterceptor(ua);
+            UniAsserter asserter = new UniAsserterInterceptor(ua) {
+                @Override
+                public Object getData(String key) {
+                    return "found";
+                }
+            };
             asserter.assertEquals(() -> Uni.createFrom().item(asserter.getData("foo")), "found");
         });
     }
@@ -198,20 +203,6 @@ public class UniAsserterTest {
         }
 
     }
-
-    static class DataUniAsserterInterceptor extends UniAsserterInterceptor {
-
-        public DataUniAsserterInterceptor(UniAsserter asserter) {
-            super(asserter);
-        }
-
-        @Override
-        public Object getData(String key) {
-            return "found";
-        }
-
-    }
-
     // utils
 
     private <T> void testAsserter(Consumer<UniAsserter> assertion) {

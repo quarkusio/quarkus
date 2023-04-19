@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.is;
 import jakarta.inject.Named;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -79,5 +80,21 @@ class WithSpiesTest {
                 .then()
                 .statusCode(200)
                 .body(is("1/2"));
+    }
+
+    @Nested
+    class WithNested {
+        @Test
+        @DisplayName("Verify default Greeting values are returned from Spied objects")
+        public void testGreet() {
+            given()
+                    .when().get("/greeting")
+                    .then()
+                    .statusCode(200)
+                    .body(is("HELLO"));
+            Mockito.verify(capitalizerService, Mockito.times(1)).capitalize(Mockito.eq("hello"));
+            Mockito.verify(messageService, Mockito.times(1)).getMessage();
+            Mockito.verify(suffixService, Mockito.times(1)).getSuffix();
+        }
     }
 }

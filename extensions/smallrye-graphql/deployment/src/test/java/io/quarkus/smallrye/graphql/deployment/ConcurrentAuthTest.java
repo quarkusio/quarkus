@@ -56,15 +56,17 @@ public class ConcurrentAuthTest extends AbstractGraphQLTest {
     @Test
     public void concurrentAllFilmsOnly() throws InterruptedException, ExecutionException {
         ExecutorService executor = Executors.newFixedThreadPool(50);
-
-        var futures = new ArrayList<CompletableFuture<Boolean>>(iterations);
-        for (int i = 0; i < iterations; i++) {
-            futures.add(CompletableFuture.supplyAsync(this::allFilmsRequestWithAuth, executor)
-                    .thenApply(r -> !r.getBody().asString().contains("unauthorized")));
+        try {
+            var futures = new ArrayList<CompletableFuture<Boolean>>(iterations);
+            for (int i = 0; i < iterations; i++) {
+                futures.add(CompletableFuture.supplyAsync(this::allFilmsRequestWithAuth, executor)
+                        .thenApply(r -> !r.getBody().asString().contains("unauthorized")));
+            }
+            Optional<Boolean> success = getTestResult(futures);
+            Assertions.assertTrue(success.orElse(false), "Unauthorized response codes were found");
+        } finally {
+            executor.shutdown();
         }
-        Optional<Boolean> success = getTestResult(futures);
-        Assertions.assertTrue(success.orElse(false), "Unauthorized response codes were found");
-        executor.shutdown();
     }
 
     private static Optional<Boolean> getTestResult(ArrayList<CompletableFuture<Boolean>> futures)

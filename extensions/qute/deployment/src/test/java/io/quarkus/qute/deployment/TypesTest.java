@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassType;
@@ -20,7 +18,7 @@ import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.qute.deployment.Types.AssignableInfo;
+import io.quarkus.qute.deployment.Types.AssignabilityCheck;
 
 public class TypesTest {
 
@@ -37,28 +35,28 @@ public class TypesTest {
         Type booleanType = Types.box(Primitive.BOOLEAN);
         ArrayType byteArrayType = ArrayType.create(PrimitiveType.BYTE, 1);
         ArrayType intArrayType = ArrayType.create(PrimitiveType.INT, 1);
-        Map<DotName, AssignableInfo> cache = new HashMap<>();
+        AssignabilityCheck assignabilityCheck = new AssignabilityCheck(index);
 
         // byte[] is not assignable from String
-        assertFalse(Types.isAssignableFrom(byteArrayType, stringType, index, cache));
+        assertFalse(assignabilityCheck.isAssignableFrom(byteArrayType, stringType));
         // CharSequence is assignable from String
-        assertTrue(Types.isAssignableFrom(charSequenceType, stringType, index, cache));
+        assertTrue(assignabilityCheck.isAssignableFrom(charSequenceType, stringType));
         // String is not assignable from CharSequence
-        assertFalse(Types.isAssignableFrom(stringType, charSequenceType, index, cache));
+        assertFalse(assignabilityCheck.isAssignableFrom(stringType, charSequenceType));
         // String is not assignable from byte[]
-        assertFalse(Types.isAssignableFrom(stringType, byteArrayType, index, cache));
+        assertFalse(assignabilityCheck.isAssignableFrom(stringType, byteArrayType));
         // Object is assignable from any type
-        assertTrue(Types.isAssignableFrom(ClassType.OBJECT_TYPE, stringType, index, cache));
+        assertTrue(assignabilityCheck.isAssignableFrom(ClassType.OBJECT_TYPE, stringType));
         // boolean is assignable from Boolean
-        assertTrue(Types.isAssignableFrom(PrimitiveType.BOOLEAN, booleanType, index, cache));
+        assertTrue(assignabilityCheck.isAssignableFrom(PrimitiveType.BOOLEAN, booleanType));
         // boolean is not assignable from double
-        assertFalse(Types.isAssignableFrom(PrimitiveType.BOOLEAN, PrimitiveType.DOUBLE, index, cache));
+        assertFalse(assignabilityCheck.isAssignableFrom(PrimitiveType.BOOLEAN, PrimitiveType.DOUBLE));
         // Serializable is assignable from BigDecimal
-        assertTrue(Types.isAssignableFrom(serializableType, bigDecimalType, index, cache));
+        assertTrue(assignabilityCheck.isAssignableFrom(serializableType, bigDecimalType));
         // Number is assignable from BigDecimal
-        assertTrue(Types.isAssignableFrom(numberType, bigDecimalType, index, cache));
+        assertTrue(assignabilityCheck.isAssignableFrom(numberType, bigDecimalType));
         // byte[] is not assignable from int[]
-        assertFalse(Types.isAssignableFrom(byteArrayType, intArrayType, index, cache));
+        assertFalse(assignabilityCheck.isAssignableFrom(byteArrayType, intArrayType));
     }
 
     private static Index index(Class<?>... classes) throws IOException {

@@ -1,16 +1,12 @@
 import { LitElement, html, css} from 'lit';
 import { JsonRpc } from 'jsonrpc';
-import { until } from 'lit/directives/until.js';
-import { observeState } from 'lit-element-state';
-import { themeState } from 'theme-state';
-import '@vanillawc/wc-codemirror';
-import '@vanillawc/wc-codemirror/mode/yaml/yaml.js';
+import 'qui-code-block';
 import '@vaadin/icon';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
 import '@vaadin/progress-bar';
 
-export class QwcKubernetesManifest extends observeState(LitElement)  {
+export class QwcKubernetesManifest extends LitElement {
 
     jsonRpc = new JsonRpc(this);
 
@@ -101,13 +97,10 @@ export class QwcKubernetesManifest extends observeState(LitElement)  {
         let yaml = this._manifests.get(key);
         
         return html`<div class="codeBlock">
-                            <wc-codemirror mode='yaml'
-                                           theme='base16-${themeState.theme.name}'
-                                           readonly>
-                                <link rel="stylesheet"
-                                      href="/_static/wc-codemirror/theme/base16-${themeState.theme.name}.css">
-                                <script type="wc-content">${yaml}</script>
-                            </wc-codemirror>
+                            <qui-code-block 
+                                mode='yaml'
+                                content='${yaml}'>
+                            </qui-code-block>
                         </div>`;
     }
 

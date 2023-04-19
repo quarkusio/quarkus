@@ -12,6 +12,7 @@ public final class Constants {
     public static final String ROLE = "Role";
     public static final String CLUSTER_ROLE = "ClusterRole";
     public static final String ROLE_BINDING = "RoleBinding";
+    public static final String CLUSTER_ROLE_BINDING = "ClusterRoleBinding";
     public static final String SERVICE_ACCOUNT = "ServiceAccount";
     public static final String DEPLOYMENT_GROUP = "apps";
     public static final String DEPLOYMENT_VERSION = "v1";
@@ -35,6 +36,8 @@ public final class Constants {
     static final String OPENSHIFT_APP_RUNTIME = "app.openshift.io/runtime";
     static final String S2I = "s2i";
     static final String DEFAULT_S2I_IMAGE_NAME = "s2i-java"; //refers to the Dekorate default image.
+
+    static final String OPENSHIFT_INTERNAL_REGISTRY = "image-registry.openshift-image-registry.svc:5000";
 
     static final String KNATIVE = "knative";
     static final String KNATIVE_SERVICE = "Service";

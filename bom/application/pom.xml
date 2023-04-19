@@ -38,15 +38,13 @@
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.23.1</opentelemetry.version>
         <opentelemetry-alpha.version>1.23.0-alpha</opentelemetry-alpha.version>
-        <opentelemetry-aws.contrib.version>1.23.0-alpha</opentelemetry-aws.contrib.version>
-        <opentelemetry-aws-xray.contrib.version>1.23.0</opentelemetry-aws-xray.contrib.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>5.0.1.Final</quarkus-http.version>
         <micrometer.version>1.10.5</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>20.1</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
-        <microprofile-config-api.version>3.0.2</microprofile-config-api.version>
+        <microprofile-config-api.version>3.0.3</microprofile-config-api.version>
         <microprofile-health-api.version>4.0.1</microprofile-health-api.version>
         <microprofile-metrics-api.version>4.0.1</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.3</microprofile-context-propagation.version>
@@ -102,7 +100,7 @@
         <hibernate-orm.version>6.2.0.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.18</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
-        <hibernate-reactive.version>2.0.0.Beta1</hibernate-reactive.version>
+        <hibernate-reactive.version>2.0.0.Beta2</hibernate-reactive.version>
         <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
         <narayana.version>6.0.0.Final</narayana.version>
@@ -141,8 +139,8 @@
         <rest-assured.version>5.3.0</rest-assured.version>
         <junit.jupiter.version>5.9.2</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.7.Final</infinispan.version>
-        <infinispan.protostream.version>4.6.1.Final</infinispan.protostream.version>
+        <infinispan.version>14.0.8.Final</infinispan.version>
+        <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
         <netty.version>4.1.87.Final</netty.version>
         <brotli4j.version>1.11.0</brotli4j.version>
@@ -168,12 +166,12 @@
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.1.1</jboss-logmanager.version>
         <flyway.version>9.16.3</flyway.version>
-        <yasson.version>3.0.2</yasson.version>
+        <yasson.version>3.0.3</yasson.version>
         <liquibase.version>4.20.0</liquibase.version>
         <snakeyaml.version>2.0</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.9.1</mongo-client.version>
-        <mongo-crypt.version>1.7.1</mongo-crypt.version>
+        <mongo-crypt.version>1.7.3</mongo-crypt.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.25.1</javaparser.version>
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
@@ -188,7 +186,7 @@
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.10.1</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
         <quarkus-security.version>2.0.2.Final</quarkus-security.version>
-        <keycloak.version>21.0.1</keycloak.version>
+        <keycloak.version>21.0.2</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
         <checker-qual.version>3.32.0</checker-qual.version>
         <error-prone-annotations.version>2.18.0</error-prone-annotations.version>
@@ -204,8 +202,8 @@
         <log4j2-api.version>2.20.0</log4j2-api.version>
         <log4j-jboss-logmanager.version>1.3.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.11.1</avro.version>
-        <apicurio-registry.version>2.3.1.Final</apicurio-registry.version>
-        <apicurio-common-rest-client.version>0.1.13.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
+        <apicurio-registry.version>2.4.2.Final</apicurio-registry.version>
+        <apicurio-common-rest-client.version>0.1.15.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
         <testcontainers.version>1.17.6</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.2.13</docker-java.version> <!-- must be the version Testcontainers use -->
         <com.dajudge.kindcontainer>1.3.0</com.dajudge.kindcontainer>
@@ -222,7 +220,7 @@
         <mime4j.version>0.8.9</mime4j.version>
         <mutiny-zero.version>1.0.0</mutiny-zero.version>
         <!-- Dev UI -->
-        <importmap.version>1.0.7</importmap.version>
+        <importmap.version>1.0.8</importmap.version>
         <vaadin.version>24.0.2</vaadin.version>
         <lit.version>2.7.2</lit.version>
         <lit-element.version>3.3.1</lit-element.version>
@@ -3922,76 +3920,6 @@
                 <groupId>io.reactivex.rxjava2</groupId>
                 <artifactId>rxjava</artifactId>
                 <version>${rxjava.version}</version>
-            </dependency>
-            <!-- OpenTelemetry contrib libraries don't have a bom and are independently released -->
-            <dependency>
-                <groupId>io.opentelemetry.contrib</groupId>
-                <artifactId>opentelemetry-aws-xray-propagator</artifactId>
-                <version>${opentelemetry-aws.contrib.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.opentelemetry</groupId>
-                        <artifactId>opentelemetry-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry.contrib</groupId>
-                <artifactId>opentelemetry-aws-resources</artifactId>
-                <version>${opentelemetry-aws.contrib.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.opentelemetry</groupId>
-                        <artifactId>opentelemetry-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>io.opentelemetry</groupId>
-                        <artifactId>opentelemetry-sdk</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>io.opentelemetry</groupId>
-                        <artifactId>opentelemetry-semconv</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.squareup.okhttp3</groupId>
-                        <artifactId>okhttp</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry.contrib</groupId>
-                <artifactId>opentelemetry-aws-xray</artifactId>
-                <version>${opentelemetry-aws-xray.contrib.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.opentelemetry</groupId>
-                        <artifactId>opentelemetry-sdk</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>io.opentelemetry</groupId>
-                        <artifactId>opentelemetry-sdk-trace</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>io.opentelemetry</groupId>
-                        <artifactId>opentelemetry-semconv</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-databind</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.squareup.okhttp3</groupId>
-                        <artifactId>okhttp</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.opentracing</groupId>

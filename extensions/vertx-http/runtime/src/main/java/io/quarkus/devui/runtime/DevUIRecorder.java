@@ -90,16 +90,16 @@ public class DevUIRecorder {
         return new VaadinRouterHandler(basePath);
     }
 
-    public Handler<RoutingContext> mvnpmHandler(Set<URL> mvnpmJarFiles) {
-        return new MvnpmHandler(mvnpmJarFiles);
+    public Handler<RoutingContext> mvnpmHandler(String root, Set<URL> mvnpmJarFiles) {
+        return new MvnpmHandler(root, mvnpmJarFiles);
     }
 
-    public Handler<RoutingContext> redirect() {
+    public Handler<RoutingContext> redirect(String contextRoot) {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext rc) {
                 // 308 because we also want to redirect other HTTP Methods (and not only GET).
-                rc.response().putHeader("Location", "/q/dev-ui").setStatusCode(308).end();
+                rc.response().putHeader("Location", contextRoot + "dev-ui").setStatusCode(308).end();
             }
         };
     }

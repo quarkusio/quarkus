@@ -349,7 +349,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
   schema-registry:
-    image: apicurio/apicurio-registry-mem:2.1.5.Final
+    image: apicurio/apicurio-registry-mem:2.4.2.Final
     ports:
       - 8081:8080
     depends_on:
@@ -583,7 +583,7 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
     @Override
     public Map<String, String> start() {
         kafka.start();
-        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.1.5.Final")
+        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.4.2.Final")
                 .withExposedPorts(8080)
                 .withEnv("QUARKUS_PROFILE", "prod");
         registry.start();
@@ -622,7 +622,7 @@ For example, with Apicurio dev service if you set the image name to use version 
 
 [source,properties]
 ----
-quarkus.apicurio-registry.devservices.image-name=quay.io/apicurio/apicurio-registry-mem:2.1.5.Final
+quarkus.apicurio-registry.devservices.image-name=quay.io/apicurio/apicurio-registry-mem:2.4.2.Final
 ----
 
 You need to make sure that `apicurio-registry-serdes-avro-serde` dependency

@@ -26,6 +26,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.inject.Typed;
@@ -466,7 +467,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
      *
      * @param event ignored
      */
-    void destroy(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event) {
+    void destroy(@Observes(notifyObserver = Reception.IF_EXISTS) @BeforeDestroyed(ApplicationScoped.class) Object event) {
         if (scheduler != null) {
             try {
                 if (shutdownWaitTime.isZero()) {

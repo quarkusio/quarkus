@@ -1,7 +1,7 @@
 [versions]
 plugin-publish = "1.2.0"
 
-kotlin = "1.8.10"
+kotlin = "1.8.20"
 smallrye-config = "2.13.1"
 
 junit5 = "5.9.2"

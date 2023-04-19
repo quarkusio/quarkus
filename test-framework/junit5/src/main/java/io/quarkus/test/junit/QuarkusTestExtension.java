@@ -765,9 +765,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
 
             invokeAfterConstructCallbacks(Object.class, actualTestInstance);
-            for (Object outerInstance : outerInstances) {
-                invokeAfterConstructCallbacks(Object.class, outerInstance);
-            }
         } catch (Exception e) {
             throw new TestInstantiationException("Failed to create test instance",
                     e instanceof InvocationTargetException ? e.getCause() : e);

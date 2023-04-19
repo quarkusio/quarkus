@@ -5,7 +5,6 @@ import java.io.IOException;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 
@@ -26,10 +25,11 @@ public class AbstractOidcClientRequestFilter extends AbstractTokensProducer impl
             final String accessToken = getAccessToken();
             requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + accessToken);
         } catch (DisabledOidcClientException ex) {
-            requestContext.abortWith(Response.status(500).build());
+            LOG.debug("Client is disabled, aborting the request");
+            throw ex;
         } catch (Exception ex) {
-            LOG.debugf("Access token is not available, aborting the request with HTTP 401 error: %s", ex.getMessage());
-            requestContext.abortWith(Response.status(401).build());
+            LOG.debugf("Access token is not available, cause: %s, aborting the request", ex.getMessage());
+            throw (ex instanceof RuntimeException) ? (RuntimeException) ex : new RuntimeException(ex);
         }
     }
 

@@ -40,4 +40,12 @@ public class LoggingBean implements LoggingInterface {
         Log.error("Hello Error", error);
     }
 
+    // https://github.com/quarkusio/quarkus/issues/32663
+    public void reproduceStackDisciplineIssue() {
+        String result;
+        String now = "now";
+
+        Log.infov("{0} {1}", "number", 42);
+        Log.info("string " + now);
+    }
 }

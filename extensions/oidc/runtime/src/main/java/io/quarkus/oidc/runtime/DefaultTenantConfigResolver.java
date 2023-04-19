@@ -185,7 +185,12 @@ public class DefaultTenantConfigResolver {
         if (tenantConfigResolver.isResolvable()) {
             Uni<OidcTenantConfig> oidcConfig = context.get(CURRENT_DYNAMIC_TENANT_CONFIG);
             if (oidcConfig == null) {
-                oidcConfig = tenantConfigResolver.get().resolve(context, blockingRequestContext).memoize().indefinitely();
+                oidcConfig = tenantConfigResolver.get().resolve(context, blockingRequestContext);
+                if (oidcConfig == null) {
+                    //shouldn't happen, but guard against it anyway
+                    oidcConfig = Uni.createFrom().nullItem();
+                }
+                oidcConfig = oidcConfig.memoize().indefinitely();
                 if (oidcConfig == null) {
                     //shouldn't happen, but guard against it anyway
                     oidcConfig = Uni.createFrom().nullItem();

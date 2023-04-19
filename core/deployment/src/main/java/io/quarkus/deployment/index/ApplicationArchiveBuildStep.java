@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,7 +14,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
@@ -144,8 +142,7 @@ public class ApplicationArchiveBuildStep {
             markers.add(marker.endsWith("/") ? marker.substring(0, marker.length() - 1) : marker);
         }
         markers.add(IndexingUtil.JANDEX_INDEX);
-        addMarkerFilePaths(markers, root, curateOutcomeBuildItem, indexedPaths, appArchives, buildCloseables,
-                indexCache, removedResources);
+        addMarkerFilePaths(markers, root, indexedPaths, appArchives, indexCache, removedResources);
 
         //get paths that are included via index-dependencies
         addIndexDependencyPaths(indexDependencyBuildItem, root, indexedPaths, appArchives, buildCloseables,
@@ -221,8 +218,7 @@ public class ApplicationArchiveBuildStep {
     }
 
     private static void addMarkerFilePaths(Set<String> applicationArchiveMarkers,
-            ArchiveRootBuildItem root, CurateOutcomeBuildItem curateOutcomeBuildItem, Set<Path> indexedPaths,
-            List<ApplicationArchive> appArchives, QuarkusBuildCloseablesBuildItem buildCloseables,
+            ArchiveRootBuildItem root, Set<Path> indexedPaths, List<ApplicationArchive> appArchives,
             IndexCache indexCache, Map<ArtifactKey, Set<String>> removed)
             throws IOException {
         final QuarkusClassLoader cl = ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader());
@@ -253,8 +249,7 @@ public class ApplicationArchiveBuildStep {
                         Index index = indexCache.cache.get(rootPath);
                         if (index == null) {
                             try {
-                                index = IndexingUtil.indexTree(tree,
-                                        dependencyKey == null ? Collections.emptySet() : removed.get(dependencyKey));
+                                index = IndexingUtil.indexTree(tree, removed.get(dependencyKey));
                             } catch (IOException ioe) {
                                 throw new UncheckedIOException(ioe);
                             }
@@ -268,15 +263,13 @@ public class ApplicationArchiveBuildStep {
                         if (visit == null || root.isExcludedFromIndexing(visit.getRoot())) {
                             return null;
                         }
-                        final List<IndexView> indexes = new ArrayList<>(tree.getRoots().size());
+                        final Index index;
                         try {
-                            indexes.add(indexPathTree(tree, removed.get(dependencyKey)));
+                            index = indexPathTree(tree, removed.get(dependencyKey));
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
-                        return new ApplicationArchiveImpl(
-                                indexes.size() == 1 ? indexes.get(0) : CompositeIndex.create(indexes),
-                                tree, dependencyKey);
+                        return new ApplicationArchiveImpl(index, tree, dependencyKey);
                     });
                     if (archive != null) {
                         appArchives.add(archive);

@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -118,7 +117,7 @@ import io.smallrye.common.expression.Expression;
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
 public class DevMojo extends AbstractMojo {
 
-    private static final String KOTLIN_MAVEN_PLUGIN_GA = "org.jetbrains.kotlin:kotlin-maven-plugin";
+    private static final String PROCESS_CLASSES = "process-classes";
 
     /**
      * running any one of these phases means the compile phase will have been run, if these have
@@ -126,7 +125,7 @@ public class DevMojo extends AbstractMojo {
      */
     private static final List<String> POST_COMPILE_PHASES = List.of(
             "compile",
-            "process-classes",
+            PROCESS_CLASSES,
             "generate-test-sources",
             "process-test-sources",
             "generate-test-resources",
@@ -160,6 +159,7 @@ public class DevMojo extends AbstractMojo {
             "install",
             "deploy");
 
+    private static final String IO_QUARKUS = "io.quarkus";
     private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
     private static final String QUARKUS_GENERATE_CODE_TESTS_GOAL = "generate-code-tests";
 
@@ -174,6 +174,7 @@ public class DevMojo extends AbstractMojo {
     private static final String IO_SMALLRYE = "io.smallrye";
     private static final String ORG_JBOSS_JANDEX = "org.jboss.jandex";
     private static final String JANDEX_MAVEN_PLUGIN = "jandex-maven-plugin";
+    private static final String JANDEX = "jandex";
 
     /**
      * The directory for compiled classes.
@@ -271,10 +272,10 @@ public class DevMojo extends AbstractMojo {
     private String argsString;
 
     @Parameter
-    private Map<String, String> environmentVariables = Collections.emptyMap();
+    private Map<String, String> environmentVariables = Map.of();
 
     @Parameter
-    private Map<String, String> systemProperties = Collections.emptyMap();
+    private Map<String, String> systemProperties = Map.of();
 
     @Parameter(defaultValue = "${session}")
     private MavenSession session;
@@ -542,8 +543,8 @@ public class DevMojo extends AbstractMojo {
         boolean prepareNeeded = true;
         boolean prepareTestsNeeded = true;
 
-        String jandexGoalPhase = getGoalPhaseOrNull(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
-        String legacyJandexGoalPhase = getGoalPhaseOrNull(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
+        String jandexGoalPhase = getGoalPhaseOrNull(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, JANDEX, PROCESS_CLASSES);
+        String legacyJandexGoalPhase = getGoalPhaseOrNull(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, JANDEX, PROCESS_CLASSES);
         boolean indexClassNeeded = legacyJandexGoalPhase != null || jandexGoalPhase != null;
 
         List<String> goals = session.getGoals();
@@ -598,7 +599,7 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void initToolchain() throws MojoExecutionException {
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN, "toolchain", Collections.emptyMap());
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN, "toolchain", Map.of());
     }
 
     private void triggerPrepare(boolean test) throws MojoExecutionException {
@@ -610,9 +611,9 @@ public class DevMojo extends AbstractMojo {
 
     private void initClassIndexes(boolean legacyJandex) throws MojoExecutionException {
         if (legacyJandex) {
-            executeIfConfigured(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", Collections.emptyMap());
+            executeIfConfigured(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, JANDEX, Map.of());
         } else {
-            executeIfConfigured(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, "jandex", Collections.emptyMap());
+            executeIfConfigured(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, JANDEX, Map.of());
         }
     }
 
@@ -628,12 +629,10 @@ public class DevMojo extends AbstractMojo {
         }
 
         // compile the Kotlin sources if needed
-        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "test-compile" : "compile",
-                Collections.emptyMap());
+        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "test-compile" : "compile", Map.of());
 
         // Compile the Java sources if needed
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, test ? "testCompile" : "compile",
-                Collections.emptyMap());
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, test ? "testCompile" : "compile", Map.of());
     }
 
     /**
@@ -644,8 +643,7 @@ public class DevMojo extends AbstractMojo {
         if (resources.isEmpty()) {
             return;
         }
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_RESOURCES_PLUGIN, test ? "testResources" : "resources",
-                Collections.emptyMap());
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_RESOURCES_PLUGIN, test ? "testResources" : "resources", Map.of());
     }
 
     private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal, Map<String, String> params)
@@ -787,7 +785,7 @@ public class DevMojo extends AbstractMojo {
         Set<Path> testSourcePaths;
         String testClassesPath = null;
         Set<Path> testResourcePaths;
-        List<Profile> activeProfiles = Collections.emptyList();
+        List<Profile> activeProfiles = List.of();
 
         MavenProject mavenProject = null;
         if (module.getClassifier().isEmpty()) {
@@ -1150,13 +1148,13 @@ public class DevMojo extends AbstractMojo {
 
         if (noDeps) {
             addProject(builder, appModel.getAppArtifact(), true);
-            appModel.getApplicationModule().getBuildFiles().forEach(p -> builder.watchedBuildFile(p));
+            appModel.getApplicationModule().getBuildFiles().forEach(builder::watchedBuildFile);
             builder.localArtifact(
                     ArtifactKey.of(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR));
         } else {
             for (ResolvedDependency project : DependenciesFilter.getReloadableModules(appModel)) {
                 addProject(builder, project, project == appModel.getAppArtifact());
-                project.getWorkspaceModule().getBuildFiles().forEach(p -> builder.watchedBuildFile(p));
+                project.getWorkspaceModule().getBuildFiles().forEach(builder::watchedBuildFile);
                 builder.localArtifact(project.getKey());
             }
         }
@@ -1234,7 +1232,7 @@ public class DevMojo extends AbstractMojo {
         ResolvedDependency coreDeployment = null;
         for (ResolvedDependency d : appModel.getDependencies()) {
             if (d.isDeploymentCp() && d.getArtifactId().equals("quarkus-core-deployment")
-                    && d.getGroupId().equals("io.quarkus")) {
+                    && d.getGroupId().equals(IO_QUARKUS)) {
                 coreDeployment = d;
                 break;
             }
@@ -1290,7 +1288,7 @@ public class DevMojo extends AbstractMojo {
                         .setCollectRequest(
                                 new CollectRequest()
                                         // it doesn't matter what the root artifact is, it's an alias
-                                        .setRootArtifact(new DefaultArtifact("io.quarkus", "quarkus-devmode-alias",
+                                        .setRootArtifact(new DefaultArtifact(IO_QUARKUS, "quarkus-devmode-alias",
                                                 ArtifactCoords.TYPE_JAR, "1.0"))
                                         .setManagedDependencies(managed)
                                         .setDependencies(List.of(
@@ -1305,9 +1303,9 @@ public class DevMojo extends AbstractMojo {
             //we only use the launcher for launching from the IDE, we need to exclude it
             final org.eclipse.aether.artifact.Artifact a = appDep.getArtifact();
             if (!(a.getArtifactId().equals("quarkus-ide-launcher")
-                    && a.getGroupId().equals("io.quarkus"))) {
+                    && a.getGroupId().equals(IO_QUARKUS))) {
                 if (a.getArtifactId().equals("quarkus-class-change-agent")
-                        && a.getGroupId().equals("io.quarkus")) {
+                        && a.getGroupId().equals(IO_QUARKUS)) {
                     builder.jvmArgs("-javaagent:" + a.getFile().getAbsolutePath());
                 } else {
                     builder.classpathEntry(
@@ -1321,7 +1319,7 @@ public class DevMojo extends AbstractMojo {
     private void setKotlinSpecificFlags(MavenDevModeLauncher.Builder builder) {
         Plugin kotlinMavenPlugin = null;
         for (Plugin plugin : project.getBuildPlugins()) {
-            if (plugin.getKey().equals(KOTLIN_MAVEN_PLUGIN_GA)) {
+            if (plugin.getArtifactId().equals(KOTLIN_MAVEN_PLUGIN) && plugin.getGroupId().equals(ORG_JETBRAINS_KOTLIN)) {
                 kotlinMavenPlugin = plugin;
                 break;
             }
@@ -1370,12 +1368,11 @@ public class DevMojo extends AbstractMojo {
 
     private Optional<Xpp3Dom> findCompilerPluginConfiguration() {
         for (final Plugin plugin : project.getBuildPlugins()) {
-            if (!plugin.getKey().equals("org.apache.maven.plugins:maven-compiler-plugin")) {
-                continue;
-            }
-            final Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) plugin.getConfiguration();
-            if (compilerPluginConfiguration != null) {
-                return Optional.of(compilerPluginConfiguration);
+            if (plugin.getArtifactId().equals(MAVEN_COMPILER_PLUGIN) && plugin.getGroupId().equals(ORG_APACHE_MAVEN_PLUGINS)) {
+                final Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) plugin.getConfiguration();
+                if (compilerPluginConfiguration != null) {
+                    return Optional.of(compilerPluginConfiguration);
+                }
             }
         }
         return Optional.empty();

@@ -87,9 +87,7 @@ public class InterceptedStaticMethodsProcessor {
             BuildProducer<InterceptedStaticMethodBuildItem> interceptedStaticMethods,
             InterceptorResolverBuildItem interceptorResolver, TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-
         // In this step we collect all intercepted static methods, i.e. static methods annotated with interceptor bindings
-        Set<DotName> interceptorBindings = interceptorResolver.getInterceptorBindings();
 
         for (ClassInfo clazz : beanArchiveIndex.getIndex().getKnownClasses()) {
             for (MethodInfo method : clazz.methods()) {
@@ -107,12 +105,15 @@ public class InterceptedStaticMethodsProcessor {
                 // Only method-level bindings are considered due to backwards compatibility
                 Set<AnnotationInstance> methodLevelBindings = null;
                 for (AnnotationInstance annotationInstance : annotations) {
-                    if (annotationInstance.target().kind() == Kind.METHOD
-                            && interceptorBindings.contains(annotationInstance.name())) {
-                        if (methodLevelBindings == null) {
-                            methodLevelBindings = new HashSet<>();
+                    if (annotationInstance.target().kind() == Kind.METHOD) {
+                        Collection<AnnotationInstance> bindings = interceptorResolver
+                                .extractInterceptorBindings(annotationInstance);
+                        if (!bindings.isEmpty()) {
+                            if (methodLevelBindings == null) {
+                                methodLevelBindings = new HashSet<>();
+                            }
+                            methodLevelBindings.addAll(bindings);
                         }
-                        methodLevelBindings.add(annotationInstance);
                     }
                 }
                 if (methodLevelBindings == null || methodLevelBindings.isEmpty()) {

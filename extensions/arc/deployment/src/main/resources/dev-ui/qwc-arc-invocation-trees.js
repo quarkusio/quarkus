@@ -64,21 +64,19 @@ export class QwcArcInvocationTrees extends LitElement {
     }
     
     _refresh(){
-        console.log("refresh");
         this.jsonRpc.getLastInvocations().then(invocations => {
             this._invocations = invocations.result;
         });
     }
     
     _clear(){
-        console.log("clear");
         this.jsonRpc.clearLastInvocations().then(invocations => {
             this._invocations = invocations.result;
         });
     }
 
     _toggleFilter(){
-        console.log("filter");
+        // TODO:
     }
 }
 customElements.define('qwc-arc-invocation-trees', QwcArcInvocationTrees);

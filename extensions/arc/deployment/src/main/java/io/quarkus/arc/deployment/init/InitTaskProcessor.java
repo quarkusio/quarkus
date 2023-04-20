@@ -64,7 +64,7 @@ public class InitTaskProcessor {
 
                 initTasks.produce(InitTaskBuildItem.create()
                         .withName(taskName)
-                        .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true"))
+                        .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_INIT_TASK_FILTER", taskName))
                         .withAppEnvVars(Map.of("QUARKUS_INIT_DISABLED", "true"))
                         .withSharedEnvironment(true)
                         .withSharedFilesystem(true));

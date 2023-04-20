@@ -19,6 +19,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Initialization;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.init.InitRuntimeConfig;
+import io.quarkus.runtime.util.PatternUtil;
 
 /**
  * A {@link Recorder} that deals with initialization tasks.
@@ -37,6 +38,10 @@ public class InitTaskRecorder {
 
     public void executeInitializationTask(String taskName) {
         if (config.getValue().initDisabled) {
+            return;
+        }
+
+        if (!PatternUtil.matches(taskName, config.getValue().initTaskFilter)) {
             return;
         }
 

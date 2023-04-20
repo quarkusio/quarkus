@@ -1,6 +1,7 @@
 package io.quarkus.deployment.builditem;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +30,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
 
     public static InitTaskBuildItem create() {
         return new InitTaskBuildItem("init-task", Optional.empty(), Collections.emptyList(), Collections.emptyList(),
-                Map.of("QUARKUS_INIT_AND_EXIT", "true"),
+                Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_INIT_TASK_FILTER", "init-task"),
                 Map.of("QUARKUS_INIT_DISABLED", "true"),
                 true, true);
     }
@@ -52,6 +53,8 @@ public final class InitTaskBuildItem extends MultiBuildItem {
     }
 
     public InitTaskBuildItem withName(String name) {
+        Map<String, String> taskEnvVars = new HashMap<>(this.taskEnvVars);
+        taskEnvVars.put("QUARKUS_INIT_TASK_FILTER", name);
         return new InitTaskBuildItem(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
                 sharedFilesystem);
     }

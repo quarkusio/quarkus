@@ -70,6 +70,16 @@ public class KubernetesWithFlywayInitTest {
                             assertThat(container.getImage()).isEqualTo("groundnuty/k8s-wait-for:no-root-v1.7");
                         });
 
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
+                            assertThat(container.getEnv())
+                                    .filteredOn(env -> "QUARKUS_INIT_DISABLED".equals(env.getName())).singleElement()
+                                    .satisfies(env -> {
+                                        assertThat(env.getValue()).isEqualTo("true");
+                                    });
+                        });
+                        assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
+                            assertThat(container.getName()).isEqualTo("wait-for-flyway-init-task");
+                        });
                     });
                 });
             });
@@ -98,6 +108,12 @@ public class KubernetesWithFlywayInitTest {
                                     .satisfies(env -> {
                                         assertThat(env.getValue()).isEqualTo("true");
                                     });
+                            assertThat(container.getEnv())
+                                    .filteredOn(env -> "QUARKUS_INIT_TASK_FILTER".equals(env.getName())).singleElement()
+                                    .satisfies(env -> {
+                                        assertThat(env.getValue()).isEqualTo("flyway-init-task");
+                                    });
+
                         });
                     });
                 });

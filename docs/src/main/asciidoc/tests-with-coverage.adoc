@@ -179,6 +179,11 @@ There are some config options that affect this:
 
 include::{generated-dir}/config/quarkus-jacoco-jacoco-config.adoc[opts=optional, leveloffset=+1]
 
+[TIP]
+====
+When working with a multi-module project, then for code coverage to work properly, the upstream modules need to be properly xref:cdi-reference.adoc#bean_discovery[indexed].
+====
+
 == Coverage for tests not using @QuarkusTest
 
 The Quarkus automatic JaCoCo config will only work for tests that are annotated with `@QuarkusTest`. If you want to check

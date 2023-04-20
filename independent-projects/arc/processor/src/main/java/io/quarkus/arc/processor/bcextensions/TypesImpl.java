@@ -135,15 +135,15 @@ class TypesImpl implements Types {
 
     @Override
     public WildcardType wildcardWithUpperBound(Type upperBound) {
-        org.jboss.jandex.WildcardType jandexType = org.jboss.jandex.WildcardType.create(((TypeImpl<?>) upperBound).jandexType,
-                true);
+        org.jboss.jandex.WildcardType jandexType = org.jboss.jandex.WildcardType
+                .createUpperBound(((TypeImpl<?>) upperBound).jandexType);
         return new WildcardTypeImpl(jandexIndex, annotationOverlays, jandexType);
     }
 
     @Override
     public WildcardType wildcardWithLowerBound(Type lowerBound) {
-        org.jboss.jandex.WildcardType jandexType = org.jboss.jandex.WildcardType.create(((TypeImpl<?>) lowerBound).jandexType,
-                false);
+        org.jboss.jandex.WildcardType jandexType = org.jboss.jandex.WildcardType
+                .createLowerBound(((TypeImpl<?>) lowerBound).jandexType);
         return new WildcardTypeImpl(jandexIndex, annotationOverlays, jandexType);
     }
 

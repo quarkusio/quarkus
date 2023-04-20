@@ -81,7 +81,7 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
 
     private boolean configureUrlPropertyUsingKey(Map<String, String> properties, String key) {
         String value = serviceBinding.getProperties().get(key);
-        if (value == null) {
+        if (value == null || prefix == null) {
             return false;
         } else if (value.startsWith(prefix)) {
             properties.put(urlPropertyName, value);
@@ -109,7 +109,7 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
         }
 
         public Reactive(String urlFormat) {
-            super("reactive", "quarkus.datasource.reactive.url", "", urlFormat);
+            super("reactive", "quarkus.datasource.reactive.url", null, urlFormat);
         }
     }
 }

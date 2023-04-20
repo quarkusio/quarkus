@@ -103,21 +103,19 @@ export class QwcArcFiredEvents extends LitElement {
     }
     
     _refresh(){
-        console.log("refresh");
         this.jsonRpc.getLastEvents().then(events => {
             this._firedEvents = events.result;
         });
     }
     
     _clear(){
-        console.log("clear");
         this.jsonRpc.clearLastEvents().then(events => {
             this._firedEvents = events.result;
         });
     }
     
     _toggleContext(){
-        console.log("context");
+        // TODO:
     }
 
     _addToEvents(event){

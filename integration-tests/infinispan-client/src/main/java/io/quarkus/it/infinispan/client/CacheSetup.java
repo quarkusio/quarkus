@@ -6,9 +6,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -31,6 +28,7 @@ import org.infinispan.query.api.continuous.ContinuousQueryListener;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
 
+import io.quarkus.infinispan.client.InfinispanClientName;
 import io.quarkus.infinispan.client.Remote;
 import io.quarkus.runtime.StartupEvent;
 
@@ -48,17 +46,25 @@ public class CacheSetup {
     RemoteCacheManager cacheManager;
 
     @Inject
+    @InfinispanClientName("another")
+    RemoteCacheManager anotherCacheManager;
+
+    @Inject
     @Remote(AUTHORS_CACHE)
     RemoteCache<String, Author> authors;
 
-    private final Map<String, Book> matches = new ConcurrentHashMap<>();
+    @Inject
+    @InfinispanClientName("another")
+    @Remote(AUTHORS_CACHE)
+    RemoteCache<String, Author> authorsSite2;
 
-    private CountDownLatch waitUntilStarted = new CountDownLatch(1);
+    private final Map<String, Book> matches = new ConcurrentHashMap<>();
 
     void onStart(@Observes StartupEvent ev) {
         RemoteCache<String, Book> defaultCache = cacheManager.getCache(DEFAULT_CACHE);
         RemoteCache<String, Magazine> magazineCache = cacheManager.getCache(MAGAZINE_CACHE);
         RemoteCache<String, Book> booksCache = cacheManager.getCache(BOOKS_CACHE);
+        RemoteCache<String, Book> anotherBooksCache = anotherCacheManager.getCache(BOOKS_CACHE);
 
         defaultCache.addClientListener(new EventPrintListener());
 
@@ -91,40 +97,43 @@ public class CacheSetup {
         log.info("Added continuous query listener");
 
         Author gMartin = new Author("George", "Martin");
+        Author sonM = new Author("Son", "Martin");
+        Author rowling = new Author("J. K. Rowling", "Rowling");
 
-        defaultCache.put("book1", new Book("Game of Thrones", "Lots of people perish", 2010,
-                Collections.singleton(gMartin), Type.FANTASY, new BigDecimal("23.99")));
-        defaultCache.put("book2", new Book("Game of Thrones Path 2", "They win?", 2023,
-                Collections.singleton(new Author("Son", "Martin")), Type.FANTASY, new BigDecimal("54.99")));
+        Book hp1Book = new Book("Philosopher's Stone", "Harry Potter and the Philosopher's Stone", 1997,
+                Collections.singleton(rowling), Type.FANTASY, new BigDecimal("50.99"));
+        Book hp2Book = new Book("Chamber of Secrets", "Harry Potter and the Chamber of Secrets", 1998,
+                Collections.singleton(rowling), Type.FANTASY, new BigDecimal("50.99"));
+        Book hp3Book = new Book("Prisoner of Azkaban", "Harry Potter and the Prisoner of Azkaban", 1999,
+                Collections.singleton(rowling), Type.FANTASY, new BigDecimal("50.99"));
+        Book got1Book = new Book("Game of Thrones", "Lots of people perish", 2010, Collections.singleton(gMartin),
+                Type.FANTASY, new BigDecimal("23.99"));
+        Book got2Book = new Book("Game of Thrones Path 2", "They win?", 2023,
+                Collections.singleton(sonM), Type.FANTASY, new BigDecimal("54.99"));
 
-        magazineCache.put("first-mad", new Magazine("MAD", YearMonth.of(1952, 10),
-                Collections.singletonList("Blob named Melvin")));
-        magazineCache.put("first-time", new Magazine("TIME", YearMonth.of(1923, 3),
+        defaultCache.put("book1", got1Book);
+        defaultCache.put("book2", got2Book);
+
+        Magazine mag1 = new Magazine("MAD", YearMonth.of(1952, 10), Collections.singletonList("Blob named Melvin"));
+        Magazine mag2 = new Magazine("TIME", YearMonth.of(1923, 3),
                 Arrays.asList("First helicopter", "Change in divorce law", "Adam's Rib movie released",
-                        "German Reparation Payments")));
-        magazineCache.put("popular-time", new Magazine("TIME", YearMonth.of(1997, 4),
-                Arrays.asList("Yep, I'm gay", "Backlash against HMOS", "False Hope on Breast Cancer?")));
+                        "German Reparation Payments"));
+        Magazine map3 = new Magazine("TIME", YearMonth.of(1997, 4),
+                Arrays.asList("Yep, I'm gay", "Backlash against HMOS", "False Hope on Breast Cancer?"));
+
+        magazineCache.put("first-mad", mag1);
+        magazineCache.put("first-time", mag2);
+        magazineCache.put("popular-time", map3);
 
         authors.put("aut-1", gMartin);
+        authors.put("aut-2", sonM);
+        authorsSite2.put("aut-3", rowling);
 
-        booksCache.put("hp-1", new Book("Philosopher's Stone", "Harry Potter and the Philosopher's Stone", 1997,
-                Collections.singleton(new Author("J. K. Rowling", "Rowling")), Type.FANTASY, new BigDecimal("50.99")));
-        booksCache.put("hp-2", new Book("Chamber of Secrets", "Harry Potter and the Chamber of Secrets", 1998,
-                Collections.singleton(new Author("J. K. Rowling", "Rowling")), Type.FANTASY, new BigDecimal("50.99")));
-        booksCache.put("hp-3", new Book("Prisoner of Azkaban", "Harry Potter and the Prisoner of Azkaban", 1999,
-                Collections.singleton(new Author("J. K. Rowling", "Rowling")), Type.FANTASY, new BigDecimal("50.99")));
+        booksCache.put("hp-1", hp1Book);
+        booksCache.put("hp-2", hp2Book);
+        booksCache.put("hp-3", hp3Book);
 
-        waitUntilStarted.countDown();
-    }
-
-    public void ensureStarted() {
-        try {
-            if (!waitUntilStarted.await(10, TimeUnit.SECONDS)) {
-                throw new RuntimeException(new TimeoutException());
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        anotherBooksCache.put("hp-1", hp1Book);
     }
 
     public Map<String, Book> getMatches() {

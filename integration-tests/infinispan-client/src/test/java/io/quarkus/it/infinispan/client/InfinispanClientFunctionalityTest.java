@@ -79,7 +79,7 @@ public class InfinispanClientFunctionalityTest {
 
     @Test
     public void testAuthor() {
-        RestAssured.when().get("/test/create-cache-default-config/authors").then().body(is("[George]"));
+        RestAssured.when().get("/test/create-cache-default-config/authors").then().body(is("[George,J. K. Rowling,Son]"));
     }
 
     @Test

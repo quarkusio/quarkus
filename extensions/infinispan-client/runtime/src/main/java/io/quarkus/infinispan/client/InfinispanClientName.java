@@ -14,21 +14,34 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * Qualifier used to specify which remote cache will be injected.
+ * Marker annotation to select the Infinispan client.
  *
- * @author William Burns
+ * For example, if the Infinispan connection is configured like so in {@code application.properties}:
+ *
+ * <pre>
+ * quarkus.infinispan-client.site-lon.hosts=localhost:11222
+ * </pre>
+ *
+ * Then to inject the proper {@code RemoteCacheManager}, you would need to use {@code InfinispanClientName} like indicated
+ * below:
+ *
+ * <pre>
+ *     &#64Inject
+ *     &#64InfinispanClientName("site-lon")
+ *     RemoteCacheManager remoteCacheManager;
+ * </pre>
  */
 @Target({ METHOD, FIELD, PARAMETER, TYPE })
 @Retention(RUNTIME)
 @Documented
 @Qualifier
-public @interface Remote {
+public @interface InfinispanClientName {
     /**
-     * The remote cache name. If no value is provided the default cache is assumed.
+     * The remote cache manager name. If no value is provided the default cache manager is assumed.
      */
-    String value() default "";
+    String value();
 
-    class Literal extends AnnotationLiteral<Remote> implements Remote {
+    class Literal extends AnnotationLiteral<InfinispanClientName> implements InfinispanClientName {
 
         public static Literal of(String value) {
             return new Literal(value);

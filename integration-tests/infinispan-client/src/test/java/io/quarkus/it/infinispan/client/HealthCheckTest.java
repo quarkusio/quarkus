@@ -20,7 +20,9 @@ public class HealthCheckTest {
                 .header("Content-Type", containsString("charset=UTF-8"))
                 .body("status", is("UP"),
                         "checks.status", containsInAnyOrder("UP"),
-                        "checks.data", containsInAnyOrder(hasKey("servers")),
-                        "checks.data", containsInAnyOrder(hasKey("caches-size")));
+                        "checks.data", containsInAnyOrder(hasKey("<default>.servers")),
+                        "checks.data", containsInAnyOrder(hasKey("<default>.caches-size")),
+                        "checks.data", containsInAnyOrder(hasKey("another.caches-size")),
+                        "checks.data", containsInAnyOrder(hasKey("another.caches-size")));
     }
 }

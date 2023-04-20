@@ -75,7 +75,7 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
     }
 
     private Uni<Void> invalidateAll(CacheInvalidateAll binding) {
-        RemoteCache cache = cacheManager.getCache(binding.cacheName());
+        RemoteCache cache = getRemoteCacheManager().getCache(binding.cacheName());
         LOGGER.debugf("Invalidating all entries from cache [%s]", binding.cacheName());
         return Uni.createFrom().completionStage(new Supplier<>() {
             @Override

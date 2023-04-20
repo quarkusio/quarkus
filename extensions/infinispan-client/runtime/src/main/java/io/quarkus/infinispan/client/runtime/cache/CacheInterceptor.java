@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import jakarta.inject.Inject;
+import jakarta.enterprise.inject.Default;
 import jakarta.interceptor.Interceptor.Priority;
 import jakarta.interceptor.InvocationContext;
 
@@ -16,6 +16,7 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.commons.CacheException;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.smallrye.mutiny.Uni;
 
@@ -26,8 +27,9 @@ public abstract class CacheInterceptor {
 
     private static final Logger LOGGER = Logger.getLogger(CacheInterceptor.class);
 
-    @Inject
-    RemoteCacheManager cacheManager;
+    // These annotations work with the default cache manager only, named connections are not supported.
+    // The configuration of the named connection will be supported in the infinispan-cache extension
+    RemoteCacheManager remoteCacheManager = Arc.container().instance(RemoteCacheManager.class, Default.Literal.INSTANCE).get();
 
     /*
      * The interception is almost always managed by Arc in a Quarkus application. In such a case, we want to retrieve the
@@ -45,6 +47,10 @@ public abstract class CacheInterceptor {
                         return getNonArcCacheInterceptionContext(invocationContext, interceptorBindingClass);
                     }
                 });
+    }
+
+    protected RemoteCacheManager getRemoteCacheManager() {
+        return remoteCacheManager;
     }
 
     private <T extends Annotation> Optional<CacheInterceptionContext<T>> getArcCacheInterceptionContext(

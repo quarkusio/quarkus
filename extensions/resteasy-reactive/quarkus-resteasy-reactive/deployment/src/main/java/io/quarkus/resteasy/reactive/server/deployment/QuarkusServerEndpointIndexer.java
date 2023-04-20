@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
+import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_READER;
+
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -14,6 +17,8 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
+import org.jboss.resteasy.reactive.common.model.MethodParameter;
+import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
@@ -24,9 +29,11 @@ import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
 import org.jboss.resteasy.reactive.server.processor.ServerIndexedParameter;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
 
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.resteasy.reactive.common.deployment.JsonDefaultProducersHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 
@@ -147,22 +154,86 @@ public class QuarkusServerEndpointIndexer
         warnAboutMissingJsonProviderIfNeeded(method, info);
     }
 
+    @Override
+    public boolean additionalRegisterClassForReflectionCheck(ResourceMethodCallbackEntry entry) {
+        return checkBodyParameterMessageBodyReader(entry);
+    }
+
+    /**
+     * Check whether the Resource Method has a body parameter for which there exists a matching
+     * {@link jakarta.ws.rs.ext.MessageBodyReader}
+     * that is not a {@link org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader}.
+     * In this case the Resource Class needs to be registered for reflection because the
+     * {@link jakarta.ws.rs.ext.MessageBodyReader#isReadable(Class, java.lang.reflect.Type, Annotation[], MediaType)}
+     * method expects to be passed the method annotations.
+     */
+    private boolean checkBodyParameterMessageBodyReader(ResourceMethodCallbackEntry entry) {
+        MethodParameter[] parameters = entry.getResourceMethod().getParameters();
+        if (parameters.length == 0) {
+            return false;
+        }
+        MethodParameter bodyParameter = null;
+        for (MethodParameter parameter : parameters) {
+            if (parameter.parameterType == ParameterType.BODY) {
+                bodyParameter = parameter;
+                break;
+            }
+        }
+        if (bodyParameter == null) {
+            return false;
+        }
+        String parameterClassName = bodyParameter.getDeclaredType();
+        List<ScannedSerializer> readers = getSerializerScanningResult().getReaders();
+
+        for (ScannedSerializer reader : readers) {
+            if (isSubclassOf(parameterClassName, reader.getHandledClassName()) && !isServerMessageBodyReader(
+                    reader.getClassInfo())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isSubclassOf(String className, String parentName) {
+        if (className.equals(parentName)) {
+            return true;
+        }
+        ClassInfo classByName = index.getClassByName(className);
+        if (classByName == null) {
+            return false;
+        }
+        try {
+            return JandexUtil.isSubclassOf(index, classByName,
+                    DotName.createSimple(parentName));
+        } catch (BuildException e) {
+            return false;
+        }
+    }
+
+    private boolean isServerMessageBodyReader(ClassInfo readerClassInfo) {
+        return index.getAllKnownImplementors(SERVER_MESSAGE_BODY_READER).contains(readerClassInfo);
+    }
+
     private void warnAboutMissingJsonProviderIfNeeded(ServerResourceMethod method, MethodInfo info) {
         if (!capabilities.isCapabilityWithPrefixMissing("io.quarkus.resteasy.reactive.json")) {
             return;
         }
         if (hasJson(method) || (hasNoTypesDefined(method) && isDefaultJson())) {
-            if (serializerScanningResult == null) {
-                serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index, applicationScanningResult);
-            }
-            boolean appProvidedJsonReaderExists = appProvidedJsonProviderExists(serializerScanningResult.getReaders());
-            boolean appProvidedJsonWriterExists = appProvidedJsonProviderExists(serializerScanningResult.getWriters());
+            boolean appProvidedJsonReaderExists = appProvidedJsonProviderExists(getSerializerScanningResult().getReaders());
+            boolean appProvidedJsonWriterExists = appProvidedJsonProviderExists(getSerializerScanningResult().getWriters());
             if (!appProvidedJsonReaderExists || !appProvidedJsonWriterExists) {
                 LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
                         + info.name()
                         + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' or 'quarkus-resteasy-reactive-jsonb'.");
             }
         }
+    }
+
+    private SerializerScanningResult getSerializerScanningResult() {
+        if (serializerScanningResult == null) {
+            serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index, applicationScanningResult);
+        }
+        return serializerScanningResult;
     }
 
     private boolean appProvidedJsonProviderExists(List<ScannedSerializer> providers) {

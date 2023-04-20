@@ -498,7 +498,7 @@ public class ResteasyReactiveProcessor {
                                     : Collections.emptyMap())
                     .setResourceMethodCallback(new Consumer<>() {
                         @Override
-                        public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
+                        public void accept(EndpointIndexer.ResourceMethodCallbackEntry entry) {
                             MethodInfo method = entry.getMethodInfo();
 
                             resourceMethodEntries.add(new ResteasyReactiveResourceMethodEntriesBuildItem.Entry(
@@ -545,18 +545,27 @@ public class ResteasyReactiveProcessor {
                                             .build());
                                 }
                                 if (parameterType.name().equals(FILE)) {
-                                    reflectiveClassBuildItemBuildProducer
-                                            .produce(ReflectiveClassBuildItem
-                                                    .builder(entry.getActualEndpointInfo().name().toString())
-                                                    .constructors(false).methods().build());
+                                    minimallyRegisterResourceClassForReflection(entry,
+                                            reflectiveClassBuildItemBuildProducer);
                                 }
                             }
 
                             if (filtersAccessResourceMethod) {
-                                reflectiveClassBuildItemBuildProducer.produce(
-                                        ReflectiveClassBuildItem.builder(entry.getActualEndpointInfo().name().toString())
-                                                .constructors(false).methods().build());
+                                minimallyRegisterResourceClassForReflection(entry, reflectiveClassBuildItemBuildProducer);
                             }
+
+                            if (entry.additionalRegisterClassForReflectionCheck()) {
+                                minimallyRegisterResourceClassForReflection(entry, reflectiveClassBuildItemBuildProducer);
+                            }
+                        }
+
+                        private void minimallyRegisterResourceClassForReflection(
+                                EndpointIndexer.ResourceMethodCallbackEntry entry,
+                                BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+                            reflectiveClassBuildItemBuildProducer
+                                    .produce(ReflectiveClassBuildItem
+                                            .builder(entry.getActualEndpointInfo().name().toString())
+                                            .constructors(false).methods().build());
                         }
 
                         private boolean hasAnnotation(MethodInfo method, short paramPosition, DotName annotation) {

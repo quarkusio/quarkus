@@ -52,7 +52,7 @@ public class AnnotationHandler {
                 } else if (ctx.isClass()) {
                     classInfo = target.asClass();
                     // skip @Interceptor
-                    if (target.asClass().classAnnotation(DotNames.INTERCEPTOR) != null) {
+                    if (target.asClass().declaredAnnotation(DotNames.INTERCEPTOR) != null) {
                         return;
                     }
                 }

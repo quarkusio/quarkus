@@ -112,7 +112,7 @@ public class SpringWebResteasyReactiveProcessor {
                 .getAnnotations(REST_CONTROLLER_ANNOTATION)) {
             ClassInfo targetClass = restController.target().asClass();
             additionalResourceClassProducer.produce(new AdditionalResourceClassBuildItem(targetClass,
-                    getSinglePathOfInstance(targetClass.classAnnotation(REQUEST_MAPPING), "")));
+                    getSinglePathOfInstance(targetClass.declaredAnnotation(REQUEST_MAPPING), "")));
         }
     }
 
@@ -133,7 +133,7 @@ public class SpringWebResteasyReactiveProcessor {
                     continue;
                 }
 
-                if (targetClass.classAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
+                if (targetClass.declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
                     classesWithoutRestController.add(targetClass.name());
                 }
             }

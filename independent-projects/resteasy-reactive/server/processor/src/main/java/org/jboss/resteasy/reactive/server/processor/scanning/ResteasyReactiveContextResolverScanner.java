@@ -70,7 +70,7 @@ public class ResteasyReactiveContextResolverScanner {
     }
 
     private static List<String> getProducesMediaTypes(ClassInfo classInfo) {
-        AnnotationInstance produces = classInfo.classAnnotation(ResteasyReactiveDotNames.PRODUCES);
+        AnnotationInstance produces = classInfo.declaredAnnotation(ResteasyReactiveDotNames.PRODUCES);
         if (produces == null) {
             return Collections.emptyList();
         }

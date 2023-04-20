@@ -81,7 +81,7 @@ public class FilterGeneration {
                 if (annotationClassInfo == null) {
                     continue;
                 }
-                if ((annotationClassInfo.classAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
+                if ((annotationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
                     nameBindingNames.add(annotationDotName.toString());
                 }
             }
@@ -116,7 +116,7 @@ public class FilterGeneration {
                 if (annotationClassInfo == null) {
                     continue;
                 }
-                if ((annotationClassInfo.classAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
+                if ((annotationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
                     nameBindingNames.add(annotationDotName.toString());
                 }
             }

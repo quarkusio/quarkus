@@ -43,7 +43,7 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
      */
     public boolean isCustomScopeDeclaredOn(ClassInfo clazz) {
         for (DotName scope : customScopeNames) {
-            if (clazz.classAnnotation(scope) != null) {
+            if (clazz.declaredAnnotation(scope) != null) {
                 return true;
             }
         }

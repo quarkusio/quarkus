@@ -277,7 +277,7 @@ public class UndertowBuildStep {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(initializer));
             ClassInfo sci = combinedIndexBuildItem.getIndex().getClassByName(DotName.createSimple(initializer));
             if (sci != null) {
-                AnnotationInstance handles = sci.classAnnotation(HANDLES_TYPES);
+                AnnotationInstance handles = sci.declaredAnnotation(HANDLES_TYPES);
                 Set<String> handledTypes = new HashSet<>();
                 if (handles != null) {
                     Type[] types = handles.value().asClassArray();

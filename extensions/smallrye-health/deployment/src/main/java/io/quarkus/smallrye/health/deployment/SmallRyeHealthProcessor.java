@@ -317,7 +317,7 @@ class SmallRyeHealthProcessor {
 
             AnnotationTarget target = instance.target();
             if (target.kind() == Kind.CLASS) {
-                if (target.asClass().classAnnotation(JAX_RS_PATH) != null) {
+                if (target.asClass().declaredAnnotation(JAX_RS_PATH) != null) {
                     containsPath = true;
                 }
             } else if (target.kind() == Kind.METHOD) {

@@ -134,7 +134,7 @@ public class GrpcServerProcessor {
             ClassInfo userDefinedBean = null;
             for (ClassInfo candidate : serviceCandidates) {
                 // The bean must be annotated with @GrpcService
-                if (candidate.classAnnotation(GrpcDotNames.GRPC_SERVICE) != null) {
+                if (candidate.declaredAnnotation(GrpcDotNames.GRPC_SERVICE) != null) {
                     userDefinedBean = candidate;
                     break;
                 }
@@ -312,7 +312,7 @@ public class GrpcServerProcessor {
         BlockingMode methodMode = BlockingMode.UNDEFINED;
         for (int i = 0; i < classes.size(); i++) {
             ClassInfo ci = classes.get(i);
-            Predicate<DotName> annotationOnClass = annotationName -> ci.classAnnotation(annotationName) != null;
+            Predicate<DotName> annotationOnClass = annotationName -> ci.declaredAnnotation(annotationName) != null;
             MethodInfo method = ci.method(methodName, methodArgs);
 
             classModeInherited = inheritedBlockingMode(annotationOnClass, classModeInherited);
@@ -334,7 +334,7 @@ public class GrpcServerProcessor {
                 if (methodMode == BlockingMode.UNDEFINED) {
                     for (i++; i < classes.size(); i++) {
                         ClassInfo ci2 = classes.get(i);
-                        annotationOnClass = annotationName -> ci2.classAnnotation(annotationName) != null;
+                        annotationOnClass = annotationName -> ci2.declaredAnnotation(annotationName) != null;
                         classModeInherited = inheritedBlockingMode(annotationOnClass, classModeInherited);
                     }
                 }

@@ -1329,8 +1329,8 @@ public final class HibernateOrmProcessor {
             Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
                     modelClassInfo);
 
-            if (modelClassInfo != null && (modelClassInfo.classAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT) != null
-                    || modelClassInfo.classAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
+            if (modelClassInfo != null && (modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT) != null
+                    || modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
                 modelClassesWithPersistenceUnitAnnotations.add(modelClassInfo.name().toString());
             }
 
@@ -1390,8 +1390,8 @@ public final class HibernateOrmProcessor {
         Set<String> relatedModelClassNames = new HashSet<>();
 
         // for now we only deal with entities and mapped super classes
-        if (modelClassInfo.classAnnotation(ClassNames.JPA_ENTITY) == null &&
-                modelClassInfo.classAnnotation(ClassNames.MAPPED_SUPERCLASS) == null) {
+        if (modelClassInfo.declaredAnnotation(ClassNames.JPA_ENTITY) == null &&
+                modelClassInfo.declaredAnnotation(ClassNames.MAPPED_SUPERCLASS) == null) {
             return Collections.emptySet();
         }
 

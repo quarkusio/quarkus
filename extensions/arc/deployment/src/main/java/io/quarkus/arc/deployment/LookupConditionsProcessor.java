@@ -103,8 +103,8 @@ public class LookupConditionsProcessor {
         AnnotationInstance container;
         switch (target.kind()) {
             case CLASS:
-                annotation = target.asClass().classAnnotation(annotationName);
-                container = target.asClass().classAnnotation(containingAnnotationName);
+                annotation = target.asClass().declaredAnnotation(annotationName);
+                container = target.asClass().declaredAnnotation(containingAnnotationName);
                 break;
             case FIELD:
                 annotation = target.asField().annotation(annotationName);

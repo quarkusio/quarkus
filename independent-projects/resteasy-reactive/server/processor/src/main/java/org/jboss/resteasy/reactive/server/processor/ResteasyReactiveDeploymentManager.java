@@ -451,7 +451,7 @@ public class ResteasyReactiveDeploymentManager {
             String path = "/";
             if (sa.applicationScanningResult.getSelectedAppClass() != null) {
                 var pathAn = sa.applicationScanningResult.getSelectedAppClass()
-                        .classAnnotation(ResteasyReactiveDotNames.APPLICATION_PATH);
+                        .declaredAnnotation(ResteasyReactiveDotNames.APPLICATION_PATH);
                 if (pathAn != null) {
                     path = pathAn.value().asString();
                     if (!path.startsWith("/")) {

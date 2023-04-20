@@ -139,7 +139,7 @@ public class WiringHelper {
                 .classAnnotationsWithRepeatable(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTES, index.getIndex())
                 .stream().flatMap(ai -> Arrays.stream(ai.value().asNestedArray())).collect(Collectors.toList());
         if (attributes.isEmpty()) {
-            AnnotationInstance attribute = bi.getImplClazz().classAnnotation(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTE);
+            AnnotationInstance attribute = bi.getImplClazz().declaredAnnotation(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTE);
             if (attribute != null) {
                 attributes = Collections.singletonList(attribute);
             }

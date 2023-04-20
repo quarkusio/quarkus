@@ -234,7 +234,7 @@ class SpringSecurityProcessor {
                 }
                 MethodInfo methodInfo = instance.target().asMethod();
                 checksStandardSecurity(instance, methodInfo);
-                result.put(methodInfo, metaAnnotation.classAnnotation(DotNames.SPRING_PRE_AUTHORIZE));
+                result.put(methodInfo, metaAnnotation.declaredAnnotation(DotNames.SPRING_PRE_AUTHORIZE));
                 classesInNeedOfAnnotationTransformation.add(methodInfo.declaringClass().name());
             }
         }

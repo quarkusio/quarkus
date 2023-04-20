@@ -45,7 +45,7 @@ public final class ApplicationScanningResult {
                         : KeepProviderResult.DISCARD;
             }
         }
-        return providerClass.classAnnotation(ResteasyReactiveDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
+        return providerClass.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
                 : KeepProviderResult.DISCARD;
     }
 

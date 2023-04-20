@@ -134,7 +134,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
         ResultHandle clientHeadersFactory = null;
 
-        AnnotationInstance registerClientHeaders = interfaceClass.classAnnotation(REGISTER_CLIENT_HEADERS);
+        AnnotationInstance registerClientHeaders = interfaceClass.declaredAnnotation(REGISTER_CLIENT_HEADERS);
 
         if (registerClientHeaders != null) {
             String headersFactoryClass = registerClientHeaders.valueWithDefault(index)
@@ -475,14 +475,14 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
     private void collectHeaderFillers(ClassInfo interfaceClass, MethodInfo method,
             Map<String, HeaderData> headerFillersByName) {
-        AnnotationInstance classLevelHeader = interfaceClass.classAnnotation(CLIENT_HEADER_PARAM);
+        AnnotationInstance classLevelHeader = interfaceClass.declaredAnnotation(CLIENT_HEADER_PARAM);
         if (classLevelHeader != null) {
             headerFillersByName.put(classLevelHeader.value("name").asString(),
                     new HeaderData(classLevelHeader, interfaceClass));
         }
         putAllHeaderAnnotations(headerFillersByName,
                 interfaceClass,
-                extractAnnotations(interfaceClass.classAnnotation(CLIENT_HEADER_PARAMS)));
+                extractAnnotations(interfaceClass.declaredAnnotation(CLIENT_HEADER_PARAMS)));
 
         Map<String, HeaderData> methodLevelHeadersByName = new HashMap<>();
         AnnotationInstance methodLevelHeader = method.annotation(CLIENT_HEADER_PARAM);

@@ -581,7 +581,7 @@ public class JunitTestRunner {
                 if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
                     ClassInfo classInfo = instance.target().asMethod().declaringClass();
                     allTestClasses.add(classInfo.name());
-                    if (classInfo.classAnnotation(NESTED) != null) {
+                    if (classInfo.declaredAnnotation(NESTED) != null) {
                         var enclosing = classInfo.enclosingClass();
                         if (enclosing != null) {
                             enclosingClasses.put(classInfo.name(), enclosing);
@@ -590,7 +590,7 @@ public class JunitTestRunner {
                 } else if (instance.target().kind() == AnnotationTarget.Kind.FIELD) {
                     ClassInfo classInfo = instance.target().asField().declaringClass();
                     allTestClasses.add(classInfo.name());
-                    if (classInfo.classAnnotation(NESTED) != null) {
+                    if (classInfo.declaredAnnotation(NESTED) != null) {
                         var enclosing = classInfo.enclosingClass();
                         if (enclosing != null) {
                             enclosingClasses.put(classInfo.name(), enclosing);
@@ -639,7 +639,7 @@ public class JunitTestRunner {
             @Override
             public String apply(Class<?> aClass) {
                 ClassInfo def = index.getClassByName(DotName.createSimple(aClass.getName()));
-                AnnotationInstance testProfile = def.classAnnotation(TEST_PROFILE);
+                AnnotationInstance testProfile = def.declaredAnnotation(TEST_PROFILE);
                 if (testProfile == null) {
                     return "$$" + aClass.getName();
                 }

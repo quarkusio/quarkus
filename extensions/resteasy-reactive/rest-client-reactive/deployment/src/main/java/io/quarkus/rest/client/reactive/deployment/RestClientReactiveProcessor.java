@@ -293,7 +293,7 @@ class RestClientReactiveProcessor {
 
                     // ignore providers annotated with `@ConstrainedTo(SERVER)`
                     AnnotationInstance constrainedToInstance = providerClass
-                            .classAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
+                            .declaredAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
                     if (constrainedToInstance != null) {
                         if (RuntimeType.valueOf(constrainedToInstance.value().asEnum()) == RuntimeType.SERVER) {
                             continue;
@@ -619,7 +619,7 @@ class RestClientReactiveProcessor {
             log.warnv("Unindexed provider class {0}. The priority of the provider will be set to {1}. ", className,
                     defaultPriority);
         } else {
-            AnnotationInstance priorityAnnoOnProvider = providerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+            AnnotationInstance priorityAnnoOnProvider = providerClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
             if (priorityAnnoOnProvider != null) {
                 priority = priorityAnnoOnProvider.value().asInt();
             }
@@ -631,7 +631,7 @@ class RestClientReactiveProcessor {
     // In order to avoid the extra complexity of having to deal with this mode, we simply fail the build when this situation is encountered
     // and provide an actionable error message on how to remedy the situation.
     private void validateKotlinDefaultMethods(ClassInfo jaxrsInterface, IndexView index) {
-        if (jaxrsInterface.classAnnotation(KOTLIN_METADATA_ANNOTATION) != null) {
+        if (jaxrsInterface.declaredAnnotation(KOTLIN_METADATA_ANNOTATION) != null) {
             var potentialDefaultImplClass = DotName
                     .createSimple(jaxrsInterface.name().toString() + KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX);
             if (index.getClassByName(potentialDefaultImplClass) != null) {

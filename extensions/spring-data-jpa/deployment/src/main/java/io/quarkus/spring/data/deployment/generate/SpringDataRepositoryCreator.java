@@ -125,7 +125,7 @@ public class SpringDataRepositoryCreator {
 
     private Map.Entry<DotName, DotName> extractIdAndEntityTypes(ClassInfo repositoryToImplement, IndexView indexView) {
         AnnotationInstance repositoryDefinitionInstance = repositoryToImplement
-                .classAnnotation(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
+                .declaredAnnotation(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
         if (repositoryDefinitionInstance != null) {
             return new AbstractMap.SimpleEntry<>(repositoryDefinitionInstance.value("idClass").asClass().name(),
                     repositoryDefinitionInstance.value("domainClass").asClass().name());

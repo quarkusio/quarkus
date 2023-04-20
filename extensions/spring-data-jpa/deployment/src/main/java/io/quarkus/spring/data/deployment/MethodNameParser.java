@@ -504,7 +504,7 @@ public class MethodNameParser {
     }
 
     private String getEntityName() {
-        AnnotationInstance annotationInstance = entityClass.classAnnotation(DotNames.JPA_ENTITY);
+        AnnotationInstance annotationInstance = entityClass.declaredAnnotation(DotNames.JPA_ENTITY);
         if (annotationInstance != null && annotationInstance.value("name") != null) {
             AnnotationValue annotationValue = annotationInstance.value("name");
             return annotationValue.asString().length() > 0 ? annotationValue.asString() : entityClass.simpleName();
@@ -548,9 +548,9 @@ public class MethodNameParser {
         Type superClassType = entityClass.superClassType();
         while (superClassType != null && !superClassType.name().equals(DotNames.OBJECT)) {
             ClassInfo superClass = indexView.getClassByName(superClassType.name());
-            if (superClass.classAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) != null) {
+            if (superClass.declaredAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) != null) {
                 mappedSuperClassInfoElements.add(superClass);
-            } else if (superClass.classAnnotation(DotNames.JPA_INHERITANCE) != null) {
+            } else if (superClass.declaredAnnotation(DotNames.JPA_INHERITANCE) != null) {
                 mappedSuperClassInfoElements.add(superClass);
             }
 

@@ -139,7 +139,7 @@ public class HibernateOrmAnnotationsTest {
     }
 
     private boolean allowsTargetType(ClassInfo annotation, ElementType targetType) {
-        AnnotationInstance targetAnnotation = annotation.classAnnotation(TARGET);
+        AnnotationInstance targetAnnotation = annotation.declaredAnnotation(TARGET);
         if (targetAnnotation == null) {
             // Can target anything
             return true;

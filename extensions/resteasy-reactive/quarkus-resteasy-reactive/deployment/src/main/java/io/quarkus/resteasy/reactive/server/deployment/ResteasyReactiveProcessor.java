@@ -1560,7 +1560,7 @@ public class ResteasyReactiveProcessor {
             return defaultPath.orElse("/");
         }
         AnnotationInstance applicationPathValue = appResult.getSelectedAppClass()
-                .classAnnotation(ResteasyReactiveDotNames.APPLICATION_PATH);
+                .declaredAnnotation(ResteasyReactiveDotNames.APPLICATION_PATH);
         if (applicationPathValue == null) {
             return defaultPath.orElse("/");
         }

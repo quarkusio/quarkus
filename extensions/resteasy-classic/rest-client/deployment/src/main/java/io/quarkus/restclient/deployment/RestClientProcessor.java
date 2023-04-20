@@ -566,7 +566,7 @@ class RestClientProcessor {
             ClassInfo restClientClass = index.getClassByName(DotName.createSimple(restClient.getInterfaceName()));
             if (restClientClass != null) {
                 Set<AnnotationInstance> classLevelBindings = new HashSet<>();
-                for (AnnotationInstance annotationInstance : restClientClass.classAnnotations()) {
+                for (AnnotationInstance annotationInstance : restClientClass.declaredAnnotations()) {
                     if (interceptorBindings.contains(annotationInstance.name())) {
                         classLevelBindings.add(annotationInstance);
                     }

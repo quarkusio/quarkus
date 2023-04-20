@@ -73,7 +73,7 @@ public class RESTEasyExtension implements AnnotationScannerExtension {
 
     private void scanAsyncResponseProviders(IndexView index) {
         for (ClassInfo providerClass : index.getAllKnownImplementors(DOTNAME_ASYNC_RESPONSE_PROVIDER)) {
-            for (AnnotationInstance annotation : providerClass.classAnnotations()) {
+            for (AnnotationInstance annotation : providerClass.declaredAnnotations()) {
                 if (annotation.name().equals(DOTNAME_PROVIDER)) {
                     for (Type interf : providerClass.interfaceTypes()) {
                         if (interf.kind() == Type.Kind.PARAMETERIZED_TYPE

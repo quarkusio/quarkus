@@ -308,7 +308,7 @@ public class SpringDIProcessor {
             final Set<String> names = new HashSet<>();
             final Set<DotName> clazzAnnotations = classInfo.annotationsMap().keySet();
 
-            for (AnnotationInstance instance : classInfo.classAnnotations()) {
+            for (AnnotationInstance instance : classInfo.declaredAnnotations()) {
                 // make sure that we don't mix and match Spring and CDI annotations since this can cause a lot of problems
                 if (arcScopes.contains(instance.name())) {
                     return annotationsToAdd;

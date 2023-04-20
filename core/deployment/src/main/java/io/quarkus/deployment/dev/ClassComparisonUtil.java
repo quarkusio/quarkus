@@ -29,7 +29,7 @@ public class ClassComparisonUtil {
         if (!clazz.interfaceNames().equals(old.interfaceNames())) {
             return false;
         }
-        if (!compareAnnotations(clazz.classAnnotations(), old.classAnnotations())) {
+        if (!compareAnnotations(clazz.declaredAnnotations(), old.declaredAnnotations())) {
             return false;
         }
         if (old.fields().size() != clazz.fields().size()) {

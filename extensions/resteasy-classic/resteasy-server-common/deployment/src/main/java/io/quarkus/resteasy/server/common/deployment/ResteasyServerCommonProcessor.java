@@ -675,7 +675,7 @@ public class ResteasyServerCommonProcessor {
             }
 
             boolean hasNonJaxRSAnnotations = false;
-            for (AnnotationInstance instance : classInfo.classAnnotations()) {
+            for (AnnotationInstance instance : classInfo.declaredAnnotations()) {
                 final String packageName = packageName(instance.name());
                 if (packageName == null || !isPackageAllowed(allowedAnnotationPrefixes, packageName)) {
                     hasNonJaxRSAnnotations = true;

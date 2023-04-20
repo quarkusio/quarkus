@@ -82,7 +82,7 @@ public abstract class ResourcePropertiesProvider {
             return annotations;
         }
 
-        for (AnnotationInstance annotation : classInfo.classAnnotations()) {
+        for (AnnotationInstance annotation : classInfo.declaredAnnotations()) {
             if (ANNOTATIONS_TO_COPY.stream().anyMatch(annotation.name().toString()::startsWith)) {
                 annotations.add(annotation);
             }

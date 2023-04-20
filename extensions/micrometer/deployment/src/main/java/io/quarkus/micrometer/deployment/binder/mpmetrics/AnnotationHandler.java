@@ -84,8 +84,8 @@ public class AnnotationHandler {
             MethodInfo methodInfo) {
         if (MetricDotNames.COUNTED_ANNOTATION.equals(sourceAnnotation)) {
             if (methodInfo == null) {
-                if (!Annotations.contains(classInfo.classAnnotations(), MetricDotNames.TIMED_ANNOTATION) &&
-                        !Annotations.contains(classInfo.classAnnotations(), MetricDotNames.SIMPLY_TIMED_ANNOTATION)) {
+                if (!Annotations.contains(classInfo.declaredAnnotations(), MetricDotNames.TIMED_ANNOTATION) &&
+                        !Annotations.contains(classInfo.declaredAnnotations(), MetricDotNames.SIMPLY_TIMED_ANNOTATION)) {
                     return false;
                 }
                 log.warnf("Bean %s is both counted and timed. The @Counted annotation " +

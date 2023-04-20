@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A simple stateful {@link javax.interceptor.InvocationContext} implementation used for {@link javax.annotation.PostConstruct}
- * and {@link javax.annotation.PreDestroy} callbacks.
+ * A simple stateful {@link jakarta.interceptor.InvocationContext} implementation used for
+ * {@link jakarta.annotation.PostConstruct} and {@link jakarta.annotation.PreDestroy} callbacks.
  * <p>
  * All lifecycle callback interceptors of a specific chain must be invoked on the same thread.
  */

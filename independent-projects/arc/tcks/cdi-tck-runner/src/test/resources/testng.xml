@@ -158,11 +158,6 @@
                     <exclude name="testScopeTypeDeclaredInheritedIsBlockedByIntermediateScopeTypeNotMarkedInherited"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.order.aroundInvoke.AroundInvokeOrderTest">
-                <methods>
-                    <exclude name="testInvocationOrder"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamInitializerTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
@@ -363,11 +358,6 @@
                     <exclude name="testLifecycleInterceptorBindings"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.order.aroundConstruct.AroundConstructOrderTest">
-                <methods>
-                    <exclude name="testInvocationOrder"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptorTypeParamInitializerTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>
@@ -399,11 +389,6 @@
                 <methods>
                     <!-- This test should be CDI Full only -->
                     <exclude name="testManagerBeanIsPassivationCapable"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.order.lifecycleCallback.PostConstructOrderTest">
-                <methods>
-                    <exclude name="testInvocationOrder"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.context.GetFromContextualTest">

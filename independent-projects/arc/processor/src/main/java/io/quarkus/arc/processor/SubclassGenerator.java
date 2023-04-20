@@ -38,6 +38,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 
+import io.quarkus.arc.ArcInvocationContext;
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.InjectableInterceptor;
@@ -45,6 +46,7 @@ import io.quarkus.arc.Subclass;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.processor.BeanInfo.DecorationInfo;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
+import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
@@ -80,6 +82,7 @@ public class SubclassGenerator extends AbstractGenerator {
 
     private final Predicate<DotName> applicationClassPredicate;
     private final Set<String> existingClasses;
+    private final PrivateMembersCollector privateMembers;
 
     static String generatedName(DotName providerTypeName, String baseName) {
         String packageName = DotNames.internalPackageNameWithTrailingSlash(providerTypeName);
@@ -90,11 +93,12 @@ public class SubclassGenerator extends AbstractGenerator {
 
     public SubclassGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             boolean generateSources, ReflectionRegistration reflectionRegistration,
-            Set<String> existingClasses) {
+            Set<String> existingClasses, PrivateMembersCollector privateMembers) {
         super(generateSources, reflectionRegistration);
         this.applicationClassPredicate = applicationClassPredicate;
         this.annotationLiterals = annotationLiterals;
         this.existingClasses = existingClasses;
+        this.privateMembers = privateMembers;
     }
 
     Collection<Resource> generate(BeanInfo bean, String beanClassName) {
@@ -325,6 +329,25 @@ public class SubclassGenerator extends AbstractGenerator {
             }
         }
 
+        // Initialize the "aroundInvokes" field if necessary
+        if (bean.hasAroundInvokes()) {
+            FieldCreator field = subclass.getFieldCreator("aroundInvokes", List.class)
+                    .setModifiers(ACC_PRIVATE);
+            ResultHandle methodsList = constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+            for (MethodInfo method : bean.getAroundInvokes()) {
+                // BiFunction<Object,InvocationContext,Object>
+                FunctionCreator fun = constructor.createFunction(BiFunction.class);
+                BytecodeCreator funBytecode = fun.getBytecode();
+                ResultHandle ret = invokeInterceptorMethod(funBytecode, method,
+                        applicationClassPredicate.test(bean.getBeanClass()),
+                        funBytecode.getMethodParam(1),
+                        funBytecode.getMethodParam(0));
+                funBytecode.returnValue(ret);
+                constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, methodsList, fun.getInstance());
+            }
+            constructor.writeInstanceField(field.getFieldDescriptor(), constructor.getThis(), methodsList);
+        }
+
         // Split initialization of InterceptedMethodMetadata into multiple methods
         int group = 0;
         int groupLimit = 30;
@@ -422,6 +445,7 @@ public class SubclassGenerator extends AbstractGenerator {
                         superParamHandles[i] = funcBytecode.readArrayValue(ctxParamsHandle, i);
                     }
                 }
+
                 // If a decorator is bound then invoke the method upon the decorator instance instead of the generated forwarding method
                 if (decorator != null) {
                     AssignableResultHandle funDecoratorInstance = funcBytecode.createVariable(Object.class);
@@ -445,10 +469,28 @@ public class SubclassGenerator extends AbstractGenerator {
                     funcBytecode.returnValue(superResult != null ? superResult : funcBytecode.loadNull());
                 }
 
+                ResultHandle aroundForwardFun = func.getInstance();
+
+                if (bean.hasAroundInvokes()) {
+                    // Wrap the forwarding function with a function that calls around invoke methods declared in a hierarchy of the target class first
+                    AssignableResultHandle methodsList = initMetadataMethod.createVariable(List.class);
+                    initMetadataMethod.assign(methodsList, initMetadataMethod.readInstanceField(
+                            FieldDescriptor.of(subclass.getClassName(), "aroundInvokes", List.class),
+                            initMetadataMethod.getThis()));
+                    FunctionCreator targetFun = initMetadataMethod.createFunction(BiFunction.class);
+                    BytecodeCreator targetFunBytecode = targetFun.getBytecode();
+                    ResultHandle ret = targetFunBytecode.invokeStaticMethod(
+                            MethodDescriptors.INVOCATION_CONTEXTS_PERFORM_TARGET_AROUND_INVOKE,
+                            targetFunBytecode.getMethodParam(1),
+                            methodsList, aroundForwardFun);
+                    targetFunBytecode.returnValue(ret);
+                    aroundForwardFun = targetFun.getInstance();
+                }
+
                 // Now create metadata for the given intercepted method
                 ResultHandle methodMetadataHandle = initMetadataMethod.newInstance(
                         MethodDescriptors.INTERCEPTED_METHOD_METADATA_CONSTRUCTOR,
-                        chainHandle, methodHandle, bindingsHandle, func.getInstance());
+                        chainHandle, methodHandle, bindingsHandle, aroundForwardFun);
 
                 FieldDescriptor metadataField = FieldDescriptor.of(subclass.getClassName(), "arc$" + methodIdx++,
                         InterceptedMethodMetadata.class.getName());
@@ -511,6 +553,37 @@ public class SubclassGenerator extends AbstractGenerator {
 
         constructor.returnValue(null);
         return preDestroysField != null ? preDestroysField.getFieldDescriptor() : null;
+    }
+
+    private ResultHandle invokeInterceptorMethod(BytecodeCreator creator, MethodInfo interceptorMethod,
+            boolean isApplicationClass, ResultHandle invocationContext, ResultHandle targetInstance) {
+        ResultHandle ret;
+        // Check if interceptor method uses InvocationContext or ArcInvocationContext
+        Class<?> invocationContextClass;
+        if (interceptorMethod.parameterType(0).name().equals(DotNames.INVOCATION_CONTEXT)) {
+            invocationContextClass = InvocationContext.class;
+        } else {
+            invocationContextClass = ArcInvocationContext.class;
+        }
+        if (Modifier.isPrivate(interceptorMethod.flags())) {
+            privateMembers.add(isApplicationClass,
+                    String.format("Interceptor method %s#%s()", interceptorMethod.declaringClass().name(),
+                            interceptorMethod.name()));
+            // Use reflection fallback
+            ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(1));
+            creator.writeArrayValue(paramTypesArray, 0, creator.loadClass(invocationContextClass));
+            ResultHandle argsArray = creator.newArray(Object.class, creator.load(1));
+            creator.writeArrayValue(argsArray, 0, invocationContext);
+            reflectionRegistration.registerMethod(interceptorMethod);
+            ret = creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                    creator.loadClass(interceptorMethod.declaringClass()
+                            .name()
+                            .toString()),
+                    creator.load(interceptorMethod.name()), paramTypesArray, targetInstance, argsArray);
+        } else {
+            ret = creator.invokeVirtualMethod(interceptorMethod, targetInstance, invocationContext);
+        }
+        return ret;
     }
 
     private void processDecorator(DecoratorInfo decorator, BeanInfo bean, Type providerType,

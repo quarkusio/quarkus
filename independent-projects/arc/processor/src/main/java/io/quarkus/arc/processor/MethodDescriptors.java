@@ -166,6 +166,10 @@ public final class MethodDescriptors {
             InvocationContexts.class,
             "performAroundInvoke", Object.class, Object.class, Object[].class, InterceptedMethodMetadata.class);
 
+    public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_TARGET_AROUND_INVOKE = MethodDescriptor.ofMethod(
+            InvocationContexts.class,
+            "performTargetAroundInvoke", Object.class, InvocationContext.class, List.class, BiFunction.class);
+
     public static final MethodDescriptor INVOCATION_CONTEXTS_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
             "aroundConstruct",
@@ -180,6 +184,11 @@ public final class MethodDescriptors {
             "preDestroy",
             InvocationContext.class, Object.class, List.class, Set.class);
 
+    public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_SUPERCLASS = MethodDescriptor.ofMethod(
+            InvocationContexts.class,
+            "performSuperclassInterception",
+            Object.class, InvocationContext.class, List.class, Object.class, Object[].class);
+
     public static final MethodDescriptor INVOCATION_CONTEXT_PROCEED = MethodDescriptor.ofMethod(InvocationContext.class,
             "proceed",
             Object.class);
@@ -187,6 +196,10 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXT_GET_TARGET = MethodDescriptor.ofMethod(InvocationContext.class,
             "getTarget",
             Object.class);
+
+    public static final MethodDescriptor INVOCATION_CONTEXT_GET_PARAMETERS = MethodDescriptor.ofMethod(InvocationContext.class,
+            "getParameters",
+            Object[].class);
 
     public static final MethodDescriptor CREATIONAL_CTX_ADD_DEP_TO_PARENT = MethodDescriptor.ofMethod(
             CreationalContextImpl.class,

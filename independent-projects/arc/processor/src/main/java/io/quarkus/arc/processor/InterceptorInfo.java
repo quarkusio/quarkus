@@ -33,14 +33,10 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
     private static final Logger LOGGER = Logger.getLogger(InterceptorInfo.class);
 
     private final Set<AnnotationInstance> bindings;
-
-    private final MethodInfo aroundInvoke;
-
-    private final MethodInfo aroundConstruct;
-
-    private final MethodInfo postConstruct;
-
-    private final MethodInfo preDestroy;
+    private final List<MethodInfo> aroundInvokes;
+    private final List<MethodInfo> aroundConstructs;
+    private final List<MethodInfo> postConstructs;
+    private final List<MethodInfo> preDestroys;
 
     InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings,
             List<Injection> injections, int priority) {
@@ -54,8 +50,12 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         List<MethodInfo> postConstructs = new ArrayList<>();
         List<MethodInfo> preDestroys = new ArrayList<>();
 
+        List<MethodInfo> allMethods = new ArrayList<>();
         ClassInfo aClass = target.asClass();
         while (aClass != null) {
+            // Only one interceptor method of a given type may be declared on a given class
+            int aroundInvokesFound = 0, aroundConstructsFound = 0, postConstructsFound = 0, preDestroysFound = 0;
+
             for (MethodInfo method : aClass.methods()) {
                 if (Modifier.isStatic(method.flags())) {
                     continue;
@@ -67,17 +67,34 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                                     + aClass);
                 }
                 if (store.hasAnnotation(method, DotNames.AROUND_INVOKE)) {
-                    aroundInvokes.add(validateSignature(method));
+                    addInterceptorMethod(allMethods, aroundInvokes, method);
+                    if (++aroundInvokesFound > 1) {
+                        throw new DefinitionException(
+                                "Multiple @AroundInvoke interceptor methods declared on class: " + aClass);
+                    }
                 }
                 if (store.hasAnnotation(method, DotNames.AROUND_CONSTRUCT)) {
-                    aroundConstructs.add(validateSignature(method));
+                    addInterceptorMethod(allMethods, aroundConstructs, method);
+                    if (++aroundConstructsFound > 1) {
+                        throw new DefinitionException(
+                                "Multiple @AroundConstruct interceptor methods declared on class: " + aClass);
+                    }
                 }
                 if (store.hasAnnotation(method, DotNames.POST_CONSTRUCT)) {
-                    postConstructs.add(validateSignature(method));
+                    addInterceptorMethod(allMethods, postConstructs, method);
+                    if (++postConstructsFound > 1) {
+                        throw new DefinitionException(
+                                "Multiple @PostConstruct interceptor methods declared on class: " + aClass);
+                    }
                 }
                 if (store.hasAnnotation(method, DotNames.PRE_DESTROY)) {
-                    preDestroys.add(validateSignature(method));
+                    addInterceptorMethod(allMethods, preDestroys, method);
+                    if (++preDestroysFound > 1) {
+                        throw new DefinitionException(
+                                "Multiple @PreDestroy interceptor methods declared on class: " + aClass);
+                    }
                 }
+                allMethods.add(method);
             }
 
             for (FieldInfo field : aClass.fields()) {
@@ -93,62 +110,123 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                     : getClassByName(beanDeployment.getBeanArchiveIndex(), superTypeName);
         }
 
-        this.aroundInvoke = aroundInvokes.isEmpty() ? null : aroundInvokes.get(0);
-        this.aroundConstruct = aroundConstructs.isEmpty() ? null : aroundConstructs.get(0);
-        this.postConstruct = postConstructs.isEmpty() ? null : postConstructs.get(0);
-        this.preDestroy = preDestroys.isEmpty() ? null : preDestroys.get(0);
-        if (aroundConstruct == null && aroundInvoke == null && preDestroy == null && postConstruct == null) {
+        // The interceptor methods defined by the superclasses are invoked before the interceptor method defined by the interceptor class, most general superclass first.
+        Collections.reverse(aroundInvokes);
+        Collections.reverse(postConstructs);
+        Collections.reverse(preDestroys);
+        Collections.reverse(aroundConstructs);
+
+        this.aroundInvokes = List.copyOf(aroundInvokes);
+        this.aroundConstructs = List.copyOf(aroundConstructs);
+        this.postConstructs = List.copyOf(postConstructs);
+        this.preDestroys = List.copyOf(preDestroys);
+
+        if (aroundConstructs.isEmpty() && aroundInvokes.isEmpty() && preDestroys.isEmpty() && postConstructs.isEmpty()) {
             LOGGER.warnf("%s declares no around-invoke method nor a lifecycle callback!", this);
         }
-    }
-
-    private MethodInfo validateSignature(MethodInfo method) {
-        List<Type> parameters = method.parameterTypes();
-        if (parameters.size() != 1 || !(parameters.get(0).name().equals(DotNames.INVOCATION_CONTEXT)
-                || parameters.get(0).name().equals(DotNames.ARC_INVOCATION_CONTEXT))) {
-            throw new IllegalStateException(
-                    "An interceptor method must accept exactly one parameter of type jakarta.interceptor.InvocationContext: "
-                            + method + " declared on " + method.declaringClass());
-        }
-        if (!method.returnType().kind().equals(Type.Kind.VOID) &&
-                !method.returnType().name().equals(DotNames.OBJECT)) {
-            throw new IllegalStateException(
-                    "The return type of an interceptor method must be java.lang.Object or void: "
-                            + method + " declared on " + method.declaringClass());
-        }
-        return method;
     }
 
     public Set<AnnotationInstance> getBindings() {
         return bindings;
     }
 
+    /**
+     * Returns all methods annotated with {@link jakarta.interceptor.AroundInvoke} found in the hierarchy of the interceptor
+     * class.
+     * <p>
+     * The returned list is sorted. The method declared on the most general superclass is first. The method declared on the
+     * interceptor class is last.
+     *
+     * @return the interceptor methods
+     */
+    public List<MethodInfo> getAroundInvokes() {
+        return aroundInvokes;
+    }
+
+    /**
+     * Returns all methods annotated with {@link jakarta.interceptor.AroundConstruct} found in the hierarchy of the interceptor
+     * class.
+     * <p>
+     * The returned list is sorted. The method declared on the most general superclass is first. The method declared on the
+     * interceptor class is last.
+     *
+     * @return the interceptor methods
+     */
+    public List<MethodInfo> getAroundConstructs() {
+        return aroundConstructs;
+    }
+
+    /**
+     * Returns all methods annotated with {@link jakarta.annotation.PostConstruct} found in the hierarchy of the interceptor
+     * class.
+     * <p>
+     * The returned list is sorted. The method declared on the most general superclass is first. The method declared on the
+     * interceptor class is last.
+     *
+     * @return the interceptor methods
+     */
+    public List<MethodInfo> getPostConstructs() {
+        return postConstructs;
+    }
+
+    /**
+     * Returns all methods annotated with {@link jakarta.annotation.PreDestroy} found in the hierarchy of the interceptor class.
+     * <p>
+     * The returned list is sorted. The method declared on the most general superclass is first. The method declared on the
+     * interceptor class is last.
+     *
+     * @return the interceptor methods
+     */
+    public List<MethodInfo> getPreDestroys() {
+        return preDestroys;
+    }
+
+    /**
+     *
+     * @deprecated Use {@link #getAroundInvokes()} instead
+     */
+    @Deprecated(since = "3.1", forRemoval = true)
     public MethodInfo getAroundInvoke() {
-        return aroundInvoke;
+        return aroundInvokes.get(aroundInvokes.size() - 1);
     }
 
+    /**
+     *
+     * @deprecated Use {@link #getAroundConstructs()} instead
+     */
+    @Deprecated(since = "3.1", forRemoval = true)
     public MethodInfo getAroundConstruct() {
-        return aroundConstruct;
+        return aroundConstructs.get(aroundConstructs.size() - 1);
     }
 
+    /**
+     *
+     * @deprecated Use {@link #getPostConstructs()} instead
+     */
+    @Deprecated(since = "3.1", forRemoval = true)
     public MethodInfo getPostConstruct() {
-        return postConstruct;
+        return postConstructs.get(postConstructs.size() - 1);
     }
 
+    /**
+     *
+     * @deprecated Use {@link #getPreDestroys()} instead
+     */
+    @Deprecated(since = "3.1", forRemoval = true)
     public MethodInfo getPreDestroy() {
-        return preDestroy;
+        return preDestroys.get(preDestroys.size() - 1);
     }
 
     public boolean intercepts(InterceptionType interceptionType) {
         switch (interceptionType) {
             case AROUND_INVOKE:
-                return aroundInvoke != null;
+                return !aroundInvokes.isEmpty();
             case AROUND_CONSTRUCT:
-                return aroundConstruct != null;
+                return !aroundConstructs.isEmpty();
             case POST_CONSTRUCT:
-                return postConstruct != null;
+                return !postConstructs.isEmpty();
             case PRE_DESTROY:
-                return preDestroy != null;
+                return !preDestroys.isEmpty();
             default:
                 return false;
         }
@@ -167,6 +245,43 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
     @Override
     public int compareTo(InterceptorInfo other) {
         return getTarget().toString().compareTo(other.getTarget().toString());
+    }
+
+    static void addInterceptorMethod(List<MethodInfo> allMethods, List<MethodInfo> interceptorMethods, MethodInfo method) {
+        validateSignature(method);
+        if (!isInterceptorMethodOverriden(allMethods, method)) {
+            interceptorMethods.add(method);
+        }
+    }
+
+    static boolean isInterceptorMethodOverriden(Iterable<MethodInfo> allMethods, MethodInfo method) {
+        for (MethodInfo m : allMethods) {
+            if (m.name().equals(method.name()) && hasInterceptorMethodParameter(m)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean hasInterceptorMethodParameter(MethodInfo method) {
+        return method.parametersCount() == 1
+                && (method.parameterType(0).name().equals(DotNames.INVOCATION_CONTEXT)
+                        || method.parameterType(0).name().equals(DotNames.ARC_INVOCATION_CONTEXT));
+    }
+
+    private static MethodInfo validateSignature(MethodInfo method) {
+        if (!hasInterceptorMethodParameter(method)) {
+            throw new IllegalStateException(
+                    "An interceptor method must accept exactly one parameter of type jakarta.interceptor.InvocationContext: "
+                            + method + " declared on " + method.declaringClass());
+        }
+        if (!method.returnType().kind().equals(Type.Kind.VOID) &&
+                !method.returnType().name().equals(DotNames.OBJECT)) {
+            throw new IllegalStateException(
+                    "The return type of an interceptor method must be java.lang.Object or void: "
+                            + method + " declared on " + method.declaringClass());
+        }
+        return method;
     }
 
 }

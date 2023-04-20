@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import jakarta.interceptor.InvocationContext;
@@ -24,6 +25,20 @@ public final class InvocationContexts {
     public static Object performAroundInvoke(Object target, Object[] args, InterceptedMethodMetadata metadata)
             throws Exception {
         return AroundInvokeInvocationContext.perform(target, args, metadata);
+    }
+
+    /**
+     *
+     * @param delegate
+     * @param aroundInvokeMethods
+     * @param aroundInvokeForward
+     * @return the return value
+     * @throws Exception
+     */
+    public static Object performTargetAroundInvoke(InvocationContext delegate,
+            List<BiFunction<Object, InvocationContext, Object>> aroundInvokeMethods,
+            BiFunction<Object, InvocationContext, Object> aroundInvokeForward) throws Exception {
+        return TargetAroundInvokeInvocationContext.perform(delegate, aroundInvokeMethods, aroundInvokeForward);
     }
 
     /**
@@ -64,6 +79,20 @@ public final class InvocationContexts {
             Set<Annotation> interceptorBindings) {
         return new AroundConstructInvocationContext(constructor, parameters, interceptorBindings, chain,
                 aroundConstructForward);
+    }
+
+    /**
+     *
+     * @param delegate
+     * @param methods
+     * @param interceptorInstance
+     * @return the return value
+     * @throws Exception
+     */
+    public static Object performSuperclassInterception(InvocationContext delegate,
+            List<BiFunction<Object, InvocationContext, Object>> methods, Object interceptorInstance, Object[] parameters)
+            throws Exception {
+        return SuperclassInvocationContext.perform(delegate, methods, interceptorInstance, parameters);
     }
 
 }

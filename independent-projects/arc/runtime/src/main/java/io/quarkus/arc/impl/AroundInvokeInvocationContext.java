@@ -11,7 +11,7 @@ import java.util.Set;
 import io.quarkus.arc.ArcInvocationContext;
 
 /**
- * An {@link javax.interceptor.InvocationContext} for {@link javax.interceptor.AroundInvoke} interceptors.
+ * An {@link jakarta.interceptor.InvocationContext} for {@link jakarta.interceptor.AroundInvoke} interceptors.
  * <p>
  * A new instance is created for the first interceptor in the chain. Furthermore, subsequent interceptors receive a new instance
  * of {@link NextAroundInvokeInvocationContext}. This does not comply with the spec but allows for "asynchronous continuation"
@@ -27,15 +27,18 @@ import io.quarkus.arc.ArcInvocationContext;
  */
 class AroundInvokeInvocationContext extends AbstractInvocationContext {
 
+    static Object perform(Object target, Object[] args, InterceptedMethodMetadata metadata) throws Exception {
+        if (metadata.chain.isEmpty()) {
+            return metadata.aroundInvokeForward.apply(target, new AroundInvokeInvocationContext(target, args, metadata));
+        }
+        return metadata.chain.get(0).invoke(new AroundInvokeInvocationContext(target, args, metadata));
+    }
+
     private final InterceptedMethodMetadata metadata;
 
     AroundInvokeInvocationContext(Object target, Object[] args, InterceptedMethodMetadata metadata) {
         super(target, args, new ContextDataMap(metadata.bindings));
         this.metadata = metadata;
-    }
-
-    static Object perform(Object target, Object[] args, InterceptedMethodMetadata metadata) throws Exception {
-        return metadata.chain.get(0).invoke(new AroundInvokeInvocationContext(target, args, metadata));
     }
 
     @Override

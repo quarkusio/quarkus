@@ -90,6 +90,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final String targetPackageName;
 
+    private final List<MethodInfo> aroundInvokes;
+
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
             boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, String targetPackageName,
@@ -143,6 +145,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.lifecycleInterceptors = Collections.emptyMap();
         this.forceApplicationClass = forceApplicationClass;
         this.targetPackageName = targetPackageName;
+        this.aroundInvokes = isInterceptor() || isDecorator() ? List.of() : Beans.getAroundInvokes(implClazz, beanDeployment);
     }
 
     @Override
@@ -360,8 +363,10 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     boolean isSubclassRequired() {
-        return !interceptedMethods.isEmpty() || !decoratedMethods.isEmpty()
-                || lifecycleInterceptors.containsKey(InterceptionType.PRE_DESTROY);
+        return !interceptedMethods.isEmpty()
+                || !decoratedMethods.isEmpty()
+                || lifecycleInterceptors.containsKey(InterceptionType.PRE_DESTROY)
+                || !aroundInvokes.isEmpty();
     }
 
     /**
@@ -443,6 +448,18 @@ public class BeanInfo implements InjectionTargetInfo {
                         .thenComparing(DecoratorInfo::getBeanClass)
                         .reversed());
         return bound;
+    }
+
+    /**
+     *
+     * @return the list of around invoke interceptor methods declared in the hierarchy of a bean class
+     */
+    List<MethodInfo> getAroundInvokes() {
+        return aroundInvokes;
+    }
+
+    boolean hasAroundInvokes() {
+        return !aroundInvokes.isEmpty();
     }
 
     public DisposerInfo getDisposer() {
@@ -602,8 +619,8 @@ public class BeanInfo implements InjectionTargetInfo {
                 }
             }
 
-            Set<MethodInfo> finalMethods = Methods.addInterceptedMethodCandidates(beanDeployment, target.get().asClass(),
-                    candidates, classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses);
+            Set<MethodInfo> finalMethods = Methods.addInterceptedMethodCandidates(this, candidates, classLevelBindings,
+                    bytecodeTransformerConsumer, transformUnproxyableClasses);
             if (!finalMethods.isEmpty()) {
                 String additionalError = "";
                 if (finalMethods.stream().anyMatch(KotlinUtils::isNoninterceptableKotlinMethod)) {
@@ -620,7 +637,7 @@ public class BeanInfo implements InjectionTargetInfo {
             for (Entry<MethodKey, Set<AnnotationInstance>> entry : candidates.entrySet()) {
                 List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver()
                         .resolve(InterceptionType.AROUND_INVOKE, entry.getValue());
-                if (!interceptors.isEmpty()) {
+                if (!interceptors.isEmpty() || !aroundInvokes.isEmpty()) {
                     interceptedMethods.put(entry.getKey().method, new InterceptionInfo(interceptors, entry.getValue()));
                 }
             }
@@ -651,7 +668,8 @@ public class BeanInfo implements InjectionTargetInfo {
         ClassInfo classInfo = target.get().asClass();
         addDecoratedMethods(candidates, classInfo, classInfo, bound,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
-                        beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods()));
+                        beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods(),
+                        beanDeployment.getAnnotationStore()));
 
         Map<MethodInfo, DecorationInfo> decoratedMethods = new HashMap<>(candidates.size());
         for (Entry<MethodKey, DecorationInfo> entry : candidates.entrySet()) {

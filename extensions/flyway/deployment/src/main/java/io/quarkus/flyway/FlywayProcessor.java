@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Default;
 
-import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
@@ -62,15 +61,17 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
+import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
+import io.quarkus.flyway.runtime.FlywayInitTask;
 import io.quarkus.flyway.runtime.FlywayRecorder;
-import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 class FlywayProcessor {
 
     private static final String CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL = "classpath";
 
+    private static final String FLYWAY_INIT_TASK = "flyway-init-task";
     private static final String FLYWAY_BEAN_NAME_PREFIX = "flyway_";
 
     private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
@@ -166,6 +167,10 @@ class FlywayProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             MigrationStateBuildItem migrationsBuildItem) {
+
+        // Init Task
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(FlywayInitTask.class).setUnremovable().build());
         // make a FlywayContainerProducer bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(FlywayContainerProducer.class).setUnremovable()
                 .setDefaultScope(DotNames.SINGLETON).build());
@@ -183,7 +188,7 @@ class FlywayProcessor {
                 createPossible = sqlGeneratorBuildItems.stream().anyMatch(s -> s.getDatabaseName().equals(dataSourceName));
             }
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                    .configure(Flyway.class)
+                    .configure(FlywayContainer.class)
                     .scope(Dependent.class) // this is what the existing code does, but it doesn't seem reasonable
                     .setRuntimeInit()
                     .unremovable()
@@ -207,29 +212,22 @@ class FlywayProcessor {
     @BuildStep
     @Consume(BeanContainerBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    public ServiceStartBuildItem startActions(FlywayRecorder recorder,
-            FlywayRuntimeConfig config,
+    public void startActions(FlywayRecorder recorder,
+            MigrationStateBuildItem migrationsBuildItem,
+            List<InitTaskCompletedBuildItem> completedInitTasks,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
-            BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
-            MigrationStateBuildItem migrationsBuildItem) {
+            BuildProducer<ServiceStartBuildItem> serviceStart) {
 
-        recorder.doStartActions();
-
-        // once we are done running the migrations, we produce a build item indicating that the
-        // schema is "ready"
-        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(migrationsBuildItem.hasMigrations));
-        initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("flyway"));
-        return new ServiceStartBuildItem("flyway");
+        if (completedInitTasks.stream().anyMatch(c -> c.getName().equals(FLYWAY_INIT_TASK))) {
+            schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(migrationsBuildItem.hasMigrations));
+            serviceStart.produce(new ServiceStartBuildItem("flyway"));
+        }
     }
 
     @BuildStep
     public InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
         return InitTaskBuildItem.create()
-                .withName(app.getName() + "-flyway-init")
-                .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
-                .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ENABLED", "false"))
-                .withSharedEnvironment(true)
-                .withSharedFilesystem(true);
+                .withName(app.getName() + "-flyway-init");
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

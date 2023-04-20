@@ -28,8 +28,10 @@ public final class InitTaskBuildItem extends MultiBuildItem {
     private final boolean sharedFilesystem;
 
     public static InitTaskBuildItem create() {
-        return new InitTaskBuildItem("init", Optional.empty(), Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyMap(), Collections.emptyMap(), false, false);
+        return new InitTaskBuildItem("init-task", Optional.empty(), Collections.emptyList(), Collections.emptyList(),
+                Map.of("QUARKUS_INIT_AND_EXIT", "true"),
+                Map.of("QUARKUS_INIT_DISABLED", "true"),
+                true, true);
     }
 
     public InitTaskBuildItem(String name, Optional<String> image, List<String> command, List<String> arguments,

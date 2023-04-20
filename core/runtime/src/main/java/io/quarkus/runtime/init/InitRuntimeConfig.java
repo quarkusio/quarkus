@@ -8,11 +8,15 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class InitRuntimeConfig {
 
     /**
+     * Feature flag to disable initialization
+     */
+    @ConfigItem
+    public boolean initDisabled;
+
+    /**
      * true to quit exit right after the initialization.
      * The option is not meant be used directly by users.
-     *
      */
     @ConfigItem
     public boolean initAndExit;
-
 }

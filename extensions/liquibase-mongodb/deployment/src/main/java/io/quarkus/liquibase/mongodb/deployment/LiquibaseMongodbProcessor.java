@@ -22,8 +22,9 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -47,6 +48,7 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbInitTask;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbRecorder;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import liquibase.change.Change;
@@ -67,6 +69,7 @@ class LiquibaseMongodbProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(LiquibaseMongodbProcessor.class);
 
+    private static final String LIQUIBASE_MONGODB_INIT_TASK = "liquibase-mongodb-init-task";
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
 
     @BuildStep
@@ -244,14 +247,11 @@ class LiquibaseMongodbProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(BeanContainerBuildItem.class)
-    ServiceStartBuildItem startLiquibase(LiquibaseMongodbRecorder recorder,
-            BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem) {
-        // will actually run the actions at runtime
-        recorder.doStartActions();
-        initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("liquibase-mongodb"));
-        return new ServiceStartBuildItem("liquibase-mongodb");
+    public void configureInitTask(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<InitTaskBuildItem> initTasks) {
+        additionalBeans.produce(
+                AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseMongodbInitTask.class).setUnremovable().build());
+        initTasks.produce(InitTaskBuildItem.create().withName(LIQUIBASE_MONGODB_INIT_TASK));
     }
 
     @BuildStep
@@ -263,6 +263,17 @@ class LiquibaseMongodbProcessor {
                 .withAppEnvVars(Map.of("QUARKUS_LIQUIBASE_MONGODB_ENABLED", "false"))
                 .withSharedEnvironment(true)
                 .withSharedFilesystem(true);
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    void startLiquibase(LiquibaseMongodbRecorder recorder,
+            ApplicationInfoBuildItem app,
+            List<InitTaskCompletedBuildItem> completedInitTasks,
+            BuildProducer<ServiceStartBuildItem> serviceStart) {
+        if (completedInitTasks.stream().anyMatch(c -> c.getName().equals(app.getName() + "-liquibase-mongodb-init"))) {
+            serviceStart.produce(new ServiceStartBuildItem("liquibase-mongodb"));
+        }
     }
 
     /**

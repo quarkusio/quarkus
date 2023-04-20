@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,8 +30,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
@@ -61,6 +60,7 @@ import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseFactoryProducer;
+import io.quarkus.liquibase.runtime.LiquibaseInitTask;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
 import liquibase.change.Change;
 import liquibase.change.DatabaseChangeProperty;
@@ -81,6 +81,7 @@ class LiquibaseProcessor {
     private static final Logger LOGGER = Logger.getLogger(LiquibaseProcessor.class);
 
     private static final String LIQUIBASE_BEAN_NAME_PREFIX = "liquibase_";
+    private static final String LIQUIBASE_INIT_TASK = "liquibase-init-task";
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
 
@@ -263,16 +264,23 @@ class LiquibaseProcessor {
     }
 
     @BuildStep
+    InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
+        return InitTaskBuildItem.create().withName(app.getName() + "-liquibase-init");
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void createBeans(LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        // make a LiquibaseContainerProducer bean
+        // Init Task
         additionalBeans
-                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseFactoryProducer.class).setUnremovable()
-                        .setDefaultScope(DotNames.SINGLETON).build());
+                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseInitTask.class).setUnremovable().build());
+        // make a LiquibaseContainerProducer bean
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseFactoryProducer.class)
+                .setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
         // add the @LiquibaseDataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(LiquibaseDataSource.class).build());
 
@@ -303,29 +311,18 @@ class LiquibaseProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(BeanContainerBuildItem.class)
-    ServiceStartBuildItem startLiquibase(LiquibaseRecorder recorder,
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    void startLiquibase(LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
-            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
-
-        recorder.doStartActions();
+            List<InitTaskCompletedBuildItem> completedInitTasks,
+            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
+            BuildProducer<ServiceStartBuildItem> serviceStart) {
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
-        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(getDataSourceNames(jdbcDataSourceBuildItems)));
-        initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("liquibase"));
-
-        return new ServiceStartBuildItem("liquibase");
-    }
-
-    @BuildStep
-    public InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
-        return InitTaskBuildItem.create()
-                .withName(app.getName() + "-liquibase-init")
-                .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_LIQUIBASE_ENABLED", "true"))
-                .withAppEnvVars(Map.of("QUARKUS_LIQUIBASE_ENABLED", "false"))
-                .withSharedEnvironment(true)
-                .withSharedFilesystem(true);
+        if (completedInitTasks.stream().anyMatch(c -> c.getName().equals(LIQUIBASE_INIT_TASK))) {
+            schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(getDataSourceNames(jdbcDataSourceBuildItems)));
+            serviceStart.produce(new ServiceStartBuildItem("liquibase"));
+        }
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

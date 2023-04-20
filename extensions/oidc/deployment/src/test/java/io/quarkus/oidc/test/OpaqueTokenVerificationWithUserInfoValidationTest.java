@@ -16,7 +16,9 @@ public class OpaqueTokenVerificationWithUserInfoValidationTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.oidc.token.verify-access-token-with-user-info=true\n"),
+                    .addAsResource(new StringAsset(
+                            "quarkus.oidc.token.verify-access-token-with-user-info=true\n"
+                                    + "quarkus.oidc.authentication.user-info-required=false\n"),
                             "application.properties"))
             .assertException(t -> {
                 Throwable e = t;

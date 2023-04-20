@@ -137,6 +137,8 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setTokenPath(tokenUri);
                     String jwksUri = uri.replace("/tenant-refresh/tenant-web-app-refresh/api/user", "/oidc/jwks");
                     config.setJwksPath(jwksUri);
+                    String userInfoPath = uri.replace("/tenant-refresh/tenant-web-app-refresh/api/user", "/oidc/userinfo");
+                    config.setUserInfoPath(userInfoPath);
                     config.getToken().setIssuer("any");
                     config.tokenStateManager.setSplitTokens(true);
                     config.tokenStateManager.setEncryptionRequired(false);

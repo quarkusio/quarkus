@@ -177,7 +177,7 @@ Alternatively, your application can inject a `Multi` in your bean and subscribe 
 [source, java]
 ----
 import io.smallrye.mutiny.Multi;
-import io.smallrye.reactive.messaging.annotations.Channel;
+import org.eclipse.microprofile.reactive.messaging.Channel;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;

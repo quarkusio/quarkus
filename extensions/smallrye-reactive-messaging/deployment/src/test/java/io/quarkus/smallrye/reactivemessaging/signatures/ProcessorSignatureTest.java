@@ -13,6 +13,8 @@ import java.util.concurrent.Executors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -26,8 +28,6 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.reactive.messaging.annotations.Channel;
-import io.smallrye.reactive.messaging.annotations.Emitter;
 
 @SuppressWarnings("unused")
 public class ProcessorSignatureTest {

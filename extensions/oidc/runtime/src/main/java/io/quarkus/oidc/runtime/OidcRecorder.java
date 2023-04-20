@@ -172,6 +172,19 @@ public class OidcRecorder {
             return Uni.createFrom().failure(t);
         }
 
+        if (oidcConfig.roles.source.orElse(null) == Source.userinfo && !enableUserInfo(oidcConfig)) {
+            throw new ConfigurationException(
+                    "UserInfo is not required but UserInfo is expected to be the source of authorization roles");
+        }
+        if (oidcConfig.token.verifyAccessTokenWithUserInfo && !enableUserInfo(oidcConfig)) {
+            throw new ConfigurationException(
+                    "UserInfo is not required but 'verifyAccessTokenWithUserInfo' is enabled");
+        }
+        if (!oidcConfig.authentication.isIdTokenRequired().orElse(true) && !enableUserInfo(oidcConfig)) {
+            throw new ConfigurationException(
+                    "UserInfo is not required but it will be needed to verify a code flow access token");
+        }
+
         if (!oidcConfig.discoveryEnabled.orElse(true)) {
             if (!isServiceApp(oidcConfig)) {
                 if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
@@ -226,10 +239,6 @@ public class OidcRecorder {
         }
 
         if (oidcConfig.token.verifyAccessTokenWithUserInfo) {
-            if (!oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
-                throw new ConfigurationException(
-                        "UserInfo is not required but 'verifyAccessTokenWithUserInfo' is enabled");
-            }
             if (!oidcConfig.isDiscoveryEnabled().orElse(true)) {
                 if (oidcConfig.userInfoPath.isEmpty()) {
                     throw new ConfigurationException(
@@ -249,6 +258,18 @@ public class OidcRecorder {
                         return new TenantConfigContext(p, oidcConfig);
                     }
                 });
+    }
+
+    private static boolean enableUserInfo(OidcTenantConfig oidcConfig) {
+        Optional<Boolean> userInfoRequired = oidcConfig.authentication.isUserInfoRequired();
+        if (userInfoRequired.isPresent()) {
+            if (!userInfoRequired.get()) {
+                return false;
+            }
+        } else {
+            oidcConfig.authentication.setUserInfoRequired(true);
+        }
+        return true;
     }
 
     private static TenantConfigContext createTenantContextFromPublicKey(OidcTenantConfig oidcConfig) {

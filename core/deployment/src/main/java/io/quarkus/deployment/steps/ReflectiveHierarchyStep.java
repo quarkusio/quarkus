@@ -160,7 +160,7 @@ public class ReflectiveHierarchyStep {
             }
         } else if (type instanceof ArrayType) {
             visits.addLast(() -> addReflectiveHierarchy(combinedIndexBuildItem, reflectiveHierarchyBuildItem, source,
-                    type.asArrayType().component(),
+                    type.asArrayType().constituent(),
                     processedReflectiveHierarchies,
                     unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
         } else if (type instanceof ParameterizedType) {

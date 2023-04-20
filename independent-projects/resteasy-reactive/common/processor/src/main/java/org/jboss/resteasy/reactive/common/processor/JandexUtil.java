@@ -248,7 +248,7 @@ public final class JandexUtil {
     private static boolean containsTypeParameters(Type type) {
         switch (type.kind()) {
             case ARRAY:
-                return containsTypeParameters(type.asArrayType().component());
+                return containsTypeParameters(type.asArrayType().constituent());
             case PARAMETERIZED_TYPE:
                 ParameterizedType parameterizedType = type.asParameterizedType();
                 if (parameterizedType.owner() != null
@@ -274,7 +274,7 @@ public final class JandexUtil {
         switch (type.kind()) {
             case ARRAY:
                 ArrayType arrayType = type.asArrayType();
-                return ArrayType.create(mapGenerics(arrayType.component(), mapping), arrayType.dimensions());
+                return ArrayType.create(mapGenerics(arrayType.constituent(), mapping), arrayType.dimensions());
             case CLASS:
                 return type;
             case PARAMETERIZED_TYPE:

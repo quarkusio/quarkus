@@ -222,7 +222,7 @@ public class AsmUtil {
                 for (int i = 0; i < arrayType.dimensions(); i++) {
                     sb.append('[');
                 }
-                toSignature(sb, arrayType.component(), typeArgMapper, erased);
+                toSignature(sb, arrayType.constituent(), typeArgMapper, erased);
                 break;
             case CLASS:
                 sb.append('L').append(type.asClassType().name().toString('/')).append(';');

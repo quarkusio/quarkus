@@ -377,7 +377,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             if (!extractor.isSingle()) {
                 boolean isArray = type.kind() == org.jboss.jandex.Type.Kind.ARRAY;
                 // it's T[] or List<T>
-                type = isArray ? type.asArrayType().component()
+                type = isArray ? type.asArrayType().constituent()
                         : type.asParameterizedType().arguments().get(0);
             }
             // type
@@ -489,7 +489,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 // [instance, instance, converter]
                 // array converter wants the array instance type
                 if (converter instanceof ArrayConverter.ArraySupplier) {
-                    org.jboss.jandex.Type componentType = fieldInfo.type().asArrayType().component();
+                    org.jboss.jandex.Type componentType = fieldInfo.type().asArrayType().constituent();
                     initConverterMethod.visitLdcInsn(componentType.name().toString('.'));
                     // [instance, instance, converter, componentType]
                     initConverterMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegatorBinaryName, "<init>",
@@ -862,8 +862,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             } else if (param.getElementType().equals(InputStream.class.getName())) {
                 return MultipartFormParamExtractor.Type.InputStream;
             } else if (param.getParamType().kind() == Kind.ARRAY
-                    && param.getParamType().asArrayType().component().kind() == Kind.PRIMITIVE
-                    && param.getParamType().asArrayType().component().asPrimitiveType().primitive() == Primitive.BYTE) {
+                    && param.getParamType().asArrayType().constituent().kind() == Kind.PRIMITIVE
+                    && param.getParamType().asArrayType().constituent().asPrimitiveType().primitive() == Primitive.BYTE) {
                 return MultipartFormParamExtractor.Type.ByteArray;
             } else if (mimeType != null && !mimeType.equals(MediaType.TEXT_PLAIN)) {
                 return MultipartFormParamExtractor.Type.PartType;

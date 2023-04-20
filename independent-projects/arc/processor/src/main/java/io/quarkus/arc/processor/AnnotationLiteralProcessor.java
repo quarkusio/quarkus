@@ -355,7 +355,7 @@ public class AnnotationLiteralProcessor {
 
     private static DotName componentTypeName(MethodInfo method) {
         ArrayType arrayType = method.returnType().asArrayType();
-        return arrayType.component().name();
+        return arrayType.constituent().name();
     }
 
     private static String generateAnnotationLiteralClassName(DotName annotationName) {

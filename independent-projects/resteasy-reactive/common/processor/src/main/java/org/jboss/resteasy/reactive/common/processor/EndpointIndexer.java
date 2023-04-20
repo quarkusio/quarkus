@@ -1419,7 +1419,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     || convertible) {
                 builder.setSingle(false);
             }
-            elementType = toClassName(at.component(), currentClassInfo, actualEndpointInfo, index);
+            elementType = toClassName(at.constituent(), currentClassInfo, actualEndpointInfo, index);
             if (convertible) {
                 handleArrayParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
@@ -1450,8 +1450,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private boolean isFormParamConvertible(Type paramType) {
         // let's not call the array converter for byte[] for multipart
         if (paramType.kind() == Kind.ARRAY
-                && paramType.asArrayType().component().kind() == Kind.PRIMITIVE
-                && paramType.asArrayType().component().asPrimitiveType().primitive() == Primitive.BYTE) {
+                && paramType.asArrayType().constituent().kind() == Kind.PRIMITIVE
+                && paramType.asArrayType().constituent().asPrimitiveType().primitive() == Primitive.BYTE) {
             return false;
         } else {
             return true;

@@ -145,7 +145,7 @@ public class HibernateSearchOutboxPollingClassesTest {
                 collectModelClassesRecursively(index, type.name(), classes);
                 break;
             case ARRAY:
-                collectModelClassesRecursively(index, type.asArrayType().component(), classes);
+                collectModelClassesRecursively(index, type.asArrayType().constituent(), classes);
                 break;
             case TYPE_VARIABLE:
                 for (Type bound : type.asTypeVariable().bounds()) {

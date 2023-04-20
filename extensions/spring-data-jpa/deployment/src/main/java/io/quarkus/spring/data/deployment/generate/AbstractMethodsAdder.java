@@ -298,7 +298,7 @@ public abstract class AbstractMethodsAdder {
             return t;
         }
         if (t.kind() == Type.Kind.ARRAY) {
-            return verifyQueryResultType(t.asArrayType().component(), index);
+            return verifyQueryResultType(t.asArrayType().constituent(), index);
         } else if (t.kind() == Type.Kind.PARAMETERIZED_TYPE) {
             final List<Type> types = t.asParameterizedType().arguments();
             if (types.size() == 1) {

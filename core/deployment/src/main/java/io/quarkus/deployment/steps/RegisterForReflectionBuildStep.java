@@ -210,7 +210,7 @@ public class RegisterForReflectionBuildStep {
             ClassLoader classLoader, Set<DotName> processedReflectiveHierarchies, boolean methods,
             ReflectiveHierarchyBuildItem.Builder builder, Type type) {
         if (type.kind().equals(Kind.ARRAY)) {
-            type = type.asArrayType().component();
+            type = type.asArrayType().constituent();
         }
         if (type.kind() != Kind.PRIMITIVE && !processedReflectiveHierarchies.contains(type.name())) {
             registerClassDependencies(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies,

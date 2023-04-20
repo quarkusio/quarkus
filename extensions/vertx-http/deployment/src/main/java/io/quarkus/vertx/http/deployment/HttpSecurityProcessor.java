@@ -144,7 +144,7 @@ public class HttpSecurityProcessor {
     }
 
     private static boolean isStringArray(Type type) {
-        return type.kind() == Type.Kind.ARRAY && isString(type.asArrayType().component());
+        return type.kind() == Type.Kind.ARRAY && isString(type.asArrayType().constituent());
     }
 
     private static boolean isString(Type type) {

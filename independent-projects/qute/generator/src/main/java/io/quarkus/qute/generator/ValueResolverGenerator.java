@@ -703,7 +703,7 @@ public class ValueResolverGenerator {
             // Then we need to create an array for the last argument
             Type varargsParam = parameterTypes.get(parameterTypes.size() - 1);
             ResultHandle componentType = tryCatch
-                    .loadClass(varargsParam.asArrayType().component().name().toString());
+                    .loadClass(varargsParam.asArrayType().constituent().name().toString());
             ResultHandle varargsResults = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
                     evaluatedParams, tryCatch.load(parameterTypes.size()), componentType);
             // E.g. String, String, String -> String, String[]
@@ -852,7 +852,7 @@ public class ValueResolverGenerator {
                     // Then we need to create an array for the last argument
                     Type varargsParam = parameterTypes.get(parameterTypes.size() - 1);
                     ResultHandle componentType = tryCatch
-                            .loadClass(varargsParam.asArrayType().component().name().toString());
+                            .loadClass(varargsParam.asArrayType().constituent().name().toString());
                     ResultHandle varargsResults = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
                             evaluatedParams, tryCatch.load(parameterTypes.size()), componentType);
                     // E.g. String, String, String -> String, String[]

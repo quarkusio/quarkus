@@ -145,7 +145,7 @@ class BeanResolverImpl implements BeanResolver {
         if (ARRAY.equals(requiredType.kind())) {
             if (ARRAY.equals(beanType.kind())) {
                 // Array types are considered to match only if their element types are identical
-                return matchesNoBoxing(requiredType.asArrayType().component(), beanType.asArrayType().component());
+                return matchesNoBoxing(requiredType.asArrayType().constituent(), beanType.asArrayType().constituent());
             }
         } else if (CLASS.equals(requiredType.kind())) {
             if (CLASS.equals(beanType.kind())) {

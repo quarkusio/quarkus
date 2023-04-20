@@ -523,7 +523,7 @@ final class Methods {
                     }
                     DotName typeName = type.name();
                     if (type.kind() == Kind.ARRAY) {
-                        Type componentType = type.asArrayType().component();
+                        Type componentType = type.asArrayType().constituent();
                         if (componentType.kind() == Kind.PRIMITIVE) {
                             continue;
                         }

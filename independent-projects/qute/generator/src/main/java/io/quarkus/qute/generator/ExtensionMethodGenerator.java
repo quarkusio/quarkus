@@ -328,7 +328,7 @@ public class ExtensionMethodGenerator {
                         // Last param is varargs
                         Type varargsParam = params.get(lastIdx).type;
                         ResultHandle componentType = tryCatch
-                                .loadClass(varargsParam.asArrayType().component().name().toString());
+                                .loadClass(varargsParam.asArrayType().constituent().name().toString());
                         ResultHandle varargsResults = tryCatch.invokeVirtualMethod(
                                 Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
                                 evaluatedParamsHandle, tryCatch.load(evaluated.size()), componentType);
@@ -579,7 +579,7 @@ public class ExtensionMethodGenerator {
                                 // Last param is varargs
                                 Type varargsParam = params.get(lastIdx).type;
                                 ResultHandle componentType = tryCatch
-                                        .loadClass(varargsParam.asArrayType().component().name().toString());
+                                        .loadClass(varargsParam.asArrayType().constituent().name().toString());
                                 ResultHandle varargsResults = tryCatch.invokeVirtualMethod(
                                         Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
                                         whenEvaluatedParams, tryCatch.load(evaluated.size()), componentType);

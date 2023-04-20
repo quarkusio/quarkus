@@ -52,7 +52,7 @@ public class Name implements Comparable<Name> {
             case PARAMETERIZED_TYPE:
                 return createSimple(type.asParameterizedType());
             case ARRAY:
-                Type component = type.asArrayType().component();
+                Type component = type.asArrayType().constituent();
                 if (component.kind() == Kind.CLASS) {
                     return createSimple(type.toString());
                 }

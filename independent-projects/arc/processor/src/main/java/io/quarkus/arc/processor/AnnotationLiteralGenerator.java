@@ -174,7 +174,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
     private static boolean returnsClassOrClassArray(MethodInfo annotationMember) {
         boolean returnsClass = DotNames.CLASS.equals(annotationMember.returnType().name());
         boolean returnsClassArray = annotationMember.returnType().kind() == Type.Kind.ARRAY
-                && DotNames.CLASS.equals(annotationMember.returnType().asArrayType().component().name());
+                && DotNames.CLASS.equals(annotationMember.returnType().asArrayType().constituent().name());
         return returnsClass || returnsClassArray;
     }
 

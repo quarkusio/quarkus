@@ -720,7 +720,7 @@ interface PermissionSecurityChecks {
 
             private static boolean secondParamIsNotStringArr(MethodInfo constructor) {
                 return constructor.parametersCount() < 2 || constructor.parameterType(1).kind() != Type.Kind.ARRAY
-                        || !constructor.parameterType(1).asArrayType().component().name().equals(STRING);
+                        || !constructor.parameterType(1).asArrayType().constituent().name().equals(STRING);
             }
 
             private static boolean isStringPermission(PermissionKey permissionKey) {

@@ -869,7 +869,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
     }
 
     private static boolean isStringArray(Type returnType) {
-        return returnType.kind() == Type.Kind.ARRAY && returnType.asArrayType().component().name().equals(STRING);
+        return returnType.kind() == Type.Kind.ARRAY && returnType.asArrayType().constituent().name().equals(STRING);
     }
 
     private static boolean isComputedParamContext(Type type) {

@@ -339,7 +339,7 @@ public class InjectionPointInfo {
             return ParameterizedType.create(parameterizedType.name(), typeParams, parameterizedType.owner());
         } else if (type.kind() == org.jboss.jandex.Type.Kind.ARRAY) {
             ArrayType arrayType = type.asArrayType();
-            Type component = arrayType.component();
+            Type component = arrayType.constituent();
             if (component.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
                     || component.kind() == org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE) {
                 component = resolveType(component, beanClass, beanDeployment, resolvedTypeVariables);

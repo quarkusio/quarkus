@@ -21,14 +21,19 @@ public class DefaultTokenStateManager implements TokenStateManager {
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
             AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
+
+        boolean encryptAll = !oidcConfig.tokenStateManager.splitTokens;
+
         StringBuilder sb = new StringBuilder();
-        sb.append(encryptToken(tokens.getIdToken(), routingContext, oidcConfig));
+        sb.append(encryptAll ? tokens.getIdToken() : encryptToken(tokens.getIdToken(), routingContext, oidcConfig));
         if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
             if (!oidcConfig.tokenStateManager.splitTokens) {
                 sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
-                        .append(encryptToken(tokens.getAccessToken(), routingContext, oidcConfig))
+                        .append(encryptAll ? tokens.getAccessToken()
+                                : encryptToken(tokens.getAccessToken(), routingContext, oidcConfig))
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
-                        .append(encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig));
+                        .append(encryptAll ? tokens.getRefreshToken()
+                                : encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig));
             } else {
                 CodeAuthenticationMechanism.createCookie(routingContext,
                         oidcConfig,
@@ -48,7 +53,8 @@ public class DefaultTokenStateManager implements TokenStateManager {
                 sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
                         .append("")
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
-                        .append(encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig));
+                        .append(encryptAll ? tokens.getRefreshToken()
+                                : encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig));
             } else {
                 if (tokens.getRefreshToken() != null) {
                     CodeAuthenticationMechanism.createCookie(routingContext,
@@ -59,21 +65,26 @@ public class DefaultTokenStateManager implements TokenStateManager {
                 }
             }
         }
-        return Uni.createFrom().item(sb.toString());
+        String state = encryptAll ? encryptToken(sb.toString(), routingContext, oidcConfig) : sb.toString();
+        return Uni.createFrom().item(state);
     }
 
     @Override
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<AuthorizationCodeTokens> requestContext) {
+        boolean decryptAll = !oidcConfig.tokenStateManager.splitTokens;
+
+        tokenState = decryptAll ? decryptToken(tokenState, routingContext, oidcConfig) : tokenState;
+
         String[] tokens = CodeAuthenticationMechanism.COOKIE_PATTERN.split(tokenState);
-        String idToken = decryptToken(tokens[0], routingContext, oidcConfig);
+        String idToken = decryptAll ? tokens[0] : decryptToken(tokens[0], routingContext, oidcConfig);
 
         String accessToken = null;
         String refreshToken = null;
         if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
             if (!oidcConfig.tokenStateManager.splitTokens) {
-                accessToken = decryptToken(tokens[1], routingContext, oidcConfig);
-                refreshToken = decryptToken(tokens[2], routingContext, oidcConfig);
+                accessToken = decryptAll ? tokens[1] : decryptToken(tokens[1], routingContext, oidcConfig);
+                refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
             } else {
                 Cookie atCookie = getAccessTokenCookie(routingContext, oidcConfig);
                 if (atCookie != null) {
@@ -86,7 +97,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
             }
         } else if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.ID_REFRESH_TOKENS) {
             if (!oidcConfig.tokenStateManager.splitTokens) {
-                refreshToken = decryptToken(tokens[2], routingContext, oidcConfig);
+                refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
             } else {
                 Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
                 if (rtCookie != null) {
@@ -129,7 +140,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
     }
 
     private String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
-        if (oidcConfig.tokenStateManager.encryptionRequired.orElse(false)) {
+        if (oidcConfig.tokenStateManager.encryptionRequired) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
                 return OidcUtils.encryptString(token, configContext.getTokenEncSecretKey());
@@ -141,7 +152,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
     }
 
     private String decryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
-        if (oidcConfig.tokenStateManager.encryptionRequired.orElse(false)) {
+        if (oidcConfig.tokenStateManager.encryptionRequired) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
                 return OidcUtils.decryptString(token, configContext.getTokenEncSecretKey());

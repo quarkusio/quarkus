@@ -1,12 +1,20 @@
 package io.quarkus.oidc.runtime;
 
-import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.smallrye.jwt.util.KeyUtils;
 
 public class TenantConfigContext {
+    private static final Logger LOG = Logger.getLogger(TenantConfigContext.class);
 
     /**
      * OIDC Provider
@@ -39,8 +47,8 @@ public class TenantConfigContext {
         this.oidcConfig = config;
         this.ready = ready;
 
-        pkceSecretKey = createPkceSecretKey(config);
-        tokenEncSecretKey = createTokenEncSecretKey(config);
+        pkceSecretKey = provider != null && provider.client != null ? createPkceSecretKey(config) : null;
+        tokenEncSecretKey = provider != null && provider.client != null ? createTokenEncSecretKey(config) : null;
     }
 
     private static SecretKey createPkceSecretKey(OidcTenantConfig config) {
@@ -59,16 +67,27 @@ public class TenantConfigContext {
     }
 
     private static SecretKey createTokenEncSecretKey(OidcTenantConfig config) {
-        if (config.tokenStateManager.encryptionRequired.orElse(false)) {
+        if (config.tokenStateManager.encryptionRequired) {
             String encSecret = config.tokenStateManager.encryptionSecret
                     .orElse(OidcCommonUtils.clientSecret(config.credentials));
             if (encSecret == null) {
-                throw new RuntimeException("Secret key for encrypting tokens is missing");
+                encSecret = OidcCommonUtils.jwtSecret(config.credentials);
             }
-            if (encSecret.length() != 32) {
-                throw new RuntimeException("Secret key for encrypting tokens must be 32 characters long");
+            try {
+                if (encSecret == null) {
+                    LOG.warn("Secret key for encrypting tokens is missing, auto-generating it");
+                    KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+                    keyGenerator.init(256);
+                    return keyGenerator.generateKey();
+                }
+                byte[] secretBytes = encSecret.getBytes(StandardCharsets.UTF_8);
+                if (secretBytes.length < 32) {
+                    LOG.warn("Secret key for encrypting tokens should be 32 characters long");
+                }
+                return new SecretKeySpec(OidcUtils.getSha256Digest(secretBytes), "AES");
+            } catch (Exception ex) {
+                throw new OIDCException(ex);
             }
-            return KeyUtils.createSecretKeyFromSecret(encSecret);
         }
         return null;
     }

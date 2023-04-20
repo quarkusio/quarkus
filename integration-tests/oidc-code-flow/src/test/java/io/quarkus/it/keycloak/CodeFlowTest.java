@@ -17,6 +17,9 @@ import java.util.Base64;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -275,7 +278,15 @@ public class CodeFlowTest {
 
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
             assertNotNull(sessionCookie);
-            JsonObject idToken = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+
+            SecretKey key = new SecretKeySpec(OidcUtils
+                    .getSha256Digest("secret".getBytes(StandardCharsets.UTF_8)),
+                    "AES");
+            String sessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
+
+            String encodedIdToken = sessionCookieValue.split("\\|")[0];
+
+            JsonObject idToken = OidcUtils.decodeJwtContent(encodedIdToken);
             String expiresAt = idToken.getInteger("exp").toString();
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             String response = page.getBody().asNormalizedText();
@@ -850,7 +861,7 @@ public class CodeFlowTest {
             assertEquals("tenant-idtoken-only:no refresh", page.getBody().asNormalizedText());
 
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-idtoken-only");
-            checkSingleTokenCookie(idTokenCookie, "ID");
+            checkSingleTokenCookie(idTokenCookie, "ID", "secret");
 
             assertNull(getSessionAtCookie(webClient, "tenant-idtoken-only"));
             assertNull(getSessionRtCookie(webClient, "tenant-idtoken-only"));
@@ -860,7 +871,7 @@ public class CodeFlowTest {
     }
 
     @Test
-    public void testDefaultSessionManagerIdRefreshTokens() throws IOException, InterruptedException {
+    public void testDefaultSessionManagerIdRefreshTokens() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-id-refresh-token");
             assertNotNull(getStateCookie(webClient, "tenant-id-refresh-token"));
@@ -880,8 +891,15 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-id-refresh-token");
             assertEquals("tenant-id-refresh-token:RT injected", page.getBody().asNormalizedText());
 
-            Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-id-refresh-token");
-            String[] parts = idTokenCookie.getValue().split("\\|");
+            Cookie sessionCookie = getSessionCookie(page.getWebClient(), "tenant-id-refresh-token");
+
+            SecretKey key = new SecretKeySpec(OidcUtils
+                    .getSha256Digest("secret".getBytes(StandardCharsets.UTF_8)),
+                    "AES");
+
+            String sessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
+
+            String[] parts = sessionCookieValue.split("\\|");
             assertEquals(3, parts.length);
             assertEquals("ID", OidcUtils.decodeJwtContent(parts[0]).getString("typ"));
             assertEquals("", parts[1]);
@@ -916,14 +934,15 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-split-tokens");
             assertEquals("tenant-split-tokens:RT injected", page.getBody().asNormalizedText());
 
+            final String decryptSecret = "eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU";
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-split-tokens");
-            checkSingleTokenCookie(idTokenCookie, "ID", true);
+            checkSingleTokenCookie(idTokenCookie, "ID", decryptSecret);
 
             Cookie atTokenCookie = getSessionAtCookie(page.getWebClient(), "tenant-split-tokens");
-            checkSingleTokenCookie(atTokenCookie, "Bearer", true);
+            checkSingleTokenCookie(atTokenCookie, "Bearer", decryptSecret);
 
             Cookie rtTokenCookie = getSessionRtCookie(page.getWebClient(), "tenant-split-tokens");
-            checkSingleTokenCookie(rtTokenCookie, "Refresh", true);
+            checkSingleTokenCookie(rtTokenCookie, "Refresh", decryptSecret);
 
             // verify all the cookies are cleared after the session timeout
             webClient.getOptions().setRedirectEnabled(false);
@@ -972,12 +991,12 @@ public class CodeFlowTest {
             assertEquals("tenant-split-id-refresh-token:RT injected", page.getBody().asNormalizedText());
 
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-split-id-refresh-token");
-            checkSingleTokenCookie(idTokenCookie, "ID");
+            checkSingleTokenCookie(idTokenCookie, "ID", "secret");
 
             assertNull(getSessionAtCookie(page.getWebClient(), "tenant-split-id-refresh-token"));
 
             Cookie rtTokenCookie = getSessionRtCookie(page.getWebClient(), "tenant-split-id-refresh-token");
-            checkSingleTokenCookie(rtTokenCookie, "Refresh");
+            checkSingleTokenCookie(rtTokenCookie, "Refresh", "secret");
 
             // verify all the cookies are cleared after the session timeout
             webClient.getOptions().setRedirectEnabled(false);
@@ -1005,26 +1024,30 @@ public class CodeFlowTest {
     }
 
     private void checkSingleTokenCookie(Cookie tokenCookie, String type) {
-        checkSingleTokenCookie(tokenCookie, type, false);
+        checkSingleTokenCookie(tokenCookie, type, null);
 
     }
 
-    private void checkSingleTokenCookie(Cookie tokenCookie, String type, boolean decrypt) {
+    private void checkSingleTokenCookie(Cookie tokenCookie, String type, String decryptSecret) {
         String[] cookieParts = tokenCookie.getValue().split("\\|");
         assertEquals(1, cookieParts.length);
         String token = cookieParts[0];
         String[] tokenParts = token.split("\\.");
-        if (decrypt) {
+        if (decryptSecret != null) {
             assertEquals(5, tokenParts.length);
             try {
-                token = OidcUtils.decryptString(token, KeyUtils.createSecretKeyFromSecret("eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU"));
+                SecretKey key = new SecretKeySpec(OidcUtils
+                        .getSha256Digest(decryptSecret.getBytes(StandardCharsets.UTF_8)),
+                        "AES");
+                token = OidcUtils.decryptString(token, key);
                 tokenParts = token.split("\\.");
             } catch (Exception ex) {
                 fail("Token decryption has failed");
             }
         }
         assertEquals(3, tokenParts.length);
-        assertEquals(type, OidcUtils.decodeJwtContent(token).getString("typ"));
+        JsonObject json = OidcUtils.decodeJwtContent(token);
+        assertEquals(type, json.getString("typ"));
     }
 
     @Test

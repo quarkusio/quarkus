@@ -280,6 +280,10 @@ public class OidcCommonUtils {
         return creds.secret.orElse(creds.clientSecret.value.orElseGet(fromCredentialsProvider(creds.clientSecret.provider)));
     }
 
+    public static String jwtSecret(Credentials creds) {
+        return creds.jwt.secret.orElseGet(fromCredentialsProvider(creds.jwt.secretProvider));
+    }
+
     public static Secret.Method clientSecretMethod(Credentials creds) {
         return creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC);
     }
@@ -304,7 +308,7 @@ public class OidcCommonUtils {
     public static Key clientJwtKey(Credentials creds) {
         if (creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent()) {
             return KeyUtils
-                    .createSecretKeyFromSecret(creds.jwt.secret.orElseGet(fromCredentialsProvider(creds.jwt.secretProvider)));
+                    .createSecretKeyFromSecret(jwtSecret(creds));
         } else {
             Key key = null;
             try {

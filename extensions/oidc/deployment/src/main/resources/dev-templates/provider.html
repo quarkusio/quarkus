@@ -10,7 +10,7 @@ OpenId Connect Dev Console
 
 var port = {config:property('quarkus.http.port')};
 
-{#if info:oidcApplicationType is 'service'}
+{#if info:oidcApplicationType is 'service' || info:oidcApplicationType is 'hybrid'}
     var devRoot = '{devRootAppend}';
     var encodedDevRoot = devRoot.replaceAll("/", "%2F");
 
@@ -40,7 +40,7 @@ var port = {config:property('quarkus.http.port')};
             $('.loginError').hide();
             $('.implicitLoggedIn').show();
             var search = window.location.search;
-            var code = search.match(/code=([^&]+)/)[1];
+            var code = decodeURIComponent(search.match(/code=([^&]+)/)[1]);
             var state = search.match(/state=([^&]+)/)[1];
             exchangeCodeForTokens(code, state);
         }else if(errorInUrl()){
@@ -103,6 +103,7 @@ var port = {config:property('quarkus.http.port')};
       var address;
       var state;
       var clientId = getClientId();
+      var scopes = '{info:scopes??}';
       {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
           address = '{info:keycloakAdminUrl??}' + "/realms/" + $('#keycloakRealm').val() + "/protocol/openid-connect/auth";
           state = makeid() + "_" + $('#keycloakRealm').val() + "_" + clientId;
@@ -114,14 +115,14 @@ var port = {config:property('quarkus.http.port')};
         window.location.href = address
           + "?client_id=" + clientId
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
-          + "&scope=openid&response_type=token id_token&response_mode=query&prompt=login"
+          + "&scope=" + scopes + "&response_type=token id_token&response_mode=query&prompt=login"
           + "&nonce=" + makeid()
           + "&state=" + state;
       {#else}
         window.location.href = address
           + "?client_id=" + clientId
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
-          + "&scope=openid&response_type=code&response_mode=query&prompt=login"
+          + "&scope=" + scopes + "&response_type=code&response_mode=query&prompt=login"
           + "&nonce=" + makeid()
           + "&state=" + state;
       {/if}    

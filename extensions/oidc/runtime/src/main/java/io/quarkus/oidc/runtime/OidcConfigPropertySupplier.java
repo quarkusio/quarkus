@@ -1,15 +1,18 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 
 public class OidcConfigPropertySupplier implements Supplier<String> {
     private static final String AUTH_SERVER_URL_CONFIG_KEY = "quarkus.oidc.auth-server-url";
     private static final String END_SESSION_PATH_KEY = "quarkus.oidc.end-session-path";
+    private static final String SCOPES_KEY = "quarkus.oidc.authentication.scopes";
     private String oidcConfigProperty;
     private String defaultValue;
     private boolean urlProperty;
@@ -40,6 +43,13 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
                 return checkUrlProperty(value);
             }
             return defaultValue;
+        } else if (SCOPES_KEY.equals(oidcConfigProperty)) {
+            Optional<List<String>> scopes = ConfigProvider.getConfig().getOptionalValues(oidcConfigProperty, String.class);
+            if (scopes.isPresent()) {
+                return OidcCommonUtils.urlEncode(String.join(" ", scopes.get()));
+            } else {
+                return OidcConstants.OPENID_SCOPE;
+            }
         } else {
             return checkUrlProperty(ConfigProvider.getConfig().getOptionalValue(oidcConfigProperty, String.class));
         }

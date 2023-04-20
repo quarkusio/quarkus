@@ -101,7 +101,8 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     metadata != null ? metadata.getString("authorization_endpoint") : null,
                     metadata != null ? metadata.getString("token_endpoint") : null,
                     metadata != null ? metadata.getString("end_session_endpoint") : null,
-                    metadata != null ? metadata.containsKey("introspection_endpoint") : false);
+                    metadata != null ? metadata.containsKey("introspection_endpoint")
+                            || metadata.containsKey("userinfo_endpoint") : false);
 
             produceDevConsoleRouteItems(devConsoleRoute,
                     new OidcTestServiceHandler(vertxInstance, oidcConfig.devui.webClientTimeout),

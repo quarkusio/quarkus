@@ -18,6 +18,7 @@ public abstract class AbstractDevConsoleProcessor {
     protected static final String TOKEN_PATH_CONFIG_KEY = CONFIG_PREFIX + "token-path";
     protected static final String END_SESSION_PATH_CONFIG_KEY = CONFIG_PREFIX + "end-session-path";
     protected static final String POST_LOGOUT_URI_PARAM_CONFIG_KEY = CONFIG_PREFIX + "logout.post-logout-uri-param";
+    protected static final String SCOPES_KEY = CONFIG_PREFIX + "authentication.scopes";
 
     protected void produceDevConsoleTemplateItems(Capabilities capabilities,
             BuildProducer<DevConsoleTemplateInfoBuildItem> devConsoleTemplate,
@@ -66,6 +67,9 @@ public abstract class AbstractDevConsoleProcessor {
                 new DevConsoleRuntimeTemplateInfoBuildItem("postLogoutUriParam",
                         new OidcConfigPropertySupplier(POST_LOGOUT_URI_PARAM_CONFIG_KEY), this.getClass(),
                         curateOutcomeBuildItem));
+        devConsoleRuntimeInfo.produce(
+                new DevConsoleRuntimeTemplateInfoBuildItem("scopes",
+                        new OidcConfigPropertySupplier(SCOPES_KEY), this.getClass(), curateOutcomeBuildItem));
 
     }
 

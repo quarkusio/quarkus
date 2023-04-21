@@ -730,7 +730,7 @@ This behavior is disabled in _prod_ mode, and if you want to import even in prod
 %prod.quarkus.redis.load-script=import.redis
 ----
 
-Before importing in _prod_ mode, mae sure you configured `quarkus.redis.flush-before-load` accordingly.
+Before importing in _prod_ mode, make sure you configured `quarkus.redis.flush-before-load` accordingly.
 
 IMPORTANT: In dev mode, to reload the content of the `.redis` load scripts, you need to add: `%dev.quarkus.vertx.caching=false`
 

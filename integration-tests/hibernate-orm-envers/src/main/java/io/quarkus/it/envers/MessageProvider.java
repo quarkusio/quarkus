@@ -40,6 +40,15 @@ public class MessageProvider implements MessageBodyReader<Message>, MessageBodyW
     @Override
     public void writeTo(Message event, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        entityStream.write("{\"data\": \"out\"}".getBytes(StandardCharsets.UTF_8));
+        String data = "out";
+        if (annotations != null) {
+            for (Annotation annotation : annotations) {
+                if (annotation.annotationType().equals(CustomOutput.class)) {
+                    data = ((CustomOutput) annotation).value();
+                    break;
+                }
+            }
+        }
+        entityStream.write(String.format("{\"data\": \"%s\"}", data).getBytes(StandardCharsets.UTF_8));
     }
 }

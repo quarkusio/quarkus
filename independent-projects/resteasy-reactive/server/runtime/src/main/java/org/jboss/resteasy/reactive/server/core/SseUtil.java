@@ -16,7 +16,6 @@ import jakarta.ws.rs.ext.MessageBodyWriter;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.SseEvent;
 
-import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
@@ -135,10 +134,9 @@ public class SseUtil extends CommonSseUtil {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
-            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations
-            if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
+            if (writer.isWriteable(entityClass, entityType, context.getAllAnnotations(), mediaType)) {
                 // FIXME: spec doesn't really say what headers we should use here
-                writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
+                writer.writeTo(entity, entityClass, entityType, context.getAllAnnotations(), mediaType,
                         new QuarkusMultivaluedHashMap<>(), baos);
                 wrote = true;
                 break;

@@ -429,6 +429,9 @@ public final class OidcUtils {
         if (tenant.token.issuer.isEmpty()) {
             tenant.token.issuer = provider.token.issuer;
         }
+        if (tenant.token.principalClaim.isEmpty()) {
+            tenant.token.principalClaim = provider.token.principalClaim;
+        }
 
         return tenant;
     }

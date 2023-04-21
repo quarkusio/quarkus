@@ -63,6 +63,7 @@ public class KnownOidcProviders {
         ret.setAuthServerUrl("https://accounts.google.com");
         ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
         ret.getAuthentication().setScopes(List.of("openid", "email", "profile"));
+        ret.getToken().setPrincipalClaim("name");
         return ret;
     }
 

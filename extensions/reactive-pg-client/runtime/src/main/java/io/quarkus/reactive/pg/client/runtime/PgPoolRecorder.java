@@ -36,6 +36,7 @@ import io.vertx.core.Vertx;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.pgclient.SslMode;
+import io.vertx.pgclient.impl.PgPoolOptions;
 import io.vertx.sqlclient.PoolOptions;
 
 @Recorder
@@ -73,7 +74,7 @@ public class PgPoolRecorder {
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
-        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+        PgPoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactivePostgreSQLConfig);
         List<PgConnectOptions> pgConnectOptionsList = toPgConnectOptions(dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig);
@@ -86,7 +87,7 @@ public class PgPoolRecorder {
         return createPool(vertx, poolOptions, pgConnectOptionsList, dataSourceName);
     }
 
-    private PoolOptions toPoolOptions(Integer eventLoopCount,
+    private PgPoolOptions toPoolOptions(Integer eventLoopCount,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
@@ -113,7 +114,7 @@ public class PgPoolRecorder {
             poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
 
-        return poolOptions;
+        return new PgPoolOptions(poolOptions);
     }
 
     private List<PgConnectOptions> toPgConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -196,7 +197,7 @@ public class PgPoolRecorder {
         return pgConnectOptionsList;
     }
 
-    private PgPool createPool(Vertx vertx, PoolOptions poolOptions, List<PgConnectOptions> pgConnectOptionsList,
+    private PgPool createPool(Vertx vertx, PgPoolOptions poolOptions, List<PgConnectOptions> pgConnectOptionsList,
             String dataSourceName) {
         Instance<PgPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
@@ -214,10 +215,10 @@ public class PgPoolRecorder {
 
     private static class DefaultInput implements PgPoolCreator.Input {
         private final Vertx vertx;
-        private final PoolOptions poolOptions;
+        private final PgPoolOptions poolOptions;
         private final List<PgConnectOptions> pgConnectOptionsList;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, List<PgConnectOptions> pgConnectOptionsList) {
+        public DefaultInput(Vertx vertx, PgPoolOptions poolOptions, List<PgConnectOptions> pgConnectOptionsList) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
             this.pgConnectOptionsList = pgConnectOptionsList;
@@ -229,7 +230,7 @@ public class PgPoolRecorder {
         }
 
         @Override
-        public PoolOptions poolOptions() {
+        public PgPoolOptions poolOptions() {
             return poolOptions;
         }
 

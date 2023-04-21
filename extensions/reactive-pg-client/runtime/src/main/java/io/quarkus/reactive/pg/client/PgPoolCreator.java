@@ -6,6 +6,7 @@ import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.core.Vertx;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
+import io.vertx.pgclient.impl.PgPoolOptions;
 import io.vertx.sqlclient.PoolOptions;
 
 /**
@@ -25,7 +26,7 @@ public interface PgPoolCreator {
 
         Vertx vertx();
 
-        PoolOptions poolOptions();
+        PgPoolOptions poolOptions();
 
         List<PgConnectOptions> pgConnectOptionsList();
     }

@@ -36,17 +36,8 @@ final class Interceptors {
      */
     static InterceptorInfo createInterceptor(ClassInfo interceptorClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
-        Set<AnnotationInstance> bindings = new HashSet<>();
         Integer priority = null;
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(interceptorClass)) {
-            bindings.addAll(beanDeployment.extractInterceptorBindings(annotation));
-            // can also be a transitive binding
-            Set<AnnotationInstance> transitiveInterceptorBindings = beanDeployment
-                    .getTransitiveInterceptorBindings(annotation.name());
-            if (transitiveInterceptorBindings != null) {
-                bindings.addAll(transitiveInterceptorBindings);
-            }
-
             if (annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
             }
@@ -60,6 +51,9 @@ final class Interceptors {
                 throw new DefinitionException("Interceptor declares scope other than @Dependent: " + interceptorClass);
             }
         }
+
+        Set<AnnotationInstance> bindings = new HashSet<>();
+        addBindings(beanDeployment, interceptorClass, bindings, false);
 
         if (bindings.isEmpty()) {
             throw new DefinitionException("Interceptor has no bindings: " + interceptorClass);
@@ -78,6 +72,31 @@ final class Interceptors {
                 bindings.size() == 1 ? Collections.singleton(bindings.iterator().next())
                         : Collections.unmodifiableSet(bindings),
                 Injection.forBean(interceptorClass, null, beanDeployment, transformer), priority);
+    }
+
+    private static void addBindings(BeanDeployment beanDeployment, ClassInfo classInfo, Collection<AnnotationInstance> bindings,
+            boolean onlyInherited) {
+        for (AnnotationInstance annotation : beanDeployment.getAnnotations(classInfo)) {
+            ClassInfo annotationClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
+            if (onlyInherited && !beanDeployment.hasAnnotation(annotationClass, DotNames.INHERITED)) {
+                continue;
+            }
+
+            bindings.addAll(beanDeployment.extractInterceptorBindings(annotation));
+            // can also be a transitive binding
+            Set<AnnotationInstance> transitiveInterceptorBindings = beanDeployment
+                    .getTransitiveInterceptorBindings(annotation.name());
+            if (transitiveInterceptorBindings != null) {
+                bindings.addAll(transitiveInterceptorBindings);
+            }
+        }
+
+        if (classInfo.superName() != null && !classInfo.superName().equals(DotNames.OBJECT)) {
+            ClassInfo superClass = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
+            if (superClass != null) {
+                addBindings(beanDeployment, superClass, bindings, true);
+            }
+        }
     }
 
     // similar logic already exists in InterceptorResolver, but it doesn't validate

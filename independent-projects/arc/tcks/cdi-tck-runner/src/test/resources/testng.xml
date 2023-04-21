@@ -230,12 +230,6 @@
                     <exclude name="testDeploymentFails"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.contract.interceptorLifeCycle.aroundConstruct.AroundConstructLifeCycleTest">
-                <methods>
-                    <exclude name="testAroundConstructInvokedAfterDependencyInjectionOnInterceptorClasses"/>
-                    <exclude name="testInstanceNotCreatedUnlessInvocationContextProceedCalled"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.event.fires.FireEventTest">
                 <methods>
                     <exclude name="testFireContainerLifecycleEvent"/>

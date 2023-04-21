@@ -284,13 +284,6 @@
                     <exclude name="testHandles"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.bindings.resolution.InterceptorBindingResolutionTest">
-                <methods>
-                    <exclude name="testBusinessMethodInterceptorBindings"/>
-                    <exclude name="testConstructorInterceptorBindings"/>
-                    <exclude name="testLifecycleInterceptorBindings"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptorTypeParamInitializerTest">
                 <methods>
                     <exclude name="testDeploymentFails"/>

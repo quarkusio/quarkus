@@ -219,7 +219,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final BlockingDefault defaultBlocking;
     private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
     private final Function<String, BeanFactory<Object>> factoryCreator;
-    private final Consumer<ResourceMethodCallbackData> resourceMethodCallback;
+    private final Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
     private final AnnotationStore annotationStore;
     protected final ApplicationScanningResult applicationScanningResult;
     private final Set<DotName> contextTypes;
@@ -773,7 +773,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, currentMethodInfo, getAnnotationStore());
             if (resourceMethodCallback != null) {
                 resourceMethodCallback.accept(
-                        new ResourceMethodCallbackData(basicResourceClassInfo, actualEndpointInfo, currentMethodInfo, method));
+                        new ResourceMethodCallbackEntry(this, index, basicResourceClassInfo, actualEndpointInfo,
+                                currentMethodInfo,
+                                method));
             }
             return method;
         } catch (Exception e) {
@@ -921,6 +923,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected void handleAdditionalMethodProcessing(METHOD method, ClassInfo currentClassInfo, MethodInfo info,
             AnnotationStore annotationStore) {
 
+    }
+
+    public boolean additionalRegisterClassForReflectionCheck(ResourceMethodCallbackEntry entry) {
+        return false;
     }
 
     protected abstract InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
@@ -1581,7 +1587,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private AdditionalWriters additionalWriters;
         private boolean hasRuntimeConverters;
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
-        private Consumer<ResourceMethodCallbackData> resourceMethodCallback;
+        private Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
         private Collection<AnnotationsTransformer> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
         private final Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
@@ -1689,7 +1695,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return (B) this;
         }
 
-        public B setResourceMethodCallback(Consumer<ResourceMethodCallbackData> resourceMethodCallback) {
+        public B setResourceMethodCallback(Consumer<ResourceMethodCallbackEntry> resourceMethodCallback) {
             this.resourceMethodCallback = resourceMethodCallback;
             return (B) this;
         }
@@ -1761,14 +1767,22 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
     }
 
-    public static class ResourceMethodCallbackData {
+    @SuppressWarnings("rawtypes")
+    public static class ResourceMethodCallbackEntry {
+
+        private final EndpointIndexer indexer;
+        private final IndexView index;
         private final BasicResourceClassInfo basicResourceClassInfo;
         private final ClassInfo actualEndpointInfo;
         private final MethodInfo methodInfo;
         private final ResourceMethod resourceMethod;
 
-        public ResourceMethodCallbackData(BasicResourceClassInfo basicResourceClassInfo, ClassInfo actualEndpointInfo,
+        public ResourceMethodCallbackEntry(EndpointIndexer indexer, IndexView index,
+                BasicResourceClassInfo basicResourceClassInfo,
+                ClassInfo actualEndpointInfo,
                 MethodInfo methodInfo, ResourceMethod resourceMethod) {
+            this.indexer = indexer;
+            this.index = index;
             this.basicResourceClassInfo = basicResourceClassInfo;
             this.methodInfo = methodInfo;
             this.actualEndpointInfo = actualEndpointInfo;
@@ -1789,6 +1803,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public ResourceMethod getResourceMethod() {
             return resourceMethod;
+        }
+
+        public boolean additionalRegisterClassForReflectionCheck() {
+            return indexer.additionalRegisterClassForReflectionCheck(this);
         }
     }
 

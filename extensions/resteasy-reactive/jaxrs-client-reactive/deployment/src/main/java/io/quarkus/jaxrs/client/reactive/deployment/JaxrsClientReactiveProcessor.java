@@ -313,7 +313,7 @@ public class JaxrsClientReactiveProcessor {
                 })
                 .setResourceMethodCallback(new Consumer<>() {
                     @Override
-                    public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
+                    public void accept(EndpointIndexer.ResourceMethodCallbackEntry entry) {
                         MethodInfo method = entry.getMethodInfo();
                         String source = JaxrsClientReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
                                 + "[" + method + "]";

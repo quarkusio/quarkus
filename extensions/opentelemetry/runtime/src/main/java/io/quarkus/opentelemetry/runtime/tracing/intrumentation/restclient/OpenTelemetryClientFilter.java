@@ -26,6 +26,8 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.net.NetClientAttributesGetter;
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 
@@ -60,6 +62,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     @Inject
     public OpenTelemetryClientFilter(final OpenTelemetry openTelemetry) {
         ClientAttributesExtractor clientAttributesExtractor = new ClientAttributesExtractor();
+        ClientNetAttributesGetter clientNetAttributesExtractor = new ClientNetAttributesGetter();
 
         InstrumenterBuilder<ClientRequestContext, ClientResponseContext> builder = Instrumenter.builder(
                 openTelemetry,
@@ -68,7 +71,8 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
 
         this.instrumenter = builder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(clientAttributesExtractor))
-                .addAttributesExtractor(HttpClientAttributesExtractor.create(clientAttributesExtractor))
+                .addAttributesExtractor(HttpClientAttributesExtractor.create(
+                        clientAttributesExtractor, clientNetAttributesExtractor))
                 .buildClientInstrumenter(new ClientRequestContextTextMapSetter());
     }
 
@@ -176,6 +180,25 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         public List<String> getResponseHeader(final ClientRequestContext request, final ClientResponseContext response,
                 final String name) {
             return response.getHeaders().getOrDefault(name, emptyList());
+        }
+    }
+
+    private static class ClientNetAttributesGetter
+            implements NetClientAttributesGetter<ClientRequestContext, ClientResponseContext> {
+
+        @Override
+        public String getTransport(ClientRequestContext clientRequestContext, ClientResponseContext clientResponseContext) {
+            return SemanticAttributes.NetTransportValues.IP_TCP;
+        }
+
+        @Override
+        public String getPeerName(ClientRequestContext clientRequestContext) {
+            return clientRequestContext.getUri().getHost();
+        }
+
+        @Override
+        public Integer getPeerPort(ClientRequestContext clientRequestContext) {
+            return clientRequestContext.getUri().getPort();
         }
     }
 }

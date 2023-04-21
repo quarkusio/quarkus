@@ -119,14 +119,13 @@ public class OpenTelemetryTestCase {
         Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
 
         Assertions.assertEquals("GET", spanData.get("attr_http.method"));
-        Assertions.assertEquals("1.1", spanData.get("attr_http.flavor"));
         Assertions.assertEquals("/direct", spanData.get("attr_http.target"));
         assertEquals(url.getHost(), spanData.get("attr_net.host.name"));
         assertEquals(url.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
         Assertions.assertEquals("http", spanData.get("attr_http.scheme"));
         Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
         Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
-        Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
+        Assertions.assertNotNull(spanData.get("attr_user_agent.original"));
     }
 
     private static void verifyProducer(Map<String, Object> spanData,

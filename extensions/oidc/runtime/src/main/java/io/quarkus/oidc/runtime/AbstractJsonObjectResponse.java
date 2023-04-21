@@ -37,16 +37,16 @@ public class AbstractJsonObjectResponse {
     }
 
     public Long getLong(String name) {
-        JsonNumber number = json.getJsonNumber(name);
+        JsonNumber number = contains(name) ? json.getJsonNumber(name) : null;
         return number != null ? number.longValue() : null;
     }
 
     public JsonArray getArray(String name) {
-        return json.getJsonArray(name);
+        return contains(name) ? json.getJsonArray(name) : null;
     }
 
     public JsonObject getObject(String name) {
-        return json.getJsonObject(name);
+        return contains(name) ? json.getJsonObject(name) : null;
     }
 
     public JsonObject getJsonObject() {
@@ -58,7 +58,7 @@ public class AbstractJsonObjectResponse {
     }
 
     public boolean contains(String propertyName) {
-        return json.containsKey(propertyName);
+        return json.containsKey(propertyName) && !json.isNull(propertyName);
     }
 
     public Set<String> getPropertyNames() {

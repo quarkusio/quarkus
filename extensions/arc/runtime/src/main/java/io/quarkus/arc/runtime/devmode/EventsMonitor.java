@@ -28,6 +28,7 @@ public class EventsMonitor {
     private volatile boolean skipContextEvents = true;
     private final List<EventInfo> events = Collections.synchronizedList(new ArrayList<>(DEFAULT_LIMIT));
     private final BroadcastProcessor<EventInfo> eventsStream = BroadcastProcessor.create();
+    private final BroadcastProcessor<Boolean> skipContextEventsStream = BroadcastProcessor.create();
 
     void notify(@Observes Object payload, EventMetadata eventMetadata) {
         if (skipContextEvents && isContextEvent(eventMetadata)) {
@@ -54,6 +55,10 @@ public class EventsMonitor {
         return eventsStream;
     }
 
+    public Multi<Boolean> streamSkipContextEvents() {
+        return skipContextEventsStream;
+    }
+
     public List<EventInfo> getLastEvents() {
         List<EventInfo> result = new ArrayList<>(events);
         Collections.reverse(result);
@@ -67,6 +72,7 @@ public class EventsMonitor {
     public void toggleSkipContextEvents() {
         // This is not thread-safe but we don't expect concurrent actions from dev ui
         skipContextEvents = !skipContextEvents;
+        skipContextEventsStream.onNext(skipContextEvents);
     }
 
     boolean isContextEvent(EventMetadata eventMetadata) {
@@ -87,14 +93,8 @@ public class EventsMonitor {
 
     private EventInfo toEventInfo(Object payload, EventMetadata eventMetadata) {
         EventInfo eventInfo = new EventInfo();
-
-        // Timestamp
         eventInfo.setTimestamp(now());
-
-        // Type
         eventInfo.setType(eventMetadata.getType().getTypeName());
-
-        // Qualifiers
         List<String> q = new ArrayList<>();
         if (eventMetadata.getQualifiers().size() > 1) {
             for (Annotation qualifier : eventMetadata.getQualifiers()) {
@@ -105,13 +105,7 @@ public class EventsMonitor {
             }
         }
         eventInfo.setQualifiers(q);
-
-        // ContextEvent
         eventInfo.setIsContextEvent(isContextEvent(eventMetadata));
-
-        // Payload
-        eventInfo.setPayload(payload.toString());
-
         return eventInfo;
     }
 

@@ -88,8 +88,13 @@ public class ArcJsonRPCService {
 
     private InvocationInfo toInvocationInfo(Invocation invocation) {
         InvocationInfo info = new InvocationInfo();
-        LocalDateTime starttime = LocalDateTime.ofInstant(Instant.ofEpochMilli(invocation.getStart()), ZoneId.systemDefault());
-        info.setStartTime(timeString(starttime));
+        info.setStartTime(
+                timeString(LocalDateTime.ofInstant(Instant.ofEpochMilli(invocation.getStart()), ZoneId.systemDefault())));
+        info.setMethodName(invocation.getDeclaringClassName() + "#" + invocation.getMethod().getName());
+        info.setDuration(invocation.getDurationMillis());
+        info.setKind(invocation.getKind().toString());
+        info.setChildren(toInvocationInfos(invocation.getChildren()));
+        info.setQuarkusBean(invocation.isQuarkusBean());
         return info;
     }
 

@@ -6,12 +6,15 @@ import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 
 public class OidcConfigPropertySupplier implements Supplier<String> {
     private static final String AUTH_SERVER_URL_CONFIG_KEY = "quarkus.oidc.auth-server-url";
-    private static final String END_SESSION_PATH_KEY = "quarkus.oidc.end-session-path";
+    private static final String END_SESSION_PATH_CONFIG_KEY = "quarkus.oidc.end-session-path";
+    private static final String OIDC_PROVIDER_CONFIG_KEY = "quarkus.oidc.provider";
     private static final String SCOPES_KEY = "quarkus.oidc.authentication.scopes";
     private String oidcConfigProperty;
     private String defaultValue;
@@ -37,7 +40,7 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
 
     @Override
     public String get() {
-        if (defaultValue != null || END_SESSION_PATH_KEY.equals(oidcConfigProperty)) {
+        if (defaultValue != null || END_SESSION_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
             Optional<String> value = ConfigProvider.getConfig().getOptionalValue(oidcConfigProperty, String.class);
             if (value.isPresent()) {
                 return checkUrlProperty(value);
@@ -45,6 +48,13 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
             return defaultValue;
         } else if (SCOPES_KEY.equals(oidcConfigProperty)) {
             Optional<List<String>> scopes = ConfigProvider.getConfig().getOptionalValues(oidcConfigProperty, String.class);
+            if (scopes.isEmpty()) {
+                Optional<Provider> provider = ConfigProvider.getConfig().getOptionalValue(OIDC_PROVIDER_CONFIG_KEY,
+                        Provider.class);
+                if (provider.isPresent()) {
+                    scopes = KnownOidcProviders.provider(provider.get()).authentication.scopes;
+                }
+            }
             if (scopes.isPresent()) {
                 return OidcCommonUtils.urlEncode(String.join(" ", scopes.get()));
             } else {

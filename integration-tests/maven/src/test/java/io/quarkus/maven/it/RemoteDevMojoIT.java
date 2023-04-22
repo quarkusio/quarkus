@@ -57,6 +57,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
 
         //also verify that the dev ui console is disabled
         DevModeTestUtils.getHttpResponse("/q/dev-v1", 404, 10, TimeUnit.SECONDS);
+        DevModeTestUtils.getHttpResponse("/q/dev-ui", 404, 10, TimeUnit.SECONDS);
     }
 
     @Test

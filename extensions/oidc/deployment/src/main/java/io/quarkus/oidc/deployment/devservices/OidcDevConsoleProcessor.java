@@ -46,7 +46,7 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
     private static final String KEYCLOAK = "Keycloak";
     private static final String AZURE = "Azure";
-    private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google");
+    private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google", "Github");
 
     OidcBuildTimeConfig oidcConfig;
 
@@ -84,7 +84,7 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
             }
 
             JsonObject metadata = null;
-            if (isDiscoveryEnabled()) {
+            if (isDiscoveryEnabled(providerConfig)) {
                 metadata = discoverMetadata(authServerUrl);
                 if (metadata == null) {
                     return;
@@ -105,8 +105,9 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     metadata != null ? metadata.getString("authorization_endpoint") : null,
                     metadata != null ? metadata.getString("token_endpoint") : null,
                     metadata != null ? metadata.getString("end_session_endpoint") : null,
-                    metadata != null ? metadata.containsKey("introspection_endpoint")
-                            || metadata.containsKey("userinfo_endpoint") : false);
+                    metadata != null
+                            ? (metadata.containsKey("introspection_endpoint") || metadata.containsKey("userinfo_endpoint"))
+                            : checkProviderUserInfoRequired(providerConfig));
 
             produceDevConsoleRouteItems(devConsoleRoute,
                     new OidcTestServiceHandler(vertxInstance, oidcConfig.devui.webClientTimeout),
@@ -115,6 +116,13 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     new OidcPasswordClientCredHandler(vertxInstance, oidcConfig.devui.webClientTimeout,
                             oidcConfig.devui.grantOptions));
         }
+    }
+
+    private boolean checkProviderUserInfoRequired(OidcTenantConfig providerConfig) {
+        if (providerConfig != null) {
+            return providerConfig.authentication.userInfoRequired.orElse(false);
+        }
+        return false;
     }
 
     private String tryToGetProviderName(String authServerUrl) {
@@ -162,8 +170,9 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
         return getBooleanProperty(TENANT_ENABLED_CONFIG_KEY);
     }
 
-    private static boolean isDiscoveryEnabled() {
-        return getBooleanProperty(DISCOVERY_ENABLED_CONFIG_KEY);
+    private static boolean isDiscoveryEnabled(OidcTenantConfig providerConfig) {
+        return ConfigProvider.getConfig().getOptionalValue(DISCOVERY_ENABLED_CONFIG_KEY, Boolean.class)
+                .orElse((providerConfig != null ? providerConfig.discoveryEnabled.orElse(true) : true));
     }
 
     private static boolean getBooleanProperty(String name) {

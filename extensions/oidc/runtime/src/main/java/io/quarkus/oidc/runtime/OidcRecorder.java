@@ -176,7 +176,8 @@ public class OidcRecorder {
             throw new ConfigurationException(
                     "UserInfo is not required but UserInfo is expected to be the source of authorization roles");
         }
-        if (oidcConfig.token.verifyAccessTokenWithUserInfo && !enableUserInfo(oidcConfig)) {
+        if (oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false) && !isWebApp(oidcConfig)
+                && !enableUserInfo(oidcConfig)) {
             throw new ConfigurationException(
                     "UserInfo is not required but 'verifyAccessTokenWithUserInfo' is enabled");
         }
@@ -238,7 +239,7 @@ public class OidcRecorder {
             }
         }
 
-        if (oidcConfig.token.verifyAccessTokenWithUserInfo) {
+        if (oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false)) {
             if (!oidcConfig.isDiscoveryEnabled().orElse(true)) {
                 if (oidcConfig.userInfoPath.isEmpty()) {
                     throw new ConfigurationException(
@@ -441,6 +442,10 @@ public class OidcRecorder {
 
     private static boolean isServiceApp(OidcTenantConfig oidcConfig) {
         return ApplicationType.SERVICE.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
+    }
+
+    private static boolean isWebApp(OidcTenantConfig oidcConfig) {
+        return ApplicationType.WEB_APP.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
     }
 
     private static void verifyAuthServerUrl(OidcCommonConfig oidcConfig) {

@@ -1256,8 +1256,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * provider does not have a token introspection endpoint.
          * This property will have no effect when JWT tokens have to be verified.
          */
-        @ConfigItem(defaultValue = "false")
-        public boolean verifyAccessTokenWithUserInfo;
+        @ConfigItem(defaultValueDocumentation = "false")
+        public Optional<Boolean> verifyAccessTokenWithUserInfo = Optional.empty();
+
+        public Optional<Boolean> isVerifyAccessTokenWithUserInfo() {
+            return verifyAccessTokenWithUserInfo;
+        }
+
+        public void setVerifyAccessTokenWithUserInfo(boolean verify) {
+            this.verifyAccessTokenWithUserInfo = Optional.of(verify);
+        }
 
         public Optional<String> getIssuer() {
             return issuer;

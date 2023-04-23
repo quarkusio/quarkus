@@ -49,6 +49,7 @@ public class OidcUtilsTest {
 
         assertFalse(config.authentication.idTokenRequired.get());
         assertTrue(config.authentication.userInfoRequired.get());
+        assertTrue(config.token.verifyAccessTokenWithUserInfo.get());
         assertEquals(List.of("user:email"), config.authentication.scopes.get());
     }
 
@@ -66,6 +67,7 @@ public class OidcUtilsTest {
 
         tenant.authentication.setIdTokenRequired(true);
         tenant.authentication.setUserInfoRequired(false);
+        tenant.token.setVerifyAccessTokenWithUserInfo(false);
         tenant.authentication.setScopes(List.of("write"));
 
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GITHUB));
@@ -80,6 +82,7 @@ public class OidcUtilsTest {
 
         assertTrue(config.authentication.idTokenRequired.get());
         assertFalse(config.authentication.userInfoRequired.get());
+        assertFalse(config.token.verifyAccessTokenWithUserInfo.get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
     }
 
@@ -197,6 +200,7 @@ public class OidcUtilsTest {
         assertEquals("https://accounts.google.com", config.getAuthServerUrl().get());
         assertEquals("name", config.getToken().getPrincipalClaim().get());
         assertEquals(List.of("openid", "email", "profile"), config.authentication.scopes.get());
+        assertTrue(config.token.verifyAccessTokenWithUserInfo.get());
     }
 
     @Test
@@ -208,6 +212,7 @@ public class OidcUtilsTest {
         tenant.setAuthServerUrl("http://localhost/wiremock");
         tenant.authentication.setScopes(List.of("write"));
         tenant.token.setPrincipalClaim("firstname");
+        tenant.token.setVerifyAccessTokenWithUserInfo(false);
 
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GOOGLE));
 
@@ -216,6 +221,7 @@ public class OidcUtilsTest {
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals("firstname", config.getToken().getPrincipalClaim().get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
+        assertFalse(config.token.verifyAccessTokenWithUserInfo.get());
     }
 
     @Test

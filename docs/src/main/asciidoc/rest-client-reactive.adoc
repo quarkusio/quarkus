@@ -985,6 +985,68 @@ Naturally this handling is per REST Client. `@ClientExceptionMapper` uses the de
 
 NOTE: Methods annotated with `@ClientExceptionMapper` can also take a `java.lang.reflect.Method` parameter which is useful if the exception mapping code needs to know the REST Client method that was invoked and caused the exception mapping code to engage.
 
+=== Using @Blocking annotation in exception mappers
+
+In cases that warrant using `InputStream` as the return type of REST Client method (such as when large amounts of data need to be read): 
+
+[source, java]
+----
+@Path("/echo")
+@RegisterRestClient
+public interface EchoClient {
+
+    @GET
+    InputStream get();
+}
+----
+
+This will work as expected, but if you try to read this InputStream object in a custom exception mapper, you will receive a `BlockingNotAllowedException` exception. This is because `ResponseExceptionMapper` classes are run on the Event Loop thread executor by default - which does not allow to perform IO operations.
+
+To make your exception mapper blocking, you can annotate the exception mapper with the `@Blocking` annotation:
+
+[source, java]
+----
+@Provider
+@Blocking <1>
+public class MyResponseExceptionMapper implements ResponseExceptionMapper<RuntimeException> {
+
+    @Override
+    public RuntimeException toThrowable(Response response) {
+        if (response.getStatus() == 500) {
+            response.readEntity(String.class); <2>
+            return new RuntimeException("The remote service responded with HTTP 500");
+        }
+        return null;
+    }
+}
+----
+
+<1> With the `@Blocking` annotation, the MyResponseExceptionMapper exception mapper will be executed in the worker thread pool. 
+<2> Reading the entity is now allowed because we're executing the mapper on the worker thread pool. 
+
+Note that you can also use the `@Blocking` annotation when using @ClientExceptionMapper:
+
+[source, java]
+----
+@Path("/echo")
+@RegisterRestClient
+public interface EchoClient {
+
+    @GET
+    InputStream get();
+
+    @ClientExceptionMapper
+    @Blocking
+    static RuntimeException toException(Response response) {
+        if (response.getStatus() == 500) {
+            response.readEntity(String.class);
+            return new RuntimeException("The remote service responded with HTTP 500");
+        }
+        return null;
+    }
+}
+----
+
 [[multipart]]
 == Multipart Form support
 

@@ -10,6 +10,7 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParams;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProviders;
+import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
@@ -31,6 +32,8 @@ public class DotNames {
     public static final DotName CLIENT_RESPONSE_FILTER = DotName.createSimple(ClientResponseFilter.class.getName());
     public static final DotName CLIENT_EXCEPTION_MAPPER = DotName.createSimple(ClientExceptionMapper.class.getName());
     public static final DotName CLIENT_REDIRECT_HANDLER = DotName.createSimple(ClientRedirectHandler.class.getName());
+
+    public static final DotName RESPONSE_EXCEPTION_MAPPER = DotName.createSimple(ResponseExceptionMapper.class.getName());
 
     static final DotName METHOD = DotName.createSimple(Method.class.getName());
 

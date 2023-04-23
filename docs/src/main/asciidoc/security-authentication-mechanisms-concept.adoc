@@ -195,11 +195,11 @@ For more information about OIDC authentication and authorization methods you can
 [options="header"]
 |====
 |OIDC topic |Quarkus information resource
-|Bearer token authentication mechanism|xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
-|Authorization code flow authentication mechanism|xref:security-oidc-code-flow-authentication-concept.adoc[OpenID Connect (OIDC) authorization code flow mechanism]
-|Multiple tenants that can support bearer token or authorization code flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
-|Using Keycloak to centralize authorization|xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]
-|Configuring Keycloak programmatically|xref:security-keycloak-admin-client.adoc[Using the Keycloak admin client]
+|Bearer token authentication mechanism |xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
+|Authorization code flow authentication mechanism |xref:security-oidc-code-flow-authentication-concept.adoc[OpenID Connect (OIDC) authorization code flow mechanism]
+|Multiple tenants that can support bearer token or authorization code flow mechanisms |xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
+|Using Keycloak to centralize authorization |xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]
+|Configuring Keycloak programmatically |xref:security-keycloak-admin-client.adoc[Using the Keycloak admin client]
 |====
 
 [NOTE]

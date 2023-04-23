@@ -57,7 +57,7 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 .Title guidance for different Quarkus content types
 [cols="15%,25%a,30%,30%"]
 |===
-|Content type |Should ... |Good example|Bad example
+|Content type |Should ... |Good example |Bad example
 
 |Concept
 |* Start with a noun that names the concept or topic

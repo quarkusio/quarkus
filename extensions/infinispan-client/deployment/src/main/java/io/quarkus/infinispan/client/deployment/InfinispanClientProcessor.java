@@ -85,6 +85,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -192,6 +193,7 @@ class InfinispanClientProcessor {
             BuildProducer<NativeImageConfigBuildItem> nativeImageConfig,
             BuildProducer<InfinispanClientNameBuildItem> infinispanClientNames,
             MarshallingBuildItem marshallingBuildItem,
+            BuildProducer<NativeImageResourceBuildItem> resourceBuildItem,
             CombinedIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
         feature.produce(new FeatureBuildItem(Feature.INFINISPAN_CLIENT));
@@ -211,12 +213,19 @@ class InfinispanClientProcessor {
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.INFINISPAN_CLIENT));
         nativeImageSecurityProviders.produce(new NativeImageSecurityProviderBuildItem(SASL_SECURITY_PROVIDER));
 
+        // add per cache file config
+        handlePerCacheFileConfig(infinispanClientsBuildTimeConfig.defaultInfinispanClient, resourceBuildItem, hotDeployment);
+        for (InfinispanClientBuildTimeConfig config : infinispanClientsBuildTimeConfig.namedInfinispanClients.values()) {
+            handlePerCacheFileConfig(config, resourceBuildItem, hotDeployment);
+        }
+
         Map<String, Properties> propertiesMap = new HashMap<>();
         IndexView index = applicationIndexBuildItem.getIndex();
 
         // named and default
         Set<String> allClientNames = infinispanClientNames(applicationIndexBuildItem, infinispanClientNames);
         allClientNames.addAll(infinispanClientsBuildTimeConfig.getInfinispanNamedClientConfigNames());
+        allClientNames.add(DEFAULT_INFINISPAN_CLIENT_NAME);
         for (String clientName : allClientNames) {
             Properties properties = loadHotrodProperties(clientName, reflectiveClass, marshallingBuildItem);
             propertiesMap.put(clientName, properties);
@@ -308,6 +317,17 @@ class InfinispanClientProcessor {
                         .build());
 
         return new InfinispanPropertiesBuildItem(propertiesMap);
+    }
+
+    private void handlePerCacheFileConfig(InfinispanClientBuildTimeConfig config,
+            BuildProducer<NativeImageResourceBuildItem> resourceBuildItem,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment) {
+        for (InfinispanClientBuildTimeConfig.RemoteCacheConfig cacheConfig : config.cache.values()) {
+            if (cacheConfig.configurationResource.isPresent()) {
+                resourceBuildItem.produce(new NativeImageResourceBuildItem(cacheConfig.configurationResource.get()));
+                hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(cacheConfig.configurationResource.get()));
+            }
+        }
     }
 
     @BuildStep

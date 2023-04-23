@@ -39,6 +39,7 @@ public class KnownOidcProviders {
         ret.getAuthentication().setScopes(List.of("user:email"));
         ret.getAuthentication().setUserInfoRequired(true);
         ret.getAuthentication().setIdTokenRequired(false);
+        ret.getToken().setVerifyAccessTokenWithUserInfo(true);
         return ret;
     }
 
@@ -64,6 +65,7 @@ public class KnownOidcProviders {
         ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
         ret.getAuthentication().setScopes(List.of("openid", "email", "profile"));
         ret.getToken().setPrincipalClaim("name");
+        ret.getToken().setVerifyAccessTokenWithUserInfo(true);
         return ret;
     }
 

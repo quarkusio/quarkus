@@ -1665,7 +1665,7 @@ On the other hand, if the value is set (e.g. via `TemplateInstance.data("foo", "
 The type of a default value must be assignable to the type of the parameter declaration. For example, see the incorrect parameter declaration that results in a build failure: `{@org.acme.Foo foo=1}`.
 
 TIP: The default value is actually an <<expressions,expression>>. So the default value does not have to be a literal (such as `42` or `true`). For example, you can leverage the `@TemplateEnum` and specify an enum constant as a default value of a parameter declaration: `{@org.acme.MyEnum myEnum=MyEnum:FOO}`.
-However, the infix notation is not supported in default values unless the parentheses are used for grouping, e.g. `{@org.acme.Foo foo=(foo1 ?: foo2)}``.
+However, the infix notation is not supported in default values unless the parentheses are used for grouping, e.g. `{@org.acme.Foo foo=(foo1 ?: foo2)}`.
 
 IMPORTANT: The type of a default value is not validated in <<standalone,Qute standalone>>.
 

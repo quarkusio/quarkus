@@ -231,11 +231,13 @@ var port = {config:property('quarkus.http.port')};
             function(data, status){
                 var tokens = JSON.parse(data);
                 accessToken = tokens.access_token
-                idToken = tokens.id_token
                 $('#accessTokenEncodedArea').html(prettyToken(accessToken));
                 $('#accessTokenDecodedArea').html(decodeToken(accessToken));
-                $('#idTokenEncodedArea').html(prettyToken(idToken));
-                $('#idTokenDecodedArea').html(decodeToken(idToken));
+                if ("id_token" in tokens) {
+	                idToken = tokens.id_token
+	                $('#idTokenEncodedArea').html(prettyToken(idToken));
+	                $('#idTokenDecodedArea').html(decodeToken(idToken));
+	            }
             });
     }
     

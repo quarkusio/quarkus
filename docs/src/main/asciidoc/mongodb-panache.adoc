@@ -622,7 +622,7 @@ For these operations, you can express the update document the same way you expre
 - `firstname = ?1 and status = ?2` will be mapped to the update document `{'$set' : {'firstname': ?1, 'status': ?2}}`
 - `firstname = :firstname and status = :status` will be mapped to the update document `{'$set' : {'firstname': :firstname, 'status': :status}}`
 - `{'firstname' : ?1 and 'status' : ?2}` will be mapped to the update document `{'$set' : {'firstname': ?1, 'status': ?2}}`
-- `{'firstname' : :firstname and 'status' : :status}` ` will be mapped to the update document `{'$set' : {'firstname': :firstname, 'status': :status}}`
+- `{'firstname' : :firstname and 'status' : :status}` will be mapped to the update document `{'$set' : {'firstname': :firstname, 'status': :status}}`
 - `{'$inc': {'cpt': ?1}}` will be used as-is
 
 === Query parameters

@@ -7,21 +7,15 @@ public class EventInfo {
     private String type;
     private List<String> qualifiers;
     private boolean isContextEvent;
-    private Object payload;
 
     public EventInfo() {
     }
 
     public EventInfo(String timestamp, String type, List<String> qualifiers, boolean isContextEvent) {
-        this(timestamp, type, qualifiers, isContextEvent, null);
-    }
-
-    public EventInfo(String timestamp, String type, List<String> qualifiers, boolean isContextEvent, Object payload) {
         this.timestamp = timestamp;
         this.type = type;
         this.qualifiers = qualifiers;
         this.isContextEvent = isContextEvent;
-        this.payload = payload;
     }
 
     public String getTimestamp() {
@@ -54,14 +48,6 @@ public class EventInfo {
 
     public void setIsContextEvent(boolean isContextEvent) {
         this.isContextEvent = isContextEvent;
-    }
-
-    public Object getPayload() {
-        return payload;
-    }
-
-    public void setPayload(Object payload) {
-        this.payload = payload;
     }
 
 }

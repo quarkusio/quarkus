@@ -43,7 +43,7 @@ public enum BuiltinScope {
 
     public static BuiltinScope from(ClassInfo clazz) {
         for (BuiltinScope scope : BuiltinScope.values()) {
-            if (clazz.classAnnotation(scope.getName()) != null) {
+            if (clazz.hasDeclaredAnnotation(scope.getName())) {
                 return scope;
             }
         }
@@ -69,7 +69,7 @@ public enum BuiltinScope {
 
     public static boolean isDeclaredOn(ClassInfo clazz) {
         for (BuiltinScope scope : BuiltinScope.values()) {
-            if (clazz.classAnnotation(scope.getName()) != null) {
+            if (clazz.hasDeclaredAnnotation(scope.getName())) {
                 return true;
             }
         }

@@ -210,12 +210,13 @@ class QuarkusSecurityJpaReactiveProcessor {
 
             // session.createQuery("<<HQL>>", UserEntity.class)
             ResultHandle query1 = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.Session.class, "createQuery", Mutiny.Query.class, String.class, Class.class),
+                    ofMethod(Mutiny.Session.class, "createQuery", Mutiny.SelectionQuery.class, String.class, Class.class),
                     session, methodCreator.load(hql), userEntityClass);
 
             // .setParameter("name", username)
             ResultHandle query2 = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.Query.class, "setParameter", Mutiny.Query.class, String.class, Object.class),
+                    ofMethod(Mutiny.SelectionQuery.class, "setParameter", Mutiny.SelectionQuery.class, String.class,
+                            Object.class),
                     query1, methodCreator.load("name"), username);
 
             // .getSingleResultOrNull()

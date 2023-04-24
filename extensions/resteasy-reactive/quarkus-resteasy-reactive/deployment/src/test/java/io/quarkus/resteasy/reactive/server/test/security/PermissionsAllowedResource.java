@@ -6,6 +6,10 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
+import org.jboss.resteasy.reactive.RestCookie;
+import org.jboss.resteasy.reactive.RestHeader;
+import org.jboss.resteasy.reactive.RestPath;
+
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.smallrye.common.annotation.NonBlocking;
@@ -45,4 +49,12 @@ public class PermissionsAllowedResource {
         return greeting;
     }
 
+    @PermissionsAllowed(value = "farewell", permission = CustomPermissionWithExtraArgs.class, params = { "goodbye", "toWhom",
+            "day", "place" })
+    @Path("/custom-perm-with-args/{goodbye}")
+    @POST
+    public String farewell(@RestPath String goodbye, @RestHeader("toWhom") String toWhom, @RestCookie int day, String place) {
+        String farewell = String.join(" ", new String[] { goodbye, toWhom, Integer.toString(day), place });
+        return farewell;
+    }
 }

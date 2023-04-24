@@ -7,6 +7,10 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
+import org.jboss.resteasy.reactive.RestCookie;
+import org.jboss.resteasy.reactive.RestHeader;
+import org.jboss.resteasy.reactive.RestPath;
+
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.smallrye.mutiny.Uni;
@@ -44,5 +48,14 @@ public class NonBlockingPermissionsAllowedResource {
     @GET
     public Uni<String> greetings(@QueryParam("greeting") String greeting) {
         return Uni.createFrom().item(greeting);
+    }
+
+    @PermissionsAllowed(value = "farewell", permission = CustomPermissionWithExtraArgs.class)
+    @Path("/custom-perm-with-args/{goodbye}")
+    @POST
+    public Uni<String> farewell(@RestPath String goodbye, @RestHeader("toWhom") String toWhom, @RestCookie int day,
+            String place) {
+        String farewell = String.join(" ", new String[] { goodbye, toWhom, Integer.toString(day), place });
+        return Uni.createFrom().item(farewell);
     }
 }

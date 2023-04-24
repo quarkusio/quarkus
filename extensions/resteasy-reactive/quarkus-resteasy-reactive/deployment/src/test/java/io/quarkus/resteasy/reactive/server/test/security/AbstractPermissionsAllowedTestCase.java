@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.restassured.RestAssured;
+import io.restassured.response.ValidatableResponse;
 
 public abstract class AbstractPermissionsAllowedTestCase {
 
@@ -122,5 +123,58 @@ public abstract class AbstractPermissionsAllowedTestCase {
         // we send 'hi' => pass
         RestAssured.given().auth().basic("admin", "admin").param("greeting", "hi")
                 .get("/permissions/custom-permission").then().statusCode(403);
+    }
+
+    @Test
+    public void testCustomPermissionWithAdditionalArgs() {
+        // === autodetected method params && non-blocking endpoint
+        // admin has permission with place 'Ostrava'
+        reqAutodetectedExtraArgs("admin", "Ostrava")
+                .statusCode(200)
+                .body(Matchers.equalTo("so long Nelson 3 Ostrava"));
+        // user has permission with place 'Prague'
+        reqAutodetectedExtraArgs("user", "Prague")
+                .statusCode(200)
+                .body(Matchers.equalTo("so long Nelson 3 Prague"));
+        reqAutodetectedExtraArgs("user", "Ostrava")
+                .statusCode(403);
+        // viewer has no permission
+        reqAutodetectedExtraArgs("viewer", "Ostrava")
+                .statusCode(403);
+
+        // === explicitly marked method params && blocking endpoint
+        // admin has permission with place 'Ostrava'
+        reqExplicitlyMarkedExtraArgs("admin", "Ostrava")
+                .statusCode(200)
+                .body(Matchers.equalTo("so long Nelson 3 Ostrava"));
+        // user has permission with place 'Prague'
+        reqExplicitlyMarkedExtraArgs("user", "Prague")
+                .statusCode(200)
+                .body(Matchers.equalTo("so long Nelson 3 Prague"));
+        reqExplicitlyMarkedExtraArgs("user", "Ostrava")
+                .statusCode(403);
+        // viewer has no permission
+        reqExplicitlyMarkedExtraArgs("viewer", "Ostrava")
+                .statusCode(403);
+    }
+
+    private static ValidatableResponse reqAutodetectedExtraArgs(String user, String place) {
+        return RestAssured.given()
+                .auth().basic(user, user)
+                .pathParam("goodbye", "so long")
+                .header("toWhom", "Nelson")
+                .cookie("day", 3)
+                .body(place)
+                .post("/permissions-non-blocking/custom-perm-with-args/{goodbye}").then();
+    }
+
+    private static ValidatableResponse reqExplicitlyMarkedExtraArgs(String user, String place) {
+        return RestAssured.given()
+                .auth().basic(user, user)
+                .pathParam("goodbye", "so long")
+                .header("toWhom", "Nelson")
+                .cookie("day", 3)
+                .body(place)
+                .post("/permissions/custom-perm-with-args/{goodbye}").then();
     }
 }

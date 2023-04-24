@@ -591,13 +591,7 @@ However this option comes with a price, as the `LibraryPermission` must be insta
 <2> Here, the first `Library` parameter is `migrate`, therefore we marked `library` parameter explicitly via `PermissionsAllowed#params`.
 Please note that both Permission constructor and annotated method must have parameter `library`, otherwise validation will fail.
 
-CAUTION: If you would like to pass method parameters to a custom `Permission` constructor from RESTEasy Reactive endpoints,
-make sure you have `@PermissionsAllowed` annotation set not on the JAX-RS resource method itself, but on the injected CDI
-bean to which this method will delegate to. Setting `@PermissionsAllowed` on the JAX-RS resource method will not work
-because RESTEasy Reactive performs the security checks before the deserialization.
-These limitations are demonstrated in the example below.
-
-.Example of endpoint limitations when it comes to passing annotated method arguments to the Permission constructor
+.Example of resource secured with the `LibraryPermission`
 
 [source,java]
 ----
@@ -610,7 +604,7 @@ public class LibraryResource {
     @PermissionsAllowed(value = "tv:write", permission = LibraryPermission.class)
     @PUT
     @Path("/id/{id}")
-    public Library updateLibrary(@PathParam("id") Integer id, Library library) { <1>
+    public Library updateLibrary(@PathParam("id") Integer id, Library library) {
         ...
     }
 
@@ -618,15 +612,11 @@ public class LibraryResource {
     @Path("/service-way/id/{id}")
     public Library updateLibrarySvc(@PathParam("id") Integer id, Library library) {
         String newDescription = "new description " + id;
-        return libraryService.updateLibrary(newDescription, library); <2>
+        return libraryService.updateLibrary(newDescription, library);
     }
 
 }
 ----
-<1> In the RESTEasy Reactive, the endpoint argument `library` won't ever be passed to the `LibraryPermission`, because it is not available.
-Instead, Quarkus will pass `null` for the argument `library`.
-That gives you option to reuse your custom Permission when the method argument (like `library`) is optional.
-<2> Argument `library` will be passed to the `LibraryPermission` constructor as the `LibraryService#updateLibrary` method is not an endpoint.
 
 Similarly to the `CRUDResource` example, we can use permission to role mapping and grant user with role `admin` right to
 update `MediaLibrary`:

@@ -211,7 +211,7 @@ public class RuntimeResourceDeployment {
 
         // when a method is blocking, we also want all the request filters to run on the worker thread
         // because they can potentially set thread local variables
-        //we don't need to run this for Servlet and other runtimes that default to blocking
+        // we don't need to run this for Servlet and other runtimes that default to blocking
         Optional<Integer> blockingHandlerIndex = Optional.empty();
         if (!defaultBlocking) {
             if (method.isBlocking()) {

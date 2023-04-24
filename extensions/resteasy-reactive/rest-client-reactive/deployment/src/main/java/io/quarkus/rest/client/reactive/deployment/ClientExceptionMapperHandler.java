@@ -90,12 +90,6 @@ class ClientExceptionMapperHandler {
             throw new IllegalStateException(message);
         }
 
-        StringBuilder sigBuilder = new StringBuilder();
-        sigBuilder.append(targetMethod.name()).append("_").append(targetMethod.returnType().name().toString());
-        for (Type i : targetMethod.parameterTypes()) {
-            sigBuilder.append(i.name().toString());
-        }
-
         int priority = Priorities.USER;
         AnnotationValue priorityAnnotationValue = instance.value("priority");
         if (priorityAnnotationValue != null) {
@@ -103,8 +97,7 @@ class ClientExceptionMapperHandler {
         }
 
         ClassInfo restClientInterfaceClassInfo = targetMethod.declaringClass();
-        String generatedClassName = restClientInterfaceClassInfo.name().toString() + "_" + targetMethod.name() + "_"
-                + "ResponseExceptionMapper" + "_" + HashUtil.sha1(sigBuilder.toString());
+        String generatedClassName = getGeneratedClassName(targetMethod);
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
                 .interfaces(ResteasyReactiveResponseExceptionMapper.class).build()) {
             MethodCreator toThrowable = cc.getMethodCreator("toThrowable", Throwable.class, Response.class,
@@ -141,6 +134,17 @@ class ClientExceptionMapperHandler {
         }
 
         return new GeneratedClassResult(restClientInterfaceClassInfo.name().toString(), generatedClassName, priority);
+    }
+
+    public static String getGeneratedClassName(MethodInfo methodInfo) {
+        StringBuilder sigBuilder = new StringBuilder();
+        sigBuilder.append(methodInfo.name()).append("_").append(methodInfo.returnType().name().toString());
+        for (Type i : methodInfo.parameterTypes()) {
+            sigBuilder.append(i.name().toString());
+        }
+
+        return methodInfo.declaringClass().name().toString() + "_" + methodInfo.name() + "_"
+                + "ResponseExceptionMapper" + "_" + HashUtil.sha1(sigBuilder.toString());
     }
 
     private static boolean ignoreAnnotation(MethodInfo methodInfo) {

@@ -10,9 +10,12 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_REDIREC
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.RESPONSE_EXCEPTION_MAPPER;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.*;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
+import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BLOCKING;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
 import java.lang.annotation.RetentionPolicy;
@@ -497,6 +500,24 @@ class RestClientReactiveProcessor {
                 }
             }
         }
+
+        Set<String> blockingClassNames = new HashSet<>();
+        Set<AnnotationInstance> registerBlockingClasses = new HashSet<>(index.getAnnotations(BLOCKING));
+        for (AnnotationInstance registerBlockingClass : registerBlockingClasses) {
+            AnnotationTarget target = registerBlockingClass.target();
+            if (target.kind() == AnnotationTarget.Kind.CLASS
+                    && isImplementorOf(index, target.asClass(), RESPONSE_EXCEPTION_MAPPER)) {
+                // Watch for @Blocking annotations in classes that implements ResponseExceptionMapper:
+                blockingClassNames.add(target.asClass().toString());
+            } else if (target.kind() == AnnotationTarget.Kind.METHOD
+                    && target.asMethod().annotation(CLIENT_EXCEPTION_MAPPER) != null) {
+                // Watch for @Blocking annotations in methods that are also annotated with @ClientExceptionMapper:
+                blockingClassNames.add(ClientExceptionMapperHandler.getGeneratedClassName(target.asMethod()));
+            }
+        }
+
+        recorder.setBlockingClassNames(blockingClassNames);
+
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);
         }

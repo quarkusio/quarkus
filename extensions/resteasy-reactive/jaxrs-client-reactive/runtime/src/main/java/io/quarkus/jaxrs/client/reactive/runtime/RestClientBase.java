@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 import jakarta.ws.rs.ext.ParamConverter;
 import jakarta.ws.rs.ext.ParamConverterProvider;
@@ -122,9 +121,8 @@ public abstract class RestClientBase implements Closeable {
     }
 
     @SuppressWarnings("unused") // used by generated code
-    public <T> Object[] convertParamArray(T[] value, Class<T> type, Supplier<Type[]> genericType,
-            Supplier<Annotation[][]> methodAnnotations, int paramIndex) {
-        ParamConverter<T> converter = getConverter(type, genericType, methodAnnotations, paramIndex);
+    public <T> Object[] convertParamArray(T[] value, Class<T> type, Type genericType, Annotation[] annotations) {
+        ParamConverter<T> converter = getConverter(type, genericType, annotations);
 
         if (converter == null) {
             return value;
@@ -139,10 +137,8 @@ public abstract class RestClientBase implements Closeable {
     }
 
     @SuppressWarnings("unused") // used by generated code
-    public <T> Object convertParam(T value, Class<T> type, Supplier<Type[]> genericType,
-            Supplier<Annotation[][]> methodAnnotations,
-            int paramIndex) {
-        ParamConverter<T> converter = getConverter(type, genericType, methodAnnotations, paramIndex);
+    public <T> Object convertParam(T value, Class<T> type, Type genericType, Annotation[] annotations) {
+        ParamConverter<T> converter = getConverter(type, genericType, annotations);
         if (converter != null) {
             return converter.toString(value);
         } else {
@@ -154,30 +150,26 @@ public abstract class RestClientBase implements Closeable {
         }
     }
 
-    private <T> ParamConverter<T> getConverter(Class<T> type, Supplier<Type[]> genericType,
-            Supplier<Annotation[][]> methodAnnotations,
-            int paramIndex) {
+    private <T> ParamConverter<T> getConverter(Class<T> type, Type genericType, Annotation[] annotations) {
         ParamConverterProvider converterProvider = providerForClass.get(type);
 
         if (converterProvider == null) {
             for (ParamConverterProvider provider : paramConverterProviders) {
-                ParamConverter<T> converter = provider.getConverter(type, genericType.get()[paramIndex],
-                        methodAnnotations.get()[paramIndex]);
+                ParamConverter<T> converter = provider.getConverter(type, genericType, annotations);
                 if (converter != null) {
                     providerForClass.put(type, provider);
                     return converter;
                 }
             }
             // FIXME: this should go in favour of generating them, so we can generate them only if used for dead-code elimination
-            ParamConverter<T> converter = DEFAULT_PROVIDER.getConverter(type, genericType.get()[paramIndex],
-                    methodAnnotations.get()[paramIndex]);
+            ParamConverter<T> converter = DEFAULT_PROVIDER.getConverter(type, genericType, annotations);
             if (converter != null) {
                 providerForClass.put(type, DEFAULT_PROVIDER);
                 return converter;
             }
             providerForClass.put(type, NO_PROVIDER);
         } else if (converterProvider != NO_PROVIDER) {
-            return converterProvider.getConverter(type, genericType.get()[paramIndex], methodAnnotations.get()[paramIndex]);
+            return converterProvider.getConverter(type, genericType, annotations);
         }
         return null;
     }

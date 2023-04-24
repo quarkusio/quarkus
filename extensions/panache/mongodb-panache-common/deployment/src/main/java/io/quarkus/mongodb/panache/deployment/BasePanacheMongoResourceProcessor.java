@@ -289,14 +289,14 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers, MetamodelInfo modelInfo) {
-        Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
-        if (entitiesWithPublicFields.isEmpty()) {
-            // There are no public fields to be accessed in the first place.
+        Set<String> entitiesWithExternallyAccessibleFields = modelInfo.getEntitiesWithExternallyAccessibleFields();
+        if (entitiesWithExternallyAccessibleFields.isEmpty()) {
+            // There are no fields to be accessed in the first place.
             return;
         }
 
         Set<String> entityClassNamesInternal = new HashSet<>();
-        for (String entityClassName : entitiesWithPublicFields) {
+        for (String entityClassName : entitiesWithExternallyAccessibleFields) {
             entityClassNamesInternal.add(entityClassName.replace(".", "/"));
         }
 
@@ -323,10 +323,11 @@ public abstract class BasePanacheMongoResourceProcessor {
         EntityModel entityModel = new EntityModel(classInfo);
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
-            if (Modifier.isPublic(fieldInfo.flags())
+            var visibility = EntityField.Visibility.get(fieldInfo.flags());
+            if (EntityField.Visibility.PUBLIC.equals(visibility)
                     && !Modifier.isStatic(fieldInfo.flags())
                     && !fieldInfo.hasAnnotation(BSON_IGNORE)) {
-                entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
+                entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type()), visibility));
             }
         }
         return entityModel;

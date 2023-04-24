@@ -3,7 +3,6 @@ package io.quarkus.panache.common.deployment;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.gizmo.Gizmo;
 
 public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
@@ -31,25 +30,49 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
                 // if we're in the constructor, do not replace field accesses to this type and its supertypes
                 // otherwise we risk running setters that depend on initialisation
                 || (this.methodName.equals("<init>")
-                        && targetIsInHierarchy(methodOwnerClassName, fieldOwnerClassName))
-                // we only care about entity fields
-                || !isEntityField(fieldOwnerClassName, fieldName)) {
+                        && targetIsInHierarchy(methodOwnerClassName, fieldOwnerClassName))) {
             // In those cases, don't do anything.
             super.visitFieldInsn(opcode, fieldOwner, fieldName, descriptor);
             return;
         }
 
-        String methodName;
+        EntityField entityField = getEntityField(fieldOwnerClassName, fieldName);
+        if (entityField == null) {
+            // Not an entity field: don't do anything.
+            super.visitFieldInsn(opcode, fieldOwner, fieldName, descriptor);
+            return;
+        }
+
+        String javaBeanMethodName;
+        String librarySpecificMethodName;
         String methodDescriptor;
         if (opcode == Opcodes.GETFIELD) {
-            methodName = JavaBeanUtil.getGetterName(fieldName, descriptor);
+            javaBeanMethodName = entityField.getGetterName();
+            librarySpecificMethodName = entityField.librarySpecificGetterName;
             methodDescriptor = "()" + descriptor;
         } else {
-            methodName = JavaBeanUtil.getSetterName(fieldName);
+            javaBeanMethodName = entityField.getSetterName();
+            librarySpecificMethodName = entityField.librarySpecificSetterName;
             methodDescriptor = "(" + descriptor + ")V";
         }
+
+        // For public fields, we'll replace field access with (potentially generated) JavaBean accessors.
+        // For non-public fields, we won't be using JavaBean accessors,
+        // because we might not generate any and pre-existing ones might have unwanted side effects.
+        // Instead, we will replace the field access with a call to internal field access methods, if any,
+        // e.g. generated methods like $$_hibernate_read_myProperty()
+        boolean useJavaBeanAccessor = EntityField.Visibility.PUBLIC.equals(entityField.visibility);
+        if (!useJavaBeanAccessor && librarySpecificMethodName == null) {
+            // Field is non-public, so we won't be using JavaBean accessors,
+            // and there are no library-specific accessors:
+            // don't do anything.
+            super.visitFieldInsn(opcode, fieldOwner, fieldName, descriptor);
+            return;
+        }
+        String methodName = useJavaBeanAccessor ? javaBeanMethodName : librarySpecificMethodName;
+
         if (fieldOwnerClassName.equals(this.methodOwnerClassName)
-                && methodName.equals(this.methodName)
+                && javaBeanMethodName.equals(this.methodName)
                 && methodDescriptor.equals(this.methodDescriptor)) {
             // The current method accessing the entity field is the corresponding getter/setter.
             // We don't perform substitution at all.
@@ -79,15 +102,15 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
     /**
      * Checks that the given field belongs to an entity (any entity)
      */
-    boolean isEntityField(String className, String fieldName) {
+    EntityField getEntityField(String className, String fieldName) {
         EntityModel entityModel = modelInfo.getEntityModel(className);
         if (entityModel == null)
-            return false;
+            return null;
         EntityField field = entityModel.fields.get(fieldName);
         if (field != null)
-            return true;
+            return field;
         if (entityModel.superClassName != null)
-            return isEntityField(entityModel.superClassName, fieldName);
-        return false;
+            return getEntityField(entityModel.superClassName, fieldName);
+        return null;
     }
 }

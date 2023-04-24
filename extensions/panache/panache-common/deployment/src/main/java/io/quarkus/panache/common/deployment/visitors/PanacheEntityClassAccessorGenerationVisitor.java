@@ -62,8 +62,10 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
         EntityField entityField = fields == null ? null : fields.get(name);
-        if (entityField == null || hasGetterForField(entityField)) {
-            // If the getter for this entity field already exists,
+        if (entityField == null || !EntityField.Visibility.PUBLIC.equals(entityField.visibility)
+                || hasGetterForField(entityField)) {
+            // If the field does not exist or is non-public,
+            // or if the getter for this entity field already exists,
             // we won't alter it in any way.
             return super.visitField(access, name, descriptor, signature, value);
         }
@@ -128,11 +130,16 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
         if (fields == null)
             return;
         for (EntityField field : fields.values()) {
+            if (!EntityField.Visibility.PUBLIC.equals(field.visibility)) {
+                // We don't generate accessors for non-public fields
+                // (but may rely on library-specific accessors in other places)
+                continue;
+            }
             // Getter
             String getterName = field.getGetterName();
             String getterDescriptor = "()" + field.descriptor;
             if (!userMethods.contains(getterName + "/" + getterDescriptor)) {
-                MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC,
+                MethodVisitor mv = super.visitMethod(field.visibility.accessOpCode,
                         getterName, getterDescriptor, field.signature == null ? null : "()" + field.signature, null);
                 mv.visitCode();
                 mv.visitIntInsn(Opcodes.ALOAD, 0);
@@ -165,7 +172,7 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
             String setterName = field.getSetterName();
             String setterDescriptor = "(" + field.descriptor + ")V";
             if (!userMethods.contains(setterName + "/" + setterDescriptor)) {
-                MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC,
+                MethodVisitor mv = super.visitMethod(field.visibility.accessOpCode,
                         setterName, setterDescriptor, field.signature == null ? null : "(" + field.signature + ")V", null);
                 mv.visitCode();
                 mv.visitIntInsn(Opcodes.ALOAD, 0);

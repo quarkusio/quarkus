@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: data
 :summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breath of an Object Relational Mapper. It works beautifully in Quarkus.
 :config-file: application.properties
-:orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/5.6/userguide/html_single/Hibernate_User_Guide.html
+:orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/6.2/userguide/html_single/Hibernate_User_Guide.html
 
 Hibernate ORM is the de facto standard Jakarta Persistence (formerly known as JPA) implementation and offers you the full breadth of an Object Relational Mapper.
 It works beautifully in Quarkus.
@@ -916,7 +916,7 @@ Jump over to xref:datasource.adoc[Quarkus - Datasources] for all details.
 
 "The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:{orm-doc-url-prefix}#multitenacy[Hibernate User Guide]).
 
-Quarkus currently supports the link:{orm-doc-url-prefix}#multitenacy-separate-database[separate database] and the link:{orm-doc-url-prefix}#multitenacy-separate-schema[separate schema] approach.
+Quarkus currently supports the link:{orm-doc-url-prefix}#multitenacy-separate-database[separate database], the link:{orm-doc-url-prefix}#multitenacy-separate-schema[separate schema] approach and the link:{orm-doc-url-prefix}#multitenacy-discriminator[discriminator] approach.
 
 To see multitenancy in action, you can check out the {quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
 
@@ -1146,6 +1146,53 @@ INSERT INTO known_fruits(id, name) VALUES (1, 'Avocado');
 INSERT INTO known_fruits(id, name) VALUES (2, 'Apricots');
 INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
 ----
+
+
+
+==== DISCRIMINATOR approach
+
+The default data source will be used for all tenants. All entities defining a field annotated with `@TenandId` will be handle automatically.
+
+
+[source,properties]
+----
+# Disable generation
+quarkus.hibernate-orm.database.generation=none
+
+# Enable DISCRIMINATOR approach and use default datasource
+quarkus.hibernate-orm.multitenant=DISCRIMINATOR
+
+# The default data source used for all tenant schemas
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=quarkus_test
+quarkus.datasource.password=quarkus_test
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+
+# Enable Flyway configuration
+quarkus.flyway.migrate-at-start=true
+----
+
+Here is an example of the Flyway SQL (`V1.0.0__create_fruits.sql`) to be created in the configured folder `src/main/resources/schema`.
+
+[source,sql]
+----
+CREATE TABLE known_fruits
+(
+  tenantId  VARCHAR(40),
+  id        INT,
+  name      VARCHAR(40)
+);
+CREATE SEQUENCE known_fruits_id_seq START WITH 7;
+INSERT INTO known_fruits(tenantId, id, name) VALUES ('base', 1, 'Cherry');
+INSERT INTO known_fruits(tenantId, id, name) VALUES ('base', 2, 'Apple');
+INSERT INTO known_fruits(tenantId, id, name) VALUES ('base', 3, 'Banana');
+
+INSERT INTO known_fruits(tenantId, id, name) VALUES ('mycompany', 4, 'Avocado');
+INSERT INTO known_fruits(tenantId, id, name) VALUES ('mycompany', 5, 'Apricots');
+INSERT INTO known_fruits(tenantId, id, name) VALUES ('mycompany', 6, 'Blackberries');
+----
+
+
 
 === Programmatically Resolving Tenants Connections
 

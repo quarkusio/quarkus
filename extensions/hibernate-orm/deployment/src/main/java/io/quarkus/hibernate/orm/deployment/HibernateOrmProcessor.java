@@ -1489,11 +1489,6 @@ public final class HibernateOrmProcessor {
         final MultiTenancyStrategy multiTenancyStrategy = MultiTenancyStrategy
                 .valueOf(multitenancyStrategy.orElse(MultiTenancyStrategy.NONE.name())
                         .toUpperCase(Locale.ROOT));
-        if (multiTenancyStrategy == MultiTenancyStrategy.DISCRIMINATOR) {
-            // See https://hibernate.atlassian.net/browse/HHH-6054
-            throw new ConfigurationException("The Hibernate ORM multitenancy strategy "
-                    + MultiTenancyStrategy.DISCRIMINATOR + " is currently not supported");
-        }
         return multiTenancyStrategy;
     }
 

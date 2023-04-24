@@ -100,7 +100,7 @@
         <hibernate-orm.version>6.2.1.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.18</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
-        <hibernate-reactive.version>2.0.0.Beta2</hibernate-reactive.version>
+        <hibernate-reactive.version>2.0.0.CR1</hibernate-reactive.version>
         <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
         <narayana.version>6.0.0.Final</narayana.version>

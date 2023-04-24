@@ -19,6 +19,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.io.Closeable;
 import java.io.File;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.AbstractMap;
@@ -152,6 +153,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.runtime.ClientResponseBuilderFactory;
 import io.quarkus.jaxrs.client.reactive.runtime.JaxrsClientReactiveRecorder;
+import io.quarkus.jaxrs.client.reactive.runtime.ParameterDescriptorFromClassSupplier;
 import io.quarkus.jaxrs.client.reactive.runtime.RestClientBase;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.jaxrs.client.reactive.runtime.impl.MultipartResponseDataBase;
@@ -909,9 +911,8 @@ public class JaxrsClientReactiveProcessor {
                                     addQueryParam(jandexMethod, methodCreator, methodTarget, param.name,
                                             methodCreator.getMethodParam(paramIdx),
                                             jandexMethod.parameterType(paramIdx), index, methodCreator.getThis(),
-                                            methodCreator.readStaticField(methodGenericParametersField.get()),
-                                            methodCreator.readStaticField(methodParamAnnotationsField.get()),
-                                            paramIdx));
+                                            getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
+                                            getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx)));
                         } else if (param.parameterType == ParameterType.BEAN
                                 || param.parameterType == ParameterType.MULTI_PART_FORM) {
                             // bean params require both, web-target and Invocation.Builder, modifications
@@ -930,13 +931,17 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
                             handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
+
+                            Supplier<FieldDescriptor> beanParamDescriptorsField = classContext
+                                    .getLazyBeanParameterDescriptors(beanParam.type);
+
                             formParams = addBeanParamData(jandexMethod, methodCreator, handleBeanParamMethod,
-                                    invocationBuilderRef, beanParam.getItems(),
+                                    invocationBuilderRef, classContext, beanParam.getItems(),
                                     methodCreator.getMethodParam(paramIdx), methodTarget, index,
                                     restClientInterface.getClassName(),
                                     methodCreator.getThis(),
                                     handleBeanParamMethod.getThis(),
-                                    formParams, methodGenericParametersField, methodParamAnnotationsField, paramIdx, multipart,
+                                    formParams, beanParamDescriptorsField, multipart,
                                     beanParam.type);
 
                             handleBeanParamMethod.returnValue(invocationBuilderRef);
@@ -945,9 +950,8 @@ public class JaxrsClientReactiveProcessor {
                             // methodTarget = methodTarget.resolveTemplate(paramname, paramvalue);
                             addPathParam(methodCreator, methodTarget, param.name, methodCreator.getMethodParam(paramIdx),
                                     param.type, methodCreator.getThis(),
-                                    methodCreator.readStaticField(methodGenericParametersField.get()),
-                                    methodCreator.readStaticField(methodParamAnnotationsField.get()),
-                                    paramIdx);
+                                    getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
+                                    getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx));
                         } else if (param.parameterType == ParameterType.BODY) {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterIdx = paramIdx;
@@ -965,8 +969,9 @@ public class JaxrsClientReactiveProcessor {
                             handleHeaderMethod.assign(invocationBuilderRef, handleHeaderMethod.getMethodParam(0));
                             addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
                                     handleHeaderMethod.getMethodParam(1), param.type,
-                                    handleHeaderMethod.getThis(), methodGenericParametersField.get(),
-                                    methodParamAnnotationsField.get(), paramIdx);
+                                    handleHeaderMethod.getThis(),
+                                    getGenericTypeFromArray(handleHeaderMethod, methodGenericParametersField, paramIdx),
+                                    getAnnotationsFromArray(handleHeaderMethod, methodParamAnnotationsField, paramIdx));
                             handleHeaderMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.COOKIE) {
@@ -984,7 +989,8 @@ public class JaxrsClientReactiveProcessor {
                             addCookieParam(handleCookieMethod, invocationBuilderRef, param.name,
                                     handleCookieMethod.getMethodParam(1), param.type,
                                     handleCookieMethod.getThis(),
-                                    methodGenericParametersField.get(), methodParamAnnotationsField.get(), paramIdx);
+                                    getGenericTypeFromArray(handleCookieMethod, methodGenericParametersField, paramIdx),
+                                    getAnnotationsFromArray(handleCookieMethod, methodParamAnnotationsField, paramIdx));
                             handleCookieMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
@@ -993,9 +999,9 @@ public class JaxrsClientReactiveProcessor {
                             addFormParam(methodCreator, param.name, methodCreator.getMethodParam(paramIdx), param.declaredType,
                                     param.signature,
                                     restClientInterface.getClassName(), methodCreator.getThis(), formParams,
-                                    methodCreator.readStaticField(methodGenericParametersField.get()),
-                                    methodCreator.readStaticField(methodParamAnnotationsField.get()),
-                                    paramIdx, multipart,
+                                    getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
+                                    getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx),
+                                    multipart,
                                     param.mimeType, param.partFileName,
                                     jandexMethod.declaringClass().name() + "." + jandexMethod.name());
                         }
@@ -1215,9 +1221,8 @@ public class JaxrsClientReactiveProcessor {
                     addPathParam(ownerMethod, webTarget, param.name, paramValue,
                             param.type,
                             client,
-                            ownerMethod.readStaticField(methodGenericParametersField.get()),
-                            ownerMethod.readStaticField(methodParamAnnotationsField.get()),
-                            i);
+                            getGenericTypeFromArray(ownerMethod, methodGenericParametersField, i),
+                            getAnnotationsFromArray(ownerMethod, methodParamAnnotationsField, i));
                 }
             }
 
@@ -1322,9 +1327,10 @@ public class JaxrsClientReactiveProcessor {
                                     addQueryParam(jandexMethod, subMethodCreator, methodTarget, param.name,
                                             paramValue, subParamField.type, index,
                                             subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
-                                            subMethodCreator.readStaticField(subParamField.genericsParametersField.get()),
-                                            subMethodCreator.readStaticField(subParamField.paramAnnotationsField.get()),
-                                            subParamField.paramIndex));
+                                            getGenericTypeFromArray(subMethodCreator, subParamField.genericsParametersField,
+                                                    subParamField.paramIndex),
+                                            getAnnotationsFromArray(subMethodCreator, subParamField.paramAnnotationsField,
+                                                    subParamField.paramIndex)));
                         } else if (param.parameterType == ParameterType.BEAN
                                 || param.parameterType == ParameterType.MULTI_PART_FORM) {
                             // bean params require both, web-target and Invocation.Builder, modifications
@@ -1341,17 +1347,20 @@ public class JaxrsClientReactiveProcessor {
                             MethodCreator handleBeanParamMethod = subContext.classCreator.getMethodCreator(
                                     handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
 
+                            Supplier<FieldDescriptor> beanParamDescriptors = subContext
+                                    .getLazyBeanParameterDescriptors(beanParam.type);
+
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
                             handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
                             formParams = addBeanParamData(jandexMethod, subMethodCreator, handleBeanParamMethod,
-                                    invocationBuilderRef, beanParam.getItems(),
+                                    invocationBuilderRef, subContext, beanParam.getItems(),
                                     paramValue, methodTarget, index,
                                     interfaceClass.name().toString(),
                                     subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
                                     handleBeanParamMethod.readInstanceField(clientField, handleBeanParamMethod.getThis()),
                                     formParams,
-                                    methodGenericParametersField, methodParamAnnotationsField, subParamField.paramIndex,
+                                    beanParamDescriptors,
                                     multipart, beanParam.type);
 
                             handleBeanParamMethod.returnValue(invocationBuilderRef);
@@ -1361,9 +1370,10 @@ public class JaxrsClientReactiveProcessor {
                             addPathParam(subMethodCreator, methodTarget, param.name, paramValue,
                                     param.type,
                                     subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
-                                    subMethodCreator.readStaticField(subParamField.genericsParametersField.get()),
-                                    subMethodCreator.readStaticField(subParamField.paramAnnotationsField.get()),
-                                    subParamField.paramIndex);
+                                    getGenericTypeFromArray(subMethodCreator, subParamField.genericsParametersField,
+                                            subParamField.paramIndex),
+                                    getAnnotationsFromArray(subMethodCreator, subParamField.paramAnnotationsField,
+                                            subParamField.paramIndex));
                         } else if (param.parameterType == ParameterType.BODY) {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = paramValue;
@@ -1384,9 +1394,10 @@ public class JaxrsClientReactiveProcessor {
                                     handleHeaderMethod.getMethodParam(1),
                                     param.type,
                                     handleHeaderMethod.readInstanceField(clientField, handleHeaderMethod.getThis()),
-                                    subParamField.genericsParametersField.get(),
-                                    subParamField.paramAnnotationsField.get(),
-                                    subParamField.paramIndex);
+                                    getGenericTypeFromArray(handleHeaderMethod, subParamField.genericsParametersField,
+                                            subParamField.paramIndex),
+                                    getAnnotationsFromArray(handleHeaderMethod, subParamField.paramAnnotationsField,
+                                            subParamField.paramIndex));
                             handleHeaderMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, paramValue);
                         } else if (param.parameterType == ParameterType.COOKIE) {
@@ -1406,9 +1417,10 @@ public class JaxrsClientReactiveProcessor {
                                     handleCookieMethod.getMethodParam(1),
                                     param.type,
                                     handleCookieMethod.readInstanceField(clientField, handleCookieMethod.getThis()),
-                                    subParamField.genericsParametersField.get(),
-                                    subParamField.paramAnnotationsField.get(),
-                                    subParamField.paramIndex);
+                                    getGenericTypeFromArray(handleCookieMethod, subParamField.genericsParametersField,
+                                            subParamField.paramIndex),
+                                    getAnnotationsFromArray(handleCookieMethod, subParamField.paramAnnotationsField,
+                                            subParamField.paramIndex));
                             handleCookieMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleCookieDescriptor, paramValue);
                         } else if (param.parameterType == ParameterType.FORM) {
@@ -1430,9 +1442,10 @@ public class JaxrsClientReactiveProcessor {
                                             subMethodCreator.getMethodParam(paramIdx),
                                             jandexSubMethod.parameterType(paramIdx), index,
                                             subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
-                                            subMethodCreator.readStaticField(subMethodGenericParametersField.get()),
-                                            subMethodCreator.readStaticField(subMethodParamAnnotationsField.get()),
-                                            paramIdx));
+                                            getGenericTypeFromArray(subMethodCreator, subMethodGenericParametersField,
+                                                    paramIdx),
+                                            getAnnotationsFromArray(subMethodCreator, subMethodParamAnnotationsField,
+                                                    paramIdx)));
                         } else if (param.parameterType == ParameterType.BEAN
                                 || param.parameterType == ParameterType.MULTI_PART_FORM) {
                             // bean params require both, web-target and Invocation.Builder, modifications
@@ -1445,20 +1458,23 @@ public class JaxrsClientReactiveProcessor {
                                     subMethod.getName() + "$$" + subMethodIndex + "$$handleBeanParam$$" + paramIdx,
                                     Invocation.Builder.class,
                                     Invocation.Builder.class, param.type);
-                            MethodCreator handleBeanParamMethod = ownerContext.classCreator.getMethodCreator(
+                            MethodCreator handleBeanParamMethod = subContext.classCreator.getMethodCreator(
                                     handleBeanParamDescriptor).setModifiers(Modifier.PRIVATE);
+
+                            Supplier<FieldDescriptor> beanParamDescriptors = subContext
+                                    .getLazyBeanParameterDescriptors(beanParam.type);
 
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
                             handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
                             formParams = addBeanParamData(jandexMethod, subMethodCreator, handleBeanParamMethod,
-                                    invocationBuilderRef, beanParam.getItems(),
+                                    invocationBuilderRef, subContext, beanParam.getItems(),
                                     subMethodCreator.getMethodParam(paramIdx), methodTarget, index,
                                     interfaceClass.name().toString(),
                                     subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
                                     handleBeanParamMethod.readInstanceField(clientField, handleBeanParamMethod.getThis()),
                                     formParams,
-                                    subMethodGenericParametersField, subMethodParamAnnotationsField, paramIdx, multipart,
+                                    beanParamDescriptors, multipart,
                                     beanParam.type);
 
                             handleBeanParamMethod.returnValue(invocationBuilderRef);
@@ -1468,9 +1484,8 @@ public class JaxrsClientReactiveProcessor {
                             addPathParam(subMethodCreator, methodTarget, param.name,
                                     subMethodCreator.getMethodParam(paramIdx), param.type,
                                     subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
-                                    subMethodCreator.readStaticField(subMethodGenericParametersField.get()),
-                                    subMethodCreator.readStaticField(subMethodParamAnnotationsField.get()),
-                                    paramIdx);
+                                    getGenericTypeFromArray(subMethodCreator, subMethodGenericParametersField, paramIdx),
+                                    getAnnotationsFromArray(subMethodCreator, subMethodParamAnnotationsField, paramIdx));
                         } else if (param.parameterType == ParameterType.BODY) {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = subMethodCreator.getMethodParam(paramIdx);
@@ -1489,7 +1504,8 @@ public class JaxrsClientReactiveProcessor {
                             addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
                                     handleHeaderMethod.getMethodParam(1), param.type,
                                     handleHeaderMethod.readInstanceField(clientField, handleHeaderMethod.getThis()),
-                                    subMethodGenericParametersField.get(), subMethodParamAnnotationsField.get(), paramIdx);
+                                    getGenericTypeFromArray(handleHeaderMethod, subMethodGenericParametersField, paramIdx),
+                                    getAnnotationsFromArray(handleHeaderMethod, subMethodParamAnnotationsField, paramIdx));
                             handleHeaderMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, subMethodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.COOKIE) {
@@ -1508,7 +1524,8 @@ public class JaxrsClientReactiveProcessor {
                                     handleCookieMethod.getMethodParam(1),
                                     param.type,
                                     handleCookieMethod.readInstanceField(clientField, handleCookieMethod.getThis()),
-                                    subMethodGenericParametersField.get(), subMethodParamAnnotationsField.get(), paramIdx);
+                                    getGenericTypeFromArray(handleCookieMethod, subMethodGenericParametersField, paramIdx),
+                                    getAnnotationsFromArray(handleCookieMethod, subMethodParamAnnotationsField, paramIdx));
                             handleCookieMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleCookieDescriptor, subMethodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
@@ -1635,7 +1652,7 @@ public class JaxrsClientReactiveProcessor {
             String type,
             String parameterGenericType, ResultHandle fieldValue, AssignableResultHandle multipartForm,
             BytecodeCreator methodCreator,
-            ResultHandle client, String restClientInterfaceClassName, ResultHandle parameterAnnotations, int methodIndex,
+            ResultHandle client, String restClientInterfaceClassName, ResultHandle parameterAnnotations,
             ResultHandle genericType, String errorLocation) {
 
         BytecodeCreator ifValueNotNull = methodCreator.ifNotNull(fieldValue).trueBranch();
@@ -1679,7 +1696,7 @@ public class JaxrsClientReactiveProcessor {
         } else {
             // go via converter
             ResultHandle convertedFormParam = convertParamToString(ifValueNotNull, client, fieldValue, type, genericType,
-                    parameterAnnotations, methodIndex);
+                    parameterAnnotations);
             BytecodeCreator parameterIsStringBranch = checkStringParam(ifValueNotNull, convertedFormParam,
                     restClientInterfaceClassName, errorLocation);
             addString(parameterIsStringBranch, multipartForm, formParamName, null, partFilename, convertedFormParam);
@@ -2270,6 +2287,7 @@ public class JaxrsClientReactiveProcessor {
             // Invocation.Builder executePut$$enrichInvocationBuilder${noOfBeanParam}(Invocation.Builder)
             BytecodeCreator invocationBuilderEnricher,
             AssignableResultHandle invocationBuilder,
+            ClassRestClientContext classContext,
             List<Item> beanParamItems,
             ResultHandle param,
             // can only be used in the current method, not in `invocationBuilderEnricher`
@@ -2280,18 +2298,17 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle invocationEnricherClient,
             // this client or containing client if this is a sub-client
             AssignableResultHandle formParams,
-            Supplier<FieldDescriptor> methodGenericTypeField,
-            Supplier<FieldDescriptor> methodParamAnnotationsField,
-            int paramIdx, boolean multipart, String beanParamClass) {
+            Supplier<FieldDescriptor> descriptorsField,
+            boolean multipart, String beanParamClass) {
         // Form params collector must be initialized at method root level before any inner blocks that may use it
         if (areFormParamsDefinedIn(beanParamItems)) {
             formParams = createFormDataIfAbsent(methodCreator, formParams, multipart);
         }
 
-        addSubBeanParamData(jandexMethod, methodCreator, invocationBuilderEnricher, invocationBuilder, beanParamItems, param,
-                target,
+        addSubBeanParamData(jandexMethod, methodCreator, invocationBuilderEnricher, invocationBuilder, classContext,
+                beanParamItems, param, target,
                 index, restClientInterfaceClassName, client, invocationEnricherClient, formParams,
-                methodGenericTypeField, methodParamAnnotationsField, paramIdx, multipart, beanParamClass);
+                descriptorsField, multipart, beanParamClass);
 
         return formParams;
     }
@@ -2300,6 +2317,7 @@ public class JaxrsClientReactiveProcessor {
             // Invocation.Builder executePut$$enrichInvocationBuilder${noOfBeanParam}(Invocation.Builder)
             BytecodeCreator invocationBuilderEnricher,
             AssignableResultHandle invocationBuilder,
+            ClassRestClientContext classContext,
             List<Item> beanParamItems,
             ResultHandle param,
             // can only be used in the current method, not in `invocationBuilderEnricher`
@@ -2310,9 +2328,8 @@ public class JaxrsClientReactiveProcessor {
             // this client or containing client if this is a sub-client
             ResultHandle invocationEnricherClient,
             AssignableResultHandle formParams,
-            Supplier<FieldDescriptor> methodGenericTypeField,
-            Supplier<FieldDescriptor> methodParamAnnotationsField,
-            int paramIdx, boolean multipart, String beanParamClass) {
+            Supplier<FieldDescriptor> beanParamDescriptorField,
+            boolean multipart, String beanParamClass) {
         BytecodeCreator creator = methodCreator.ifNotNull(param).trueBranch();
         BytecodeCreator invoEnricher = invocationBuilderEnricher.ifNotNull(invocationBuilderEnricher.getMethodParam(1))
                 .trueBranch();
@@ -2322,10 +2339,12 @@ public class JaxrsClientReactiveProcessor {
                 case BEAN_PARAM:
                     BeanParamItem beanParamItem = (BeanParamItem) item;
                     ResultHandle beanParamElementHandle = beanParamItem.extract(creator, param);
-                    addSubBeanParamData(jandexMethod, creator, invoEnricher, invocationBuilder, beanParamItem.items(),
-                            beanParamElementHandle, target, index, restClientInterfaceClassName, client,
+                    Supplier<FieldDescriptor> newBeanParamDescriptorField = classContext
+                            .getLazyBeanParameterDescriptors(beanParamItem.className());
+                    addSubBeanParamData(jandexMethod, creator, invoEnricher, invocationBuilder, classContext,
+                            beanParamItem.items(), beanParamElementHandle, target, index, restClientInterfaceClassName, client,
                             invocationEnricherClient, formParams,
-                            methodGenericTypeField, methodParamAnnotationsField, paramIdx, multipart,
+                            newBeanParamDescriptorField, multipart,
                             beanParamItem.className());
                     break;
                 case QUERY_PARAM:
@@ -2335,9 +2354,8 @@ public class JaxrsClientReactiveProcessor {
                                     queryParam.extract(creator, param),
                                     queryParam.getValueType(),
                                     index, client,
-                                    creator.readStaticField(methodGenericTypeField.get()),
-                                    creator.readStaticField(methodParamAnnotationsField.get()),
-                                    paramIdx));
+                                    getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
+                                    getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName())));
                     break;
                 case COOKIE:
                     CookieParamItem cookieParam = (CookieParamItem) item;
@@ -2345,39 +2363,98 @@ public class JaxrsClientReactiveProcessor {
                             cookieParam.getCookieName(),
                             cookieParam.extract(invoEnricher, invoEnricher.getMethodParam(1)),
                             cookieParam.getParamType(), invocationEnricherClient,
-                            methodGenericTypeField.get(), methodParamAnnotationsField.get(), paramIdx);
+                            getGenericTypeFromParameter(invoEnricher, beanParamDescriptorField, item.fieldName()),
+                            getAnnotationsFromParameter(invoEnricher, beanParamDescriptorField, item.fieldName()));
                     break;
                 case HEADER_PARAM:
                     HeaderParamItem headerParam = (HeaderParamItem) item;
                     addHeaderParam(invoEnricher, invocationBuilder,
                             headerParam.getHeaderName(),
                             headerParam.extract(invoEnricher, invoEnricher.getMethodParam(1)),
-                            headerParam.getParamType(), invocationEnricherClient, methodGenericTypeField.get(),
-                            methodParamAnnotationsField.get(), paramIdx);
+                            headerParam.getParamType(), invocationEnricherClient,
+                            getGenericTypeFromParameter(invoEnricher, beanParamDescriptorField, item.fieldName()),
+                            getAnnotationsFromParameter(invoEnricher, beanParamDescriptorField, item.fieldName()));
                     break;
                 case PATH_PARAM:
                     PathParamItem pathParam = (PathParamItem) item;
                     addPathParam(creator, target,
                             pathParam.getPathParamName(),
                             pathParam.extract(creator, param), pathParam.getParamType(), client,
-                            creator.readStaticField(methodGenericTypeField.get()),
-                            creator.readStaticField(methodParamAnnotationsField.get()),
-                            paramIdx);
+                            getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
+                            getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName()));
                     break;
                 case FORM_PARAM:
                     FormParamItem formParam = (FormParamItem) item;
                     addFormParam(creator, formParam.getFormParamName(), formParam.extract(creator, param),
                             formParam.getParamType(), formParam.getParamSignature(), restClientInterfaceClassName, client,
                             formParams,
-                            creator.readStaticField(methodGenericTypeField.get()),
-                            creator.readStaticField(methodParamAnnotationsField.get()),
-                            paramIdx, multipart, formParam.getMimeType(), formParam.getFileName(),
+                            getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
+                            getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName()),
+                            multipart, formParam.getMimeType(), formParam.getFileName(),
                             beanParamClass + "." + formParam.getSourceName());
                     break;
                 default:
                     throw new IllegalStateException("Unimplemented");
             }
         }
+    }
+
+    private ResultHandle getGenericTypeFromParameter(BytecodeCreator creator, Supplier<FieldDescriptor> supplier,
+            String name) {
+        // Will return Map<String, ParameterDescriptorFromClassSupplier.ParameterDescriptor>
+        ResultHandle map = creator.invokeInterfaceMethod(ofMethod(Supplier.class, "get", Object.class),
+                creator.readStaticField(supplier.get()));
+        // Will return ParameterDescriptorFromClassSupplier.ParameterDescriptor;
+        ResultHandle value = creator.invokeInterfaceMethod(ofMethod(Map.class, "get", Object.class, Object.class),
+                map, creator.load(name));
+        // if (value != null) return value.genericType;
+        AssignableResultHandle genericType = creator.createVariable(java.lang.reflect.Type.class);
+        BranchResult ifBranch = creator.ifNotNull(value);
+        BytecodeCreator ifNotNull = ifBranch.trueBranch();
+        ifNotNull.assign(genericType, ifNotNull.readInstanceField(
+                FieldDescriptor.of(ParameterDescriptorFromClassSupplier.ParameterDescriptor.class, "genericType",
+                        java.lang.reflect.Type.class),
+                value));
+        // if (value == null) return null;
+        BytecodeCreator ifNull = ifBranch.falseBranch();
+        ifNull.assign(genericType, ifNull.loadNull());
+        return genericType;
+    }
+
+    private ResultHandle getGenericTypeFromArray(BytecodeCreator creator, Supplier<FieldDescriptor> supplier,
+            int paramIdx) {
+        ResultHandle value = creator.invokeInterfaceMethod(ofMethod(Supplier.class, "get", Object.class),
+                creator.readStaticField(supplier.get()));
+        return creator.readArrayValue(creator.checkCast(value, java.lang.reflect.Type[].class), paramIdx);
+    }
+
+    private ResultHandle getAnnotationsFromParameter(BytecodeCreator creator, Supplier<FieldDescriptor> supplier,
+            String name) {
+        // Will return Map<String, ParameterDescriptorFromClassSupplier.ParameterDescriptor>
+        ResultHandle map = creator.invokeInterfaceMethod(ofMethod(Supplier.class, "get", Object.class),
+                creator.readStaticField(supplier.get()));
+        // Will return ParameterDescriptorFromClassSupplier.ParameterDescriptor;
+        ResultHandle value = creator.invokeInterfaceMethod(ofMethod(Map.class, "get", Object.class, Object.class),
+                map, creator.load(name));
+        // if (value != null) return value.genericType;
+        AssignableResultHandle annotations = creator.createVariable(Annotation[].class);
+        BranchResult ifBranch = creator.ifNotNull(value);
+        BytecodeCreator ifNotNull = ifBranch.trueBranch();
+        ifNotNull.assign(annotations, ifNotNull.readInstanceField(
+                FieldDescriptor.of(ParameterDescriptorFromClassSupplier.ParameterDescriptor.class, "annotations",
+                        Annotation[].class),
+                value));
+        // if (value == null) return null;
+        BytecodeCreator ifNull = ifBranch.falseBranch();
+        ifNull.assign(annotations, ifNull.loadNull());
+        return annotations;
+    }
+
+    private ResultHandle getAnnotationsFromArray(BytecodeCreator creator, Supplier<FieldDescriptor> supplier,
+            int paramIdx) {
+        ResultHandle value = creator.invokeInterfaceMethod(ofMethod(Supplier.class, "get", Object.class),
+                creator.readStaticField(supplier.get()));
+        return creator.readArrayValue(creator.checkCast(value, Annotation[][].class), paramIdx);
     }
 
     private boolean areFormParamsDefinedIn(List<Item> beanParamItems) {
@@ -2406,7 +2483,7 @@ public class JaxrsClientReactiveProcessor {
             // this client or containing client if we're in a subresource
             ResultHandle client,
             ResultHandle genericType,
-            ResultHandle paramAnnotations, int paramIndex) {
+            ResultHandle paramAnnotations) {
 
         AssignableResultHandle result = methodCreator.createVariable(WebTarget.class);
         BranchResult isParamNull = methodCreator.ifNull(queryParamHandle);
@@ -2453,7 +2530,7 @@ public class JaxrsClientReactiveProcessor {
             }
             // get the new WebTarget
             addQueryParamToWebTarget(loopCreator, key, result, client, genericType, paramAnnotations,
-                    paramIndex, paramArray, componentType, result);
+                    paramArray, componentType, result);
         } else {
             ResultHandle paramArray;
             String componentType = null;
@@ -2481,8 +2558,7 @@ public class JaxrsClientReactiveProcessor {
             }
 
             addQueryParamToWebTarget(notNullParam, notNullParam.load(paramName), webTarget, client, genericType,
-                    paramAnnotations, paramIndex,
-                    paramArray, componentType, result);
+                    paramAnnotations, paramArray, componentType, result);
         }
 
         isParamNull.trueBranch().assign(result, webTarget);
@@ -2521,14 +2597,13 @@ public class JaxrsClientReactiveProcessor {
     private void addQueryParamToWebTarget(BytecodeCreator creator, ResultHandle paramName,
             ResultHandle webTarget,
             ResultHandle client, ResultHandle genericType,
-            ResultHandle paramAnnotations, int paramIndex, ResultHandle paramArray,
+            ResultHandle paramAnnotations, ResultHandle paramArray,
             String componentType,
             AssignableResultHandle resultVariable) {
         ResultHandle convertedParamArray = creator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
-                        Class.class, Supplier.class, Supplier.class, int.class),
-                client, paramArray, creator.loadClassFromTCCL(componentType), genericType, paramAnnotations,
-                creator.load(paramIndex));
+                        Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                client, paramArray, creator.loadClassFromTCCL(componentType), genericType, paramAnnotations);
 
         creator.assign(resultVariable, creator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
@@ -2563,19 +2638,15 @@ public class JaxrsClientReactiveProcessor {
 
     private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,
             String paramName, ResultHandle headerParamHandle, String paramType, ResultHandle client,
-            FieldDescriptor methodGenericTypeField, FieldDescriptor methodParamAnnotationsField,
-            int paramIdx) {
+            ResultHandle genericType, ResultHandle annotations) {
 
         BytecodeCreator notNullValue = invoBuilderEnricher.ifNull(headerParamHandle).falseBranch();
-        ResultHandle genericType = notNullValue.readStaticField(methodGenericTypeField);
-
-        ResultHandle parameterAnnotations = notNullValue.readStaticField(methodParamAnnotationsField);
 
         headerParamHandle = notNullValue.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
-                        Object.class, Class.class, Supplier.class, Supplier.class, int.class),
+                        Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
                 client, headerParamHandle,
-                notNullValue.loadClassFromTCCL(paramType), genericType, parameterAnnotations, notNullValue.load(paramIdx));
+                notNullValue.loadClassFromTCCL(paramType), genericType, annotations);
 
         notNullValue.assign(invocationBuilder,
                 notNullValue.invokeInterfaceMethod(
@@ -2586,13 +2657,12 @@ public class JaxrsClientReactiveProcessor {
 
     private void addPathParam(BytecodeCreator methodCreator, AssignableResultHandle methodTarget,
             String paramName, ResultHandle pathParamHandle, String parameterType, ResultHandle client,
-            ResultHandle genericType, ResultHandle parameterAnnotations, int paramIndex) {
+            ResultHandle genericType, ResultHandle parameterAnnotations) {
         ResultHandle handle = methodCreator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
-                        Object.class, Class.class, Supplier.class, Supplier.class, int.class),
+                        Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
                 client, pathParamHandle,
-                methodCreator.loadClassFromTCCL(parameterType), genericType, parameterAnnotations,
-                methodCreator.load(paramIndex));
+                methodCreator.loadClassFromTCCL(parameterType), genericType, parameterAnnotations);
         methodCreator.assign(methodTarget,
                 methodCreator.invokeInterfaceMethod(WEB_TARGET_RESOLVE_TEMPLATE_METHOD,
                         methodTarget,
@@ -2603,17 +2673,17 @@ public class JaxrsClientReactiveProcessor {
             String parameterType, String parameterGenericType,
             String restClientInterfaceClassName, ResultHandle client, AssignableResultHandle formParams,
             ResultHandle genericType,
-            ResultHandle parameterAnnotations, int methodIndex, boolean multipart,
+            ResultHandle parameterAnnotations, boolean multipart,
             String partType, String partFilename, String errorLocation) {
         if (multipart) {
             handleMultipartField(paramName, partType, partFilename, parameterType, parameterGenericType, formParamHandle,
                     formParams, methodCreator,
-                    client, restClientInterfaceClassName, parameterAnnotations, methodIndex, genericType,
+                    client, restClientInterfaceClassName, parameterAnnotations, genericType,
                     errorLocation);
         } else {
             BytecodeCreator notNullValue = methodCreator.ifNull(formParamHandle).falseBranch();
             ResultHandle convertedFormParam = convertParamToString(notNullValue, client, formParamHandle, parameterType,
-                    genericType, parameterAnnotations, methodIndex);
+                    genericType, parameterAnnotations);
             BytecodeCreator parameterIsStringBranch = checkStringParam(notNullValue, convertedFormParam,
                     restClientInterfaceClassName, errorLocation);
             parameterIsStringBranch.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
@@ -2637,30 +2707,25 @@ public class JaxrsClientReactiveProcessor {
 
     private ResultHandle convertParamToString(BytecodeCreator notNullValue, ResultHandle client,
             ResultHandle formParamHandle, String parameterType,
-            ResultHandle genericType, ResultHandle parameterAnnotations, int methodIndex) {
+            ResultHandle genericType, ResultHandle parameterAnnotations) {
         return notNullValue.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
-                        Object.class, Class.class, Supplier.class, Supplier.class, int.class),
+                        Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
                 client, formParamHandle,
-                notNullValue.loadClassFromTCCL(parameterType), genericType, parameterAnnotations,
-                notNullValue.load(methodIndex));
+                notNullValue.loadClassFromTCCL(parameterType), genericType, parameterAnnotations);
     }
 
     private void addCookieParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,
             String paramName, ResultHandle cookieParamHandle, String paramType, ResultHandle client,
-            FieldDescriptor methodGenericTypeField, FieldDescriptor methodParamAnnotationsField, int paramIdx) {
+            ResultHandle genericType, ResultHandle annotations) {
 
         BytecodeCreator notNullValue = invoBuilderEnricher.ifNull(cookieParamHandle).falseBranch();
 
-        ResultHandle genericType = notNullValue.readStaticField(methodGenericTypeField);
-
-        ResultHandle parameterAnnotations = notNullValue.readStaticField(methodParamAnnotationsField);
-
         cookieParamHandle = notNullValue.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
-                        Object.class, Class.class, Supplier.class, Supplier.class, int.class),
+                        Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
                 client, cookieParamHandle,
-                notNullValue.loadClassFromTCCL(paramType), genericType, parameterAnnotations, notNullValue.load(paramIdx));
+                notNullValue.loadClassFromTCCL(paramType), genericType, annotations);
         notNullValue.assign(invocationBuilder,
                 notNullValue.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "cookie", Invocation.Builder.class, String.class,

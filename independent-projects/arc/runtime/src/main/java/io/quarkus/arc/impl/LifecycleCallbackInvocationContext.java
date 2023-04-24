@@ -7,11 +7,11 @@ import java.util.Set;
 
 /**
  * A simple stateful {@link jakarta.interceptor.InvocationContext} implementation used for
- * {@link jakarta.annotation.PostConstruct} and {@link jakarta.annotation.PreDestroy} callbacks.
+ * lifecycle callback interceptors.
  * <p>
  * All lifecycle callback interceptors of a specific chain must be invoked on the same thread.
  */
-class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
+abstract class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
 
     protected final Set<Annotation> bindings;
     protected final List<InterceptorInvocation> chain;
@@ -31,7 +31,8 @@ class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
                 // Invoke the next interceptor in the chain
                 invokeNext();
             } else {
-                // The invocation of proceed in the last interceptor method in the chain
+                // The invocation of proceed in the last interceptor method in the chain,
+                // need to forward to the target class
                 interceptorChainCompleted();
             }
             // The return value of a lifecycle callback is ignored
@@ -53,19 +54,7 @@ class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
         return bindings;
     }
 
-    @Override
-    public Object[] getParameters() {
-        throw new IllegalStateException();
-    }
-
-    @Override
-    public void setParameters(Object[] params) {
-        throw new IllegalStateException();
-    }
-
-    protected void interceptorChainCompleted() throws Exception {
-        // No-op
-    }
+    protected abstract void interceptorChainCompleted() throws Exception;
 
     private Object invokeNext() throws Exception {
         try {

@@ -178,11 +178,11 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXTS_POST_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
             "postConstruct",
-            InvocationContext.class, Object.class, List.class, Set.class);
+            InvocationContext.class, Object.class, List.class, Set.class, Runnable.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_PRE_DESTROY = MethodDescriptor.ofMethod(InvocationContexts.class,
             "preDestroy",
-            InvocationContext.class, Object.class, List.class, Set.class);
+            InvocationContext.class, Object.class, List.class, Set.class, Runnable.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_SUPERCLASS = MethodDescriptor.ofMethod(
             InvocationContexts.class,

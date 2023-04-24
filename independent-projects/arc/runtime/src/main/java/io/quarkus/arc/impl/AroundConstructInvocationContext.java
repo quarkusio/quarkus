@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * An InvocationContext implementation used for AroundConstruct callbacks.
+ * An {@code InvocationContext} implementation used for {@code AroundConstruct} callbacks.
  */
 class AroundConstructInvocationContext extends LifecycleCallbackInvocationContext {
 

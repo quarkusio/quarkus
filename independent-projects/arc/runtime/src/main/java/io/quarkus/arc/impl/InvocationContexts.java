@@ -46,11 +46,12 @@ public final class InvocationContexts {
      * @param target
      * @param chain
      * @param interceptorBindings
+     * @param forward
      * @return a new invocation context
      */
     public static InvocationContext postConstruct(Object target, List<InterceptorInvocation> chain,
-            Set<Annotation> interceptorBindings) {
-        return new LifecycleCallbackInvocationContext(target, null, interceptorBindings, chain);
+            Set<Annotation> interceptorBindings, Runnable forward) {
+        return new PostConstructPreDestroyInvocationContext(target, null, interceptorBindings, chain, forward);
     }
 
     /**
@@ -58,11 +59,12 @@ public final class InvocationContexts {
      * @param target
      * @param chain
      * @param interceptorBindings
+     * @param forward
      * @return a new invocation context
      */
     public static InvocationContext preDestroy(Object target, List<InterceptorInvocation> chain,
-            Set<Annotation> interceptorBindings) {
-        return new LifecycleCallbackInvocationContext(target, null, interceptorBindings, chain);
+            Set<Annotation> interceptorBindings, Runnable forward) {
+        return new PostConstructPreDestroyInvocationContext(target, null, interceptorBindings, chain, forward);
     }
 
     /**

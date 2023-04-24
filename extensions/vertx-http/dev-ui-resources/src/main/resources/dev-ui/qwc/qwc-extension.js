@@ -44,6 +44,10 @@ export class QwcExtension extends LitElement {
             visibility:hidden;
         }
 
+        .card-footer a {
+            color: var(--lumo-contrast-50pct);
+        }
+
         .active:hover {
             box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
         }
@@ -137,7 +141,9 @@ export class QwcExtension extends LitElement {
     _footerTemplate() {
         return html`
             <div class="card-footer">
-                <vaadin-icon class="icon" icon="font-awesome-solid:pen-to-square" @click="${this._configuration}" title="Configuration for the ${this.name} extension"></vaadin-icon>  
+                <a href="configuration-form-editor?filter=${this.configFilter}">
+                    <vaadin-icon class="icon" icon="font-awesome-solid:pen-to-square" title="Configuration for the ${this.name} extension"></vaadin-icon>
+                </a>  
                 <vaadin-icon class="icon" icon="font-awesome-solid:ellipsis-vertical" @click="${() => (this._dialogOpened = true)}" title="More about the ${this.name} extension"></vaadin-icon>
             </div>
         `;

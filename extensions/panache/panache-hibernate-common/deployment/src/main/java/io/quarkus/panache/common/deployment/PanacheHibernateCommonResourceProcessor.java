@@ -8,8 +8,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Transient;
 
+import org.hibernate.bytecode.enhance.spi.EnhancerConstants;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -26,6 +30,9 @@ import io.quarkus.gizmo.DescriptorUtils;
 
 public final class PanacheHibernateCommonResourceProcessor {
 
+    private static final DotName DOTNAME_ENTITY = DotName.createSimple(Entity.class.getName());
+    private static final DotName DOTNAME_MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
+    private static final DotName DOTNAME_EMBEDDABLE = DotName.createSimple(Embeddable.class.getName());
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
     private static final DotName DOTNAME_KOTLIN_METADATA = DotName.createSimple("kotlin.Metadata");
 
@@ -68,15 +75,15 @@ public final class PanacheHibernateCommonResourceProcessor {
         // Share the metamodel for use in replaceFieldAccesses
         modelInfoBuildItem.produce(new HibernateMetamodelForFieldAccessBuildItem(modelInfo));
 
-        Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
-        if (entitiesWithPublicFields.isEmpty()) {
-            // There are no public fields to be accessed in the first place.
+        Set<String> entitiesWithExternallyAccessibleFields = modelInfo.getEntitiesWithExternallyAccessibleFields();
+        if (entitiesWithExternallyAccessibleFields.isEmpty()) {
+            // There are no fields to be accessed in the first place.
             return;
         }
 
         // Share with other extensions that we will generate accessors for some classes
         fieldAccessEnhancedEntityClasses
-                .produce(new PanacheEntityClassesBuildItem(entitiesWithPublicFields));
+                .produce(new PanacheEntityClassesBuildItem(entitiesWithExternallyAccessibleFields));
     }
 
     @BuildStep
@@ -91,23 +98,23 @@ public final class PanacheHibernateCommonResourceProcessor {
         }
 
         MetamodelInfo modelInfo = modelInfoBuildItem.get().getMetamodelInfo();
-        Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
-        if (entitiesWithPublicFields.isEmpty()) {
-            // There are no public fields to be accessed in the first place.
+        Set<String> entitiesWithExternallyAccessibleFields = modelInfo.getEntitiesWithExternallyAccessibleFields();
+        if (entitiesWithExternallyAccessibleFields.isEmpty()) {
+            // There are no fields to be accessed in the first place.
             return;
         }
 
-        // Generate accessors for public fields in entities, mapped superclasses
+        // Generate accessors for externally accessible fields in entities, mapped superclasses
         // (and embeddables, see where we build modelInfo above).
         PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(index.getIndex(),
                 modelInfo);
-        for (String entityClassName : entitiesWithPublicFields) {
+        for (String entityClassName : entitiesWithExternallyAccessibleFields) {
             transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityAccessorsEnhancer));
         }
 
         // Replace field access in application code with calls to accessors
         Set<String> entityClassNamesInternal = new HashSet<>();
-        for (String entityClassName : entitiesWithPublicFields) {
+        for (String entityClassName : entitiesWithExternallyAccessibleFields) {
             entityClassNamesInternal.add(entityClassName.replace(".", "/"));
         }
 
@@ -144,12 +151,29 @@ public final class PanacheHibernateCommonResourceProcessor {
 
     private EntityModel createEntityModel(ClassInfo classInfo) {
         EntityModel entityModel = new EntityModel(classInfo);
+        // Unfortunately, at the moment Hibernate ORM's enhancement ignores XML mapping,
+        // so we need to be careful when we enhance private fields,
+        // because the corresponding `$_hibernate_{read/write}_*()` methods
+        // will only be generated for classes mapped through *annotations*.
+        boolean willBeEnhancedByHibernateOrm = classInfo.hasAnnotation(DOTNAME_ENTITY)
+                || classInfo.hasAnnotation(DOTNAME_MAPPED_SUPERCLASS)
+                || classInfo.hasAnnotation(DOTNAME_EMBEDDABLE);
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
-            if (Modifier.isPublic(fieldInfo.flags())
-                    && !Modifier.isStatic(fieldInfo.flags())
+            if (!Modifier.isStatic(fieldInfo.flags())
                     && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)) {
-                entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
+                String librarySpecificGetterName;
+                String librarySpecificSetterName;
+                if (willBeEnhancedByHibernateOrm) {
+                    librarySpecificGetterName = EnhancerConstants.PERSISTENT_FIELD_READER_PREFIX + name;
+                    librarySpecificSetterName = EnhancerConstants.PERSISTENT_FIELD_WRITER_PREFIX + name;
+                } else {
+                    librarySpecificGetterName = null;
+                    librarySpecificSetterName = null;
+                }
+                entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type()),
+                        EntityField.Visibility.get(fieldInfo.flags()),
+                        librarySpecificGetterName, librarySpecificSetterName));
             }
         }
         return entityModel;

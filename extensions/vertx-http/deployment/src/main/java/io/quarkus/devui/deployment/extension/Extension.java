@@ -8,9 +8,6 @@ import io.quarkus.devui.spi.page.Card;
 import io.quarkus.devui.spi.page.Page;
 
 public class Extension {
-    private static final String SPACE = " ";
-    private static final String DASH = "-";
-
     private String namespace;
     private String artifact;
     private String name;
@@ -58,10 +55,6 @@ public class Extension {
     public void setName(String name) {
         this.name = name;
     }
-
-    //    public String getPathName() {
-    //        return name.toLowerCase().replaceAll(SPACE, DASH);
-    //    }
 
     public String getShortName() {
         return shortName;

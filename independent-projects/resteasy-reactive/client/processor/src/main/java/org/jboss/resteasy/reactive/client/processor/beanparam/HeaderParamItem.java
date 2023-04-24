@@ -4,8 +4,8 @@ public class HeaderParamItem extends Item {
     private final String headerName;
     private final String paramType;
 
-    public HeaderParamItem(String headerName, ValueExtractor extractor, String paramType) {
-        super(ItemType.HEADER_PARAM, extractor);
+    public HeaderParamItem(String fieldName, String headerName, ValueExtractor extractor, String paramType) {
+        super(fieldName, ItemType.HEADER_PARAM, extractor);
         this.headerName = headerName;
         this.paramType = paramType;
     }

@@ -61,18 +61,19 @@ public class BeanParamParser {
             }
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, QUERY_PARAM,
-                    (annotationValue, fieldInfo) -> new QueryParamItem(annotationValue,
+                    (annotationValue, fieldInfo) -> new QueryParamItem(fieldInfo.name(), annotationValue,
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
                             fieldInfo.type()),
-                    (annotationValue, getterMethod) -> new QueryParamItem(annotationValue, new GetterExtractor(getterMethod),
+                    (annotationValue, getterMethod) -> new QueryParamItem(getterMethod.name(), annotationValue,
+                            new GetterExtractor(getterMethod),
                             getterMethod.returnType())));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_QUERY_PARAM,
-                    (annotationValue, fieldInfo) -> new QueryParamItem(
+                    (annotationValue, fieldInfo) -> new QueryParamItem(fieldInfo.name(),
                             annotationValue != null ? annotationValue : fieldInfo.name(),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
                             fieldInfo.type()),
-                    (annotationValue, getterMethod) -> new QueryParamItem(
+                    (annotationValue, getterMethod) -> new QueryParamItem(getterMethod.name(),
                             annotationValue != null ? annotationValue : getterName(getterMethod),
                             new GetterExtractor(getterMethod),
                             getterMethod.returnType())));
@@ -84,7 +85,7 @@ public class BeanParamParser {
                             DotName beanParamClassName = type.asClassType().name();
                             List<Item> subBeanParamItems = parseInternal(index.getClassByName(beanParamClassName), index,
                                     processedBeanParamClasses);
-                            return new BeanParamItem(subBeanParamItems, beanParamClassName.toString(),
+                            return new BeanParamItem(fieldInfo.name(), subBeanParamItems, beanParamClassName.toString(),
                                     new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()));
                         } else {
                             throw new IllegalArgumentException("BeanParam annotation used on a field that is not an object: "
@@ -95,69 +96,71 @@ public class BeanParamParser {
                         Type returnType = getterMethod.returnType();
                         List<Item> items = parseInternal(index.getClassByName(returnType.name()), index,
                                 processedBeanParamClasses);
-                        return new BeanParamItem(items, beanParamClass.name().toString(), new GetterExtractor(getterMethod));
+                        return new BeanParamItem(getterMethod.name(), items, beanParamClass.name().toString(),
+                                new GetterExtractor(getterMethod));
                     }));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, COOKIE_PARAM,
-                    (annotationValue, fieldInfo) -> new CookieParamItem(annotationValue,
+                    (annotationValue, fieldInfo) -> new CookieParamItem(fieldInfo.name(), annotationValue,
                             new FieldExtractor(null, fieldInfo.name(),
                                     fieldInfo.declaringClass().name().toString()),
                             fieldInfo.type().name().toString()),
-                    (annotationValue, getterMethod) -> new CookieParamItem(annotationValue,
+                    (annotationValue, getterMethod) -> new CookieParamItem(getterMethod.name(), annotationValue,
                             new GetterExtractor(getterMethod), getterMethod.returnType().name().toString())));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_COOKIE_PARAM,
-                    (annotationValue, fieldInfo) -> new CookieParamItem(
+                    (annotationValue, fieldInfo) -> new CookieParamItem(fieldInfo.name(),
                             annotationValue != null ? annotationValue : fieldInfo.name(),
                             new FieldExtractor(null, fieldInfo.name(),
                                     fieldInfo.declaringClass().name().toString()),
                             fieldInfo.type().name().toString()),
-                    (annotationValue, getterMethod) -> new CookieParamItem(
+                    (annotationValue, getterMethod) -> new CookieParamItem(getterMethod.name(),
                             annotationValue != null ? annotationValue : getterName(getterMethod),
                             new GetterExtractor(getterMethod), getterMethod.returnType().name().toString())));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, HEADER_PARAM,
-                    (annotationValue, fieldInfo) -> new HeaderParamItem(annotationValue,
+                    (annotationValue, fieldInfo) -> new HeaderParamItem(fieldInfo.name(), annotationValue,
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
                             fieldInfo.type().name().toString()),
-                    (annotationValue, getterMethod) -> new HeaderParamItem(annotationValue,
+                    (annotationValue, getterMethod) -> new HeaderParamItem(getterMethod.name(), annotationValue,
                             new GetterExtractor(getterMethod), getterMethod.returnType().name().toString())));
 
             // @RestHeader with no explicit value are hyphenated
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_HEADER_PARAM,
-                    (annotationValue, fieldInfo) -> new HeaderParamItem(
+                    (annotationValue, fieldInfo) -> new HeaderParamItem(fieldInfo.name(),
                             annotationValue != null ? annotationValue
                                     : StringUtil.hyphenateWithCapitalFirstLetter(fieldInfo.name()),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
                             fieldInfo.type().name().toString()),
-                    (annotationValue, getterMethod) -> new HeaderParamItem(
+                    (annotationValue, getterMethod) -> new HeaderParamItem(getterMethod.name(),
                             annotationValue != null ? annotationValue
                                     : StringUtil.hyphenateWithCapitalFirstLetter(getterName(getterMethod)),
                             new GetterExtractor(getterMethod), getterMethod.returnType().name().toString())));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, PATH_PARAM,
-                    (annotationValue, fieldInfo) -> new PathParamItem(annotationValue, fieldInfo.type().name().toString(),
+                    (annotationValue, fieldInfo) -> new PathParamItem(fieldInfo.name(), annotationValue,
+                            fieldInfo.type().name().toString(),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
-                    (annotationValue, getterMethod) -> new PathParamItem(annotationValue,
+                    (annotationValue, getterMethod) -> new PathParamItem(getterMethod.name(), annotationValue,
                             getterMethod.returnType().name().toString(),
                             new GetterExtractor(getterMethod))));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_PATH_PARAM,
-                    (annotationValue, fieldInfo) -> new PathParamItem(
+                    (annotationValue, fieldInfo) -> new PathParamItem(fieldInfo.name(),
                             annotationValue != null ? annotationValue : fieldInfo.name(), fieldInfo.type().name().toString(),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
-                    (annotationValue, getterMethod) -> new PathParamItem(
+                    (annotationValue, getterMethod) -> new PathParamItem(getterMethod.name(),
                             annotationValue != null ? annotationValue : getterName(getterMethod),
                             getterMethod.returnType().name().toString(),
                             new GetterExtractor(getterMethod))));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, FORM_PARAM,
-                    (annotationValue, fieldInfo) -> new FormParamItem(annotationValue,
+                    (annotationValue, fieldInfo) -> new FormParamItem(fieldInfo.name(), annotationValue,
                             fieldInfo.type().name().toString(), AsmUtil.getSignature(fieldInfo.type()),
                             fieldInfo.name(),
                             partType(fieldInfo), fileName(fieldInfo),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
-                    (annotationValue, getterMethod) -> new FormParamItem(annotationValue,
+                    (annotationValue, getterMethod) -> new FormParamItem(getterMethod.name(), annotationValue,
                             getterMethod.returnType().name().toString(),
                             AsmUtil.getSignature(getterMethod.returnType()),
                             getterMethod.name(),
@@ -165,13 +168,13 @@ public class BeanParamParser {
                             new GetterExtractor(getterMethod))));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_FORM_PARAM,
-                    (annotationValue, fieldInfo) -> new FormParamItem(
+                    (annotationValue, fieldInfo) -> new FormParamItem(fieldInfo.name(),
                             annotationValue != null ? annotationValue : fieldInfo.name(),
                             fieldInfo.type().name().toString(), AsmUtil.getSignature(fieldInfo.type()),
                             fieldInfo.name(),
                             partType(fieldInfo), fileName(fieldInfo),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
-                    (annotationValue, getterMethod) -> new FormParamItem(
+                    (annotationValue, getterMethod) -> new FormParamItem(getterMethod.name(),
                             annotationValue != null ? annotationValue : getterName(getterMethod),
                             getterMethod.returnType().name().toString(),
                             AsmUtil.getSignature(getterMethod.returnType()),

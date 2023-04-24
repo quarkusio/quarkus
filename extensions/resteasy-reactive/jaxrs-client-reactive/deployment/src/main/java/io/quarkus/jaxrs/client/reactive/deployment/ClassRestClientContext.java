@@ -19,6 +19,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jaxrs.client.reactive.runtime.ParameterAnnotationsSupplier;
+import io.quarkus.jaxrs.client.reactive.runtime.ParameterDescriptorFromClassSupplier;
 import io.quarkus.jaxrs.client.reactive.runtime.ParameterGenericTypesSupplier;
 
 class ClassRestClientContext implements AutoCloseable {
@@ -30,6 +31,9 @@ class ClassRestClientContext implements AutoCloseable {
     public final Map<Integer, FieldDescriptor> methodStaticFields = new HashMap<>();
     public final Map<Integer, FieldDescriptor> methodParamAnnotationsStaticFields = new HashMap<>();
     public final Map<Integer, FieldDescriptor> methodGenericParametersStaticFields = new HashMap<>();
+    public final Map<String, FieldDescriptor> beanTypesParameterDescriptorsStaticFields = new HashMap<>();
+    public final Map<String, ResultHandle> classesMap = new HashMap<>();
+    private int beanParamIndex = 0;
 
     public ClassRestClientContext(String name, BuildProducer<GeneratedClassBuildItem> generatedClasses,
             String... interfaces) {
@@ -53,12 +57,12 @@ class ClassRestClientContext implements AutoCloseable {
     }
 
     protected FieldDescriptor createJavaMethodField(ClassInfo interfaceClass, MethodInfo method, int methodIndex) {
-        ResultHandle interfaceClassHandle = clinit.loadClassFromTCCL(interfaceClass.toString());
+        ResultHandle interfaceClassHandle = loadClass(interfaceClass.toString());
 
         ResultHandle parameterArray = clinit.newArray(Class.class, method.parametersCount());
         for (int i = 0; i < method.parametersCount(); i++) {
             String parameterClass = method.parameterType(i).name().toString();
-            clinit.writeArrayValue(parameterArray, i, clinit.loadClassFromTCCL(parameterClass));
+            clinit.writeArrayValue(parameterArray, i, loadClass(parameterClass));
         }
 
         ResultHandle javaMethodHandle = clinit.invokeVirtualMethod(
@@ -124,5 +128,44 @@ class ClassRestClientContext implements AutoCloseable {
 
             return javaMethodGenericParametersField;
         };
+    }
+
+    /**
+     * Generates "Class.forName(beanClass)" to generate the parameter descriptors. This method will only be created if and only
+     * if the supplier is used in order to not have a penalty performance.
+     */
+    protected Supplier<FieldDescriptor> getLazyBeanParameterDescriptors(String beanClass) {
+        return () -> {
+            FieldDescriptor field = beanTypesParameterDescriptorsStaticFields.get(beanClass);
+            if (field != null) {
+                return field;
+            }
+
+            ResultHandle clazz = loadClass(beanClass);
+
+            ResultHandle mapWithAnnotationsHandle = clinit.newInstance(MethodDescriptor.ofConstructor(
+                    ParameterDescriptorFromClassSupplier.class, Class.class),
+                    clazz);
+            field = FieldDescriptor.of(classCreator.getClassName(), "beanParamDescriptors" + beanParamIndex, Supplier.class);
+            classCreator.getFieldCreator(field).setModifiers(Modifier.FINAL | Modifier.STATIC); // needs to be package-private because it's used by subresources
+            clinit.writeStaticField(field, mapWithAnnotationsHandle);
+
+            beanTypesParameterDescriptorsStaticFields.put(beanClass, field);
+
+            beanParamIndex++;
+
+            return field;
+        };
+    }
+
+    private ResultHandle loadClass(String className) {
+        ResultHandle classType = classesMap.get(className);
+        if (classType != null) {
+            return classType;
+        }
+
+        ResultHandle classFromTCCL = clinit.loadClassFromTCCL(className);
+        classesMap.put(className, classFromTCCL);
+        return classFromTCCL;
     }
 }
